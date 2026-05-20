@@ -2,7 +2,7 @@
 
 Route: `/orders`
 Owner: Setu Guru knowledge base
-Last updated: 2026-05-11
+Last updated: 2026-05-20
 
 ## Sprint 8O purpose
 
@@ -14,7 +14,7 @@ This pass keeps the core Sprint 8 rule:
 Prepare → Preview → Approve → Send / Advance
 ```
 
-It does not mutate quote history, does not auto-dispatch, and does not sync finance records.
+It does not mutate quote history, does not auto-dispatch, and does not sync finance records. Sprint 18 finance behavior is pending-adapter queue only through `finance_integration_events`.
 
 ## What Sprint 8O adds
 
@@ -48,8 +48,8 @@ Setu Guru must explain that final invoice is different from proforma invoice.
 
 - Proforma invoice supports buyer confirmation, advance payment, LC, or internal execution.
 - Final invoice should be based on actual approved/dispatched quantities and dispatch posture.
-- Finance sync must not happen from draft, preview, or proforma documents.
-- Finance sync should only happen after a future approved finance adapter pass and explicit approval.
+- Queue invoice sync must not happen from draft, preview, or proforma documents.
+- Queue invoice sync should only happen after Final Invoice approval and explicit human action. It creates a pending adapter event; it does not sync to Xero, QuickBooks, Tally, bank feeds, or payment processors.
 
 ## Dispatch policy
 
@@ -63,9 +63,9 @@ Setu Guru must not:
 - waive open trade requirements;
 - clear document blockers;
 - send documents;
-- book freight;
+- queue or book freight without human action;
 - close an order;
-- sync finance records.
+- sync finance records or claim accounting provider delivery.
 
 Setu Guru may explain what is missing before dispatch and route the user back to the order.
 

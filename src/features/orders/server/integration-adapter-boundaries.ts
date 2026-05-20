@@ -115,12 +115,12 @@ export const financeAdapter = new DisabledFinanceAdapter();
 export const ORDER_INTEGRATION_BOUNDARY_POLICY = {
   freight: {
     enabledByDefault: false,
-    safeFirstStep: 'Use freight_rate_requests with email, WhatsApp, manual, or integration-ready method before any live carrier adapter is enabled.',
+    safeFirstStep: "Use freight_rate_requests/freight_booking_events with adapter_name='pending' before any live carrier adapter is enabled.",
     humanApprovalRequiredFor: ['send_request', 'select_quote', 'book_shipment', 'dispatch'],
   },
   finance: {
     enabledByDefault: false,
-    safeFirstStep: 'Use finance_sync_records only after final invoice approval and explicit finance integration approval.',
+    safeFirstStep: "Use finance_integration_events with adapter_name='pending' only after final invoice approval and explicit finance queue action.",
     noSyncFrom: ['quote', 'proforma_invoice', 'order_confirmation', 'packing_sheet', 'freight_rate_request', 'draft_invoice'],
     humanApprovalRequiredFor: ['create_invoice', 'update_invoice', 'record_payment', 'void_invoice', 'sync_customer'],
   },

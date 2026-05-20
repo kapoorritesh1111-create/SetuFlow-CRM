@@ -153,6 +153,8 @@ export async function savePackingOverridesAction(formData: FormData) {
     gross_weight_kg: safeNumber(formData.get('gross_weight_kg'), 0),
     cbm: safeNumber(formData.get('cbm'), 0),
     pickup: clean(formData.get('pickup')),
+    delivery_destination: clean(formData.get('delivery_destination')),
+    dimensions: clean(formData.get('dimensions')),
     freight_notes: clean(formData.get('freight_notes')),
     updated_at: new Date().toISOString(),
   };

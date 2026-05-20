@@ -1,87 +1,308 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { approveActualOrderLinesGateAction, approveFirstDocumentGateAction, prepareFirstDocumentGateAction } from '@/features/orders/server/execution-order-actions';
-import { addManualActualOrderLineAction, saveOrderDiscountAction, updateActualOrderLineAction } from '@/features/orders/server/order-line-actions';
-import { approveFinalInvoiceGateAction, prepareFinalInvoiceGateAction, previewFinalInvoiceGateAction } from '@/features/orders/server/dispatch-invoice-gate-actions';
-import { approveDeliveryNoteAction, approvePackingOverridesAction, closeOrderAction, savePackingOverridesAction, saveProcessingCheckAction } from '@/features/orders/server/stage-gate-actions';
+import {
+  approveActualOrderLinesGateAction,
+  approveFirstDocumentGateAction,
+  prepareFirstDocumentGateAction,
+} from '@/features/orders/server/execution-order-actions';
+import {
+  addManualActualOrderLineAction,
+  removeActualOrderLineAction,
+  saveOrderDiscountAction,
+  updateActualOrderLineAction,
+} from '@/features/orders/server/order-line-actions';
+import {
+  approveFinalInvoiceGateAction,
+  prepareFinalInvoiceGateAction,
+  previewFinalInvoiceGateAction,
+} from '@/features/orders/server/dispatch-invoice-gate-actions';
+import {
+  approveDeliveryNoteAction,
+  approvePackingOverridesAction,
+  closeOrderAction,
+  savePackingOverridesAction,
+  saveProcessingCheckAction,
+} from '@/features/orders/server/stage-gate-actions';
+import {
+  markQueueEventManuallyCompletedAction,
+  queueFinanceIntegrationEventAction,
+  queueFreightBookingEventAction,
+  retryPendingQueueEventAction,
+} from '@/features/orders/server/integration-queue-actions';
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
-import { sendOrderDocumentViaWhatsApp } from '@/features/orders/server/order-whatsapp-delivery';
 
-export type CatalogOrderOption8S = { id: string; label: string; productName: string; variantName?: string | null; skuCode?: string | null; hsnCode?: string | null; pricingType?: string | null; basisLabel: string; fobPrice: number | null; exFactoryPrice: number | null; bulkPrice: number | null; currency: string };
-export type OrderLineComparison8S = { id: string; productName: string; quotedQuantity: number | null; actualQuantity: number | null; unitOfMeasure: string | null; unitPrice: number | null; currency: string | null; quotedTotal: number | null; lineTotal: number | null; status: 'unchanged' | 'changed' | 'removed' | 'added' | 'needs_actual_lines'; variantName?: string | null; skuCode?: string | null; hsnCode?: string | null; reason?: string | null; isActual: boolean; pricingBasis?: string | null; lineDiscountType?: string | null; lineDiscountValue?: number | null; lineDiscountReason?: string | null };
-export type ProductionOrderGate8S = { id: string; stageKey: string | null; gateType: string | null; status: string | null; approvedAt?: string | null; previewedAt?: string | null; completedAt?: string | null; reason?: string | null };
-export type ProductionOrderDocumentSend8X = { id: string; channel: string | null; recipient: string | null; status: string | null; shareUrl?: string | null; sentAt?: string | null; openedAt?: string | null; openCount?: number | null; recipientRole?: string | null };
-export type ProductionOrderDocument8W = { id: string; documentType: string | null; status: string | null; sends?: ProductionOrderDocumentSend8X[]; sentAt?: string | null; openedAt?: string | null };
-export type ProductionOrder8S = { orderId?: string | null; orderNumber?: string | null; quoteId: string; leadId: string; companyName: string; orderType: 'regional' | 'export'; currency: string | null; actualTotal: number | null; quotedTotal: number | null; currentStage?: string | null; executionState: string; productContext?: string | null; country: string | null; defaultEmailRecipient?: string | null; defaultWhatsappRecipient?: string | null; defaultRecipientRole?: string | null; lines: OrderLineComparison8S[]; documents?: ProductionOrderDocument8W[]; gates?: ProductionOrderGate8S[]; blockerCount: number; nextAction: string; contractId: string | null; status: string; blockerReasons: string[]; documentCount: number; orgCountry: string | null; contactName?: string | null; defaultRecipient?: string | null; approvalState?: string | null; sourceQuoteVersionId?: string | null; acceptedVersionId?: string | null; versionLabel?: string | null; gateCount?: number; pricingBasis?: string | null; orderDiscountType?: string | null; orderDiscountValue?: number | null; orderDiscountReason?: string | null; closeout?: Record<string, unknown> | null };
+export type CatalogOrderOption8S = {
+  id: string;
+  label: string;
+  productName: string;
+  variantName?: string | null;
+  skuCode?: string | null;
+  hsnCode?: string | null;
+  pricingType?: string | null;
+  basisLabel: string;
+  fobPrice: number | null;
+  exFactoryPrice: number | null;
+  bulkPrice: number | null;
+  currency: string;
+};
 
-type Filter = 'all' | 'regional' | 'export';
+export type OrderLineComparison8S = {
+  id: string;
+  productName: string;
+  quotedQuantity: number | null;
+  actualQuantity: number | null;
+  unitOfMeasure: string | null;
+  unitPrice: number | null;
+  currency: string | null;
+  quotedTotal: number | null;
+  lineTotal: number | null;
+  status: 'unchanged' | 'changed' | 'removed' | 'added' | 'needs_actual_lines';
+  variantName?: string | null;
+  skuCode?: string | null;
+  hsnCode?: string | null;
+  reason?: string | null;
+  isActual: boolean;
+  pricingBasis?: string | null;
+  lineDiscountType?: string | null;
+  lineDiscountValue?: number | null;
+  lineDiscountReason?: string | null;
+};
+
+export type ProductionOrderGate8S = {
+  id: string;
+  stageKey: string | null;
+  gateType: string | null;
+  status: string | null;
+  approvedAt?: string | null;
+  previewedAt?: string | null;
+  completedAt?: string | null;
+  reason?: string | null;
+};
+
+export type ProductionOrderDocumentSend8X = {
+  id: string;
+  channel: string | null;
+  recipient: string | null;
+  status: string | null;
+  shareUrl?: string | null;
+  whatsappLink?: string | null;
+  sentAt?: string | null;
+  openedAt?: string | null;
+  openCount?: number | null;
+  recipientRole?: string | null;
+};
+
+export type ProductionOrderDocument8W = {
+  id: string;
+  documentType: string | null;
+  status: string | null;
+  pdfStoragePath?: string | null;
+  sends?: ProductionOrderDocumentSend8X[];
+  sentAt?: string | null;
+  openedAt?: string | null;
+};
+
+export type QueueEvent8S = {
+  id: string;
+  eventType: string | null;
+  adapterName: string | null;
+  status: string | null;
+  orderDocumentId?: string | null;
+  freightRateRequestId?: string | null;
+  shipmentMode?: string | null;
+  payload?: unknown;
+  responsePayload?: unknown;
+  externalRef?: string | null;
+  bookingReference?: string | null;
+  trackingReference?: string | null;
+  errorMessage?: string | null;
+  retryCount?: number | null;
+  queuedAt?: string | null;
+  sentAt?: string | null;
+  confirmedAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type PackingPlan8S = {
+  id: string;
+  status: string | null;
+  totalCartons?: number | null;
+  totalPallets?: number | null;
+  totalNetWeightKg?: number | null;
+  totalGrossWeightKg?: number | null;
+  totalCbm?: number | null;
+  pickupLocation?: string | null;
+  deliveryDestination?: string | null;
+  freightNotes?: string | null;
+  overrideSnapshot?: unknown;
+  updatedAt?: string | null;
+};
+
+export type FreightRateRequest8S = {
+  id: string;
+  status: string | null;
+  shipmentMode?: string | null;
+  incoterm?: string | null;
+  pickupAddress?: string | null;
+  deliveryAddress?: string | null;
+  payload?: unknown;
+  updatedAt?: string | null;
+};
+
+export type ProcessingCheck8S = {
+  id: string;
+  status: string | null;
+  picked?: boolean | null;
+  packed?: boolean | null;
+  qcPassed?: boolean | null;
+  note?: string | null;
+  updatedAt?: string | null;
+};
+
+export type Shipment8S = {
+  id: string;
+  shipmentMode?: string | null;
+  status: string | null;
+  bookingReference?: string | null;
+  trackingNumber?: string | null;
+  carrierName?: string | null;
+  forwarderName?: string | null;
+  dispatchedAt?: string | null;
+  deliveredAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type StageEvent8S = {
+  id: string;
+  stageKey: string | null;
+  eventType: string | null;
+  summary: string | null;
+  payload?: unknown;
+  createdAt?: string | null;
+};
+
+export type ProductionOrder8S = {
+  orderId?: string | null;
+  orderNumber?: string | null;
+  quoteId: string;
+  leadId: string;
+  companyName: string;
+  orderType: 'regional' | 'export';
+  currency: string | null;
+  actualTotal: number | null;
+  quotedTotal: number | null;
+  currentStage?: string | null;
+  executionState: string;
+  productContext?: string | null;
+  country: string | null;
+  defaultEmailRecipient?: string | null;
+  defaultWhatsappRecipient?: string | null;
+  defaultRecipientRole?: string | null;
+  lines: OrderLineComparison8S[];
+  documents?: ProductionOrderDocument8W[];
+  gates?: ProductionOrderGate8S[];
+  blockerCount: number;
+  nextAction: string;
+  contractId: string | null;
+  status: string;
+  blockerReasons: string[];
+  documentCount: number;
+  orgCountry: string | null;
+  contactName?: string | null;
+  defaultRecipient?: string | null;
+  approvalState?: string | null;
+  sourceQuoteVersionId?: string | null;
+  acceptedVersionId?: string | null;
+  versionLabel?: string | null;
+  gateCount?: number;
+  pricingBasis?: string | null;
+  orderDiscountType?: string | null;
+  orderDiscountValue?: number | null;
+  orderDiscountReason?: string | null;
+  paymentStatus?: string | null;
+  fulfillmentStatus?: string | null;
+  dispatchStatus?: string | null;
+  incoterm?: string | null;
+  originPlace?: string | null;
+  destinationPlace?: string | null;
+  destinationPort?: string | null;
+  buyerReference?: string | null;
+  paymentTerms?: string | null;
+  packingPlan?: PackingPlan8S | null;
+  packingOverrides?: Record<string, unknown> | null;
+  freightRateRequest?: FreightRateRequest8S | null;
+  processingCheck?: ProcessingCheck8S | null;
+  shipment?: Shipment8S | null;
+  financeEvents?: QueueEvent8S[];
+  freightEvents?: QueueEvent8S[];
+  stageEvents?: StageEvent8S[];
+  closeout?: Record<string, unknown> | null;
+};
+
 type ServerAction = (formData: FormData) => void | Promise<void>;
+type OrderTypeFilter = 'all' | 'regional' | 'export';
+type KpiFilter = 'all' | 'ready_now' | 'blocked' | 'finance_ready' | 'freight_ready' | 'whatsapp_ready' | null;
+type ReadinessFilter = 'all' | 'ready' | 'blocked' | 'finance_ready' | 'freight_ready' | 'whatsapp_ready';
+type DrawerState = { type: 'finance' | 'freight'; order: ProductionOrder8S } | null;
 
-const names = ['Actual Lines', 'Proforma / Confirmation', 'Packing / Rates', 'Processing', 'Delivery Note', 'Final Invoice', 'Paid & Closed'];
-const flow = ['actual_lines', 'approval', 'packing', 'processing', 'delivery_note', 'final_invoice', 'closed'] as const;
+const STAGES = [
+  { key: 'actual_lines', label: 'Actual Lines' },
+  { key: 'buyer_doc', label: 'Buyer Doc' },
+  { key: 'packing', label: 'Packing' },
+  { key: 'freight_queue', label: 'Freight Queue' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'delivery_note', label: 'Delivery Note' },
+  { key: 'final_invoice', label: 'Final Invoice' },
+  { key: 'paid_closed', label: 'Paid & Closed' },
+] as const;
 
-function orderKey(o: ProductionOrder8S) {
-  return o.orderId ?? o.quoteId;
+type StageKey = typeof STAGES[number]['key'];
+
+function orderKey(order: ProductionOrder8S) {
+  return order.orderId ?? order.quoteId;
 }
 
-function idx(o: ProductionOrder8S) {
-  const s = String(o.currentStage ?? o.executionState ?? '').toLowerCase();
-  if (['quote_approved', 'actual_lines', 'draft'].includes(s)) return 0;
-  if (['first_document', 'order_confirmation', 'proforma_invoice', 'internal_review'].includes(s)) return 1;
-  if (['packing_sheet', 'packing_list', 'freight_request'].includes(s)) return 2;
-  if (['processing', 'trade_requirements'].includes(s)) return 3;
-  if (['shipment_booking', 'delivery_note'].includes(s)) return 4;
-  if (['dispatch_invoice', 'final_invoice'].includes(s)) return 5;
-  if (['completed', 'closed'].includes(s)) return 6;
-  return 0;
+function clean(value: unknown) {
+  const text = String(value ?? '').trim();
+  return text.length ? text : null;
 }
 
-function dtype(o: ProductionOrder8S, n: number) {
-  if (n === 1) return o.orderType === 'export' ? 'proforma_invoice' : 'order_confirmation';
-  if (n === 2) return o.orderType === 'export' ? 'packing_list' : 'packing_sheet';
-  if (n === 4) return 'delivery_note';
-  return 'dispatch_invoice';
+function asNumber(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function dlabel(t: string) {
-  return ({ proforma_invoice: 'Proforma Invoice', order_confirmation: 'Order Confirmation', packing_sheet: 'Packing Sheet', packing_list: 'Packing List', delivery_note: 'Delivery Note', dispatch_invoice: 'Final / Commercial Invoice' } as Record<string, string>)[t] ?? t;
+function money(value: number | null | undefined, currency: string | null | undefined) {
+  if (value == null || !Number.isFinite(Number(value))) return 'Not available';
+  return `${currency ?? 'USD'} ${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
-function normUrl(u?: string | null) {
-  const v = String(u ?? '').trim();
-  if (!v) return null;
-  return /^https?:\/\//i.test(v) ? v : `https://${v.replace(/^\/+/, '')}`;
+function initials(value: string) {
+  return value.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'SF';
 }
 
-function latest(o: ProductionOrder8S, t: string) {
-  return normUrl((o.documents ?? []).filter((d) => d.documentType === t).flatMap((d) => d.sends ?? []).find((s) => s.shareUrl)?.shareUrl);
+function normalizeUrl(value?: string | null) {
+  const text = clean(value);
+  if (!text) return null;
+  if (/^https?:\/\//i.test(text)) return text;
+  if (text.startsWith('/')) return text;
+  return `https://${text}`;
 }
 
-function qty(l: OrderLineComparison8S) {
-  return Number(l.actualQuantity ?? l.quotedQuantity ?? 0) || 0;
+function lineQty(line: OrderLineComparison8S) {
+  return asNumber(line.actualQuantity ?? line.quotedQuantity, 0);
 }
 
-function pack(o: ProductionOrder8S) {
-  const units = o.lines.reduce((s, l) => s + qty(l), 0);
-  const unitsPerCase = 24;
-  const cartons = Math.max(1, Math.ceil(units / unitsPerCase));
-  const net = +(units * 0.25).toFixed(2);
-  const gross = +(net + cartons * 0.75).toFixed(2);
-  return { units, unitsPerCase, cartons, net, gross, cbm: +(cartons * 0.035).toFixed(3), pallets: Math.max(1, Math.ceil(cartons / 40)) };
+function titleCase(value: string | null | undefined) {
+  const text = clean(value);
+  if (!text) return 'Not set';
+  return text.replace(/[_-]+/g, ' ').replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-function money(v: number | null, c: string | null) {
-  return v == null ? '--' : `${c ?? 'USD'} ${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-}
-
-function initials(s: string) {
-  return s.split(/\s+/).filter(Boolean).map((x) => x[0]).join('').slice(0, 2).toUpperCase() || 'SF';
-}
-
-function approvedGate(o: ProductionOrder8S, stageKeys: string[], gateTypes?: string[]) {
-  return (o.gates ?? []).some((gate) => {
+function gateApproved(order: ProductionOrder8S, stageKeys: string[], gateTypes?: string[]) {
+  return (order.gates ?? []).some((gate) => {
     const status = String(gate.status ?? '').toLowerCase();
     const stageKey = String(gate.stageKey ?? '');
     const gateType = String(gate.gateType ?? '');
@@ -89,209 +310,1268 @@ function approvedGate(o: ProductionOrder8S, stageKeys: string[], gateTypes?: str
   });
 }
 
-function documentApproved(o: ProductionOrder8S, documentType: string) {
-  return (o.documents ?? []).some((doc) => doc.documentType === documentType && doc.status === 'approved')
-    || approvedGate(o, [documentType, 'first_document', 'final_invoice'], [documentType, documentType === 'dispatch_invoice' ? 'final_invoice' : documentType]);
+function documentTypeForBuyer(order: ProductionOrder8S) {
+  return order.orderType === 'export' ? 'proforma_invoice' : 'order_confirmation';
 }
 
-function stageAllowed(o: ProductionOrder8S, stage: number) {
-  if (stage === 0) return true;
-  if (String(o.status).toLowerCase() === 'completed') return true;
-  if (stage === 1) return approvedGate(o, ['internal_review'], ['actual_lines']);
-  if (stage === 2) return approvedGate(o, ['first_document'], ['proforma_invoice', 'order_confirmation']);
-  if (stage === 3) return approvedGate(o, ['packing_sheet'], ['packing_sheet']);
-  if (stage === 4) return approvedGate(o, ['processing'], ['pick_pack_qc']);
-  if (stage === 5) return approvedGate(o, ['delivery_note'], ['delivery_note']);
-  if (stage === 6) return approvedGate(o, ['final_invoice', 'dispatch_invoice'], ['dispatch_invoice', 'final_invoice']);
-  return false;
+function documentLabel(type: string) {
+  const labels: Record<string, string> = {
+    proforma_invoice: 'Proforma Invoice',
+    order_confirmation: 'Order Confirmation',
+    packing_sheet: 'Packing Sheet',
+    packing_list: 'Packing List',
+    delivery_note: 'Delivery Note',
+    dispatch_invoice: 'Final Invoice',
+  };
+  return labels[type] ?? titleCase(type);
 }
 
-function stageBlocker(stage: number) {
-  if (stage === 1) return 'Approve actual order lines before preparing Proforma or Order Confirmation.';
-  if (stage === 2) return 'Approve the Proforma or Order Confirmation before packing and freight work.';
-  if (stage === 3) return 'Approve packing overrides before processing checks.';
-  if (stage === 4) return 'Complete Pick / Pack / QC checks before Delivery Note.';
-  if (stage === 5) return 'Approve Delivery Note before Final Invoice.';
-  if (stage === 6) return 'Approve Final Invoice before Paid & Closed.';
-  return 'Previous gate approval is required.';
+function documentForType(order: ProductionOrder8S, documentType: string) {
+  return (order.documents ?? []).find((document) => document.documentType === documentType) ?? null;
 }
 
-function Btn({ children, tone = '', disabled = false }: { children: React.ReactNode; tone?: string; disabled?: boolean }) {
-  return <button className={`r3btn ${tone}`} disabled={disabled}>{children}</button>;
+function documentApproved(order: ProductionOrder8S, documentType: string) {
+  return (order.documents ?? []).some((document) => document.documentType === documentType && String(document.status).toLowerCase() === 'approved')
+    || (documentType === 'dispatch_invoice'
+      ? gateApproved(order, ['final_invoice', 'dispatch_invoice'], ['dispatch_invoice', 'final_invoice'])
+      : documentType === 'delivery_note'
+        ? gateApproved(order, ['delivery_note'], ['delivery_note'])
+        : gateApproved(order, ['first_document'], [documentType]));
 }
 
-function Gate({ action, quoteId, children, type, tone = '', disabled = false }: { action: ServerAction; quoteId: string; children: React.ReactNode; type?: string; tone?: string; disabled?: boolean }) {
-  return <form action={action}><input type="hidden" name="quote_id" value={quoteId} />{type ? <input type="hidden" name="document_gate_type" value={type} /> : null}<Btn tone={tone} disabled={disabled}>{children}</Btn></form>;
+function latestShareUrl(order: ProductionOrder8S, documentType: string) {
+  const document = documentForType(order, documentType);
+  return normalizeUrl((document?.sends ?? []).find((send) => send.shareUrl)?.shareUrl);
 }
 
-function Preview({ o, t, label, disabled = false }: { o: ProductionOrder8S; t: string; label: string; disabled?: boolean }) {
-  const href = latest(o, t);
-  // If share URL already exists, open directly in new tab
-  if (href) return <a className={`r3btn blue ${disabled ? 'disabled' : ''}`} href={disabled ? undefined : href} target="_blank" rel="noreferrer noopener">{label}</a>;
-  // No URL yet — submit form to generate share token; page revalidates and next click uses href path
+function latestWhatsappLink(order: ProductionOrder8S, documentType: string) {
+  const document = documentForType(order, documentType);
+  return normalizeUrl((document?.sends ?? []).find((send) => send.whatsappLink)?.whatsappLink);
+}
+
+function pdfHref(order: ProductionOrder8S, documentType: string) {
+  if (!order.contractId) return null;
+  if (documentType === 'dispatch_invoice') return `/api/orders/${encodeURIComponent(order.contractId)}/invoice/pdf`;
+  if (documentType === 'order_confirmation') return `/api/orders/${encodeURIComponent(order.contractId)}/order-confirmation/pdf`;
+  return null;
+}
+
+function workflow(order: ProductionOrder8S) {
+  const buyerDocumentType = documentTypeForBuyer(order);
+  const actualApproved = gateApproved(order, ['internal_review'], ['actual_lines']);
+  const buyerDocumentApproved = documentApproved(order, buyerDocumentType);
+  const packingApproved = gateApproved(order, ['packing_sheet'], ['packing_sheet']);
+  const freightQueued = Boolean((order.freightEvents ?? []).length || order.freightRateRequest?.id);
+  const processingApproved = gateApproved(order, ['processing'], ['pick_pack_qc']) || Boolean(order.processingCheck?.qcPassed && order.processingCheck?.picked && order.processingCheck?.packed);
+  const deliveryApproved = documentApproved(order, 'delivery_note');
+  const finalInvoiceApproved = documentApproved(order, 'dispatch_invoice');
+  const financeQueued = Boolean((order.financeEvents ?? []).length);
+  const paidClosed = String(order.status ?? '').toLowerCase() === 'completed' || gateApproved(order, ['closed'], ['paid_closeout']);
+  return { buyerDocumentType, actualApproved, buyerDocumentApproved, packingApproved, freightQueued, processingApproved, deliveryApproved, finalInvoiceApproved, financeQueued, paidClosed };
+}
+
+function stageDone(order: ProductionOrder8S, key: StageKey) {
+  const state = workflow(order);
+  if (key === 'actual_lines') return state.actualApproved;
+  if (key === 'buyer_doc') return state.buyerDocumentApproved;
+  if (key === 'packing') return state.packingApproved;
+  if (key === 'freight_queue') return state.freightQueued;
+  if (key === 'processing') return state.processingApproved;
+  if (key === 'delivery_note') return state.deliveryApproved;
+  if (key === 'final_invoice') return state.finalInvoiceApproved;
+  return state.paidClosed;
+}
+
+function stageUnlocked(order: ProductionOrder8S, key: StageKey) {
+  const state = workflow(order);
+  if (key === 'actual_lines') return true;
+  if (key === 'buyer_doc') return state.actualApproved;
+  if (key === 'packing') return state.buyerDocumentApproved;
+  if (key === 'freight_queue') return state.packingApproved;
+  if (key === 'processing') return state.packingApproved;
+  if (key === 'delivery_note') return state.processingApproved;
+  if (key === 'final_invoice') return state.deliveryApproved;
+  return state.finalInvoiceApproved;
+}
+
+function stageBlocker(order: ProductionOrder8S, key: StageKey) {
+  const state = workflow(order);
+  if (key === 'buyer_doc' && !state.actualApproved) return 'Actual order lines, discount reasons, and the actual-lines approval gate must be complete first.';
+  if (key === 'packing' && !state.buyerDocumentApproved) return 'The first buyer document must be approved before packing work.';
+  if (key === 'freight_queue' && !state.packingApproved) return 'Freight queue is locked until the packing plan is saved and approved.';
+  if (key === 'processing' && !state.packingApproved) return 'Processing is locked until packing is approved.';
+  if (key === 'delivery_note' && !state.processingApproved) return 'Delivery Note is locked until Pick, Pack, and QC are approved.';
+  if (key === 'final_invoice' && !state.deliveryApproved) return 'Final Invoice is locked until Delivery Note is approved.';
+  if (key === 'paid_closed' && !state.finalInvoiceApproved) return 'Paid & Closed is locked until Final Invoice approval.';
+  return null;
+}
+
+function inferredStageKey(order: ProductionOrder8S): StageKey {
+  const state = workflow(order);
+  if (state.paidClosed) return 'paid_closed';
+  if (state.finalInvoiceApproved && state.financeQueued) return 'paid_closed';
+  if (state.finalInvoiceApproved) return 'final_invoice';
+  if (state.deliveryApproved) return 'final_invoice';
+  if (state.processingApproved) return 'delivery_note';
+  if (state.freightQueued) return 'processing';
+  if (state.packingApproved) return 'freight_queue';
+  if (state.buyerDocumentApproved) return 'packing';
+  if (state.actualApproved) return 'buyer_doc';
+  return 'actual_lines';
+}
+
+function stageIndex(key: StageKey) {
+  return STAGES.findIndex((stage) => stage.key === key);
+}
+
+function packingEstimate(order: ProductionOrder8S) {
+  const units = order.lines.reduce((sum, line) => sum + lineQty(line), 0);
+  const unitsPerCarton = 24;
+  const cartons = Math.max(1, Math.ceil(units / unitsPerCarton));
+  const net = Number((units * 0.25).toFixed(2));
+  const gross = Number((net + cartons * 0.75).toFixed(2));
+  const cbm = Number((cartons * 0.035).toFixed(3));
+  const pallets = Math.max(1, Math.ceil(cartons / 40));
+  return { units, cartons, pallets, netWeightKg: net, grossWeightKg: gross, cbm };
+}
+
+function packingMetrics(order: ProductionOrder8S) {
+  const estimate = packingEstimate(order);
+  const overrides = order.packingOverrides ?? {};
+  return {
+    units: estimate.units,
+    cartons: asNumber(order.packingPlan?.totalCartons ?? overrides.cartons, estimate.cartons),
+    pallets: asNumber(order.packingPlan?.totalPallets ?? overrides.pallets, estimate.pallets),
+    netWeightKg: asNumber(order.packingPlan?.totalNetWeightKg ?? overrides.net_weight_kg, estimate.netWeightKg),
+    grossWeightKg: asNumber(order.packingPlan?.totalGrossWeightKg ?? overrides.gross_weight_kg, estimate.grossWeightKg),
+    cbm: asNumber(order.packingPlan?.totalCbm ?? overrides.cbm, estimate.cbm),
+    pickup: clean(order.packingPlan?.pickupLocation ?? overrides.pickup ?? order.originPlace) ?? '',
+    destination: clean(order.packingPlan?.deliveryDestination ?? overrides.delivery_destination ?? order.destinationPlace ?? order.destinationPort) ?? '',
+    dimensions: clean(overrides.dimensions) ?? '',
+    freightNotes: clean(order.packingPlan?.freightNotes ?? overrides.freight_notes) ?? '',
+  };
+}
+
+function freightPayloadComplete(order: ProductionOrder8S) {
+  const metrics = packingMetrics(order);
+  return Boolean(metrics.cartons && metrics.pallets && metrics.netWeightKg && metrics.grossWeightKg && metrics.cbm && metrics.pickup && metrics.destination && clean(order.freightRateRequest?.shipmentMode ?? 'manual_review') && clean(order.freightRateRequest?.incoterm ?? order.incoterm));
+}
+
+function isFinanceQueueReady(order: ProductionOrder8S) {
+  const state = workflow(order);
+  return state.finalInvoiceApproved && !state.financeQueued;
+}
+
+function isFreightQueueReady(order: ProductionOrder8S) {
+  const state = workflow(order);
+  return state.packingApproved && !state.freightQueued && freightPayloadComplete(order);
+}
+
+function isWhatsappReady(order: ProductionOrder8S) {
+  return (order.documents ?? []).some((document) => {
+    const type = String(document.documentType ?? '');
+    return documentApproved(order, type) && Boolean(order.defaultWhatsappRecipient || latestShareUrl(order, type) || latestWhatsappLink(order, type));
+  });
+}
+
+function blockingReasons(order: ProductionOrder8S) {
+  const reasons = [...(order.blockerReasons ?? [])];
+  if (order.lines.some((line) => line.status === 'needs_actual_lines')) reasons.push('Actual order lines are missing for at least one quoted line.');
+  if (isFreightQueueReady(order) && !freightPayloadComplete(order)) reasons.push('Freight request payload is missing packing, pickup, delivery, shipment mode, or incoterm.');
+  return [...new Set(reasons.filter(Boolean))];
+}
+
+function isBlocked(order: ProductionOrder8S) {
+  return blockingReasons(order).length > 0;
+}
+
+function nextBestAction(order: ProductionOrder8S) {
+  const state = workflow(order);
+  const blockers = blockingReasons(order);
+  if (blockers.length) {
+    return {
+      stageKey: 'actual_lines' as StageKey,
+      label: 'Review order blockers',
+      why: 'The order has source, line, or readiness issues that must be resolved before execution can move cleanly.',
+      unlocks: 'Clean execution path and trustworthy next-stage approval.',
+      blocks: blockers,
+      truthLabels: ['Human review required', 'No automatic state change'],
+    };
+  }
+  if (!state.actualApproved) {
+    return {
+      stageKey: 'actual_lines' as StageKey,
+      label: 'Approve actual lines',
+      why: 'Actual buyer order lines and any discount reasons must be approved before the first buyer document.',
+      unlocks: 'Buyer Doc preparation and approval.',
+      blocks: order.lines.length ? [] : ['No actual order lines are loaded.'],
+      truthLabels: ['Accepted quote lineage preserved', 'Quote version lines stay immutable'],
+    };
+  }
+  if (!state.buyerDocumentApproved) {
+    return {
+      stageKey: 'buyer_doc' as StageKey,
+      label: `Approve ${documentLabel(state.buyerDocumentType)}`,
+      why: 'The first buyer document confirms the actual order before packing and logistics work.',
+      unlocks: 'Packing workspace.',
+      blocks: [],
+      truthLabels: ['Prepare -> Preview -> Approve -> Send tracked', 'Mailtrap email path'],
+    };
+  }
+  if (!state.packingApproved) {
+    return {
+      stageKey: 'packing' as StageKey,
+      label: 'Approve packing',
+      why: 'Packing dimensions, cartons, pallets, weights, CBM, pickup, and destination are required before freight queueing.',
+      unlocks: 'Freight Queue and Processing.',
+      blocks: [],
+      truthLabels: ['Human packing approval', 'Freight remains pending adapter'],
+    };
+  }
+  if (!state.freightQueued) {
+    return {
+      stageKey: 'freight_queue' as StageKey,
+      label: 'Queue freight request',
+      why: 'The approved packing payload can be queued for manual/provider-later freight handling.',
+      unlocks: 'Freight queue visibility and retry/manual reference tracking.',
+      blocks: freightPayloadComplete(order) ? [] : ['Freight payload is missing packing metrics, pickup, delivery, shipment mode, or incoterm.'],
+      truthLabels: ['Queue-ready only', "adapter_name='pending'", 'No live carrier booking'],
+    };
+  }
+  if (!state.processingApproved) {
+    return {
+      stageKey: 'processing' as StageKey,
+      label: 'Approve processing/QC',
+      why: 'Pick, Pack, and QC must be complete before Delivery Note.',
+      unlocks: 'Delivery Note approval.',
+      blocks: [],
+      truthLabels: ['Human QC gate', 'No automatic dispatch'],
+    };
+  }
+  if (!state.deliveryApproved) {
+    return {
+      stageKey: 'delivery_note' as StageKey,
+      label: 'Approve Delivery Note',
+      why: 'Delivery Note approval is the execution gate before the final invoice.',
+      unlocks: 'Final Invoice.',
+      blocks: [],
+      truthLabels: ['Document approval required', 'Manual tracked sends only'],
+    };
+  }
+  if (!state.finalInvoiceApproved) {
+    return {
+      stageKey: 'final_invoice' as StageKey,
+      label: 'Approve Final Invoice',
+      why: 'Finance queueing and paid closeout remain locked until the final invoice is approved.',
+      unlocks: 'Finance queue and paid closeout.',
+      blocks: [],
+      truthLabels: ['No live accounting sync', 'Human approval required'],
+    };
+  }
+  if (!state.financeQueued) {
+    return {
+      stageKey: 'final_invoice' as StageKey,
+      label: 'Queue invoice sync',
+      why: 'The approved final invoice can be queued as a pending finance integration event for manual/provider-later processing.',
+      unlocks: 'Finance queue visibility and retry/manual reference tracking.',
+      blocks: [],
+      truthLabels: ['Queue-ready only', "adapter_name='pending'", 'No Xero, QuickBooks, or Tally sync'],
+    };
+  }
+  return {
+    stageKey: 'paid_closed' as StageKey,
+    label: 'Complete paid closeout',
+    why: 'Payment reference, reconciliation, receipt acknowledgement, archive, and audit notes must be completed by a human.',
+    unlocks: 'Order closeout.',
+    blocks: [],
+    truthLabels: ['Human closeout required', 'No silent close'],
+  };
+}
+
+function draftFinancePayload(order: ProductionOrder8S) {
+  const finalDocument = documentForType(order, 'dispatch_invoice');
+  return {
+    manual_review_required: true,
+    adapter_name: 'pending',
+    event_type: 'invoice_sync_requested',
+    order_id: order.orderId ?? null,
+    order_number: order.orderNumber ?? null,
+    final_invoice_document_id: finalDocument?.id ?? null,
+    final_invoice_document_type: 'dispatch_invoice',
+    currency: order.currency,
+    total: order.actualTotal ?? order.quotedTotal,
+    buyer: { company_name: order.companyName, country: order.country },
+    line_items_summary: order.lines.map((line) => ({
+      product: line.productName,
+      quantity: line.actualQuantity ?? line.quotedQuantity,
+      unit_price: line.unitPrice,
+      line_total: line.lineTotal,
+      sku_code: line.skuCode,
+      hsn_code: line.hsnCode,
+    })),
+    pdf_storage_path: finalDocument?.pdfStoragePath ?? null,
+  };
+}
+
+function draftFreightPayload(order: ProductionOrder8S) {
+  const metrics = packingMetrics(order);
+  return {
+    manual_review_required: true,
+    adapter_name: 'pending',
+    event_type: 'freight_quote_requested',
+    order_id: order.orderId ?? null,
+    order_number: order.orderNumber ?? null,
+    origin: metrics.pickup || order.originPlace || null,
+    destination: metrics.destination || order.destinationPlace || order.destinationPort || null,
+    incoterm: order.freightRateRequest?.incoterm ?? order.incoterm ?? null,
+    shipment_mode: order.freightRateRequest?.shipmentMode ?? 'manual_review',
+    cartons: metrics.cartons,
+    pallets: metrics.pallets,
+    net_weight_kg: metrics.netWeightKg,
+    gross_weight_kg: metrics.grossWeightKg,
+    cbm: metrics.cbm,
+    packing_document_reference: order.packingPlan?.id ?? null,
+    freight_notes: metrics.freightNotes || null,
+  };
+}
+
+function latestActivity(order: ProductionOrder8S) {
+  const sendActivities = (order.documents ?? []).flatMap((document) => (document.sends ?? []).map((send) => ({
+    id: send.id,
+    label: `${documentLabel(String(document.documentType ?? 'document'))} ${send.channel ?? 'tracked'} link ${send.status ?? 'created'}`,
+    at: send.sentAt ?? null,
+  })));
+  const queueActivities = [...(order.financeEvents ?? []), ...(order.freightEvents ?? [])].map((event) => ({
+    id: event.id,
+    label: `${titleCase(event.eventType)} - ${event.adapterName ?? 'pending'} / ${event.status ?? 'queued'}`,
+    at: event.queuedAt ?? event.updatedAt ?? null,
+  }));
+  const stageActivities = (order.stageEvents ?? []).map((event) => ({
+    id: event.id,
+    label: event.summary ?? titleCase(event.eventType),
+    at: event.createdAt ?? null,
+  }));
+  return [...stageActivities, ...queueActivities, ...sendActivities].slice(0, 5);
+}
+
+function CopyButton({ payload, onCopy, label = 'Copy payload' }: { payload: unknown; onCopy: (payload: unknown) => void; label?: string }) {
+  return <button type="button" className="oc-btn ghost" onClick={() => onCopy(payload)}>{label}</button>;
+}
+
+function ActionButton({ children, tone = 'ghost', disabled = false, type = 'submit' }: { children: React.ReactNode; tone?: string; disabled?: boolean; type?: 'button' | 'submit' }) {
+  return <button type={type} className={`oc-btn ${tone}`} disabled={disabled}>{children}</button>;
+}
+
+function GateForm({ action, quoteId, children, type, tone = 'ghost', disabled = false, onSubmit }: { action: ServerAction; quoteId: string; children: React.ReactNode; type?: string; tone?: string; disabled?: boolean; onSubmit?: () => void }) {
   return (
-    <form action={sendOrderDocumentLinkAction}>
-      <input type="hidden" name="order_id" value={o.orderId ?? ''} />
-      <input type="hidden" name="quote_id" value={o.quoteId} />
-      <input type="hidden" name="document_type" value={t} />
-      <input type="hidden" name="channel" value="preview" />
-      <input type="hidden" name="preview_only" value="true" />
-      <Btn tone="blue" disabled={disabled}>{label}</Btn>
+    <form action={action} onSubmit={onSubmit}>
+      <input type="hidden" name="quote_id" value={quoteId} />
+      {type ? <input type="hidden" name="document_gate_type" value={type} /> : null}
+      <ActionButton tone={tone} disabled={disabled}>{children}</ActionButton>
     </form>
   );
 }
 
-function Send({ o, t, disabled = false }: { o: ProductionOrder8S; t: string; disabled?: boolean }) {
-  const [ch, setCh] = useState<'email' | 'whatsapp'>('email');
-  const [r, setR] = useState(o.defaultEmailRecipient ?? '');
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  const openWhatsApp = () => {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const result = await sendOrderDocumentViaWhatsApp({
-          orderId: o.orderId ?? null,
-          quoteId: o.quoteId,
-          documentType: t,
-          recipient: r,
-        });
-        window.open(result.url, '_blank', 'noopener,noreferrer');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to open WhatsApp delivery.');
-      }
-    });
-  };
-
+function PreviewAction({ order, documentType, label, disabled = false, onRedirect }: { order: ProductionOrder8S; documentType: string; label: string; disabled?: boolean; onRedirect: (message: string) => void }) {
+  const href = latestShareUrl(order, documentType);
+  if (href) {
+    return <a className={`oc-btn blue ${disabled ? 'disabled' : ''}`} href={disabled ? undefined : href} target="_blank" rel="noreferrer" onClick={() => onRedirect(`Opening ${label}...`)}>{label}</a>;
+  }
   return (
-    <form
-      action={sendOrderDocumentLinkAction}
-      className="send"
-      onSubmit={(event) => {
-        if (ch === 'whatsapp') {
-          event.preventDefault();
-          if (!disabled && !pending) openWhatsApp();
-        }
-      }}
-    >
-      <input type="hidden" name="order_id" value={o.orderId ?? ''} />
-      <input type="hidden" name="quote_id" value={o.quoteId} />
-      <input type="hidden" name="document_type" value={t} />
-      <select
-        name="channel"
-        value={ch}
-        disabled={disabled || pending}
-        onChange={(e) => {
-          const n = e.target.value === 'whatsapp' ? 'whatsapp' : 'email';
-          setCh(n);
-          setR(n === 'email' ? (o.defaultEmailRecipient ?? '') : (o.defaultWhatsappRecipient ?? ''));
-          setError(null);
-        }}
-      >
-        <option value="email">📧 Email approved document</option>
-        <option value="whatsapp">💬 WhatsApp approved document</option>
-      </select>
-      <input
-        name="recipient"
-        value={r}
-        disabled={disabled || pending}
-        onChange={(e) => setR(e.target.value)}
-        placeholder={ch === 'whatsapp' ? '+1 234 567 8900' : 'buyer@company.com'}
-      />
-      <input name="recipient_role" defaultValue="buyer" disabled={disabled || pending} />
-      <Btn tone="green" disabled={disabled || pending}>
-        {pending ? 'Opening WhatsApp...' : ch === 'whatsapp' ? '💬 Send tracked WhatsApp link' : '📧 Send approved document'}
-      </Btn>
-      {error ? <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>{error}</p> : null}
+    <form action={sendOrderDocumentLinkAction} target="_blank" onSubmit={() => onRedirect(`Creating tracked ${label.toLowerCase()}...`)}>
+      <input type="hidden" name="order_id" value={order.orderId ?? ''} />
+      <input type="hidden" name="quote_id" value={order.quoteId} />
+      <input type="hidden" name="document_type" value={documentType} />
+      <input type="hidden" name="channel" value="preview" />
+      <input type="hidden" name="preview_only" value="true" />
+      <ActionButton tone="blue" disabled={disabled}>{label}</ActionButton>
     </form>
+  );
+}
+
+function PdfAction({ order, documentType, disabled = false, onRedirect }: { order: ProductionOrder8S; documentType: string; disabled?: boolean; onRedirect: (message: string) => void }) {
+  const href = pdfHref(order, documentType);
+  if (href) {
+    return <a className={`oc-btn blue ${disabled ? 'disabled' : ''}`} href={disabled ? undefined : href} target="_blank" rel="noreferrer" onClick={() => onRedirect('Opening server PDF...')}>Generate PDF</a>;
+  }
+  return <PreviewAction order={order} documentType={documentType} label="Generate PDF" disabled={disabled} onRedirect={onRedirect} />;
+}
+
+function DocumentSendForm({ order, documentType, channel, disabled, onRedirect }: { order: ProductionOrder8S; documentType: string; channel: 'email' | 'whatsapp'; disabled: boolean; onRedirect: (message: string) => void }) {
+  const recipient = channel === 'email' ? order.defaultEmailRecipient ?? '' : order.defaultWhatsappRecipient ?? '';
+  const label = channel === 'email' ? 'Send Email' : 'Open WhatsApp manually';
+  return (
+    <form action={sendOrderDocumentLinkAction} target={channel === 'whatsapp' ? '_blank' : undefined} className="send-form" onSubmit={() => onRedirect(channel === 'whatsapp' ? 'Opening WhatsApp with tracked link...' : 'Creating Mailtrap tracked email...')}>
+      <input type="hidden" name="order_id" value={order.orderId ?? ''} />
+      <input type="hidden" name="quote_id" value={order.quoteId} />
+      <input type="hidden" name="document_type" value={documentType} />
+      <input type="hidden" name="channel" value={channel} />
+      <input type="hidden" name="recipient_role" value="buyer" />
+      <input name="recipient" defaultValue={recipient} placeholder={channel === 'email' ? 'Buyer email' : 'WhatsApp phone'} disabled={disabled} />
+      <ActionButton tone={channel === 'email' ? 'green' : 'teal'} disabled={disabled}>{label}</ActionButton>
+    </form>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: React.ReactNode }) {
+  return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function StatusPill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'good' | 'warn' | 'bad' | 'blue' }) {
+  return <span className={`pill ${tone}`}>{children}</span>;
+}
+
+function HiddenFreightFields({ order }: { order: ProductionOrder8S }) {
+  const metrics = packingMetrics(order);
+  return (
+    <>
+      <input type="hidden" name="shipment_mode" value={order.freightRateRequest?.shipmentMode ?? 'manual_review'} />
+      <input type="hidden" name="incoterm" value={order.freightRateRequest?.incoterm ?? order.incoterm ?? ''} />
+      <input type="hidden" name="pickup_address" value={metrics.pickup} />
+      <input type="hidden" name="delivery_address" value={metrics.destination} />
+      <input type="hidden" name="cartons" value={metrics.cartons} />
+      <input type="hidden" name="pallets" value={metrics.pallets} />
+      <input type="hidden" name="net_weight_kg" value={metrics.netWeightKg} />
+      <input type="hidden" name="gross_weight_kg" value={metrics.grossWeightKg} />
+      <input type="hidden" name="cbm" value={metrics.cbm} />
+      <input type="hidden" name="freight_notes" value={metrics.freightNotes} />
+    </>
   );
 }
 
 export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { orders: ProductionOrder8S[]; catalogOptions?: CatalogOrderOption8S[] }) {
   const searchParams = useSearchParams();
-  const [filter, setFilter] = useState<Filter>('all');
-  const [q, setQ] = useState('');
-  const [id, setId] = useState(orders[0] ? orderKey(orders[0]) : '');
-  const [stage, setStage] = useState<number | null>(null);
+  const [kpiFilter, setKpiFilter] = useState<KpiFilter>(null);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<OrderTypeFilter>('all');
+  const [stageFilter, setStageFilter] = useState<'all' | StageKey>('all');
+  const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>('all');
+  const [marketFilter, setMarketFilter] = useState('all');
+  const [selectedId, setSelectedId] = useState(orders[0] ? orderKey(orders[0]) : '');
+  const [selectedStage, setSelectedStage] = useState<StageKey | null>(null);
+  const [drawer, setDrawer] = useState<DrawerState>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState<string | null>(null);
   const requestedOpenOrderId = searchParams.get('openOrderId');
   const requestedSourceQuoteId = searchParams.get('sourceQuoteId') ?? searchParams.get('quoteId');
-  const list = useMemo(() => orders.filter((o) => (filter === 'all' || o.orderType === filter) && `${o.companyName} ${o.orderNumber ?? ''} ${o.productContext ?? ''}`.toLowerCase().includes(q.toLowerCase())), [orders, filter, q]);
-  const requested = useMemo(() => list.find((candidate) => (requestedOpenOrderId && candidate.orderId === requestedOpenOrderId) || (requestedSourceQuoteId && candidate.quoteId === requestedSourceQuoteId)), [list, requestedOpenOrderId, requestedSourceQuoteId]);
+  const notice = searchParams.get('notice');
+
+  const markets = useMemo(() => {
+    const values = orders.map((order) => clean(order.country)).filter(Boolean) as string[];
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b));
+  }, [orders]);
+
+  const kpis = useMemo(() => [
+    { key: 'all' as KpiFilter, label: 'All orders', count: orders.length, detail: 'Loaded execution orders' },
+    { key: 'ready_now' as KpiFilter, label: 'Ready now', count: orders.filter((order) => nextBestAction(order).blocks.length === 0 && !isBlocked(order)).length, detail: 'No current blocker' },
+    { key: 'blocked' as KpiFilter, label: 'Blocked', count: orders.filter(isBlocked).length, detail: 'Needs human review' },
+    { key: 'finance_ready' as KpiFilter, label: 'Finance queue-ready', count: orders.filter(isFinanceQueueReady).length, detail: 'Final invoice approved' },
+    { key: 'freight_ready' as KpiFilter, label: 'Freight queue-ready', count: orders.filter(isFreightQueueReady).length, detail: 'Packing payload approved' },
+    { key: 'whatsapp_ready' as KpiFilter, label: 'WhatsApp-ready docs', count: orders.filter(isWhatsappReady).length, detail: 'Approved tracked link docs' },
+  ], [orders]);
+
+  const filteredOrders = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return orders.filter((order) => {
+      const haystack = `${order.companyName} ${order.orderNumber ?? ''} ${order.productContext ?? ''} ${order.country ?? ''}`.toLowerCase();
+      if (query && !haystack.includes(query)) return false;
+      if (typeFilter !== 'all' && order.orderType !== typeFilter) return false;
+      if (stageFilter !== 'all' && inferredStageKey(order) !== stageFilter) return false;
+      if (marketFilter !== 'all' && order.country !== marketFilter) return false;
+      const readiness = readinessFilter === 'ready' ? !isBlocked(order) && nextBestAction(order).blocks.length === 0
+        : readinessFilter === 'blocked' ? isBlocked(order)
+          : readinessFilter === 'finance_ready' ? isFinanceQueueReady(order)
+            : readinessFilter === 'freight_ready' ? isFreightQueueReady(order)
+              : readinessFilter === 'whatsapp_ready' ? isWhatsappReady(order)
+                : true;
+      if (!readiness) return false;
+      if (kpiFilter === 'ready_now' && (isBlocked(order) || nextBestAction(order).blocks.length > 0)) return false;
+      if (kpiFilter === 'blocked' && !isBlocked(order)) return false;
+      if (kpiFilter === 'finance_ready' && !isFinanceQueueReady(order)) return false;
+      if (kpiFilter === 'freight_ready' && !isFreightQueueReady(order)) return false;
+      if (kpiFilter === 'whatsapp_ready' && !isWhatsappReady(order)) return false;
+      return true;
+    });
+  }, [orders, search, typeFilter, stageFilter, readinessFilter, marketFilter, kpiFilter]);
+
+  const requested = useMemo(() => {
+    return filteredOrders.find((candidate) => (requestedOpenOrderId && candidate.orderId === requestedOpenOrderId) || (requestedSourceQuoteId && candidate.quoteId === requestedSourceQuoteId));
+  }, [filteredOrders, requestedOpenOrderId, requestedSourceQuoteId]);
 
   useEffect(() => {
     if (requested) {
-      setId(orderKey(requested));
-      setStage(null);
+      setSelectedId(orderKey(requested));
+      setSelectedStage(null);
     }
   }, [requested?.orderId, requested?.quoteId]);
 
-  const o = list.find((x) => orderKey(x) === id) ?? requested ?? list[0] ?? orders[0];
-  if (!o) return <main className="r3"><div>No orders</div><style jsx global>{css}</style></main>;
+  useEffect(() => {
+    if (!filteredOrders.length) return;
+    if (!filteredOrders.some((order) => orderKey(order) === selectedId)) {
+      setSelectedId(orderKey(filteredOrders[0]));
+      setSelectedStage(null);
+    }
+  }, [filteredOrders, selectedId]);
 
-  const n = stage ?? idx(o);
-  const t = dtype(o, n);
-  const allowed = stageAllowed(o, n);
-  const content = !allowed
-    ? <LockedStage stage={n} />
-    : n === 0
-      ? <Lines o={o} catalogOptions={catalogOptions} />
-      : n === 1
-        ? <FirstDocument o={o} t={t} />
-        : n === 2
-          ? <Packing o={o} t={t} />
-          : n === 3
-            ? <Processing o={o} />
-            : n === 4
-              ? <DeliveryNote o={o} />
-              : n === 5
-                ? <FinalInvoice o={o} />
-                : <PaidCloseout o={o} />;
+  const activeOrder = filteredOrders.find((order) => orderKey(order) === selectedId) ?? filteredOrders[0] ?? null;
+  const activeStage = activeOrder ? selectedStage ?? inferredStageKey(activeOrder) : 'actual_lines';
+  const activeStageIndex = stageIndex(activeStage);
 
-  return <main className="r3"><header><div><small>Trade Command Center</small><h1>Orders / Execution Workspace</h1><p>Approved quote to actual lines, document gates, packing, delivery, final invoice, and paid closeout.</p></div><nav>{(['all', 'regional', 'export'] as Filter[]).map((f) => <button key={f} onClick={() => setFilter(f)} className={filter === f ? 'on' : ''}>{f}</button>)}</nav></header><section className="kpis">{['Ready', 'Approval', 'Packing', 'Processing', 'Locked', 'Active'].map((x, ix) => <div className="k" key={x}><span>{x}</span><b>{ix === 5 ? orders.length : ix === 4 ? orders.filter((a) => !stageAllowed(a, Math.min(idx(a) + 1, 6))).length : orders.filter((a) => idx(a) === ix).length}</b></div>)}</section><section className="layout"><aside><b>Order Queue</b><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search buyer, order, product" /><button className="clear" onClick={() => { setQ(''); setFilter('all'); }}>Clear filters</button>{list.map((x) => <button className={`row ${orderKey(x) === orderKey(o) ? 'sel' : ''}`} key={orderKey(x)} onClick={() => { setId(orderKey(x)); setStage(null); }}><span className="avatar">{initials(x.companyName)}</span><span><b>{x.companyName}</b><small>{x.orderType} - {x.productContext ?? 'Order products'} - {names[idx(x)]}</small></span><strong>{money(x.actualTotal ?? x.quotedTotal, x.currency)}</strong></button>)}</aside><section className="work"><article className="open"><div><small>Open order</small><h2>{o.companyName}</h2><p>{o.orderNumber ?? 'Order'} - {names[n]}</p></div><strong>{money(o.actualTotal ?? o.quotedTotal, o.currency)}</strong></article><nav className="flow">{flow.map((_, ix) => { const isAllowed = stageAllowed(o, ix); return <button key={ix} disabled={!isAllowed} className={`${ix === n ? 'active' : ix < idx(o) ? 'done' : ''} ${!isAllowed ? 'locked' : ''}`} onClick={() => { if (isAllowed) setStage(ix); }}><b>{names[ix]}</b><span>{isAllowed ? ix < idx(o) ? 'Done' : 'Open' : 'Locked'}</span></button>; })}</nav>{content}</section></section><style jsx global>{css}</style></main>;
+  function resetFilters() {
+    setKpiFilter(null);
+    setSearch('');
+    setTypeFilter('all');
+    setStageFilter('all');
+    setReadinessFilter('all');
+    setMarketFilter('all');
+  }
+
+  function copyPayload(payload: unknown) {
+    const text = JSON.stringify(payload ?? {}, null, 2);
+    navigator.clipboard?.writeText(text).then(() => setCopied('Payload copied')).catch(() => setCopied('Copy failed'));
+    window.setTimeout(() => setCopied(null), 1800);
+  }
+
+  if (!orders.length) {
+    return (
+      <main className="oc-page">
+        <section className="empty-shell">
+          <span>Orders Execution Cockpit</span>
+          <h1>No accepted-order workspaces yet</h1>
+          <p>Orders appear here only after an accepted quote version creates an execution workspace. Finance and freight queues remain pending-adapter only.</p>
+        </section>
+        <style jsx global>{css}</style>
+      </main>
+    );
+  }
+
+  const next = activeOrder ? nextBestAction(activeOrder) : null;
+
+  return (
+    <main className="oc-page">
+      <header className="oc-header">
+        <div>
+          <span>Execution Cockpit v2</span>
+          <h1>Orders Execution Cockpit</h1>
+          <p>Actual buyer order lines, human approval gates, document sends, pending finance queue, and pending freight queue in one execution workspace.</p>
+        </div>
+        <div className="truth-strip">
+          <StatusPill tone="good">Mailtrap email live</StatusPill>
+          <StatusPill tone="warn">Finance pending adapter</StatusPill>
+          <StatusPill tone="warn">Freight pending adapter</StatusPill>
+          <StatusPill tone="blue">WhatsApp manual tracked link</StatusPill>
+        </div>
+      </header>
+
+      {(notice || redirecting || copied) ? (
+        <section className="oc-feedback">
+          {notice ? <span>{titleCase(notice)}</span> : null}
+          {redirecting ? <span>{redirecting}</span> : null}
+          {copied ? <span>{copied}</span> : null}
+        </section>
+      ) : null}
+
+      <section className="kpi-row" aria-label="Order KPI filters">
+        {kpis.map((kpi) => {
+          const active = kpiFilter === kpi.key || (!kpiFilter && kpi.key === 'all');
+          return (
+            <button key={kpi.label} className={`kpi-card ${active ? 'active' : ''}`} onClick={() => setKpiFilter(active && kpi.key !== 'all' ? null : kpi.key === 'all' ? null : kpi.key)}>
+              <span>{kpi.label}</span>
+              <strong>{kpi.count}</strong>
+              <small>{kpi.detail}</small>
+            </button>
+          );
+        })}
+      </section>
+
+      <section className="filter-bar">
+        <label className="search-field">
+          <span>Search</span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buyer, order number, market, product" />
+        </label>
+        <label>
+          <span>Order type</span>
+          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as OrderTypeFilter)}>
+            <option value="all">All</option>
+            <option value="export">Export</option>
+            <option value="regional">Regional</option>
+          </select>
+        </label>
+        <label>
+          <span>Stage</span>
+          <select value={stageFilter} onChange={(event) => setStageFilter(event.target.value as 'all' | StageKey)}>
+            <option value="all">All stages</option>
+            {STAGES.map((stage) => <option key={stage.key} value={stage.key}>{stage.label}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Readiness</span>
+          <select value={readinessFilter} onChange={(event) => setReadinessFilter(event.target.value as ReadinessFilter)}>
+            <option value="all">All readiness</option>
+            <option value="ready">Ready now</option>
+            <option value="blocked">Blocked</option>
+            <option value="finance_ready">Finance queue-ready</option>
+            <option value="freight_ready">Freight queue-ready</option>
+            <option value="whatsapp_ready">WhatsApp-ready docs</option>
+          </select>
+        </label>
+        <label>
+          <span>Market</span>
+          <select value={marketFilter} onChange={(event) => setMarketFilter(event.target.value)}>
+            <option value="all">All markets</option>
+            {markets.map((market) => <option key={market} value={market}>{market}</option>)}
+          </select>
+        </label>
+        <button className="oc-btn reset" type="button" onClick={resetFilters}>Reset filters</button>
+      </section>
+
+      <section className="cockpit-grid">
+        <aside className="queue-panel">
+          <div className="panel-head">
+            <div>
+              <span>Order queue</span>
+              <strong>{filteredOrders.length} shown</strong>
+            </div>
+          </div>
+          {filteredOrders.length ? (
+            <div className="queue-list">
+              {filteredOrders.map((order) => {
+                const state = workflow(order);
+                const progress = Math.round(((STAGES.filter((stage) => stageDone(order, stage.key)).length) / STAGES.length) * 100);
+                const selected = activeOrder && orderKey(activeOrder) === orderKey(order);
+                return (
+                  <button key={orderKey(order)} className={`order-row ${selected ? 'selected' : ''}`} onClick={() => { setSelectedId(orderKey(order)); setSelectedStage(null); }}>
+                    <span className="avatar">{initials(order.companyName)}</span>
+                    <span className="row-main">
+                      <b>{order.companyName}</b>
+                      <small>{order.orderNumber ?? 'Order number pending'} / {titleCase(order.orderType)} / {order.country ?? 'Market not set'}</small>
+                      <em>{order.productContext ?? 'Order products'}</em>
+                      <span className="progress"><i style={{ width: `${progress}%` }} /></span>
+                    </span>
+                    <span className="row-side">
+                      <strong>{money(order.actualTotal ?? order.quotedTotal, order.currency)}</strong>
+                      <small>{STAGES[stageIndex(inferredStageKey(order))]?.label}</small>
+                      <StatusPill tone={isBlocked(order) ? 'bad' : state.financeQueued || state.freightQueued ? 'warn' : 'good'}>{isBlocked(order) ? 'Blocked' : nextBestAction(order).blocks.length ? 'Needs input' : 'Ready'}</StatusPill>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-panel">
+              <h3>No orders match these filters</h3>
+              <p>Reset filters or choose a broader KPI. Counts are derived from loaded order data only.</p>
+              <button className="oc-btn blue" type="button" onClick={resetFilters}>Reset filters</button>
+            </div>
+          )}
+        </aside>
+
+        {activeOrder ? (
+          <>
+            <section className="workspace-panel">
+              <CockpitHeader order={activeOrder} />
+              <nav className="stage-rail" aria-label="Order execution stages">
+                {STAGES.map((stage, index) => {
+                  const done = stageDone(activeOrder, stage.key);
+                  const unlocked = stageUnlocked(activeOrder, stage.key);
+                  const active = activeStage === stage.key;
+                  const blocked = !unlocked;
+                  return (
+                    <button key={stage.key} className={`stage-pill ${active ? 'active' : ''} ${done ? 'done' : ''} ${blocked ? 'blocked' : ''}`} onClick={() => setSelectedStage(stage.key)}>
+                      <span>{index + 1}</span>
+                      <b>{stage.label}</b>
+                      <small>{done ? 'Done' : active ? 'Active' : blocked ? 'Blocked' : 'Open'}</small>
+                    </button>
+                  );
+                })}
+              </nav>
+              <StageWorkspace
+                order={activeOrder}
+                stageKey={activeStage}
+                stageIndex={activeStageIndex}
+                catalogOptions={catalogOptions}
+                setDrawer={setDrawer}
+                copyPayload={copyPayload}
+                onRedirect={setRedirecting}
+              />
+            </section>
+            <ActionStack order={activeOrder} next={next} setStage={setSelectedStage} />
+          </>
+        ) : (
+          <section className="workspace-panel empty-workspace">
+            <h2>No cockpit selected</h2>
+            <p>The current filters returned no orders. Reset filters to return to the execution queue.</p>
+          </section>
+        )}
+      </section>
+
+      {drawer ? <QueueDrawer drawer={drawer} onClose={() => setDrawer(null)} onCopy={copyPayload} /> : null}
+      <style jsx global>{css}</style>
+    </main>
+  );
 }
 
-function LockedStage({ stage }: { stage: number }) {
-  return <article className="card lockedcard"><h2>{names[stage]} locked</h2><p>{stageBlocker(stage)}</p></article>;
+function CockpitHeader({ order }: { order: ProductionOrder8S }) {
+  const state = workflow(order);
+  return (
+    <article className="cockpit-title">
+      <div>
+        <span>{order.orderNumber ?? 'Order number pending'} / {titleCase(order.orderType)} / {order.country ?? 'Market not set'}</span>
+        <h2>{order.companyName}</h2>
+        <p>{order.productContext ?? 'Order products'} / {order.incoterm ?? 'Incoterm pending'} / {order.destinationPlace ?? order.destinationPort ?? 'Destination pending'}</p>
+      </div>
+      <div className="header-metrics">
+        <Metric label="Value" value={money(order.actualTotal ?? order.quotedTotal, order.currency)} />
+        <Metric label="Current stage" value={STAGES[stageIndex(inferredStageKey(order))]?.label ?? 'Actual Lines'} />
+        <Metric label="Readiness" value={isBlocked(order) ? 'Blocked' : nextBestAction(order).blocks.length ? 'Needs input' : 'Ready now'} />
+        <Metric label="Queues" value={`${state.financeQueued ? 'Finance queued' : 'Finance pending'} / ${state.freightQueued ? 'Freight queued' : 'Freight pending'}`} />
+      </div>
+    </article>
+  );
 }
 
-function Lines({ o, catalogOptions }: { o: ProductionOrder8S; catalogOptions: CatalogOrderOption8S[] }) {
-  return <article className="card"><h2>Edit actual order before Proforma / Order Confirmation</h2><p>Add catalog items, change quantities, apply line discounts, and save order-level discount before approval.</p>{o.lines.map((l) => <form action={updateActualOrderLineAction} className="lineform" key={l.id}><input type="hidden" name="quote_id" value={o.quoteId} /><input type="hidden" name="order_line_id" value={l.id} /><input value={l.productName} readOnly /><input name="ordered_quantity" defaultValue={qty(l)} disabled={!l.isActual} /><input name="unit_price" defaultValue={l.unitPrice ?? ''} disabled={!l.isActual} /><select name="line_discount_type" defaultValue={l.lineDiscountType ?? 'none'} disabled={!l.isActual}><option value="none">No discount</option><option value="percent">Discount %</option><option value="amount">Discount amount</option></select><input name="line_discount_value" defaultValue={l.lineDiscountValue ?? ''} placeholder="Discount" disabled={!l.isActual} /><input name="line_discount_reason" defaultValue={l.lineDiscountReason ?? l.reason ?? ''} placeholder="Reason" disabled={!l.isActual} /><Btn disabled={!l.isActual}>Save line</Btn></form>)}<form action={addManualActualOrderLineAction} className="grid2"><input type="hidden" name="quote_id" value={o.quoteId} /><select name="catalog_pricing_rule_id"><option value="">Add catalog product...</option>{catalogOptions.slice(0, 30).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select><input name="ordered_quantity" placeholder="Qty" /><input name="unit_price" placeholder="Override price" /><input name="change_reason" placeholder="Why this line was added" /><Btn tone="blue">Add actual line</Btn></form><form action={saveOrderDiscountAction} className="grid2"><input type="hidden" name="quote_id" value={o.quoteId} /><select name="order_discount_type" defaultValue={o.orderDiscountType ?? 'none'}><option value="none">No total discount</option><option value="percent">Total discount %</option><option value="amount">Total discount amount</option></select><input name="order_discount_value" defaultValue={o.orderDiscountValue ?? ''} placeholder="Discount" /><input name="order_discount_reason" defaultValue={o.orderDiscountReason ?? ''} placeholder="Reason" /><Btn>Save total discount</Btn></form><div className="actions"><Gate action={approveActualOrderLinesGateAction} quoteId={o.quoteId} tone="green">Approve actual lines</Gate></div></article>;
+function StageWorkspace({ order, stageKey, stageIndex, catalogOptions, setDrawer, copyPayload, onRedirect }: {
+  order: ProductionOrder8S;
+  stageKey: StageKey;
+  stageIndex: number;
+  catalogOptions: CatalogOrderOption8S[];
+  setDrawer: (drawer: DrawerState) => void;
+  copyPayload: (payload: unknown) => void;
+  onRedirect: (message: string) => void;
+}) {
+  const blocker = stageBlocker(order, stageKey);
+  if (blocker) {
+    return (
+      <article className="stage-card locked-card">
+        <span>{STAGES[stageIndex]?.label ?? 'Stage'} locked</span>
+        <h3>Approval gate required</h3>
+        <p>{blocker}</p>
+      </article>
+    );
+  }
+  if (stageKey === 'actual_lines') return <ActualLinesStage order={order} catalogOptions={catalogOptions} />;
+  if (stageKey === 'buyer_doc') return <BuyerDocStage order={order} onRedirect={onRedirect} />;
+  if (stageKey === 'packing') return <PackingStage order={order} onRedirect={onRedirect} />;
+  if (stageKey === 'freight_queue') return <FreightQueueStage order={order} setDrawer={setDrawer} copyPayload={copyPayload} />;
+  if (stageKey === 'processing') return <ProcessingStage order={order} />;
+  if (stageKey === 'delivery_note') return <DeliveryNoteStage order={order} onRedirect={onRedirect} />;
+  if (stageKey === 'final_invoice') return <FinalInvoiceStage order={order} setDrawer={setDrawer} copyPayload={copyPayload} onRedirect={onRedirect} />;
+  return <PaidClosedStage order={order} />;
 }
 
-function FirstDocument({ o, t }: { o: ProductionOrder8S; t: string }) {
-  const canSend = documentApproved(o, t);
-  return <article className="card"><h2>Preview and approve {dlabel(t)}</h2><div className="actions"><Gate action={prepareFirstDocumentGateAction} quoteId={o.quoteId} type={t}>Prepare draft</Gate><Preview o={o} t={t} label={`Preview ${dlabel(t)}`} /><Gate action={approveFirstDocumentGateAction} quoteId={o.quoteId} type={t} tone="green">Approve {dlabel(t)}</Gate></div><Send o={o} t={t} disabled={!canSend} />{!canSend ? <p className="note">Sending is locked until this document is explicitly approved.</p> : null}<Tray o={o} t={t} /></article>;
+function ActualLinesStage({ order, catalogOptions }: { order: ProductionOrder8S; catalogOptions: CatalogOrderOption8S[] }) {
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Accepted quote lineage preserved</span>
+          <h3>Actual vs quoted buyer order lines</h3>
+          <p>Actual order lines can differ from quoted lines. Sent/accepted quote version lines are never mutated.</p>
+        </div>
+        <StatusPill tone={workflow(order).actualApproved ? 'good' : 'warn'}>{workflow(order).actualApproved ? 'Approved' : 'Approval required'}</StatusPill>
+      </div>
+
+      <div className="line-table">
+        <div className="line-head"><span>Product</span><span>Quoted</span><span>Actual</span><span>Unit price</span><span>Total</span><span>Status</span></div>
+        {order.lines.map((line) => (
+          <div className="line-row" key={`summary-${line.id}`}>
+            <span><b>{line.productName}</b><small>{line.skuCode ?? line.hsnCode ?? line.variantName ?? 'Line context pending'}</small></span>
+            <span>{line.quotedQuantity ?? 'NA'} {line.unitOfMeasure ?? ''}</span>
+            <span>{line.actualQuantity ?? 'Needs actual'}</span>
+            <span>{money(line.unitPrice, line.currency)}</span>
+            <span>{money(line.lineTotal, line.currency)}</span>
+            <StatusPill tone={line.status === 'unchanged' ? 'good' : line.status === 'needs_actual_lines' ? 'bad' : 'warn'}>{titleCase(line.status)}</StatusPill>
+          </div>
+        ))}
+      </div>
+
+      <div className="editor-list">
+        {order.lines.map((line) => (
+          <div className="line-editor" key={line.id}>
+            <form action={updateActualOrderLineAction} className="line-form">
+              <input type="hidden" name="quote_id" value={order.quoteId} />
+              <input type="hidden" name="order_line_id" value={line.id} />
+              <label><span>Product</span><input value={line.productName} readOnly /></label>
+              <label><span>Actual qty</span><input name="ordered_quantity" defaultValue={lineQty(line)} disabled={!line.isActual} /></label>
+              <label><span>Unit price</span><input name="unit_price" defaultValue={line.unitPrice ?? ''} disabled={!line.isActual} /></label>
+              <label><span>Reason/context</span><input name="change_reason" defaultValue={line.reason ?? 'Actual buyer order review.'} disabled={!line.isActual} /></label>
+              <label><span>Line discount</span><select name="line_discount_type" defaultValue={line.lineDiscountType ?? 'none'} disabled={!line.isActual}><option value="none">No discount</option><option value="percent">Percent</option><option value="amount">Amount</option></select></label>
+              <label><span>Discount value</span><input name="line_discount_value" defaultValue={line.lineDiscountValue ?? ''} disabled={!line.isActual} /></label>
+              <label><span>Discount reason</span><input name="line_discount_reason" defaultValue={line.lineDiscountReason ?? ''} disabled={!line.isActual} /></label>
+              <div className="line-actions">
+                <ActionButton disabled={!line.isActual}>Save line</ActionButton>
+                <ActionButton tone="blue" disabled={!line.isActual}>Save line discount</ActionButton>
+              </div>
+            </form>
+            <form action={removeActualOrderLineAction} className="remove-form">
+              <input type="hidden" name="quote_id" value={order.quoteId} />
+              <input type="hidden" name="order_line_id" value={line.id} />
+              <input type="hidden" name="change_reason" value="Buyer did not include this quoted line in the actual order." />
+              <ActionButton tone="danger" disabled={!line.isActual}>Remove line</ActionButton>
+            </form>
+          </div>
+        ))}
+      </div>
+
+      <div className="split-panel">
+        <form action={addManualActualOrderLineAction} className="control-grid">
+          <input type="hidden" name="quote_id" value={order.quoteId} />
+          <label><span>Add catalog line</span><select name="catalog_pricing_rule_id"><option value="">Choose catalog product</option>{catalogOptions.slice(0, 80).map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
+          <label><span>Qty</span><input name="ordered_quantity" placeholder="Quantity" /></label>
+          <label><span>Override price</span><input name="unit_price" placeholder="Optional" /></label>
+          <label><span>Reason/context</span><input name="change_reason" placeholder="Why this line is being added" /></label>
+          <ActionButton tone="blue">Add line</ActionButton>
+        </form>
+        <form action={saveOrderDiscountAction} className="control-grid">
+          <input type="hidden" name="quote_id" value={order.quoteId} />
+          <label><span>Total discount</span><select name="order_discount_type" defaultValue={order.orderDiscountType ?? 'none'}><option value="none">No total discount</option><option value="percent">Percent</option><option value="amount">Amount</option></select></label>
+          <label><span>Discount value</span><input name="order_discount_value" defaultValue={order.orderDiscountValue ?? ''} /></label>
+          <label><span>Discount reason</span><input name="order_discount_reason" defaultValue={order.orderDiscountReason ?? ''} /></label>
+          <ActionButton>Save total order discount</ActionButton>
+        </form>
+      </div>
+      <div className="cta-row">
+        <GateForm action={approveActualOrderLinesGateAction} quoteId={order.quoteId} tone="green">Approve actual lines</GateForm>
+      </div>
+    </article>
+  );
 }
 
-function Packing({ o, t }: { o: ProductionOrder8S; t: string }) {
-  const p = pack(o);
-  return <article className="card"><h2>{o.orderType === 'export' ? 'Export packing list + freight request' : 'Regional packing sheet + freight request'}</h2><p>AI assist values are prefilled from ordered quantities. Save overrides before approval.</p><form action={savePackingOverridesAction} className="pack"><input type="hidden" name="quote_id" value={o.quoteId} />{Object.entries({ cartons: p.cartons, pallets: p.pallets, net_weight_kg: p.net, gross_weight_kg: p.gross, cbm: p.cbm, pickup: '', freight_notes: '' }).map(([k, v]) => <label key={k}>{k.replaceAll('_', ' ')}<input name={k} defaultValue={v} /></label>)}<Btn>Save packing overrides</Btn></form><div className="actions"><Preview o={o} t={t} label={`Preview ${dlabel(t)}`} /><Gate action={approvePackingOverridesAction} quoteId={o.quoteId} tone="green">Approve packing</Gate></div><Tray o={o} t={t} /></article>;
+function BuyerDocStage({ order, onRedirect }: { order: ProductionOrder8S; onRedirect: (message: string) => void }) {
+  const documentType = documentTypeForBuyer(order);
+  const approved = documentApproved(order, documentType);
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>{order.orderType === 'export' ? 'Export buyer document' : 'Regional buyer document'}</span>
+          <h3>{documentLabel(documentType)}</h3>
+          <p>Document flow is Prepare, Preview, Approve, then Send tracked. Sending remains locked until approval.</p>
+        </div>
+        <StatusPill tone={approved ? 'good' : 'warn'}>{approved ? 'Approved' : 'Send locked'}</StatusPill>
+      </div>
+      <div className="cta-row">
+        <GateForm action={prepareFirstDocumentGateAction} quoteId={order.quoteId} type={documentType}>Prepare</GateForm>
+        <PreviewAction order={order} documentType={documentType} label="Preview" onRedirect={onRedirect} />
+        <PdfAction order={order} documentType={documentType} onRedirect={onRedirect} />
+        <GateForm action={approveFirstDocumentGateAction} quoteId={order.quoteId} type={documentType} tone="green">Approve</GateForm>
+      </div>
+      <div className="send-stack">
+        <DocumentSendForm order={order} documentType={documentType} channel="email" disabled={!approved} onRedirect={onRedirect} />
+        <DocumentSendForm order={order} documentType={documentType} channel="whatsapp" disabled={!approved} onRedirect={onRedirect} />
+      </div>
+      <DocumentTray order={order} preferredType={documentType} onRedirect={onRedirect} />
+    </article>
+  );
 }
 
-function Processing({ o }: { o: ProductionOrder8S }) {
-  return <article className="card"><h2>Processing / logistics checks</h2><p>Pick, pack, and QC checks must all be confirmed before Delivery Note unlocks.</p><form action={saveProcessingCheckAction} className="checks"><input type="hidden" name="quote_id" value={o.quoteId} /><label><input type="checkbox" name="picked" />Picked</label><label><input type="checkbox" name="packed" />Packed</label><label><input type="checkbox" name="qc_passed" />QC passed</label><input name="processing_note" placeholder="Processing note" /><Btn tone="green">Save / approve processing checks</Btn></form></article>;
+function PackingStage({ order, onRedirect }: { order: ProductionOrder8S; onRedirect: (message: string) => void }) {
+  const metrics = packingMetrics(order);
+  const documentType = order.orderType === 'export' ? 'packing_list' : 'packing_sheet';
+  const state = workflow(order);
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Packing plan</span>
+          <h3>Cartons, pallets, CBM, weights, pickup, destination</h3>
+          <p>Freight remains locked until this packing plan is saved and human-approved.</p>
+        </div>
+        <StatusPill tone={state.packingApproved ? 'good' : 'warn'}>{state.packingApproved ? 'Packing approved' : 'Freight locked'}</StatusPill>
+      </div>
+      <div className="metric-grid">
+        <Metric label="Units" value={metrics.units} />
+        <Metric label="Cartons" value={metrics.cartons} />
+        <Metric label="Pallets" value={metrics.pallets} />
+        <Metric label="Net kg" value={metrics.netWeightKg} />
+        <Metric label="Gross kg" value={metrics.grossWeightKg} />
+        <Metric label="CBM" value={metrics.cbm} />
+      </div>
+      <form action={savePackingOverridesAction} className="control-grid wide">
+        <input type="hidden" name="quote_id" value={order.quoteId} />
+        <label><span>Cartons</span><input name="cartons" defaultValue={metrics.cartons} /></label>
+        <label><span>Pallets</span><input name="pallets" defaultValue={metrics.pallets} /></label>
+        <label><span>Net weight kg</span><input name="net_weight_kg" defaultValue={metrics.netWeightKg} /></label>
+        <label><span>Gross weight kg</span><input name="gross_weight_kg" defaultValue={metrics.grossWeightKg} /></label>
+        <label><span>CBM</span><input name="cbm" defaultValue={metrics.cbm} /></label>
+        <label><span>Dimensions</span><input name="dimensions" defaultValue={metrics.dimensions} placeholder="L x W x H / notes" /></label>
+        <label><span>Pickup</span><input name="pickup" defaultValue={metrics.pickup} /></label>
+        <label><span>Destination</span><input name="delivery_destination" defaultValue={metrics.destination} /></label>
+        <label className="span-2"><span>Freight notes</span><input name="freight_notes" defaultValue={metrics.freightNotes} /></label>
+        <ActionButton>Save packing overrides</ActionButton>
+      </form>
+      <div className="cta-row">
+        <GateForm action={approvePackingOverridesAction} quoteId={order.quoteId} tone="green">Approve packing</GateForm>
+        <PreviewAction order={order} documentType={documentType} label="Preview packing list/sheet" onRedirect={onRedirect} />
+      </div>
+    </article>
+  );
 }
 
-function DeliveryNote({ o }: { o: ProductionOrder8S }) {
-  const t = 'delivery_note';
-  const canSend = documentApproved(o, t);
-  return <article className="card"><h2>Delivery Note</h2><div className="actions"><Preview o={o} t={t} label="Preview Delivery Note" /><form action={approveDeliveryNoteAction} className="actions-inline"><input type="hidden" name="quote_id" value={o.quoteId} /><input name="delivery_reference" placeholder="Delivery reference" /><Btn tone="green">Approve Delivery Note</Btn></form></div><Send o={o} t={t} disabled={!canSend} />{!canSend ? <p className="note">Sending is locked until Delivery Note is approved.</p> : null}<Tray o={o} t={t} /></article>;
+function FreightQueueStage({ order, setDrawer, copyPayload }: { order: ProductionOrder8S; setDrawer: (drawer: DrawerState) => void; copyPayload: (payload: unknown) => void }) {
+  const state = workflow(order);
+  const payload = draftFreightPayload(order);
+  const ready = isFreightQueueReady(order);
+  const latestEvent = (order.freightEvents ?? [])[0];
+  const label = state.freightQueued ? 'Pending adapter' : ready ? 'Queue-ready' : 'Not ready';
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Freight integration-ready queue</span>
+          <h3>Queue freight request</h3>
+          <p>No live carrier booking is active. Queueing writes a pending freight event for manual/provider-later processing.</p>
+        </div>
+        <StatusPill tone={state.freightQueued ? 'warn' : ready ? 'good' : 'bad'}>{label}</StatusPill>
+      </div>
+      <div className="truth-list">
+        <span>adapter_name='pending'</span>
+        <span>event_type='freight_quote_requested'</span>
+        <span>No Flexport, Freightos, DHL, or carrier booking call</span>
+      </div>
+      {!ready && !state.freightQueued ? <p className="blocker-text">Missing before freight request: approved packing plan plus cartons, pallets, net/gross weight, CBM, pickup, delivery, shipment mode, and incoterm.</p> : null}
+      <div className="cta-row">
+        <form action={queueFreightBookingEventAction}>
+          <input type="hidden" name="quote_id" value={order.quoteId} />
+          <HiddenFreightFields order={order} />
+          <ActionButton tone="green" disabled={!ready || state.freightQueued}>Queue freight request</ActionButton>
+        </form>
+        <button type="button" className="oc-btn blue" onClick={() => setDrawer({ type: 'freight', order })}>View queue</button>
+        <CopyButton payload={payload} onCopy={copyPayload} />
+        {latestEvent ? (
+          <form action={retryPendingQueueEventAction}>
+            <input type="hidden" name="quote_id" value={order.quoteId} />
+            <input type="hidden" name="queue_type" value="freight" />
+            <input type="hidden" name="event_id" value={latestEvent.id} />
+            <ActionButton>Retry queued event</ActionButton>
+          </form>
+        ) : null}
+      </div>
+    </article>
+  );
 }
 
-function FinalInvoice({ o }: { o: ProductionOrder8S }) {
-  const t = 'dispatch_invoice';
-  const canSend = documentApproved(o, t);
-  return <article className="card"><h2>Final Invoice</h2><div className="actions"><Gate action={prepareFinalInvoiceGateAction} quoteId={o.quoteId}>Prepare final invoice</Gate><Gate action={previewFinalInvoiceGateAction} quoteId={o.quoteId}>Preview gate</Gate><Preview o={o} t={t} label="Preview Final Invoice" /><Gate action={approveFinalInvoiceGateAction} quoteId={o.quoteId} tone="green">Approve Final Invoice</Gate></div><Send o={o} t={t} disabled={!canSend} />{!canSend ? <p className="note">Sending is locked until Final Invoice is approved.</p> : null}<Tray o={o} t={t} /></article>;
+function ProcessingStage({ order }: { order: ProductionOrder8S }) {
+  const check = order.processingCheck;
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Processing checks</span>
+          <h3>Pick / Pack / QC</h3>
+          <p>Save checks as work progresses. The gate approves only when pick, pack, and QC are all confirmed.</p>
+        </div>
+        <StatusPill tone={workflow(order).processingApproved ? 'good' : 'warn'}>{workflow(order).processingApproved ? 'Processing approved' : 'QC pending'}</StatusPill>
+      </div>
+      <form action={saveProcessingCheckAction} className="check-form">
+        <input type="hidden" name="quote_id" value={order.quoteId} />
+        <label><input type="checkbox" name="picked" defaultChecked={Boolean(check?.picked)} /> Pick complete</label>
+        <label><input type="checkbox" name="packed" defaultChecked={Boolean(check?.packed)} /> Pack complete</label>
+        <label><input type="checkbox" name="qc_passed" defaultChecked={Boolean(check?.qcPassed)} /> QC passed</label>
+        <input name="processing_note" defaultValue={check?.note ?? ''} placeholder="Processing/QC note" />
+        <ActionButton>Save processing check</ActionButton>
+        <ActionButton tone="green">Approve processing/QC</ActionButton>
+      </form>
+      <p className="note-text">This does not mark the order dispatched or delivered.</p>
+    </article>
+  );
 }
 
-function PaidCloseout({ o }: { o: ProductionOrder8S }) {
-  return <article className="card"><h2>Paid & Closed</h2><p>Complete closeout only after payment, reconciliation, receipt acknowledgement, archive, and audit notes are ready.</p><form action={closeOrderAction} className="closeout"><input type="hidden" name="quote_id" value={o.quoteId} /><label><input type="checkbox" name="payment_received" />Payment received</label><input name="payment_reference" placeholder="Payment reference / receipt number" /><label>Reconciliation<select name="reconciliation_status" defaultValue="pending"><option value="pending">Pending</option><option value="reconciled">Reconciled</option></select></label><input name="outstanding_amount" placeholder="Outstanding amount" defaultValue="0" /><label><input type="checkbox" name="receipt_acknowledged" />Receipt / acknowledgement sent</label><label><input type="checkbox" name="documents_archived" />Documents archived</label><textarea name="activity_note" placeholder="Audit / activity note" /><Btn tone="green">Close order</Btn></form></article>;
+function DeliveryNoteStage({ order, onRedirect }: { order: ProductionOrder8S; onRedirect: (message: string) => void }) {
+  const documentType = 'delivery_note';
+  const approved = documentApproved(order, documentType);
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Dispatch document gate</span>
+          <h3>Delivery Note</h3>
+          <p>Delivery Note can be sent only after human approval. WhatsApp remains manual tracked link.</p>
+        </div>
+        <StatusPill tone={approved ? 'good' : 'warn'}>{approved ? 'Approved' : 'Send locked'}</StatusPill>
+      </div>
+      <div className="cta-row">
+        <PreviewAction order={order} documentType={documentType} label="Preview" onRedirect={onRedirect} />
+        <PdfAction order={order} documentType={documentType} onRedirect={onRedirect} />
+        <form action={approveDeliveryNoteAction} className="inline-form">
+          <input type="hidden" name="quote_id" value={order.quoteId} />
+          <input name="delivery_reference" placeholder="Delivery reference" />
+          <ActionButton tone="green">Approve Delivery Note</ActionButton>
+        </form>
+      </div>
+      <div className="send-stack">
+        <DocumentSendForm order={order} documentType={documentType} channel="email" disabled={!approved} onRedirect={onRedirect} />
+        <DocumentSendForm order={order} documentType={documentType} channel="whatsapp" disabled={!approved} onRedirect={onRedirect} />
+      </div>
+      <DocumentTray order={order} preferredType={documentType} onRedirect={onRedirect} />
+    </article>
+  );
 }
 
-function Tray({ o, t }: { o: ProductionOrder8S; t: string }) {
-  const docs = o.documents?.length ? o.documents : [{ id: 'planned', documentType: t, status: 'planned', sends: [] as ProductionOrderDocumentSend8X[] }];
-  return <div className="tray"><b>Document tray</b>{docs.map((d) => <div className="doc" key={d.id}><strong>{dlabel(String(d.documentType ?? t))}</strong><span>{d.status ?? 'planned'}</span><Preview o={o} t={String(d.documentType ?? t)} label={`${o.orderNumber ?? 'Order'} review link`} />{d.sends?.map((s) => { const href = normUrl(s.shareUrl); const isWa = s.channel === 'whatsapp'; return <p key={s.id} style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}><span style={{fontSize:'10px',background:isWa?'#dcfce7':'#dbeafe',color:isWa?'#166534':'#1d4ed8',borderRadius:'4px',padding:'1px 7px',fontWeight:700}}>{isWa ? '💬 WhatsApp' : '📧 Email'}</span><span style={{fontSize:'11px',color:'#64748b'}}>link</span>{href ? <a href={href} target="_blank" rel="noreferrer noopener" style={{fontSize:'11px',fontWeight:600,color:'#2563eb',textDecoration:'underline'}}>Open ↗</a> : <span style={{fontSize:'11px',color:'#94a3b8'}}>pending</span>}{s.openCount ? <span style={{fontSize:'10px',color:'#10b981',fontWeight:700}}>{s.openCount} open{s.openCount !== 1?'s':''}</span> : null}</p>; })}</div>)}</div>;
+function FinalInvoiceStage({ order, setDrawer, copyPayload, onRedirect }: { order: ProductionOrder8S; setDrawer: (drawer: DrawerState) => void; copyPayload: (payload: unknown) => void; onRedirect: (message: string) => void }) {
+  const documentType = 'dispatch_invoice';
+  const state = workflow(order);
+  const payload = draftFinancePayload(order);
+  const latestEvent = (order.financeEvents ?? [])[0];
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Finance integration-ready queue</span>
+          <h3>Final Invoice</h3>
+          <p>Finance queueing remains pending-adapter only. No Xero, QuickBooks, Tally, bank feed, or payment processor sync is live.</p>
+        </div>
+        <StatusPill tone={state.financeQueued ? 'warn' : state.finalInvoiceApproved ? 'good' : 'bad'}>{state.financeQueued ? 'Pending adapter' : state.finalInvoiceApproved ? 'Finance queue-ready' : 'Finance locked'}</StatusPill>
+      </div>
+      <div className="cta-row">
+        <GateForm action={prepareFinalInvoiceGateAction} quoteId={order.quoteId}>Prepare final invoice</GateForm>
+        <GateForm action={previewFinalInvoiceGateAction} quoteId={order.quoteId}>Preview gate</GateForm>
+        <PreviewAction order={order} documentType={documentType} label="Preview" onRedirect={onRedirect} />
+        <PdfAction order={order} documentType={documentType} onRedirect={onRedirect} />
+        <GateForm action={approveFinalInvoiceGateAction} quoteId={order.quoteId} tone="green">Approve Final Invoice</GateForm>
+      </div>
+      <div className="send-stack">
+        <DocumentSendForm order={order} documentType={documentType} channel="email" disabled={!state.finalInvoiceApproved} onRedirect={onRedirect} />
+        <DocumentSendForm order={order} documentType={documentType} channel="whatsapp" disabled={!state.finalInvoiceApproved} onRedirect={onRedirect} />
+      </div>
+      <div className="queue-actions">
+        <form action={queueFinanceIntegrationEventAction}>
+          <input type="hidden" name="quote_id" value={order.quoteId} />
+          <ActionButton tone="green" disabled={!state.finalInvoiceApproved || state.financeQueued}>Queue invoice sync</ActionButton>
+        </form>
+        <button type="button" className="oc-btn blue" onClick={() => setDrawer({ type: 'finance', order })}>View queue</button>
+        <CopyButton payload={payload} onCopy={copyPayload} />
+        {latestEvent ? (
+          <form action={retryPendingQueueEventAction}>
+            <input type="hidden" name="quote_id" value={order.quoteId} />
+            <input type="hidden" name="queue_type" value="finance" />
+            <input type="hidden" name="event_id" value={latestEvent.id} />
+            <ActionButton>Retry queued event</ActionButton>
+          </form>
+        ) : null}
+      </div>
+      <DocumentTray order={order} preferredType={documentType} onRedirect={onRedirect} />
+    </article>
+  );
 }
 
-const css = `.r3{background:#eef4f8;min-height:100vh;padding:22px;font-family:Inter,system-ui;color:#09243b}.r3 header,.card,aside,.open,.k{background:#fff;border:1px solid #d7e5f0;border-radius:22px;box-shadow:0 14px 34px #0f172a10}.r3 header{display:flex;justify-content:space-between;padding:18px;margin-bottom:14px}.r3 h1,.r3 h2{margin:0;color:#082f49}.r3 p,small{color:#64748b}.r3 nav button{border:0;border-radius:999px;padding:8px 12px;background:#f8fafc}.r3 nav .on{background:#082f49;color:white}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}.k{padding:12px;border-top:4px solid #0c7fff}.k span{text-transform:uppercase;font-size:9px;font-weight:900;color:#7c8da3}.k b{display:block;text-align:right;font-size:24px}.layout{display:grid;grid-template-columns:390px 1fr;gap:14px}aside{padding:14px;overflow:hidden}aside input{width:100%;box-sizing:border-box;border:1px solid #d7e5f0;border-radius:999px;padding:11px;margin:12px 0}.clear{border:1px solid #d7e5f0;border-radius:999px;background:white;padding:8px 10px;margin-bottom:10px}.row{width:100%;display:grid;grid-template-columns:34px 1fr auto;gap:10px;border:0;border-top:1px solid #edf2f7;background:white;text-align:left;padding:12px 0}.row.sel{background:#f7fbff}.avatar{width:34px;height:34px;border-radius:12px;background:#147df5;color:white;display:grid;place-items:center;font-weight:900}.row small{display:block;font-size:10px}.work{display:grid;gap:14px}.open{display:flex;justify-content:space-between;padding:16px 18px}.flow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;background:white;border:1px solid #d7e5f0;border-radius:20px;padding:12px}.flow button{border:1px solid #d7e5f0;border-radius:13px;background:white;min-height:62px;display:grid;gap:4px;place-items:center}.flow button span{font-size:9px;color:#64748b}.flow .active{background:#eff6ff;border-color:#93c5fd}.flow .done{background:#ecfdf5}.flow .locked{background:#f8fafc;color:#94a3b8;cursor:not-allowed}.card{padding:18px}.lockedcard{border-style:dashed;background:#f8fafc}.lineform{display:grid;grid-template-columns:1.2fr 90px 110px 130px 110px 1fr auto;gap:8px;margin-top:8px}.grid2,.pack,.checks,.closeout{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.closeout textarea{min-height:74px;grid-column:1/-1}.lineform input,.lineform select,.grid2 input,.grid2 select,.pack input,.send input,.send select,.checks input,.checks select,.closeout input,.closeout select,.closeout textarea,.actions-inline input{border:1px solid #d7e5f0;border-radius:10px;padding:9px}.pack label,.checks label,.closeout label{text-transform:uppercase;font-size:10px;font-weight:900;color:#64748b}.pack input{display:block;width:100%;box-sizing:border-box;margin-top:4px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions-inline{display:flex;gap:8px;flex-wrap:wrap}.r3btn{border:1px solid #cfe0ea;background:white;border-radius:999px;padding:9px 13px;font-weight:900;color:#1d4ed8;text-decoration:none}.r3btn:disabled,.r3btn.disabled{opacity:.45;cursor:not-allowed}.r3btn.primary{background:#082f49;color:white}.r3btn.green{background:#ecfdf5;color:#047857}.r3btn.blue{background:#eff6ff}.send{display:grid;grid-template-columns:180px 1fr 100px auto;gap:8px;margin-top:12px}.note{font-size:12px}.tray{border:1px solid #d7e5f0;background:#f8fbfd;border-radius:16px;padding:14px;margin-top:14px}.doc{background:white;border:1px solid #d7e5f0;border-radius:14px;padding:10px;margin-top:8px;display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}@media(max-width:1320px){.layout,.kpis,.flow,.lineform,.grid2,.pack,.send,.checks,.closeout{grid-template-columns:1fr}.doc{grid-template-columns:1fr}}`;
+function PaidClosedStage({ order }: { order: ProductionOrder8S }) {
+  const state = workflow(order);
+  const locked = !state.finalInvoiceApproved || isBlocked(order);
+  return (
+    <article className="stage-card">
+      <div className="stage-head">
+        <div>
+          <span>Payment and archive closeout</span>
+          <h3>Paid & Closed</h3>
+          <p>Close order only after delivery/final invoice approval, payment reference, reconciliation, archive, and no open blockers.</p>
+        </div>
+        <StatusPill tone={state.paidClosed ? 'good' : locked ? 'bad' : 'warn'}>{state.paidClosed ? 'Closed' : locked ? 'Close locked' : 'Human closeout required'}</StatusPill>
+      </div>
+      <form action={closeOrderAction} className="closeout-form" onSubmit={(event) => { if (!window.confirm('Close this order only if payment, reconciliation, archive, and blockers are complete. Continue?')) event.preventDefault(); }}>
+        <input type="hidden" name="quote_id" value={order.quoteId} />
+        <label><span>Record payment reference</span><input name="payment_reference" defaultValue={clean(order.closeout?.payment_reference) ?? ''} placeholder="Bank ref, UTR, cheque, receipt ID" /></label>
+        <label><input type="checkbox" name="payment_received" defaultChecked={Boolean(order.closeout?.payment_received)} /> Payment received</label>
+        <label><span>Upload receipt if supported</span><input type="file" disabled /></label>
+        <label><span>Reconcile</span><select name="reconciliation_status" defaultValue={clean(order.closeout?.reconciliation_status) ?? 'pending'}><option value="pending">Pending</option><option value="reconciled">Reconciled</option></select></label>
+        <label><span>Outstanding amount</span><input name="outstanding_amount" defaultValue={String(order.closeout?.outstanding_amount ?? '0')} /></label>
+        <label><input type="checkbox" name="receipt_acknowledged" defaultChecked={Boolean(order.closeout?.receipt_acknowledged)} /> Receipt acknowledged</label>
+        <label><input type="checkbox" name="documents_archived" defaultChecked={Boolean(order.closeout?.documents_archived)} /> Archive documents</label>
+        <textarea name="activity_note" defaultValue={clean(order.closeout?.activity_note) ?? ''} placeholder="Closeout audit note" />
+        <ActionButton tone="green" disabled={locked}>Close order</ActionButton>
+      </form>
+    </article>
+  );
+}
+
+function DocumentTray({ order, preferredType, onRedirect }: { order: ProductionOrder8S; preferredType: string; onRedirect: (message: string) => void }) {
+  const docs = (order.documents ?? []).length ? order.documents ?? [] : [{ id: 'planned', documentType: preferredType, status: 'planned', sends: [] }];
+  return (
+    <section className="document-tray">
+      <div className="panel-head"><span>Document activity</span><strong>{docs.length}</strong></div>
+      {docs.map((document) => {
+        const type = String(document.documentType ?? preferredType);
+        return (
+          <div className="document-row" key={document.id}>
+            <div><b>{documentLabel(type)}</b><small>{titleCase(document.status)} / PDF storage: {document.pdfStoragePath ? 'available' : 'not generated'}</small></div>
+            <PreviewAction order={order} documentType={type} label="Preview tracked link" onRedirect={onRedirect} />
+            {(document.sends ?? []).slice(0, 3).map((send) => {
+              const href = normalizeUrl(send.shareUrl);
+              return <p key={send.id}>{titleCase(send.channel)} / {titleCase(send.status)} {href ? <a href={href} target="_blank" rel="noreferrer">Open tracked link</a> : null}</p>;
+            })}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function ActionStack({ order, next, setStage }: { order: ProductionOrder8S; next: ReturnType<typeof nextBestAction> | null; setStage: (stage: StageKey) => void }) {
+  const activities = latestActivity(order);
+  return (
+    <aside className="action-stack">
+      <div className="panel-head">
+        <div><span>Action Stack</span><strong>Next best action</strong></div>
+      </div>
+      {next ? (
+        <>
+          <section className="next-card">
+            <span>Next best action</span>
+            <h3>{next.label}</h3>
+            <p>{next.why}</p>
+            <button type="button" className="oc-btn green full" onClick={() => setStage(next.stageKey)}>{next.label}</button>
+          </section>
+          <section className="stack-section">
+            <b>What it unlocks</b>
+            <p>{next.unlocks}</p>
+          </section>
+          <section className="stack-section">
+            <b>What blocks it</b>
+            {next.blocks.length ? <ul>{next.blocks.map((block) => <li key={block}>{block}</li>)}</ul> : <p>No blocker in loaded data.</p>}
+          </section>
+          <section className="stack-section">
+            <b>Truth labels</b>
+            <div className="truth-list compact">{next.truthLabels.map((label) => <span key={label}>{label}</span>)}</div>
+          </section>
+        </>
+      ) : null}
+      <section className="stack-section">
+        <b>Latest activity/events</b>
+        {activities.length ? activities.map((activity) => (
+          <p key={activity.id}><span>{activity.label}</span><small>{activity.at ? new Date(activity.at).toLocaleString() : 'Time not available'}</small></p>
+        )) : <p>No activity loaded yet.</p>}
+      </section>
+    </aside>
+  );
+}
+
+function QueueDrawer({ drawer, onClose, onCopy }: { drawer: { type: 'finance' | 'freight'; order: ProductionOrder8S }; onClose: () => void; onCopy: (payload: unknown) => void }) {
+  const { type, order } = drawer;
+  const events = type === 'finance' ? order.financeEvents ?? [] : order.freightEvents ?? [];
+  const draft = type === 'finance' ? draftFinancePayload(order) : draftFreightPayload(order);
+  return (
+    <div className="drawer-backdrop" role="dialog" aria-modal="true">
+      <aside className="queue-drawer">
+        <div className="drawer-head">
+          <div>
+            <span>{type === 'finance' ? 'Finance queue' : 'Freight queue'}</span>
+            <h3>{order.orderNumber ?? order.orderId ?? 'Order'}</h3>
+            <p>Pending adapter queue detail. This drawer does not claim provider sync or booking.</p>
+          </div>
+          <button type="button" className="oc-btn ghost" onClick={onClose}>Close</button>
+        </div>
+        <div className="drawer-truth">
+          <StatusPill tone="warn">adapter_name='pending'</StatusPill>
+          <StatusPill tone="blue">{type === 'finance' ? 'invoice_sync_requested' : 'freight_quote_requested'}</StatusPill>
+          <StatusPill tone="neutral">Manual/provider-later</StatusPill>
+        </div>
+        {events.length ? events.map((event) => (
+          <section className="event-card" key={event.id}>
+            <div className="event-meta">
+              <Metric label="Event type" value={event.eventType ?? 'Not available'} />
+              <Metric label="Queue status" value={event.status ?? 'Not available'} />
+              <Metric label="Order ID" value={order.orderId ?? 'Not available'} />
+              <Metric label="Document/request ID" value={type === 'finance' ? event.orderDocumentId ?? 'Not available' : event.freightRateRequestId ?? 'Not available'} />
+              <Metric label="Retry count/status" value={`${event.retryCount ?? 0} / ${event.status ?? 'queued'}`} />
+              <Metric label="Last error" value={event.errorMessage ?? 'None'} />
+            </div>
+            <pre>{JSON.stringify(event.payload ?? {}, null, 2)}</pre>
+            <div className="cta-row">
+              <CopyButton payload={event.payload ?? {}} onCopy={onCopy} />
+              <form action={retryPendingQueueEventAction}>
+                <input type="hidden" name="quote_id" value={order.quoteId} />
+                <input type="hidden" name="queue_type" value={type} />
+                <input type="hidden" name="event_id" value={event.id} />
+                <ActionButton>Retry queued event</ActionButton>
+              </form>
+              <form action={markQueueEventManuallyCompletedAction} className="inline-form">
+                <input type="hidden" name="quote_id" value={order.quoteId} />
+                <input type="hidden" name="queue_type" value={type} />
+                <input type="hidden" name="event_id" value={event.id} />
+                <input name="manual_reference" placeholder={type === 'finance' ? 'Manual finance ref' : 'Manual freight ref'} />
+                <ActionButton tone="green">Mark manually completed</ActionButton>
+              </form>
+            </div>
+          </section>
+        )) : (
+          <section className="event-card">
+            <h4>No queued event yet</h4>
+            <p>The payload below is a readiness preview from loaded order data. Queue actions write a pending adapter event only.</p>
+            <pre>{JSON.stringify(draft, null, 2)}</pre>
+            <CopyButton payload={draft} onCopy={onCopy} />
+          </section>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+const css = `
+.oc-page{min-height:100vh;background:#f3f7f6;color:#102033;padding:24px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.oc-header,.filter-bar,.queue-panel,.workspace-panel,.action-stack,.stage-card,.cockpit-title,.empty-shell,.oc-feedback{background:#fff;border:1px solid #d8e5e1;border-radius:8px;box-shadow:0 18px 45px rgba(21,44,58,.08)}
+.oc-header{display:flex;justify-content:space-between;gap:18px;padding:22px;margin-bottom:14px}
+.oc-header h1,.cockpit-title h2,.stage-card h3,.next-card h3,.empty-shell h1{margin:4px 0;color:#102033;letter-spacing:0}
+.oc-header p,.stage-card p,.next-card p,.empty-panel p,.empty-shell p,.stack-section p,.cockpit-title p{margin:4px 0;color:#64748b;line-height:1.45}
+.oc-header span,.stage-head span,.panel-head span,.cockpit-title span,.metric span,.next-card span,.empty-shell span,.filter-bar label span{font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;color:#607080}
+.truth-strip,.truth-list,.cta-row,.queue-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.oc-feedback{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:14px;color:#0f766e;font-weight:800}
+.kpi-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi-card{border:1px solid #d8e5e1;background:#fff;border-radius:8px;padding:14px;text-align:left;box-shadow:0 12px 30px rgba(21,44,58,.06);cursor:pointer}
+.kpi-card.active{outline:2px solid #0f766e;background:#f0fdfa}
+.kpi-card span{display:block;font-size:11px;font-weight:900;text-transform:uppercase;color:#607080}
+.kpi-card strong{display:block;font-size:30px;color:#102033;margin:6px 0}
+.kpi-card small{color:#64748b}
+.filter-bar{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr 1fr auto;gap:10px;padding:14px;margin-bottom:14px;align-items:end}
+.filter-bar label{display:grid;gap:5px}
+.filter-bar input,.filter-bar select,.line-form input,.line-form select,.control-grid input,.control-grid select,.send-form input,.inline-form input,.check-form input,.closeout-form input,.closeout-form select,.closeout-form textarea{border:1px solid #cfddd8;border-radius:8px;padding:10px;background:#fff;color:#102033;min-width:0}
+.cockpit-grid{display:grid;grid-template-columns:360px minmax(0,1fr) 330px;gap:14px;align-items:start}
+.queue-panel,.workspace-panel,.action-stack{padding:14px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.panel-head strong{display:block;color:#102033}
+.queue-list{display:grid;gap:8px;max-height:calc(100vh - 320px);overflow:auto;padding-right:3px}
+.order-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:start;width:100%;border:1px solid #e4ece9;background:#fff;border-radius:8px;padding:12px;text-align:left;cursor:pointer}
+.order-row.selected{border-color:#0f766e;background:#f0fdfa}
+.avatar{width:42px;height:42px;border-radius:8px;background:#155e75;color:#fff;display:grid;place-items:center;font-weight:900}
+.row-main{display:grid;gap:3px;min-width:0}
+.row-main b,.row-main small,.row-main em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-main small,.row-main em,.row-side small{color:#64748b;font-style:normal;font-size:12px}
+.row-side{display:grid;gap:5px;justify-items:end}
+.row-side strong{font-size:12px;color:#102033}
+.progress{height:6px;background:#e7efec;border-radius:999px;overflow:hidden}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#0f766e,#2563eb)}
+.cockpit-title{display:flex;justify-content:space-between;gap:14px;padding:16px;margin-bottom:12px}
+.header-metrics{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:8px;min-width:330px}
+.metric{border:1px solid #e2eae7;background:#f8fbfa;border-radius:8px;padding:10px}
+.metric strong{display:block;color:#102033;margin-top:4px}
+.stage-rail{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.stage-pill{border:1px solid #d8e5e1;background:#fff;border-radius:8px;padding:10px 8px;display:grid;gap:4px;text-align:left;min-height:84px;cursor:pointer}
+.stage-pill span{width:22px;height:22px;border-radius:999px;background:#e7efec;display:grid;place-items:center;font-weight:900;color:#47616c}
+.stage-pill b{font-size:12px;color:#102033}
+.stage-pill small{font-size:11px;color:#64748b}
+.stage-pill.active{border-color:#2563eb;background:#eff6ff}
+.stage-pill.done{border-color:#16a34a;background:#f0fdf4}
+.stage-pill.blocked{border-color:#f59e0b;background:#fff7ed}
+.stage-card{padding:18px}
+.stage-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}
+.pill{display:inline-flex;align-items:center;justify-content:center;border:1px solid #d8e5e1;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;white-space:nowrap}
+.pill.good{background:#ecfdf5;color:#047857;border-color:#bbf7d0}.pill.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}.pill.bad{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.pill.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.oc-btn{border:1px solid #cfddd8;background:#fff;border-radius:8px;padding:10px 12px;font-weight:900;color:#17425b;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:40px}
+.oc-btn:hover{background:#f8fbfa}.oc-btn:disabled,.oc-btn.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}.oc-btn.green{background:#0f766e;color:#fff;border-color:#0f766e}.oc-btn.teal{background:#ccfbf1;color:#115e59;border-color:#99f6e4}.oc-btn.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.oc-btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.oc-btn.reset{height:42px}.oc-btn.full{width:100%}
+.line-table{border:1px solid #e2eae7;border-radius:8px;overflow:hidden;margin-bottom:14px}
+.line-head,.line-row{display:grid;grid-template-columns:1.5fr .7fr .7fr .8fr .8fr .8fr;gap:8px;align-items:center;padding:10px;border-bottom:1px solid #e2eae7}
+.line-head{background:#f8fbfa;font-size:11px;font-weight:900;text-transform:uppercase;color:#607080}
+.line-row:last-child{border-bottom:0}.line-row small{display:block;color:#64748b}
+.editor-list{display:grid;gap:10px}.line-editor{border:1px solid #e2eae7;border-radius:8px;padding:12px;background:#fbfdfc}.line-form{display:grid;grid-template-columns:1.3fr .6fr .7fr 1fr .7fr .7fr 1fr auto;gap:8px;align-items:end}.line-form label,.control-grid label,.closeout-form label{display:grid;gap:5px;font-size:11px;text-transform:uppercase;font-weight:800;color:#607080}.line-actions{display:flex;gap:6px}.remove-form{margin-top:8px}
+.split-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid #e2eae7;border-radius:8px;padding:12px;background:#fbfdfc}.control-grid.wide{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}.span-2{grid-column:span 2}
+.metric-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.send-stack{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.send-form,.inline-form{display:flex;gap:8px;align-items:center}.send-form input{flex:1}.document-tray{border:1px solid #e2eae7;background:#f8fbfa;border-radius:8px;padding:12px;margin-top:14px}.document-row{background:#fff;border:1px solid #e2eae7;border-radius:8px;padding:10px;margin-top:8px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.document-row small,.document-row p{display:block;color:#64748b;margin:2px 0}.document-row p{grid-column:1/-1}
+.truth-list span{background:#f8fbfa;border:1px solid #d8e5e1;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;color:#47616c}.truth-list.compact span{font-size:10px}
+.blocker-text,.note-text{border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:8px;padding:10px}
+.check-form{display:grid;grid-template-columns:repeat(3,auto) minmax(220px,1fr) auto auto;gap:10px;align-items:center}.check-form label{display:flex;gap:6px;align-items:center;font-weight:800;color:#47616c}
+.closeout-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.closeout-form textarea{grid-column:1/-1;min-height:90px}
+.action-stack{position:sticky;top:16px}.next-card{border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:12px;margin-bottom:12px}.stack-section{border-top:1px solid #e2eae7;padding:12px 0}.stack-section b{display:block;margin-bottom:5px;color:#102033}.stack-section ul{padding-left:18px;margin:6px 0;color:#92400e}.stack-section small{display:block;color:#64748b;margin-top:2px}
+.locked-card{border-style:dashed;background:#fff7ed}.empty-panel,.empty-workspace,.empty-shell{padding:24px;text-align:center}.empty-shell{max-width:760px;margin:80px auto}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;justify-content:flex-end;z-index:50}.queue-drawer{width:min(760px,100%);height:100%;overflow:auto;background:#fff;padding:20px;box-shadow:-24px 0 60px rgba(15,23,42,.2)}.drawer-head{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e2eae7;padding-bottom:14px}.drawer-head h3{margin:3px 0}.drawer-head p{color:#64748b;margin:0}.drawer-truth{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.event-card{border:1px solid #e2eae7;border-radius:8px;padding:14px;margin-bottom:12px}.event-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.event-card pre{max-height:340px;overflow:auto;background:#0f172a;color:#d1fae5;border-radius:8px;padding:12px;font-size:12px;line-height:1.45}
+@media(max-width:1500px){.cockpit-grid{grid-template-columns:320px minmax(0,1fr)}.action-stack{grid-column:1/-1;position:static}.stage-rail{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi-row{grid-template-columns:repeat(3,minmax(0,1fr))}.filter-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.line-form{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.oc-page{padding:14px}.oc-header,.cockpit-title,.stage-head{display:grid}.cockpit-grid,.filter-bar,.kpi-row,.stage-rail,.split-panel,.control-grid,.control-grid.wide,.send-stack,.check-form,.closeout-form,.metric-grid,.header-metrics,.event-meta{grid-template-columns:1fr}.queue-list{max-height:none}.line-head{display:none}.line-row{grid-template-columns:1fr}.line-form{grid-template-columns:1fr}.document-row{grid-template-columns:1fr}.send-form,.inline-form,.cta-row,.queue-actions{display:grid;grid-template-columns:1fr}.span-2{grid-column:auto}}
+`;

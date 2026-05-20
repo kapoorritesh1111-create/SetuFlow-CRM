@@ -2,11 +2,78 @@
 
 Route: `/orders`
 Owner: Setu Guru knowledge base
-Last updated: 2026-05-13
+Last updated: 2026-05-20
 
 ## Purpose
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.
+
+## Sprint 18 active truth: Orders Execution Cockpit v2
+
+Orders is now the **Orders Execution Cockpit**, not a Quote clone. It is the execution workspace created from an accepted quote version.
+
+The eight user-facing stages are:
+
+1. Actual Lines
+2. Buyer Doc
+3. Packing
+4. Freight Queue
+5. Processing
+6. Delivery Note
+7. Final Invoice
+8. Paid & Closed
+
+KPI filters at the top of `/orders` are clickable and combine with search/type/stage/readiness/market filters:
+
+- **All orders**: all loaded execution orders.
+- **Ready now**: loaded orders with no current blocker for the next best action.
+- **Blocked**: loaded orders with source, line, approval, document, packing, trade, payment, or closeout blockers.
+- **Finance queue-ready**: final invoice is approved and a pending finance event can be queued.
+- **Freight queue-ready**: packing is saved/approved and the freight payload has cartons, pallets, weights/CBM, pickup, delivery, shipment mode, and incoterm.
+- **WhatsApp-ready docs**: approved order documents with a tracked preview link path and a manual WhatsApp recipient/link path.
+
+The Action Stack answers:
+
+- next best action;
+- why it is needed;
+- what it unlocks;
+- what blocks it;
+- truth labels;
+- latest activity/events;
+- primary CTA for the human operator.
+
+Required approvals and boundaries:
+
+- Before the first buyer document, actual order lines, discount reasons/context, and the actual-lines approval gate must be complete.
+- Before freight request, packing must be saved and approved with cartons, pallets, net/gross weight, CBM, pickup/delivery, shipment mode, and incoterm.
+- Buyer documents follow Prepare -> Preview -> Approve -> Send tracked.
+- Finance and Freight are integration-ready queues only. They use pending adapter events and do not call Xero, QuickBooks, Tally, Flexport, Freightos, DHL, carrier booking, bank feeds, payment processors, or live accounting providers.
+- WhatsApp is manual. SetuFlow opens WhatsApp or WhatsApp Web with prefilled text containing `View secure document: https://www.setuflowcrm.com/order-documents/preview/...`; the operator manually sends it.
+- PDF remains free/open-source: server rendering where available uses `puppeteer-core` plus `@sparticuz/chromium`, generated files may use private Supabase Storage/signed URLs, and browser print fallback remains available from tracked preview pages.
+
+Setu Guru may explain blockers, draft checklists, and identify what to review. It must not silently approve, send, waive, close, delete, mutate accepted commercial truth, sync finance, book freight, or claim provider delivery.
+
+### Sprint 18 Setu Guru Q&A examples
+
+**What is blocking this order?** Check the Action Stack and blocker list. Separate accepted-quote/source issues, actual line approval, buyer document approval, packing approval, freight payload readiness, processing/QC, delivery note, final invoice, finance queue, payment/reconciliation, and archive blockers.
+
+**What should I approve before sending the first order document?** Approve actual buyer order lines, discount reasons/context, and the actual-lines approval gate. Do not mutate the accepted quote version lines.
+
+**Can I queue finance now?** Only after the final invoice is approved. Queue invoice sync creates a `finance_integration_events` row with `adapter_name='pending'`, `event_type='invoice_sync_requested'`, and `manual_review_required=true`; it does not sync to a live provider.
+
+**Can I book freight from this screen?** No. You can queue a freight request after packing is approved. Queue freight request creates a pending freight event/request payload; it does not book a carrier.
+
+**Can you close this order?** No. Setu Guru can explain the closeout checklist, but a human must record payment reference, reconcile, acknowledge receipt, archive documents, confirm no blockers, and click Close order.
+
+**Draft a dispatch evidence checklist without advancing state.** Guru may draft a checklist for trade requirements, packing, processing/QC, delivery note, final invoice, shipment/dispatch evidence, and payment closeout, but must not advance state.
+
+**Why is WhatsApp manual?** No WhatsApp Business API is live. The app opens WhatsApp/WhatsApp Web with a prefilled tracked link and the operator manually sends it.
+
+**What does Finance queue-ready mean?** Final invoice approval exists, and the order can create a pending finance integration event for manual/provider-later processing.
+
+**What does Freight queue-ready mean?** Packing approval exists and the freight payload is complete enough to create a pending freight event/request for manual/provider-later processing.
+
+**What do the KPI filters show?** They show counts derived from currently loaded order data only. If data cannot be computed, the app should show zero or not available honestly.
 
 ## Sprint 8.1B channel-aware tracked links
 
@@ -160,7 +227,7 @@ New behavior:
    - Logistics
    - Dispatch / Invoice
    - Paid & Closed
-5. Backend records still keep the more detailed execution truth: `orders`, `order_lines`, `order_approval_gates`, `order_documents`, `packing_plans`, `freight_rate_requests`, `shipments`, `trade_requirements`, and `finance_sync_records`.
+5. Backend records still keep the more detailed execution truth: `orders`, `order_lines`, `order_approval_gates`, `order_documents`, `packing_plans`, `freight_rate_requests`, `freight_booking_events`, `shipments`, `trade_requirements`, and `finance_integration_events`.
 6. Completed stages remain clickable. Done means locked from unsafe edits, not hidden.
 7. The stage panel carries the relevant work for that stage instead of pushing more content below the page.
 8. A compact document tray appears in document stages so users can preview documents at any time and resend approved/sent documents to different stakeholders.
@@ -200,13 +267,13 @@ Rules remain:
 
 ## Sprint 8T packing, freight, dispatch, and closeout UI
 
-Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and `finance_sync_records`. After Sprint 8W/8X/8Y/8Z, that data should appear inside the relevant stage panel:
+Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and finance queue records. In Sprint 18, active queue truth is `finance_integration_events` and `freight_booking_events` with pending adapters. That data should appear inside the relevant stage panel or drawer:
 
 - Packing / Freight stage shows packing sheet, freight request, and selected quote.
 - Processing stage shows pick/pack/QC and packing list readiness.
 - Logistics stage shows shipment booking, delivery note, BOL/AWB, and shipping docs.
 - Dispatch / Invoice stage shows dispatch invoice evidence and send status.
-- Paid & Closed stage shows finance sync, payment, receipt, archive, and closeout.
+- Paid & Closed stage shows finance queue/manual reference, payment, receipt, archive, and closeout.
 
 ## Sprint 8S order document gates and send tracking
 
@@ -249,7 +316,7 @@ Protected behavior:
 - Downloading/printing tracked previews as PDFs through browser print.
 - Tracking each document send to each recipient separately.
 - Tracking document opens per send link.
-- Tracking accepted quote-version lineage, actual order lines, documents, trade requirements, packing, freight, shipment, dispatch, finance sync, and closeout posture.
+- Tracking accepted quote-version lineage, actual order lines, documents, trade requirements, packing, freight queue readiness, shipment/dispatch posture, finance queue readiness, and closeout posture.
 - Separating accepted quote status from fulfillment readiness.
 
 ## Common questions Setu Guru should answer
@@ -268,10 +335,11 @@ Protected behavior:
 - Has this order confirmation or proforma been sent/tracked?
 - Which trade requirements apply to this order stage?
 - Is packing approved for this order?
-- Has freight been selected for this order?
-- Is shipment booked or dispatched?
+- Can I queue freight for this order?
+- Is shipment or dispatch reference ready for human review?
 - Is dispatch invoice evidence ready?
-- Is finance closeout synced?
+- What does Finance queue-ready mean?
+- Can I queue invoice sync now?
 - Which evidence is missing before release?
 - Is this a quote issue or an order execution issue?
 - Why do I need to prepare actual order lines after quote approval?
@@ -290,10 +358,10 @@ Protected behavior:
 - Order-stage trade requirement has not been attached or source-confirmed.
 - Required or blocking trade requirement is still pending review.
 - Packing sheet has not been prepared, previewed, or approved.
-- Freight request or freight quote selection is missing.
-- Shipment booking is missing.
+- Freight request payload is missing or has not been queued as a pending adapter event.
+- Shipment/dispatch reference is missing where the stage requires it.
 - Dispatch invoice document evidence is missing.
-- Finance sync or receipt closeout is missing.
+- Finance pending adapter event, manual finance reference, or receipt closeout is missing.
 - User wants to advance order state without required evidence or human approval.
 
 ## Data sources
@@ -310,7 +378,8 @@ Protected behavior:
 - Packing plans and packing plan lines.
 - Freight rate requests and freight rate quotes.
 - Shipments.
-- Finance sync records.
+- `finance_integration_events` for pending invoice sync payloads.
+- `freight_booking_events` for pending freight request payloads.
 - Documents attached to order, lead, quote, or dispatch.
 
 ## Approval rules
@@ -334,7 +403,7 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - sending or approving a freight/delivery rate request;
 - selecting a freight quote or booking a shipment;
 - marking shipment dispatched or delivered;
-- syncing finance or closing payment/receipt.
+- queueing finance, retrying queue events, marking manual finance/freight references complete, or closing payment/receipt without human action.
 
 ## Sprint 8.1B smoke-check checklist
 
@@ -415,5 +484,10 @@ Use this checklist before the next Orders pass:
 - Has freight been selected for this order?
 - Is shipment booked or dispatched?
 - Is dispatch invoice evidence ready?
-- Is finance closeout synced?
+- Can I queue finance now?
+- Can I book freight from this screen?
+- Why is WhatsApp manual?
+- What does Finance queue-ready mean?
+- What does Freight queue-ready mean?
+- What do the KPI filters show?
 - Explain the approval boundary for this order.

@@ -8,9 +8,6 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { writeAuditLog } from '@/lib/auditLog';
-// Sprint 12: Email + WhatsApp utilities wired in
-import { sendOrderDocumentEmail } from '@/lib/email/order-document-email';
-import { generateWhatsAppLinks } from '@/lib/whatsapp/whatsapp-link';
 
 type DocumentType = 'order_confirmation' | 'proforma_invoice' | 'dispatch_invoice' | 'packing_sheet' | 'packing_list' | 'delivery_note' | 'freight_request';
 type SendChannel = 'email' | 'whatsapp' | 'preview';
@@ -29,7 +26,7 @@ function clean(value: unknown) {
 function fallbackRecipientForChannel(channel: SendChannel, lead: any) {
   if (channel === 'preview') return '';
   if (channel === 'email') return clean(lead?.email);
-  if (channel === 'whatsapp') return clean(lead?.whatsapp_number) || clean(lead?.phone);
+  if (channel === 'whatsapp') return clean(lead?.whatsapp_number) || clean(lead?.whatsapp) || clean(lead?.phone);
   return '';
 }
 
@@ -59,6 +56,18 @@ function labelFor(type: DocumentType) {
   if (type === 'delivery_note') return 'Delivery Note';
   if (type === 'freight_request') return 'Freight Request';
   return 'Order Confirmation';
+}
+
+function whatsappDigits(value: string) {
+  const cleaned = value.replace(/[^\d+]/g, '');
+  return cleaned.replace(/^\+/, '');
+}
+
+function buildManualWhatsappLink(recipient: string, message: string) {
+  const encoded = encodeURIComponent(message);
+  const digits = whatsappDigits(recipient);
+  if (digits) return `https://wa.me/${digits}?text=${encoded}`;
+  return `https://web.whatsapp.com/send?text=${encoded}`;
 }
 
 async function recordOrderStageEvent(db: any, payload: {
@@ -98,29 +107,6 @@ async function findApprovedOrderDocument(db: any, input: {
     .limit(1)
     .maybeSingle();
   return data?.id ? data : null;
-}
-
-async function findLatestStoredWhatsAppSend(db: any, input: {
-  organizationId: string;
-  orderId: string;
-  orderDocumentId: string;
-  recipient?: string | null;
-}) {
-  let query = db
-    .from('order_document_sends')
-    .select('id, share_url, whatsapp_link, whatsapp_phone, recipient, created_at')
-    .eq('organization_id', input.organizationId)
-    .eq('order_id', input.orderId)
-    .eq('order_document_id', input.orderDocumentId)
-    .eq('channel', 'whatsapp')
-    .not('share_url', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  if (input.recipient) query = query.eq('recipient', input.recipient);
-
-  const { data } = await query.maybeSingle();
-  return data?.share_url ? data : null;
 }
 
 async function findOrCreateTrackedOrderDocument(db: any, input: {
@@ -253,42 +239,10 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const now = new Date().toISOString();
   const documentLabel = labelFor(documentType);
   const shareToken = randomUUID();
-  const generatedShareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
+  const shareUrl = `${buildAppOrigin()}/order-documents/preview/${shareToken}`;
   const sendStatus = previewOnly ? 'previewed' : 'link_created';
-
-  let reusedWhatsAppSend: any = null;
-  if (!previewOnly && channel === 'whatsapp' && trackedDocument?.id) {
-    reusedWhatsAppSend = await findLatestStoredWhatsAppSend(db, {
-      organizationId: workspace.organization.id,
-      orderId: order.id,
-      orderDocumentId: trackedDocument.id,
-      recipient: resolvedRecipient || null,
-    });
-  }
-
-  const shareUrl = reusedWhatsAppSend?.share_url || generatedShareUrl;
-
-  // Sprint 12/Sprint 18: Generate WhatsApp links before insert; reuse stored tracked URL/link when present.
-  let whatsappLink: string | null = reusedWhatsAppSend?.whatsapp_link ?? null;
-  let whatsappPhone: string | null = reusedWhatsAppSend?.whatsapp_phone ?? null;
-  if (!previewOnly && channel === 'whatsapp' && resolvedRecipient && !whatsappLink) {
-    try {
-      const orgName = workspace.organization.name ?? 'SETU Flow';
-      const waLinks = generateWhatsAppLinks({
-        phone: resolvedRecipient,
-        organizationName: orgName,
-        documentType,
-        orderNumber: order.order_number ?? order.id.slice(0, 8).toUpperCase(),
-        companyName: lead?.company_name ?? 'Buyer',
-        shareUrl,
-        note: note || null,
-      });
-      whatsappLink = waLinks.mobileLink; // Store mobile link; UI picks device-appropriate one
-      whatsappPhone = waLinks.phone;
-    } catch (waErr) {
-      console.error('[share-actions] WhatsApp link generation error:', waErr);
-    }
-  }
+  const whatsappMessage = `View secure document: ${shareUrl}`;
+  const manualWhatsappLink = !previewOnly && channel === 'whatsapp' ? buildManualWhatsappLink(resolvedRecipient, whatsappMessage) : null;
 
   const { data: sendRow } = await db.from('order_document_sends').insert({
     organization_id: workspace.organization.id,
@@ -302,12 +256,10 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     status: sendStatus,
     share_token: shareToken,
     share_url: shareUrl,
+    whatsapp_phone: channel === 'whatsapp' ? (resolvedRecipient || null) : null,
+    whatsapp_link: manualWhatsappLink,
     sent_at: now,
     created_by: workspace.user.id,
-    // Sprint 12: WhatsApp link columns
-    whatsapp_link: whatsappLink,
-    whatsapp_phone: whatsappPhone,
-    email_delivery_status: (!previewOnly && channel === 'email') ? 'pending' : null,
     metadata: {
       source: 'sendOrderDocumentLinkAction',
       preview_only: previewOnly,
@@ -316,58 +268,10 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
       lead_id: order.lead_id ?? null,
-      reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null,
+      manual_whatsapp_message: manualWhatsappLink ? whatsappMessage : null,
+      whatsapp_business_api_live: false,
     },
   }).select('id').single();
-
-  // Sprint 12: Fire email via Mailtrap for email channel
-  if (!previewOnly && channel === 'email' && resolvedRecipient && sendRow?.id) {
-    try {
-      const orgName = workspace.organization.name ?? 'SETU Flow';
-      const emailResult = await sendOrderDocumentEmail({
-        to: resolvedRecipient,
-        organizationName: orgName,
-        organizationLogo: workspace.organization.logo_url ?? null,
-        documentType,
-        documentLabel: labelFor(documentType),
-        orderNumber: order.order_number ?? order.id.slice(0, 8).toUpperCase(),
-        companyName: lead?.company_name ?? 'Buyer',
-        shareUrl,
-        note: note || null,
-        senderName: workspace.user.email ?? null,
-      });
-
-      // Update send row with email result
-      const emailUpdate: Record<string, unknown> = {
-        email_provider: emailResult.ok ? emailResult.provider : null,
-        email_sent: emailResult.ok,
-        email_delivery_status: emailResult.ok ? 'sent' : 'failed',
-        updated_at: now,
-      };
-      if (emailResult.ok && 'messageId' in emailResult) {
-        emailUpdate.email_message_id = emailResult.messageId ?? null;
-      }
-      await db.from('order_document_sends').update(emailUpdate).eq('id', sendRow.id);
-
-      // Write to email_send_log
-      if (emailResult.ok && 'messageId' in emailResult) {
-        await db.from('email_send_log').insert({
-          organization_id: workspace.organization.id,
-          order_document_send_id: sendRow.id,
-          provider: emailResult.provider,
-          provider_message_id: emailResult.messageId ?? null,
-          to_email: resolvedRecipient,
-          subject: `${labelFor(documentType)} — ${order.order_number ?? ''} | ${orgName}`,
-          template_type: 'order_document',
-          status: 'sent',
-          sent_at: now,
-        });
-      }
-    } catch (emailErr) {
-      console.error('[share-actions] Email send error:', emailErr);
-      // Non-fatal — send row already created, UI can show link_created
-    }
-  }
 
   await db.from('order_documents').update({
     status: previewOnly ? (trackedDocument.status === 'approved' ? 'approved' : 'previewed') : trackedDocument.status ?? 'approved',
@@ -384,7 +288,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       source_quote_version_id: order.source_quote_version_id ?? null,
       note: note || null,
       workflow: 'order_confirmed_then_proforma_then_logistics',
-      reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null,
+      manual_whatsapp_link: manualWhatsappLink,
     },
   }).eq('organization_id', workspace.organization.id).eq('id', trackedDocument.id);
 
@@ -400,12 +304,13 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
       order_document_send_id: sendRow?.id ?? null,
       channel,
       recipient: resolvedRecipient || null,
+      whatsapp_link: manualWhatsappLink,
       share_url: shareUrl,
       preview_only: previewOnly,
       transport_delivery_confirmed: false,
+      whatsapp_business_api_live: false,
       source_quote_id: order.source_quote_id ?? null,
       source_quote_version_id: order.source_quote_version_id ?? null,
-      reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null,
     },
   });
 
@@ -428,12 +333,13 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
     actorUserId: workspace.user.id,
     payload: {
       previous: { document_status: trackedDocument.status },
-      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, preview_only: previewOnly, transport_delivery_confirmed: false, reused_share_url_from_send_id: reusedWhatsAppSend?.id ?? null },
+      new: { document_type: documentType, channel, recipient: resolvedRecipient || null, sent_at: now, share_url: shareUrl, whatsapp_link: manualWhatsappLink, preview_only: previewOnly, transport_delivery_confirmed: false },
       metadata: { source: 'sendOrderDocumentLinkAction', order_id: order.id, quote_id: order.source_quote_id, lead_id: order.lead_id, order_document_id: trackedDocument.id, note },
     },
   });
 
   revalidatePath('/orders');
   if (previewOnly) redirect(shareUrl);
+  if (manualWhatsappLink) redirect(manualWhatsappLink);
   redirect(`/orders?notice=order-document-review-link-created&openOrderId=${encodeURIComponent(order.id)}`);
 }

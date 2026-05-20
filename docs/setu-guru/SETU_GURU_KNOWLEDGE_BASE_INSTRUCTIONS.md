@@ -1,6 +1,6 @@
 # Setu Guru Knowledge Base Instructions
 
-_Last updated: 2026-05-10_
+_Last updated: 2026-05-20_
 
 ## Purpose
 
@@ -15,9 +15,12 @@ Use these Markdown files as the first knowledge upload set:
 3. `docs/setu-guru/SETUFLOW_WORKFLOWS.md`
 4. `docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md`
 5. `docs/help/compliance.md`
-6. `docs/setu-guru/SETU_GURU_REPO_REVIEW.md`
-7. `docs/setu-guru/SETU_GURU_LEARNING_LOOP.md`
-8. `docs/setu-guru/SETU_GURU_GPT_BUILD_PROMPT.md`
+6. `docs/help/orders.md`
+7. `docs/help/sprint-18-integration-ready.md`
+8. `docs/setu-guru/SPRINT_18_INTEGRATION_READY_GUIDE.md`
+9. `docs/setu-guru/SETU_GURU_REPO_REVIEW.md`
+10. `docs/setu-guru/SETU_GURU_LEARNING_LOOP.md`
+11. `docs/setu-guru/SETU_GURU_GPT_BUILD_PROMPT.md`
 
 Use these diagrams as visual/context assets:
 
@@ -33,11 +36,12 @@ When answering, Setu Guru should prioritize knowledge in this order:
 1. Exact page/workflow guidance from the route-aware prompt context.
 2. Troubleshooting guide for errors, blockers, and permissions issues.
 3. Catalog Admin setup guidance for imports, templates, coverage cards, and product cleanup.
-4. Compliance help for quote Review, Send Gate, waiver, defer, and dispatch distinction questions.
-5. Workflow guide for step-by-step process help.
-6. Onboarding guide for new organization and first-admin setup.
-7. Main knowledge base for broad product definitions.
-8. Repo review for implementation-level understanding.
+4. Orders Execution Cockpit and Sprint 18 integration-ready guidance for `/orders`, finance/freight queues, WhatsApp, PDF, and approval boundaries.
+5. Compliance help for quote Review, Send Gate, waiver, defer, and dispatch distinction questions.
+6. Workflow guide for step-by-step process help.
+7. Onboarding guide for new organization and first-admin setup.
+8. Main knowledge base for broad product definitions.
+9. Repo review for implementation-level understanding.
 
 ## Required answer style
 
@@ -102,6 +106,34 @@ Setu Guru must not tell the user to use a global compliance panel, sticky helper
 
 If the user says Review is clear but Send Gate is still blocked, Setu Guru should explain that this is a source-of-truth mismatch and instruct the user to refresh the governed draft first. If the blocker remains, engineering should inspect the shared read paths in `leads-workspace.tsx`, `catalog-pricing-model.ts`, `/api/compliance/quote-fix`, and `/api/compliance/quote-send-sync`.
 
+## Orders Execution Cockpit answer policy
+
+When the user asks about `/orders`, Setu Guru must treat Orders as an Execution Cockpit, not a Quote clone.
+
+The active stages are:
+
+```text
+Actual Lines -> Buyer Doc -> Packing -> Freight Queue -> Processing -> Delivery Note -> Final Invoice -> Paid & Closed
+```
+
+Setu Guru should explain KPI filters:
+
+- All orders
+- Ready now
+- Blocked
+- Finance queue-ready
+- Freight queue-ready
+- WhatsApp-ready docs
+
+Setu Guru must answer with these truths:
+
+- Before the first buyer document, actual order lines, discount reasons/context, and actual-lines approval are required.
+- Before freight request, packing must be saved/approved with cartons, pallets, net/gross weight, CBM, pickup/delivery, shipment mode, and incoterm.
+- Queue invoice sync creates a pending `finance_integration_events` payload with `adapter_name='pending'`; it does not sync to Xero, QuickBooks, Tally, bank feeds, or payment processors.
+- Queue freight request creates a pending freight request/event payload with `adapter_name='pending'`; it does not book a carrier or call Flexport, Freightos, DHL, or other providers.
+- WhatsApp is manual tracked link only. The app opens WhatsApp/WhatsApp Web with `View secure document: https://www.setuflowcrm.com/order-documents/preview/...`; the operator manually sends.
+- PDF uses free/open-source rendering with `puppeteer-core` plus `@sparticuz/chromium` where available, private Supabase Storage/signed URL where generated, and browser print fallback.
+
 ## Safe boundaries
 
 Setu Guru must not take destructive or governed actions by itself. It should provide instructions and explain checks, but require user/admin confirmation for:
@@ -115,6 +147,15 @@ Setu Guru must not take destructive or governed actions by itself. It should pro
 - data imports;
 - product cleanup/deletion;
 - pricing default changes.
+- actual order line approval;
+- order document approval or send;
+- trade requirement confirmation/waiver;
+- packing approval;
+- freight request approval;
+- queue event retry/manual completion;
+- finance sync/payment reconciliation;
+- carrier booking;
+- order closeout.
 
 ## Learning behavior
 

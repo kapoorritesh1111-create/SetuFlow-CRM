@@ -1,156 +1,114 @@
-# Setu Guru — Sprint 18 Integration-Ready Guide
+# Sprint 18 Orders Execution Cockpit and integration-ready guide
 
-Last updated: 2026-05-19
-Owner: Setu Guru knowledge base
-Related routes: `/orders`, `/admin/integrations`, `/dashboard/analytics`, `/internal/setuflow-docs.html#s18`
+Last updated: 2026-05-20
 
-## Product-owner approved decisions
+## Canonical answer
 
-1. Mailtrap is the final production email integration for now. It has been tested and confirmed working.
-2. Finance, freight, banks, and WhatsApp Business API are not live integrations yet.
-3. Finance and freight should be described as integration-ready event queues, not live external sync.
-4. Orders should be treated as the execution cockpit after quote acceptance, not a copy of the quote send workflow.
-5. Analytics UX proposal is approved and locked for later implementation.
-6. PDF generation should use a free/open-source path now. Do not use paid PDF APIs before investor approval.
-7. Every future build must update `public/internal/setuflow-docs.html` with live status while preserving the existing HTML structure.
+The Orders Execution Cockpit is the real execution workspace after quote acceptance. It is not a Quote clone. It manages actual buyer order lines, buyer documents, packing, freight queue readiness, processing, delivery note, final invoice, finance queue readiness, payment, and closeout.
 
-## How Setu Guru should describe Mailtrap
+The eight stages are:
 
-Mailtrap is production-ready and working for SetuFlow email. It is the active email provider integration for current production workflows.
+```text
+Actual Lines -> Buyer Doc -> Packing -> Freight Queue -> Processing -> Delivery Note -> Final Invoice -> Paid & Closed
+```
 
-Use this wording:
+## Required Setu Guru answers
 
-- Mailtrap email integration is active and working.
-- Email sending is provider-backed through Mailtrap.
-- Delivery/open/bounce tracking depends on the relevant webhook/log surfaces being wired into each workflow.
+What is blocking this order?
 
-Avoid saying Mailtrap is temporary, placeholder, or only sandbox unless a future product decision changes this.
+- Check the Action Stack, blocker list, and latest activity.
+- Separate accepted quote/source lineage, actual lines, first buyer document, packing, freight payload, processing/QC, delivery note, final invoice, finance queue, payment/reconciliation, archive, and trade requirement blockers.
 
-## Integration readiness language
+What should I approve before sending the first order document?
 
-Use this wording for finance and freight:
+- Actual order lines.
+- Line discount and total order discount reasons/context.
+- Actual-lines approval gate.
+- Do not mutate accepted quote version lines.
 
-- integration-ready
-- queue-ready
-- adapter boundary ready
-- pending adapter
-- manual review required
-- future live provider connection
+Can I queue finance now?
 
-Avoid this wording until providers are actually connected:
+- Only after Final Invoice approval.
+- Queue invoice sync writes `finance_integration_events` with `adapter_name='pending'`, event type `invoice_sync_requested`, and `manual_review_required=true`.
+- It does not sync to Xero, QuickBooks, Tally, bank feeds, or payment processors.
 
-- synced to Xero
-- synced to QuickBooks
-- booked with Freightos
-- booked with Flexport
-- live freight rates requested
-- bank verified payment
-- WhatsApp Business API delivered
+Can I book freight from this screen?
 
-## Finance guidance
+- No.
+- The screen can queue a pending freight request after packing approval.
+- Queue freight request writes a pending freight request/event payload. It does not book a carrier or call Flexport, Freightos, DHL, or any carrier adapter.
 
-Finance in Sprint 18 should show queue/status readiness only.
+Can you close this order?
 
-Setu Guru should explain:
+- No.
+- Setu Guru can explain the closeout checklist, but a human must record payment reference, reconcile, acknowledge receipt, archive documents, confirm no blockers, and click Close order.
 
-- `finance_integration_events` is an event queue for future accounting adapters.
-- `adapter_name = pending` means no external provider is connected yet.
-- Operators may queue invoice sync intent, but it does not post to Xero, QuickBooks, Tally, Zoho Books, or banks.
-- Payment and closeout evidence are still human-reviewed unless a future provider confirms them.
+Why is WhatsApp manual?
 
-Recommended CTAs:
+- No WhatsApp Business API is live.
+- SetuFlow opens WhatsApp or WhatsApp Web with a prefilled tracked link.
+- The operator manually sends the message.
+
+How does PDF work?
+
+- Free server rendering uses `puppeteer-core` plus `@sparticuz/chromium` where available.
+- Generated files may use private Supabase Storage/signed URLs.
+- Browser print fallback remains available from tracked preview pages.
+
+## KPI filter answers
+
+- All orders: all loaded execution orders.
+- Ready now: loaded orders with no current blocker for the next best action.
+- Blocked: loaded orders with execution blockers.
+- Finance queue-ready: final invoice approved and invoice sync can be queued.
+- Freight queue-ready: packing approved and freight payload complete.
+- WhatsApp-ready docs: approved documents with a tracked link/manual WhatsApp path.
+
+## Truthful CTA labels
+
+Use these labels:
 
 - Queue invoice sync
-- View finance queue
-- Copy integration payload
+- Queue freight request
+- View queue
+- Copy payload
 - Retry queued event
-- Record payment manually
-- Mark receipt uploaded
-- Close order after evidence is complete
+- Open WhatsApp manually
+- Generate PDF / Browser print fallback
+- Queue-ready
+- Pending adapter
+- Manual tracked link
 
-## Freight guidance
+Do not use these labels as current truth:
 
-Freight in Sprint 18 should show manual request/quote readiness and future adapter queue status.
+- Sync to QuickBooks
+- Book freight
+- Delivered via WhatsApp
+- Connected to provider
+- Live accounting sync
+- Live carrier booking
 
-Setu Guru should explain:
+## Approval boundary
 
-- `freight_booking_events` is an event queue for future freight adapters.
-- `adapter_name = pending` means no freight provider is connected yet.
-- Operators can prepare freight requests, manually add quotes, select quotes, and create shipment drafts.
-- External freight booking is not automatic.
+Setu Guru may draft:
 
-Recommended CTAs:
+- blocker explanations;
+- next-best-action explanations;
+- dispatch evidence checklists;
+- finance/freight queue readiness checklists;
+- WhatsApp/email wording;
+- PDF/preview instructions.
 
-- Create freight request
-- Preview freight request
-- Create tracked freight link
-- Add freight quote manually
-- Select freight quote
-- Queue freight booking event
-- Create shipment draft
-- Add booking reference
-- Mark shipment booked
-- Mark dispatched
+Setu Guru must not perform:
 
-## Admin Integrations page guidance
-
-A future `/admin/integrations` page should show provider readiness without overstating live connections.
-
-Suggested cards:
-
-1. Email provider — Mailtrap active and working.
-2. Finance software — queue-ready, not connected; future Xero/QuickBooks/Tally/Zoho Books.
-3. Freight providers — queue-ready, not connected; future Freightos/Flexport/DHL/FedEx/forwarder APIs.
-4. Banks/payments — planned; manual payment/receipt evidence for now.
-5. WhatsApp — manual tracked links; future WhatsApp Business API.
-6. PDF pipeline — free server-side generation planned; browser print fallback.
-7. Open API/webhooks — planned developer surface for future connections.
-
-## PDF guidance
-
-Use a free PDF generation approach for Sprint 18:
-
-- `puppeteer-core`
-- `@sparticuz/chromium`
-- Supabase Storage bucket: `order-documents`
-- `order_documents.pdf_storage_path`
-
-PDF flow:
-
-1. Use order document preview as the rendering source of truth.
-2. Render the preview server-side with Chromium.
-3. Upload the PDF to Supabase Storage.
-4. Save the storage path on `order_documents`.
-5. Return a signed download URL.
-6. Keep browser print/save as PDF as fallback.
-
-Do not recommend paid PDF APIs until investor approval.
-
-## Orders execution-cockpit guidance
-
-Orders is where real revenue execution happens after quote acceptance.
-
-Setu Guru should say:
-
-- Accepted quote is commercially important but does not mean ready to release, dispatch, invoice, or close.
-- Orders must show the next safe execution action.
-- The design should be one queue, one selected order, one stage strip, one active stage panel.
-- New capability should go into the active stage panel, document tray, or focused modal/drawer, not stacked sections below the page.
-- Document send state belongs in `order_documents` and `order_document_sends`.
-- Re-sending a document creates/uses send history and must not mutate quote history.
-- Link-created does not equal provider-delivered unless a provider confirms delivery.
-
-## Sprint 18 scope for future implementation chat
-
-Recommended scope:
-
-1. Update `public/internal/setuflow-docs.html#s18` first, preserving HTML structure.
-2. Add PDF storage migration and bucket setup.
-3. Add free server-side PDF generation.
-4. Reuse stored WhatsApp/share URLs for resend.
-5. Add finance queue/status panel with no live external sync language.
-6. Add `/admin/integrations` readiness page.
-7. Add analytics snapshot cron with `CRON_SECRET`.
-8. Keep Analytics UX locked for later implementation.
-9. Keep Orders Cockpit design as approved direction but avoid full redesign unless full CTA matrix is implemented.
-10. Run typecheck/build and verify Vercel before declaring done.
+- actual line approval;
+- order document approval;
+- sending;
+- waiving or confirming trade requirements;
+- packing approval;
+- freight request approval;
+- dispatch/shipment status changes;
+- invoice sync;
+- payment reconciliation;
+- order closeout;
+- delete/archive/mutate commercial truth.
