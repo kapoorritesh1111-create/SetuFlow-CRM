@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { approveActualOrderLinesGateAction, approveFirstDocumentGateAction, prepareFirstDocumentGateAction } from '@/features/orders/server/execution-order-actions';
 import { addManualActualOrderLineAction, saveOrderDiscountAction, updateActualOrderLineAction } from '@/features/orders/server/order-line-actions';
 import { approveFinalInvoiceGateAction, prepareFinalInvoiceGateAction, previewFinalInvoiceGateAction } from '@/features/orders/server/dispatch-invoice-gate-actions';
 import { approveDeliveryNoteAction, approvePackingOverridesAction, closeOrderAction, savePackingOverridesAction, saveProcessingCheckAction } from '@/features/orders/server/stage-gate-actions';
 import { sendOrderDocumentLinkAction } from '@/features/orders/server/share-actions';
+import { sendOrderDocumentViaWhatsApp } from '@/features/orders/server/order-whatsapp-delivery';
 
 export type CatalogOrderOption8S = { id: string; label: string; productName: string; variantName?: string | null; skuCode?: string | null; hsnCode?: string | null; pricingType?: string | null; basisLabel: string; fobPrice: number | null; exFactoryPrice: number | null; bulkPrice: number | null; currency: string };
 export type OrderLineComparison8S = { id: string; productName: string; quotedQuantity: number | null; actualQuantity: number | null; unitOfMeasure: string | null; unitPrice: number | null; currency: string | null; quotedTotal: number | null; lineTotal: number | null; status: 'unchanged' | 'changed' | 'removed' | 'added' | 'needs_actual_lines'; variantName?: string | null; skuCode?: string | null; hsnCode?: string | null; reason?: string | null; isActual: boolean; pricingBasis?: string | null; lineDiscountType?: string | null; lineDiscountValue?: number | null; lineDiscountReason?: string | null };
@@ -143,36 +144,49 @@ function Preview({ o, t, label, disabled = false }: { o: ProductionOrder8S; t: s
 function Send({ o, t, disabled = false }: { o: ProductionOrder8S; t: string; disabled?: boolean }) {
   const [ch, setCh] = useState<'email' | 'whatsapp'>('email');
   const [r, setR] = useState(o.defaultEmailRecipient ?? '');
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
-  // Sprint 17: After WhatsApp send, auto-open WhatsApp in new tab
-  const handleSubmit = () => {
-    if (ch === 'whatsapp') {
-      const phone = r.replace(/\D/g, '');
-      if (phone.length >= 8) {
-        const docLabel = t.replace(/_/g, '+');
-        const orderRef = o.orderNumber ?? o.orderId?.slice(0, 8) ?? '';
-        const msg = encodeURIComponent(`Hi, please find your ${docLabel} for order ${orderRef}. Secure link will follow.`);
-        const waUrl = /Android|iPhone|iPad/i.test(navigator.userAgent)
-          ? `https://wa.me/${phone}?text=${msg}`
-          : `https://web.whatsapp.com/send?phone=${phone}&text=${msg}`;
-        setTimeout(() => window.open(waUrl, '_blank', 'noopener,noreferrer'), 600);
+  const openWhatsApp = () => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await sendOrderDocumentViaWhatsApp({
+          orderId: o.orderId ?? null,
+          quoteId: o.quoteId,
+          documentType: t,
+          recipient: r,
+        });
+        window.open(result.url, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to open WhatsApp delivery.');
       }
-    }
+    });
   };
 
   return (
-    <form action={sendOrderDocumentLinkAction} className="send" onSubmit={handleSubmit}>
+    <form
+      action={sendOrderDocumentLinkAction}
+      className="send"
+      onSubmit={(event) => {
+        if (ch === 'whatsapp') {
+          event.preventDefault();
+          if (!disabled && !pending) openWhatsApp();
+        }
+      }}
+    >
       <input type="hidden" name="order_id" value={o.orderId ?? ''} />
       <input type="hidden" name="quote_id" value={o.quoteId} />
       <input type="hidden" name="document_type" value={t} />
       <select
         name="channel"
         value={ch}
-        disabled={disabled}
+        disabled={disabled || pending}
         onChange={(e) => {
           const n = e.target.value === 'whatsapp' ? 'whatsapp' : 'email';
           setCh(n);
           setR(n === 'email' ? (o.defaultEmailRecipient ?? '') : (o.defaultWhatsappRecipient ?? ''));
+          setError(null);
         }}
       >
         <option value="email">📧 Email approved document</option>
@@ -181,14 +195,15 @@ function Send({ o, t, disabled = false }: { o: ProductionOrder8S; t: string; dis
       <input
         name="recipient"
         value={r}
-        disabled={disabled}
+        disabled={disabled || pending}
         onChange={(e) => setR(e.target.value)}
         placeholder={ch === 'whatsapp' ? '+1 234 567 8900' : 'buyer@company.com'}
       />
-      <input name="recipient_role" defaultValue="buyer" disabled={disabled} />
-      <Btn tone="green" disabled={disabled}>
-        {ch === 'whatsapp' ? '💬 Send & open WhatsApp' : '📧 Send approved document'}
+      <input name="recipient_role" defaultValue="buyer" disabled={disabled || pending} />
+      <Btn tone="green" disabled={disabled || pending}>
+        {pending ? 'Opening WhatsApp...' : ch === 'whatsapp' ? '💬 Send tracked WhatsApp link' : '📧 Send approved document'}
       </Btn>
+      {error ? <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>{error}</p> : null}
     </form>
   );
 }
