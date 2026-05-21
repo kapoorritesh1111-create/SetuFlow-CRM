@@ -37,3 +37,40 @@ export const QUOTE_CREATE_STEPS: WizardStepDefinition[] = [
       'Use the existing checkpoint to confirm blockers are clear, approval is approved or not required, and the customer-send decision is intentional.',
   },
 ];
+
+export const QUOTE_EDIT_STEPS: WizardStepDefinition[] = [
+  {
+    id: 'product',
+    title: 'Workflow context',
+    shortLabel: 'Context',
+    description:
+      'Adjust workflow context without changing routing or page architecture.',
+  },
+  {
+    id: 'pricing',
+    title: 'Pricing summary',
+    shortLabel: 'Pricing',
+    description: 'Review commercial totals and linked line items in one place.',
+  },
+  {
+    id: 'terms',
+    title: 'Terms and posture',
+    shortLabel: 'Terms',
+    description: 'Confirm approval state, workflow posture, and notes.',
+  },
+  {
+    id: 'review',
+    title: 'Review and save',
+    shortLabel: 'Review',
+    description: 'Confirm the final draft before saving the quote.',
+  },
+  {
+    id: 'send',
+    title: 'Send checkpoint',
+    shortLabel: 'Send',
+    description:
+      'Keep send blockers and approval posture explicit before the quote leaves the team.',
+  },
+];
+
+globalThis.QUOTE_EDIT_STEPS = QUOTE_EDIT_STEPS;
