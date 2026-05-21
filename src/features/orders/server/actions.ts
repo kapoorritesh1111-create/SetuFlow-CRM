@@ -9,6 +9,9 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { buildOrderExecutionSnapshot, evaluateOrderExecution, normalizeOrderExecutionState } from '@/lib/order-execution';
 import { buildOrderOperationalControlState } from '@/lib/order-operations';
+import type { Database } from '@/types/database';
+
+type ContractUpdate = Database['public']['Tables']['contracts']['Update'];
 
 function buildRedirect(notice: string) {
   return `/orders?notice=${encodeURIComponent(notice)}`;
@@ -30,7 +33,7 @@ export async function progressOrderExecution(formData: FormData) {
   const nextState = normalizeOrderExecutionState(String(formData.get('next_state') ?? ''));
   if (!contractId || !nextState) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const { data: contract, error: contractError } = await db
     .from('contracts')
     .select('id, lead_id, quote_id, status, signed_at, commercial_lock_state, execution_state, execution_snapshot')
@@ -39,8 +42,8 @@ export async function progressOrderExecution(formData: FormData) {
     .maybeSingle();
   if (contractError || !contract?.id) redirect(buildRedirect('order-contract-missing'));
 
-  const quoteId = contract.quote_id as string;
-  const leadId = contract.lead_id as string;
+  const quoteId = String(contract.quote_id ?? '');
+  const leadId = String(contract.lead_id ?? '');
   const [{ data: quote }, { data: docs }, { data: compliance }, { data: lines }, { data: lead }, { data: leadMarkets }, { data: leadProducts }, { data: requirementRules }] = await Promise.all([
     db.from('quotes').select('id, status').eq('organization_id', workspace.organization.id).eq('id', quoteId).maybeSingle(),
     db.from('documents').select('id, file_name, doc_type, status, uploaded_at, version, related_id, related_entity, requirement_code, expires_at, review_notes').eq('organization_id', workspace.organization.id).in('related_entity', ['quote', 'lead']).in('related_id', [quoteId, leadId]),
@@ -57,8 +60,8 @@ export async function progressOrderExecution(formData: FormData) {
     complianceItems: Array.isArray(compliance) ? compliance : [],
     requirementRules: Array.isArray(requirementRules) ? requirementRules : [],
     leadType: lead?.lead_type ?? null,
-    marketIds: Array.isArray(leadMarkets) ? leadMarkets.map((item: any) => item.market_id).filter(Boolean) : [],
-    productIds: Array.isArray(leadProducts) ? leadProducts.map((item: any) => item.product_id).filter(Boolean) : [],
+    marketIds: Array.isArray(leadMarkets) ? leadMarkets.map((item) => item.market_id).filter((id): id is string => Boolean(id)) : [],
+    productIds: Array.isArray(leadProducts) ? leadProducts.map((item) => item.product_id).filter((id): id is string => Boolean(id)) : [],
   });
 
   const evaluation = evaluateOrderExecution({
@@ -68,8 +71,8 @@ export async function progressOrderExecution(formData: FormData) {
     contractSignedAt: contract.signed_at,
     commercialLockState: contract.commercial_lock_state,
     lineCount: Array.isArray(lines) ? lines.length : 0,
-    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc: any) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
-    openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item: any) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
+    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
+    openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
     documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
     complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
     releaseArtifactReasons: operationalControls.releaseArtifactReasons,
@@ -93,8 +96,8 @@ export async function progressOrderExecution(formData: FormData) {
     contractSignedAt: contract.signed_at,
     commercialLockState: contract.commercial_lock_state,
     lineCount: Array.isArray(lines) ? lines.length : 0,
-    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc: any) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
-    openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item: any) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
+    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
+    openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
     documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
     complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
     releaseArtifactReasons: operationalControls.releaseArtifactReasons,
@@ -106,10 +109,10 @@ export async function progressOrderExecution(formData: FormData) {
     completedAt: nextState === 'completed' ? now : null,
   });
 
-  const updatePayload: Record<string, any> = {
+  const updatePayload: ContractUpdate = {
     execution_state: nextState,
     execution_blockers: nextSnapshot.blockers,
-    execution_snapshot: nextSnapshot,
+    execution_snapshot: nextSnapshot as ContractUpdate['execution_snapshot'],
     updated_at: now,
   };
   if (nextState === 'ready') updatePayload.ready_at = now;
@@ -163,7 +166,7 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
   if (!contractId) return { error: 'Contract ID is required.' };
   if (!(fileValue instanceof File) || fileValue.size <= 0) return { error: 'A document file is required.' };
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const { data: contract, error: contractError } = await db.from('contracts').select('id, lead_id, quote_id, execution_state').eq('organization_id', workspace.organization.id).eq('id', contractId).maybeSingle();
   if (contractError) return { error: 'Could not verify the order before upload. Please refresh and retry.' };
   if (!contract?.id) return { error: 'Order contract not found.' };
@@ -225,7 +228,7 @@ export async function signContractAction(formData: FormData) {
   const contractId = String(formData.get('contract_id') ?? '').trim();
   if (!contractId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
 
   const { data: contract, error: contractError } = await db
     .from('contracts')
