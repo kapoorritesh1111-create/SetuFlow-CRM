@@ -6,6 +6,13 @@ import { getAiAnalyticsData } from '@/lib/queries/ai-analytics';
 import { canViewAuditLogs } from '@/lib/permissionGuards';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 
+const SETU_FLOW_INTERNAL_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+
+function isInternalOrg(organizationId: string) {
+  const configuredInternalOrgId = process.env.SETU_INTERNAL_ORG_ID?.trim();
+  return organizationId === configuredInternalOrgId || organizationId === SETU_FLOW_INTERNAL_ORG_ID;
+}
+
 function parseWindow(value: string | string[] | undefined) {
   const first = Array.isArray(value) ? value[0] : value;
   const parsed = Number(first ?? 30);
@@ -25,8 +32,7 @@ export default async function AdminAiAnalyticsPage({
     return <WorkspaceState eyebrow="AI analytics" title="Admin access needed" description="Only admin-capable workspace members can open the AI analytics dashboard." primaryActionHref="/dashboard" primaryActionLabel="Return to dashboard" />;
   }
 
-  const internalOrgId = process.env.SETU_INTERNAL_ORG_ID;
-  if (!internalOrgId || organization.id !== internalOrgId) redirect('/admin');
+  if (!isInternalOrg(organization.id)) redirect('/admin');
 
   const data = await getAiAnalyticsData(organization.id, parseWindow(searchParams?.window));
   if (!data) {
