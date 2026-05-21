@@ -379,6 +379,109 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .refresh-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border3)}
 .refresh-btn.spinning svg{animation:spin .6s linear infinite}
 
+
+/* ══ FILE UPLOAD ZONE ══ */
+.upload-zone{
+  border:2px dashed var(--border2);border-radius:var(--radius-lg,12px);
+  padding:20px 16px;text-align:center;cursor:pointer;
+  transition:all .2s;position:relative;background:var(--bg3);margin-bottom:14px;
+}
+.upload-zone:hover,.upload-zone.drag-over{
+  border-color:var(--brand-teal);background:rgba(53,159,145,.06);
+}
+.upload-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.upload-zone-icon{font-size:28px;margin-bottom:6px;display:block;line-height:1}
+.upload-zone-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:3px}
+.upload-zone-sub{font-size:11px;color:var(--text3)}
+.upload-zone-sub span{color:var(--brand-teal);font-weight:600}
+.upload-zone.has-files{border-style:solid;border-color:rgba(53,159,145,.35);background:rgba(53,159,145,.04)}
+
+/* File previews grid */
+.attachments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:14px}
+.att-thumb{
+  position:relative;border-radius:var(--r,8px);overflow:hidden;
+  background:var(--bg4);border:1px solid var(--border2);
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:4px;
+}
+.att-thumb img{width:100%;height:100%;object-fit:cover}
+.att-thumb .att-file-ico{font-size:24px;line-height:1}
+.att-thumb .att-file-name{font-size:9px;color:var(--text3);padding:0 4px;text-align:center;word-break:break-all;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att-remove{
+  position:absolute;top:3px;right:3px;
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,.7);border:none;cursor:pointer;
+  display:grid;place-items:center;color:#fff;font-size:11px;
+  line-height:1;transition:background .15s;z-index:2;
+}
+.att-remove:hover{background:var(--red)}
+.att-progress{
+  position:absolute;bottom:0;left:0;height:3px;
+  background:var(--brand-teal);transition:width .3s ease;
+  border-radius:0 0 var(--r) var(--r);
+}
+.att-uploading::after{
+  content:'';position:absolute;inset:0;
+  background:rgba(0,0,0,.5);
+}
+.att-error{border-color:var(--red)!important}
+.att-error .att-file-name{color:#fca5a5}
+
+/* Paste hint */
+.paste-hint{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10.5px;color:var(--text3);padding:4px 10px;
+  background:var(--bg4);border-radius:20px;border:1px solid var(--border);
+  margin-top:6px;cursor:default;user-select:none;
+}
+.paste-hint kbd{
+  font-family:var(--mono);font-size:9px;background:var(--bg5,#1a2d52);
+  border:1px solid var(--border2);border-radius:3px;
+  padding:1px 5px;color:var(--text2);
+}
+
+/* Attachment viewer in detail panel */
+.panel-attachments{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
+.pan-att{
+  position:relative;border-radius:var(--r);overflow:hidden;cursor:pointer;
+  background:var(--bg3);border:1px solid var(--border);
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:3px;transition:border-color .15s;
+}
+.pan-att:hover{border-color:var(--border2)}
+.pan-att img{width:100%;height:100%;object-fit:cover;transition:opacity .15s}
+.pan-att:hover img{opacity:.9}
+.pan-att .pan-file-ico{font-size:22px}
+.pan-att .pan-file-name{font-size:9px;color:var(--text3);padding:0 4px;text-align:center;word-break:break-all;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pan-att-badge{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.6);border-radius:3px;padding:1px 4px;font-size:8px;color:rgba(255,255,255,.7)}
+
+/* Lightbox */
+.lightbox{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:900;
+  display:none;align-items:center;justify-content:center;
+  padding:20px;cursor:zoom-out;
+}
+.lightbox.open{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.lightbox img{max-width:100%;max-height:90vh;border-radius:var(--r);object-fit:contain;box-shadow:0 20px 80px rgba(0,0,0,.8);cursor:default}
+.lightbox-close{position:fixed;top:18px;right:18px;width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center;transition:background .15s}
+.lightbox-close:hover{background:rgba(255,255,255,.2)}
+.lightbox-name{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.6);background:rgba(0,0,0,.5);padding:4px 12px;border-radius:20px;white-space:nowrap;max-width:80vw;overflow:hidden;text-overflow:ellipsis}
+
+/* Upload button in detail panel */
+.panel-upload-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:var(--r);
+  background:var(--bg3);border:1px dashed var(--border2);
+  color:var(--text2);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;font-family:var(--font);
+  position:relative;overflow:hidden;
+}
+.panel-upload-btn:hover{border-color:var(--brand-teal);color:var(--brand-teal);background:rgba(53,159,145,.06)}
+.panel-upload-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
 @media(max-width:900px){.sidebar{display:none}.kpi-row{grid-template-columns:repeat(4,1fr);grid-auto-rows:auto}.donut-card{grid-column:span 2}}
 @media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.col-ref,.col-area{display:none}.panel{width:100vw}}
 </style>
@@ -1118,6 +1221,22 @@ Then select the first eligible issue, update it to In Progress, inspect current 
         <div class="test-box" id="p-test">–</div>
       </div>
 
+      <!-- ATTACHMENTS IN PANEL -->
+      <div id="p-attach-wrap">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span>Screenshots &amp; Attachments</span>
+          <label class="panel-upload-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add file
+            <input type="file" multiple accept="image/*,.pdf,.txt,.zip" onchange="handlePanelFileUpload(event)" style="display:none;pointer-events:none">
+          </label>
+        </div>
+        <div class="panel-attachments" id="p-attach-grid">
+          <div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:8px 0" id="p-attach-empty">No attachments yet</div>
+        </div>
+        <div id="p-attach-uploading" style="font-size:11px;color:var(--brand-teal);margin-top:4px;display:none">Uploading…</div>
+      </div>
+
       <div class="section-header">Update status</div>
       <div class="status-btns" id="p-status-btns"></div>
 
@@ -1489,6 +1608,9 @@ function fillPanel(i){
   $('p-test-wrap').style.display=i.regression_test?'block':'none';
   $('p-test').textContent=i.regression_test||'';
 
+  // Render attachments
+  renderPanelAttachments(i.attachments);
+
   $('p-status-btns').innerHTML=STATUSES.map(s=>`<button class="s-btn${s===i.status?' active':''}" onclick="patchIssue('${i.id}',{status:'${s.replace(/'/g,"\'")}'})">${s}</button>`).join('');
 }
 
@@ -1515,7 +1637,12 @@ function openNewIssueModal(){
   ['Bug','Enhancement','Testing','UX'].forEach(c=>{
     const b=$('cat-'+c);if(b){b.className='cat-btn'+(c==='Bug'?' sel':'');}
   });
+  // Reset file uploads
+  pendingFiles.forEach(f=>{if(f.previewUrl)URL.revokeObjectURL(f.previewUrl);});
+  pendingFiles=[];
+  renderPendingGrid();
   setText('ni-submit-label','Add to Tracker');
+  setText('ni-upload-status','');
   $('ni-submit-btn').disabled=false;
   $('new-issue-modal').classList.add('open');
   setTimeout(()=>$('ni-title').focus(),80);
@@ -1540,7 +1667,7 @@ async function submitNewIssue(){
   if(!desc){$('ni-desc').focus();toast('✗ Description is required',false);return;}
 
   const btn=$('ni-submit-btn');
-  btn.disabled=true;setText('ni-submit-label','Adding…');
+  btn.disabled=true;
 
   // Get next issue number
   const maxNum=Math.max(...ALL.map(i=>i.issue_number||0),50);
@@ -1548,9 +1675,20 @@ async function submitNewIssue(){
   const catPfx={Bug:'',Enhancement:'E-',Testing:'T-',UX:'UX-'};
   const issueRef=`SF-18-${catPfx[selectedCat]||''}${String(nextNum).padStart(3,'0')}`;
 
-  // Parse files
+  // Parse code files
   const filesRaw=($('ni-files').value||'').trim();
-  const files=filesRaw?filesRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+  const codeFiles=filesRaw?filesRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+
+  // Step 1 — Upload attachments first (if any)
+  let uploadedAtts=[];
+  if(pendingFiles.length){
+    setText('ni-submit-label','Uploading '+pendingFiles.length+' file'+(pendingFiles.length>1?'s':'')+'…');
+    setText('ni-upload-status','Uploading files to Supabase Storage…');
+    uploadedAtts=await uploadPendingFiles(issueRef);
+  }
+
+  setText('ni-submit-label','Saving to DB…');
+  setText('ni-upload-status','');
 
   const payload={
     issue_number:nextNum,
@@ -1567,19 +1705,29 @@ async function submitNewIssue(){
     workflow_area:$('ni-area').value,
     status:'Open',
     issue_category:selectedCat,
-    files_changed:files.length?files:null,
+    files_changed:codeFiles.length?codeFiles:null,
+    attachments:uploadedAtts.length?uploadedAtts:[],
     regression_test:$('ni-test').value.trim()||null,
     assigned_to:$('ni-assignee').value.trim()||null,
     organization_id:null,
   };
 
   const{data,error}=await db.from('sprint_issues').insert(payload).select().single();
-  if(error){toast('✗ Failed to add: '+error.message,false);btn.disabled=false;setText('ni-submit-label','Add to Tracker');return;}
+  if(error){
+    toast('✗ Failed to add: '+error.message,false);
+    btn.disabled=false;setText('ni-submit-label','Add to Tracker');
+    return;
+  }
+
+  // Clean up pending files & blob URLs
+  pendingFiles.forEach(f=>{if(f.previewUrl)URL.revokeObjectURL(f.previewUrl);});
+  pendingFiles=[];
 
   ALL.push(data);
   buildAreaFilter();buildSidebar();animateKPIs();render();
   $('new-issue-modal').classList.remove('open');
-  toast('✓ '+issueRef+' added to tracker');
+  const attNote=uploadedAtts.length?' + '+uploadedAtts.length+' attachment'+(uploadedAtts.length>1?'s':''):'';
+  toast('✓ '+issueRef+' added to tracker'+attNote);
 }
 
 /* ══════════════════════════════════════
@@ -1616,6 +1764,182 @@ document.addEventListener('keydown',e=>{
     else closePanel();
   }
 });
+
+
+
+/* ══════════════════════════════════════════════════════════════════
+   FILE UPLOAD — NEW ISSUE MODAL
+══════════════════════════════════════════════════════════════════ */
+const STORAGE_BUCKET = 'issue-attachments';
+const STORAGE_URL = 'https://sjzfzloggabsmcuxktnl.supabase.co/storage/v1/object/public/issue-attachments/';
+let pendingFiles = []; // {id, file, previewUrl, isImage}
+
+function fileExt(name){ return (name.split('.').pop()||'').toLowerCase(); }
+function isImage(file){ return file.type.startsWith('image/'); }
+function fileIcon(ext){ const m={pdf:'📄',zip:'🗜️',txt:'📝',mp4:'🎬',webm:'🎬'}; return m[ext]||'📎'; }
+function formatBytes(b){ if(b<1024)return b+'B'; if(b<1048576)return (b/1024).toFixed(0)+'KB'; return (b/1048576).toFixed(1)+'MB'; }
+function uniqueId(){ return Math.random().toString(36).slice(2,10); }
+
+function addPendingFile(file){
+  if(file.size > 10*1024*1024){ toast('✗ '+file.name+' exceeds 10 MB limit',false); return; }
+  const id=uniqueId();
+  const isImg=isImage(file);
+  const previewUrl=isImg?URL.createObjectURL(file):null;
+  pendingFiles.push({id,file,previewUrl,isImg});
+  renderPendingGrid();
+}
+
+function removePendingFile(id){
+  pendingFiles=pendingFiles.filter(f=>f.id!==id);
+  renderPendingGrid();
+}
+
+function renderPendingGrid(){
+  const grid=$('ni-attach-grid');
+  const zone=$('ni-upload-zone');
+  if(!grid)return;
+  if(!pendingFiles.length){
+    grid.style.display='none';
+    zone.classList.remove('has-files');
+    return;
+  }
+  zone.classList.add('has-files');
+  grid.style.display='grid';
+  grid.innerHTML=pendingFiles.map(f=>`
+    <div class="att-thumb" id="at-${f.id}">
+      ${f.isImg
+        ? `<img src="${f.previewUrl}" alt="${esc(f.file.name)}" onclick="openLightboxBlob('${f.previewUrl}','${esc(f.file.name)}')">`
+        : `<span class="att-file-ico">${fileIcon(fileExt(f.file.name))}</span><span class="att-file-name">${esc(f.file.name)}</span>`}
+      <button class="att-remove" onclick="removePendingFile('${f.id}')" title="Remove">✕</button>
+      <div class="att-file-name" style="position:absolute;bottom:2px;left:2px;right:18px;background:rgba(0,0,0,.5);border-radius:3px;padding:1px 3px;font-size:8px;color:rgba(255,255,255,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.file.name)}</div>
+      <div class="att-progress" id="prg-${f.id}" style="width:0%"></div>
+    </div>`).join('');
+}
+
+/* Drag-and-drop handlers */
+function handleDragOver(e){ e.preventDefault(); $('ni-upload-zone').classList.add('drag-over'); }
+function handleDragLeave(e){ $('ni-upload-zone').classList.remove('drag-over'); }
+function handleDrop(e){
+  e.preventDefault();
+  $('ni-upload-zone').classList.remove('drag-over');
+  Array.from(e.dataTransfer.files).forEach(addPendingFile);
+}
+function handleFileSelect(e){ Array.from(e.target.files).forEach(addPendingFile); e.target.value=''; }
+
+/* Paste screenshot support */
+document.addEventListener('paste',function(e){
+  if(!$('new-issue-modal').classList.contains('open'))return;
+  const items=Array.from(e.clipboardData.items||[]);
+  const imageItems=items.filter(it=>it.type.startsWith('image/'));
+  if(!imageItems.length)return;
+  e.preventDefault();
+  imageItems.forEach(it=>{
+    const file=it.getAsFile();
+    if(!file)return;
+    const ext=file.type.split('/')[1]||'png';
+    const named=new File([file],'screenshot-'+Date.now()+'.'+ext,{type:file.type});
+    addPendingFile(named);
+  });
+});
+
+/* Upload all pending files to Supabase Storage */
+async function uploadPendingFiles(issueRef){
+  const results=[];
+  for(const pf of pendingFiles){
+    const path=`${issueRef}/${Date.now()}_${pf.file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    // Show progress
+    const prg=document.getElementById('prg-'+pf.id);
+    const thumb=document.getElementById('at-'+pf.id);
+    if(thumb) thumb.classList.add('att-uploading');
+    if(prg) prg.style.width='30%';
+    try {
+      const{data,error}=await db.storage.from(STORAGE_BUCKET).upload(path,pf.file,{upsert:false,contentType:pf.file.type});
+      if(error) throw error;
+      if(prg) prg.style.width='100%';
+      const url=STORAGE_URL+path;
+      results.push({url,name:pf.file.name,type:pf.file.type,size:pf.file.size,path,isImage:pf.isImg});
+    } catch(err){
+      if(thumb) thumb.classList.add('att-error');
+      toast('✗ Upload failed: '+pf.file.name,false);
+    }
+    if(thumb) thumb.classList.remove('att-uploading');
+  }
+  return results;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FILE UPLOAD — DETAIL PANEL (existing issue)
+══════════════════════════════════════════════════════════════════ */
+async function handlePanelFileUpload(e){
+  if(!openIssue)return;
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  e.target.value='';
+  const uploadingEl=$('p-attach-uploading');
+  if(uploadingEl) uploadingEl.style.display='block';
+
+  const issueRef=openIssue.issue_ref||'SF-18-'+String(openIssue.issue_number).padStart(3,'0');
+  const existing=Array.isArray(openIssue.attachments)?openIssue.attachments:[];
+  const newAtts=[];
+
+  for(const file of files){
+    if(file.size>10*1024*1024){toast('✗ '+file.name+' exceeds 10 MB',false);continue;}
+    const path=`${issueRef}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    if(uploadingEl) uploadingEl.textContent='Uploading '+file.name+'…';
+    try{
+      const{error}=await db.storage.from(STORAGE_BUCKET).upload(path,file,{upsert:false,contentType:file.type});
+      if(error) throw error;
+      const url=STORAGE_URL+path;
+      newAtts.push({url,name:file.name,type:file.type,size:file.size,path,isImage:file.type.startsWith('image/')});
+    } catch(err){
+      toast('✗ Failed to upload '+file.name+': '+err.message,false);
+    }
+  }
+
+  if(newAtts.length){
+    const merged=[...existing,...newAtts];
+    await patchIssue(openIssue.id,{attachments:merged});
+    toast('✓ '+newAtts.length+' file'+(newAtts.length>1?'s':'')+' attached');
+  }
+  if(uploadingEl) uploadingEl.style.display='none';
+}
+
+/* Render attachments in detail panel */
+function renderPanelAttachments(attachments){
+  const grid=$('p-attach-grid'),emptyEl=$('p-attach-empty');
+  if(!grid)return;
+  const atts=Array.isArray(attachments)?attachments:[];
+  if(!atts.length){
+    if(emptyEl)emptyEl.style.display='block';
+    grid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:8px 0" id="p-attach-empty">No attachments yet</div>';
+    return;
+  }
+  if(emptyEl)emptyEl.style.display='none';
+  grid.innerHTML=atts.map((att,i)=>`
+    <div class="pan-att" title="${esc(att.name)}">
+      ${att.isImage
+        ? `<img src="${esc(att.url)}" alt="${esc(att.name)}" loading="lazy" onclick="openLightbox('${esc(att.url)}','${esc(att.name)}')">`
+        : `<span class="pan-file-ico">${fileIcon(fileExt(att.name))}</span><span class="pan-file-name">${esc(att.name)}</span>`}
+      ${att.isImage?'':`<a href="${esc(att.url)}" target="_blank" style="position:absolute;inset:0" title="Open ${esc(att.name)}"></a>`}
+      <span class="pan-att-badge">${formatBytes(att.size||0)}</span>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   LIGHTBOX
+══════════════════════════════════════════════════════════════════ */
+function openLightbox(url,name){
+  const lb=$('lightbox'),img=$('lightbox-img'),nm=$('lightbox-name');
+  if(!lb||!img)return;
+  img.src=url;if(nm)nm.textContent=name||'';
+  lb.classList.add('open');
+}
+function openLightboxBlob(blobUrl,name){ openLightbox(blobUrl,name); }
+function closeLightbox(){
+  const lb=$('lightbox');
+  if(lb){lb.classList.remove('open');setTimeout(()=>{const img=$('lightbox-img');if(img)img.src='';},200);}
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox();},{capture:false});
 
 load();
 </script>
@@ -1689,6 +2013,28 @@ load();
           <textarea class="form-ta" id="ni-desc" placeholder="What is wrong? Where exactly? What should happen instead? Include page, file, or workflow context."></textarea>
         </div>
       </div>
+      <!-- SCREENSHOTS / FILE UPLOAD -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          Screenshots &amp; Attachments
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(optional — images, PDFs, up to 10 MB each)</span>
+        </div>
+        <div class="upload-zone" id="ni-upload-zone"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <input type="file" id="ni-file-input" multiple accept="image/*,.pdf,.txt,.zip"
+            onchange="handleFileSelect(event)">
+          <span class="upload-zone-icon">📎</span>
+          <div class="upload-zone-title">Drop files here or click to browse</div>
+          <div class="upload-zone-sub">PNG, JPG, GIF, WebP, PDF · <span>Ctrl+V</span> to paste screenshot</div>
+        </div>
+        <div class="attachments-grid" id="ni-attach-grid" style="display:none"></div>
+        <div style="text-align:center">
+          <span class="paste-hint">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Paste screenshot directly: <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>⌘</kbd>+<kbd>V</kbd>
+          </span>
+        </div>
+      </div>
       <!-- How to fix -->
       <div class="form-row single">
         <div class="form-field">
@@ -1715,6 +2061,7 @@ load();
         </div>
       </div>
       <div class="modal-footer">
+        <span id="ni-upload-status" style="font-size:11px;color:var(--text3);margin-right:auto"></span>
         <button class="btn-cancel" onclick="closeNewIssueModal()">Cancel</button>
         <button class="btn-submit" id="ni-submit-btn" onclick="submitNewIssue()">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1723,6 +2070,14 @@ load();
       </div>
     </div>
   </div>
+</div>
+
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-name" id="lightbox-name"></div>
 </div>
 
 </body>
