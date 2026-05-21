@@ -15,6 +15,7 @@ type Summary = { row: number; entity: string; name: string; sku?: string | null;
 type Result = { inserted: number; updated: number; skipped: number; pricingRulesCreated: number; pricingRulesUpdated: number; issues: Issue[]; rowSummaries: Summary[] };
 type CategoryRow = { id: string; name: string; parent_id: string | null; sort_order: number | null; is_active: boolean };
 type ProductLookupRow = { id: string; name: string | null; sku: string | null; sku_code: string | null; sort_order: number | null };
+type LiveJsonRecord = Record<string, Json | undefined>;
 
 type Table<RowType, InsertType = Partial<RowType>, UpdateType = Partial<InsertType>> = {
   Row: RowType;
@@ -23,7 +24,7 @@ type Table<RowType, InsertType = Partial<RowType>, UpdateType = Partial<InsertTy
   Relationships: [];
 };
 
-type ImportRunRow = {
+type ImportRunRow = LiveJsonRecord & {
   id: string;
   organization_id: string;
   import_type: string;
@@ -42,7 +43,7 @@ type ImportRunRow = {
   summary_payload: Json;
 };
 
-type ImportIssueRow = {
+type ImportIssueRow = LiveJsonRecord & {
   id: string;
   import_run_id: string;
   entity_type: string;
@@ -61,16 +62,24 @@ type ImportIssueRow = {
   created_at: string;
 };
 
+type PricingRuleSetRow = LiveJsonRecord & { id: string; organization_id: string; name: string; status: string; is_default: boolean; source_type: string };
+type ProductPricingRuleRow = LiveJsonRecord & { id: string; organization_id: string; pricing_rule_set_id: string; sku_code: string; product_name: string };
+type AuditLogRow = LiveJsonRecord & { id: string; organization_id: string; entity_type: string; action: string };
+
 type CatalogDatabase = Omit<Database, 'public'> & {
   public: Omit<Database['public'], 'Tables'> & {
-    Tables: Database['public']['Tables'] & {
-      import_runs: Table<ImportRunRow, Partial<ImportRunRow> & Pick<ImportRunRow, 'organization_id' | 'import_type' | 'status' | 'rows_read' | 'summary_payload'>>;
-      import_issues: Table<ImportIssueRow, Partial<ImportIssueRow> & Pick<ImportIssueRow, 'import_run_id' | 'entity_type' | 'severity' | 'issue_code' | 'issue_message' | 'blocking_flag'>>;
+    Tables: Omit<Database['public']['Tables'], 'pricing_rule_sets' | 'product_pricing_rules' | 'import_runs' | 'import_issues' | 'audit_logs'> & {
+      pricing_rule_sets: Table<PricingRuleSetRow, LiveJsonRecord & Pick<PricingRuleSetRow, 'organization_id' | 'name' | 'status' | 'is_default' | 'source_type'>>;
+      product_pricing_rules: Table<ProductPricingRuleRow, LiveJsonRecord & Pick<ProductPricingRuleRow, 'organization_id' | 'pricing_rule_set_id' | 'sku_code' | 'product_name'>>;
+      import_runs: Table<ImportRunRow, LiveJsonRecord & Pick<ImportRunRow, 'organization_id' | 'import_type' | 'status' | 'rows_read' | 'summary_payload'>>;
+      import_issues: Table<ImportIssueRow, LiveJsonRecord & Pick<ImportIssueRow, 'import_run_id' | 'entity_type' | 'severity' | 'issue_code' | 'issue_message' | 'blocking_flag'>>;
+      audit_logs: Table<AuditLogRow, LiveJsonRecord & Pick<AuditLogRow, 'organization_id' | 'entity_type' | 'action'>>;
     };
   };
 };
 
 type CatalogDb = SupabaseClient<CatalogDatabase>;
+type ProductPricingRulePayload = CatalogDatabase['public']['Tables']['product_pricing_rules']['Insert'];
 
 function catalogDb(db: SupabaseClient<Database>): CatalogDb {
   return db as SupabaseClient<CatalogDatabase>;
@@ -205,7 +214,7 @@ async function ensureVariant(db: CatalogDb, orgId: string, userId: string, produ
 async function ensureRule(db: CatalogDb, orgId: string, userId: string, setId: string, productId: string, variantId: string, categoryName: string, row: Row, index: number) {
   if (!hasPrice(row)) return 'not_provided';
   const sku = text(row, ['sku_code', 'sku']) || `${productId}-${variantId}`.slice(0, 32); const cur = currency(row); const ex = num(row, ['price', 'ex_factory_per_unit', 'exw_price']); const fob = num(row, ['fob_per_unit', 'fob_price']); const bulk = num(row, ['bulk_price_per_kg']);
-  const payload: Database['public']['Tables']['product_pricing_rules']['Insert'] = { organization_id: orgId, pricing_rule_set_id: setId, product_id: productId, product_variant_id: variantId, sku_code: sku, hsn_code: clean(row.hsn_code) || null, product_name: clean(row.product_name ?? row.name), category_type: categoryName || null, category_name: categoryName || null, brand_name: clean(row.brand_name) || null, pricing_type: text(row, ['pricing_type', 'pricing_mode_default']) || null, pack_label: text(row, ['pack_label']) || null, units_per_case: num(row, ['units_per_case']), moq: num(row, ['moq_cases', 'moq_kg', 'moq']), is_active: active(row.active_status ?? row.is_active), is_quoteable: quoteable(row.quoteable_status), effective_from: clean(row.price_effective_from) || new Date().toISOString().slice(0, 10), effective_to: clean(row.price_effective_to) || null, raw_source_row_no: index + 2, raw_source_payload: row, updated_by: userId, ex_factory_input_currency: cur, ex_factory_input_amount: ex, fob_input_currency: cur, fob_input_amount: fob, bulk_input_currency: cur, bulk_input_amount_per_kg: bulk };
+  const payload: ProductPricingRulePayload = { organization_id: orgId, pricing_rule_set_id: setId, product_id: productId, product_variant_id: variantId, sku_code: sku, hsn_code: clean(row.hsn_code) || null, product_name: clean(row.product_name ?? row.name), category_type: categoryName || null, category_name: categoryName || null, brand_name: clean(row.brand_name) || null, pricing_type: text(row, ['pricing_type', 'pricing_mode_default']) || null, pack_label: text(row, ['pack_label']) || null, units_per_case: num(row, ['units_per_case']), moq: num(row, ['moq_cases', 'moq_kg', 'moq']), is_active: active(row.active_status ?? row.is_active), is_quoteable: quoteable(row.quoteable_status), effective_from: clean(row.price_effective_from) || new Date().toISOString().slice(0, 10), effective_to: clean(row.price_effective_to) || null, raw_source_row_no: index + 2, raw_source_payload: row, updated_by: userId, ex_factory_input_currency: cur, ex_factory_input_amount: ex, fob_input_currency: cur, fob_input_amount: fob, bulk_input_currency: cur, bulk_input_amount_per_kg: bulk };
   if (cur === 'INR') { payload.ex_factory_inr = ex; payload.fob_inr = fob; payload.bulk_ex_factory_inr_per_kg = bulk; } else { payload.ex_factory_usd = ex; payload.fob_usd = fob; payload.bulk_ex_factory_usd_per_kg = bulk; payload.ex_factory_usd_per_unit = ex; payload.fob_usd_per_unit = fob; payload.bulk_usd_per_kg = bulk; }
   const { data: existing, error: lookup } = await db.from('product_pricing_rules').select('id').eq('organization_id', orgId).eq('pricing_rule_set_id', setId).eq('sku_code', sku).maybeSingle(); if (lookup) throw new Error(lookup.message);
   if (existing?.id) { const { error } = await db.from('product_pricing_rules').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', existing.id); if (error) throw new Error(error.message); return 'updated'; }
