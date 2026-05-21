@@ -1,4 +1,5 @@
 import type { QuotePricingBasis } from "@/lib/pricing-basis-contract";
+import type { WizardStepDefinition } from "@/components/ui/wizard-shell";
 
 export type ProductOption = {
   id: string;
@@ -165,7 +166,7 @@ export type CheckpointDecision = {
   warningRecommendations: StepRecommendation[];
 };
 
-const QUOTE_EDIT_STEPS: WizardStepDefinition[] = [
+export const QUOTE_EDIT_STEPS: WizardStepDefinition[] = [
   {
     id: "product",
     title: "Workflow context",
