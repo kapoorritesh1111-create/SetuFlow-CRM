@@ -702,6 +702,14 @@ LIVE PRODUCTION WORKFLOW:
 - Tracker: live Supabase sprint_issues table
 - Sprint: 18
 
+Current tracker baseline to verify from live DB at start:
+- 66 total issues
+- 11 resolved
+- 3 in progress
+- 52 open
+- 10 sub-tasks / task rows
+- Sprint completion is about 17%
+
 Stack:
 - Next.js 14 App Router
 - TypeScript
@@ -735,6 +743,38 @@ Before selecting or updating any issue, verify access to all live systems:
    - Confirm deployments/build logs can be checked.
 
 If GitHub SetuFlow-CRM access, Supabase tracker read/write access through REST or connected Supabase tooling, or Vercel deployment access is missing, do not update an issue to In Progress. Report exactly which access is missing and stop.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TRACKER STRUCTURE — SUB-TASK AWARE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The live tracker is the source of truth. Sprint 18 now includes parent/epic issues and smaller sub-tasks.
+
+Use these tracker fields when present:
+- issue_ref
+- issue_number
+- title
+- severity
+- status
+- sprint_target
+- issue_type
+- parent_ref
+- depends_on
+- description
+- root_cause
+- how_to_fix
+- files_changed
+- db_migrations
+- regression_test
+- fix_applied
+- pr_link
+
+Rules:
+1. Treat issue_type = Task or a non-empty parent_ref as a sub-task.
+2. A sub-task must be fixed only within its listed scope. Do not broaden it back into the parent epic.
+3. If depends_on is present, inspect the referenced issue(s). Do not start blocked work unless the dependency is resolved or the issue explicitly allows parallel work.
+4. Do not mark a parent/epic issue Resolved merely because one sub-task is done. Parent issues can close only when their acceptance criteria are met and all required children are resolved.
+5. Tracker notes must include all changes made so far for the issue, not only the latest fix. Always include pending items and blockers.
+6. If a new bug is discovered while working another issue, create a new tracker issue unless the user explicitly says to fold it into the current issue.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NON-NEGOTIABLE DRIFT-PROOF RULES
@@ -772,10 +812,10 @@ Never use, request, expose, or assume a service-role key for tracker reads/write
 Never block live issue work solely because REST is unavailable if connected Supabase tracker read/write access is confirmed.
 
 REST READ Open issues:
-GET /sprint_issues?sprint_number=eq.18&status=eq.Open&order=severity.asc,issue_number.asc
+GET /sprint_issues?sprint_number=eq.18&amp;status=eq.Open&amp;order=severity.asc,issue_number.asc
 
 REST READ all Sprint 18 issues for progress:
-GET /sprint_issues?sprint_number=eq.18&order=severity.asc,issue_number.asc
+GET /sprint_issues?sprint_number=eq.18&amp;order=severity.asc,issue_number.asc
 
 Tracker updates may be performed through either:
 1. REST PATCH /sprint_issues?issue_ref=eq.{REF}, or
@@ -791,17 +831,25 @@ Set issue to In Progress immediately after selecting it:
 {
   "status": "In Progress",
   "assigned_to": "ChatGPT",
-  "fix_applied": "Started live GitHub workflow in kapoorritesh1111-create/SetuFlow-CRM. Preflight passed. Current checkpoint: selected issue, inspecting main branch files and live schema before changes.",
+  "fix_applied": "Started live GitHub workflow in kapoorritesh1111-create/SetuFlow-CRM. Preflight passed. Current checkpoint: selected issue, inspected tracker details including issue_type, parent_ref, depends_on, files_changed, how_to_fix, and regression_test. Inspecting main branch files and live schema before changes. Pending: implementation, validation, Vercel proof, and final tracker update.",
   "pr_link": ""
 }
 
 Update tracker progress after every meaningful checkpoint while status remains In Progress.
 
+Every checkpoint note must include:
+- completed changes so far
+- files changed so far
+- Supabase migrations/data changes so far, if any
+- validation/Vercel status so far
+- pending items before the issue can be resolved
+- blockers or caveats, if any
+
 Set issue to Resolved only after live proof exists:
 {
   "status": "Resolved",
   "assigned_to": "ChatGPT",
-  "fix_applied": "{final proof-based summary: exact GitHub main changes, Supabase updates if any, Vercel build/deployment result, validation performed, caveats if any}",
+  "fix_applied": "{final proof-based summary: all changes made across the issue, exact GitHub main changes, Supabase updates if any, Vercel build/deployment result, validation performed, pending items should be none, caveats if any}",
   "pr_link": "{real GitHub commit/PR URL or Vercel deployment URL}"
 }
 
@@ -812,42 +860,52 @@ LIVE WORKFLOW — FOLLOW EXACTLY
 1. Read all Open Sprint 18 issues from the tracker.
 2. Read all Sprint 18 issues to calculate progress.
 3. Report:
+   - total Sprint 18 issues
    - total Open issues
+   - total In Progress issues
+   - resolved count
+   - sprint completion percentage
    - Critical Open count
    - High Open count
    - count by severity
-   - total Sprint 18 issues
-   - resolved count
-   - sprint completion percentage
+   - count by issue_type
+   - sub-task count where issue_type = Task or parent_ref is present
    - 7-Day Rescue completion percentage
-4. Select the highest-severity Open issue where sprint_target = "7-Day Rescue".
-5. If no 7-Day Rescue issue is Open, select the highest-severity Open issue overall.
-6. State clearly: "Starting SF-18-XXX: [title]".
-7. Immediately update the issue to In Progress with a checkpoint note.
-8. Read and use these tracker fields:
+   - 30-Day Cleanup completion percentage
+4. Select the highest-severity Open issue where sprint_target = "7-Day Rescue" and dependencies are clear.
+5. If no eligible 7-Day Rescue issue is Open, select the highest-severity Open issue overall where dependencies are clear.
+6. If the selected issue is a sub-task, state the parent_ref and keep the fix scoped to that sub-task.
+7. State clearly: "Starting SF-18-XXX: [title]".
+8. Immediately update the issue to In Progress with a checkpoint note.
+9. Read and use these tracker fields:
    - issue_ref
    - title
    - severity
    - sprint_target
+   - issue_type
+   - parent_ref
+   - depends_on
    - description
+   - root_cause
    - how_to_fix
    - files_changed
+   - db_migrations
    - regression_test
-9. Inspect the current GitHub main version of every file listed in files_changed.
-10. Inspect adjacent code only when needed to understand imports, types, server actions, data flow, or routing.
-11. Inspect live Supabase schema/types/policies only when the issue touches database tables, RLS, server actions, or API routes.
-12. Apply the smallest safe issue-scoped fix using the connected GitHub workflow:
+10. Inspect the current GitHub main version of every file listed in files_changed.
+11. Inspect adjacent code only when needed to understand imports, types, server actions, data flow, or routing.
+12. Inspect live Supabase schema/types/policies only when the issue touches database tables, RLS, server actions, or API routes.
+13. Apply the smallest safe issue-scoped fix using the connected GitHub workflow:
    - If the change is small and direct main commits are allowed, commit directly to main.
    - If the change is large, risky, cross-cutting, or branch protection requires it, create a dedicated branch and PR.
    - Do not mark the issue Resolved until the change is merged into main and the Vercel deployment from main has been checked.
-13. If live Supabase schema/data/RLS changes are required by the issue, apply them to live Supabase only after explaining exactly why they are required.
-14. After each code or Supabase checkpoint, update tracker progress while status remains In Progress.
-15. After GitHub main is updated, check the Vercel build/deployment created from main.
-16. If Vercel build fails, inspect the real build logs, fix the cause on GitHub main, and check Vercel again.
-17. Continue until Vercel build/deployment is checked and the tracker has the latest checkpoint.
-18. Only then mark the issue Resolved with proof.
-19. Recalculate sprint progress after the issue is Resolved.
-20. Move to the next Open issue only after the current issue is fully updated in the tracker.
+14. If live Supabase schema/data/RLS changes are required by the issue, apply them to live Supabase only after explaining exactly why they are required.
+15. After each code or Supabase checkpoint, update tracker progress while status remains In Progress.
+16. After GitHub main is updated, check the Vercel build/deployment created from main.
+17. If Vercel build fails, inspect the real build logs, fix the cause on GitHub main, and check Vercel again.
+18. Continue until Vercel build/deployment is checked and the tracker has the latest checkpoint.
+19. Only then mark the issue Resolved with proof and no pending items.
+20. Recalculate sprint progress after the issue is Resolved.
+21. Move to the next Open issue only after the current issue is fully updated in the tracker.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LARGE CHANGE RULES
@@ -861,10 +919,11 @@ If the selected issue requires broad changes across multiple files, schema, rout
    - Supabase impact
    - Vercel/build risk
    - rollback plan
+   - dependency/parent issue impact
 4. Break the work into checkpoints.
 5. Update tracker notes after every checkpoint while status remains In Progress.
 6. Do not mark Resolved until the PR/change is merged to main and Vercel deployment from main is checked.
-7. If the change cannot be completed safely, leave the issue In Progress with a clear blocker note.
+7. If the change cannot be completed safely, leave the issue In Progress with a clear blocker note and pending items.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GITHUB RULES
@@ -879,6 +938,7 @@ GITHUB RULES
   - files changed
   - validation performed
   - Vercel result if available
+  - pending items if any
 - If the environment requires a PR instead of direct main commits, create the PR but do not call the issue Resolved until the PR is merged to main and Vercel checks main.
 - Never claim main was updated unless there is a real commit/merge URL.
 
@@ -977,6 +1037,11 @@ If regression_test is missing:
 - create a practical validation plan,
 - include it in the tracker progress note and final summary.
 
+If parent_ref or depends_on is missing:
+- do not invent dependencies,
+- proceed only with the selected issue scope,
+- mention the missing dependency data in the checkpoint note if it affects risk.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OUTPUT FORMAT AFTER EACH ISSUE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -991,6 +1056,9 @@ OUTPUT FORMAT AFTER EACH ISSUE
 - Title:
 - Severity:
 - Sprint target:
+- Issue type:
+- Parent ref:
+- Depends on:
 
 ## Live Change Proof
 - GitHub main commit/PR:
@@ -1001,24 +1069,33 @@ OUTPUT FORMAT AFTER EACH ISSUE
 - Set to In Progress:
 - Checkpoint updates:
 - Final Resolved update:
+- Pending items recorded:
 
 ## What Changed
 - Summary:
 - Changed files:
+- Database migrations/data changes:
+- Parent/sub-task impact:
 
 ## Validation
 - Local typecheck:
 - Local build:
 - Vercel build/deployment:
+- Regression test:
 - Remaining errors/blockers:
 
 ## Sprint Progress
 - Sprint readiness percentage:
 - Sprint completion percentage:
 - 7-Day Rescue completion percentage:
+- 30-Day Cleanup completion percentage:
+- Total issues:
 - Remaining Open:
+- In Progress:
+- Resolved:
 - Critical Open:
 - High Open:
+- Sub-tasks / task rows:
 
 ## Next Step
 State whether you are moving to the next Open issue or blocked, and why.
@@ -1033,7 +1110,7 @@ Run the live access preflight using:
 - Vercel project setu-flow-crm
 
 Then use the live tracker to read Open Sprint 18 issues and all Sprint 18 progress.
-Show total Open, Critical Open, High Open, count by severity, sprint completion percentage, and 7-Day Rescue completion percentage.
+Show total issues, Open, In Progress, Resolved, Critical Open, High Open, count by severity, count by issue_type, sub-task count, sprint completion percentage, 7-Day Rescue completion percentage, and 30-Day Cleanup completion percentage.
 
 Then select the first eligible issue, update it to In Progress, inspect current GitHub main files, and begin the live fix.</div>
       <div class="copy-row">
