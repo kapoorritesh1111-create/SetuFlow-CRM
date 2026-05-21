@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
@@ -211,6 +212,8 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = headers().get('x-nonce') ?? undefined;
+
   return (
     <html lang="en" className={jakarta.variable} suppressHydrationWarning>
       <head>
@@ -221,6 +224,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
 
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify([organizationSchema, softwareSchema]),
