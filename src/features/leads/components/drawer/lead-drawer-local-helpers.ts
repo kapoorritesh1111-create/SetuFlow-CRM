@@ -165,5 +165,10 @@ export const LEAD_QUOTE_STEP: WizardStepDefinition = {
     "Review customer-ready quotes, version history, and quote actions without leaving the lead drawer.",
 };
 
-globalThis.LEAD_WIZARD_STEPS = LEAD_WIZARD_STEPS;
-globalThis.LEAD_QUOTE_STEP = LEAD_QUOTE_STEP;
+const leadDrawerRuntimeGlobals = globalThis as typeof globalThis & {
+  LEAD_WIZARD_STEPS?: WizardStepDefinition[];
+  LEAD_QUOTE_STEP?: WizardStepDefinition;
+};
+
+leadDrawerRuntimeGlobals.LEAD_WIZARD_STEPS = LEAD_WIZARD_STEPS;
+leadDrawerRuntimeGlobals.LEAD_QUOTE_STEP = LEAD_QUOTE_STEP;
