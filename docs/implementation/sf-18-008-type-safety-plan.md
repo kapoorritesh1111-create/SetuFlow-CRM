@@ -19,14 +19,22 @@ Because this touches high-risk server actions, the work should proceed in PR che
    - orders execution / documents
    - quotes create/update/send
    - leads mutation and workflow actions
-3. Replace inline `as any` casts with generated database row/insert/update aliases from `src/types/database.generated.ts`.
-4. Use `unknown` plus narrow helper functions for dynamic metadata, snapshots, and JSON payloads.
-5. Add a repo check that fails if ` as any` appears in selected server action files.
+3. Replace unsafe inline casts with generated database row/insert/update aliases from `src/types/database.generated.ts` where inference works.
+4. Use `unknown` plus narrow helper functions for dynamic metadata, snapshots, query bridges, and JSON payloads.
+5. Add a repo check that fails if unsafe inline casts appear in selected server action files.
 6. Merge only after Vercel and targeted workflow smoke checks pass.
 
 ## Validation target
 
 - `npx tsc --noEmit --skipLibCheck`
 - `npm run build`
-- grep/check shows zero ` as any` casts in selected server action files
+- selected server action files pass the repository type-safety guard
 - Leads, Quotes, and Orders pages continue to open after production deployment
+
+## PR #16 checkpoint
+
+PR #16 focuses only on `src/features/orders/server/actions.ts`.
+
+The first branch deployment failed because the generated Supabase client inferred the `contracts` query result as `never` in this legacy server action file. Commit `4b1d26919b21c7798bda8b711e71695ad52afba2` replaced that failure path with a narrow `unknown`-based order action query bridge and explicit row shapes while preserving runtime behavior.
+
+This documentation checkpoint intentionally triggers a fresh Vercel build for the patched PR branch.
