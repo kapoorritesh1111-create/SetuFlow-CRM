@@ -12,9 +12,66 @@ import { buildOrderOperationalControlState } from '@/lib/order-operations';
 import type { Database } from '@/types/database';
 
 type ContractUpdate = Database['public']['Tables']['contracts']['Update'];
+type OperationalControlInput = Parameters<typeof buildOrderOperationalControlState>[0];
+type OrderActionError = { message?: string; code?: string; details?: string; hint?: string } | null;
+type QueryResult<T> = { data: T; error: OrderActionError };
+type QueryChain<T = unknown> = PromiseLike<QueryResult<T>> & {
+  select(columns: string): QueryChain<T>;
+  eq(column: string, value: unknown): QueryChain<T>;
+  in(column: string, values: readonly unknown[]): QueryChain<T>;
+  order(column: string, options?: { ascending?: boolean }): QueryChain<T>;
+  limit(count: number): QueryChain<T>;
+  maybeSingle(): Promise<QueryResult<T | null>>;
+  single(): Promise<QueryResult<T>>;
+  insert(payload: unknown): QueryChain<T>;
+  update(payload: unknown): QueryChain<T>;
+  delete(): QueryChain<T>;
+};
+type StorageBucket = {
+  upload(path: string, file: File, options?: { upsert?: boolean; contentType?: string }): Promise<{ error: OrderActionError }>;
+  getPublicUrl(path: string): { data: { publicUrl?: string | null } | null };
+};
+type OrderActionDb = {
+  from<T = unknown>(table: string): QueryChain<T>;
+  storage: { from(bucket: string): StorageBucket };
+};
+type ProgressContractRow = {
+  id: string;
+  lead_id: string | null;
+  quote_id: string | null;
+  status: string | null;
+  signed_at: string | null;
+  commercial_lock_state: string | null;
+  execution_state: string | null;
+  execution_snapshot?: unknown;
+};
+type QuoteStatusRow = { id: string; status: string | null };
+type LeadTypeRow = { id: string; lead_type: string | null };
+type MarketInterestRow = { lead_id: string | null; market_id: string | null };
+type ProductInterestRow = { lead_id: string | null; product_id: string | null };
+type StatusRow = { status?: string | null };
+type UploadContractRow = { id: string; lead_id: string | null; quote_id: string | null; execution_state: string | null };
+type DocumentInsertRow = { id: string };
+type SignContractRow = {
+  id: string;
+  quote_id: string | null;
+  lead_id: string | null;
+  status: string | null;
+  signed_at: string | null;
+  commercial_lock_state: string | null;
+  execution_state: string | null;
+};
 
 function buildRedirect(notice: string) {
   return `/orders?notice=${encodeURIComponent(notice)}`;
+}
+
+async function createOrderActionDb(): Promise<OrderActionDb> {
+  return (await createClient()) as unknown as OrderActionDb;
+}
+
+function toStatusRows(value: unknown): StatusRow[] {
+  return Array.isArray(value) ? (value as StatusRow[]) : [];
 }
 
 export async function progressOrderExecution(formData: FormData) {
@@ -33,18 +90,19 @@ export async function progressOrderExecution(formData: FormData) {
   const nextState = normalizeOrderExecutionState(String(formData.get('next_state') ?? ''));
   if (!contractId || !nextState) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
-  const { data: contract, error: contractError } = await db
+  const db = await createOrderActionDb();
+  const { data: contractData, error: contractError } = await db
     .from('contracts')
     .select('id, lead_id, quote_id, status, signed_at, commercial_lock_state, execution_state, execution_snapshot')
     .eq('organization_id', workspace.organization.id)
     .eq('id', contractId)
     .maybeSingle();
+  const contract = contractData as ProgressContractRow | null;
   if (contractError || !contract?.id) redirect(buildRedirect('order-contract-missing'));
 
   const quoteId = String(contract.quote_id ?? '');
   const leadId = String(contract.lead_id ?? '');
-  const [{ data: quote }, { data: docs }, { data: compliance }, { data: lines }, { data: lead }, { data: leadMarkets }, { data: leadProducts }, { data: requirementRules }] = await Promise.all([
+  const [quoteResult, docsResult, complianceResult, linesResult, leadResult, leadMarketsResult, leadProductsResult, requirementRulesResult] = await Promise.all([
     db.from('quotes').select('id, status').eq('organization_id', workspace.organization.id).eq('id', quoteId).maybeSingle(),
     db.from('documents').select('id, file_name, doc_type, status, uploaded_at, version, related_id, related_entity, requirement_code, expires_at, review_notes').eq('organization_id', workspace.organization.id).in('related_entity', ['quote', 'lead']).in('related_id', [quoteId, leadId]),
     db.from('lead_compliance_items').select('id, status, compliance_item_id, submitted_at, approved_at').eq('organization_id', workspace.organization.id).eq('lead_id', leadId),
@@ -55,13 +113,24 @@ export async function progressOrderExecution(formData: FormData) {
     db.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, applies_to_entity, is_mandatory, is_active').eq('organization_id', workspace.organization.id).eq('is_active', true),
   ]);
 
+  const quote = quoteResult.data as QuoteStatusRow | null;
+  const docs = Array.isArray(docsResult.data) ? (docsResult.data as OperationalControlInput['documents']) : [];
+  const compliance = Array.isArray(complianceResult.data) ? (complianceResult.data as OperationalControlInput['complianceItems']) : [];
+  const lines = Array.isArray(linesResult.data) ? linesResult.data : [];
+  const lead = leadResult.data as LeadTypeRow | null;
+  const leadMarkets = Array.isArray(leadMarketsResult.data) ? (leadMarketsResult.data as MarketInterestRow[]) : [];
+  const leadProducts = Array.isArray(leadProductsResult.data) ? (leadProductsResult.data as ProductInterestRow[]) : [];
+  const requirementRules = Array.isArray(requirementRulesResult.data) ? (requirementRulesResult.data as OperationalControlInput['requirementRules']) : [];
+  const documentRows = toStatusRows(docs);
+  const complianceRows = toStatusRows(compliance);
+
   const operationalControls = buildOrderOperationalControlState({
-    documents: Array.isArray(docs) ? docs : [],
-    complianceItems: Array.isArray(compliance) ? compliance : [],
-    requirementRules: Array.isArray(requirementRules) ? requirementRules : [],
+    documents: docs,
+    complianceItems: compliance,
+    requirementRules,
     leadType: lead?.lead_type ?? null,
-    marketIds: Array.isArray(leadMarkets) ? leadMarkets.map((item) => item.market_id).filter((id): id is string => Boolean(id)) : [],
-    productIds: Array.isArray(leadProducts) ? leadProducts.map((item) => item.product_id).filter((id): id is string => Boolean(id)) : [],
+    marketIds: leadMarkets.map((item) => item.market_id).filter((id): id is string => Boolean(id)),
+    productIds: leadProducts.map((item) => item.product_id).filter((id): id is string => Boolean(id)),
   });
 
   const evaluation = evaluateOrderExecution({
@@ -70,9 +139,9 @@ export async function progressOrderExecution(formData: FormData) {
     contractStatus: contract.status,
     contractSignedAt: contract.signed_at,
     commercialLockState: contract.commercial_lock_state,
-    lineCount: Array.isArray(lines) ? lines.length : 0,
-    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
-    openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
+    lineCount: lines.length,
+    openDocumentBlockers: documentRows.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length,
+    openComplianceBlockers: complianceRows.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length,
     documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
     complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
     releaseArtifactReasons: operationalControls.releaseArtifactReasons,
@@ -95,9 +164,9 @@ export async function progressOrderExecution(formData: FormData) {
     contractStatus: contract.status,
     contractSignedAt: contract.signed_at,
     commercialLockState: contract.commercial_lock_state,
-    lineCount: Array.isArray(lines) ? lines.length : 0,
-    openDocumentBlockers: Array.isArray(docs) ? docs.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length : 0,
-    openComplianceBlockers: Array.isArray(compliance) ? compliance.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length : 0,
+    lineCount: lines.length,
+    openDocumentBlockers: documentRows.filter((doc) => !['approved', 'complete', 'ready', 'completed'].includes(String(doc.status ?? '').toLowerCase())).length,
+    openComplianceBlockers: complianceRows.filter((item) => !['approved', 'complete', 'waived', 'completed'].includes(String(item.status ?? '').toLowerCase())).length,
     documentRequirementReasons: operationalControls.documentRequirementSummary.blockerReasons,
     complianceRequirementReasons: operationalControls.complianceSummary.blockerReasons,
     releaseArtifactReasons: operationalControls.releaseArtifactReasons,
@@ -166,8 +235,9 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
   if (!contractId) return { error: 'Contract ID is required.' };
   if (!(fileValue instanceof File) || fileValue.size <= 0) return { error: 'A document file is required.' };
 
-  const db = await createClient();
-  const { data: contract, error: contractError } = await db.from('contracts').select('id, lead_id, quote_id, execution_state').eq('organization_id', workspace.organization.id).eq('id', contractId).maybeSingle();
+  const db = await createOrderActionDb();
+  const { data: uploadContractData, error: contractError } = await db.from('contracts').select('id, lead_id, quote_id, execution_state').eq('organization_id', workspace.organization.id).eq('id', contractId).maybeSingle();
+  const contract = uploadContractData as UploadContractRow | null;
   if (contractError) return { error: 'Could not verify the order before upload. Please refresh and retry.' };
   if (!contract?.id) return { error: 'Order contract not found.' };
 
@@ -179,7 +249,8 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
 
   const { data: publicUrlData } = db.storage.from('order-documents').getPublicUrl(storagePath);
   const fileUrl = publicUrlData?.publicUrl ?? `supabase://order-documents/${storagePath}`;
-  const { data: documentRow, error: documentError } = await db.from('documents').insert({ organization_id: workspace.organization.id, related_entity: 'contract', related_id: contractId, file_name: safeName, file_url: fileUrl, doc_type: docType, status: 'uploaded', uploaded_by: workspace.user.id, uploaded_at: now, version: 1, ...(requirementCode ? { requirement_code: requirementCode } : {}) }).select('id').single();
+  const { data: documentData, error: documentError } = await db.from('documents').insert({ organization_id: workspace.organization.id, related_entity: 'contract', related_id: contractId, file_name: safeName, file_url: fileUrl, doc_type: docType, status: 'uploaded', uploaded_by: workspace.user.id, uploaded_at: now, version: 1, ...(requirementCode ? { requirement_code: requirementCode } : {}) }).select('id').single();
+  const documentRow = documentData as DocumentInsertRow | null;
   if (documentError) return { error: 'The file uploaded, but the document record could not be linked to this order.' };
 
   await writeAuditLog({ organizationId: workspace.organization.id, action: 'document_status_changed', entityType: 'contract', entityId: contractId, actorUserId: workspace.user.id, payload: { previous: { execution_state: contract.execution_state ?? null }, new: { document_id: documentRow?.id ?? null, doc_type: docType, file_name: safeName }, metadata: { source: 'uploadOrderDocument', quote_id: contract.quote_id, lead_id: contract.lead_id, storage_bucket: 'order-documents', storage_path: storagePath } } });
@@ -228,14 +299,15 @@ export async function signContractAction(formData: FormData) {
   const contractId = String(formData.get('contract_id') ?? '').trim();
   if (!contractId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
+  const db = await createOrderActionDb();
 
-  const { data: contract, error: contractError } = await db
+  const { data: signContractData, error: contractError } = await db
     .from('contracts')
     .select('id, quote_id, lead_id, status, signed_at, commercial_lock_state, execution_state')
     .eq('organization_id', workspace.organization.id)
     .eq('id', contractId)
     .maybeSingle();
+  const contract = signContractData as SignContractRow | null;
 
   if (contractError || !contract?.id) redirect(buildRedirect('order-contract-missing'));
 
