@@ -12,18 +12,20 @@ const workspaceRedirects: Record<string, string> = {
   '/workspace/my-card': '/contact-exchange/vcard',
 };
 
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "img-src 'self' data: https:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline'",
-  "connect-src 'self' https: wss:",
-  "object-src 'none'",
-].join('; ');
+function createContentSecurityPolicy(nonce: string) {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    "connect-src 'self' https: wss:",
+    "object-src 'none'",
+  ].join('; ');
+}
 
 const PUBLIC_EXACT_PATHS = new Set([
   '/',
@@ -68,8 +70,18 @@ function loginRedirect(request: NextRequest) {
   return redirectUrl;
 }
 
-function applySecurityHeaders(response: NextResponse) {
-  response.headers.set('Content-Security-Policy', CONTENT_SECURITY_POLICY);
+function createNonce() {
+  return crypto.randomUUID().replace(/-/g, '');
+}
+
+function createRequestHeaders(request: NextRequest, nonce: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  return requestHeaders;
+}
+
+function applySecurityHeaders(response: NextResponse, nonce: string) {
+  response.headers.set('Content-Security-Policy', createContentSecurityPolicy(nonce));
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
@@ -101,32 +113,34 @@ function createMiddlewareClient(request: NextRequest, response: NextResponse) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const nonce = createNonce();
+  const requestHeaders = createRequestHeaders(request, nonce);
 
   if (pathname === '/development' || pathname.startsWith('/development/')) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)));
+    return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)), nonce);
   }
 
   const workspaceDestination = workspaceRedirects[pathname];
   if (workspaceDestination) {
-    return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)));
+    return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)), nonce);
   }
 
   if (isPublicPath(pathname) || !hasSupabaseMiddlewareEnv()) {
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }), nonce);
   }
 
-  const response = NextResponse.next({ request });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   const supabase = createMiddlewareClient(request, response);
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
     if (isProtectedApiPath(pathname)) {
-      return applySecurityHeaders(NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 }));
+      return applySecurityHeaders(NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 }), nonce);
     }
-    return applySecurityHeaders(NextResponse.redirect(loginRedirect(request)));
+    return applySecurityHeaders(NextResponse.redirect(loginRedirect(request)), nonce);
   }
 
-  return applySecurityHeaders(response);
+  return applySecurityHeaders(response, nonce);
 }
 
 export const config = {
