@@ -46,366 +46,48 @@ import {
   type ContactAfterSaveGuidanceResult,
 } from "@/lib/contact-exchange/contact-after-save-guidance";
 
-type LeadFormState = {
-  error?: string;
-  success?: string;
-  lead?: LeadDrawerLead;
-  selectedMarketIds?: string[];
-  selectedProductIds?: string[];
-};
-type Stage = {
-  id: string;
-  name: string;
-  pipeline_id: string;
-  sort_order?: number;
-};
-type Pipeline = {
-  id: string;
-  name: string;
-  lead_type: "buyer" | "supplier" | "both";
-  is_default: boolean;
-};
-type Option = { id: string; name: string };
-type Product = {
-  id: string;
-  name: string;
-  sku: string | null;
-  category_id: string | null;
-};
-type Variant = { id: string; name: string; product_id: string; sku_code?: string | null; pack_label?: string | null; pack_size_value?: number | null; pack_size_unit?: string | null; units_per_case?: number | null; moq_cases?: number | null; moq_kg?: number | null; pricing_mode_default?: string | null };
-type Price = {
-  id: string;
-  product_variant_id: string;
-  market_id: string | null;
-  price: number;
-  currency: string;
-  effective_from: string;
-  effective_to: string | null;
-};
-type PricingRule = {
-  id: string;
-  product_id?: string | null;
-  product_variant_id?: string | null;
-  effective_from?: string | null;
-  effective_to?: string | null;
-  ex_factory_usd?: number | null;
-  fob_usd?: number | null;
-  ex_factory_inr?: number | null;
-  fob_inr?: number | null;
-  ex_factory_usd_per_case?: number | null;
-  ex_factory_usd_per_unit?: number | null;
-  fob_usd_per_case?: number | null;
-  fob_usd_per_unit?: number | null;
-  bulk_usd_per_kg?: number | null;
-  pricing_type?: string | null;
-};
-type ProductCategory = {
-  id: string;
-  name: string;
-  is_active?: boolean;
-  sort_order?: number;
-  parent_id?: string | null;
-};
-type Profile = {
-  id: string;
-  full_name: string | null;
-  username: string | null;
-};
-type Country = {
-  id: string;
-  name: string;
-  phone_code: string | null;
-  market_id: string | null;
-};
-type Market = { id: string; name: string };
-type FollowUp = {
-  id: string;
-  lead_id: string | null;
-  scheduled_at: string | null;
-  status: string;
-  created_at?: string | null;
-  completed_at?: string | null;
-  notes?: string | null;
-};
-type Activity = {
-  id: string;
-  lead_id: string;
-  kind: string;
-  message: string;
-  occurred_at: string;
-};
-type StageHistory = {
-  id: string;
-  from_stage_id: string | null;
-  to_stage_id: string | null;
-  changed_at: string;
-  note: string | null;
-};
-type Rfq = {
-  id: string;
-  lead_id: string | null;
-  status: string;
-  currency: string | null;
-  validity_date: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
-type QuoteLineItem = {
-  id: string;
-  quote_id: string | null;
-  product_id: string | null;
-  product_variant_id?: string | null;
-  catalog_price_id?: string | null;
-  catalog_price_amount?: number | null;
-  catalog_price_currency?: string | null;
-  quantity?: number | null;
-  unit_price?: number | null;
-  currency?: string | null;
-  is_price_overridden?: boolean | null;
-  override_reason?: string | null;
-  overridden_by?: string | null;
-  overridden_at?: string | null;
-  notes?: string | null;
-};
-type Quote = {
-  id: string;
-  lead_id: string;
-  rfq_id: string | null;
-  status: string;
-  currency: string | null;
-  created_at: string;
-  updated_at: string;
-  notes?: string | null;
-  quote_number?: string | null;
-  current_version_id?: string | null;
-  lineItems?: QuoteLineItem[];
-};
-type ComplianceItem = {
-  id: string;
-  lead_id: string;
-  compliance_item_id: string;
-  status: string;
-  created_at: string;
-  submitted_at: string | null;
-  approved_at: string | null;
-};
-type ComplianceDefinition = { id: string; code: string; description: string };
-type QuoteVersion = {
-  id: string;
-  quote_id: string | null;
-  version_no?: number | null;
-  status?: string | null;
-  created_at?: string | null;
-  approved_at?: string | null;
-  sent_at?: string | null;
-  pdf_document_id?: string | null;
-};
-type LeadDocument = {
-  id: string;
-  related_entity?: string | null;
-  related_id?: string | null;
-  requirement_code: string | null;
-  status: string | null;
-  expires_at: string | null;
-  uploaded_at?: string | null;
-  doc_type?: string | null;
-  file_name?: string | null;
-  linked_quote_id?: string | null;
-  source_related_entity?: string | null;
-  review_notes?: string | null;
-};
-type CoverageSelection = {
-  key: string;
-  categoryId: string;
-  productIds: string[];
-};
+import type {
+  Activity,
+  ComplianceDefinition,
+  ComplianceItem,
+  Country,
+  CoverageSelection,
+  FollowUp,
+  LeadDocument,
+  LeadFormState,
+  Market,
+  Option,
+  Pipeline,
+  Price,
+  PricingRule,
+  Product,
+  ProductCategory,
+  Profile,
+  QuickInterestMode,
+  QuickScanDraft,
+  Quote,
+  QuoteLineItem,
+  QuoteVersion,
+  Rfq,
+  Stage,
+  StageHistory,
+  Variant,
+} from "./lead-drawer-local-types";
+import {
+  buildCoverageSelectionKey,
+  buildInterestNote,
+  buildQuickScanSummary,
+  createCoverageSelection,
+  formatLocalDateTimeValue,
+  getDefaultFollowUpLocalValue,
+  hasQuickScanSignal,
+  inputClassName,
+  mergeLeadNotesWithInterest,
+  normalizeLeadFormValues,
+  toDatetimeLocalValue,
+  tryQuickScanBrowserTextDetection,
+} from "./lead-drawer-local-helpers";
 
-type QuickScanDraft = {
-  contactName?: string | null;
-  companyName?: string | null;
-  jobTitle?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  phoneSecondary?: string | null;
-  website?: string | null;
-  notes?: string | null;
-};
-
-type QuickInterestMode = "product" | "category" | "new_request";
-
-type SpeechRecognitionCtor = new () => {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult:
-    | ((event: {
-        results: ArrayLike<ArrayLike<{ transcript: string }>>;
-      }) => void)
-    | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop?: () => void;
-};
-
-function buildInterestNote(params: {
-  leadType: "buyer" | "supplier";
-  mode: QuickInterestMode;
-  categoryName?: string;
-  productNames: string[];
-  request: string;
-}) {
-  const request = params.request.trim();
-  if (params.mode === "product" && params.productNames.length) {
-    return `${params.leadType === "supplier" ? "Can supply" : "Interested in"} products: ${params.productNames.join(", ")}`;
-  }
-  if (params.mode === "category" && params.categoryName) {
-    return `${params.leadType === "supplier" ? "Can supply" : "Interested in"} category: ${params.categoryName}`;
-  }
-  if (params.mode === "new_request" && request) {
-    return `${params.leadType === "supplier" ? "New supplier category" : "New buyer request"}: ${request}`;
-  }
-  return "";
-}
-
-function mergeLeadNotesWithInterest(notes: string, interestNote: string) {
-  const cleanNotes = String(notes ?? "").trim();
-  const cleanInterest = String(interestNote ?? "").trim();
-  if (!cleanInterest) return cleanNotes;
-  if (cleanNotes.toLowerCase().includes(cleanInterest.toLowerCase()))
-    return cleanNotes;
-  return [cleanNotes, cleanInterest].filter(Boolean).join("\n\n");
-}
-
-function hasQuickScanSignal(draft: QuickScanDraft) {
-  return Boolean(
-    String(draft.companyName ?? "").trim() ||
-    String(draft.contactName ?? "").trim() ||
-    String(draft.jobTitle ?? "").trim() ||
-    String(draft.email ?? "").trim() ||
-    String(draft.phone ?? "").trim() ||
-    String(draft.phoneSecondary ?? "").trim() ||
-    String(draft.website ?? "").trim(),
-  );
-}
-
-function buildQuickScanSummary(draft: QuickScanDraft) {
-  const pieces = [
-    draft.companyName ? `Company: ${draft.companyName}` : "",
-    draft.contactName ? `Contact: ${draft.contactName}` : "",
-    draft.jobTitle ? `Role: ${draft.jobTitle}` : "",
-    draft.email ? `Email: ${draft.email}` : "",
-    draft.phone ? `Phone: ${draft.phone}` : "",
-  ].filter(Boolean);
-  return pieces.length
-    ? pieces.join(" · ")
-    : "No structured lead fields were found.";
-}
-
-async function tryQuickScanBrowserTextDetection(file: File): Promise<string> {
-  if (typeof window === "undefined") return "";
-  const Detector = (
-    window as unknown as {
-      TextDetector?: new () => {
-        detect: (
-          source: ImageBitmap,
-        ) => Promise<Array<{ rawValue?: string; text?: string }>>;
-      };
-    }
-  ).TextDetector;
-  if (!Detector || !file.type.startsWith("image/")) return "";
-  try {
-    const bitmap = await createImageBitmap(file);
-    const detector = new Detector();
-    const blocks = await detector.detect(bitmap);
-    bitmap.close?.();
-    return blocks
-      .map((block) => block.rawValue || block.text || "")
-      .filter(Boolean)
-      .join("\n")
-      .trim();
-  } catch {
-    return "";
-  }
-}
-
-function createCoverageSelection(
-  categoryId = "",
-  productIds: string[] = [],
-  seed = 0,
-): CoverageSelection {
-  return {
-    key: buildCoverageSelectionKey(categoryId, seed),
-    categoryId,
-    productIds,
-  };
-}
-
-function toDatetimeLocalValue(value?: string | null) {
-  if (!value) return "";
-  return value.slice(0, 16);
-}
-
-function getDefaultFollowUpLocalValue() {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  date.setSeconds(0, 0);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
-}
-
-function inputClassName() {
-  return "h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400";
-}
-
-function formatLocalDateTimeValue(value?: string | null) {
-  if (!value) return "Not set";
-  const normalized = String(value).trim();
-  if (!normalized) return "Not set";
-  if (normalized.includes("T")) return normalized.replace("T", " ");
-  return normalized;
-}
-
-function buildCoverageSelectionKey(categoryId = "", seed = 0) {
-  return `${categoryId || "coverage"}-${seed}`;
-}
-
-function normalizeLeadFormValues(values: Record<string, unknown>) {
-  return JSON.stringify(values);
-}
-
-const LEAD_WIZARD_STEPS: WizardStepDefinition[] = [
-  {
-    id: "basics",
-    title: "Lead basics",
-    shortLabel: "Basics",
-    description:
-      "Save the minimum valid lead first, then move into routing only after the entry is secure.",
-  },
-  {
-    id: "workflow",
-    title: "Workflow and ownership",
-    shortLabel: "Workflow",
-    description:
-      "Set the follow-up rhythm, routing, and ownership details that keep the lead actionable.",
-  },
-  {
-    id: "coverage",
-    title: "Coverage and notes",
-    shortLabel: "Coverage",
-    description:
-      "Capture market, product, and note context without changing the existing save behavior.",
-  },
-];
-
-const LEAD_QUOTE_STEP: WizardStepDefinition = {
-  id: "quotes",
-  title: "Quote review",
-  shortLabel: "Quotes",
-  description:
-    "Review customer-ready quotes, version history, and quote actions without leaving the lead drawer.",
-};
 
 export function LeadDrawer({
   lead,

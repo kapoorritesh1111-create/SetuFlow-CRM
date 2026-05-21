@@ -35,219 +35,58 @@ import type {
 } from '@/features/workspace/types';
 
 /* unchanged type definitions omitted for brevity in explanation, but keep them exactly from current file */
-type LeadRow = {
-  id: string;
-  company_name: string;
-  contact_name: string | null;
-  job_title: string | null;
-  email: string | null;
-  phone: string | null;
-  whatsapp_number: string | null;
-  phone_secondary: string | null;
-  website: string | null;
-  social_handle: string | null;
-  lead_type: 'buyer' | 'supplier';
-  country: string | null;
-  country_id: string | null;
-  source_type: string | null;
-  source_label: string | null;
-  next_follow_up_at: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  last_contacted_at: string | null;
-  stage_id: string | null;
-  next_step_id: string | null;
-  owner_user_id: string | null;
-  trade_event_id: string | null;
-  notes: string | null;
-  pipeline_id: string | null;
-  intro_sent: boolean;
-  deal_value: number | null;
-  deal_currency: string | null;
-  phone_country_code: string | null;
-  phone_secondary_country_code: string | null;
-};
+import type {
+  Activity,
+  ComplianceDefinition,
+  ComplianceItem,
+  Country,
+  DrawerMode,
+  FollowUp,
+  FormState,
+  IconComponent,
+  LeadDocument,
+  LeadOpenStep,
+  LeadRow,
+  Option,
+  Pipeline,
+  Price,
+  PricingRule,
+  Product,
+  ProductCategory,
+  Profile,
+  Quote,
+  QuoteLineItem,
+  QuotePreviewSavePayload,
+  QuoteVersion,
+  Rfq,
+  RfqLineItem,
+  SavedView,
+  SignalTone,
+  SortMode,
+  Stage,
+  StageHistory,
+  Variant,
+} from "./leads-workspace-types";
+import {
+  QUOTE_ADJUSTMENT_OPTIONS,
+  applyQuoteAdjustment,
+  buildAiLeadBrief,
+  countryCurrency,
+  defaultQuoteQuantity,
+  formatPreviewAmount,
+  getHealthIcon,
+  getHealthTone,
+  getIncotermHelp,
+  getReadinessTone,
+  getStableFollowUpVisualState,
+  getStageIcon,
+  getStageTone,
+  quoteAdjustmentDeltaPercent,
+  uniqueCurrencyOptions,
+  variantPackSummary,
+  variantPricingUnit,
+} from "./leads-workspace-helpers";
 
-type Option = { id: string; name: string };
-type ProductCategory = { id: string; name: string; is_active?: boolean; sort_order?: number; parent_id?: string | null };
-type Product = { id: string; name: string; sku: string | null; category_id: string | null };
-type Profile = { id: string; full_name: string | null; username: string | null };
-type Country = { id: string; name: string; phone_code: string | null; market_id: string | null };
-type Stage = { id: string; name: string; pipeline_id: string; sort_order?: number; is_closed?: boolean; is_won?: boolean; is_lost?: boolean };
-type Pipeline = { id: string; name: string; lead_type: 'buyer' | 'supplier' | 'both'; is_default: boolean };
-type FollowUp = { id: string; lead_id: string | null; scheduled_at: string | null; status: string; created_at?: string | null };
-type Activity = { id: string; lead_id: string; kind: string; message: string; occurred_at: string };
-type StageHistory = { id: string; lead_id?: string; from_stage_id: string | null; to_stage_id: string | null; changed_at: string; note: string | null };
-type RfqLineItem = { id: string; rfq_id: string | null; product_id: string | null; product_variant_id?: string | null; catalog_price_id?: string | null; catalog_price_amount?: number | null; catalog_price_currency?: string | null; quantity?: number | null; unit_price?: number | null; currency?: string | null; is_price_overridden?: boolean | null; override_reason?: string | null; overridden_by?: string | null; overridden_at?: string | null; notes?: string | null };
-type QuoteLineItem = { id: string; quote_id: string | null; product_id: string | null; product_variant_id?: string | null; catalog_price_id?: string | null; catalog_price_amount?: number | null; catalog_price_currency?: string | null; quantity?: number | null; unit_price?: number | null; currency?: string | null; is_price_overridden?: boolean | null; override_reason?: string | null; overridden_by?: string | null; overridden_at?: string | null; notes?: string | null };
-type Rfq = { id: string; lead_id: string | null; status: string; currency: string | null; validity_date: string | null; created_at: string | null; updated_at: string | null; notes?: string | null; lineItems?: RfqLineItem[] };
-type Quote = { id: string; lead_id: string; rfq_id: string | null; status: string; currency: string | null; created_at: string; updated_at: string; notes?: string | null; notes_internal?: string | null; quote_number?: string | null; current_version_id?: string | null; approval_required?: boolean | null; approved_at?: string | null; approved_by?: string | null; lineItems?: QuoteLineItem[] };
-type QuoteVersion = { id: string; quote_id: string | null; version_no?: number | null; status?: string | null; created_at?: string | null; approved_at?: string | null; sent_at?: string | null; pdf_document_id?: string | null };
-type ComplianceItem = { id: string; lead_id: string; compliance_item_id: string; status: string; created_at: string; submitted_at: string | null; approved_at: string | null };
-type ComplianceDefinition = { id: string; code: string; description: string };
-type LeadDocument = { id: string; related_entity?: string | null; related_id?: string | null; requirement_code: string | null; status: string | null; expires_at: string | null; uploaded_at?: string | null; doc_type?: string | null; file_name?: string | null; linked_quote_id?: string | null; source_related_entity?: string | null; review_notes?: string | null };
-type Variant = { id: string; name: string; product_id: string; sku_code?: string | null; pack_label?: string | null; pack_size_value?: number | null; pack_size_unit?: string | null; units_per_case?: number | null; moq_cases?: number | null; moq_kg?: number | null; pricing_mode_default?: string | null };
-type Price = { id: string; product_variant_id: string; market_id: string | null; price: number; currency: string; effective_from: string; effective_to: string | null };
-type PricingRule = { id: string; product_id?: string | null; product_variant_id?: string | null; effective_from?: string | null; effective_to?: string | null; ex_factory_usd?: number | null; fob_usd?: number | null; ex_factory_inr?: number | null; fob_inr?: number | null; ex_factory_usd_per_case?: number | null; ex_factory_usd_per_unit?: number | null; fob_usd_per_case?: number | null; fob_usd_per_unit?: number | null; bulk_usd_per_kg?: number | null; pricing_type?: string | null; product_name?: string | null; sku_code?: string | null };
-type FormState = { error?: string; success?: string };
-type SavedView = 'all' | 'mine' | 'overdue' | 'today' | 'trade-event' | 'buyers' | 'suppliers';
-type SortMode = 'follow-up' | 'created' | 'company' | 'health';
-type DrawerMode = 'quick' | 'full';
-type QuotePreviewSavePayload = { currency: string; lines: Array<{ id?: string; productId: string | null; productVariantId?: string | null; quantity: number; unitPrice: number | null; currency: string; catalogPriceAmount?: number | null; catalogPriceCurrency?: string | null; notes?: string | null; source?: string | null; quoteAdjustmentType?: 'none' | 'discount_percent' | 'discount_amount' | 'markup_percent' | 'markup_amount'; quoteAdjustmentValue?: number | null; quoteAdjustmentReason?: string | null; approvalRequired?: boolean | null }> };
-type LeadOpenStep = 'basics' | 'workflow' | 'coverage' | 'quotes';
-
-
-const COUNTRY_CURRENCY: Record<string, string> = {
-  unitedstates: 'USD', usa: 'USD', us: 'USD', canada: 'CAD', mexico: 'MXN',
-  india: 'INR', unitedkingdom: 'GBP', uk: 'GBP', britain: 'GBP', england: 'GBP',
-  germany: 'EUR', france: 'EUR', italy: 'EUR', spain: 'EUR', netherlands: 'EUR', belgium: 'EUR',
-  japan: 'JPY', china: 'CNY', singapore: 'SGD', australia: 'AUD', newzealand: 'NZD',
-  ua: 'UAH', ukraine: 'UAH', uae: 'AED', unitedarabemirates: 'AED', saudiarabia: 'SAR',
-  qatar: 'QAR', kuwait: 'KWD', oman: 'OMR', bahrain: 'BHD', southafrica: 'ZAR',
-};
-
-function countryCurrency(country?: string | null) {
-  const key = String(country ?? '').toLowerCase().replace(/[^a-z]/g, '');
-  return COUNTRY_CURRENCY[key] ?? null;
-}
-
-const INCOTERM_HELP: Record<string, string> = {
-  EXW: 'EXW: buyer collects from factory; quote price is factory gate only.',
-  FOB: 'FOB/FCA: seller covers factory to port/carrier handoff; buyer handles main freight.',
-  CFR: 'CFR: seller covers freight to destination port; buyer handles insurance and import.',
-  CIF: 'CIF: seller covers freight and insurance to destination port.',
-  DDP: 'DDP: seller covers delivery, duty, taxes, and local handoff to buyer.'
-};
-
-const QUOTE_ADJUSTMENT_OPTIONS = [
-  { value: 'none', label: 'No quote adjustment' },
-  { value: 'discount_percent', label: 'Discount %' },
-  { value: 'discount_amount', label: 'Discount amount' },
-  { value: 'markup_percent', label: 'Markup %' },
-  { value: 'markup_amount', label: 'Markup amount' },
-] as const;
-
-function getIncotermHelp(value: string) {
-  return INCOTERM_HELP[String(value || '').toUpperCase()] ?? 'Select the commercial handoff point before pricing the customer.';
-}
-
-function quoteAdjustmentDeltaPercent(base: number | null | undefined, adjusted: number | null | undefined) {
-  const baseline = Number(base ?? 0);
-  const next = Number(adjusted ?? 0);
-  if (!Number.isFinite(baseline) || baseline <= 0 || !Number.isFinite(next)) return 0;
-  return ((next - baseline) / baseline) * 100;
-}
-
-function applyQuoteAdjustment(base: number | null | undefined, type?: string | null, value?: number | null) {
-  const starting = Number(base ?? 0);
-  const amount = Number(value ?? 0);
-  if (!Number.isFinite(starting) || starting < 0) return 0;
-  if (!Number.isFinite(amount) || amount === 0 || !type || type === 'none') return starting;
-  if (type === 'discount_percent') return Math.max(0, starting * (1 - amount / 100));
-  if (type === 'markup_percent') return Math.max(0, starting * (1 + amount / 100));
-  if (type === 'discount_amount') return Math.max(0, starting - amount);
-  if (type === 'markup_amount') return Math.max(0, starting + amount);
-  return starting;
-}
-
-function uniqueCurrencyOptions(...values: Array<string | null | undefined>) {
-  const defaults = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'JPY'];
-  const seen = new Set<string>();
-  return [...values, ...defaults]
-    .map((value) => String(value ?? '').trim().toUpperCase())
-    .filter((value) => value && !seen.has(value) && seen.add(value));
-}
-
-function variantPricingUnit(variant?: Variant | null) {
-  const mode = String(variant?.pricing_mode_default ?? '').trim().toLowerCase();
-  if (mode === 'kg' || mode === 'bulk') return 'kg';
-  if (mode === 'unit') return 'unit';
-  return 'case';
-}
-
-function variantPackSummary(variant?: Variant | null) {
-  if (!variant) return 'Catalog basis';
-  const packSize = variant.pack_size_value ? `${variant.pack_size_value} ${variant.pack_size_unit ?? ''}`.trim() : null;
-  const units = variant.units_per_case ? `${variant.units_per_case} units/case` : null;
-  return [packSize, units, variant.pack_label].filter(Boolean).join(' · ') || variant.name;
-}
-
-function defaultQuoteQuantity(variant?: Variant | null) {
-  const basis = variantPricingUnit(variant);
-  if (basis === 'kg') return Number(variant?.moq_kg ?? 0) > 0 ? Number(variant?.moq_kg) : 1;
-  if (basis === 'case') return Number(variant?.moq_cases ?? 0) > 0 ? Number(variant?.moq_cases) : 1;
-  return 1;
-}
-
-type SignalTone = 'slate' | 'blue' | 'emerald' | 'amber' | 'rose' | 'violet';
-type IconComponent = (props: SVGProps<SVGSVGElement>) => JSX.Element;
-
-function getStageIcon(stageName?: string | null): IconComponent {
-  const value = String(stageName ?? '').toLowerCase();
-  if (value.includes('qual')) return BadgeCheck;
-  if (value.includes('contact')) return Phone;
-  if (value.includes('sample')) return Package;
-  if (value.includes('negoti')) return Handshake;
-  if (value.includes('won') || value.includes('close')) return Trophy;
-  if (value.includes('lost')) return XCircle;
-  return Sparkles;
-}
-
-function getStageTone(stageName?: string | null) {
-  const value = String(stageName ?? '').toLowerCase();
-  if (value.includes('qual')) return 'border-emerald-100 bg-emerald-50 text-emerald-700';
-  if (value.includes('contact')) return 'border-indigo-100 bg-indigo-50 text-indigo-700';
-  if (value.includes('sample')) return 'border-amber-100 bg-amber-50 text-amber-700';
-  if (value.includes('negoti')) return 'border-violet-100 bg-violet-50 text-violet-700';
-  if (value.includes('won') || value.includes('close')) return 'border-emerald-100 bg-emerald-50 text-emerald-700';
-  if (value.includes('lost')) return 'border-rose-100 bg-rose-50 text-rose-700';
-  return 'border-blue-100 bg-blue-50 text-blue-700';
-}
-
-function getHealthTone(health: string): SignalTone {
-  if (health.includes('at_risk')) return 'rose';
-  if (health.includes('cold')) return 'slate';
-  if (health.includes('due')) return 'amber';
-  return 'emerald';
-}
-
-function getHealthIcon(health: string): IconComponent {
-  if (health.includes('at_risk')) return AlertTriangle;
-  if (health.includes('cold')) return Snowflake;
-  if (health.includes('due')) return Clock;
-  return CalendarCheck;
-}
-
-function formatPreviewAmount(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  if (!Number.isFinite(amount)) return '0';
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
-}
-
-function getStableFollowUpVisualState(scheduledAt?: string | null, nowIso?: string | null) {
-  if (!scheduledAt || !nowIso) return scheduledAt ? 'upcoming' : 'unscheduled';
-  const target = new Date(scheduledAt);
-  const now = new Date(nowIso);
-  if (Number.isNaN(target.getTime()) || Number.isNaN(now.getTime())) return 'unscheduled';
-  const start = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
-  const targetDay = start(target);
-  const today = start(now);
-  if (targetDay < today) return 'overdue';
-  if (targetDay === today) return 'today';
-  return 'upcoming';
-}
-
-function getReadinessTone(readiness: string): SignalTone {
-  if (readiness === 'ready') return 'emerald';
-  if (readiness === 'partial') return 'amber';
-  return 'rose';
-}
-
-function buildAiLeadBrief(lead: LeadRow, readiness: LeadCommercialReadiness | undefined, ownerLabel: string, followUpLabel: string) {
-  if ((readiness?.blockerCount ?? 0) > 0) return `${lead.company_name} needs blocker recovery before moving deeper into the sales process. ${ownerLabel} should review ${followUpLabel.toLowerCase()}.`;
-  if (lead.next_follow_up_at) return `${lead.company_name} is live in the queue with ${followUpLabel.toLowerCase()}. Keep the operator handoff calm and move toward ${lead.contact_name ?? 'the main contact'}.`;
-  return `${lead.company_name} has no scheduled next touch. Add a follow-up so AI, pricing, and workflow stay aligned.`;
-}
 
 function SignalPill({ label, tone, icon: Icon }: { label: string; tone: SignalTone; icon: IconComponent }) {
   const classes =
