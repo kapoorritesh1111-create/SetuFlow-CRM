@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { AdminAiAnalyticsWorkspace } from '@/features/admin/components/admin-ai-analytics-workspace';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
@@ -23,6 +24,9 @@ export default async function AdminAiAnalyticsPage({
   if (!membership || !organization || !canViewAuditLogs(currentRoles)) {
     return <WorkspaceState eyebrow="AI analytics" title="Admin access needed" description="Only admin-capable workspace members can open the AI analytics dashboard." primaryActionHref="/dashboard" primaryActionLabel="Return to dashboard" />;
   }
+
+  const internalOrgId = process.env.SETU_INTERNAL_ORG_ID;
+  if (!internalOrgId || organization.id !== internalOrgId) redirect('/admin');
 
   const data = await getAiAnalyticsData(organization.id, parseWindow(searchParams?.window));
   if (!data) {
