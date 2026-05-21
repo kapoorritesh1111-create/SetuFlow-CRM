@@ -18,12 +18,38 @@ type WebhookAuditInput = {
   validation?: { ok: boolean; errors: string[]; label: string } | null;
 };
 
+type IntegrationWebhookRow = {
+  id: string;
+  organization_id: string;
+  provider: string | null;
+  is_active: boolean | null;
+};
+
 function readRecord(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function readString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readIntegrationWebhookRow(value: unknown): IntegrationWebhookRow | null {
+  const record = readRecord(value);
+  const id = readString(record.id);
+  const organizationId = readString(record.organization_id);
+
+  if (!id || !organizationId) return null;
+
+  return {
+    id,
+    organization_id: organizationId,
+    provider: readString(record.provider),
+    is_active: typeof record.is_active === 'boolean' ? record.is_active : null,
+  };
+}
+
+function readRowId(value: unknown) {
+  return readString(readRecord(value).id);
 }
 
 function readAttemptCount(payload: Record<string, unknown>) {
@@ -82,14 +108,15 @@ export async function POST(request: Request, context: { params: Promise<{ provid
 
       if (integrationId) {
         const db = await createClient();
-        const { data: integration } = await db
+        const { data: integrationData } = await db
           .from('integrations')
           .select('id, organization_id, provider')
           .eq('id', integrationId)
           .eq('provider', provider)
           .maybeSingle();
+        const integration = readIntegrationWebhookRow(integrationData);
 
-        if (integration?.id && integration.organization_id) {
+        if (integration) {
           await writeWebhookAudit({
             organizationId: integration.organization_id,
             integrationId: integration.id,
@@ -126,14 +153,15 @@ export async function POST(request: Request, context: { params: Promise<{ provid
   }
 
   const db = await createClient();
-  const { data: integration } = await db
+  const { data: integrationData } = await db
     .from('integrations')
     .select('id, organization_id, provider, is_active')
     .eq('id', integrationId)
     .eq('provider', provider)
     .maybeSingle();
+  const integration = readIntegrationWebhookRow(integrationData);
 
-  if (!integration?.id || !integration.organization_id) {
+  if (!integration) {
     return NextResponse.json({ ok: false, error: 'Integration not found for this provider.' }, { status: 404 });
   }
 
@@ -144,12 +172,13 @@ export async function POST(request: Request, context: { params: Promise<{ provid
     .order('created_at', { ascending: false })
     .limit(20);
 
-  const priorAttemptCount = (Array.isArray(priorEvents) ? priorEvents : []).reduce((max: number, event: { payload: unknown }) => {
-    const payloadRecord = readRecord(event.payload);
+  const priorAttemptCount = (Array.isArray(priorEvents) ? priorEvents : []).reduce((max: number, event: unknown) => {
+    const eventRecord = readRecord(event);
+    const payloadRecord = readRecord(eventRecord.payload);
     const metadata = readRecord(payloadRecord.metadata);
     const continuity = readRecord(payloadRecord.continuity);
     const key = readString(continuity.key) ?? readString(metadata.target_key) ?? null;
-    if (continuityKey && key === continuityKey) return Math.max(max, readAttemptCount(readRecord(event.payload)));
+    if (continuityKey && key === continuityKey) return Math.max(max, readAttemptCount(payloadRecord));
     return max;
   }, 0);
 
@@ -196,6 +225,7 @@ export async function POST(request: Request, context: { params: Promise<{ provid
     })
     .select('id')
     .maybeSingle();
+  const eventId = readRowId(eventRow);
 
   if (error) {
     await writeWebhookAudit({
@@ -216,7 +246,7 @@ export async function POST(request: Request, context: { params: Promise<{ provid
     provider,
     status: validation.ok ? 'accepted' : 'rejected',
     reason: validation.ok ? eventStatus : 'payload_validation_failed',
-    eventId: eventRow?.id ?? null,
+    eventId,
     validation,
   });
 
@@ -228,6 +258,6 @@ export async function POST(request: Request, context: { params: Promise<{ provid
     continuity: { key: continuityKey, attempt_count: priorAttemptCount + 1 },
     impact: governanceImpact,
     mappedPayload,
-    eventId: eventRow?.id ?? null,
+    eventId,
   }, { status: validation.ok ? 200 : 422 });
 }
