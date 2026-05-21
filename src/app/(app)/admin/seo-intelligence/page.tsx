@@ -11,7 +11,14 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 
 export const metadata = { title: 'SEO Intelligence | SETU Flow Admin', robots: { index: false, follow: false } };
 
+const SETU_FLOW_INTERNAL_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+
+function isInternalOrg(organizationId: string) {
+  const configuredInternalOrgId = process.env.SETU_INTERNAL_ORG_ID?.trim();
+  return organizationId === configuredInternalOrgId || organizationId === SETU_FLOW_INTERNAL_ORG_ID;
+}
 
 function average(values: number[]) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
@@ -160,8 +167,7 @@ export default async function SeoIntelligencePage() {
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the SEO intelligence workspace." tone="warning" />;
   if (!membership || !organization) return null;
 
-  const internalOrgId = process.env.SETU_INTERNAL_ORG_ID;
-  if (!internalOrgId || organization.id !== internalOrgId) redirect('/admin');
+  if (!isInternalOrg(organization.id)) redirect('/admin');
 
   const liveTrends = await getLiveGoogleTrends();
   const readyClusters = seoKeywordClusters.filter((cluster) => cluster.currentCoverage === 'ready').length;
