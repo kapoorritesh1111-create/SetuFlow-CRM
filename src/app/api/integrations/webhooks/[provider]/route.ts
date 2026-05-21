@@ -25,6 +25,30 @@ type IntegrationWebhookRow = {
   is_active: boolean | null;
 };
 
+type IntegrationEventInsert = {
+  integration_id: string;
+  direction: 'inbound';
+  event_type: string;
+  status: 'processed' | 'error';
+  payload: Record<string, unknown>;
+  processed_at: string;
+};
+
+type IntegrationEventInsertResult = {
+  data: unknown;
+  error: { message: string } | null;
+};
+
+type IntegrationEventWriter = {
+  from(table: 'integration_events'): {
+    insert(values: IntegrationEventInsert): {
+      select(columns: 'id'): {
+        maybeSingle(): Promise<IntegrationEventInsertResult>;
+      };
+    };
+  };
+};
+
 function readRecord(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
@@ -70,6 +94,11 @@ function parsePayload(rawBody: string) {
   } catch {
     return {};
   }
+}
+
+async function insertIntegrationEvent(db: unknown, values: IntegrationEventInsert) {
+  const writer = db as IntegrationEventWriter;
+  return await writer.from('integration_events').insert(values).select('id').maybeSingle();
 }
 
 async function writeWebhookAudit(input: WebhookAuditInput) {
@@ -213,18 +242,14 @@ export async function POST(request: Request, context: { params: Promise<{ provid
   };
 
   const eventStatus = validation.ok && governanceImpact.safeToApply ? 'processed' : 'error';
-  const { data: eventRow, error } = await db
-    .from('integration_events')
-    .insert({
-      integration_id: integration.id,
-      direction: 'inbound',
-      event_type: String(mappedPayload.event_type ?? payload.event_type ?? 'webhook_event'),
-      status: eventStatus,
-      payload: persistedPayload,
-      processed_at: new Date().toISOString(),
-    })
-    .select('id')
-    .maybeSingle();
+  const { data: eventRow, error } = await insertIntegrationEvent(db, {
+    integration_id: integration.id,
+    direction: 'inbound',
+    event_type: String(mappedPayload.event_type ?? payload.event_type ?? 'webhook_event'),
+    status: eventStatus,
+    payload: persistedPayload,
+    processed_at: new Date().toISOString(),
+  });
   const eventId = readRowId(eventRow);
 
   if (error) {
