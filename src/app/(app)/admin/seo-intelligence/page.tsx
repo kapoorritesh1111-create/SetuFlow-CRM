@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -11,10 +12,6 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 export const metadata = { title: 'SEO Intelligence | SETU Flow Admin', robots: { index: false, follow: false } };
 
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
-
-function isMainSetuOrganization(organization: { name?: string | null; slug?: string | null; domain?: string | null }) {
-  return [organization.name, organization.slug, organization.domain].filter(Boolean).join(' ').toLowerCase().includes('setu');
-}
 
 function average(values: number[]) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
@@ -162,7 +159,9 @@ export default async function SeoIntelligencePage() {
   const { missingEnv, membership, organization } = await requireAdminWorkspace();
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the SEO intelligence workspace." tone="warning" />;
   if (!membership || !organization) return null;
-  if (!isMainSetuOrganization(organization as any)) return <StateMessage title="SEO intelligence is restricted to the main SETU Flow organization" description="Customer workspaces can manage CRM data, but SEO strategy and competitor monitoring are controlled from the main organization." tone="warning" />;
+
+  const internalOrgId = process.env.SETU_INTERNAL_ORG_ID;
+  if (!internalOrgId || organization.id !== internalOrgId) redirect('/admin');
 
   const liveTrends = await getLiveGoogleTrends();
   const readyClusters = seoKeywordClusters.filter((cluster) => cluster.currentCoverage === 'ready').length;
