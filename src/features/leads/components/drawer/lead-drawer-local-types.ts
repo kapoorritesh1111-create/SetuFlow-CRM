@@ -1,5 +1,6 @@
 import type { Database } from "@/types/database";
 import type { ContactAfterSaveGuidanceResult } from "@/lib/contact-exchange/contact-after-save-guidance";
+import type { LeadDrawerLead } from "@/features/leads/types/workspace";
 
 export type LeadFormState = {
   error?: string;
