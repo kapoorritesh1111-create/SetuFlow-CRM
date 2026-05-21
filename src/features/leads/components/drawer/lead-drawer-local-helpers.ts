@@ -3,7 +3,8 @@ import {
   MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES,
   MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES,
 } from "@/features/mobile/lib/mobile-card-image";
-import type { CoverageSelection, QuickScanDraft } from "./lead-drawer-local-types";
+import type { WizardStepDefinition } from "@/components/ui/wizard-shell";
+import type { CoverageSelection, QuickInterestMode, QuickScanDraft } from "./lead-drawer-local-types";
 
 export function buildInterestNote(params: {
   leadType: "buyer" | "supplier";
@@ -59,7 +60,7 @@ export function buildQuickScanSummary(draft: QuickScanDraft) {
     : "No structured lead fields were found.";
 }
 
-async export function tryQuickScanBrowserTextDetection(file: File): Promise<string> {
+export async function tryQuickScanBrowserTextDetection(file: File): Promise<string> {
   if (typeof window === "undefined") return "";
   const Detector = (
     window as unknown as {
