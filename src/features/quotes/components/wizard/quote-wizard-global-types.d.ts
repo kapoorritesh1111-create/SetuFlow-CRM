@@ -1,3 +1,4 @@
+import type { WizardStepDefinition } from "@/components/ui/wizard-shell";
 import type {
   ProductOption as QuoteWizardProductOption,
   PricingBasis as QuoteWizardPricingBasis,
@@ -20,6 +21,7 @@ import type {
 } from "./quote-wizard-types";
 
 declare global {
+  var QUOTE_EDIT_STEPS: WizardStepDefinition[];
   type ProductOption = QuoteWizardProductOption;
   type PricingBasis = QuoteWizardPricingBasis;
   type RfqOption = QuoteWizardRfqOption;
