@@ -7,15 +7,74 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
-import type { Database } from '@/types/database';
+import type { Database, Json } from '@/types/database';
 
-type CatalogDb = SupabaseClient<Database>;
 type Row = Record<string, string | number | boolean | null>;
 type Issue = { row: number; field: string; severity: 'error' | 'warning'; message: string };
 type Summary = { row: number; entity: string; name: string; sku?: string | null; action: string; pricing: string; message: string };
 type Result = { inserted: number; updated: number; skipped: number; pricingRulesCreated: number; pricingRulesUpdated: number; issues: Issue[]; rowSummaries: Summary[] };
 type CategoryRow = { id: string; name: string; parent_id: string | null; sort_order: number | null; is_active: boolean };
 type ProductLookupRow = { id: string; name: string | null; sku: string | null; sku_code: string | null; sort_order: number | null };
+
+type Table<RowType, InsertType = Partial<RowType>, UpdateType = Partial<InsertType>> = {
+  Row: RowType;
+  Insert: InsertType;
+  Update: UpdateType;
+  Relationships: [];
+};
+
+type ImportRunRow = {
+  id: string;
+  organization_id: string;
+  import_type: string;
+  source_file_name: string | null;
+  source_file_checksum: string | null;
+  status: string;
+  started_by: string | null;
+  started_at: string;
+  completed_at: string | null;
+  rows_read: number;
+  rows_valid: number;
+  rows_warning: number;
+  rows_blocked: number;
+  rows_inserted: number;
+  rows_updated: number;
+  summary_payload: Json;
+};
+
+type ImportIssueRow = {
+  id: string;
+  import_run_id: string;
+  entity_type: string;
+  entity_subtype: string | null;
+  source_file_name: string | null;
+  source_sheet_name: string | null;
+  source_row_no: number | null;
+  field_name: string | null;
+  source_value: string | null;
+  normalized_value: string | null;
+  severity: string;
+  issue_code: string;
+  issue_message: string;
+  suggested_fix: string | null;
+  blocking_flag: boolean;
+  created_at: string;
+};
+
+type CatalogDatabase = Omit<Database, 'public'> & {
+  public: Omit<Database['public'], 'Tables'> & {
+    Tables: Database['public']['Tables'] & {
+      import_runs: Table<ImportRunRow, Partial<ImportRunRow> & Pick<ImportRunRow, 'organization_id' | 'import_type' | 'status' | 'rows_read' | 'summary_payload'>>;
+      import_issues: Table<ImportIssueRow, Partial<ImportIssueRow> & Pick<ImportIssueRow, 'import_run_id' | 'entity_type' | 'severity' | 'issue_code' | 'issue_message' | 'blocking_flag'>>;
+    };
+  };
+};
+
+type CatalogDb = SupabaseClient<CatalogDatabase>;
+
+function catalogDb(db: SupabaseClient<Database>): CatalogDb {
+  return db as SupabaseClient<CatalogDatabase>;
+}
 
 const CsvCellSchema = z.union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()]).transform((value) => value ?? null);
 const CsvRowsSchema = z.array(z.record(CsvCellSchema));
@@ -172,7 +231,7 @@ export async function POST(request: Request) {
   const rowErrors = entity === 'products' ? validateProductRows(rows) : validateCategoryRows(rows);
   if (rowErrors.length > 0) return NextResponse.json({ ok: false, error: 'CSV rows failed validation. No catalog data was written.', errors: rowErrors, validCount: validCount(rows, rowErrors) }, { status: 422 });
 
-  const supabase = await createClient(); const db = createAdminSupabaseClient() ?? supabase; const runId = await startRun(db, workspace.organization.id, workspace.user.id, entity, rows, fileName);
+  const supabase = await createClient(); const db = catalogDb(createAdminSupabaseClient() ?? supabase); const runId = await startRun(db, workspace.organization.id, workspace.user.id, entity, rows, fileName);
   try { const result = entity === 'products' ? await importProducts(db, workspace.organization.id, workspace.user.id, rows, fileName) : await importCategories(db, workspace.organization.id, rows); await saveIssues(db, runId, result.issues, fileName); const blocked = result.issues.some((i) => i.severity === 'error'); await finishRun(db, runId, blocked ? 'failed' : 'completed', result, rows.length); await audit(db, workspace.organization.id, workspace.user.id, runId, entity, result); if (blocked) return NextResponse.json({ error: 'Import has blocking validation issues.', import_run_id: runId, ...result }, { status: 400 }); revalidatePath('/admin/categories'); revalidatePath('/admin/product-management'); revalidatePath('/products'); revalidatePath('/leads'); return NextResponse.json({ ok: true, import_run_id: runId, success: entity === 'products' ? 'Products, variants, and pricing rules imported.' : 'Categories imported.', ...result }); }
   catch (error) { const failed = empty(); failed.issues.push({ row: 0, field: 'import', severity: 'error', message: error instanceof Error ? error.message : 'Catalog import failed.' }); await finishRun(db, runId, 'failed', failed, rows.length); await saveIssues(db, runId, failed.issues, fileName); return NextResponse.json({ error: error instanceof Error ? error.message : 'Catalog import failed.', import_run_id: runId }, { status: 500 }); }
 }
