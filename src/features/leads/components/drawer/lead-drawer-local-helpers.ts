@@ -133,7 +133,7 @@ export function normalizeLeadFormValues(values: Record<string, unknown>) {
   return JSON.stringify(values);
 }
 
-const LEAD_WIZARD_STEPS: WizardStepDefinition[] = [
+export const LEAD_WIZARD_STEPS: WizardStepDefinition[] = [
   {
     id: "basics",
     title: "Lead basics",
@@ -157,7 +157,7 @@ const LEAD_WIZARD_STEPS: WizardStepDefinition[] = [
   },
 ];
 
-const LEAD_QUOTE_STEP: WizardStepDefinition = {
+export const LEAD_QUOTE_STEP: WizardStepDefinition = {
   id: "quotes",
   title: "Quote review",
   shortLabel: "Quotes",
