@@ -61,7 +61,8 @@ function whatsappContact(lead: any) {
   return clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
-export default async function OrdersLayout() {
+// This layout IS the Orders view. The child page is intentionally a null route placeholder.
+export default async function OrdersLayout({ children: _children }: { children: React.ReactNode }) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
     return <EmptyState title="Workspace required" description="Sign in with an active organization membership to view orders." />;

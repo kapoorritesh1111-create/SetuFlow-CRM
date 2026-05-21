@@ -1,5 +1,10 @@
 -- 045_enable_rls_core_tables.sql
 -- Baseline org-scoped RLS for the main CRM tables used in this repo.
+-- Sprint 18 audit note: later execution-table RLS is owned by the Orders
+-- execution migrations because those tables do not exist at migration 045.
+-- Live verification for SF-18-012 confirmed RLS enabled for order_lines,
+-- packing_plans, freight_booking_events, finance_integration_events, and
+-- trade_requirements, with policies present for each table.
 
 alter table public.organization_members enable row level security;
 alter table public.roles enable row level security;

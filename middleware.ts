@@ -1,3 +1,4 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -24,6 +25,49 @@ const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
 ].join('; ');
 
+const PUBLIC_EXACT_PATHS = new Set([
+  '/',
+  '/client-login',
+  '/forgot-password',
+  '/reset-password',
+  '/onboarding',
+  '/privacy',
+  '/terms',
+]);
+
+const PUBLIC_PREFIXES = [
+  '/auth/',
+  '/api/public/',
+  '/api/logout',
+  '/api/cron/',
+  '/api/integrations/webhooks/',
+  '/order-documents/preview/',
+  '/v/',
+  '/public/',
+  '/internal/',
+];
+
+function hasSupabaseMiddlewareEnv() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY));
+}
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_EXACT_PATHS.has(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+function isProtectedApiPath(pathname: string) {
+  return pathname.startsWith('/api/') && !isPublicPath(pathname);
+}
+
+function loginRedirect(request: NextRequest) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = '/client-login';
+  redirectUrl.search = '';
+  const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  redirectUrl.searchParams.set('next', nextPath);
+  return redirectUrl;
+}
+
 function applySecurityHeaders(response: NextResponse) {
   response.headers.set('Content-Security-Policy', CONTENT_SECURITY_POLICY);
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -35,7 +79,27 @@ function applySecurityHeaders(response: NextResponse) {
   return response;
 }
 
-export function middleware(request: NextRequest) {
+function createMiddlewareClient(request: NextRequest, response: NextResponse) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          response.cookies.set({ name, value: '', ...options });
+        },
+      },
+    },
+  );
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === '/development' || pathname.startsWith('/development/')) {
@@ -47,11 +111,26 @@ export function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)));
   }
 
-  return applySecurityHeaders(NextResponse.next());
+  if (isPublicPath(pathname) || !hasSupabaseMiddlewareEnv()) {
+    return applySecurityHeaders(NextResponse.next());
+  }
+
+  const response = NextResponse.next({ request });
+  const supabase = createMiddlewareClient(request, response);
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data.user) {
+    if (isProtectedApiPath(pathname)) {
+      return applySecurityHeaders(NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 }));
+    }
+    return applySecurityHeaders(NextResponse.redirect(loginRedirect(request)));
+  }
+
+  return applySecurityHeaders(response);
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|og-image.png|logos/|marketing/).*)',
   ],
 };
