@@ -290,6 +290,95 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .toast.err{color:#fca5a5;border-color:rgba(239,68,68,.25)}
 
 /* ══ RESPONSIVE ══ */
+
+/* ══ KPI ROW 2 — Temporal ══ */
+.kpi-row2{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.kc-today{}.kc-today::before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.kc-week{}.kc-week::before{background:linear-gradient(90deg,#6366f1,#818cf8)}
+.kc-res-today{}.kc-res-today::before{background:linear-gradient(90deg,#10b981,#34d399)}
+.kc-res-week{}.kc-res-week::before{background:linear-gradient(90deg,#14b8a6,#2dd4bf)}
+.kc-today .kpi-value{color:#fde047}
+.kc-week .kpi-value{color:#a5b4fc}
+.kc-res-today .kpi-value{color:#6ee7b7}
+.kc-res-week .kpi-value{color:#5eead4}
+.kpi-delta{font-size:10px;color:var(--green);font-weight:600;margin-top:1px}
+.kpi-delta.zero{color:var(--text3)}
+
+/* ══ HIDE-RESOLVED TOGGLE ══ */
+.hide-toggle{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border2);cursor:pointer;font-size:11.5px;color:var(--text2);user-select:none;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.hide-toggle:hover{border-color:var(--border3);color:var(--text)}
+.hide-toggle.hiding{background:var(--green-d);border-color:rgba(34,197,94,.25);color:#86efac}
+.toggle-pill{width:28px;height:15px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);position:relative;flex-shrink:0;transition:background .2s}
+.hide-toggle.hiding .toggle-pill{background:rgba(34,197,94,.3);border-color:rgba(34,197,94,.4)}
+.toggle-knob{width:11px;height:11px;border-radius:50%;background:var(--text3);position:absolute;top:1px;left:1px;transition:all .2s}
+.hide-toggle.hiding .toggle-knob{background:var(--green);left:14px}
+.resolved-hidden-note{font-size:11px;color:var(--text3);display:none;gap:5px;align-items:center;white-space:nowrap}
+.resolved-hidden-note.visible{display:flex}
+.rhn-link{color:var(--brand-teal);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* ══ NEW ISSUE MODAL ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rxl);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;animation:modalIn .22s cubic-bezier(.4,0,.2,1)}
+@keyframes modalIn{from{transform:scale(.96) translateY(12px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-header{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg2);z-index:10;border-radius:var(--rxl) var(--rxl) 0 0}
+.modal-title-wrap{flex:1}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:3px}
+.modal-sub{font-size:12px;color:var(--text3)}
+.modal-close{width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;display:grid;place-items:center;font-size:15px;transition:all .15s;flex-shrink:0}
+.modal-close:hover{background:var(--bg4);color:var(--text)}
+.modal-body{padding:20px 22px 24px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row.single{grid-template-columns:1fr}
+.form-row.triple{grid-template-columns:1fr 1fr 1fr}
+.form-field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:5px}
+.form-field label .req{color:var(--red)}
+.form-in,.form-sel,.form-ta{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-size:12.5px;font-family:var(--font);outline:none;transition:border .15s}
+.form-in:focus,.form-sel:focus,.form-ta:focus{border-color:var(--brand-teal);box-shadow:0 0 0 3px rgba(53,159,145,.1)}
+.form-ta{resize:vertical;min-height:80px;line-height:1.6}
+.form-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234d6280' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;cursor:pointer;padding-right:28px}
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+.cat-btn{padding:8px 6px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--font)}
+.cat-btn:hover{border-color:var(--border3);color:var(--text)}
+.cat-btn.sel{background:var(--accent-dim);border-color:rgba(59,130,246,.35);color:var(--accent2)}
+.cat-btn.sel-enh{background:var(--purple-d);border-color:rgba(167,139,250,.3);color:#c4b5fd}
+.cat-btn.sel-test{background:var(--teal-d);border-color:rgba(20,184,166,.25);color:#5eead4}
+.cat-btn.sel-ux{background:var(--amber-d);border-color:rgba(245,158,11,.25);color:#fde047}
+.cat-ico{font-size:18px;line-height:1}
+.modal-footer{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:8px}
+.btn-cancel{padding:8px 16px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-cancel:hover{border-color:var(--border3);color:var(--text)}
+.btn-submit{padding:8px 20px;border-radius:var(--r);background:var(--grad);color:#fff;border:none;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);transition:opacity .15s;display:flex;align-items:center;gap:6px}
+.btn-submit:hover{opacity:.88}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed}
+
+/* ══ ADD ISSUE BUTTON ══ */
+.add-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);background:var(--grad);color:#fff;font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);transition:opacity .15s;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 10px rgba(53,159,145,.2)}
+.add-btn:hover{opacity:.88}
+.sb-add-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:8px;border-radius:var(--r);background:rgba(53,159,145,.12);border:1px solid rgba(53,159,145,.25);color:var(--brand-teal);font-size:12px;font-weight:700;cursor:pointer;margin-bottom:8px;font-family:var(--font);transition:all .15s}
+.sb-add-btn:hover{background:rgba(53,159,145,.2)}
+
+/* ══ CATEGORY CHIP ══ */
+.cat-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.cc-Bug{background:var(--red-d);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.cc-Enhancement{background:var(--purple-d);color:#c4b5fd;border:1px solid rgba(167,139,250,.2)}
+.cc-Testing{background:var(--teal-d);color:#5eead4;border:1px solid rgba(20,184,166,.2)}
+.cc-UX{background:var(--amber-d);color:#fde047;border:1px solid rgba(245,158,11,.2)}
+
+@media(max-width:900px){.kpi-row2{grid-template-columns:repeat(2,1fr)}}
+
+
+/* ══ LIVE INDICATOR ══ */
+.live-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:0 4px;flex-shrink:0}
+.live-ring{width:8px;height:8px;border-radius:50%;border:2px solid var(--brand-teal);position:relative;flex-shrink:0}
+.live-ring::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--brand-teal);opacity:0;animation:liveRing 2.5s infinite}
+@keyframes liveRing{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(2)}}
+.live-ring.stale{border-color:var(--amber)}
+.live-ring.stale::after{border-color:var(--amber);animation:none}
+.refresh-btn{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all .15s;white-space:nowrap}
+.refresh-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border3)}
+.refresh-btn.spinning svg{animation:spin .6s linear infinite}
+
 @media(max-width:900px){.sidebar{display:none}.kpi-row{grid-template-columns:repeat(4,1fr);grid-auto-rows:auto}.donut-card{grid-column:span 2}}
 @media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.col-ref,.col-area{display:none}.panel{width:100vw}}
 </style>
@@ -366,6 +455,10 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <svg class="ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       CRM Live
     </a>
+    <button class="add-btn" onclick="openNewIssueModal()" style="margin-right:4px">
+      <svg class="ico" style="width:13px;height:13px" stroke="#fff" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Report Issue
+    </button>
     <button class="nav-link primary" onclick="toggleGPT()">
       <svg class="ico" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       ChatGPT Fix Prompt
@@ -458,6 +551,10 @@ input.p-in:focus{border-color:var(--brand-teal)}
     <div id="sb-areas"></div>
 
     <div class="sb-cta-wrap">
+      <button class="sb-add-btn" onclick="openNewIssueModal()">
+        <svg class="ico" style="width:13px;height:13px" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Report New Issue
+      </button>
       <button class="sb-cta" onclick="toggleGPT()">
         <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-zap"/></svg>
         ChatGPT Fix Prompt
@@ -884,6 +981,29 @@ Then select the first eligible issue, update it to In Progress, inspect current 
           <div class="kpi-value" id="kpi-30d">–</div><div class="kpi-sub" id="kpi-30d-sub">–</div>
         </div>
       </div>
+      <!-- KPI Row 2: Temporal -->
+      <div class="kpi-row2">
+        <div class="kpi-card kc-today">
+          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#fde047" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Added Today</div>
+          <div class="kpi-value" id="kpi-added-today">–</div>
+          <div class="kpi-sub">new issues logged today</div>
+        </div>
+        <div class="kpi-card kc-week">
+          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#a5b4fc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Added This Week</div>
+          <div class="kpi-value" id="kpi-added-week">–</div>
+          <div class="kpi-sub">since Monday</div>
+        </div>
+        <div class="kpi-card kc-res-today">
+          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#6ee7b7" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved Today</div>
+          <div class="kpi-value" id="kpi-res-today">–</div>
+          <div class="kpi-sub" id="kpi-res-today-sub">issues closed today</div>
+        </div>
+        <div class="kpi-card kc-res-week">
+          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#5eead4" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved This Week</div>
+          <div class="kpi-value" id="kpi-res-week">–</div>
+          <div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
+        </div>
+      </div>
     </div>
 
     <!-- Dual progress -->
@@ -898,6 +1018,23 @@ Then select the first eligible issue, update it to In Progress, inspect current 
         <div class="prog-bar"><div class="prog-fill-cleanup" id="pfill-cleanup" style="width:0%"></div></div>
         <span class="pt-label" id="plabel-cleanup">–/– resolved</span>
       </div>
+    </div>
+
+    <!-- LIVE STATUS BAR -->
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 20px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+      <div class="live-status">
+        <div class="live-ring" id="live-ring"></div>
+        <span id="live-label">Connecting…</span>
+      </div>
+      <span style="color:var(--border2)">·</span>
+      <span style="font-size:11px;color:var(--text3)">Last refreshed: <span id="last-refresh-time">–</span></span>
+      <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
+        <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)">
+        <span id="realtime-event-count" style="color:var(--brand-teal);font-weight:600">0</span> live updates received
+      </span>
     </div>
 
     <!-- TOOLBAR -->
@@ -915,6 +1052,14 @@ Then select the first eligible issue, update it to In Progress, inspect current 
         <option value="30-Day Cleanup">30-Day Cleanup</option>
       </select>
       <div class="spacer"></div>
+      <div class="resolved-hidden-note" id="res-hidden-note">
+        <svg class="ico" style="width:11px;height:11px;stroke:var(--text3)" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        <span id="res-hidden-count">0</span> resolved hidden &mdash; <span class="rhn-link" onclick="filterSb('Resolved')">show them</span>
+      </div>
+      <button class="hide-toggle hiding" id="hide-toggle-btn" onclick="toggleHideResolved()" title="Toggle auto-hide resolved issues">
+        <div class="toggle-pill"><div class="toggle-knob"></div></div>
+        <span id="hide-toggle-label">Hiding resolved</span>
+      </button>
       <span class="results-count" id="res-count"></span>
     </div>
 
@@ -1001,15 +1146,83 @@ const SB='https://sjzfzloggabsmcuxktnl.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
 const db=supabase.createClient(SB,KEY);
 let ALL=[],VISIBLE=[],activeFlt='all',sortFld='issue_number',sortDir=1,openIssue=null,gptOpen=false;
+let hideResolved=true; // auto-hide resolved by default
+let selectedCat='Bug';
 const STATUSES=['Open','In Progress','Resolved',"Won't Fix",'Deferred'];
 const SEV_ORD={'Critical':0,'High':1,'Medium':2,'Low':3};
-const AREA_ICONS={'Security':'ic-shield','Engineering':'ic-code','UI/UX':'ic-layout','Supabase':'ic-database','Docs':'ic-file','Product':'ic-box','Infrastructure':'ic-server','Multiple':'ic-settings'};
+const AREA_ICONS={'Security':'ic-shield','Engineering':'ic-code','UI/UX':'ic-layout','Supabase':'ic-database','Docs':'ic-file','Product':'ic-box','Infrastructure':'ic-server','Multiple':'ic-settings','Testing':'ic-check'};
 
-async function load(){
+/* ══════════════════════════════════════
+   LOAD & CORE
+══════════════════════════════════════ */
+let realtimeChannel=null;
+let realtimeEventCount=0;
+
+async function load(showLoader=true){
+  if(showLoader && $('loading-state')) $('loading-state').style.display='flex';
   const{data,error}=await db.from('sprint_issues').select('*').eq('sprint_number',18).order('issue_number');
-  $('loading-state').style.display='none';
-  if(error){toast('DB error: '+error.message,false);return;}
+  if($('loading-state')) $('loading-state').style.display='none';
+  if(error){toast('DB error: '+error.message,false);setLiveStatus('stale','Error loading data');return;}
   ALL=data||[];buildAreaFilter();buildSidebar();render();animateKPIs();
+  updateLastRefresh();
+  if(!realtimeChannel) subscribeRealtime();
+}
+
+async function manualRefresh(){
+  const btn=$('refresh-btn');if(btn)btn.classList.add('spinning');
+  setLiveStatus('checking','Refreshing…');
+  await load(false);
+  if(btn)btn.classList.remove('spinning');
+  toast('✓ Data refreshed');
+}
+
+function subscribeRealtime(){
+  realtimeChannel=db
+    .channel('sprint_issues_live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'sprint_issues'},payload=>{
+      realtimeEventCount++;
+      setText('realtime-event-count',realtimeEventCount);
+      handleRealtimeChange(payload);
+    })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){
+        setLiveStatus('live','Live · auto-updating');
+        toast('✓ Live tracker connected',true);
+      } else if(status==='CLOSED'||status==='CHANNEL_ERROR'){
+        setLiveStatus('stale','Realtime disconnected');
+      } else {
+        setLiveStatus('checking','Connecting…');
+      }
+    });
+}
+
+function handleRealtimeChange(payload){
+  const{eventType,new:newRow,old:oldRow}=payload;
+  if(eventType==='INSERT'){
+    ALL.push(newRow);
+    toast('✓ New issue added: '+(newRow.issue_ref||'#'+newRow.issue_number));
+  } else if(eventType==='UPDATE'){
+    const idx=ALL.findIndex(i=>i.id===newRow.id);
+    if(idx>=0) ALL[idx]=newRow;
+    else ALL.push(newRow);
+    if(openIssue&&openIssue.id===newRow.id){openIssue=newRow;fillPanel(newRow);}
+  } else if(eventType==='DELETE'){
+    ALL=ALL.filter(i=>i.id!==oldRow.id);
+  }
+  buildAreaFilter();buildSidebar();render();animateKPIs();updateLastRefresh();
+}
+
+function setLiveStatus(state,label){
+  const ring=$('live-ring'),lbl=$('live-label');
+  if(!ring||!lbl)return;
+  ring.className='live-ring'+(state==='stale'?' stale':'');
+  lbl.textContent=label;
+  lbl.style.color=state==='live'?'var(--brand-teal)':state==='stale'?'var(--amber)':'var(--text3)';
+}
+
+function updateLastRefresh(){
+  const el=$('last-refresh-time');
+  if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
 function buildAreaFilter(){
@@ -1018,6 +1231,9 @@ function buildAreaFilter(){
   sel.innerHTML='<option value="">All areas</option>'+areas.map(a=>`<option>${a}</option>`).join('');
 }
 
+/* ══════════════════════════════════════
+   SIDEBAR & COUNTS
+══════════════════════════════════════ */
 function buildSidebar(){
   const sc={},sev={},t={};
   STATUSES.forEach(s=>sc[s]=0);['Critical','High','Medium','Low'].forEach(s=>sev[s]=0);
@@ -1028,7 +1244,12 @@ function buildSidebar(){
     if(i.sprint_target)t[i.sprint_target]=(t[i.sprint_target]||0)+1;
     const a=areaOf(i);ac[a]=(ac[a]||0)+1;
   });
-  setText('cnt-all',ALL.length);setText('cnt-Open',sc.Open||0);setText('cnt-InProgress',sc['In Progress']||0);
+
+  // Active (non-resolved) count for "All Issues"
+  const activeCount=ALL.filter(i=>!isResolved(i)).length;
+  const totalCount=ALL.length;
+  setText('cnt-all', hideResolved ? activeCount+' / '+totalCount : totalCount);
+  setText('cnt-Open',sc.Open||0);setText('cnt-InProgress',sc['In Progress']||0);
   setText('cnt-Resolved',sc.Resolved||0);setText('cnt-Deferred',sc.Deferred||0);setText('cnt-WontFix',sc["Won't Fix"]||0);
   setText('cnt-sevCritical',sev.Critical||0);setText('cnt-sevHigh',sev.High||0);setText('cnt-sevMedium',sev.Medium||0);setText('cnt-sevLow',sev.Low||0);
   setText('cnt-t7d',t['7-Day Rescue']||0);setText('cnt-t30d',t['30-Day Cleanup']||0);
@@ -1038,61 +1259,104 @@ function buildSidebar(){
     return`<div class="sb-item" id="sb-area-${esc(a)}" onclick="filterSb('area:${a}')"><svg class="ico sb-icon" style="width:13px;height:13px"><use href="#${iconId}"/></svg><span class="sb-item-text">${esc(a)}</span><span class="sb-count" id="cnt-area-${esc(a)}">${c}</span></div>`;
   }).join('');
 
-  // Sprint ring
+  // Sprint ring (exclude resolved)
   const total=ALL.length;
-  const resolved=ALL.filter(i=>i.status==='Resolved'||i.status==="Won't Fix").length;
-  const open=ALL.filter(i=>i.status!=='Resolved'&&i.status!=="Won't Fix").length;
-  const critOpen=ALL.filter(i=>i.severity==='Critical'&&i.status!=='Resolved'&&i.status!=="Won't Fix").length;
+  const resolved=ALL.filter(i=>isResolved(i)).length;
+  const open=total-resolved;
+  const critOpen=ALL.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
   const pct=total?Math.round(resolved/total*100):0;
-  const circ=113;
-  const offset=circ-(circ*pct/100);
+  const circ=113,offset=circ-(circ*pct/100);
   document.querySelector('.ring-fill').style.strokeDashoffset=offset;
   setText('ring-pct',pct+'%');
   setText('ss-crit',critOpen);setText('ss-res',resolved);setText('ss-rem',open);
 
   // Health strip
   const inProg=ALL.filter(i=>i.status==='In Progress').length;
-  const highOpen=ALL.filter(i=>i.severity==='High'&&i.status!=='Resolved'&&i.status!=="Won't Fix").length;
+  const highOpen=ALL.filter(i=>i.severity==='High'&&!isResolved(i)).length;
   setText('hs-crit',critOpen+' crit');setText('hs-high',highOpen+' high');setText('hs-prog',inProg+' active');
 
   // Dual progress bars
   const r7=ALL.filter(i=>i.sprint_target==='7-Day Rescue');
-  const c7=r7.filter(i=>i.status==='Resolved'||i.status==="Won't Fix").length;
+  const c7=r7.filter(i=>isResolved(i)).length;
   const r30=ALL.filter(i=>i.sprint_target==='30-Day Cleanup');
-  const c30=r30.filter(i=>i.status==='Resolved'||i.status==="Won't Fix").length;
+  const c30=r30.filter(i=>isResolved(i)).length;
   $('pfill-rescue').style.width=(r7.length?Math.round(c7/r7.length*100):0)+'%';
   $('pfill-cleanup').style.width=(r30.length?Math.round(c30/r30.length*100):0)+'%';
   setText('plabel-rescue',c7+'/'+r7.length+' resolved');setText('plabel-cleanup',c30+'/'+r30.length+' resolved');
 }
 
+/* ══════════════════════════════════════
+   KPI ANIMATION (incl. temporal)
+══════════════════════════════════════ */
 function animateKPIs(){
   const total=ALL.length;
-  const resolved=ALL.filter(i=>i.status==='Resolved'||i.status==="Won't Fix").length;
-  const critOpen=ALL.filter(i=>i.severity==='Critical'&&i.status!=='Resolved'&&i.status!=="Won't Fix").length;
-  const highOpen=ALL.filter(i=>i.severity==='High'&&i.status!=='Resolved'&&i.status!=="Won't Fix").length;
+  const resolved=ALL.filter(i=>isResolved(i)).length;
+  const critOpen=ALL.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
+  const highOpen=ALL.filter(i=>i.severity==='High'&&!isResolved(i)).length;
   const inProg=ALL.filter(i=>i.status==='In Progress').length;
   const r7=ALL.filter(i=>i.sprint_target==='7-Day Rescue');
-  const r7open=r7.filter(i=>i.status!=='Resolved'&&i.status!=="Won't Fix").length;
+  const r7open=r7.filter(i=>!isResolved(i)).length;
   const r30=ALL.filter(i=>i.sprint_target==='30-Day Cleanup');
-  const r30open=r30.filter(i=>i.status!=='Resolved'&&i.status!=="Won't Fix").length;
+  const r30open=r30.filter(i=>!isResolved(i)).length;
   const pct=total?Math.round(resolved/total*100):0;
 
-  // Count-up animation
+  // Temporal KPIs
+  const now=new Date();
+  const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  // Monday of current week
+  const dow=now.getDay();
+  const daysSinceMonday=(dow+6)%7; // 0=Monday
+  const weekStart=new Date(todayStart);weekStart.setDate(weekStart.getDate()-daysSinceMonday);
+
+  const addedToday=ALL.filter(i=>new Date(i.created_at)>=todayStart).length;
+  const addedWeek=ALL.filter(i=>new Date(i.created_at)>=weekStart).length;
+  const resolvToday=ALL.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=todayStart).length;
+  const resolvWeek=ALL.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=weekStart).length;
+
   function countUp(id,target,duration=600){
-    const el=$(id);if(!el)return;let start=0,step=target/Math.ceil(duration/16);
+    const el=$(id);if(!el)return;let start=0,step=target/Math.max(1,Math.ceil(duration/16));
     const timer=setInterval(()=>{start=Math.min(start+step,target);el.textContent=Math.round(start);if(start>=target)clearInterval(timer);},16);
   }
   countUp('kpi-total',total);countUp('kpi-crit',critOpen);countUp('kpi-high',highOpen);
   countUp('kpi-prog',inProg);countUp('kpi-res',resolved);countUp('kpi-7d',r7.length);countUp('kpi-30d',r30.length);
+  countUp('kpi-added-today',addedToday);countUp('kpi-added-week',addedWeek);
+  countUp('kpi-res-today',resolvToday);countUp('kpi-res-week',resolvWeek);
+
   setText('kpi-total-sm',total);setText('kpi-res-pct',pct+'% done');
   setText('kpi-crit-sub',critOpen===0?'✓ all clear':'need urgent fix');
   setText('kpi-7d-sub',r7open+' open');setText('kpi-30d-sub',r30open+' open');
+  setText('kpi-res-today-sub',resolvToday===0?'none yet today':'great progress!');
+  setText('kpi-res-week-sub',resolvWeek===0?'keep going!':resolvWeek+' this week');
+
   // Donut
   const d=132,offset=d-(d*pct/100);
   $('donut-path').style.strokeDashoffset=offset;
   setTimeout(()=>setText('donut-pct',pct+'%'),100);
 }
 
+/* ══════════════════════════════════════
+   HIDE RESOLVED TOGGLE
+══════════════════════════════════════ */
+function toggleHideResolved(){
+  hideResolved=!hideResolved;
+  const btn=$('hide-toggle-btn');
+  if(hideResolved){
+    btn.classList.add('hiding');
+    setText('hide-toggle-label','Hiding resolved');
+  } else {
+    btn.classList.remove('hiding');
+    setText('hide-toggle-label','Show all');
+  }
+  // If we just turned on hiding and we're in "Resolved" filter, reset to all
+  if(hideResolved && (activeFlt==='Resolved'||activeFlt==="Won't Fix")) filterSb('all');
+  else render();
+}
+
+function isResolved(i){return i.status==='Resolved'||i.status==="Won't Fix";}
+
+/* ══════════════════════════════════════
+   FILTER & RENDER
+══════════════════════════════════════ */
 function filterSb(key){
   document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
   let id=key==='all'?'sb-all':key.startsWith('sev:')?'sb-sev'+key.slice(4):key.startsWith('area:')?'sb-area-'+key.slice(5):key.startsWith('target:')?('sb-'+(key.slice(7)==='7-Day Rescue'?'rescue':'cleanup')):'sb-'+key.replace(/[^a-zA-Z]/g,'');
@@ -1105,6 +1369,11 @@ function getFiltered(){
   const aF=$('fsel-area').value,tF=$('fsel-target').value;
   return ALL.filter(i=>{
     const area=areaOf(i);
+
+    // ── AUTO-HIDE RESOLVED (unless explicitly viewing Resolved filter) ──
+    const viewingResolved=(activeFlt==='Resolved'||activeFlt==="Won't Fix");
+    if(hideResolved && !viewingResolved && isResolved(i)) return false;
+
     if(activeFlt!=='all'){
       if(activeFlt.startsWith('sev:')&&i.severity!==activeFlt.slice(4))return false;
       else if(activeFlt.startsWith('area:')&&area!==activeFlt.slice(5))return false;
@@ -1126,16 +1395,26 @@ function render(){
   VISIBLE=getFiltered();
   const tbl=$('issues-tbl'),empty=$('empty-state'),tbody=$('issues-tbody');
   setText('res-count',VISIBLE.length+' issue'+(VISIBLE.length!==1?'s':''));
+
+  // Show/hide "X resolved hidden" note
+  const hiddenCount=hideResolved&&activeFlt!=='Resolved'&&activeFlt!=="Won't Fix"
+    ? ALL.filter(i=>isResolved(i)).length : 0;
+  const noteEl=$('res-hidden-note');
+  if(hiddenCount>0){noteEl.classList.add('visible');setText('res-hidden-count',hiddenCount);}
+  else noteEl.classList.remove('visible');
+
   if(!VISIBLE.length){tbl.style.display='none';empty.style.display='flex';return;}
   tbl.style.display='table';empty.style.display='none';
   tbody.innerHTML=VISIBLE.map(i=>{
     const area=areaOf(i),iconId=AREA_ICONS[area]||'ic-zap';
-    const sc=statusCls(i.status),isRes=i.status==='Resolved'||i.status==="Won't Fix";
+    const sc=statusCls(i.status),isRes=isResolved(i);
     const tc=i.sprint_target==='7-Day Rescue'?'<span class="target-chip tc-rescue">7-Day</span>':i.sprint_target?'<span class="target-chip tc-cleanup">30-Day</span>':'';
+    const catCls=i.issue_category?`cc-${i.issue_category}`:'cc-Bug';
+    const catBadge=i.issue_category&&i.issue_category!=='Bug'?`<span class="cat-chip ${catCls}">${i.issue_category}</span>`:'';
     return`<tr onclick="openPanel('${i.id}')" class="sev-${i.severity}${isRes?' row-resolved':''}">
       <td class="col-num">${i.issue_number}</td>
       <td class="col-ref">${esc(i.issue_ref||'')}</td>
-      <td class="col-title"><span class="title-main">${esc(i.title)}</span><span class="title-sub"><svg class="ico" style="width:11px;height:11px;stroke:var(--text3)"><use href="#${iconId}"/></svg>${esc(area)}</span></td>
+      <td class="col-title"><span class="title-main">${esc(i.title)}</span><span class="title-sub"><svg class="ico" style="width:11px;height:11px;stroke:var(--text3)"><use href="#${iconId}"/></svg>${esc(area)} ${catBadge}</span></td>
       <td class="col-sev"><span class="sev-chip sev-${i.severity}">${i.severity}</span></td>
       <td class="col-area"><span class="area-cell"><svg class="ico area-icon"><use href="#${iconId}"/></svg>${esc(area)}</span></td>
       <td class="col-status"><span class="status-chip ${sc}" onclick="cycleStatus(event,'${i.id}')"><span class="sc-dot"></span>${i.status}</span></td>
@@ -1159,18 +1438,21 @@ async function patchIssue(id,payload){
   const{error}=await db.from('sprint_issues').update(payload).eq('id',id);
   if(error){toast('✗ '+error.message,false);return false;}
   const i=ALL.find(x=>x.id===id);if(i)Object.assign(i,payload);
-  buildSidebar();render();
+  buildSidebar();animateKPIs();render();
   if(openIssue&&openIssue.id===id){Object.assign(openIssue,payload);fillPanel(openIssue);}
   toast('✓ Updated: '+Object.keys(payload).join(', '));return true;
 }
 
 function sortBy(f){
   if(sortFld===f)sortDir*=-1;else{sortFld=f;sortDir=1;}
-  document.querySelectorAll('thead th .sort-icon,thead th span[id^=sort-]').forEach(e=>{if(e.id)e.style.opacity='.4';});
+  document.querySelectorAll('thead th span[id^=sort-]').forEach(e=>{if(e.id)e.style.opacity='.4';});
   const el=$('sort-'+f);if(el){el.textContent=sortDir===1?'↑':'↓';el.style.opacity='1';}
   render();
 }
 
+/* ══════════════════════════════════════
+   DETAIL PANEL
+══════════════════════════════════════ */
 function openPanel(id){
   openIssue=ALL.find(i=>i.id===id);if(!openIssue)return;
   fillPanel(openIssue);$('overlay').classList.add('open');
@@ -1190,9 +1472,12 @@ function fillPanel(i){
   $('p-assignee').value=i.assigned_to||'';
   setText('p-save-msg','');
 
+  const catLabel=i.issue_category||'Bug';
+  const catCls=`cc-${catLabel}`;
   $('p-meta').innerHTML=[
     ['Area',esc(area)],
-    ['Target',i.sprint_target==='7-Day Rescue'?'<span class="target-chip tc-rescue">7-Day Rescue</span>':i.sprint_target?'<span class="target-chip tc-cleanup">30-Day Cleanup</span>':'–'],
+    ['Category',`<span class="cat-chip ${catCls}">${catLabel}</span>`],
+    ['Target',i.sprint_target==='7-Day Rescue'?'<span class="target-chip tc-rescue">7-Day Rescue</span>':i.sprint_target?'<span class="target-chip tc-cleanup">'+esc(i.sprint_target)+'</span>':'–'],
     ['Updated',new Date(i.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})],
     ['Assignee',esc(i.assigned_to||'Unassigned')],
     ['Status',`<span class="status-chip ${statusCls(i.status)}" style="font-size:10.5px;padding:3px 8px"><span class="sc-dot"></span>${i.status}</span>`],
@@ -1204,7 +1489,7 @@ function fillPanel(i){
   $('p-test-wrap').style.display=i.regression_test?'block':'none';
   $('p-test').textContent=i.regression_test||'';
 
-  $('p-status-btns').innerHTML=STATUSES.map(s=>`<button class="s-btn${s===i.status?' active':''}" onclick="patchIssue('${i.id}',{status:'${s.replace(/'/g,"\\'")}'})">${s}</button>`).join('');
+  $('p-status-btns').innerHTML=STATUSES.map(s=>`<button class="s-btn${s===i.status?' active':''}" onclick="patchIssue('${i.id}',{status:'${s.replace(/'/g,"\'")}'})">${s}</button>`).join('');
 }
 
 async function savePanel(){
@@ -1217,6 +1502,89 @@ async function savePanel(){
 
 function closePanel(e){if(!e||e.target===$('overlay')){$('overlay').classList.remove('open');openIssue=null;}}
 
+/* ══════════════════════════════════════
+   NEW ISSUE MODAL
+══════════════════════════════════════ */
+function openNewIssueModal(){
+  // Reset form
+  $('ni-title').value='';$('ni-desc').value='';$('ni-fix').value='';
+  $('ni-files').value='';$('ni-assignee').value='';$('ni-test').value='';
+  $('ni-severity').value='Medium';$('ni-area').value='Engineering';
+  $('ni-target').value='30-Day Cleanup';
+  selectedCat='Bug';
+  ['Bug','Enhancement','Testing','UX'].forEach(c=>{
+    const b=$('cat-'+c);if(b){b.className='cat-btn'+(c==='Bug'?' sel':'');}
+  });
+  setText('ni-submit-label','Add to Tracker');
+  $('ni-submit-btn').disabled=false;
+  $('new-issue-modal').classList.add('open');
+  setTimeout(()=>$('ni-title').focus(),80);
+}
+
+function closeNewIssueModal(e){
+  if(!e||e.target===$('new-issue-modal')) $('new-issue-modal').classList.remove('open');
+}
+
+function selectCat(cat){
+  selectedCat=cat;
+  const selMap={Bug:'sel',Enhancement:'sel-enh',Testing:'sel-test',UX:'sel-ux'};
+  ['Bug','Enhancement','Testing','UX'].forEach(c=>{
+    const b=$('cat-'+c);if(b)b.className='cat-btn'+(c===cat?' '+selMap[c]:'');
+  });
+}
+
+async function submitNewIssue(){
+  const title=($('ni-title').value||'').trim();
+  const desc=($('ni-desc').value||'').trim();
+  if(!title){$('ni-title').focus();toast('✗ Title is required',false);return;}
+  if(!desc){$('ni-desc').focus();toast('✗ Description is required',false);return;}
+
+  const btn=$('ni-submit-btn');
+  btn.disabled=true;setText('ni-submit-label','Adding…');
+
+  // Get next issue number
+  const maxNum=Math.max(...ALL.map(i=>i.issue_number||0),50);
+  const nextNum=maxNum+1;
+  const catPfx={Bug:'',Enhancement:'E-',Testing:'T-',UX:'UX-'};
+  const issueRef=`SF-18-${catPfx[selectedCat]||''}${String(nextNum).padStart(3,'0')}`;
+
+  // Parse files
+  const filesRaw=($('ni-files').value||'').trim();
+  const files=filesRaw?filesRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+
+  const payload={
+    issue_number:nextNum,
+    sprint_number:18,
+    sprint_name:'Sprint 18',
+    sprint_label:'Sprint 18',
+    sprint_target:$('ni-target').value,
+    issue_ref:issueRef,
+    title,
+    description:desc,
+    how_to_fix:$('ni-fix').value.trim()||null,
+    severity:$('ni-severity').value,
+    area:$('ni-area').value,
+    workflow_area:$('ni-area').value,
+    status:'Open',
+    issue_category:selectedCat,
+    files_changed:files.length?files:null,
+    regression_test:$('ni-test').value.trim()||null,
+    assigned_to:$('ni-assignee').value.trim()||null,
+    organization_id:null,
+  };
+
+  const{data,error}=await db.from('sprint_issues').insert(payload).select().single();
+  if(error){toast('✗ Failed to add: '+error.message,false);btn.disabled=false;setText('ni-submit-label','Add to Tracker');return;}
+
+  ALL.push(data);
+  buildAreaFilter();buildSidebar();animateKPIs();render();
+  $('new-issue-modal').classList.remove('open');
+  toast('✓ '+issueRef+' added to tracker');
+}
+
+/* ══════════════════════════════════════
+   GPT PANEL
+══════════════════════════════════════ */
 function toggleGPT(){
   gptOpen=!gptOpen;
   $('gpt-expanded').classList.toggle('open',gptOpen);
@@ -1229,6 +1597,9 @@ function copyPrompt(){
   });
 }
 
+/* ══════════════════════════════════════
+   UTILS
+══════════════════════════════════════ */
 function toast(msg,ok=true){
   const el=$('toast');el.textContent=msg;el.className='toast '+(ok?'ok':'err');
   el.style.display='block';setTimeout(()=>el.style.display='none',3200);
@@ -1239,10 +1610,120 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();$('search-in').focus();}
-  if(e.key==='Escape'){closePanel();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();openNewIssueModal();}
+  if(e.key==='Escape'){
+    if($('new-issue-modal').classList.contains('open'))closeNewIssueModal();
+    else closePanel();
+  }
 });
 
 load();
 </script>
+
+<!-- NEW ISSUE MODAL -->
+<div class="modal-overlay" id="new-issue-modal" onclick="closeNewIssueModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title">Report New Issue or Enhancement</div>
+        <div class="modal-sub">Found during manual testing, code review, or usage — logged directly to Sprint 18 tracker</div>
+      </div>
+      <button class="modal-close" onclick="closeNewIssueModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Category -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:8px">Category <span style="color:var(--red)">*</span></div>
+        <div class="cat-grid">
+          <button class="cat-btn sel" id="cat-Bug" onclick="selectCat('Bug')"><span class="cat-ico">🐛</span>Bug</button>
+          <button class="cat-btn" id="cat-Enhancement" onclick="selectCat('Enhancement')"><span class="cat-ico">✨</span>Enhancement</button>
+          <button class="cat-btn" id="cat-Testing" onclick="selectCat('Testing')"><span class="cat-ico">🧪</span>Testing Find</button>
+          <button class="cat-btn" id="cat-UX" onclick="selectCat('UX')"><span class="cat-ico">🎨</span>UX Issue</button>
+        </div>
+      </div>
+      <!-- Title -->
+      <div class="form-row single" style="margin-bottom:14px">
+        <div class="form-field">
+          <label>Title <span class="req">*</span></label>
+          <input type="text" class="form-in" id="ni-title" placeholder="Short, specific description of the issue…">
+        </div>
+      </div>
+      <!-- Severity + Area + Target -->
+      <div class="form-row triple">
+        <div class="form-field">
+          <label>Severity <span class="req">*</span></label>
+          <select class="form-sel" id="ni-severity">
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Area <span class="req">*</span></label>
+          <select class="form-sel" id="ni-area">
+            <option value="Engineering">Engineering</option>
+            <option value="UI/UX">UI/UX</option>
+            <option value="Security">Security</option>
+            <option value="Supabase">Supabase</option>
+            <option value="Product">Product</option>
+            <option value="Docs">Docs</option>
+            <option value="Testing">Testing</option>
+            <option value="Infrastructure">Infrastructure</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Sprint Target</label>
+          <select class="form-sel" id="ni-target">
+            <option value="7-Day Rescue">7-Day Rescue</option>
+            <option value="30-Day Cleanup" selected>30-Day Cleanup</option>
+            <option value="Next Sprint">Next Sprint</option>
+            <option value="Backlog">Backlog</option>
+          </select>
+        </div>
+      </div>
+      <!-- Description -->
+      <div class="form-row single">
+        <div class="form-field">
+          <label>Description <span class="req">*</span></label>
+          <textarea class="form-ta" id="ni-desc" placeholder="What is wrong? Where exactly? What should happen instead? Include page, file, or workflow context."></textarea>
+        </div>
+      </div>
+      <!-- How to fix -->
+      <div class="form-row single">
+        <div class="form-field">
+          <label>How to fix <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — steps to reproduce or fix)</span></label>
+          <textarea class="form-ta" id="ni-fix" placeholder="Step 1 — Open file X&#10;Step 2 — Change line Y&#10;Step 3 — Verify with test Z"></textarea>
+        </div>
+      </div>
+      <!-- Files + Assignee -->
+      <div class="form-row">
+        <div class="form-field">
+          <label>Affected files <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(comma separated)</span></label>
+          <input type="text" class="form-in" id="ni-files" placeholder="src/app/orders/page.tsx, middleware.ts">
+        </div>
+        <div class="form-field">
+          <label>Assignee</label>
+          <input type="text" class="form-in" id="ni-assignee" placeholder="Name or @handle">
+        </div>
+      </div>
+      <!-- Regression test -->
+      <div class="form-row single">
+        <div class="form-field">
+          <label>Regression test</label>
+          <input type="text" class="form-in" id="ni-test" placeholder="What to verify once fixed…">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeNewIssueModal()">Cancel</button>
+        <button class="btn-submit" id="ni-submit-btn" onclick="submitNewIssue()">
+          <svg class="ico" style="width:13px;height:13px" stroke="#fff" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span id="ni-submit-label">Add to Tracker</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
