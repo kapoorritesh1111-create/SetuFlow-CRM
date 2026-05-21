@@ -11,6 +11,15 @@ type ActionState = { error?: string; success?: string };
 
 const DOCUMENT_STATUSES = new Set(['pending', 'submitted', 'approved', 'revision_requested', 'rejected', 'expired']);
 const COMPLIANCE_STATUSES = new Set(['pending', 'submitted', 'approved', 'revision_requested', 'blocked', 'rejected', 'waived']);
+const COMPLIANCE_DOCS_BUCKET = 'compliance-docs';
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
 
 function normalizeStatus(value: FormDataEntryValue | null) {
   return String(value ?? '').trim().toLowerCase();
@@ -20,6 +29,14 @@ function safeReturnPath(value: FormDataEntryValue | null, fallback = '/complianc
   const raw = String(value ?? '').trim();
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return fallback;
   return raw;
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName.trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120) || 'evidence-file';
+}
+
+function readUploadFile(value: FormDataEntryValue | null) {
+  return value instanceof File && value.name && value.size > 0 ? value : null;
 }
 
 async function resolveLeadAndQuote(db: any, organizationId: string, leadId: string, quoteId: string) {
@@ -66,12 +83,12 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
   const requirementCode = String(formData.get('requirement_code') ?? '').trim() || null;
   const reviewNotes = String(formData.get('review_notes') ?? '').trim() || null;
   const expiresAt = String(formData.get('expires_at') ?? '').trim() || null;
-  const fileEntry = formData.get('file');
-  const typedName = String(formData.get('file_name') ?? '').trim();
-  const fileName = fileEntry instanceof File && fileEntry.name ? fileEntry.name : typedName;
+  const file = readUploadFile(formData.get('file'));
 
   if (!leadId && !quoteId) return { error: 'Choose a lead or quote before uploading a document.' };
-  if (!fileName) return { error: 'Choose a file or enter a document name.' };
+  if (!file) return { error: 'Choose a real file before attaching evidence.' };
+  if (file.size > MAX_UPLOAD_BYTES) return { error: 'Evidence file must be 10MB or smaller.' };
+  if (!ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) return { error: 'Evidence file must be a PDF, JPG, PNG, DOC, or DOCX file.' };
 
   const supabase = await createClient();
   const admin = createAdminSupabaseClient();
@@ -86,6 +103,14 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
   const relatedId = quote?.id ?? lead.id;
 
   const now = new Date().toISOString();
+  const safeName = sanitizeFileName(file.name);
+  const storagePath = `${workspace.organization.id}/${relatedEntity}/${relatedId}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+  const uploadResult = await supabase.storage.from(COMPLIANCE_DOCS_BUCKET).upload(storagePath, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (uploadResult.error) return { error: uploadResult.error.message };
+
   const { data: document, error } = await mutationDb
     .from('documents')
     .insert({
@@ -93,8 +118,8 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
       related_entity: relatedEntity,
       related_id: relatedId,
       linked_quote_id: quote?.id ?? null,
-      file_name: fileName,
-      file_url: `workspace-upload://${relatedEntity}/${relatedId}/${Date.now()}/${encodeURIComponent(fileName)}`,
+      file_name: file.name,
+      file_url: `storage://${COMPLIANCE_DOCS_BUCKET}/${storagePath}`,
       doc_type: docType,
       uploaded_by: workspace.user.id,
       uploaded_at: now,
@@ -108,7 +133,10 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
     })
     .select('id')
     .single();
-  if (error) return { error: error.message };
+  if (error) {
+    await supabase.storage.from(COMPLIANCE_DOCS_BUCKET).remove([storagePath]);
+    return { error: error.message };
+  }
 
   await mutationDb.from('audit_logs').insert({
     organization_id: workspace.organization.id,
@@ -116,7 +144,7 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
     action: 'document_uploaded',
     entity_type: 'document',
     entity_id: document?.id ?? null,
-    payload: { previous: null, new: { lead_id: lead.id, quote_id: quote?.id ?? null, file_name: fileName, status: 'submitted' }, metadata: { source: quote?.id ? 'quote_compliance_fix_panel' : 'documents_workspace' } },
+    payload: { previous: null, new: { lead_id: lead.id, quote_id: quote?.id ?? null, file_name: file.name, storage_path: storagePath, status: 'submitted' }, metadata: { source: quote?.id ? 'quote_compliance_fix_panel' : 'documents_workspace' } },
   });
 
   revalidatePath('/documents');
