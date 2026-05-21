@@ -2,6 +2,23 @@ import type { Database } from "@/types/database";
 import type { ContactAfterSaveGuidanceResult } from "@/lib/contact-exchange/contact-after-save-guidance";
 import type { LeadDrawerLead } from "@/features/leads/types/workspace";
 
+declare global {
+  type SpeechRecognitionCtor = new () => {
+    lang: string;
+    continuous: boolean;
+    interimResults: boolean;
+    onresult:
+      | ((event: {
+          results: ArrayLike<ArrayLike<{ transcript: string }>>;
+        }) => void)
+      | null;
+    onerror: (() => void) | null;
+    onend: (() => void) | null;
+    start: () => void;
+    stop?: () => void;
+  };
+}
+
 export type LeadFormState = {
   error?: string;
   success?: string;
@@ -189,17 +206,4 @@ export type QuickScanDraft = {
 
 export type QuickInterestMode = "product" | "category" | "new_request";
 
-export type SpeechRecognitionCtor = new () => {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult:
-    | ((event: {
-        results: ArrayLike<ArrayLike<{ transcript: string }>>;
-      }) => void)
-    | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop?: () => void;
-};
+export type SpeechRecognitionCtor = globalThis.SpeechRecognitionCtor;
