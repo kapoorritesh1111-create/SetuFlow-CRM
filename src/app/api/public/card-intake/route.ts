@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { extractContactSource, extractPdfTextLayer } from '@/lib/contact-exchange/contact-extraction';
+import { checkRateLimit, publicRateLimitKey } from '@/lib/rate-limit/simple';
 
 function trim(value: FormDataEntryValue | null) {
   return String(value ?? '').trim();
@@ -13,6 +14,11 @@ function buildPublicCardSourceLabel(args: { desiredAction: string; repName: stri
 }
 
 export async function POST(request: NextRequest) {
+  const limit = await checkRateLimit(publicRateLimitKey('card-intake', request), 5, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: 'Too many submissions. Try again later.' }, { status: 429 });
+  }
+
   const admin = createAdminSupabaseClient();
   if (!admin) {
     return NextResponse.json({ error: 'Service role is not configured for public card intake.' }, { status: 500 });
