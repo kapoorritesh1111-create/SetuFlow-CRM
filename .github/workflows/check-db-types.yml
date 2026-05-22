@@ -1,0 +1,28 @@
+name: Check DB Type Drift
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  type-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Generate fresh database types
+        run: supabase gen types typescript --project-id sjzfzloggabsmcuxktnl > /tmp/database.generated.fresh.ts
+      - name: Compare committed generated types
+        run: |
+          if diff -u src/types/database.generated.ts /tmp/database.generated.fresh.ts; then
+            echo "Types in sync"
+          else
+            echo "TYPE DRIFT DETECTED"
+            echo "Run: npm run db:types"
+            echo "Then commit src/types/database.generated.ts."
+            exit 1
+          fi
