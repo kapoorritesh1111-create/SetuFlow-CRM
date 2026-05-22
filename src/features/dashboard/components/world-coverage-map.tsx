@@ -250,8 +250,8 @@ export function WorldCoverageMap({
               <stop offset="62%" stopColor="#0b2344" />
               <stop offset="100%" stopColor="#061326" />
             </radialGradient>
-            <filter id="selectedGlow" x="-55%" y="-55%" width="210%" height="210%">
-              <feDropShadow dx="0" dy="0" stdDeviation="9" floodColor="#f8fafc" floodOpacity="1" />
+            <filter id="selectedGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#fbbf24" floodOpacity="0.9" />
             </filter>
           </defs>
           <rect width={worldMap.width} height={worldMap.height} fill="url(#ocean)" />
@@ -262,7 +262,7 @@ export function WorldCoverageMap({
               const style = countryStyles.get(code);
 
               if (isSelected) {
-                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#fbbf24" strokeWidth={2.4} filter="url(#selectedGlow)" className="cursor-pointer transition" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
+                return <path key={code} d={item.path} data-country-code={code} fill={style?.fill ?? '#f59e0b'} stroke="#fbbf24" strokeWidth={1.1} filter="url(#selectedGlow)" opacity={1} className="cursor-pointer transition brightness-150 saturate-150" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
               if (style) {
                 return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={1.05} className="cursor-pointer transition hover:brightness-125" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
@@ -274,13 +274,13 @@ export function WorldCoverageMap({
               const isSelected = selectedCountryCode === marker.country.countryCode;
               return (
                 <g key={`marker-${marker.country.countryCode}`} className="pointer-events-none">
-                  {marker.tier !== 'watch' ? (
+                  {marker.tier !== 'watch' && !isSelected ? (
                     <circle cx={marker.center[0]} cy={marker.center[1]} r="4" fill="none" stroke={color} strokeWidth="1.7" opacity="0.95">
                       <animate attributeName="r" from="4" to="18" dur="2.4s" repeatCount="indefinite" />
                       <animate attributeName="opacity" from="1" to="0" dur="2.4s" repeatCount="indefinite" />
                     </circle>
                   ) : null}
-                  <circle cx={marker.center[0]} cy={marker.center[1]} r={isSelected ? 7.2 : 4.8} fill={isSelected ? '#f8fafc' : color} stroke={isSelected ? '#fbbf24' : '#020617'} strokeWidth={isSelected ? 2 : 1.4} />
+                  <circle cx={marker.center[0]} cy={marker.center[1]} r={isSelected ? 5.2 : 4.8} fill={isSelected ? '#fbbf24' : color} stroke={isSelected ? '#f8fafc' : '#020617'} strokeWidth={isSelected ? 1.6 : 1.4} />
                   {marker.country.activeLeadCount > 0 ? (
                     <g transform={`translate(${marker.center[0] + 7} ${marker.center[1] - 9})`}>
                       <rect x="0" y="0" width="20" height="14" rx="7" fill="rgba(2,6,23,0.9)" stroke="rgba(248,250,252,0.45)" />
