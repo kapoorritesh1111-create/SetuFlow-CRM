@@ -378,3 +378,8 @@ svg[aria-label="Global trade coverage map"] circle[fill="#f8fafc"][stroke="#fbbf
   r: 18px;
   filter: drop-shadow(0 0 9px rgba(251,191,36,0.95)) drop-shadow(0 0 18px rgba(248,250,252,0.7));
 }
+
+svg[aria-label="Global trade coverage map"] path[data-country-code] {
+  clip-rule: evenodd;
+  fill-rule: evenodd;
+}
