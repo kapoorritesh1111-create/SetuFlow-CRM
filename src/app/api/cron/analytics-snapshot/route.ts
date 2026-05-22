@@ -4,6 +4,14 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const CRON_SECRET = process.env.CRON_SECRET;
+
+if (!CRON_SECRET) {
+  console.error(
+    '[SetuFlow CRON] CRITICAL: CRON_SECRET env var is not set. All cron requests will be rejected. Set it in Vercel > Settings > Environment Variables.',
+  );
+}
+
 type AnalyticsDb = ReturnType<typeof createServiceRoleClient>;
 type LeadSnapshotRow = { id: string; qualification_status: string | null; status: string | null };
 type QuoteSnapshotRow = { id: string; status: string | null; lead_id: string | null; created_at: string | null; updated_at: string | null };
@@ -27,9 +35,7 @@ function avgDays(rows: Array<{ created_at?: string | null; updated_at?: string |
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
-function isAuthorized(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
+function isAuthorized(request: NextRequest, secret: string) {
   const auth = request.headers.get('authorization') ?? '';
   const querySecret = request.nextUrl.searchParams.get('secret') ?? '';
   return auth === `Bearer ${secret}` || querySecret === secret;
@@ -101,7 +107,11 @@ async function snapshotOrganization(db: NonNullable<AnalyticsDb>, organizationId
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!CRON_SECRET) {
+    return NextResponse.json({ ok: false, error: 'Cron not configured - CRON_SECRET missing on server.' }, { status: 503 });
+  }
+
+  if (!isAuthorized(request, CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized analytics snapshot cron request.' }, { status: 401 });
   }
 
