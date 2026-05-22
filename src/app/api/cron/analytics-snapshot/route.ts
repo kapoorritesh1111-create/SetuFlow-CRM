@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
-import type { Database } from '@/types/database';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type AnalyticsDb = SupabaseClient<Database>;
+type AnalyticsDb = ReturnType<typeof createServiceRoleClient>;
 type LeadSnapshotRow = { id: string; qualification_status: string | null; status: string | null };
 type QuoteSnapshotRow = { id: string; status: string | null; lead_id: string | null; created_at: string | null; updated_at: string | null };
 type OrderSnapshotRow = { id: string; lead_id: string | null; status: string | null; current_stage: string | null; execution_state: string | null };
@@ -37,7 +35,7 @@ function isAuthorized(request: NextRequest) {
   return auth === `Bearer ${secret}` || querySecret === secret;
 }
 
-async function snapshotOrganization(db: AnalyticsDb, organizationId: string, snapshotDate: string) {
+async function snapshotOrganization(db: NonNullable<AnalyticsDb>, organizationId: string, snapshotDate: string) {
   const since90 = new Date(Date.now() - 90 * 86_400_000).toISOString();
 
   const [leadsRes, quotesRes, ordersRes, sendsRes] = await Promise.all([
