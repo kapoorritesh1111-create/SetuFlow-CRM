@@ -17,8 +17,38 @@
  * SUPABASE_SERVICE_ROLE_KEY is set.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { hasSupabaseEnv } from '@/lib/env';
+
+type RateLimitHitRow = {
+  key: string;
+  count: number;
+  window_start: string;
+};
+
+type RateLimitDatabase = {
+  public: {
+    Tables: {
+      rate_limit_hits: {
+        Row: RateLimitHitRow;
+        Insert: RateLimitHitRow;
+        Update: Partial<RateLimitHitRow>;
+        Relationships: [];
+      };
+    };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
+  };
+};
+
+function createRateLimitClient() {
+  const supabase = createAdminSupabaseClient();
+  if (!supabase) return null;
+  return supabase as unknown as SupabaseClient<RateLimitDatabase>;
+}
 
 export async function checkRateLimit(
   key: string,
@@ -28,7 +58,7 @@ export async function checkRateLimit(
   if (!hasSupabaseEnv) return { allowed: true };
 
   try {
-    const supabase = createAdminSupabaseClient();
+    const supabase = createRateLimitClient();
     if (!supabase) return { allowed: true };
 
     const now = new Date();
