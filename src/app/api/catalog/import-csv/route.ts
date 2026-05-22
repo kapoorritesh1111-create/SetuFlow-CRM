@@ -34,7 +34,7 @@ const text = (row: CsvRow, keys: string[]) => keys.map((key) => clean(row[key]))
 const num = (row: CsvRow, keys: string[]) => { for (const key of keys) { const n = money(row[key]); if (n !== null) return n; } return null; };
 const currency = (row: CsvRow) => clean(row.currency || 'USD').toUpperCase() || 'USD';
 const empty = (): Result => ({ inserted: 0, updated: 0, skipped: 0, pricingRulesCreated: 0, pricingRulesUpdated: 0, issues: [], rowSummaries: [] });
-const catalogDb = (db: SupabaseClient<Database>): CatalogDb => db as unknown as CatalogDb;
+const catalogDb = (db: unknown): CatalogDb => db as CatalogDb;
 
 function zodIssues(error: z.ZodError): Issue[] {
   return error.issues.map((issue) => ({ row: typeof issue.path[0] === 'number' ? issue.path[0] + 2 : 0, field: issue.path.slice(1).join('.') || 'row', severity: 'error', message: issue.message }));
