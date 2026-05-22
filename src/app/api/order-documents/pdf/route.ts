@@ -60,12 +60,11 @@ export async function POST(request: NextRequest) {
   const query = db
     .from('order_document_sends')
     .select('id, organization_id, order_id, order_document_id, share_token, share_url, document_type, order_documents(pdf_storage_path)')
-    .limit(1)
-    .returns<OrderDocumentSendRow[]>();
+    .limit(1);
 
   const { data: sendRow, error } = sendId
-    ? await query.eq('id', sendId).maybeSingle()
-    : await query.eq('share_token', shareToken).maybeSingle();
+    ? await query.eq('id', sendId).returns<OrderDocumentSendRow[]>().maybeSingle()
+    : await query.eq('share_token', shareToken).returns<OrderDocumentSendRow[]>().maybeSingle();
 
   if (error || !sendRow?.id || !sendRow?.share_token) {
     return NextResponse.json({ ok: false, error: 'Tracked order document send was not found.' }, { status: 404 });
