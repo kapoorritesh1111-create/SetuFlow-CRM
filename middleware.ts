@@ -12,6 +12,60 @@ const workspaceRedirects: Record<string, string> = {
   '/workspace/my-card': '/contact-exchange/vcard',
 };
 
+type RateLimitBucket = { count: number; resetAt: number };
+
+const SETU_GURU_RESEARCH_PATH = '/api/setu-guru/research';
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const DEFAULT_RESEARCH_LIMIT = 10;
+const researchBuckets = new Map<string, RateLimitBucket>();
+
+function getResearchLimit() {
+  const configured = Number(process.env.SETU_GURU_RESEARCH_RATE_LIMIT ?? DEFAULT_RESEARCH_LIMIT);
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : DEFAULT_RESEARCH_LIMIT;
+}
+
+function getClientKey(request: NextRequest) {
+  const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  const vercelIp = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  return forwardedFor || realIp || vercelIp || 'unknown-client';
+}
+
+function checkResearchRateLimit(request: NextRequest) {
+  const now = Date.now();
+  const limit = getResearchLimit();
+  const key = getClientKey(request);
+  const existing = researchBuckets.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    const resetAt = now + RATE_LIMIT_WINDOW_MS;
+    researchBuckets.set(key, { count: 1, resetAt });
+    return { allowed: true, limit, remaining: limit - 1, resetAt };
+  }
+
+  if (existing.count >= limit) {
+    return { allowed: false, limit, remaining: 0, resetAt: existing.resetAt };
+  }
+
+  existing.count += 1;
+  return { allowed: true, limit, remaining: Math.max(limit - existing.count, 0), resetAt: existing.resetAt };
+}
+
+function rateLimitHeaders(limit: number, remaining: number, resetAt: number) {
+  const retryAfterSeconds = Math.max(Math.ceil((resetAt - Date.now()) / 1000), 1);
+  return {
+    'Retry-After': String(retryAfterSeconds),
+    'X-RateLimit-Limit': String(limit),
+    'X-RateLimit-Remaining': String(remaining),
+    'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
+  };
+}
+
+function applyRateLimitHeaders(response: NextResponse, limit: number, remaining: number, resetAt: number) {
+  Object.entries(rateLimitHeaders(limit, remaining, resetAt)).forEach(([key, value]) => response.headers.set(key, value));
+  return response;
+}
+
 function createContentSecurityPolicy(nonce: string) {
   return [
     "default-src 'self'",
@@ -138,6 +192,24 @@ export async function middleware(request: NextRequest) {
       return applySecurityHeaders(NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 }), nonce);
     }
     return applySecurityHeaders(NextResponse.redirect(loginRedirect(request)), nonce);
+  }
+
+  if (pathname === SETU_GURU_RESEARCH_PATH) {
+    const quota = checkResearchRateLimit(request);
+    if (!quota.allowed) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          {
+            ok: false,
+            error: 'Setu Guru live research rate limit exceeded.',
+            message: 'Please wait for the rate-limit window to reset before asking another live research question.',
+          },
+          { status: 429, headers: rateLimitHeaders(quota.limit, quota.remaining, quota.resetAt) },
+        ),
+        nonce,
+      );
+    }
+    applyRateLimitHeaders(response, quota.limit, quota.remaining, quota.resetAt);
   }
 
   return applySecurityHeaders(response, nonce);
