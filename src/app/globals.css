@@ -258,7 +258,6 @@ button {
   .mobile-premium-leads > div[style*="padding: 10px 24px"] select,
   .mobile-premium-leads > div[style*="padding: 10px 24px"] input {
     min-height: 0 !important;
-    box-shadow: none !important;
   }
 
   .mobile-premium-leads [style*="border: 1px solid #e2e8f0"][style*="background: white"] {
@@ -372,4 +371,10 @@ button {
   .setu-float-3 {
     animation: none !important;
   }
+}
+
+/* SF-18-067: keep the selected market visible after map auto-zoom. */
+svg[aria-label="Global trade coverage map"] circle[fill="#f8fafc"][stroke="#fbbf24"] {
+  r: 18px;
+  filter: drop-shadow(0 0 9px rgba(251,191,36,0.95)) drop-shadow(0 0 18px rgba(248,250,252,0.7));
 }
