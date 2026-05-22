@@ -79,6 +79,25 @@ export function useWorldMapControls({
     clearInteractionState();
   }, [clearInteractionState]);
 
+  const focusCountryCenter = useCallback(({
+    center,
+    zoom: nextZoom,
+    mapWidth,
+    mapHeight,
+  }: {
+    center: [number, number];
+    zoom: number;
+    mapWidth: number;
+    mapHeight: number;
+  }) => {
+    setZoom(nextZoom);
+    setPan({
+      x: mapWidth / 2 - center[0] * nextZoom,
+      y: mapHeight / 2 - center[1] * nextZoom,
+    });
+    clearInteractionState();
+  }, [clearInteractionState]);
+
   const onPointerDown: PointerEventHandler<HTMLDivElement> = (event) => {
     if (!event.isPrimary || event.button !== 0) return;
 
@@ -180,6 +199,7 @@ export function useWorldMapControls({
     onZoomIn,
     onResetView,
     focusCountry,
+    focusCountryCenter,
     onPointerDown,
     onPointerMove,
     onPointerUp,
