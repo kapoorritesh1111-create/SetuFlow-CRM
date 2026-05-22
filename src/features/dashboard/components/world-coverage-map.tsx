@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CountryCoverageDatum } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import { cn, formatDate } from '@/lib/utils';
+import { COUNTRY_MAP_FOCUS } from '@/features/dashboard/lib/country-map-focus';
 import { useWorldMapControls } from '@/features/dashboard/hooks/use-world-map-controls';
 
 type WorldCoverageMapProps = {
@@ -119,7 +120,7 @@ export function WorldCoverageMap({
 
   const {
     zoom, pan, dragging, hoveredCode, pointerPosition,
-    onZoomOut, onZoomIn, onResetView, focusCountry,
+    onZoomOut, onZoomIn, onResetView, focusCountry, focusCountryCenter,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onPointerLeave,
   } = useWorldMapControls({ isSelectableCountry, onSelectCountry });
 
@@ -129,11 +130,18 @@ export function WorldCoverageMap({
       onResetView();
       return;
     }
+
+    const focusMeta = COUNTRY_MAP_FOCUS[selectedCountryCode];
+    if (focusMeta) {
+      focusCountryCenter({ center: focusMeta.center, zoom: focusMeta.zoom, mapWidth: worldMap.width, mapHeight: worldMap.height });
+      return;
+    }
+
     const path = svgRef.current?.querySelector<SVGPathElement>(`[data-country-code="${selectedCountryCode}"]`) ?? null;
     const bounds = getPathBounds(path);
     if (!bounds) return;
     focusCountry({ bounds, mapWidth: worldMap.width, mapHeight: worldMap.height });
-  }, [focusCountry, mapReady, onResetView, selectedCountryCode, worldMap]);
+  }, [focusCountry, focusCountryCenter, mapReady, onResetView, selectedCountryCode, worldMap]);
 
   const hovered = hoveredCode ? coverageMap.get(hoveredCode) ?? null : null;
 
