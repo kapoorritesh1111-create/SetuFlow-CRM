@@ -14,6 +14,8 @@ type AdminNavItem = {
   badgeTone?: 'success' | 'warning' | 'danger';
 };
 
+const internalOnlyAdminKeys: AdminNavKey[] = ['ai-analytics', 'client-onboarding', 'seo'];
+
 const nav: Array<{ label: string; items: AdminNavItem[] }> = [
   {
     label: 'Workspace',
@@ -74,7 +76,7 @@ function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'suc
 
 export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], navCounts, children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; navCounts?: Partial<Record<'users' | 'invitations' | 'security', number>>; children?: ReactNode }) {
   const normalizedOrgName = organizationName.trim().toLowerCase();
-  const showMainOrgOnlyTools = normalizedOrgName === 'setu flow' || normalizedOrgName === 'setuflow' || normalizedOrgName.includes('setu');
+  const showInternalOnlyTools = normalizedOrgName === 'setu flow' || normalizedOrgName === 'setuflow' || normalizedOrgName.includes('setu');
   return (
     <div className="grid gap-6 xl:grid-cols-[216px_minmax(0,1fr)]">
       <aside className="rounded-none border-r border-slate-200 bg-white px-2 py-5 shadow-[4px_0_18px_rgba(15,23,42,0.04)] xl:sticky xl:top-16 xl:min-h-[calc(100vh-4rem)] xl:self-start">
@@ -83,7 +85,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
             <div key={section.label} className={cn(index > 0 && 'border-t border-slate-200 pt-7')}>
               <p className="px-2 text-[9px] font-extrabold uppercase tracking-[0.24em] text-slate-400">{section.label}</p>
               <div className="mt-4 space-y-2">
-                {section.items.filter((item) => showMainOrgOnlyTools || !['client-onboarding', 'seo'].includes(item.key)).map((item) => {
+                {section.items.filter((item) => showInternalOnlyTools || !internalOnlyAdminKeys.includes(item.key)).map((item) => {
                   const isActive = item.key === active;
                   const dynamicCount = item.key === 'users' ? navCounts?.users : item.key === 'invitations' ? navCounts?.invitations : item.key === 'security' ? navCounts?.security : undefined;
                   const badgeLabel = dynamicCount === undefined ? item.badge : String(dynamicCount);
@@ -120,7 +122,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
 }
 
 export function AdminPageHero({ title, description, badge, cta, stats }: { title: string; description: string; badge?: string; cta?: ReactNode; stats?: Array<{ label: string; value: string | number; tone?: 'default' | 'success' | 'warning' | 'danger' | 'info' }> }) {
-  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <span key={stat.label}><ToolbarStat label={stat.label} value={String(stat.value)} tone={(stat.tone ?? 'default') as any} /></span>)} />;
+  return <WorkspaceHeader eyebrow="Admin & Settings" title={title} description={description} badge={badge} actions={cta} meta={stats?.map((stat) => <span key={stat.label}><ToolbarStat label={stat.label} value={String(stat.value)} tone={stat.tone ?? 'default'} /></span>)} />;
 }
 
 function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: number; gapItems?: AdminGapItem[] }) {
