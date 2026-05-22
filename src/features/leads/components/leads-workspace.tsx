@@ -1,4 +1,4 @@
-// SF-18-007: Small public entrypoint.
-// The implementation was moved to a focused submodule so this canonical import path
-// stays stable while the large legacy implementation is decomposed in smaller PRs.
-export * from "@/features/leads/components/workspace/leads-workspace.legacy";
+// SF-18-007C: Small public entrypoint.
+// The production Leads workspace now routes through a non-legacy implementation
+// module while list and command-center extraction continues in focused modules.
+export * from "@/features/leads/components/workspace/leads-workspace-implementation";
