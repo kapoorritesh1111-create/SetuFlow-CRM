@@ -9,6 +9,17 @@ type PdfRequestBody = {
   shareToken?: string;
 };
 
+type OrderDocumentSendRow = {
+  id: string;
+  organization_id: string;
+  order_id: string;
+  order_document_id: string;
+  share_token: string;
+  share_url: string | null;
+  document_type: string | null;
+  order_documents: { pdf_storage_path: string | null } | null;
+};
+
 function buildOrigin(request: NextRequest) {
   const envOrigin = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
   if (envOrigin) return envOrigin;
@@ -42,10 +53,15 @@ export async function POST(request: NextRequest) {
   }
 
   const db = createServiceRoleClient();
+  if (!db) {
+    return NextResponse.json({ ok: false, error: 'Server configuration error.' }, { status: 500 });
+  }
+
   const query = db
     .from('order_document_sends')
     .select('id, organization_id, order_id, order_document_id, share_token, share_url, document_type, order_documents(pdf_storage_path)')
-    .limit(1);
+    .limit(1)
+    .returns<OrderDocumentSendRow[]>();
 
   const { data: sendRow, error } = sendId
     ? await query.eq('id', sendId).maybeSingle()
