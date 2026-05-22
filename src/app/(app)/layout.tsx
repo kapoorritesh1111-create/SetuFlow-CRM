@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { StateMessage } from '@/components/ui/state-message';
+import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
@@ -57,6 +58,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       cardSettings={myCardSettings}
       cardShareSlug={myCardSettingsRow?.share_slug ?? null}
     >
+      <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
       {children}
     </AppShell>
