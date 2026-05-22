@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { checkRateLimit, publicRateLimitKey } from '@/lib/rate-limit/simple';
@@ -17,6 +18,67 @@ import {
 } from '@/features/client-onboarding/server/notifications';
 
 export const dynamic = 'force-dynamic';
+
+type ClientOnboardingRequestRow = {
+  id: string;
+  company_name: string;
+  company_slug: string;
+  workspace_domain: string;
+  logo_url: string | null;
+  website: string | null;
+  primary_admin_name: string | null;
+  primary_admin_email: string;
+  primary_phone: string | null;
+  headquarters_country: string | null;
+  requested_markets: string[];
+  requested_countries: string[];
+  requested_pipelines: string[];
+  requested_pipeline_stages: string[];
+  requested_next_steps: string[];
+  pricing_rules_notes: string | null;
+  product_category_notes: string | null;
+  additional_notes: string | null;
+  wants_trade_events: boolean;
+  notification_email: string;
+  status: string;
+  admin_setup_url: string | null;
+  notification_status: string | null;
+  notification_error: string | null;
+  notification_sent_at: string | null;
+  updated_at: string | null;
+};
+
+type ClientOnboardingRequestInsert = Omit<
+  ClientOnboardingRequestRow,
+  'id' | 'admin_setup_url' | 'notification_status' | 'notification_error' | 'notification_sent_at' | 'updated_at'
+>;
+
+type ClientOnboardingRequestUpdate = Partial<
+  Pick<ClientOnboardingRequestRow, 'admin_setup_url' | 'notification_status' | 'notification_error' | 'notification_sent_at' | 'updated_at'>
+>;
+
+type ClientOnboardingDatabase = {
+  public: {
+    Tables: {
+      client_onboarding_requests: {
+        Row: ClientOnboardingRequestRow;
+        Insert: ClientOnboardingRequestInsert;
+        Update: ClientOnboardingRequestUpdate;
+        Relationships: [];
+      };
+    };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
+  };
+};
+
+function createClientOnboardingAdminClient() {
+  const admin = createAdminSupabaseClient();
+  if (!admin) return null;
+  return admin as unknown as SupabaseClient<ClientOnboardingDatabase>;
+}
 
 function redirectToReceived(request: NextRequest, params: Record<string, string | null | undefined>) {
   const url = new URL('/onboarding/received', request.url);
@@ -49,12 +111,12 @@ export async function POST(request: NextRequest) {
 
   const workspaceDomain = buildWorkspaceDomain(companyName);
   const adminEmail = getOnboardingAdminEmail();
-  const admin = createAdminSupabaseClient();
+  const admin = createClientOnboardingAdminClient();
   if (!admin) {
     return redirectToReceived(request, { company: companyName, domain: workspaceDomain, notice: 'service-role-missing' });
   }
 
-  const payload = {
+  const payload: ClientOnboardingRequestInsert = {
     company_name: companyName,
     company_slug: slugifyCompanyName(companyName),
     workspace_domain: workspaceDomain,
