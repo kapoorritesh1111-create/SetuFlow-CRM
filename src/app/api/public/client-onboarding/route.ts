@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { checkRateLimit, publicRateLimitKey } from '@/lib/rate-limit/simple';
 import {
   DEFAULT_SETU_FLOW_LOGO,
   buildWorkspaceDomain,
@@ -34,6 +35,11 @@ function redirectToForm(request: NextRequest, params: Record<string, string | nu
 }
 
 export async function POST(request: NextRequest) {
+  const limit = await checkRateLimit(publicRateLimitKey('client-onboarding', request), 5, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return redirectToForm(request, { notice: 'too-many-submissions' });
+  }
+
   const formData = await request.formData();
   const companyName = normalizeText(formData.get('company_name'));
   const primaryAdminEmail = normalizeEmail(formData.get('primary_admin_email'));
@@ -43,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   const workspaceDomain = buildWorkspaceDomain(companyName);
   const adminEmail = getOnboardingAdminEmail();
-  const admin = createAdminSupabaseClient() as any;
+  const admin = createAdminSupabaseClient();
   if (!admin) {
     return redirectToReceived(request, { company: companyName, domain: workspaceDomain, notice: 'service-role-missing' });
   }
