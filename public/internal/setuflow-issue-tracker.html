@@ -830,9 +830,9 @@ When updating a tracker row, update only fields required by the workflow:
 Set issue to In Progress immediately after selecting it:
 {
   "status": "In Progress",
-  "assigned_to": "ChatGPT",
-  "fix_applied": "Started live GitHub workflow in kapoorritesh1111-create/SetuFlow-CRM. Preflight passed. Current checkpoint: selected issue, inspected tracker details including issue_type, parent_ref, depends_on, files_changed, how_to_fix, and regression_test. Inspecting main branch files and live schema before changes. Pending: implementation, validation, Vercel proof, and final tracker update.",
-  "pr_link": ""
+  "assigned_to": "Ritesh",
+  "fix_applied": "Checkpoint Update:\n\n- Completed so far:\n  o {completed work}.\n\n- Files changed so far:\n  o {files changed or None}.\n\n- Supabase migrations/data changes so far:\n  o {changes or None}.\n\n- Validation/Vercel status so far:\n  o {preview/prod status, deployment ID, or not checked}.\n\n- Pending items before resolution:\n  o {remaining work}.\n\n- Blockers / caveats:\n  o {blocker or None}.",
+  "pr_link": "{real PR/deployment URL if available, otherwise empty string}"
 }
 
 Update tracker progress after every meaningful checkpoint while status remains In Progress.
@@ -848,8 +848,8 @@ Every checkpoint note must include:
 Set issue to Resolved only after live proof exists:
 {
   "status": "Resolved",
-  "assigned_to": "ChatGPT",
-  "fix_applied": "{final proof-based summary: all changes made across the issue, exact GitHub main changes, Supabase updates if any, Vercel build/deployment result, What Changed Summary, validation performed, pending items should be none, caveats if any}",
+  "assigned_to": "Ritesh",
+  "fix_applied": "Fix Applied (Final Proof-Based Summary):\n\n- Scope of changes:\n  o All updates implemented across the issue have been completed and verified.\n  o Exact changes merged into main in GitHub: {commit/PR summary}.\n  o Supabase updates: {schema/config/data changes or None}.\n  o Vercel build/deployment: {pass/fail + deployment URL or ID}.\n\n- What Changed (Summary):\n  o {bullet 1 - key functional/UI change}.\n  o {bullet 2 - secondary change or refactor}.\n  o {bullet 3 - infra/config/schema change, or None}.\n\n- Validation Performed:\n  o {tests run - unit/integration/manual}.\n  o {environments validated - preview/production}.\n  o Result: {All checks passed / blocker summary}.\n\n- Pending Items:\n  o None.\n\n- Caveats / Notes:\n  o {known edge cases, rollout notes, or None}.",
   "pr_link": "{real GitHub commit/PR URL or Vercel deployment URL}"
 }
 
