@@ -125,7 +125,7 @@ export function WorldCoverageMap({
     const map = new Map<string, { fill: string; stroke: string; clickable: boolean }>();
     for (const c of countries) {
       const tier = getMarketTier(c);
-      const intensity = 0.28 + (c.activeLeadCount / maxLeads) * 0.58;
+      const intensity = 0.36 + (c.activeLeadCount / maxLeads) * 0.58;
       map.set(c.countryCode, {
         fill: getTierFill(tier, mode, intensity),
         stroke: getTierStroke(tier, mode),
@@ -191,14 +191,14 @@ export function WorldCoverageMap({
 
   if (!worldMap) {
     return (
-      <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#0a1628] p-4', className)}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-3">
+      <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#071326] p-4', className)}>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/12 pb-3">
           <span className="h-6 w-32 animate-pulse rounded-full bg-slate-800" />
           <div className="flex gap-1.5">
             {[1,2,3].map(i => <span key={i} className="h-8 w-10 animate-pulse rounded-full bg-slate-800" />)}
           </div>
         </div>
-        <div className="flex h-[348px] items-center justify-center rounded-[1.4rem] bg-[#0d1f3a]">
+        <div className="flex h-[430px] items-center justify-center rounded-[1.4rem] bg-[#0a1a31] lg:h-[460px]">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-slate-400" />
             <p className="mt-3 text-xs font-semibold text-slate-500">Loading trade map…</p>
@@ -209,47 +209,49 @@ export function WorldCoverageMap({
   }
 
   return (
-    <div className={cn('relative overflow-hidden rounded-[1.7rem] border border-slate-700/70 bg-[#0a1628] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.52)] ring-1 ring-white/5', className)}>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-3">
+    <div className={cn('relative overflow-hidden rounded-[1.7rem] border border-slate-700/80 bg-gradient-to-br from-[#061224] via-[#081a33] to-[#020917] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.55)] ring-1 ring-white/10', className)}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           {selectedCountryCode ? (
-            <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
+            <span className="rounded-full bg-amber-400/25 px-3 py-1 text-xs font-bold text-amber-200 shadow-[0_0_18px_rgba(245,158,11,0.2)]">
               {coverageMap.get(selectedCountryCode)?.countryName ?? selectedCountryCode} · focused
             </span>
           ) : (
-            <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${modeAccent}`}>
+            <span className={`text-[11px] font-bold uppercase tracking-[0.14em] ${modeAccent}`}>
               {modeLabel} · {countries.length} market{countries.length !== 1 ? 's' : ''}
             </span>
           )}
-          <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Live coverage · role aware</span>
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${mapReady ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{mapReady ? 'Ready' : 'Loading'}</span>
+          <span className="rounded-full border border-slate-600 bg-slate-950/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-200">Live coverage · role aware</span>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${mapReady ? 'bg-emerald-400/20 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>{mapReady ? 'Ready' : 'Loading'}</span>
         </div>
-        <div className="flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/85 p-1 shadow-[0_12px_28px_rgba(0,0,0,0.24)]">
+        <div className="flex items-center gap-1 rounded-full border border-slate-600/90 bg-slate-950/80 p-1 shadow-[0_12px_28px_rgba(0,0,0,0.3)]">
           <button type="button" onClick={onZoomOut} aria-label="Zoom out" className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">−</button>
           <button type="button" onClick={onZoomIn} aria-label="Zoom in" className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">+</button>
-          <button type="button" onClick={onResetView} className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">Reset</button>
+          <button type="button" onClick={onResetView} className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white">Reset</button>
         </div>
       </div>
 
       <div
-        className={cn('relative h-[348px] overflow-hidden rounded-[1.4rem] bg-[#0d1f3a] transition-opacity duration-300', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
+        className={cn('relative h-[430px] overflow-hidden rounded-[1.4rem] bg-[#08182f] shadow-inner ring-1 ring-white/10 transition-opacity duration-300 lg:h-[460px]', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >
         <svg
           ref={svgRef}
           viewBox={`0 0 ${worldMap.width} ${worldMap.height}`}
+          preserveAspectRatio="xMidYMid meet"
           className="h-full w-full"
           role="img"
           aria-label="Global trade coverage map"
         >
           <defs>
-            <radialGradient id="ocean" cx="50%" cy="40%" r="70%">
-              <stop offset="0%" stopColor="#112240" />
-              <stop offset="100%" stopColor="#0a1628" />
+            <radialGradient id="ocean" cx="50%" cy="42%" r="74%">
+              <stop offset="0%" stopColor="#16315f" />
+              <stop offset="62%" stopColor="#0b2344" />
+              <stop offset="100%" stopColor="#061326" />
             </radialGradient>
-            <filter id="selectedGlow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#f8fafc" floodOpacity="0.85" />
+            <filter id="selectedGlow" x="-55%" y="-55%" width="210%" height="210%">
+              <feDropShadow dx="0" dy="0" stdDeviation="9" floodColor="#f8fafc" floodOpacity="1" />
             </filter>
           </defs>
           <rect width={worldMap.width} height={worldMap.height} fill="url(#ocean)" />
@@ -260,12 +262,12 @@ export function WorldCoverageMap({
               const style = countryStyles.get(code);
 
               if (isSelected) {
-                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} filter="url(#selectedGlow)" className="cursor-pointer transition" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
+                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#fbbf24" strokeWidth={2.4} filter="url(#selectedGlow)" className="cursor-pointer transition" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
               if (style) {
-                return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={0.9} className="cursor-pointer transition hover:brightness-110" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
+                return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={1.05} className="cursor-pointer transition hover:brightness-125" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
-              return <path key={code} d={item.path} data-country-code={code} fill="#1a2744" stroke="#243152" strokeWidth={0.4} />;
+              return <path key={code} d={item.path} data-country-code={code} fill="#253a5d" stroke="#3d5272" strokeWidth={0.42} opacity={0.86} />;
             })}
             {marketMarkers.map((marker) => {
               const color = getPulseColor(marker.tier, mode);
@@ -273,15 +275,15 @@ export function WorldCoverageMap({
               return (
                 <g key={`marker-${marker.country.countryCode}`} className="pointer-events-none">
                   {marker.tier !== 'watch' ? (
-                    <circle cx={marker.center[0]} cy={marker.center[1]} r="4" fill="none" stroke={color} strokeWidth="1.5" opacity="0.95">
+                    <circle cx={marker.center[0]} cy={marker.center[1]} r="4" fill="none" stroke={color} strokeWidth="1.7" opacity="0.95">
                       <animate attributeName="r" from="4" to="18" dur="2.4s" repeatCount="indefinite" />
                       <animate attributeName="opacity" from="1" to="0" dur="2.4s" repeatCount="indefinite" />
                     </circle>
                   ) : null}
-                  <circle cx={marker.center[0]} cy={marker.center[1]} r={isSelected ? 6 : 4.5} fill={isSelected ? '#f8fafc' : color} stroke="#020617" strokeWidth="1.4" />
+                  <circle cx={marker.center[0]} cy={marker.center[1]} r={isSelected ? 7.2 : 4.8} fill={isSelected ? '#f8fafc' : color} stroke={isSelected ? '#fbbf24' : '#020617'} strokeWidth={isSelected ? 2 : 1.4} />
                   {marker.country.activeLeadCount > 0 ? (
                     <g transform={`translate(${marker.center[0] + 7} ${marker.center[1] - 9})`}>
-                      <rect x="0" y="0" width="20" height="14" rx="7" fill="rgba(2,6,23,0.86)" stroke="rgba(226,232,240,0.28)" />
+                      <rect x="0" y="0" width="20" height="14" rx="7" fill="rgba(2,6,23,0.9)" stroke="rgba(248,250,252,0.45)" />
                       <text x="10" y="10" textAnchor="middle" fill="#f8fafc" fontSize="8" fontWeight="700">{marker.country.activeLeadCount}</text>
                     </g>
                   ) : null}
@@ -293,7 +295,7 @@ export function WorldCoverageMap({
 
         {hovered && !dragging ? (
           <div
-            className="pointer-events-none absolute z-20 w-[220px] rounded-2xl border border-slate-700/80 bg-slate-950/95 px-3 py-3 shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
+            className="pointer-events-none absolute z-20 w-[220px] rounded-2xl border border-slate-600/90 bg-slate-950/95 px-3 py-3 shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
             style={tooltipStyle}
           >
             <div className="flex items-start justify-between gap-2">
@@ -322,13 +324,13 @@ export function WorldCoverageMap({
                 ['Pipeline', formatCompactMoney(hovered.pipelineValue)],
                 ['Leads', hovered.activeLeadCount],
               ].map(([l, v]) => (
-                <div key={String(l)} className="rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+                <div key={String(l)} className="rounded-xl border border-slate-700 bg-slate-900 px-2 py-1.5">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{l}</p>
                   <p className="mt-0.5 text-sm font-semibold text-white">{v}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-1.5 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+            <div className="mt-1.5 rounded-xl border border-slate-700 bg-slate-900 px-2 py-1.5">
               <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">Last activity</p>
               <p className="mt-0.5 text-[12px] font-semibold text-slate-100">
                 {hovered.lastActivityAt ? formatDate(hovered.lastActivityAt) : 'No activity yet'}
@@ -338,7 +340,7 @@ export function WorldCoverageMap({
         ) : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-white/8 px-1 pt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-white/15 px-1 pt-3">
         {mode === 'suppliers' ? (
           <>
             <LegendDot color="bg-purple-400" label="Critical" />
@@ -353,7 +355,7 @@ export function WorldCoverageMap({
           </>
         )}
         <LegendDot color="bg-white/90" label="Selected" />
-        <span className="ml-auto rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Country filter auto-focuses the map</span>
+        <span className="ml-auto rounded-full border border-slate-600/80 bg-slate-950/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-200">Country filter auto-focuses the map</span>
       </div>
     </div>
   );
@@ -361,7 +363,7 @@ export function WorldCoverageMap({
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+    <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
       <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
       {label}
     </span>
