@@ -21,36 +21,58 @@ type WorldMapData = {
   paths: Record<string, { path: string; name: string }>;
 };
 
+type MarketTier = 'critical' | 'active' | 'watch';
+
+type MarketMarker = {
+  country: CountryCoverageDatum;
+  center: [number, number];
+  tier: MarketTier;
+};
+
 const TOOLTIP_OFFSET_X = 14;
 const TOOLTIP_OFFSET_Y = 14;
 const TOOLTIP_PADDING = 12;
-const TOOLTIP_W = 190;
-const TOOLTIP_H = 130;
+const TOOLTIP_W = 220;
+const TOOLTIP_H = 172;
 
-function getMarketTier(c: CountryCoverageDatum): 'critical' | 'active' | 'watch' {
+function getMarketTier(c: CountryCoverageDatum): MarketTier {
   if (c.activeLeadCount >= 8 || c.openQuoteCount >= 4) return 'critical';
   if (c.activeLeadCount >= 3 || c.openQuoteCount >= 2) return 'active';
   return 'watch';
 }
 
-function getTierFill(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMode, intensity: number): string {
+function getTierFill(tier: MarketTier, mode: WorkspaceMode, intensity: number): string {
   if (mode === 'suppliers') {
-    const base = tier === 'critical' ? [168, 85, 247] : tier === 'active' ? [109, 40, 217] : [139, 92, 246];
+    const base = tier === 'critical' ? [168, 85, 247] : tier === 'active' ? [99, 102, 241] : [124, 58, 237];
     return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
   }
   if (mode === 'buyers') {
-    const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [31, 72, 124] : [8, 145, 178];
+    const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [59, 130, 246] : [8, 145, 178];
     return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
   }
-  const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [31, 72, 124] : [8, 145, 178];
+  const base = tier === 'critical' ? [245, 158, 11] : tier === 'active' ? [59, 130, 246] : [8, 145, 178];
   return `rgba(${base[0]},${base[1]},${base[2]},${intensity})`;
 }
 
-function getTierStroke(tier: 'critical' | 'active' | 'watch', mode: WorkspaceMode): string {
+function getTierStroke(tier: MarketTier, mode: WorkspaceMode): string {
   if (mode === 'suppliers') {
-    return tier === 'critical' ? '#9333ea' : tier === 'active' ? '#7c3aed' : '#8b5cf6';
+    return tier === 'critical' ? '#8b5cf6' : tier === 'active' ? '#6366f1' : '#7c3aed';
   }
-  return tier === 'critical' ? '#d97706' : tier === 'active' ? '#1e40af' : '#0e7490';
+  return tier === 'critical' ? '#f59e0b' : tier === 'active' ? '#3b82f6' : '#0891b2';
+}
+
+function getPulseColor(tier: MarketTier, mode: WorkspaceMode) {
+  if (mode === 'suppliers') {
+    return tier === 'critical' ? '#8b5cf6' : tier === 'active' ? '#6366f1' : '#7c3aed';
+  }
+  return tier === 'critical' ? '#f59e0b' : tier === 'active' ? '#3b82f6' : '#0891b2';
+}
+
+function formatCompactMoney(value?: number) {
+  if (!value) return '$0';
+  if (Math.abs(value) >= 1_000_000) return `$${Math.round(value / 100_000) / 10}M`;
+  if (Math.abs(value) >= 1_000) return `$${Math.round(value / 1_000)}K`;
+  return `$${Math.round(value)}`;
 }
 
 function getPathBounds(path: SVGPathElement | null) {
@@ -112,6 +134,17 @@ export function WorldCoverageMap({
     }
     return map;
   }, [countries, maxLeads, mode]);
+
+  const marketMarkers = useMemo<MarketMarker[]>(
+    () => countries
+      .map((country) => {
+        const focus = COUNTRY_MAP_FOCUS[country.countryCode];
+        if (!focus) return null;
+        return { country, center: focus.center, tier: getMarketTier(country) };
+      })
+      .filter((marker): marker is MarketMarker => marker !== null),
+    [countries],
+  );
 
   const isSelectableCountry = useCallback(
     (code: string) => coverageMap.has(code),
@@ -215,6 +248,9 @@ export function WorldCoverageMap({
               <stop offset="0%" stopColor="#112240" />
               <stop offset="100%" stopColor="#0a1628" />
             </radialGradient>
+            <filter id="selectedGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#f8fafc" floodOpacity="0.85" />
+            </filter>
           </defs>
           <rect width={worldMap.width} height={worldMap.height} fill="url(#ocean)" />
 
@@ -224,19 +260,40 @@ export function WorldCoverageMap({
               const style = countryStyles.get(code);
 
               if (isSelected) {
-                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} className="cursor-pointer transition" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
+                return <path key={code} d={item.path} data-country-code={code} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} filter="url(#selectedGlow)" className="cursor-pointer transition" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
               if (style) {
                 return <path key={code} d={item.path} data-country-code={code} fill={style.fill} stroke={style.stroke} strokeWidth={0.9} className="cursor-pointer transition hover:brightness-110" role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onSelectCountry(code); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectCountry(code); } }} />;
               }
               return <path key={code} d={item.path} data-country-code={code} fill="#1a2744" stroke="#243152" strokeWidth={0.4} />;
             })}
+            {marketMarkers.map((marker) => {
+              const color = getPulseColor(marker.tier, mode);
+              const isSelected = selectedCountryCode === marker.country.countryCode;
+              return (
+                <g key={`marker-${marker.country.countryCode}`} className="pointer-events-none">
+                  {marker.tier !== 'watch' ? (
+                    <circle cx={marker.center[0]} cy={marker.center[1]} r="4" fill="none" stroke={color} strokeWidth="1.5" opacity="0.95">
+                      <animate attributeName="r" from="4" to="18" dur="2.4s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" from="1" to="0" dur="2.4s" repeatCount="indefinite" />
+                    </circle>
+                  ) : null}
+                  <circle cx={marker.center[0]} cy={marker.center[1]} r={isSelected ? 6 : 4.5} fill={isSelected ? '#f8fafc' : color} stroke="#020617" strokeWidth="1.4" />
+                  {marker.country.activeLeadCount > 0 ? (
+                    <g transform={`translate(${marker.center[0] + 7} ${marker.center[1] - 9})`}>
+                      <rect x="0" y="0" width="20" height="14" rx="7" fill="rgba(2,6,23,0.86)" stroke="rgba(226,232,240,0.28)" />
+                      <text x="10" y="10" textAnchor="middle" fill="#f8fafc" fontSize="8" fontWeight="700">{marker.country.activeLeadCount}</text>
+                    </g>
+                  ) : null}
+                </g>
+              );
+            })}
           </g>
         </svg>
 
         {hovered && !dragging ? (
           <div
-            className="pointer-events-none absolute z-20 w-[190px] rounded-2xl border border-slate-700/80 bg-slate-950/95 px-3 py-3 shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
+            className="pointer-events-none absolute z-20 w-[220px] rounded-2xl border border-slate-700/80 bg-slate-950/95 px-3 py-3 shadow-[0_16px_32px_rgba(0,0,0,0.5)] backdrop-blur"
             style={tooltipStyle}
           >
             <div className="flex items-start justify-between gap-2">
@@ -262,6 +319,8 @@ export function WorldCoverageMap({
               {[
                 ['Quotes', hovered.openQuoteCount],
                 ['RFQs', hovered.openRfqCount],
+                ['Pipeline', formatCompactMoney(hovered.pipelineValue)],
+                ['Leads', hovered.activeLeadCount],
               ].map(([l, v]) => (
                 <div key={String(l)} className="rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{l}</p>
@@ -283,13 +342,13 @@ export function WorldCoverageMap({
         {mode === 'suppliers' ? (
           <>
             <LegendDot color="bg-purple-400" label="Critical" />
-            <LegendDot color="bg-purple-700" label="Active" />
-            <LegendDot color="bg-violet-500" label="Watch" />
+            <LegendDot color="bg-indigo-500" label="Active" />
+            <LegendDot color="bg-violet-600" label="Watch" />
           </>
         ) : (
           <>
             <LegendDot color="bg-amber-400" label="Critical" />
-            <LegendDot color="bg-[#1F487C]" label="Active" />
+            <LegendDot color="bg-blue-500" label="Active" />
             <LegendDot color="bg-cyan-600" label="Watch" />
           </>
         )}
