@@ -468,6 +468,44 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .panel-upload-btn:hover{border-color:var(--brand-teal);color:var(--brand-teal);background:rgba(53,159,145,.06)}
 .panel-upload-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 
+
+/* ══ CATEGORY BREAKDOWN BAR ══ */
+.cat-row{
+  display:flex;align-items:stretch;gap:0;margin-top:10px;
+  border-radius:var(--r);overflow:hidden;border:1px solid var(--border2);
+  min-height:64px;
+}
+.cat-segment{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:10px 14px;cursor:pointer;transition:filter .15s,transform .15s;
+  position:relative;border-right:1px solid rgba(0,0,0,.18);
+  user-select:none;
+}
+.cat-segment:last-child{border-right:none}
+.cat-segment:hover{filter:brightness(1.15)}
+.cat-segment.active{transform:scaleY(1.04);z-index:2;box-shadow:0 0 0 2px #fff inset}
+.cat-seg-bug      {background:rgba(239,68,68,.22)}
+.cat-seg-enh      {background:rgba(167,139,250,.22)}
+.cat-seg-test     {background:rgba(20,184,166,.22)}
+.cat-seg-ux       {background:rgba(245,158,11,.20)}
+.cat-seg-other    {background:rgba(255,255,255,.06)}
+.cat-seg-icon{font-size:17px;margin-bottom:3px;display:block;line-height:1}
+.cat-seg-val{font-size:22px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:2px}
+.cat-seg-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;opacity:.75;white-space:nowrap}
+.cat-seg-pct{font-size:9.5px;font-weight:700;opacity:.55;margin-top:1px}
+.cat-seg-bug   .cat-seg-val{color:var(--red-hi)}
+.cat-seg-enh   .cat-seg-val{color:var(--purple-hi)}
+.cat-seg-test  .cat-seg-val{color:var(--teal-hi)}
+.cat-seg-ux    .cat-seg-val{color:var(--amber-hi)}
+.cat-seg-other .cat-seg-val{color:var(--text2)}
+
+/* ══ SIDEBAR CATEGORY ITEMS ══ */
+.sb-cat-bug  .sb-count{background:rgba(239,68,68,.18);color:var(--red-hi)}
+.sb-cat-enh  .sb-count{background:rgba(167,139,250,.18);color:var(--purple-hi)}
+.sb-cat-test .sb-count{background:rgba(20,184,166,.18);color:var(--teal-hi)}
+.sb-cat-ux   .sb-count{background:rgba(245,158,11,.18);color:var(--amber-hi)}
+
+/* ══ CATEGORY FILTER SELECT ══ */
 @media(max-width:900px){.sidebar{display:none}.kpi-row{grid-template-columns:repeat(4,1fr);grid-auto-rows:auto}.donut-card{grid-column:span 2}.kpi-row2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.col-ref,.col-area,.col-date{display:none}.panel{width:100vw}}
 </style>
@@ -634,6 +672,25 @@ input.p-in:focus{border-color:var(--brand-teal)}
     <div class="sb-item" id="sb-cleanup" onclick="filterSb('target:30-Day Cleanup')">
       <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-settings"/></svg>
       <span class="sb-item-text">30-Day Cleanup</span><span class="sb-count" id="cnt-t30d">–</span>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section"><div class="sb-section-label">By Category</div></div>
+    <div class="sb-item sb-cat-bug" id="sb-cat-Bug" onclick="filterSb('cat:Bug')">
+      <span style="font-size:13px;flex-shrink:0">🐛</span>
+      <span class="sb-item-text">Bug</span><span class="sb-count" id="cnt-cat-Bug">–</span>
+    </div>
+    <div class="sb-item sb-cat-enh" id="sb-cat-Enhancement" onclick="filterSb('cat:Enhancement')">
+      <span style="font-size:13px;flex-shrink:0">✨</span>
+      <span class="sb-item-text">Enhancement</span><span class="sb-count" id="cnt-cat-Enhancement">–</span>
+    </div>
+    <div class="sb-item sb-cat-test" id="sb-cat-Testing" onclick="filterSb('cat:Testing')">
+      <span style="font-size:13px;flex-shrink:0">🧪</span>
+      <span class="sb-item-text">Testing Find</span><span class="sb-count" id="cnt-cat-Testing">–</span>
+    </div>
+    <div class="sb-item sb-cat-ux" id="sb-cat-UX" onclick="filterSb('cat:UX')">
+      <span style="font-size:13px;flex-shrink:0">🎨</span>
+      <span class="sb-item-text">UX Issue</span><span class="sb-count" id="cnt-cat-UX">–</span>
     </div>
 
     <div class="sb-divider"></div>
@@ -1171,6 +1228,34 @@ Then select the first eligible issue, update it to In Progress, inspect current 
           <div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
         </div>
       </div>
+
+      <!-- CATEGORY BREAKDOWN BAR -->
+      <div class="cat-row" id="cat-row">
+        <div class="cat-segment cat-seg-bug" id="cat-seg-Bug" onclick="filterSb('cat:Bug')" title="Filter: Bugs only">
+          <span class="cat-seg-icon">🐛</span>
+          <div class="cat-seg-val" id="cat-val-Bug">–</div>
+          <div class="cat-seg-label">Bugs</div>
+          <div class="cat-seg-pct" id="cat-pct-Bug"></div>
+        </div>
+        <div class="cat-segment cat-seg-enh" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement')" title="Filter: Enhancements only">
+          <span class="cat-seg-icon">✨</span>
+          <div class="cat-seg-val" id="cat-val-Enhancement">–</div>
+          <div class="cat-seg-label">Enhancements</div>
+          <div class="cat-seg-pct" id="cat-pct-Enhancement"></div>
+        </div>
+        <div class="cat-segment cat-seg-test" id="cat-seg-Testing" onclick="filterSb('cat:Testing')" title="Filter: Testing Finds only">
+          <span class="cat-seg-icon">🧪</span>
+          <div class="cat-seg-val" id="cat-val-Testing">–</div>
+          <div class="cat-seg-label">Testing Finds</div>
+          <div class="cat-seg-pct" id="cat-pct-Testing"></div>
+        </div>
+        <div class="cat-segment cat-seg-ux" id="cat-seg-UX" onclick="filterSb('cat:UX')" title="Filter: UX Issues only">
+          <span class="cat-seg-icon">🎨</span>
+          <div class="cat-seg-val" id="cat-val-UX">–</div>
+          <div class="cat-seg-label">UX Issues</div>
+          <div class="cat-seg-pct" id="cat-pct-UX"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Dual progress -->
@@ -1213,6 +1298,13 @@ Then select the first eligible issue, update it to In Progress, inspect current 
         <span class="kbd-hint">⌘K</span>
       </div>
       <select class="fsel" id="fsel-area" onchange="render()"><option value="">All areas</option></select>
+      <select class="fsel" id="fsel-cat" onchange="applyCatFilter()" title="Filter by category">
+        <option value="">All types</option>
+        <option value="Bug">🐛 Bugs</option>
+        <option value="Enhancement">✨ Enhancements</option>
+        <option value="Testing">🧪 Testing Finds</option>
+        <option value="UX">🎨 UX Issues</option>
+      </select>
       <select class="fsel" id="fsel-target" onchange="render()">
         <option value="">All targets</option>
         <option value="7-Day Rescue">7-Day Rescue</option>
@@ -1438,14 +1530,16 @@ function buildAreaFilter(){
    SIDEBAR & COUNTS
 ══════════════════════════════════════ */
 function buildSidebar(){
-  const sc={},sev={},t={};
+  const sc={},sev={},t={},cat={};
   STATUSES.forEach(s=>sc[s]=0);['Critical','High','Medium','Low'].forEach(s=>sev[s]=0);
   ['7-Day Rescue','30-Day Cleanup'].forEach(t2=>t[t2]=0);
+  ['Bug','Enhancement','Testing','UX'].forEach(c=>cat[c]=0);
   const ac={};
   ALL.forEach(i=>{
     sc[i.status]=(sc[i.status]||0)+1;sev[i.severity]=(sev[i.severity]||0)+1;
     if(i.sprint_target)t[i.sprint_target]=(t[i.sprint_target]||0)+1;
     const a=areaOf(i);ac[a]=(ac[a]||0)+1;
+    const c=i.issue_category||'Bug';cat[c]=(cat[c]||0)+1;
   });
 
   // Active (non-resolved) count for "All Issues"
@@ -1456,6 +1550,20 @@ function buildSidebar(){
   setText('cnt-Resolved',sc.Resolved||0);setText('cnt-Deferred',sc.Deferred||0);setText('cnt-WontFix',sc["Won't Fix"]||0);
   setText('cnt-sevCritical',sev.Critical||0);setText('cnt-sevHigh',sev.High||0);setText('cnt-sevMedium',sev.Medium||0);setText('cnt-sevLow',sev.Low||0);
   setText('cnt-t7d',t['7-Day Rescue']||0);setText('cnt-t30d',t['30-Day Cleanup']||0);
+  // Category counts — sidebar
+  ['Bug','Enhancement','Testing','UX'].forEach(c=>{
+    setText('cnt-cat-'+c, cat[c]||0);
+  });
+  // Category breakdown bar
+  const total2=ALL.length||1;
+  ['Bug','Enhancement','Testing','UX'].forEach(c=>{
+    const n=cat[c]||0;
+    setText('cat-val-'+c, n);
+    setText('cat-pct-'+c, total2>0 ? Math.round(n/total2*100)+'% of all' : '');
+    // Flex grow based on count (min 1 so zero-count segments still show label)
+    const seg=document.getElementById('cat-seg-'+c);
+    if(seg) seg.style.flex = Math.max(n,1);
+  });
 
   $('sb-areas').innerHTML=Object.entries(ac).sort((a,b)=>b[1]-a[1]).map(([a,c])=>{
     const iconId=AREA_ICONS[a]||'ic-zap';
@@ -1562,14 +1670,45 @@ function isResolved(i){return i.status==='Resolved'||i.status==="Won't Fix";}
 ══════════════════════════════════════ */
 function filterSb(key){
   document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
-  let id=key==='all'?'sb-all':key.startsWith('sev:')?'sb-sev'+key.slice(4):key.startsWith('area:')?'sb-area-'+key.slice(5):key.startsWith('target:')?('sb-'+(key.slice(7)==='7-Day Rescue'?'rescue':'cleanup')):'sb-'+key.replace(/[^a-zA-Z]/g,'');
-  const el=document.getElementById(id);if(el)el.classList.add('active');
-  activeFlt=key;$('search-in').value='';render();
+  // Also clear the cat bar active state
+  document.querySelectorAll('.cat-segment').forEach(e=>e.classList.remove('active'));
+
+  let id;
+  if(key==='all') id='sb-all';
+  else if(key.startsWith('sev:')) id='sb-sev'+key.slice(4);
+  else if(key.startsWith('area:')) id='sb-area-'+key.slice(5);
+  else if(key.startsWith('target:')) id='sb-'+(key.slice(7)==='7-Day Rescue'?'rescue':'cleanup');
+  else if(key.startsWith('cat:')) { id='sb-cat-'+key.slice(4); }
+  else id='sb-'+key.replace(/[^a-zA-Z]/g,'');
+
+  const el=document.getElementById(id);
+  if(el)el.classList.add('active');
+
+  // Highlight the breakdown bar segment too
+  if(key.startsWith('cat:')){
+    const seg=document.getElementById('cat-seg-'+key.slice(4));
+    if(seg)seg.classList.add('active');
+    // Sync the toolbar dropdown
+    const cFsel=$('fsel-cat');
+    if(cFsel)cFsel.value=key.slice(4);
+  } else {
+    // Clear toolbar cat filter if switching to non-cat filter
+    const cFsel=$('fsel-cat');
+    if(cFsel && key!=='all') cFsel.value='';
+    if(cFsel && key==='all') cFsel.value='';
+  }
+
+  activeFlt=key;$('search-in').value='';
+  // Update toolbar title
+  const labels={all:'All Issues','cat:Bug':'🐛 Bugs','cat:Enhancement':'✨ Enhancements','cat:Testing':'🧪 Testing Finds','cat:UX':'🎨 UX Issues'};
+  const titleEl=$('toolbar-title');
+  if(titleEl) titleEl.textContent = labels[key] || key.replace(/^(sev:|area:|target:|cat:)/,'');
+  render();
 }
 
 function getFiltered(){
   const q=$('search-in').value.toLowerCase().trim();
-  const aF=$('fsel-area').value,tF=$('fsel-target').value;
+  const aF=$('fsel-area').value,tF=$('fsel-target').value,cF=$('fsel-cat')?.value||'';
   return ALL.filter(i=>{
     const area=areaOf(i);
 
@@ -1581,10 +1720,12 @@ function getFiltered(){
       if(activeFlt.startsWith('sev:')&&i.severity!==activeFlt.slice(4))return false;
       else if(activeFlt.startsWith('area:')&&area!==activeFlt.slice(5))return false;
       else if(activeFlt.startsWith('target:')&&i.sprint_target!==activeFlt.slice(7))return false;
-      else if(!activeFlt.startsWith('sev:')&&!activeFlt.startsWith('area:')&&!activeFlt.startsWith('target:')&&i.status!==activeFlt)return false;
+      else if(activeFlt.startsWith('cat:')&&(i.issue_category||'Bug')!==activeFlt.slice(4))return false;
+      else if(!activeFlt.startsWith('sev:')&&!activeFlt.startsWith('area:')&&!activeFlt.startsWith('target:')&&!activeFlt.startsWith('cat:')&&i.status!==activeFlt)return false;
     }
     if(aF&&area!==aF)return false;
     if(tF&&i.sprint_target!==tF)return false;
+    if(cF&&(i.issue_category||'Bug')!==cF)return false;
     if(q){const t=((i.title||'')+' '+(i.description||'')+' '+(i.issue_ref||'')+' '+area).toLowerCase();if(!t.includes(q))return false;}
     return true;
   }).sort((a,b)=>{
@@ -2116,6 +2257,12 @@ function toggleTheme(){
 })();
 
 /* ── Quick sort dropdown ── */
+function applyCatFilter(){
+  const val=$('fsel-cat')?.value;
+  if(val) filterSb('cat:'+val);
+  else filterSb('all');
+}
+
 function applyQuickSort(){
   const val=$('fsel-sort')?.value;if(!val)return;
   const[f,d]=val.split('|');sortFld=f;sortDir=parseInt(d);
