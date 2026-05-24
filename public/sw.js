@@ -1,6 +1,6 @@
-const CACHE_NAME = 'setuflow-offline-v1';
+const CACHE_NAME = 'setuflow-offline-v2';
 const CAPTURE_URL = '/contact-exchange/scan';
-const DEFAULT_NOTIFICATION_URL = '/dashboard';
+const DEFAULT_NOTIFICATION_URL = '/dashboard?panel=notifications';
 const STATIC_ASSETS = [
   CAPTURE_URL,
   '/manifest.json',
@@ -78,6 +78,7 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'SETU Flow alert';
   const body = payload.body || 'A workflow notification needs your attention.';
   const url = payload.action_url || payload.actionUrl || DEFAULT_NOTIFICATION_URL;
+  const priority = payload.priority || 'normal';
 
   event.waitUntil(
     self.registration.showNotification(title, {
@@ -85,14 +86,22 @@ self.addEventListener('push', (event) => {
       tag: payload.id || payload.type || 'setuflow-notification',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: { url },
-      renotify: Boolean(payload.priority === 'critical'),
+      image: payload.image || undefined,
+      data: { url, id: payload.id || null, priority },
+      actions: [
+        { action: 'open', title: 'Open' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ],
+      requireInteraction: priority === 'critical',
+      renotify: priority === 'critical',
     })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  if (event.action === 'dismiss') return;
 
   const targetUrl = new URL(event.notification.data?.url || DEFAULT_NOTIFICATION_URL, self.location.origin).href;
 
