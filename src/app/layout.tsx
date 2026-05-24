@@ -199,7 +199,7 @@ export const metadata: Metadata = {
   },
 
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent', startupImage: ['/icons/icon-512.png'] },
   icons: {
     icon: [{ url: '/favicon.ico' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
@@ -209,6 +209,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#0c7fff',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -222,6 +223,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#0c7fff" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="SETU Flow" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="format-detection" content="telephone=no" />
 
         <script
           nonce={nonce}
