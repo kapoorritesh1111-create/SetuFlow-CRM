@@ -3,7 +3,31 @@ import type { ReactNode } from 'react';
 import { WorkspaceHeader, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { cn } from '@/lib/utils';
 
-export type AdminNavKey = 'overview' | 'client-onboarding' | 'users' | 'invitations' | 'notifications' | 'markets' | 'categories' | 'stages' | 'pipelines' | 'trade-events' | 'product-management' | 'document-templates' | 'security' | 'audit' | 'ai-analytics' | 'seo';
+export type AdminNavKey =
+  | 'overview'
+  | 'profile'
+  | 'client-onboarding'
+  | 'users'
+  | 'invitations'
+  | 'notifications'
+  | 'markets'
+  | 'categories'
+  | 'stages'
+  | 'pipelines'
+  | 'trade-events'
+  | 'product-management'
+  | 'pricing-engine'
+  | 'document-templates'
+  | 'integrations'
+  | 'rate-limits'
+  | 'guru-config'
+  | 'api-keys'
+  | 'security'
+  | 'audit'
+  | 'ai-analytics'
+  | 'seo';
+
+type AdminNavStatusDot = 'ok' | 'warn' | 'none';
 
 type AdminNavItem = {
   key: AdminNavKey;
@@ -11,63 +35,83 @@ type AdminNavItem = {
   icon: string;
   label: string;
   badge?: string;
-  badgeTone?: 'success' | 'warning' | 'danger';
+  badgeTone?: 'success' | 'warning' | 'danger' | 'info';
+  statusDot?: AdminNavStatusDot;
+  internalOnly?: boolean;
 };
 
-const internalOnlyAdminKeys: AdminNavKey[] = ['ai-analytics', 'client-onboarding', 'seo'];
+const internalOnlyAdminKeys: AdminNavKey[] = [
+  'ai-analytics',
+  'api-keys',
+  'client-onboarding',
+  'guru-config',
+  'integrations',
+  'rate-limits',
+  'seo',
+];
 
 const nav: Array<{ label: string; items: AdminNavItem[] }> = [
   {
-    label: 'Workspace',
+    label: 'Organisation',
     items: [
-      { key: 'overview', href: '/admin/organization', icon: '🏢', label: 'Organization' },
-      { key: 'client-onboarding', href: '/admin/client-onboarding', icon: '🚀', label: 'Client onboarding' },
-      { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members' },
-      { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations' },
-      { key: 'notifications', href: '/admin/notifications', icon: '🔔', label: 'Notifications' },
+      { key: 'overview', href: '/admin/organization', icon: '🏢', label: 'Overview', statusDot: 'ok' },
+      { key: 'profile', href: '/admin/organization', icon: '👤', label: 'Organization profile', statusDot: 'ok' },
+      { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members', statusDot: 'ok' },
+      { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations', statusDot: 'warn' },
+      { key: 'notifications', href: '/admin/notifications', icon: '🔔', label: 'Notifications', statusDot: 'ok' },
+      { key: 'client-onboarding', href: '/admin/client-onboarding', icon: '🚀', label: 'Client onboarding', statusDot: 'warn', internalOnly: true },
     ],
   },
   {
-    label: 'Reference lists',
+    label: 'Operations',
     items: [
-      { key: 'markets', href: '/admin/markets', icon: '🌍', label: 'Markets' },
-      { key: 'categories', href: '/admin/categories', icon: '📦', label: 'Categories' },
-      { key: 'product-management', href: '/admin/product-management', icon: '📚', label: 'Product management' },
-      { key: 'stages', href: '/admin/stages', icon: '◎', label: 'Stages & next steps' },
-      { key: 'pipelines', href: '/admin/pipelines', icon: '⊕', label: 'Pipelines' },
-      { key: 'trade-events', href: '/admin/trade-events', icon: '🏭', label: 'Trade events' },
+      { key: 'markets', href: '/admin/markets', icon: '🌍', label: 'Markets', statusDot: 'ok' },
+      { key: 'categories', href: '/admin/categories', icon: '📦', label: 'Categories', statusDot: 'ok' },
+      { key: 'stages', href: '/admin/stages', icon: '◎', label: 'Pipelines & stages', statusDot: 'ok' },
+      { key: 'product-management', href: '/admin/product-management', icon: '📚', label: 'Products', statusDot: 'ok' },
+      { key: 'trade-events', href: '/admin/trade-events', icon: '🏭', label: 'Trade events', statusDot: 'ok' },
     ],
   },
   {
-    label: 'Documents',
+    label: 'Commerce',
     items: [
-      { key: 'document-templates', href: '/admin/document-templates', icon: '📄', label: 'Templates & terms' },
+      { key: 'pricing-engine', href: '/admin/product-management', icon: '💱', label: 'Pricing engine', statusDot: 'ok' },
+      { key: 'document-templates', href: '/admin/document-templates', icon: '📄', label: 'Templates & terms', statusDot: 'ok' },
     ],
   },
   {
-    label: 'Growth',
+    label: 'Platform',
     items: [
-      { key: 'seo', href: '/admin/seo-intelligence', icon: '📈', label: 'SEO intelligence' },
+      { key: 'integrations', href: '/admin/integrations', icon: '🔌', label: 'Integrations', statusDot: 'warn', internalOnly: true },
+      { key: 'rate-limits', href: '/admin/rate-limits', icon: '⚡', label: 'Rate limits', statusDot: 'none', internalOnly: true },
+      { key: 'guru-config', href: '/admin/guru-config', icon: '🤖', label: 'Setu Guru config', statusDot: 'none', internalOnly: true },
+      { key: 'api-keys', href: '/admin/api-keys', icon: '🔑', label: 'API & webhooks', statusDot: 'none', internalOnly: true },
     ],
   },
   {
     label: 'Governance',
     items: [
-      { key: 'audit', href: '/admin/audit', icon: '📋', label: 'Audit log' },
-      { key: 'ai-analytics', href: '/admin/ai-analytics', icon: '✦', label: 'AI analytics' },
-      { key: 'security', href: '/admin/security', icon: '🔒', label: 'Security & roles' },
+      { key: 'security', href: '/admin/security', icon: '🔒', label: 'Security & roles', statusDot: 'warn' },
+      { key: 'audit', href: '/admin/audit', icon: '📋', label: 'Audit log', statusDot: 'ok' },
+      { key: 'ai-analytics', href: '/admin/ai-analytics', icon: '✦', label: 'AI analytics', badge: 'Internal', badgeTone: 'info', statusDot: 'ok', internalOnly: true },
     ],
   },
 ] as const;
 
 export type AdminGapItem = { icon: string; text: string; href: string };
 
-function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'success' | 'warning' | 'danger' }) {
+function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'success' | 'warning' | 'danger' | 'info' }) {
   return (
     <span
       className={cn(
-        'ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none',
-        tone === 'success' ? 'bg-emerald-100 text-emerald-700' : tone === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700',
+        'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none',
+        tone === 'success'
+          ? 'bg-emerald-100 text-emerald-700'
+          : tone === 'warning'
+            ? 'bg-amber-100 text-amber-700'
+            : tone === 'danger'
+              ? 'bg-rose-100 text-rose-700'
+              : 'bg-sky-100 text-sky-700',
       )}
     >
       {label}
@@ -75,46 +119,64 @@ function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'suc
   );
 }
 
+function AdminNavStatusDot({ dot = 'none' }: { dot?: AdminNavStatusDot }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'h-2 w-2 rounded-full',
+        dot === 'ok' ? 'bg-emerald-500' : dot === 'warn' ? 'bg-amber-400' : 'bg-slate-300',
+      )}
+    />
+  );
+}
+
 export function AdminSettingsShell({ active, organizationName, missingCount = 0, sectionTitle, gapItems = [], navCounts, children }: { active: AdminNavKey; organizationName: string; missingCount?: number; sectionTitle?: string; gapItems?: AdminGapItem[]; navCounts?: Partial<Record<'users' | 'invitations' | 'security', number>>; children?: ReactNode }) {
   const normalizedOrgName = organizationName.trim().toLowerCase();
   const showInternalOnlyTools = normalizedOrgName === 'setu flow' || normalizedOrgName === 'setuflow' || normalizedOrgName.includes('setu');
   return (
-    <div className="grid gap-6 xl:grid-cols-[216px_minmax(0,1fr)]">
-      <aside className="rounded-none border-r border-slate-200 bg-white px-2 py-5 shadow-[4px_0_18px_rgba(15,23,42,0.04)] xl:sticky xl:top-16 xl:min-h-[calc(100vh-4rem)] xl:self-start">
-        <nav className="space-y-8">
-          {nav.map((section, index) => (
-            <div key={section.label} className={cn(index > 0 && 'border-t border-slate-200 pt-7')}>
-              <p className="px-2 text-[9px] font-extrabold uppercase tracking-[0.24em] text-slate-400">{section.label}</p>
-              <div className="mt-4 space-y-2">
-                {section.items.filter((item) => showInternalOnlyTools || !internalOnlyAdminKeys.includes(item.key)).map((item) => {
-                  const isActive = item.key === active;
-                  const dynamicCount = item.key === 'users' ? navCounts?.users : item.key === 'invitations' ? navCounts?.invitations : item.key === 'security' ? navCounts?.security : undefined;
-                  const badgeLabel = dynamicCount === undefined ? item.badge : String(dynamicCount);
-                  const badgeTone = item.key === 'invitations' ? (Number(dynamicCount ?? 0) > 0 ? 'warning' : 'success') : item.key === 'security' ? (Number(dynamicCount ?? 0) > 0 ? 'danger' : 'success') : item.badgeTone;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        'relative flex min-h-11 items-center gap-2 rounded-2xl px-3 text-sm font-medium transition',
-                        isActive
-                          ? 'bg-blue-50 text-slate-950 shadow-[inset_3px_0_0_#0c7fff]'
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950',
-                      )}
-                    >
-                      <span className="w-5 text-center text-[15px]" aria-hidden="true">{item.icon}</span>
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      {badgeLabel ? <AdminNavBadge label={badgeLabel} tone={badgeTone} /> : null}
-                    </Link>
-                  );
-                })}
+    <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
+      <aside className="rounded-none border-r border-slate-200 bg-white px-3 py-4 shadow-[4px_0_18px_rgba(15,23,42,0.04)] xl:sticky xl:top-14 xl:min-h-[calc(100vh-3.5rem)] xl:self-start">
+        <nav className="space-y-4">
+          {nav.map((section, index) => {
+            const visibleItems = section.items.filter((item) => showInternalOnlyTools || !item.internalOnly && !internalOnlyAdminKeys.includes(item.key));
+            if (!visibleItems.length) return null;
+            return (
+              <div key={section.label} className={cn(index > 0 && 'border-t border-slate-200 pt-4')}>
+                <p className="px-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-400">{section.label}</p>
+                <div className="mt-2 space-y-1">
+                  {visibleItems.map((item) => {
+                    const isActive = item.key === active;
+                    const dynamicCount = item.key === 'users' ? navCounts?.users : item.key === 'invitations' ? navCounts?.invitations : item.key === 'security' ? navCounts?.security : undefined;
+                    const badgeLabel = dynamicCount === undefined ? item.badge : String(dynamicCount);
+                    const badgeTone = item.key === 'invitations' ? (Number(dynamicCount ?? 0) > 0 ? 'warning' : 'success') : item.key === 'security' ? (Number(dynamicCount ?? 0) > 0 ? 'danger' : 'success') : item.key === 'users' ? 'info' : item.badgeTone;
+                    const statusDot = item.key === 'invitations' ? (Number(dynamicCount ?? 0) > 0 ? 'warn' : 'ok') : item.key === 'security' ? (Number(dynamicCount ?? 0) > 0 ? 'warn' : 'ok') : item.statusDot;
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        className={cn(
+                          'relative flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition',
+                          isActive
+                            ? 'bg-blue-50 text-slate-950 shadow-[inset_3px_0_0_#0c7fff]'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950',
+                        )}
+                      >
+                        <span className="w-5 text-center text-[15px]" aria-hidden="true">{item.icon}</span>
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        {badgeLabel ? <AdminNavBadge label={badgeLabel} tone={badgeTone} /> : null}
+                        <AdminNavStatusDot dot={statusDot} />
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
-        <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
+        <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900">
           <p className="font-bold">{sectionTitle ?? 'Workspace control'}</p>
-          
+          <p className="mt-1 text-blue-800/75">Admin is grouped by organisation, operations, commerce, platform, and governance.</p>
         </div>
       </aside>
       <main className="min-w-0 space-y-6"><GovernanceBanner missingCount={missingCount} gapItems={gapItems} />{children}</main>
