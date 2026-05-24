@@ -6,6 +6,7 @@ import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
 
 type NotificationPriority = 'normal' | 'high' | 'critical';
+type PushStatus = 'idle' | 'saving' | 'enabled' | 'unsupported' | 'denied' | 'missing-key' | 'error';
 
 type NotificationRow = {
   id: string;
@@ -20,19 +21,54 @@ type NotificationRow = {
   created_at: string;
 };
 
+type PushSubscriptionRow = {
+  id: string;
+  endpoint: string;
+};
+
+type PushSubscriptionInsert = {
+  organization_id: string;
+  user_id: string;
+  endpoint: string;
+  auth_key: string;
+  p256dh: string;
+  user_agent: string | null;
+};
+
+type SupabaseError = { message: string };
+
 type NotificationQuery = {
   select(columns: string): NotificationQuery;
   eq(column: string, value: string | boolean): NotificationQuery;
   is(column: string, value: null): NotificationQuery;
   order(column: string, options?: { ascending?: boolean }): NotificationQuery;
-  limit(count: number): Promise<{ data: NotificationRow[] | null; error: { message: string } | null }>;
+  limit(count: number): Promise<{ data: NotificationRow[] | null; error: SupabaseError | null }>;
   update(values: Partial<Pick<NotificationRow, 'read'>> & { read_at?: string }): {
-    eq(column: string, value: string): Promise<{ error: { message: string } | null }>;
+    eq(column: string, value: string): Promise<{ error: SupabaseError | null }>;
+  };
+};
+
+type PushSubscriptionQuery = {
+  select(columns: string): PushSubscriptionQuery;
+  eq(column: string, value: string): PushSubscriptionQuery;
+  limit(count: number): Promise<{ data: PushSubscriptionRow[] | null; error: SupabaseError | null }>;
+  insert(row: PushSubscriptionInsert): Promise<{ error: SupabaseError | null }>;
+  update(row: Omit<PushSubscriptionInsert, 'organization_id' | 'user_id' | 'endpoint'>): {
+    eq(column: string, value: string): Promise<{ error: SupabaseError | null }>;
   };
 };
 
 type NotificationClient = {
   from(table: 'notifications'): NotificationQuery;
+  from(table: 'push_subscriptions'): PushSubscriptionQuery;
+};
+
+type PushSubscriptionJson = {
+  endpoint?: string;
+  keys?: {
+    auth?: string;
+    p256dh?: string;
+  };
 };
 
 const priorityCopy: Record<NotificationPriority, string> = {
@@ -40,6 +76,8 @@ const priorityCopy: Record<NotificationPriority, string> = {
   high: 'High',
   critical: 'Critical',
 };
+
+const webPushPublicKey = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ?? '';
 
 function formatWhen(value: string) {
   const date = new Date(value);
@@ -60,14 +98,50 @@ function getPriorityClasses(priority: NotificationPriority) {
   return 'border-slate-200 bg-slate-50 text-slate-600';
 }
 
-export function InAppNotificationCenter() {
+function urlBase64ToUint8Array(value: string) {
+  const padding = '='.repeat((4 - (value.length % 4)) % 4);
+  const base64 = `${value}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
+}
+
+function canUseBrowserPush() {
+  return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+}
+
+export function InAppNotificationCenter({ organizationId, userId }: { organizationId: string; userId: string }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pushStatus, setPushStatus] = useState<PushStatus>('idle');
 
   const unread = useMemo(() => notifications.filter((notification) => !notification.read), [notifications]);
   const unreadCount = unread.length;
   const alertBanner = unread.find((notification) => notification.priority === 'critical') ?? unread.find((notification) => notification.priority === 'high') ?? null;
+
+  useEffect(() => {
+    if (!canUseBrowserPush()) {
+      setPushStatus('unsupported');
+      return;
+    }
+
+    if (!webPushPublicKey) {
+      setPushStatus('missing-key');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      setPushStatus('denied');
+      return;
+    }
+
+    navigator.serviceWorker.ready
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((subscription) => {
+        if (subscription) setPushStatus('enabled');
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +177,90 @@ export function InAppNotificationCenter() {
     const supabase = createClient() as unknown as NotificationClient;
     await supabase.from('notifications').update({ read: true, read_at: new Date().toISOString() }).eq('id', notificationId);
   };
+
+  const enablePush = async () => {
+    if (!canUseBrowserPush()) {
+      setPushStatus('unsupported');
+      return;
+    }
+
+    if (!webPushPublicKey) {
+      setPushStatus('missing-key');
+      return;
+    }
+
+    setPushStatus('saving');
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushStatus(permission === 'denied' ? 'denied' : 'idle');
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const existing = await registration.pushManager.getSubscription();
+      const subscription =
+        existing ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(webPushPublicKey),
+        }));
+
+      const subscriptionJson = subscription.toJSON() as PushSubscriptionJson;
+      const endpoint = subscriptionJson.endpoint ?? subscription.endpoint;
+      const authKey = subscriptionJson.keys?.auth;
+      const p256dh = subscriptionJson.keys?.p256dh;
+
+      if (!endpoint || !authKey || !p256dh) {
+        setPushStatus('error');
+        return;
+      }
+
+      const supabase = createClient() as unknown as NotificationClient;
+      const payload: PushSubscriptionInsert = {
+        organization_id: organizationId,
+        user_id: userId,
+        endpoint,
+        auth_key: authKey,
+        p256dh,
+        user_agent: navigator.userAgent || null,
+      };
+
+      const { data: existingRows } = await supabase
+        .from('push_subscriptions')
+        .select('id,endpoint')
+        .eq('endpoint', endpoint)
+        .limit(1);
+
+      const existingId = existingRows?.[0]?.id;
+      const { error } = existingId
+        ? await supabase
+            .from('push_subscriptions')
+            .update({ auth_key: authKey, p256dh, user_agent: payload.user_agent })
+            .eq('id', existingId)
+        : await supabase.from('push_subscriptions').insert(payload);
+
+      setPushStatus(error ? 'error' : 'enabled');
+    } catch {
+      setPushStatus('error');
+    }
+  };
+
+  const pushLabel =
+    pushStatus === 'enabled'
+      ? 'Push on'
+      : pushStatus === 'saving'
+        ? 'Saving...'
+        : pushStatus === 'denied'
+          ? 'Push blocked'
+          : pushStatus === 'missing-key'
+            ? 'Push setup pending'
+            : pushStatus === 'unsupported'
+              ? 'Push unavailable'
+              : pushStatus === 'error'
+                ? 'Retry push'
+                : 'Enable push';
 
   return (
     <div className="pointer-events-none fixed right-4 top-[7.25rem] z-[320] flex w-[min(360px,calc(100vw-2rem))] flex-col items-end gap-3 md:right-8 md:top-[6.25rem]">
@@ -148,7 +306,22 @@ export function InAppNotificationCenter() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p>
                 <h2 className="text-sm font-bold text-slate-950">{unreadCount ? `${unreadCount} unread alert${unreadCount === 1 ? '' : 's'}` : 'All caught up'}</h2>
               </div>
-              <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">×</button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={enablePush}
+                  disabled={pushStatus === 'saving' || pushStatus === 'enabled' || pushStatus === 'unsupported' || pushStatus === 'denied' || pushStatus === 'missing-key'}
+                  className={cn(
+                    'rounded-xl border px-3 py-2 text-[11px] font-bold transition',
+                    pushStatus === 'enabled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                    (pushStatus === 'unsupported' || pushStatus === 'denied' || pushStatus === 'missing-key') && 'cursor-not-allowed opacity-60',
+                  )}
+                  title="Enable browser push notifications"
+                >
+                  {pushLabel}
+                </button>
+                <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">×</button>
+              </div>
             </div>
 
             <div className="max-h-[420px] overflow-y-auto p-2">
