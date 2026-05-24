@@ -56,7 +56,7 @@
 }
 [data-theme="light"] body{background:var(--bg);color:var(--text)}
 [data-theme="light"] .kpi-section,
-[data-theme="light"] .cat-card,
+[data-theme="light"] .cat-card,[data-theme="light"] .cat-res-label,[data-theme="light"] .cat-res-pct,
 [data-theme="light"] .sidebar,
 [data-theme="light"] .topbar,
 [data-theme="light"] .toolbar,
@@ -500,6 +500,17 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .cat-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:3px}
 .cat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
 /* Colored bottom bar showing percentage filled */
+
+/* ── Category card resolved row (below the total count) ── */
+.cat-resolved-row{display:flex;align-items:baseline;gap:5px;margin:4px 0 8px;flex-wrap:wrap}
+.cat-res-count{font-size:13px;font-weight:800;color:var(--text3);font-family:var(--mono)}
+.cat-res-label{font-size:10px;color:var(--text3);opacity:.7;letter-spacing:.03em}
+.cat-res-pct{font-size:9.5px;font-family:var(--mono);font-weight:700;padding:1px 5px;border-radius:8px;margin-left:auto;background:rgba(255,255,255,.06);color:var(--text3)}
+/* Active filter glow on card — pulsing cursor hint */
+.cat-card{cursor:pointer;position:relative}
+.cat-card::after{content:'Click to filter';position:absolute;top:8px;right:9px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);opacity:0;transition:opacity .2s}
+.cat-card:hover::after{opacity:.6}
+.cat-card.active::after{content:'✓ Filtered · click to clear';opacity:.8;color:var(--amber-hi)}
 .cat-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06)}
 .cat-fill{height:100%;border-radius:0;transition:width .9s cubic-bezier(.4,0,.2,1)}
 .cat-fill-bug  {background:linear-gradient(90deg,var(--red),rgba(239,68,68,.6))}
@@ -1245,29 +1256,49 @@ Then select the first eligible issue, update it to In Progress, inspect current 
 
       <!-- CATEGORY CARDS — equal-width grid -->
       <div class="cat-cards" id="cat-row">
-        <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug')" title="Filter: Bugs only" style="border-left:3px solid var(--red)">
+        <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug')" title="Click to filter by Bugs · click again to clear" style="border-left:3px solid var(--red)">
           <div class="cat-header"><span class="cat-icon">🐛</span><span class="cat-pct-pill" id="cat-pct-Bug">–%</span></div>
           <div class="cat-val" id="cat-val-Bug">–</div>
           <div class="cat-label">Bugs</div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-bug" id="cat-fill-Bug" style="width:0%"></div></div>
+          <div class="cat-resolved-row">
+            <span class="cat-res-count" id="cat-res-Bug">–</span>
+            <span class="cat-res-label">resolved</span>
+            <span class="cat-res-pct" id="cat-res-pct-Bug">–% done</span>
+          </div>
+          <div class="cat-bar"><div class="cat-fill cat-fill-bug" id="cat-fill-Bug" style="width:0%" title="Resolved %"></div></div>
         </div>
-        <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement')" title="Filter: Enhancements only" style="border-left:3px solid var(--purple)">
+        <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement')" title="Click to filter by Enhancements · click again to clear" style="border-left:3px solid var(--purple)">
           <div class="cat-header"><span class="cat-icon">✨</span><span class="cat-pct-pill" id="cat-pct-Enhancement">–%</span></div>
           <div class="cat-val" id="cat-val-Enhancement">–</div>
           <div class="cat-label">Enhancements</div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-enh" id="cat-fill-Enhancement" style="width:0%"></div></div>
+          <div class="cat-resolved-row">
+            <span class="cat-res-count" id="cat-res-Enhancement">–</span>
+            <span class="cat-res-label">resolved</span>
+            <span class="cat-res-pct" id="cat-res-pct-Enhancement">–% done</span>
+          </div>
+          <div class="cat-bar"><div class="cat-fill cat-fill-enh" id="cat-fill-Enhancement" style="width:0%" title="Resolved %"></div></div>
         </div>
-        <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing')" title="Filter: Testing Finds only" style="border-left:3px solid var(--teal)">
+        <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing')" title="Click to filter by Testing Finds · click again to clear" style="border-left:3px solid var(--teal)">
           <div class="cat-header"><span class="cat-icon">🧪</span><span class="cat-pct-pill" id="cat-pct-Testing">–%</span></div>
           <div class="cat-val" id="cat-val-Testing">–</div>
           <div class="cat-label">Testing Finds</div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-test" id="cat-fill-Testing" style="width:0%"></div></div>
+          <div class="cat-resolved-row">
+            <span class="cat-res-count" id="cat-res-Testing">–</span>
+            <span class="cat-res-label">resolved</span>
+            <span class="cat-res-pct" id="cat-res-pct-Testing">–% done</span>
+          </div>
+          <div class="cat-bar"><div class="cat-fill cat-fill-test" id="cat-fill-Testing" style="width:0%" title="Resolved %"></div></div>
         </div>
-        <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX')" title="Filter: UX Issues only" style="border-left:3px solid var(--amber)">
+        <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX')" title="Click to filter by UX Issues · click again to clear" style="border-left:3px solid var(--amber)">
           <div class="cat-header"><span class="cat-icon">🎨</span><span class="cat-pct-pill" id="cat-pct-UX">–%</span></div>
           <div class="cat-val" id="cat-val-UX">–</div>
           <div class="cat-label">UX Issues</div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-ux" id="cat-fill-UX" style="width:0%"></div></div>
+          <div class="cat-resolved-row">
+            <span class="cat-res-count" id="cat-res-UX">–</span>
+            <span class="cat-res-label">resolved</span>
+            <span class="cat-res-pct" id="cat-res-pct-UX">–% done</span>
+          </div>
+          <div class="cat-bar"><div class="cat-fill cat-fill-ux" id="cat-fill-UX" style="width:0%" title="Resolved %"></div></div>
         </div>
       </div>
     </div>
@@ -1451,6 +1482,10 @@ Then select the first eligible issue, update it to In Progress, inspect current 
 </div>
 
 <script>
+// Category normalization: DB stores descriptive labels, tracker uses short keys
+const CAT_NORM={'UX Issue':'UX','UX Issues':'UX','Testing Find':'Testing','Testing Finds':'Testing'};
+function normCat(c){return CAT_NORM[c]||c||'Bug';}
+
 const SB='https://sjzfzloggabsmcuxktnl.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
 const db=supabase.createClient(SB,KEY);
@@ -1547,13 +1582,15 @@ function buildSidebar(){
   const sc={},sev={},t={},cat={};
   STATUSES.forEach(s=>sc[s]=0);['Critical','High','Medium','Low'].forEach(s=>sev[s]=0);
   ['7-Day Rescue','30-Day Cleanup'].forEach(t2=>t[t2]=0);
-  ['Bug','Enhancement','Testing','UX'].forEach(c=>cat[c]=0);
+  ['Bug','Enhancement','Testing','UX'].forEach(c=>{cat[c]=0;});
+  const catRes={Bug:0,Enhancement:0,Testing:0,UX:0};
   const ac={};
   ALL.forEach(i=>{
     sc[i.status]=(sc[i.status]||0)+1;sev[i.severity]=(sev[i.severity]||0)+1;
     if(i.sprint_target)t[i.sprint_target]=(t[i.sprint_target]||0)+1;
     const a=areaOf(i);ac[a]=(ac[a]||0)+1;
-    const c=i.issue_category||'Bug';cat[c]=(cat[c]||0)+1;
+    const c=normCat(i.issue_category);cat[c]=(cat[c]||0)+1;
+    if(isResolved(i))catRes[c]=(catRes[c]||0)+1;
   });
 
   // Active (non-resolved) count for "All Issues"
@@ -1568,18 +1605,25 @@ function buildSidebar(){
   ['Bug','Enhancement','Testing','UX'].forEach(c=>{
     setText('cnt-cat-'+c, cat[c]||0);
   });
-  // Category cards — equal width with % pill and bottom fill bar
+  // Category cards — total count, resolved count, resolved%, fill bar = resolved/cat
   const total2=ALL.length||1;
   ['Bug','Enhancement','Testing','UX'].forEach(c=>{
     const n=cat[c]||0;
-    const pct=total2>0?Math.round(n/total2*100):0;
+    const r=catRes[c]||0;
+    const pctOfAll=total2>0?Math.round(n/total2*100):0;   // % of all issues (pill)
+    const resPct=n>0?Math.round(r/n*100):0;               // % resolved within category (bar)
+    // Total count + % of all pill
     setText('cat-val-'+c, n);
-    // Percentage pill
     const pill=document.getElementById('cat-pct-'+c);
-    if(pill) pill.textContent=pct+'%';
-    // Bottom fill bar (capped at 100% of card width, not proportional to other cards)
+    if(pill) pill.textContent=pctOfAll+'%';
+    // Resolved count row
+    const resCount=document.getElementById('cat-res-'+c);
+    if(resCount) resCount.textContent=r;
+    const resPctEl=document.getElementById('cat-res-pct-'+c);
+    if(resPctEl) resPctEl.textContent=resPct+'% done';
+    // Bottom bar = resolved-within-category (meaningful metric, not category-of-all)
     const fill=document.getElementById('cat-fill-'+c);
-    if(fill) fill.style.width=pct+'%';
+    if(fill) fill.style.width=resPct+'%';
   });
 
   $('sb-areas').innerHTML=Object.entries(ac).sort((a,b)=>b[1]-a[1]).map(([a,c])=>{
@@ -1687,6 +1731,14 @@ function isResolved(i){return i.status==='Resolved'||i.status==="Won't Fix";}
 ══════════════════════════════════════ */
 function filterSb(key){
   document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
+  // Toggle: if clicking the already-active cat filter, clear it
+  if(activeFlt===key&&key.startsWith('cat:')){
+    activeFlt='all';
+    document.querySelectorAll('.cat-card').forEach(e=>e.classList.remove('active'));
+    document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
+    $('sb-all')&&$('sb-all').classList.add('active');
+    render();return;
+  }
   // Also clear the cat card active state
   document.querySelectorAll('.cat-card').forEach(e=>e.classList.remove('active'));
 
@@ -1737,12 +1789,12 @@ function getFiltered(){
       if(activeFlt.startsWith('sev:')&&i.severity!==activeFlt.slice(4))return false;
       else if(activeFlt.startsWith('area:')&&area!==activeFlt.slice(5))return false;
       else if(activeFlt.startsWith('target:')&&i.sprint_target!==activeFlt.slice(7))return false;
-      else if(activeFlt.startsWith('cat:')&&(i.issue_category||'Bug')!==activeFlt.slice(4))return false;
+      else if(activeFlt.startsWith('cat:')&&normCat(i.issue_category)!==activeFlt.slice(4))return false;
       else if(!activeFlt.startsWith('sev:')&&!activeFlt.startsWith('area:')&&!activeFlt.startsWith('target:')&&!activeFlt.startsWith('cat:')&&i.status!==activeFlt)return false;
     }
     if(aF&&area!==aF)return false;
     if(tF&&i.sprint_target!==tF)return false;
-    if(cF&&(i.issue_category||'Bug')!==cF)return false;
+    if(cF&&normCat(i.issue_category)!==cF)return false;
     if(q){const t=((i.title||'')+' '+(i.description||'')+' '+(i.issue_ref||'')+' '+area).toLowerCase();if(!t.includes(q))return false;}
     return true;
   }).sort((a,b)=>{
@@ -1771,7 +1823,7 @@ function render(){
     const area=areaOf(i),iconId=AREA_ICONS[area]||'ic-zap';
     const sc=statusCls(i.status),isRes=isResolved(i);
     const tc=i.sprint_target==='7-Day Rescue'?'<span class="target-chip tc-rescue">7-Day</span>':i.sprint_target?'<span class="target-chip tc-cleanup">30-Day</span>':'';
-    const catCls=i.issue_category?`cc-${i.issue_category}`:'cc-Bug';
+    const catCls=i.issue_category?`cc-${normCat(i.issue_category)}`:'cc-Bug';
     const catBadge=i.issue_category&&i.issue_category!=='Bug'?`<span class="cat-chip ${catCls}">${i.issue_category}</span>`:'';
     return`<tr onclick="openPanel('${i.id}')" class="sev-${i.severity}${isRes?' row-resolved':''}">
       <td class="col-num">${i.issue_number}</td>
@@ -1837,7 +1889,7 @@ function fillPanel(i){
   $('p-assignee').value=i.assigned_to||'';
   setText('p-save-msg','');
 
-  const catLabel=i.issue_category||'Bug';
+  const catLabel=normCat(i.issue_category);
   const catCls=`cc-${catLabel}`;
   $('p-meta').innerHTML=[
     ['Area',esc(area)],
@@ -1954,7 +2006,7 @@ async function submitNewIssue(){
     area:$('ni-area').value,
     workflow_area:$('ni-area').value,
     status:'Open',
-    issue_category:selectedCat,
+    issue_category:({'UX':'UX Issue','Testing':'Testing Find'}[selectedCat]||selectedCat),
     files_changed:codeFiles.length?codeFiles:null,
     attachments:uploadedAtts.length?uploadedAtts:[],
     regression_test:$('ni-test').value.trim()||null,
