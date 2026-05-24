@@ -16,6 +16,16 @@ const COUNTRY_CURRENCY: Record<string, string> = {
   EU: 'EUR',
 };
 
+type OrganizationProfilePatch = Record<string, string | null>;
+type OrganizationUpdateResult = Promise<{ error: { message: string } | null }>;
+type OrganizationTableClient = {
+  update(payload: OrganizationProfilePatch): { eq(column: string, value: string): OrganizationUpdateResult };
+};
+
+function organizationTable(supabase: Awaited<ReturnType<typeof createClient>>) {
+  return supabase.from('organizations') as unknown as OrganizationTableClient;
+}
+
 function clean(value: FormDataEntryValue | null) {
   const text = typeof value === 'string' ? value.trim() : '';
   return text.length ? text : null;
@@ -49,7 +59,7 @@ function redirectToProfile(notice: string): never {
   redirect(`/admin/organization?notice=${encodeURIComponent(notice)}#company-profile`);
 }
 
-function setTextField(payload: Record<string, unknown>, formData: FormData, field: string) {
+function setTextField(payload: OrganizationProfilePatch, formData: FormData, field: string) {
   if (formData.has(field)) payload[field] = clean(formData.get(field));
 }
 
@@ -97,7 +107,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     if (existingSlug?.id) redirectToProfile('slug-taken');
   }
 
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const payload: OrganizationProfilePatch = { updated_at: new Date().toISOString() };
 
   if (formData.has('name')) payload.name = clean(formData.get('name')) ?? context.organization.name;
   if (formData.has('slug')) payload.slug = nextSlug;
@@ -114,8 +124,8 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
 
   if (formData.has('default_country_id')) {
     payload.default_country_id = requestedCountryId;
-    payload.default_market_id = defaultCountry?.market_id ?? null;
-    payload.headquarters_country = clean(formData.get('headquarters_country')) ?? defaultCountry?.name ?? null;
+    payload.default_market_id = defaultCountry?.market_id ? String(defaultCountry.market_id) : null;
+    payload.headquarters_country = clean(formData.get('headquarters_country')) ?? (defaultCountry?.name ? String(defaultCountry.name) : null);
   }
 
   if (formData.has('default_currency') || defaultCountry) {
@@ -127,8 +137,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   const uploadedLogoUrl = await uploadLogoFile({ supabase, organizationId: context.organization.id, formData });
   if (uploadedLogoUrl) payload.logo_url = uploadedLogoUrl;
 
-  const { error } = await supabase
-    .from('organizations')
+  const { error } = await organizationTable(supabase)
     .update(payload)
     .eq('id', context.organization.id);
 
