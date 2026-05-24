@@ -5,6 +5,7 @@ import {
   type NotificationChannel,
   type NotificationTemplateContext
 } from './notification-templates';
+import { sendImmediateNotificationEmails } from './email-service';
 
 type JsonRecord = Record<string, string | number | boolean | null>;
 
@@ -32,6 +33,11 @@ export type NotificationDispatchResult = {
   notificationIds: string[];
   skippedUserIds: string[];
   channelsByUserId: Record<string, NotificationChannel[]>;
+  email: {
+    sent: number;
+    skipped: number;
+    failed: number;
+  };
 };
 
 type SupabaseError = {
@@ -177,8 +183,13 @@ export async function triggerNotification(
   const fallbackUserIds = input.recipients?.length ? [] : await getOrgMemberUserIds(input.organizationId);
   const recipients = buildRecipients(input, fallbackUserIds);
   const notificationRows: NotificationInsertRow[] = [];
+  const emailPayloads: Parameters<typeof sendImmediateNotificationEmails>[0] = [];
   const skippedUserIds: string[] = [];
   const channelsByUserId: Record<string, NotificationChannel[]> = {};
+  const title = input.title || template.title;
+  const body = input.body || template.body;
+  const entityRef = input.entityRef ?? input.context?.entityRef ?? null;
+  const actionUrl = input.actionUrl ?? null;
 
   for (const recipient of recipients) {
     const enabledChannels = await getEffectiveChannels(
@@ -190,6 +201,19 @@ export async function triggerNotification(
 
     channelsByUserId[recipient.userId] = enabledChannels;
 
+    if (enabledChannels.includes('email')) {
+      emailPayloads.push({
+        organizationId: input.organizationId,
+        userId: recipient.userId,
+        type: input.type,
+        title,
+        body,
+        priority: template.priority,
+        entityRef,
+        actionUrl,
+      });
+    }
+
     if (!enabledChannels.includes('in_app')) {
       skippedUserIds.push(recipient.userId);
       continue;
@@ -199,23 +223,26 @@ export async function triggerNotification(
       organization_id: input.organizationId,
       user_id: recipient.userId,
       type: input.type,
-      title: input.title || template.title,
-      body: input.body || template.body,
+      title,
+      body,
       icon: template.icon,
       priority: template.priority,
       entity_type: template.entityType,
       entity_id: input.entityId ?? null,
-      entity_ref: input.entityRef ?? input.context?.entityRef ?? null,
-      action_url: input.actionUrl ?? null,
+      entity_ref: entityRef,
+      action_url: actionUrl,
       channels_sent: enabledChannels
     });
   }
+
+  const email = await sendImmediateNotificationEmails(emailPayloads);
 
   if (!notificationRows.length) {
     return {
       notificationIds: [],
       skippedUserIds,
-      channelsByUserId
+      channelsByUserId,
+      email
     };
   }
 
@@ -232,7 +259,8 @@ export async function triggerNotification(
   return {
     notificationIds: (data ?? []).map((row) => row.id),
     skippedUserIds,
-    channelsByUserId
+    channelsByUserId,
+    email
   };
 }
 
