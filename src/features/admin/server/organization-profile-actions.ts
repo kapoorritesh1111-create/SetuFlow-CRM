@@ -32,7 +32,7 @@ function normalizeSlug(value: FormDataEntryValue | null, fallback: string) {
   return normalized || fallback;
 }
 
-function currencyFromCountry(country: any, fallback: string | null) {
+function currencyFromCountry(country: Record<string, unknown> | null, fallback: string | null) {
   const iso = String(country?.iso2_code ?? country?.iso_code ?? '').trim().toUpperCase();
   const byIso = COUNTRY_CURRENCY[iso];
   if (byIso) return byIso;
@@ -49,13 +49,31 @@ function redirectToProfile(notice: string): never {
   redirect(`/admin/organization?notice=${encodeURIComponent(notice)}#company-profile`);
 }
 
+function setTextField(payload: Record<string, unknown>, formData: FormData, field: string) {
+  if (formData.has(field)) payload[field] = clean(formData.get(field));
+}
+
+async function uploadLogoFile({ supabase, organizationId, formData }: { supabase: Awaited<ReturnType<typeof createClient>>; organizationId: string; formData: FormData }) {
+  const entry = formData.get('logo_file');
+  if (!(entry instanceof File) || entry.size === 0) return null;
+
+  const safeName = entry.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
+  const extension = safeName.includes('.') ? safeName.split('.').pop() : 'png';
+  const path = `${organizationId}/${Date.now()}.${extension ?? 'png'}`;
+  const { error } = await supabase.storage.from('org-logos').upload(path, entry, { upsert: true, contentType: entry.type || 'image/png' });
+  if (error) throw error;
+  const { data } = supabase.storage.from('org-logos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function updateOrganizationProfileV2(formData: FormData): Promise<void> {
   const context = await requireAdminWorkspace();
   if (context.missingEnv || !context.user || !context.membership || !context.organization) return;
 
-  const supabase = (await createClient()) as any;
-  const requestedCountryId = clean(formData.get('default_country_id'));
-  let defaultCountry: any = null;
+  const supabase = await createClient();
+  const organizationRecord = context.organization as unknown as Record<string, unknown>;
+  const requestedCountryId = formData.has('default_country_id') ? clean(formData.get('default_country_id')) : null;
+  let defaultCountry: Record<string, unknown> | null = null;
 
   if (requestedCountryId) {
     const { data } = await supabase
@@ -67,8 +85,8 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     defaultCountry = data ?? null;
   }
 
-  const currentSlug = String((context.organization as any).slug ?? 'organization').trim().toLowerCase();
-  const nextSlug = normalizeSlug(formData.get('slug'), currentSlug);
+  const currentSlug = String(organizationRecord.slug ?? 'organization').trim().toLowerCase();
+  const nextSlug = formData.has('slug') ? normalizeSlug(formData.get('slug'), currentSlug) : currentSlug;
   if (nextSlug !== currentSlug) {
     const { data: existingSlug } = await supabase
       .from('organizations')
@@ -79,28 +97,35 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     if (existingSlug?.id) redirectToProfile('slug-taken');
   }
 
-  const manualCurrency = clean(formData.get('default_currency'));
-  const nextCurrency = (manualCurrency ?? currencyFromCountry(defaultCountry, context.organization.default_currency ?? 'USD')).toUpperCase().slice(0, 3);
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-  const payload: Record<string, unknown> = {
-    name: clean(formData.get('name')) ?? context.organization.name,
-    slug: nextSlug,
-    legal_name: clean(formData.get('legal_name')),
-    headquarters_country: clean(formData.get('headquarters_country')) ?? defaultCountry?.name ?? null,
-    registered_address: clean(formData.get('registered_address')),
-    city: clean(formData.get('city')),
-    postal_code: clean(formData.get('postal_code')),
-    website: clean(formData.get('website')),
-    contact_email: clean(formData.get('contact_email')),
-    tax_id: clean(formData.get('tax_id')),
-    default_currency: nextCurrency,
-    default_country_id: requestedCountryId,
-    default_market_id: defaultCountry?.market_id ?? null,
-    logo_url: clean(formData.get('logo_url')),
-    quote_terms_conditions: clean(formData.get('quote_terms_conditions')),
-    order_terms_conditions: clean(formData.get('order_terms_conditions')),
-    updated_at: new Date().toISOString(),
-  };
+  if (formData.has('name')) payload.name = clean(formData.get('name')) ?? context.organization.name;
+  if (formData.has('slug')) payload.slug = nextSlug;
+  setTextField(payload, formData, 'legal_name');
+  setTextField(payload, formData, 'headquarters_country');
+  setTextField(payload, formData, 'registered_address');
+  setTextField(payload, formData, 'city');
+  setTextField(payload, formData, 'postal_code');
+  setTextField(payload, formData, 'website');
+  setTextField(payload, formData, 'contact_email');
+  setTextField(payload, formData, 'tax_id');
+  setTextField(payload, formData, 'quote_terms_conditions');
+  setTextField(payload, formData, 'order_terms_conditions');
+
+  if (formData.has('default_country_id')) {
+    payload.default_country_id = requestedCountryId;
+    payload.default_market_id = defaultCountry?.market_id ?? null;
+    payload.headquarters_country = clean(formData.get('headquarters_country')) ?? defaultCountry?.name ?? null;
+  }
+
+  if (formData.has('default_currency') || defaultCountry) {
+    const manualCurrency = clean(formData.get('default_currency'));
+    payload.default_currency = (manualCurrency ?? currencyFromCountry(defaultCountry, String(organizationRecord.default_currency ?? 'USD'))).toUpperCase().slice(0, 3);
+  }
+
+  if (formData.has('logo_url')) payload.logo_url = clean(formData.get('logo_url'));
+  const uploadedLogoUrl = await uploadLogoFile({ supabase, organizationId: context.organization.id, formData });
+  if (uploadedLogoUrl) payload.logo_url = uploadedLogoUrl;
 
   const { error } = await supabase
     .from('organizations')
@@ -120,8 +145,8 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
         name: context.organization.name,
         slug: currentSlug,
         default_currency: context.organization.default_currency,
-        default_country_id: (context.organization as any).default_country_id ?? null,
-        default_market_id: (context.organization as any).default_market_id ?? null,
+        default_country_id: organizationRecord.default_country_id ?? null,
+        default_market_id: organizationRecord.default_market_id ?? null,
       },
       next: payload,
       source: 'admin_organization_profile_v2',
