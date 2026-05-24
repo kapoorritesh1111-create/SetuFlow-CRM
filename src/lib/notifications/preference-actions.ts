@@ -28,7 +28,7 @@ export async function saveWorkspaceNotificationSettings(formData: FormData) {
   const workspace = await requireAdminWorkspace();
   if (workspace.missingEnv || !workspace.user || !workspace.organization) redirectWithNotice('/admin/notifications', 'missing-workspace');
 
-  const supabase = await createClient();
+  const supabase = (await createClient()) as any;
   const rows = typeKeys.map((notifType) => ({
     organization_id: workspace.organization!.id,
     notif_type: notifType,
@@ -53,7 +53,7 @@ export async function saveUserNotificationPreferences(formData: FormData) {
   const workspace = await requireWorkspace();
   if (workspace.missingEnv || !workspace.user || !workspace.organization || !workspace.membership) redirectWithNotice('/settings/notifications', 'missing-workspace');
 
-  const supabase = await createClient();
+  const supabase = (await createClient()) as any;
   const rows = typeKeys.map((notifType) => ({
     user_id: workspace.user!.id,
     organization_id: workspace.organization!.id,
