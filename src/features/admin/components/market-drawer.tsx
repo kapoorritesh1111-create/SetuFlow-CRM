@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { createMarket, updateMarket } from '@/features/admin/server/actions';
 import { formatDate } from '@/lib/utils';
 
 export type AdminMarket = {
@@ -14,15 +15,13 @@ export type AdminMarket = {
   updated_at: string | null;
 };
 
-type MarketAction = (formData: FormData) => Promise<void>;
-
 const inputClass = 'min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const primaryButtonClass = 'inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800';
 const secondaryButtonClass = 'inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50';
 
-function MarketForm({ market, action, onCancel }: { market?: AdminMarket; action: MarketAction; onCancel: () => void }) {
+function MarketForm({ market, onCancel }: { market?: AdminMarket; onCancel: () => void }) {
   return (
-    <form action={action} className="flex flex-1 flex-col overflow-hidden">
+    <form action={market ? updateMarket : createMarket} className="flex flex-1 flex-col overflow-hidden">
       {market ? <input type="hidden" name="id" value={market.id} /> : null}
       <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
         <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
@@ -60,7 +59,7 @@ function DrawerShell({ title, subtitle, children, onClose }: { title: string; su
             <h2 className="mt-1 text-lg font-bold text-slate-950">{title}</h2>
             <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50" aria-label="Close market drawer">✕</button>
+          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50" aria-label="Close market drawer">X</button>
         </div>
         {children}
       </div>
@@ -68,7 +67,7 @@ function DrawerShell({ title, subtitle, children, onClose }: { title: string; su
   );
 }
 
-export function MarketDrawer({ markets, createMarketAction, updateMarketAction }: { markets: AdminMarket[]; createMarketAction: MarketAction; updateMarketAction: MarketAction }) {
+export function MarketDrawer({ markets }: { markets: AdminMarket[] }) {
   const [selected, setSelected] = useState<AdminMarket | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
@@ -97,11 +96,11 @@ export function MarketDrawer({ markets, createMarketAction, updateMarketAction }
               {markets.map((market) => (
                 <tr key={market.id} onClick={() => setSelected(market)} className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50">
                   <td className="px-4 py-3 font-semibold text-slate-900">{market.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs uppercase text-slate-500">{market.market_code || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs uppercase text-slate-500">{market.market_code || '-'}</td>
                   <td className="px-4 py-3"><StatusBadge label="Linked by countries" tone="neutral" dot={false} /></td>
                   <td className="px-4 py-3"><StatusBadge label={market.is_active ? 'Active' : 'Inactive'} tone={market.is_active ? 'success' : 'neutral'} dot={false} /></td>
                   <td className="px-4 py-3 text-slate-500">#{market.sort_order ?? 0}</td>
-                  <td className="px-4 py-3 text-slate-600">{market.updated_at ? formatDate(market.updated_at) : '—'}</td>
+                  <td className="px-4 py-3 text-slate-600">{market.updated_at ? formatDate(market.updated_at) : '-'}</td>
                   <td className="px-4 py-3">
                     <button type="button" onClick={(event) => { event.stopPropagation(); setSelected(market); }} className={secondaryButtonClass}>Edit</button>
                   </td>
@@ -115,13 +114,13 @@ export function MarketDrawer({ markets, createMarketAction, updateMarketAction }
 
       {selected ? (
         <DrawerShell title={selected.name} subtitle={`Code: ${selected.market_code || 'Not set'}`} onClose={() => setSelected(null)}>
-          <MarketForm market={selected} action={updateMarketAction} onCancel={() => setSelected(null)} />
+          <MarketForm market={selected} onCancel={() => setSelected(null)} />
         </DrawerShell>
       ) : null}
 
       {showAdd ? (
         <DrawerShell title="Add market" subtitle="Create a market used by leads, catalog pricing, quotes, and routing." onClose={() => setShowAdd(false)}>
-          <MarketForm action={createMarketAction} onCancel={() => setShowAdd(false)} />
+          <MarketForm onCancel={() => setShowAdd(false)} />
         </DrawerShell>
       ) : null}
     </div>
