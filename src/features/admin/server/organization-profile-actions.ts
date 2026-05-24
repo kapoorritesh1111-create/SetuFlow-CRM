@@ -21,6 +21,7 @@ type OrganizationUpdateResult = Promise<{ error: { message: string } | null }>;
 type OrganizationTableClient = {
   update(payload: OrganizationProfilePatch): { eq(column: string, value: string): OrganizationUpdateResult };
 };
+type SlugLookupRow = { id: string };
 
 function organizationTable(supabase: Awaited<ReturnType<typeof createClient>>) {
   return supabase.from('organizations') as unknown as OrganizationTableClient;
@@ -98,13 +99,14 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   const currentSlug = String(organizationRecord.slug ?? 'organization').trim().toLowerCase();
   const nextSlug = formData.has('slug') ? normalizeSlug(formData.get('slug'), currentSlug) : currentSlug;
   if (nextSlug !== currentSlug) {
-    const { data: existingSlug } = await supabase
+    const { data } = await supabase
       .from('organizations')
       .select('id')
       .eq('slug', nextSlug)
       .neq('id', context.organization.id)
       .maybeSingle();
-    if (existingSlug?.id) redirectToProfile('slug-taken');
+    const existingSlug = data as SlugLookupRow | null;
+    if (existingSlug) redirectToProfile('slug-taken');
   }
 
   const payload: OrganizationProfilePatch = { updated_at: new Date().toISOString() };
