@@ -17,32 +17,53 @@ const inputClass = 'min-h-11 rounded-2xl border border-slate-200 bg-white px-3 p
 const primaryButtonClass = 'inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800';
 const secondaryButtonClass = 'inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50';
 
-function MarketForm({ market }: { market?: AdminMarket }) {
+function MarketFields({ market }: { market?: AdminMarket }) {
   return (
-    <form action={market ? updateMarket : createMarket} className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
       {market ? <input type="hidden" name="id" value={market.id} /> : null}
-      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-        <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-          Market name
-          <input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={market?.name ?? ''} placeholder="Market name, e.g. GCC" required />
-        </label>
-        <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-          Market code
-          <input className={`${inputClass} mt-1 w-full uppercase`} name="market_code" defaultValue={market?.market_code ?? ''} placeholder="Code" />
-        </label>
-        <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-          Sort order
-          <input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue={market?.sort_order ?? 0} />
-        </label>
-        <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-          <input type="checkbox" name="is_active" defaultChecked={market?.is_active ?? true} />
-          Active market
-        </label>
-      </div>
-      <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
-        <a href="#markets" className={secondaryButtonClass}>Cancel</a>
-        <button type="submit" className={primaryButtonClass}>{market ? 'Save market' : 'Add market'}</button>
-      </div>
+      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+        Market name
+        <input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={market?.name ?? ''} placeholder="Market name, e.g. GCC" required />
+      </label>
+      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+        Market code
+        <input className={`${inputClass} mt-1 w-full uppercase`} name="market_code" defaultValue={market?.market_code ?? ''} placeholder="Code" />
+      </label>
+      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+        Sort order
+        <input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue={market?.sort_order ?? 0} />
+      </label>
+      <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
+        <input type="checkbox" name="is_active" defaultChecked={market?.is_active ?? true} />
+        Active market
+      </label>
+    </div>
+  );
+}
+
+function FormFooter({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+      <a href="#markets" className={secondaryButtonClass}>Cancel</a>
+      <button type="submit" className={primaryButtonClass}>{label}</button>
+    </div>
+  );
+}
+
+function EditMarketForm({ market }: { market: AdminMarket }) {
+  return (
+    <form action={updateMarket} className="flex flex-1 flex-col overflow-hidden">
+      <MarketFields market={market} />
+      <FormFooter label="Save market" />
+    </form>
+  );
+}
+
+function AddMarketForm() {
+  return (
+    <form action={createMarket} className="flex flex-1 flex-col overflow-hidden">
+      <MarketFields />
+      <FormFooter label="Add market" />
     </form>
   );
 }
@@ -108,12 +129,12 @@ export function MarketDrawer({ markets }: { markets: AdminMarket[] }) {
 
       {markets.map((market) => (
         <DrawerShell key={market.id} id={`market-${market.id}`} title={market.name} subtitle={`Code: ${market.market_code || 'Not set'}`}>
-          <MarketForm market={market} />
+          <EditMarketForm market={market} />
         </DrawerShell>
       ))}
 
       <DrawerShell id="add-market" title="Add market" subtitle="Create a market used by leads, catalog pricing, quotes, and routing.">
-        <MarketForm />
+        <AddMarketForm />
       </DrawerShell>
     </div>
   );
