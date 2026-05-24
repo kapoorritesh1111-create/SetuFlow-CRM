@@ -1,5 +1,6 @@
 const CACHE_NAME = 'setuflow-offline-v1';
 const CAPTURE_URL = '/contact-exchange/scan';
+const DEFAULT_NOTIFICATION_URL = '/dashboard';
 const STATIC_ASSETS = [
   CAPTURE_URL,
   '/manifest.json',
@@ -56,4 +57,53 @@ self.addEventListener('sync', (event) => {
       clients.forEach((client) => client.postMessage({ type: 'SETUFLOW_SYNC_OFFLINE_LEADS' }));
     }));
   }
+});
+
+function parsePushPayload(event) {
+  if (!event.data) return {};
+
+  try {
+    return event.data.json();
+  } catch {
+    try {
+      return JSON.parse(event.data.text());
+    } catch {
+      return { title: 'SETU Flow alert', body: event.data.text() };
+    }
+  }
+}
+
+self.addEventListener('push', (event) => {
+  const payload = parsePushPayload(event);
+  const title = payload.title || 'SETU Flow alert';
+  const body = payload.body || 'A workflow notification needs your attention.';
+  const url = payload.action_url || payload.actionUrl || DEFAULT_NOTIFICATION_URL;
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      tag: payload.id || payload.type || 'setuflow-notification',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url },
+      renotify: Boolean(payload.priority === 'critical'),
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = new URL(event.notification.data?.url || DEFAULT_NOTIFICATION_URL, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client && client.url === targetUrl) return client.focus();
+      }
+
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+      return undefined;
+    })
+  );
 });
