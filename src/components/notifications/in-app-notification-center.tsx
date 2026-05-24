@@ -105,7 +105,7 @@ export function InAppNotificationCenter() {
   };
 
   return (
-    <div className="pointer-events-none fixed right-4 top-16 z-[320] flex w-[min(360px,calc(100vw-2rem))] flex-col items-end gap-3 md:right-8 md:top-6">
+    <div className="pointer-events-none fixed right-4 top-[7.25rem] z-[320] flex w-[min(360px,calc(100vw-2rem))] flex-col items-end gap-3 md:right-8 md:top-[6.25rem]">
       {alertBanner ? (
         <div className="pointer-events-auto w-full overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5">
           <div className="flex items-start gap-3 p-4">
