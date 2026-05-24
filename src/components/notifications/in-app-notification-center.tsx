@@ -109,17 +109,32 @@ function canUseBrowserPush() {
   return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
+function isIosDevice() {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandalonePwa() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+}
+
 export function InAppNotificationCenter({ organizationId, userId }: { organizationId: string; userId: string }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pushStatus, setPushStatus] = useState<PushStatus>('idle');
+  const [iosDevice, setIosDevice] = useState(false);
+  const [standalonePwa, setStandalonePwa] = useState(false);
 
   const unread = useMemo(() => notifications.filter((notification) => !notification.read), [notifications]);
   const unreadCount = unread.length;
   const alertBanner = unread.find((notification) => notification.priority === 'critical') ?? unread.find((notification) => notification.priority === 'high') ?? null;
 
   useEffect(() => {
+    setIosDevice(isIosDevice());
+    setStandalonePwa(isStandalonePwa());
+
     if (!canUseBrowserPush()) {
       setPushStatus('unsupported');
       return;
@@ -180,6 +195,11 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
 
   const enablePush = async () => {
     if (!canUseBrowserPush()) {
+      setPushStatus('unsupported');
+      return;
+    }
+
+    if (iosDevice && !standalonePwa) {
       setPushStatus('unsupported');
       return;
     }
@@ -262,10 +282,18 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
                 ? 'Retry push'
                 : 'Enable push';
 
+  const mobilePushHint = iosDevice && !standalonePwa
+    ? 'On iPhone/iPad, add SETU Flow to your Home Screen first, then open the app icon to enable push alerts.'
+    : pushStatus === 'missing-key'
+      ? 'Push subscription is ready in the app, but VAPID public key configuration is still pending.'
+      : pushStatus === 'denied'
+        ? 'Push is blocked in this browser. Re-enable notifications from browser or OS settings.'
+        : 'Mobile push uses the installed PWA service worker and your notification preferences.';
+
   return (
-    <div className="pointer-events-none fixed right-4 top-[7.25rem] z-[320] flex w-[min(360px,calc(100vw-2rem))] flex-col items-end gap-3 md:right-8 md:top-[6.25rem]">
+    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[320] flex flex-col items-end gap-3 md:inset-x-auto md:right-8 md:top-[6.25rem] md:bottom-auto md:w-[min(360px,calc(100vw-2rem))]">
       {alertBanner ? (
-        <div className="pointer-events-auto w-full overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5">
+        <div className="pointer-events-auto w-full overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5 md:w-[min(360px,calc(100vw-2rem))]">
           <div className="flex items-start gap-3 p-4">
             <div className={cn('mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border', getPriorityClasses(alertBanner.priority))}>
               <FaIcon icon={alertBanner.priority === 'critical' ? 'exclamation-triangle' : 'bell'} fixedWidth />
@@ -283,11 +311,11 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
         </div>
       ) : null}
 
-      <div className="pointer-events-auto relative">
+      <div className="pointer-events-auto relative flex w-full justify-end md:block md:w-auto">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="relative grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-[#0b2e4a]"
+          className="relative grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-[#0b2e4a] md:h-11 md:w-11"
           aria-label="Open notifications"
           aria-expanded={open}
         >
@@ -300,13 +328,15 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
         </button>
 
         {open ? (
-          <section className="absolute right-0 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.22)] ring-1 ring-slate-950/5">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+          <section className="fixed inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-28px_70px_rgba(15,23,42,0.24)] ring-1 ring-slate-950/5 md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:mt-2 md:w-[min(360px,calc(100vw-2rem))] md:rounded-[1.35rem] md:pb-0 md:shadow-[0_28px_70px_rgba(15,23,42,0.22)]">
+            <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-slate-200 md:hidden" aria-hidden="true" />
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p>
                 <h2 className="text-sm font-bold text-slate-950">{unreadCount ? `${unreadCount} unread alert${unreadCount === 1 ? '' : 's'}` : 'All caught up'}</h2>
+                <p className="mt-1 max-w-[16rem] text-[11px] leading-5 text-slate-500 md:hidden">{mobilePushHint}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={enablePush}
@@ -324,7 +354,7 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
               </div>
             </div>
 
-            <div className="max-h-[420px] overflow-y-auto p-2">
+            <div className="max-h-[58vh] overflow-y-auto p-2 md:max-h-[420px]">
               {loading ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading alerts...</div>
               ) : notifications.length === 0 ? (
