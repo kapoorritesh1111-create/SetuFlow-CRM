@@ -4,6 +4,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
+import { OrgProfileCollapsible } from '@/features/admin/components/org-profile-collapsible';
 import { updateApprovalThreshold } from '@/features/admin/server/actions';
 import { updateOrganizationProfileV2 } from '@/features/admin/server/organization-profile-actions';
 import { buildAdminUsersViewModel } from '@/features/admin/view-model';
@@ -36,7 +37,7 @@ function currencyHint(country: any, fallback = 'USD') {
 }
 
 function noticeCopy(notice?: string) {
-  if (notice === 'profile-saved') return { tone: 'success' as const, title: 'Organization profile saved', description: 'Country, market, currency, slug, and company profile fields were updated.' };
+  if (notice === 'profile-saved') return { tone: 'success' as const, title: 'Organization profile saved', description: 'Organization profile section updated successfully.' };
   if (notice === 'slug-taken') return { tone: 'danger' as const, title: 'Slug already in use', description: 'Choose another organization slug. Slugs must be unique.' };
   return null;
 }
@@ -53,6 +54,10 @@ function Field({ label, children, help }: { label: string; children: ReactNode; 
 
 const inputClass = 'mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none placeholder:text-slate-400 placeholder:font-normal focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const textareaClass = 'mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none placeholder:text-slate-400 placeholder:font-normal focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+
+function SaveButton({ label = 'Save section' }: { label?: string }) {
+  return <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">{label}</button>;
+}
 
 function SetupRouteCard({ title, eyebrow, description, href, stats, primaryLabel }: { title: string; eyebrow: string; description: string; href: string; stats: Array<{ label: string; value: string | number; tone?: 'success' | 'warning' | 'info' | 'neutral' }>; primaryLabel: string }) {
   return (
@@ -131,39 +136,52 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
   ];
   const setupCompleteCount = setupChecklist.filter((item) => item.done).length;
 
+  const orgSections = [
+    {
+      id: 'identity',
+      icon: '🏢',
+      title: 'Company identity',
+      subtitle: `${organization.name ?? 'Unnamed'} · ${orgProfile.slug ?? 'slug unset'} · ${orgProfile.contact_email ?? 'email unset'}`,
+      badge: organization.name && orgProfile.slug && orgProfile.contact_email ? 'ok' as const : 'optional' as const,
+      children: <form action={updateOrganizationProfileV2} className="grid gap-4 md:grid-cols-2"><Field label="Organization name"><input name="name" required defaultValue={organization.name ?? ''} className={inputClass} /></Field><Field label="Organization URL slug" help="Lowercase letters/numbers only. Controls the organization site URL."><input name="slug" required defaultValue={orgProfile.slug ?? ''} placeholder="avantifoodslimited" className={inputClass} /></Field><Field label="Legal name"><input name="legal_name" defaultValue={orgProfile.legal_name ?? ''} placeholder="Registered company name" className={inputClass} /></Field><Field label="Contact email"><input name="contact_email" type="email" defaultValue={orgProfile.contact_email ?? ''} placeholder="accounts@example.com" className={inputClass} /></Field><div className="flex justify-end md:col-span-2"><SaveButton label="Save identity" /></div></form>,
+    },
+    {
+      id: 'geography',
+      icon: '🌍',
+      title: 'Geography & currency',
+      subtitle: `${selectedCountry?.name ?? 'Country unset'} · ${inferredMarket?.name ?? 'market unset'} · ${orgProfile.default_currency ?? suggestedCurrency}`,
+      badge: selectedCountry && inferredMarket ? 'ok' as const : 'optional' as const,
+      children: <form action={updateOrganizationProfileV2} className="grid gap-4 md:grid-cols-2"><Field label="Default country" help="The selected country automatically controls the organization default market."><select name="default_country_id" defaultValue={orgProfile.default_country_id ?? ''} className={inputClass}><option value="">Select country</option>{countries.map((country) => <option key={country.id} value={country.id}>{country.name}{country.iso2_code ? ` (${country.iso2_code})` : ''}</option>)}</select></Field><Field label="Default market" help="Read-only. It is inferred from the selected country after save."><input readOnly value={inferredMarket?.name ?? 'Select a country to infer market'} className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm normal-case tracking-normal text-slate-500 outline-none" /></Field><Field label="Default currency" help={`Suggested from country: ${suggestedCurrency}. You can override it when needed.`}><input name="default_currency" maxLength={3} defaultValue={orgProfile.default_currency ?? suggestedCurrency} placeholder={suggestedCurrency} className={inputClass + ' uppercase'} /></Field><Field label="Headquarters country label"><input name="headquarters_country" defaultValue={orgProfile.headquarters_country ?? selectedCountry?.name ?? ''} placeholder="Ireland" className={inputClass} /></Field><div className="md:col-span-2"><Field label="Registered address"><textarea name="registered_address" rows={3} defaultValue={orgProfile.registered_address ?? ''} placeholder="Registered office / billing address" className={textareaClass} /></Field></div><Field label="City"><input name="city" defaultValue={orgProfile.city ?? ''} placeholder="Dublin" className={inputClass} /></Field><Field label="Postal code"><input name="postal_code" defaultValue={orgProfile.postal_code ?? ''} placeholder="D02 XXXX" className={inputClass} /></Field><div className="flex justify-end md:col-span-2"><SaveButton label="Save geography" /></div></form>,
+    },
+    {
+      id: 'terms',
+      icon: '📄',
+      title: 'Quote & order terms',
+      subtitle: `${orgProfile.quote_terms_conditions ? 'Quote terms set' : 'Quote terms unset'} · ${orgProfile.order_terms_conditions ? 'Order terms set' : 'order terms unset'}`,
+      badge: orgProfile.quote_terms_conditions || orgProfile.order_terms_conditions ? 'ok' as const : 'optional' as const,
+      children: <form action={updateOrganizationProfileV2} className="grid gap-4"><Field label="Default quote terms & conditions" help="Leave blank to keep this unset. Suggestions belong in help, not as saved text."><textarea name="quote_terms_conditions" rows={5} defaultValue={orgProfile.quote_terms_conditions ?? ''} placeholder="Add quote terms only after legal/commercial review." className={textareaClass} /></Field><Field label="Default order handoff terms" help="Leave blank until the organization confirms its standard order terms."><textarea name="order_terms_conditions" rows={4} defaultValue={orgProfile.order_terms_conditions ?? ''} placeholder="Add order handoff terms only after operations/commercial review." className={textareaClass} /></Field><div className="flex justify-end"><SaveButton label="Save terms" /></div></form>,
+    },
+    {
+      id: 'branding',
+      icon: '🎨',
+      title: 'Branding',
+      subtitle: `${orgProfile.logo_url ? 'Logo configured' : 'Logo optional'} · ${orgProfile.website ?? 'website unset'} · ${orgProfile.tax_id ?? 'tax ID unset'}`,
+      badge: orgProfile.logo_url || orgProfile.website || orgProfile.tax_id ? 'ok' as const : 'optional' as const,
+      children: <form action={updateOrganizationProfileV2} encType="multipart/form-data" className="grid gap-4 md:grid-cols-2"><div className="md:col-span-2"><Field label="Logo" help="Upload a new logo, or paste a logo URL below."><input type="file" name="logo_file" accept="image/*" className={inputClass} /></Field>{orgProfile.logo_url ? <img src={orgProfile.logo_url} alt="Current logo" className="mt-3 h-14 w-14 rounded-xl border border-slate-200 object-contain p-1" /> : null}</div><Field label="Logo URL"><input name="logo_url" defaultValue={orgProfile.logo_url ?? ''} placeholder="https://example.com/logo.png" className={inputClass} /></Field><Field label="Website"><input name="website" defaultValue={orgProfile.website ?? ''} placeholder="https://example.com" className={inputClass} /></Field><Field label="Tax / VAT ID"><input name="tax_id" defaultValue={orgProfile.tax_id ?? ''} placeholder="VAT / tax registration" className={inputClass} /></Field><div className="flex items-end justify-end"><SaveButton label="Save branding" /></div></form>,
+    },
+  ];
+
   return (
-    <AdminSettingsShell active="overview" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="SaaS onboarding" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }}>
+    <AdminSettingsShell active="profile" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="SaaS onboarding" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }}>
       <AdminPageHero
         title="Organization Setup"
         description="Set the company identity, clean URL slug, default country, inferred market, currency, team access, catalog readiness, and governance. Country drives market defaults for Setu Guru and pricing calculator guidance."
         badge={organization.name}
-        cta={<Link href="#company-profile" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Complete profile</Link>}
         stats={[{ label: 'My role', value: myRoleLabel, tone: 'info' }, { label: 'Country', value: selectedCountry?.name ?? 'Unset', tone: selectedCountry ? 'success' : 'warning' }, { label: 'Default market', value: inferredMarket?.name ?? 'Unset', tone: inferredMarket ? 'success' : 'warning' }, { label: 'Currency', value: orgProfile.default_currency ?? suggestedCurrency, tone: 'info' }]}
       />
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
-
-      <SectionCard eyebrow="Company profile" title="Editable organization profile" description="Set legal identity, operating country, address, tax/contact details, default currency, and the clean organization URL slug.">
-        <form id="company-profile" action={updateOrganizationProfileV2} className="grid gap-4 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
-          <Field label="Organization name"><input name="name" required defaultValue={organization.name ?? ''} className={inputClass} /></Field>
-          <Field label="Organization URL slug" help="Lowercase letters/numbers only. This controls the organization site URL, for example avantifoodslimited.setuflowcrm.com."><input name="slug" required defaultValue={orgProfile.slug ?? ''} placeholder="avantifoodslimited" className={inputClass} /></Field>
-          <Field label="Legal name"><input name="legal_name" defaultValue={orgProfile.legal_name ?? ''} placeholder="Registered company name" className={inputClass} /></Field>
-          <Field label="Default country" help="The selected country automatically controls the organization default market."><select name="default_country_id" defaultValue={orgProfile.default_country_id ?? ''} className={inputClass}><option value="">Select country</option>{countries.map((country) => <option key={country.id} value={country.id}>{country.name}{country.iso2_code ? ` (${country.iso2_code})` : ''}</option>)}</select></Field>
-          <Field label="Default market" help="Read-only. It is inferred from the selected country after save."><input readOnly value={inferredMarket?.name ?? 'Select a country to infer market'} className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm normal-case tracking-normal text-slate-500 outline-none" /></Field>
-          <Field label="Default currency" help={`Suggested from country: ${suggestedCurrency}. You can override it when needed.`}><input name="default_currency" maxLength={3} defaultValue={orgProfile.default_currency ?? suggestedCurrency} placeholder={suggestedCurrency} className={inputClass + ' uppercase'} /></Field>
-          <Field label="Headquarters country label"><input name="headquarters_country" defaultValue={orgProfile.headquarters_country ?? selectedCountry?.name ?? ''} placeholder="Ireland" className={inputClass} /></Field>
-          <Field label="Registered address"><textarea name="registered_address" rows={3} defaultValue={orgProfile.registered_address ?? ''} placeholder="Registered office / billing address" className={textareaClass} /></Field>
-          <Field label="City"><input name="city" defaultValue={orgProfile.city ?? ''} placeholder="Dublin" className={inputClass} /></Field>
-          <Field label="Postal code"><input name="postal_code" defaultValue={orgProfile.postal_code ?? ''} placeholder="D02 XXXX" className={inputClass} /></Field>
-          <Field label="Website"><input name="website" defaultValue={orgProfile.website ?? ''} placeholder="https://example.com" className={inputClass} /></Field>
-          <Field label="Contact email"><input name="contact_email" type="email" defaultValue={orgProfile.contact_email ?? ''} placeholder="accounts@example.com" className={inputClass} /></Field>
-          <Field label="Tax / VAT ID"><input name="tax_id" defaultValue={orgProfile.tax_id ?? ''} placeholder="VAT / tax registration" className={inputClass} /></Field>
-          <Field label="Logo URL"><input name="logo_url" defaultValue={orgProfile.logo_url ?? ''} placeholder="https://example.com/logo.png" className={inputClass} /></Field>
-          <div className="md:col-span-2"><Field label="Default quote terms & conditions" help="Leave blank to keep this unset. Suggestions belong in help, not as saved text."><textarea name="quote_terms_conditions" rows={5} defaultValue={orgProfile.quote_terms_conditions ?? ''} placeholder="Add quote terms only after legal/commercial review." className={textareaClass} /></Field></div>
-          <div className="md:col-span-2"><Field label="Default order handoff terms" help="Leave blank until the organization confirms its standard order terms."><textarea name="order_terms_conditions" rows={4} defaultValue={orgProfile.order_terms_conditions ?? ''} placeholder="Add order handoff terms only after operations/commercial review." className={textareaClass} /></Field></div>
-          <div className="flex items-end justify-end md:col-span-2"><button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save organization profile</button></div>
-        </form>
-      </SectionCard>
+      <OrgProfileCollapsible sections={orgSections} />
 
       <section className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">Setup progress</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{setupCompleteCount}/7 onboarding steps ready</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Complete company profile, country-driven market defaults, team, catalog, and governance before the first quote cycle.</p></div><div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm">Approval threshold: <span className={threshold == null ? 'text-amber-700' : 'text-emerald-700'}>{threshold == null ? 'Unset' : String(threshold) + '%'}</span></div></div>
