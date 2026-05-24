@@ -33,7 +33,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     );
   }
 
-  if (!workspace.membership || !workspace.organization) {
+  if (!workspace.membership || !workspace.organization || !workspace.user) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-2xl">
@@ -47,7 +47,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     );
   }
 
-  const myCardSettingsRow = workspace.user ? await getMyCardSettingsForUser(workspace.user.id) : null;
+  const myCardSettingsRow = await getMyCardSettingsForUser(workspace.user.id);
   const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
 
   return (
@@ -59,7 +59,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       cardSettings={myCardSettings}
       cardShareSlug={myCardSettingsRow?.share_slug ?? null}
     >
-      <InAppNotificationCenter />
+      <InAppNotificationCenter organizationId={workspace.organization.id} userId={workspace.user.id} />
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
       {children}
