@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { WorkspaceHeader, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { cn } from '@/lib/utils';
 
-export type AdminNavKey = 'overview' | 'client-onboarding' | 'users' | 'invitations' | 'markets' | 'categories' | 'stages' | 'pipelines' | 'trade-events' | 'product-management' | 'document-templates' | 'security' | 'audit' | 'ai-analytics' | 'seo';
+export type AdminNavKey = 'overview' | 'client-onboarding' | 'users' | 'invitations' | 'notifications' | 'markets' | 'categories' | 'stages' | 'pipelines' | 'trade-events' | 'product-management' | 'document-templates' | 'security' | 'audit' | 'ai-analytics' | 'seo';
 
 type AdminNavItem = {
   key: AdminNavKey;
@@ -24,6 +24,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
       { key: 'client-onboarding', href: '/admin/client-onboarding', icon: '🚀', label: 'Client onboarding' },
       { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members' },
       { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations' },
+      { key: 'notifications', href: '/admin/notifications', icon: '🔔', label: 'Notifications' },
     ],
   },
   {
