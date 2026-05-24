@@ -5,7 +5,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 
-type MarketRow = {
+type MarketRow = Record<string, unknown> & {
   id: string;
   name: string;
   market_code: string | null;
