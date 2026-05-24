@@ -1,7 +1,6 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { MarketDrawer, type AdminMarket } from '@/features/admin/components/market-drawer';
-import { createMarket, updateMarket } from '@/features/admin/server/actions';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -14,5 +13,5 @@ export default async function Page() {
   const supabase = await createClient();
   const { data: rowsData } = await supabase.from('markets').select('id, name, market_code, sort_order, is_active, updated_at').eq('organization_id', organization.id).order('sort_order', { ascending: true }).order('name', { ascending: true });
   const rows = (rowsData ?? []) as AdminMarket[];
-  return <AdminSettingsShell active="markets" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0}><AdminPageHero title="Markets" description="Manage the active market list that powers leads, catalog pricing, quote routing, and country coverage." badge={organization.name} stats={[{ label: 'Markets', value: rows.length, tone: rows.length ? 'success' : 'warning' }, { label: 'Active', value: rows.filter((item) => item.is_active).length, tone: 'info' }]} /><MarketDrawer markets={rows} createMarketAction={createMarket} updateMarketAction={updateMarket} /></AdminSettingsShell>;
+  return <AdminSettingsShell active="markets" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0}><AdminPageHero title="Markets" description="Manage the active market list that powers leads, catalog pricing, quote routing, and country coverage." badge={organization.name} stats={[{ label: 'Markets', value: rows.length, tone: rows.length ? 'success' : 'warning' }, { label: 'Active', value: rows.filter((item) => item.is_active).length, tone: 'info' }]} /><MarketDrawer markets={rows} /></AdminSettingsShell>;
 }
