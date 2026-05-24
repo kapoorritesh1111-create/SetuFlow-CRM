@@ -34,6 +34,10 @@ export type NotificationDispatchResult = {
   channelsByUserId: Record<string, NotificationChannel[]>;
 };
 
+type SupabaseError = {
+  message: string;
+};
+
 type MemberRow = {
   user_id: string;
 };
@@ -53,7 +57,46 @@ type NotificationInsertRow = {
   channels_sent: NotificationChannel[];
 };
 
+type InsertedNotificationRow = {
+  id: string;
+};
+
+type OrganizationMembersQuery = {
+  select(columns: 'user_id'): OrganizationMembersQuery;
+  eq(column: 'organization_id' | 'is_active', value: string | boolean): Promise<{
+    data: MemberRow[] | null;
+    error: SupabaseError | null;
+  }> & OrganizationMembersQuery;
+};
+
+type NotificationsInsertQuery = {
+  insert(rows: NotificationInsertRow[]): {
+    select(columns: 'id'): Promise<{
+      data: InsertedNotificationRow[] | null;
+      error: SupabaseError | null;
+    }>;
+  };
+};
+
+type NotificationSupabaseClient = {
+  from(table: 'organization_members'): OrganizationMembersQuery;
+  from(table: 'notifications'): NotificationsInsertQuery;
+  rpc(
+    fn: 'get_effective_notif_pref',
+    args: {
+      p_user_id: string;
+      p_org_id: string;
+      p_type: NotifType;
+      p_channel: NotificationChannel;
+    }
+  ): Promise<{ data: boolean | null; error: SupabaseError | null }>;
+};
+
 const channelOrder: NotificationChannel[] = ['in_app', 'push', 'email', 'whatsapp', 'sms'];
+
+async function createNotificationClient() {
+  return (await createClient()) as unknown as NotificationSupabaseClient;
+}
 
 function uniqueUserIds(ids: string[]) {
   return Array.from(new Set(ids.filter(Boolean)));
@@ -69,7 +112,7 @@ function normalizeRequestedChannels(channels?: NotificationChannel[]) {
 }
 
 async function getOrgMemberUserIds(organizationId: string) {
-  const supabase = await createClient();
+  const supabase = await createNotificationClient();
   const { data, error } = await supabase
     .from('organization_members')
     .select('user_id')
@@ -80,7 +123,7 @@ async function getOrgMemberUserIds(organizationId: string) {
     throw new Error(`Unable to load notification recipients: ${error.message}`);
   }
 
-  return uniqueUserIds(((data ?? []) as MemberRow[]).map((member) => member.user_id));
+  return uniqueUserIds((data ?? []).map((member) => member.user_id));
 }
 
 async function getEffectiveChannels(
@@ -89,7 +132,7 @@ async function getEffectiveChannels(
   type: NotifType,
   requestedChannels: NotificationChannel[]
 ) {
-  const supabase = await createClient();
+  const supabase = await createNotificationClient();
   const enabledChannels: NotificationChannel[] = [];
 
   for (const channel of requestedChannels) {
@@ -176,7 +219,7 @@ export async function triggerNotification(
     };
   }
 
-  const supabase = await createClient();
+  const supabase = await createNotificationClient();
   const { data, error } = await supabase
     .from('notifications')
     .insert(notificationRows)
@@ -187,7 +230,7 @@ export async function triggerNotification(
   }
 
   return {
-    notificationIds: (data ?? []).map((row) => row.id as string),
+    notificationIds: (data ?? []).map((row) => row.id),
     skippedUserIds,
     channelsByUserId
   };
