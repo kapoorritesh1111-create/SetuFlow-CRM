@@ -153,7 +153,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
       previous: {
         name: context.organization.name,
         slug: currentSlug,
-        default_currency: context.organization.default_currency,
+        default_currency: organizationRecord.default_currency ?? null,
         default_country_id: organizationRecord.default_country_id ?? null,
         default_market_id: organizationRecord.default_market_id ?? null,
       },
