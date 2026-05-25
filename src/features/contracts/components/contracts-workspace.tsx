@@ -1,5 +1,6 @@
-import { FilterBar, FilterSearch, FilterSelect, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
 'use client';
+
+import { FilterBar, FilterSearch, FilterSelect, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';

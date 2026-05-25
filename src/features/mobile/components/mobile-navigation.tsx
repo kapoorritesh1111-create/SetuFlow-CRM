@@ -1,5 +1,6 @@
-import { GuruAvatar } from '@/components/ui/guru-avatar';
 "use client";
+
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
