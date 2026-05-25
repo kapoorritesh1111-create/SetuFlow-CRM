@@ -25,8 +25,8 @@ export function OrgProfileCollapsible({ sections }: { sections: Section[] }) {
             </span>
             <span className="flex flex-shrink-0 items-center gap-2">
               <StatusBadge label={section.badge === 'ok' ? 'Configured' : 'Optional'} tone={section.badge === 'ok' ? 'success' : 'neutral'} dot={false} />
-              <span className="text-xs text-slate-400 group-open:hidden" aria-hidden="true">v</span>
-              <span className="hidden text-xs text-slate-400 group-open:inline" aria-hidden="true">^</span>
+              <span className="text-xs text-slate-400 group-open:hidden" aria-hidden="true">▼</span>
+              <span className="hidden text-xs text-slate-400 group-open:inline" aria-hidden="true">▲</span>
             </span>
           </summary>
           <div className="border-t border-slate-100 px-5 pb-5 pt-4">{section.children}</div>

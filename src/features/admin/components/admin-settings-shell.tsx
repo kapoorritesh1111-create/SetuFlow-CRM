@@ -58,7 +58,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
       { key: 'profile', href: '/admin/organization', icon: '👤', label: 'Organization profile', statusDot: 'ok' },
       { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members', statusDot: 'ok' },
       { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations', statusDot: 'warn' },
-      { key: 'notifications', href: '/admin/notifications', icon: '🔔', label: 'Notifications', statusDot: 'ok' },
+      { key: 'notifications', href: '/admin/notifications', icon: '🔔', label: 'Notifications', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
       { key: 'client-onboarding', href: '/admin/client-onboarding', icon: '🚀', label: 'Client onboarding', statusDot: 'warn', internalOnly: true },
     ],
   },
@@ -83,9 +83,9 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     label: 'Platform',
     items: [
       { key: 'integrations', href: '/admin/integrations', icon: '🔌', label: 'Integrations', statusDot: 'warn', internalOnly: true },
-      { key: 'rate-limits', href: '/admin/rate-limits', icon: '⚡', label: 'Rate limits', statusDot: 'none', internalOnly: true },
-      { key: 'guru-config', href: '/admin/guru-config', icon: '🤖', label: 'Setu Guru config', statusDot: 'none', internalOnly: true },
-      { key: 'api-keys', href: '/admin/api-keys', icon: '🔑', label: 'API & webhooks', statusDot: 'none', internalOnly: true },
+      { key: 'rate-limits', href: '/admin/rate-limits', icon: '⚡', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'guru-config', href: '/admin/guru-config', icon: '🤖', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'api-keys', href: '/admin/api-keys', icon: '🔑', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
     ],
   },
   {
