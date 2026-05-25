@@ -1,6 +1,7 @@
 export type SetuGuruRouteKey =
   | 'dashboard'
   | 'leads'
+  | 'pipeline'
   | 'products'
   | 'quotes'
   | 'orders'
@@ -78,6 +79,21 @@ export const SETU_GURU_PAGE_CONTEXTS: SetuGuruPageContext[] = [
     allowedActions: ['Explain missing fields', 'Suggest follow-up questions', 'Route to quote, documents, or Compliance Assist', 'Search active lead context'],
     approvalRequiredActions: ['send quote', 'approve price deviation', 'waive compliance', 'delete lead', 'write back defaults'],
     suggestedPrompts: ['Can I quote this lead now?', 'What evidence is needed for this buyer?', 'What should I ask the buyer next?'],
+    liveSearchModes: ['page_help', 'lead_search', 'quote_compliance', 'document_requirements'],
+  },
+  {
+    routeKey: 'pipeline',
+    title: 'Pipeline',
+    helpTopicId: 'pipeline',
+    helpFile: 'docs/help/pipeline.md',
+    routes: ['/pipeline'],
+    summary: 'Premium trade command center for stage movement, deal value, blockers, follow-up risk, and quote-ready action.',
+    primaryQuestions: ['What should I do next in Pipeline?', 'Why should I use Pipeline instead of Leads?', 'Which stage has the most value at risk?', 'Which deals are ready to convert to quote?'],
+    commonBlockers: ['Pipeline and Leads purpose confusion', 'Heavy instructional text on the board', 'Overdue follow-up', 'Stage move blocker', 'Quote readiness unclear'],
+    dataSources: ['leads', 'pipeline_stages', 'lead_stage_history', 'follow_ups', 'quotes', 'compliance_items', 'lead_product_interests'],
+    allowedActions: ['Explain Pipeline versus Leads', 'Summarize stage risk and deal value', 'Route to Leads, Quotes, or Compliance', 'Suggest the next commercial action'],
+    approvalRequiredActions: ['move stage', 'convert to quote', 'send quote', 'approve pricing', 'waive compliance', 'change lead data'],
+    suggestedPrompts: ['What should I do next in Pipeline?', 'Why use Pipeline instead of Leads?', 'Which deals are ready to quote?', 'What is blocking this Pipeline card?'],
     liveSearchModes: ['page_help', 'lead_search', 'quote_compliance', 'document_requirements'],
   },
   {
