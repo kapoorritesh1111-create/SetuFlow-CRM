@@ -1,6 +1,7 @@
+'use client';
+
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { setSetuGuruWorkspaceContext } from '@/lib/setu-guru/page-context';
-'use client';
 
 import Link from 'next/link';
 import * as React from 'react';

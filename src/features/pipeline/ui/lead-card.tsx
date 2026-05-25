@@ -1,5 +1,6 @@
-import { GuruAvatar } from '@/components/ui/guru-avatar';
 "use client";
+
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 
 import { useRouter } from 'next/navigation';
 import { useState, type KeyboardEvent } from 'react';
