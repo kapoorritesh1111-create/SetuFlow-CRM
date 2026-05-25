@@ -61,6 +61,31 @@ export default async function PipelinePage({
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
+      <section className="rounded-[1.4rem] border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-blue-600">Deal management view</p>
+            <h1 className="text-lg font-black tracking-tight text-slate-950">Pipeline manages stage movement, deal value, and quote-ready actions.</h1>
+            <p className="text-sm leading-6 text-slate-600">
+              Use Pipeline when you need a revenue and workflow view of the same lead records: stage lanes, blockers, follow-up pressure, and per-stage pipeline value. Use Leads when you need contact details, product interests, qualification notes, or profile cleanup.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 md:justify-end">
+            <a
+              href={PRODUCT_ROUTES.app.leads}
+              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:text-blue-700"
+            >
+              Open Leads contact view
+            </a>
+            <a
+              href={PRODUCT_ROUTES.app.quotes}
+              className="rounded-full bg-slate-950 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800"
+            >
+              Convert deal to quote
+            </a>
+          </div>
+        </div>
+      </section>
       <PipelineBoard
         currentUserId={workspace.user?.id ?? ''}
         canManageLeads={pipelineView.canManageLeads}
