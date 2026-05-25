@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -66,14 +67,61 @@ function getQuickMoveLabel(label: string) {
   return 'Advance';
 }
 
-export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary, isSelected = false, onSelectedChange, onOpenDetail }: LeadCardProps) {
+// SF-18-097: Stage Readiness Ring
+function ReadinessRing({ pct, blockers }: { pct: number; blockers: string[] }) {
+  const circumference = 2 * Math.PI * 10;
+  const dash = (pct / 100) * circumference;
+  const stroke = pct >= 75 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
+  const labelCls = pct >= 75 ? 'text-emerald-700' : pct >= 40 ? 'text-amber-700' : 'text-rose-700';
+  const label = blockers.length > 0 ? 'Blocked' : pct >= 75 ? 'Move ready' : 'Partial';
+  return (
+    <div className="flex items-center gap-2" title={`${pct}% criteria met${blockers[0] ? ' · ' + blockers[0] : ''}`}>
+      <div className="relative w-7 h-7 flex-shrink-0">
+        <svg width="28" height="28" viewBox="0 0 28 28" style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx="14" cy="14" r="10" fill="none" stroke="#f1f5f9" strokeWidth="2.5" />
+          <circle cx="14" cy="14" r="10" fill="none" stroke={stroke} strokeWidth="2.5"
+            strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round" />
+        </svg>
+      </div>
+      <span className={`text-[10.5px] font-bold ${labelCls}`}>{label}</span>
+    </div>
+  );
+}
+
+// SF-18-097: Momentum Sparkline — 7-day activity bars
+function MomentumSparkline({ activityDates }: { activityDates: string[] }) {
+  const today = new Date();
+  const bars = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+    const dateStr = d.toISOString().slice(0, 10);
+    return activityDates.filter(a => a.startsWith(dateStr)).length;
+  });
+  const maxBar = Math.max(...bars, 1);
+  return (
+    <div className="flex items-end gap-[2px] h-4" title="Activity last 7 days">
+      {bars.map((count, i) => (
+        <div key={i}
+          className={`w-[4px] rounded-[2px_2px_0_0] transition-all ${count > 0 ? 'bg-blue-400' : 'bg-slate-100'}`}
+          style={{ height: `${Math.max((count / maxBar) * 100, count > 0 ? 20 : 10)}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+
+export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, state, history, nextStepMap, handleMove, handleAddNote, handleScheduleFollowUp, isPending, commandCenterHref, setDraggedLeadId, setDragOverStageId, safeFormatDateTime, health, ownerLabel, blockerCount, pricingLabel, pricingClassName, blockerSummary, openRfqCount, activeQuoteCount, agingLabel, moveReadiness, moveOptions, countryCode, coverageSummary, isSelected = false, onSelectedChange, onOpenDetail, activityDates = [], density = 'compact' }: LeadCardProps) {
   const router = useRouter();
   const stageAccent = getStageAccent(stageLabel);
+  // SF-18-098: density-driven visibility
+  const showFull = density === 'full';
+  const showCompact = density !== 'micro';
   const FollowUpIcon = getStatusIcon(getFollowUpStatus(state));
   const OpenIcon = getActionIcon('open');
   const followUpLabel = getFollowUpLabel(state);
   const nextActionSummary = shortenCardCopy(moveReadiness.blockers[0] ?? moveReadiness.warnings[0] ?? moveReadiness.summary, 96);
-  const suggestedAction = moveReadiness.status === 'blocked' ? 'AI: Clear blockers before moving' : state === 'overdue' ? 'AI: Follow up today' : `AI: ${nextActionSummary}`;
+  const suggestedAction = moveReadiness.status === 'blocked' ? 'Setu Guru: Clear blockers before moving' : state === 'overdue' ? 'Setu Guru: Follow up today' : `Setu Guru: ${nextActionSummary}`;
   const currentSortOrder = moveOptions.find((option) => option.stageId === lead.stage_id)?.sortOrder ?? 0;
   const quickMoveOption = moveOptions.filter((option) => option.stageId !== lead.stage_id && !option.disabled).sort((left, right) => {
     const leftDirectionPenalty = left.sortOrder > currentSortOrder ? 0 : 1000;
@@ -171,14 +219,29 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
           <span>{ownerLabel}</span>
           <span>{safeFormatDateTime(lead.next_follow_up_at)}</span>
         </div>
-        <div className={cn('rounded-2xl border px-3 py-2 text-xs font-semibold', getMoveTone(moveReadiness.status))}>
-          <div className="flex items-center justify-between gap-2">
-            <span>{getMoveStatusLabel(moveReadiness.status)}</span>
-            <span>{getPipelineStageActionLabel(stageLabel, moveReadiness.status === 'blocked')}</span>
+        {/* SF-18-097: Stage Readiness Ring replaces text chip */}
+        {(() => {
+          const totalChecks = moveReadiness.blockers.length + moveReadiness.warnings.length + 3;
+          const passed = totalChecks - moveReadiness.blockers.length;
+          const pct = Math.round((passed / totalChecks) * 100);
+          return (
+            <div className="flex items-center justify-between gap-2">
+              <ReadinessRing pct={pct} blockers={moveReadiness.blockers} />
+              <span className="text-[10px] font-semibold text-slate-500">{getPipelineStageActionLabel(stageLabel, moveReadiness.status === 'blocked')}</span>
+            </div>
+          );
+        })()}
+        {/* SF-18-097: Momentum Sparkline */}
+        {activityDates && activityDates.length > 0 && (
+          <div className="flex items-center gap-3">
+            <MomentumSparkline activityDates={activityDates} />
+            <span className="text-[9px] text-slate-400 font-semibold">7d activity</span>
           </div>
-          <p className="mt-1 text-[11px] font-medium">{nextActionSummary}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300">{suggestedAction}</div>{visibleReadinessReasons.length ? <div className="rounded-2xl border border-rose-200/80 bg-rose-50/70 px-3 py-2 text-[11px] text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-200"><p className="font-semibold">Stage blockers</p><ul className="mt-1 list-disc pl-4">{visibleReadinessReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div> : null}{visibleActionItems.length ? <div className="flex flex-wrap gap-1.5">{visibleActionItems.map((item) => <span key={item} className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">{item}</span>)}</div> : null}{coverageSummary ? <div className="rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-[11px] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{coverageSummary}</div> : null}
+        )}
+        <div className="flex items-start gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300">
+          <GuruAvatar size="xs" className="mt-0.5 flex-shrink-0" />
+          <span>{suggestedAction}</span>
+        </div>{showCompact && visibleReadinessReasons.length ? <div className="rounded-2xl border border-rose-200/80 bg-rose-50/70 px-3 py-2 text-[11px] text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-200"><p className="font-semibold">Stage blockers</p><ul className="mt-1 list-disc pl-4">{visibleReadinessReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div> : null}{showFull && visibleActionItems.length ? <div className="flex flex-wrap gap-1.5">{visibleActionItems.map((item) => <span key={item} className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">{item}</span>)}</div> : null}{showFull && coverageSummary ? <div className="rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-[11px] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{coverageSummary}</div> : null}
         {cardMessage ? <StateMessage title={cardMessage} tone="neutral" description="The lead card reflects the latest action result." /> : null}
       </div>
 

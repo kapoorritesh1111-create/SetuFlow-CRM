@@ -118,7 +118,17 @@ export function PipelineBoard({
   // leadProductsMap and leadMarketsMap computed below to determine membership.
   const [productId, setProductId] = useState(() => searchParams.get('product') ?? searchParams.get('category') ?? '');
   const [marketId, setMarketId] = useState(() => searchParams.get('market') ?? '');
+  // SF-18-105: Pipeline filter parity
+  const [countryFilter, setCountryFilter] = useState(() => searchParams.get('country') ?? '');
+  const [tradeEventFilter, setTradeEventFilter] = useState(() => searchParams.get('event') ?? '');
   const [message, setMessage] = useState('');
+  // SF-18-098: Card density toggle
+  const [density, setDensity] = useState<'full' | 'compact' | 'micro'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('pipeline-density') as 'full' | 'compact' | 'micro') ?? 'compact';
+    }
+    return 'compact';
+  });
   const [filtersOpen, setFiltersOpen] = useState(() => ['follow','owner','product','category','market'].some((key) => Boolean(searchParams.get(key))));
   const [isPending, startTransition] = useTransition();
   const [leadTypeFilter, setLeadTypeFilter] = useState<'' | LeadJourney>(() => normalizeLeadTypeParam(searchParams.get('mode')) || initialLeadType);
@@ -393,8 +403,11 @@ export function PipelineBoard({
       const matchesOwner = !ownerFilter || lead.owner_user_id === ownerFilter;
       const matchesProduct = !productId || (leadProductsMap.get(lead.id)?.includes(productId) ?? false);
       const matchesMarket = !marketId || (leadMarketsMap.get(lead.id)?.includes(marketId) ?? false);
+      // SF-18-105: country + trade event predicates
+      const matchesCountry = !countryFilter || lead.country_id === countryFilter;
+      const matchesTradeEvent = !tradeEventFilter || lead.trade_event_id === tradeEventFilter;
       const matchesLeadType = !leadTypeFilter || lead.lead_type === leadTypeFilter;
-      return matchesSearch && matchesFollowUp && matchesOwner && matchesProduct && matchesMarket && matchesLeadType;
+      return matchesSearch && matchesFollowUp && matchesOwner && matchesProduct && matchesMarket && matchesCountry && matchesTradeEvent && matchesLeadType;
     });
   }, [localLeads, search, followUpTiming, ownerFilter, productId, marketId, leadTypeFilter, leadProductsMap, leadMarketsMap]);
 
@@ -630,6 +643,8 @@ export function PipelineBoard({
                 });
               }}
               onOpenDetail={(leadId) => setDetailPanelLeadId(leadId)}
+              activityDates={activities.filter(a => a.lead_id === lead.id).map(a => a.occurred_at)}
+              density={density}
             />
             </div>
           );
@@ -666,6 +681,16 @@ export function PipelineBoard({
   });
 
   const totalPipelineValue = filteredLeads.reduce((sum, lead) => sum + (Number(lead.deal_value ?? 0) || 0), 0);
+
+  // SF-18-096: per-stage value map for Value Waterfall
+  const stageValueMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const lead of filteredLeads) {
+      if (!lead.stage_id) continue;
+      map.set(lead.stage_id, (map.get(lead.stage_id) ?? 0) + (Number(lead.deal_value ?? 0) || 0));
+    }
+    return map;
+  }, [filteredLeads]);
   const valueCurrency = filteredLeads.find((lead) => lead.deal_currency)?.deal_currency ?? 'USD';
   const blockedRecordCount = filteredLeads.reduce((sum, lead) => sum + (getLeadBlockerCount(lead.id) ? 1 : 0), 0);
   const selectedLead = filteredLeads[0] ?? null;
@@ -708,31 +733,85 @@ export function PipelineBoard({
         <a href={PRODUCT_ROUTES.app.dashboard} style={{padding:'12px 16px',fontSize:'12px',fontWeight:700,color:'#94a3b8',cursor:'pointer',borderBottom:'2px solid transparent',textDecoration:'none',display:'flex',alignItems:'center',gap:'6px',whiteSpace:'nowrap',marginBottom:'-1px'}}>⊞ Dashboard →</a>
       </div>
 
-      {/* FILTER BAR */}
-      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'10px 24px',display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
-        <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8',marginRight:'4px'}}>Filter:</span>
-        <PipelineBoardFilters
-          search={search}
-          onSearchChange={setSearch}
-          leadType={leadTypeFilter}
-          onLeadTypeChange={(value) => setLeadTypeFilter(normalizeLeadTypeParam(value))}
-          ownerId={ownerFilter}
-          onOwnerIdChange={setOwnerFilter}
-          owners={profiles.map((profile) => ({ id: profile.id, label: profile.full_name ?? profile.username ?? 'Unassigned' }))}
-          followUpTiming={followUpTiming}
-          onFollowUpTimingChange={setFollowUpTiming}
-          productId={productId}
-          onProductIdChange={setProductId}
-          products={products.map((product) => ({ id: product.id, label: product.name }))}
-          marketId={marketId}
-          onMarketIdChange={setMarketId}
-          markets={markets.map((market) => ({ id: market.id, label: market.name }))}
-        />
-        {overdueCount>0&&<button type="button" onClick={()=>setFollowUpTiming('overdue')} style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fff1f2',border:'1px solid #fecaca',color:'#991b1b',cursor:'pointer'}}>⚠ {overdueCount} overdue <span>×</span></button>}
-        {todayCount>0&&<button type="button" onClick={()=>setFollowUpTiming('today')} style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'999px',fontSize:'10px',fontWeight:700,background:'#fffbeb',border:'1px solid #fde68a',color:'#92400e',cursor:'pointer'}}>📅 {todayCount} due today <span>×</span></button>}
-        {activeFilterCount>0&&<button type="button" onClick={resetFilters} style={{fontSize:'10px',fontWeight:700,padding:'3px 10px',borderRadius:'999px',border:'1px solid #e2e8f0',background:'white',color:'#64748b',cursor:'pointer'}}>Reset</button>}
-        <span style={{marginLeft:'auto',fontSize:'10px',fontWeight:600,color:'#94a3b8'}}>{filteredLeads.length} leads · {filteredStageGroups.length} stages · {valueCurrency} {Math.round(totalPipelineValue).toLocaleString()} pipeline</span>
+      {/* DENSITY TOGGLE — SF-18-098 */}
+      <div className="flex items-center gap-3 border-b border-slate-100 bg-white px-5 py-2">
+        <span className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400">Density:</span>
+        <div className="flex border border-slate-200 rounded-xl overflow-hidden">
+          {(['full', 'compact', 'micro'] as const).map(d => (
+            <button key={d} type="button"
+              onClick={() => { setDensity(d); if (typeof window !== 'undefined') localStorage.setItem('pipeline-density', d); }}
+              className={`h-8 px-3 text-[11px] font-bold capitalize transition ${density === d ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}>
+              {d}
+            </button>
+          ))}
+        </div>
+        <span className="text-[10px] text-slate-400 font-medium">
+          {density === 'compact' ? '2× more cards visible' : density === 'micro' ? '4× scanning mode' : 'Full detail view'}
+        </span>
       </div>
+
+      {/* FILTER BAR — SF-18-103: premium shared pills */}
+      <PipelineBoardFilters
+        search={search}
+        onSearchChange={setSearch}
+        leadType={leadTypeFilter}
+        onLeadTypeChange={(value) => setLeadTypeFilter(normalizeLeadTypeParam(value))}
+        ownerId={ownerFilter}
+        onOwnerIdChange={setOwnerFilter}
+        owners={profiles.map((profile) => ({ id: profile.id, label: profile.full_name ?? profile.username ?? 'Unassigned' }))}
+        followUpTiming={followUpTiming}
+        onFollowUpTimingChange={setFollowUpTiming}
+        productId={productId}
+        onProductIdChange={setProductId}
+        products={products.map((product) => ({ id: product.id, label: product.name }))}
+        marketId={marketId}
+        onMarketIdChange={setMarketId}
+        markets={markets.map((market) => ({ id: market.id, label: market.name }))}
+          countryId={countryFilter}
+          onCountryIdChange={setCountryFilter}
+          countries={countries.map((co) => ({ id: co.id, label: co.name }))}
+          tradeEventId={tradeEventFilter}
+          onTradeEventIdChange={setTradeEventFilter}
+          tradeEvents={tradeEvents.map((te) => ({ id: te.id, label: te.name }))}
+        summary={`${filteredLeads.length} leads · ${valueCurrency} ${Math.round(totalPipelineValue).toLocaleString()}`}
+      />
+
+      {/* VALUE WATERFALL — SF-18-096 */}
+      {totalPipelineValue > 0 && (
+        <div className="bg-white border-b border-slate-100 px-5 py-3">
+          <p className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400 mb-2">
+            Pipeline by stage · {valueCurrency} {Math.round(totalPipelineValue).toLocaleString()} total
+          </p>
+          <div className="flex gap-[2px] h-2 rounded-full overflow-hidden mb-2">
+            {[...filteredStageGroups].flatMap(g => g.stages).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((stage, i) => {
+              const val = stageValueMap.get(stage.id) ?? 0;
+              const flex = totalPipelineValue > 0 ? val / totalPipelineValue : 0;
+              if (flex < 0.005) return null;
+              const COLORS = ['#3b82f6','#22c55e','#f59e0b','#8b5cf6','#ec4899','#10b981','#6366f1','#f97316','#0ea5e9'];
+              return (
+                <div key={stage.id}
+                  className="rounded-full cursor-pointer hover:brightness-110 transition"
+                  style={{ flex, background: COLORS[i % COLORS.length] }}
+                  title={`${stage.name}: ${valueCurrency} ${Math.round(val).toLocaleString()}`}
+                />
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {[...filteredStageGroups].flatMap(g => g.stages).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((stage, i) => {
+              const val = stageValueMap.get(stage.id) ?? 0;
+              if (!val) return null;
+              const COLORS = ['#3b82f6','#22c55e','#f59e0b','#8b5cf6','#ec4899','#10b981','#6366f1','#f97316','#0ea5e9'];
+              return (
+                <span key={stage.id} className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+                  {stage.name} <strong>{valueCurrency} {Math.round(val).toLocaleString()}</strong>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* STATS STRIP */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>

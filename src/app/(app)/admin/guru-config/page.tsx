@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -89,7 +90,7 @@ export default async function GuruConfigPage() {
   return (
     <AdminSettingsShell active="guru-config" organizationName={organization.name} sectionTitle="Setu Guru Config">
       {/* SETU internal banner */}
-      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🧠</span><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><GuruAvatar size="md" /><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
 
       <AdminPageHero
         title="Setu Guru Configuration"

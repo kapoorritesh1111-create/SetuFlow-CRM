@@ -37,6 +37,17 @@ export type SetuGuruPageContext = {
   approvalRequiredActions: string[];
   suggestedPrompts: string[];
   liveSearchModes: SetuGuruLiveSearchMode[];
+  liveWorkspaceState?: {
+    totalLeads?: number;
+    overdueLeads?: number;
+    dueTodayLeads?: number;
+    revenueAtRisk?: number;
+    activeFilterCount?: number;
+    activeFilters?: string[];
+    activeSorts?: string[];
+    visibleLeadCount?: number;
+    totalPipelineValue?: number;
+  };
 };
 
 export function normalizeSetuGuruPath(pathname: string) {
@@ -72,7 +83,7 @@ export const SETU_GURU_PAGE_CONTEXTS: SetuGuruPageContext[] = [
     helpTopicId: 'leads',
     helpFile: 'docs/help/leads.md',
     routes: ['/leads'],
-    summary: 'Follow-up workspace for qualification, product interest, blockers, and quote prep.',
+    summary: 'Follow-up workspace with priority score rings, group banners, multi-sort, advanced filters (deal range, follow-up timing, has-quote), and urgency rails. Setu Guru is context-aware of active filters and overdue counts.',
     primaryQuestions: ['Can I quote this lead now?', 'What is missing before quote?', 'What should I ask next?'],
     commonBlockers: ['Missing contact or country', 'No product interest', 'No next step', 'Quote terms incomplete', 'Compliance stage unclear'],
     dataSources: ['leads', 'lead_product_interests', 'quotes', 'documents', 'lead_compliance_items', 'document_requirement_rules'],
@@ -223,6 +234,13 @@ export function getSetuGuruPageContext(pathname: string) {
   return match ?? SETU_GURU_PAGE_CONTEXTS[0];
 }
 
+// SF-18-101: Module-level live workspace context (set by each workspace page)
+let _liveWorkspaceState: SetuGuruPageContext['liveWorkspaceState'] = {};
+export function setSetuGuruWorkspaceContext(state: SetuGuruPageContext['liveWorkspaceState']) {
+  _liveWorkspaceState = { ..._liveWorkspaceState, ...state };
+}
+export function getLiveWorkspaceState() { return _liveWorkspaceState; }
+
 export function collectSetuGuruPageContext() {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     const fallback = getSetuGuruPageContext('/dashboard');
@@ -235,5 +253,6 @@ export function collectSetuGuruPageContext() {
     ...context,
     route,
     pageText: document.body?.innerText?.replace(/\s+/g, ' ').slice(0, 6000) ?? '',
+      liveWorkspaceState: getLiveWorkspaceState(),
   };
 }

@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 import Link from 'next/link';
 import type { AIInsightLevel, AIGovernanceSummary, AIGovernedDecision, DailyInsightSummary, LeadPrioritySummary, OrderDelayPrediction, QuoteRiskSummary } from '@/features/ai/types/intelligence';
 
@@ -58,7 +59,7 @@ export function AICompactActionBrief({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${accentClasses}`}>AI suggestion</span>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${accentClasses}`}><GuruAvatar size="xs" /><span>Setu Guru</span></span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{lane}</span>
           </div>
           <p className="mt-3 text-sm font-semibold text-slate-900">Where you are: <span className="font-normal text-slate-700">{where}</span></p>

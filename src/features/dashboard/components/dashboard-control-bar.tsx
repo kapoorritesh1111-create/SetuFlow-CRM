@@ -39,45 +39,25 @@ const TIME_RANGE_OPTIONS: Array<{ value: DashboardTimeRange; label: string }> = 
   { value: 'this-quarter', label: 'This quarter' },
 ];
 
-function FilterSelect({ icon, label, value, onChange, children, minWidthClassName = 'min-w-0 md:min-w-[188px]' }: FilterSelectProps) {
+function FilterSelect({ icon, label, value, onChange, children, minWidthClassName }: FilterSelectProps) {
+  const isActive = Boolean(value);
   return (
-    <label className={`group flex ${minWidthClassName} min-w-0 items-center gap-2 rounded-[1.1rem] border border-slate-200 bg-slate-50/90 px-2.5 py-2 md:gap-3 md:rounded-[1.2rem] md:px-3 md:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:bg-white`}>
-      <span aria-hidden="true" className="mt-3 hidden shrink-0 text-[14px] leading-none sm:inline">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</div>
-        <div className="relative rounded-[0.95rem] border border-slate-200 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.03)] transition group-hover:border-slate-300">
-          <select
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            className="h-11 w-full appearance-none bg-transparent px-3 pr-8 text-[13px] font-semibold text-slate-900 outline-none md:h-12 md:px-4 md:pr-9 md:text-[14px]"
-            aria-label={label}
-          >
-            {children}
-          </select>
-          <span aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 group-hover:text-slate-600">▾</span>
-        </div>
+    <label className={["inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 cursor-pointer transition", minWidthClassName ?? "", isActive ? "border-blue-200 bg-blue-50 hover:bg-blue-50 hover:border-blue-300" : "border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 hover:shadow-sm"].join(" ")} style={{ minWidth: 120 }}>
+      <span aria-hidden="true" className="text-[13px] flex-shrink-0 leading-none">{icon}</span>
+      <div className="flex flex-col leading-none gap-[3px] min-w-0">
+        <span className="text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">{label}</span>
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="border-none bg-transparent outline-none text-[11.5px] font-bold text-slate-800 appearance-none cursor-pointer leading-snug" aria-label={label}>
+          {children}
+        </select>
       </div>
     </label>
   );
 }
 
-function ActiveChip({ label, onClear, tone = 'slate' }: { label: string; onClear: () => void; tone?: 'slate' | 'sky' | 'emerald' | 'violet' | 'amber' }) {
-  const tones = {
-    slate: 'border-slate-200 bg-white text-slate-700',
-    sky: 'border-sky-200 bg-sky-50 text-sky-700',
-    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    violet: 'border-violet-200 bg-violet-50 text-violet-700',
-    amber: 'border-amber-200 bg-amber-50 text-amber-800',
-  } as const;
-
+function ActiveChip({ label, onClear }: { label: string; onClear: () => void; tone?: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClear}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:-translate-y-px ${tones[tone]}`}
-    >
-      <span>{label}</span>
-      <span aria-hidden="true" className="text-sm leading-none opacity-60">×</span>
+    <button type="button" onClick={onClear} className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 transition">
+      {label}<span aria-hidden="true" className="opacity-60 text-[9px]">✕</span>
     </button>
   );
 }
@@ -96,8 +76,8 @@ export function DashboardControlBar({
   const hasActive = Boolean(filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter || filters.timeRange !== 'this-month');
 
   return (
-    <section className="setu-dashboard-controls rounded-[1.5rem] border border-slate-200/85 bg-white px-3 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] sm:px-5 md:rounded-[1.8rem] md:px-4 md:py-4">
-      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 xl:flex-nowrap">
+    <section className="setu-dashboard-controls flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2">
+      <div className="contents">
         <span className="hidden shrink-0 pr-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:inline md:min-w-[72px]">Viewing:</span>
 
         <div className="contents md:flex md:min-w-0 md:flex-1 md:items-center md:gap-3 md:flex-wrap">

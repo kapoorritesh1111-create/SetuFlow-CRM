@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 'use client';
 
 import { AICompactActionBrief } from '@/features/ai/ui/intelligence-panels';
@@ -33,7 +34,7 @@ export function PipelineAIStrip({ message }: PipelineAIStripProps) {
       where="Rescue board"
       blocker={brief.blocker}
       nextAction={brief.nextAction}
-      guardrail="AI explains lane pressure and sequencing. It cannot move stages, bypass readiness, or invent evidence."
+      guardrail="Setu Guru explains lane pressure and sequencing. It cannot move stages, bypass readiness, or invent evidence."
       details={[
         message,
         'Use the rescue board as a prioritization surface first, then route into the lead command center for the real governed fix.',

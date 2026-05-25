@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { WorkspaceHeader, ToolbarStat } from '@/components/ui/workspace-toolbar';
@@ -84,7 +85,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     items: [
       { key: 'integrations', href: '/admin/integrations', icon: '🔌', label: 'Integrations', statusDot: 'warn', internalOnly: true },
       { key: 'rate-limits', href: '/admin/rate-limits', icon: '⚡', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
-      { key: 'guru-config', href: '/admin/guru-config', icon: '🤖', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'guru-config', href: '/admin/guru-config', icon: '__guru__', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
       { key: 'api-keys', href: '/admin/api-keys', icon: '🔑', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
     ],
   },
@@ -162,7 +163,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
                             : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950',
                         )}
                       >
-                        <span className="w-5 text-center text-[15px]" aria-hidden="true">{item.icon}</span>
+                        <span className="w-5 text-center text-[15px] flex items-center justify-center" aria-hidden="true">{item.icon === '__guru__' ? <GuruAvatar size="sm" /> : item.icon}</span>
                         <span className="min-w-0 flex-1 truncate">{item.label}</span>
                         {badgeLabel ? <AdminNavBadge label={badgeLabel} tone={badgeTone} /> : null}
                         <AdminNavStatusDot dot={statusDot} />
@@ -201,7 +202,7 @@ function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: numbe
             <div className="mt-3 flex flex-wrap gap-2">
               {gapItems.map(item => (
                 <Link key={item.href} href={item.href} className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-200">
-                  <span>{item.icon}</span><span>{item.text}</span><span className="text-amber-600">→ Fix</span>
+                  <span>{item.icon === '__guru__' ? <GuruAvatar size="sm" /> : item.icon}</span><span>{item.text}</span><span className="text-amber-600">→ Fix</span>
                 </Link>
               ))}
             </div>

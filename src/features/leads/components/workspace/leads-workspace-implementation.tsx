@@ -1,3 +1,5 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
+import { setSetuGuruWorkspaceContext } from '@/lib/setu-guru/page-context';
 'use client';
 
 import Link from 'next/link';
@@ -253,7 +255,32 @@ export function LeadsWorkspace({
   const [productIdFilter, setProductIdFilter] = useState('');
   const [tradeEventFilter, setTradeEventFilter] = useState(initialEventId ?? '');
   const [sortMode, setSortMode] = useState<SortMode>('follow-up');
+  // SF-18-099: Multi-sort rules
+  type SortField = 'follow_up' | 'deal_value' | 'company_name' | 'priority_score' | 'created_at';
+  type SortDirection = 'asc' | 'desc';
+  type SortRule = { field: SortField; dir: SortDirection };
+  const [sortRules, setSortRules] = useState<SortRule[]>([{ field: 'follow_up', dir: 'asc' }]);
+  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
+  // SF-18-094: Group banner collapse states
+  const [criticalCollapsed, setCriticalCollapsed] = useState(false);
+  const [todayCollapsed, setTodayCollapsed] = useState(false);
+  const [activeCollapsed, setActiveCollapsed] = useState(false);
+
+  const SORT_FIELDS: Array<{ value: SortField; label: string }> = [
+    { value: 'follow_up', label: 'Follow-up date' },
+    { value: 'deal_value', label: 'Deal value' },
+    { value: 'company_name', label: 'Company name' },
+    { value: 'priority_score', label: 'Priority score' },
+    { value: 'created_at', label: 'Created date' },
+  ];
   const [showFilters, setShowFilters] = useState(false);
+  // SF-18-100: Advanced filter state
+  const [showAdvFilters, setShowAdvFilters] = useState(false);
+  const [advDealMin, setAdvDealMin] = useState('');
+  const [advDealMax, setAdvDealMax] = useState('');
+  const [advFollowUpTiming, setAdvFollowUpTiming] = useState('');
+  const [advHasQuote, setAdvHasQuote] = useState('');
+  const [advSourceType, setAdvSourceType] = useState('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [batchFollowUpAt, setBatchFollowUpAt] = useState('');
   const [batchNextStepId, setBatchNextStepId] = useState('');
@@ -620,12 +647,64 @@ export function LeadsWorkspace({
         matchesTradeEvent;
 
       const matchesToday = todayFilter === 'all-open' ? true : todayLeadIdSet.has(lead.id);
-      return matchesSavedView && matchesSearch && matchesFilters && matchesToday;
+      // SF-18-100: Advanced filters
+      const matchesAdvanced = (
+        (!advDealMin || (lead.deal_value ?? 0) >= Number(advDealMin)) &&
+        (!advDealMax || (lead.deal_value ?? 0) <= Number(advDealMax)) &&
+        (!advFollowUpTiming || (() => {
+          const fs = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
+          if (advFollowUpTiming === 'overdue') return fs === 'overdue';
+          if (advFollowUpTiming === 'today') return fs === 'today';
+          if (advFollowUpTiming === 'unscheduled') return !lead.next_follow_up_at;
+          return true;
+        })()) &&
+        (!advSourceType || lead.source_type === advSourceType)
+      );
+      return matchesSavedView && matchesSearch && matchesFilters && matchesToday && matchesAdvanced;
     });
-  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, tradeEventFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso]);
+  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, tradeEventFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso, advDealMin, advDealMax, advFollowUpTiming, advSourceType]);
+
+  // SF-18-101: Feed live context to Guru widget
+  const overdueCountForGuru = preparedLeads.filter(l => getStableFollowUpVisualState(l.next_follow_up_at, stableNowIso) === 'overdue').length;
+  const dueTodayCountForGuru = preparedLeads.filter(l => getStableFollowUpVisualState(l.next_follow_up_at, stableNowIso) === 'today').length;
+  const revenueAtRiskForGuru = preparedLeads.filter(l => getStableFollowUpVisualState(l.next_follow_up_at, stableNowIso) === 'overdue').reduce((s, l) => s + (l.deal_value ?? 0), 0);
+  useEffect(() => {
+    setSetuGuruWorkspaceContext({
+      totalLeads: workspaceLeads.length,
+      overdueLeads: overdueCountForGuru,
+      dueTodayLeads: dueTodayCountForGuru,
+      revenueAtRisk: revenueAtRiskForGuru,
+      visibleLeadCount: preparedLeads.length,
+      activeFilterCount: activeFilterChips.length,
+      activeFilters: activeFilterChips.map(f => f.label),
+      activeSorts: sortRules.map((r, i) => `${i + 1}: ${r.field.replace('_', ' ')} ${r.dir === 'asc' ? '↑' : '↓'}`),
+    });
+  }, [workspaceLeads.length, overdueCountForGuru, dueTodayCountForGuru, revenueAtRiskForGuru, preparedLeads.length]);
 
   const sortedLeads = useMemo(() => {
     const items = [...preparedLeads];
+    // SF-18-099: Apply multi-sort rules first if more than default
+    if (sortRules.length > 1 || (sortRules[0] && sortRules[0].field !== 'follow_up')) {
+      items.sort((a, b) => {
+        for (const rule of sortRules) {
+          let cmp = 0;
+          if (rule.field === 'follow_up') {
+            const av = a.next_follow_up_at ?? '9999'; const bv = b.next_follow_up_at ?? '9999';
+            cmp = av < bv ? -1 : av > bv ? 1 : 0;
+          } else if (rule.field === 'deal_value') {
+            cmp = (a.deal_value ?? 0) - (b.deal_value ?? 0);
+          } else if (rule.field === 'company_name') {
+            cmp = a.company_name.localeCompare(b.company_name);
+          } else if (rule.field === 'created_at') {
+            cmp = (a.created_at ?? '').localeCompare(b.created_at ?? '');
+          }
+          if (rule.dir === 'desc') cmp = -cmp;
+          if (cmp !== 0) return cmp;
+        }
+        return 0;
+      });
+      return items;
+    }
     items.sort((left, right) => {
       if (sortMode === 'created') {
         return (right.created_at ?? '').localeCompare(left.created_at ?? '');
@@ -668,7 +747,7 @@ export function LeadsWorkspace({
       return (right.created_at ?? '').localeCompare(left.created_at ?? '');
     });
     return items;
-  }, [activityMap, preparedLeads, sortMode, stageHistoryMap, stageMetaMap]);
+  }, [activityMap, preparedLeads, sortMode, sortRules, stageHistoryMap, stageMetaMap]);
 
   const visibleLeads = useMemo(() => sortedLeads.slice(0, visibleCount), [sortedLeads, visibleCount]);
 
@@ -852,6 +931,12 @@ export function LeadsWorkspace({
     setDrawerState((current) => ({ ...current, open: false, leadId: lead?.id ?? current.leadId }));
   };
 
+
+  // SF-18-093: max deal value for priority score normalisation
+  const maxDealValue = useMemo(() =>
+    Math.max(0, ...visibleLeads.map(l => l.deal_value ?? 0)),
+    [visibleLeads]
+  );
 
   const groupedLeadSections = useMemo(() => {
     const groups: Array<{ id: 'critical' | 'due-today' | 'active'; label: string; leads: LeadRow[] }> = [
@@ -1219,6 +1304,7 @@ export function LeadsWorkspace({
     // SF-18-091 fix: also clear search so the chip is removed by Clear All
     setSearch('');
     setLocalSearch('');
+    setAdvDealMin(''); setAdvDealMax(''); setAdvFollowUpTiming(''); setAdvHasQuote(''); setAdvSourceType('');
   };
 
   const resetWorkspaceChrome = () => {
@@ -1415,11 +1501,106 @@ export function LeadsWorkspace({
           </div>
         )}
 
+        {/* SF-18-099: Multi-sort button + popover */}
+        <div className="relative">
+          <button type="button" onClick={() => setSortPopoverOpen(o => !o)}
+            className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 text-[11.5px] font-bold transition ${sortRules.length > 1 || (sortRules[0]?.field !== 'follow_up') ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white hover:border-slate-300'}`}>
+            ⇅ Sort {sortRules.length > 1 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{sortRules.length}</span>}
+          </button>
+          {sortPopoverOpen && (
+            <div className="absolute top-full left-0 mt-1.5 z-50 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 w-96">
+              <p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-3">Sort rules — applied in order</p>
+              {sortRules.map((rule, i) => (
+                <div key={i} className="flex items-center gap-2 py-2 border-b border-slate-100 last:border-0">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                  <select value={rule.field} onChange={e => { const next = [...sortRules]; next[i] = { ...next[i], field: e.target.value as SortField }; setSortRules(next); }}
+                    className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold outline-none">
+                    {SORT_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </select>
+                  <select value={rule.dir} onChange={e => { const next = [...sortRules]; next[i] = { ...next[i], dir: e.target.value as SortDirection }; setSortRules(next); }}
+                    className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold outline-none">
+                    <option value="asc">↑ Asc</option>
+                    <option value="desc">↓ Desc</option>
+                  </select>
+                  <button onClick={() => setSortRules(sortRules.filter((_, j) => j !== i))} className="w-6 h-6 rounded-md border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 text-xs flex items-center justify-center">✕</button>
+                </div>
+              ))}
+              {sortRules.length < 3 && (
+                <button onClick={() => setSortRules([...sortRules, { field: 'deal_value', dir: 'desc' }])}
+                  className="text-blue-600 text-xs font-bold mt-2 py-1">+ Add sort rule</button>
+              )}
+              <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                <button onClick={() => setSortPopoverOpen(false)} className="flex-1 h-8 rounded-xl border border-slate-200 text-xs font-bold text-slate-600">Close</button>
+                <button onClick={() => { setSortRules([{ field: 'follow_up', dir: 'asc' }]); setSortPopoverOpen(false); }} className="flex-1 h-8 rounded-xl border border-slate-200 text-xs font-bold text-slate-500">Reset</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SF-18-100: More filters button */}
+        <button type="button" onClick={() => setShowAdvFilters(v => !v)}
+          className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 text-[11.5px] font-bold transition ${showAdvFilters || [advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].some(Boolean) ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white hover:border-slate-300'}`}>
+          🔬 More filters {[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length > 0 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length}</span>}
+        </button>
+
         {/* Summary count */}
         <span className="ml-auto text-[10px] font-semibold text-slate-400 tracking-wide whitespace-nowrap">
           {summary.overdue > 0 ? `${summary.overdue} overdue · ` : ''}{sortedLeads.length} total leads
         </span>
       </div>
+
+            {/* ADVANCED FILTERS PANEL — SF-18-100 */}
+      {showAdvFilters && (
+        <div className="bg-slate-50 border-b border-slate-200 px-5 py-4">
+          <div className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-3">Advanced filters — 5 additional criteria</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div>
+              <label className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-1">Deal value min ($)</label>
+              <input type="number" placeholder="e.g. 5000" value={advDealMin} onChange={e => setAdvDealMin(e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold outline-none focus:border-blue-400" />
+            </div>
+            <div>
+              <label className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-1">Deal value max ($)</label>
+              <input type="number" placeholder="e.g. 50000" value={advDealMax} onChange={e => setAdvDealMax(e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold outline-none focus:border-blue-400" />
+            </div>
+            <div>
+              <label className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-1">Follow-up timing</label>
+              <select value={advFollowUpTiming} onChange={e => setAdvFollowUpTiming(e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold outline-none appearance-none">
+                <option value="">Any</option>
+                <option value="overdue">Overdue only</option>
+                <option value="today">Due today</option>
+                <option value="unscheduled">Unscheduled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-1">Has active quote</label>
+              <select value={advHasQuote} onChange={e => setAdvHasQuote(e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold outline-none appearance-none">
+                <option value="">Any</option>
+                <option value="yes">Has quote</option>
+                <option value="no">No quote yet</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-1">Source type</label>
+              <select value={advSourceType} onChange={e => setAdvSourceType(e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold outline-none appearance-none">
+                <option value="">All sources</option>
+                <option value="direct">Direct inquiry</option>
+                <option value="trade_event">Trade event</option>
+                <option value="referral">Referral</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-3 items-center">
+            <button type="button" onClick={() => setShowAdvFilters(false)} className="h-8 rounded-xl bg-slate-900 text-white px-4 text-xs font-bold">Apply</button>
+            <button type="button" onClick={() => { setAdvDealMin(''); setAdvDealMax(''); setAdvFollowUpTiming(''); setAdvHasQuote(''); setAdvSourceType(''); }} className="h-8 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600">Clear</button>
+            <span className="text-xs text-slate-400 font-semibold">Combines with AND logic · active: {[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length} filters</span>
+          </div>
+        </div>
+      )}
 
       {/* ═══ SAVED VIEWS BAR — matches spec .saved-views ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center', overflowX: 'auto' }}>
@@ -1559,19 +1740,62 @@ export function LeadsWorkspace({
             <>
               {groupedLeadSections.map((section) => (
                 <section key={section.id}>
-                  {/* Section label */}
-                  <div style={{ padding: '10px 16px 4px', marginTop: section.id === 'critical' ? 0 : 8 }}>
-                    <p style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: '#94a3b8' }}>
-                      {section.id === 'critical' ? '🔴' : section.id === 'due-today' ? '🟡' : '🟢'}{' '}
-                      {section.id === 'critical' ? 'Critical — needs action now' : section.id === 'due-today' ? 'Due today — scheduled actions' : 'Active / upcoming'} ({section.leads.length})
-                    </p>
-                  </div>
-                  {/* Lead rows */}
+                  {/* SF-18-094: Group Intelligence Banner */}
+                  {(() => {
+                    const isCollapsed = section.id === 'critical' ? criticalCollapsed : section.id === 'due-today' ? todayCollapsed : activeCollapsed;
+                    const setCollapsed = section.id === 'critical' ? setCriticalCollapsed : section.id === 'due-today' ? setTodayCollapsed : setActiveCollapsed;
+                    const tone = section.id === 'critical' ? 'critical' : section.id === 'due-today' ? 'warning' : 'success';
+                    const sectionRevenue = section.leads.reduce((sum, l) => sum + (l.deal_value ?? 0), 0);
+                    const sectionAvgDays = section.id === 'critical' && section.leads.length > 0
+                      ? Math.round(section.leads.filter(l => l.next_follow_up_at).reduce((sum, l) => {
+                          const diff = Math.floor((Date.now() - new Date(l.next_follow_up_at!).getTime()) / 86400000);
+                          return sum + Math.max(0, diff);
+                        }, 0) / Math.max(1, section.leads.filter(l => l.next_follow_up_at).length))
+                      : undefined;
+                    const aiTip = section.id === 'critical'
+                      ? `${sectionRevenue > 0 ? `$${Math.round(sectionRevenue/1000)}K at risk · ` : ''}schedule follow-up calls today`
+                      : section.id === 'due-today' ? 'Complete today to maintain momentum'
+                      : 'On track — no immediate action needed';
+                    const toneStyles = {
+                      critical: 'bg-gradient-to-r from-rose-50 to-red-50 border-rose-200',
+                      warning:  'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200',
+                      success:  'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-100',
+                    } as const;
+                    const dotStyles = {
+                      critical: 'bg-rose-500 animate-pulse', warning: 'bg-amber-500 animate-pulse', success: 'bg-emerald-500',
+                    } as const;
+                    const textStyles = { critical: 'text-rose-800', warning: 'text-amber-800', success: 'text-emerald-800' } as const;
+                    const fmt = (n: number) => n >= 1000 ? `$${(n/1000).toFixed(0)}K` : n > 0 ? `$${n}` : '';
+                    return (
+                      <button type="button" onClick={() => setCollapsed(v => !v)}
+                        className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-2.5 mb-2 mt-2 transition hover:shadow-md text-left ${toneStyles[tone]}`}
+                        style={{ margin: '8px 8px 4px' }}>
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotStyles[tone]}`} />
+                        <span className={`text-[10.5px] font-extrabold uppercase tracking-[.1em] ${textStyles[tone]}`}>
+                          {section.id === 'critical' ? '⚠ Critical — Needs Action Now'
+                            : section.id === 'due-today' ? '⏰ Due Today'
+                            : '✓ Active / Upcoming'}
+                        </span>
+                        <span className="text-[9.5px] font-semibold text-slate-500 bg-white/70 rounded-md px-2 py-0.5 border border-white/80 flex items-center gap-1 whitespace-nowrap">
+                          <GuruAvatar size="xs" />{aiTip}
+                        </span>
+                        <div className="ml-auto flex gap-3 items-center flex-shrink-0">
+                          <span className={`text-[10.5px] font-bold ${textStyles[tone]}`}><strong>{section.leads.length}</strong> leads</span>
+                          {sectionRevenue > 0 && <span className={`text-[10.5px] font-bold ${textStyles[tone]}`}><strong>{fmt(sectionRevenue)}</strong> pipeline</span>}
+                          {sectionAvgDays != null && sectionAvgDays > 0 && <span className={`text-[10.5px] font-bold ${textStyles[tone]}`}>avg <strong>{sectionAvgDays}d</strong> overdue</span>}
+                          <span className="text-[9px] text-slate-400">{isCollapsed ? '▶' : '▼'}</span>
+                        </div>
+                      </button>
+                    );
+                  })()}
+                  {/* SF-18-094: Collapse group body */}
+                  {(section.id === 'critical' ? !criticalCollapsed : section.id === 'due-today' ? !todayCollapsed : !activeCollapsed) && (
                   <div style={{ padding: '0 8px 4px' }}>
                     {section.leads.map((lead) => (
                       <LeadTableRow
                         key={lead.id}
                         lead={lead}
+                        maxDealValue={maxDealValue}
                         selected={selectedLeadIds.includes(lead.id)}
                         isSpotlight={spotlightLead?.id === lead.id}
                         toggleSelect={toggleLeadSelection}
@@ -1610,6 +1834,7 @@ export function LeadsWorkspace({
                       />
                     ))}
                   </div>
+                  )}
                 </section>
               ))}
             </>

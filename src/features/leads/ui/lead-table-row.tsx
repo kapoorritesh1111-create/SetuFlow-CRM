@@ -29,6 +29,7 @@ export interface LeadTableRowProps {
   openQuoteBuilder?: (leadId: string) => void;
   openQuickEdit?: (leadId: string) => void;
   onDeleteLead?: (leadId: string, companyName: string) => void;
+  maxDealValue?: number;
 }
 
 function getLeadInitials(companyName: string) {
@@ -83,6 +84,46 @@ function getStableDayDiff(scheduledAt?: string | null, nowIso?: string | null) {
   return Math.round((start(target) - start(now)) / dayMs);
 }
 
+// ── SF-18-093: Priority Score Ring ─────────────────────────────────────────
+function computePriorityScore(
+  dealValue: number | null,
+  overdueDays: number | null,
+  maxDealValue: number,
+  blockerCount: number,
+  progress: number,
+  followUpState: string,
+): number {
+  const urgency    = Math.min((overdueDays ?? 0) / 14, 1) * 45;
+  const value      = maxDealValue > 0 ? Math.min((dealValue ?? 0) / maxDealValue, 1) * 25 : 0;
+  const blocker    = blockerCount > 0 ? 15 : 0;
+  const entry      = progress < 0.2 ? 10 : 0;
+  const unscheduled = followUpState === 'unscheduled' ? 5 : 0;
+  return Math.round(Math.min(Math.max(urgency + value + blocker + entry + unscheduled, 0), 99));
+}
+
+function PriorityRing({ score }: { score: number }) {
+  const dash = (score / 100) * 125.66;
+  const [stroke, textClass] =
+    score >= 75 ? ['#e11d48', 'text-rose-600'] :
+    score >= 50 ? ['#d97706', 'text-amber-600'] :
+    score >= 25 ? ['#2563eb', 'text-blue-600'] :
+                  ['#94a3b8', 'text-slate-400'];
+  return (
+    <div className="relative w-11 h-11 flex-shrink-0">
+      <svg width="44" height="44" viewBox="0 0 44 44" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="22" cy="22" r="18" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+        <circle cx="22" cy="22" r="18" fill="none" stroke={stroke} strokeWidth="3"
+          strokeDasharray={`${(score / 100) * 113.1} 113.1`} strokeLinecap="round" />
+      </svg>
+      <span className={`absolute inset-0 flex items-center justify-center text-[11px] font-black font-mono ${textClass}`}>
+        {score}
+      </span>
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+
 export function LeadTableRow({
   lead,
   selected,
@@ -103,6 +144,7 @@ export function LeadTableRow({
   openQuoteBuilder,
   openQuickEdit,
   onDeleteLead,
+  maxDealValue = 0,
 }: LeadTableRowProps) {
   const [hydratedNowIso, setHydratedNowIso] = useState<string | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -154,6 +196,8 @@ export function LeadTableRow({
   const stageOrder = stageMeta.sortOrder ?? 0;
   const stageCount = stageMeta.stageCount ?? 1;
   const progress = stageCount > 0 ? Math.max(0.08, Math.min(1, stageOrder / stageCount)) : 0.08;
+  // SF-18-093: Priority score — must be after progress is declared
+  const priorityScore = computePriorityScore(lead.deal_value, overdueDays, maxDealValue, blockerCount, progress, followUpState);
   const progressBarColour = blockerCount > 0 || followUpState === 'overdue' ? 'bg-rose-400' : followUpState === 'today' ? 'bg-amber-400' : 'bg-emerald-500';
 
   let progressSubLabel: string;
@@ -178,10 +222,18 @@ export function LeadTableRow({
         severityBorderClass,
         selected || isSpotlight ? 'bg-blue-50/40' : '',
       ].join(' ')}
-      style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 146px' }}
+      style={{ gridTemplateColumns: '28px 1fr 130px 110px 88px 110px 100px 146px' }}
       onClick={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; openLeadCommandCenter(router, commandCenterHref); }}
       onKeyDown={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; handleLeadCommandCenterKeyDown(event, router, commandCenterHref); }}
     >
+      {/* SF-18-095: Left urgency rail */}
+      <div className={[
+        'absolute left-0 top-2 bottom-2 w-[3px] rounded-r-[2px] transition-opacity',
+        followUpState === 'overdue'  ? 'bg-rose-500 opacity-100' :
+        followUpState === 'today'    ? 'bg-amber-500 opacity-100' :
+        followUpState === 'upcoming' ? 'bg-emerald-500 opacity-60' :
+        'opacity-0',
+      ].join(' ')} />
       <div className="flex justify-center">
         <input type="checkbox" checked={selected} aria-label={`Select ${lead.company_name}`} onChange={() => toggleSelect(lead.id)} onClick={(event) => event.stopPropagation()} className="h-[18px] w-[18px] cursor-pointer rounded-[4px] border-slate-300" />
       </div>
@@ -210,6 +262,11 @@ export function LeadTableRow({
             : followUpState === 'today' ? <><span className="inline-flex rounded-[4px] border border-amber-100 bg-amber-50 px-[7px] py-[2px] text-[10px] font-bold text-amber-600">Today</span><span className="text-[10px] text-slate-400">{dueLabel}</span></>
               : hasDueDate ? <span className="text-[10px] font-semibold text-slate-600">{dueLabel}</span>
                 : <span className="text-[10px] text-slate-400">No date set</span>}
+      </div>
+
+      {/* SF-18-093: Priority Score Ring */}
+      <div className="hidden lg:flex items-center justify-center">
+        <PriorityRing score={priorityScore} />
       </div>
 
       <div className="hidden lg:flex flex-col items-start">
@@ -241,11 +298,12 @@ export function LeadTableRow({
 
 export function LeadTableHeader({ onSelectAll, allSelected }: { onSelectAll: (checked: boolean) => void; allSelected: boolean }) {
   return (
-    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px 1fr 130px 110px 110px 100px 146px' }}>
+    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px 1fr 130px 110px 88px 110px 100px 146px' }}>
       <div className="flex justify-center"><input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} className="h-[18px] w-[18px] rounded-[4px] border-slate-300" /></div>
       <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Company / Contact</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Stage progress</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Follow-up</div>
+      <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400 text-center">Priority</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Deal value</div>
       <div className="hidden lg:block text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Owner</div>
       <div className="hidden lg:block text-right text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Open / More</div>

@@ -90,6 +90,8 @@ export interface LeadCardProps {
   isSelected?: boolean;
   onSelectedChange?: (leadId: string, checked: boolean) => void;
   onOpenDetail?: (leadId: string) => void;
+  activityDates?: string[];
+  density?: 'full' | 'compact' | 'micro';
 }
 
 export interface PipelineBoardProps {

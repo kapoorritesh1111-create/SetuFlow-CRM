@@ -1,120 +1,108 @@
-"use client";
-
+'use client';
 import React from 'react';
+import { FilterBar, FilterSearch, FilterSelect, ActiveChip, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
 
-export interface PipelineBoardFilterOption {
-  id: string;
-  label: string;
-}
+export interface PipelineBoardFilterOption { id: string; label: string; }
 
 interface PipelineBoardFiltersProps {
-  search: string;
-  onSearchChange: (value: string) => void;
-  leadType: string;
-  onLeadTypeChange: (value: string) => void;
-  ownerId?: string;
-  onOwnerIdChange?: (value: string) => void;
-  owners?: PipelineBoardFilterOption[];
-  followUpTiming: string;
-  onFollowUpTimingChange: (value: string) => void;
-  productId: string;
-  onProductIdChange: (value: string) => void;
-  products?: PipelineBoardFilterOption[];
-  marketId: string;
-  onMarketIdChange: (value: string) => void;
-  markets?: PipelineBoardFilterOption[];
+  search: string; onSearchChange: (value: string) => void;
+  leadType: string; onLeadTypeChange: (value: string) => void;
+  ownerId?: string; onOwnerIdChange?: (value: string) => void; owners?: PipelineBoardFilterOption[];
+  followUpTiming: string; onFollowUpTimingChange: (value: string) => void;
+  productId: string; onProductIdChange: (value: string) => void; products?: PipelineBoardFilterOption[];
+  marketId: string; onMarketIdChange: (value: string) => void; markets?: PipelineBoardFilterOption[];
+  summary?: string;
+  countryId?: string;
+  onCountryIdChange?: (value: string) => void;
+  countries?: PipelineBoardFilterOption[];
+  tradeEventId?: string;
+  onTradeEventIdChange?: (value: string) => void;
+  tradeEvents?: PipelineBoardFilterOption[];
 }
 
-const followUpTimingLabels: Record<string, string> = { overdue: 'Overdue', today: 'Today', week: 'This week', none: 'No follow-up' };
-
-function FilterChip({ label, onClear, tone = 'blue' }: { label: string; onClear: () => void; tone?: 'rose' | 'amber' | 'blue' }) {
-  const toneClass = tone === 'rose'
-    ? 'border-rose-200 bg-rose-50 text-rose-800'
-    : tone === 'amber'
-      ? 'border-amber-200 bg-amber-50 text-amber-800'
-      : 'border-sky-200 bg-sky-50 text-sky-800';
-
-  return (
-    <button type="button" onClick={onClear} className={`inline-flex h-7 items-center gap-1 rounded-full border px-3 text-[10px] font-bold ${toneClass}`}>
-      {label} <span className="opacity-60">×</span>
-    </button>
-  );
-}
-
-function FilterSelect({ label, icon, value, onChange, children, minWidth = 132 }: { label: string; icon: string; value: string; onChange: (value: string) => void; children: React.ReactNode; minWidth?: number }) {
-  return (
-    <label className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 shadow-sm" style={{ minWidth }}>
-      <span className="text-[13px] leading-none">{icon}</span>
-      <span className="flex flex-col leading-none">
-        <span className="text-[8px] font-extrabold uppercase tracking-[.14em] text-slate-400">{label}</span>
-        <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-0.5 border-none bg-transparent p-0 text-[11px] font-bold text-slate-800 outline-none">
-          {children}
-        </select>
-      </span>
-    </label>
-  );
-}
+const FU_OPTS = [
+  { value: '', label: 'All timing ▾' },
+  { value: 'overdue', label: 'Overdue ▾' },
+  { value: 'today', label: 'Due today ▾' },
+  { value: 'week', label: 'This week ▾' },
+  { value: 'none', label: 'No follow-up ▾' },
+];
 
 export default function PipelineBoardFilters({
-  search,
-  onSearchChange,
-  leadType,
-  onLeadTypeChange,
-  ownerId = '',
-  onOwnerIdChange,
-  owners = [],
-  followUpTiming,
-  onFollowUpTimingChange,
-  productId,
-  onProductIdChange,
-  products = [],
-  marketId,
-  onMarketIdChange,
-  markets = [],
+  search, onSearchChange, leadType, onLeadTypeChange,
+  ownerId = '', onOwnerIdChange, owners = [],
+  followUpTiming, onFollowUpTimingChange,
+  productId, onProductIdChange, products = [],
+  marketId, onMarketIdChange, markets = [],
+  summary,
+  countryId = '',
+  onCountryIdChange,
+  countries = [],
+  tradeEventId = '',
+  onTradeEventIdChange,
+  tradeEvents = [],
 }: PipelineBoardFiltersProps) {
-  const ownerLabel = owners.find((owner) => owner.id === ownerId)?.label ?? 'Owner';
-  const productLabel = products.find((product) => product.id === productId)?.label ?? 'Product';
-  const marketLabel = markets.find((market) => market.id === marketId)?.label ?? 'Market';
+  const chips = [
+    leadType ? { key: 'type', label: `Type: ${leadType}`, clear: () => onLeadTypeChange('') } : null,
+    ownerId && onOwnerIdChange ? { key: 'owner', label: `Owner: ${owners.find(o => o.id === ownerId)?.label ?? ownerId}`, clear: () => onOwnerIdChange?.('') } : null,
+    followUpTiming ? { key: 'fu', label: FU_OPTS.find(o => o.value === followUpTiming)?.label ?? followUpTiming, clear: () => onFollowUpTimingChange('') } : null,
+    productId ? { key: 'product', label: `Product: ${products.find(p => p.id === productId)?.label ?? productId}`, clear: () => onProductIdChange('') } : null,
+    marketId ? { key: 'market', label: `Market: ${markets.find(m => m.id === marketId)?.label ?? marketId}`, clear: () => onMarketIdChange('') } : null,
+    countryId && onCountryIdChange ? { key: 'country', label: `Country: ${countries.find(c => c.id === countryId)?.label ?? countryId}`, clear: () => onCountryIdChange?.('') } : null,
+    tradeEventId && onTradeEventIdChange ? { key: 'event', label: `Event: ${tradeEvents.find(e => e.id === tradeEventId)?.label ?? tradeEventId}`, clear: () => onTradeEventIdChange?.('') } : null,
+  ].filter(Boolean) as Array<{ key: string; label: string; clear: () => void }>;
+
+  function clearAll() {
+    onLeadTypeChange(''); onOwnerIdChange?.(''); onFollowUpTimingChange('');
+    onProductIdChange(''); onMarketIdChange(''); onSearchChange('');
+  }
 
   return (
-    <div className="contents">
-      <div className="flex h-10 min-w-[260px] items-center gap-2 rounded-md border border-slate-200 bg-white px-3 shadow-sm">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a3b8" strokeWidth="1.8"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
-        <input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search company, contact, country..."
-          className="w-full border-none bg-transparent text-[11px] text-slate-800 outline-none placeholder:text-slate-400"
-        />
-      </div>
-      <FilterSelect label="Follow-up timing" icon="⏰" value={followUpTiming} onChange={onFollowUpTimingChange} minWidth={142}>
-        <option value="">All timing</option>
-        <option value="overdue">Overdue</option>
-        <option value="today">Today</option>
-        <option value="week">This week</option>
-        <option value="none">No follow-up</option>
+    <FilterBar>
+      <FilterSearch value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Search company, contact…" minWidth={210} />
+      <FilterSelect icon="◎" label="Type" value={leadType} onChange={e => onLeadTypeChange(e.target.value)} active={Boolean(leadType)} minWidth={100}>
+        <option value="">All types ▾</option>
+        <option value="buyer">Buyers</option>
+        <option value="supplier">Suppliers</option>
       </FilterSelect>
-      {onOwnerIdChange ? (
-        <FilterSelect label="Owner" icon="👤" value={ownerId} onChange={onOwnerIdChange} minWidth={128}>
-          <option value="">All owners</option>
-          {owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.label}</option>)}
+      <FilterSelect icon="🌍" label="Market" value={marketId} onChange={e => onMarketIdChange(e.target.value)} active={Boolean(marketId)}>
+        <option value="">All markets ▾</option>
+        {markets.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+      </FilterSelect>
+      <FilterSelect icon="📦" label="Product" value={productId} onChange={e => onProductIdChange(e.target.value)} active={Boolean(productId)}>
+        <option value="">All products ▾</option>
+        {products.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+      </FilterSelect>
+      <FilterSelect icon="📅" label="Follow-up" value={followUpTiming} onChange={e => onFollowUpTimingChange(e.target.value)} active={Boolean(followUpTiming)}>
+        {FU_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </FilterSelect>
+      {owners.length > 0 && onOwnerIdChange && (
+        <FilterSelect icon="👤" label="Owner" value={ownerId} onChange={e => onOwnerIdChange(e.target.value)} active={Boolean(ownerId)}>
+          <option value="">All owners ▾</option>
+          {owners.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
         </FilterSelect>
-      ) : null}
-      <FilterSelect label="Product" icon="📦" value={productId} onChange={onProductIdChange} minWidth={140}>
-        <option value="">All products</option>
-        {products.map((product) => <option key={product.id} value={product.id}>{product.label}</option>)}
-      </FilterSelect>
-      <FilterSelect label="Market" icon="🌍" value={marketId} onChange={onMarketIdChange} minWidth={132}>
-        <option value="">All markets</option>
-        {markets.map((market) => <option key={market.id} value={market.id}>{market.label}</option>)}
-      </FilterSelect>
-      <div className="flex flex-wrap items-center gap-2">
-        {followUpTiming ? <FilterChip label={`${followUpTimingLabels[followUpTiming] ?? followUpTiming}`} tone={followUpTiming === 'overdue' ? 'rose' : followUpTiming === 'today' ? 'amber' : 'blue'} onClear={() => onFollowUpTimingChange('')} /> : null}
-        {ownerId ? <FilterChip label={ownerLabel} onClear={() => onOwnerIdChange?.('')} /> : null}
-        {productId ? <FilterChip label={productLabel} onClear={() => onProductIdChange('')} /> : null}
-        {marketId ? <FilterChip label={marketLabel} onClear={() => onMarketIdChange('')} /> : null}
-        {leadType ? <input type="hidden" value={leadType} onChange={(event) => onLeadTypeChange(event.target.value)} readOnly /> : null}
-      </div>
-    </div>
+      )}
+      {chips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {chips.map(c => <ActiveChip key={c.key} label={c.label} onClear={c.clear} />)}
+          <ClearAllButton onClick={clearAll} />
+        </div>
+      )}
+      {/* SF-18-105: Country filter */}
+      {countries.length > 0 && onCountryIdChange && (
+        <FilterSelect icon="🌐" label="Country" value={countryId} onChange={e => onCountryIdChange(e.target.value)} active={Boolean(countryId)}>
+          <option value="">All countries ▾</option>
+          {countries.map(co => <option key={co.id} value={co.id}>{co.label}</option>)}
+        </FilterSelect>
+      )}
+      {/* SF-18-105: Source event filter */}
+      {tradeEvents.length > 0 && onTradeEventIdChange && (
+        <FilterSelect icon="🎪" label="Source event" value={tradeEventId} onChange={e => onTradeEventIdChange(e.target.value)} active={Boolean(tradeEventId)}>
+          <option value="">All events ▾</option>
+          {tradeEvents.map(te => <option key={te.id} value={te.id}>{te.label}</option>)}
+        </FilterSelect>
+      )}
+      {summary && <FilterMeta>{summary}</FilterMeta>}
+    </FilterBar>
   );
 }
