@@ -19,7 +19,217 @@ export function CategoriesAdminWorkspace({ categories }: { categories: AnyRow[] 
 }
 
 export function StagesAdminWorkspace({ pipelines, stages, nextSteps }: { pipelines: AnyRow[]; stages: AnyRow[]; nextSteps: AnyRow[] }) {
-  return <div className="space-y-6"><div className="grid gap-6 xl:grid-cols-2"><SectionCard title="Add pipeline stage" eyebrow="Pipeline readiness" description="Stages control pipeline board order and lead workflow positioning."><form action={createPipelineStage} className="grid gap-3"><select className={inputClass} name="pipeline_id" required>{pipelines.map((pipeline) => <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>)}</select><input className={inputClass} name="name" placeholder="Stage name" required /><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="color" placeholder="Color token / hex" /><input className={inputClass} name="sort_order" type="number" defaultValue="0" /></div><div className="flex flex-wrap gap-3 text-sm text-slate-600"><label><input type="checkbox" name="is_closed" /> Closed</label><label><input type="checkbox" name="is_won" /> Won</label><label><input type="checkbox" name="is_lost" /> Lost</label></div><button className={buttonClass} type="submit">Add stage</button></form></SectionCard><SectionCard title="Add next step" eyebrow="Lead command" description="Next Steps keep follow-up action language standardized."><form action={createNextStep} className="grid gap-3"><input className={inputClass} name="name" placeholder="Next step name" required /><input className={inputClass} name="sort_order" type="number" defaultValue="0" /><button className={buttonClass} type="submit">Add next step</button></form></SectionCard></div><SectionCard title="Pipeline stages" eyebrow="Board lanes" description="Edit stage labels and terminal-state flags by pipeline."><div className="space-y-4">{pipelines.map((pipeline) => { const pipelineStages = stages.filter((stage) => stage.pipeline_id === pipeline.id); return <div key={pipeline.id} className="rounded-3xl border border-slate-200 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-slate-900">{pipeline.name}</h3><StatusBadge label={pipeline.lead_type} tone="info" dot={false} /></div><div className="mt-3 grid gap-3">{pipelineStages.map((stage) => <form key={stage.id} action={updatePipelineStage} className="grid gap-3 rounded-2xl bg-slate-50 p-3 lg:grid-cols-[1fr_110px_120px_250px_auto] lg:items-center"><input type="hidden" name="id" value={stage.id} /><input className={inputClass} name="name" defaultValue={stage.name} required /><input className={inputClass} name="sort_order" type="number" defaultValue={stage.sort_order ?? 0} /><input className={inputClass} name="color" defaultValue={stage.color ?? ''} placeholder="Color" /><div className="flex flex-wrap gap-2 text-xs text-slate-600"><label><input type="checkbox" name="is_closed" defaultChecked={stage.is_closed ?? false} /> Closed</label><label><input type="checkbox" name="is_won" defaultChecked={stage.is_won ?? false} /> Won</label><label><input type="checkbox" name="is_lost" defaultChecked={stage.is_lost ?? false} /> Lost</label></div><button type="submit" className={secondaryButtonClass}>Save</button></form>)}{pipelineStages.length === 0 ? <p className="text-sm text-slate-500">No stages yet.</p> : null}</div></div>; })}</div></SectionCard><SectionCard title="Next steps" eyebrow="Follow-up actions" description="Keep the action list short and operator-friendly."><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{nextSteps.map((step) => <form key={step.id} action={updateNextStep} className="rounded-3xl border border-slate-200 p-4"><input type="hidden" name="id" value={step.id} /><input className={`${inputClass} w-full`} name="name" defaultValue={step.name} required /><div className="mt-3 flex items-center gap-3"><input className={`${inputClass} w-24`} name="sort_order" type="number" defaultValue={step.sort_order ?? 0} /><label className="text-sm text-slate-600"><input type="checkbox" name="is_active" defaultChecked={step.is_active ?? true} /> Active</label><button className={secondaryButtonClass} type="submit">Save</button></div></form>)}</div></SectionCard></div>;
+  return (
+    <div className="space-y-6">
+      {/* Visual pipeline boards */}
+      {pipelines.map((pipeline) => {
+        const pipelineStages = stages.filter((s) => s.pipeline_id === pipeline.id).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        return (
+          <SectionCard key={pipeline.id} title={pipeline.name} eyebrow="Operations · Pipeline" actions={
+            <div className="flex items-center gap-2">
+              {pipeline.is_default && <StatusBadge label="Default" tone="success" dot={false} />}
+              <StatusBadge label={pipeline.lead_type} tone="info" dot={false} />
+              <a href={`#edit-pipeline-${pipeline.id}`} className={secondaryButtonClass}>Edit pipeline</a>
+              <a href={`#add-stage-${pipeline.id}`} className={secondaryButtonClass}>+ Stage</a>
+            </div>
+          }>
+            {/* Stage pills board */}
+            <div className="flex overflow-x-auto rounded-2xl border border-slate-200 overflow-hidden">
+              {pipelineStages.map((stage) => (
+                <a key={stage.id} href={`#stage-${stage.id}`} className="group flex-1 min-w-[100px] px-3 py-3 border-r border-slate-100 bg-white hover:bg-slate-50 text-left no-underline cursor-pointer transition" style={{ textDecoration: 'none' }}>
+                  <div className="h-1 rounded-full mb-2" style={{ backgroundColor: stage.color || '#94a3b8' }} />
+                  <div className="text-sm font-bold text-slate-900">{stage.name}</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">#{stage.sort_order ?? 0}</div>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {stage.is_won && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">Won</span>}
+                    {stage.is_lost && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700">Lost</span>}
+                    {stage.is_closed && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">Closed</span>}
+                  </div>
+                </a>
+              ))}
+              <a href={`#add-stage-${pipeline.id}`} className="min-w-[44px] bg-slate-50 text-teal-600 text-xl flex items-center justify-center hover:bg-teal-50 border-l border-slate-100 no-underline transition" style={{ textDecoration: 'none' }}>+</a>
+            </div>
+            {pipelineStages.length === 0 && <p className="mt-3 text-sm text-slate-500">No stages yet. Click + to add the first stage.</p>}
+
+            {/* Edit stage drawers */}
+            {pipelineStages.map((stage) => (
+              <div key={`drawer-${stage.id}`} id={`stage-${stage.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+                <a href={`#pipeline-${pipeline.id}`} className="absolute inset-0" aria-label="Close stage drawer" />
+                <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+                  <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Edit stage</p>
+                      <h2 className="mt-1 text-lg font-bold text-slate-950">{stage.name}</h2>
+                      <p className="mt-0.5 text-xs text-slate-400">Pipeline: {pipeline.name}</p>
+                    </div>
+                    <a href="#stages-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">X</a>
+                  </div>
+                  <form action={updatePipelineStage} className="flex flex-1 flex-col overflow-hidden">
+                    <input type="hidden" name="id" value={stage.id} />
+                    <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Stage name<input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={stage.name} required /></label>
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Sort order<input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue={stage.sort_order ?? 0} /></label>
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Color (hex or token)<input className={`${inputClass} mt-1 w-full`} name="color" defaultValue={stage.color ?? ''} placeholder="#3b82f6" /></label>
+                      <div className="flex flex-wrap gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                        <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_won" defaultChecked={stage.is_won ?? false} /> <span className="font-semibold text-emerald-700">Won stage</span></label>
+                        <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_lost" defaultChecked={stage.is_lost ?? false} /> <span className="font-semibold text-rose-700">Lost stage</span></label>
+                        <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_closed" defaultChecked={stage.is_closed ?? false} /> <span className="font-semibold text-slate-600">Closed stage</span></label>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                      <a href="#stages-top" className={secondaryButtonClass}>Cancel</a>
+                      <button type="submit" className={buttonClass}>Save stage</button>
+                    </div>
+                  </form>
+                </aside>
+              </div>
+            ))}
+
+            {/* Add stage drawer for this pipeline */}
+            <div id={`add-stage-${pipeline.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+              <a href="#stages-top" className="absolute inset-0" aria-label="Close add stage drawer" />
+              <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Add stage</p><h2 className="mt-1 text-lg font-bold text-slate-950">New stage for {pipeline.name}</h2></div>
+                  <a href="#stages-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">X</a>
+                </div>
+                <form action={createPipelineStage} className="flex flex-1 flex-col overflow-hidden">
+                  <input type="hidden" name="pipeline_id" value={pipeline.id} />
+                  <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Stage name<input className={`${inputClass} mt-1 w-full`} name="name" placeholder="e.g. Qualified" required /></label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Sort order<input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue="0" /></label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Color (hex)<input className={`${inputClass} mt-1 w-full`} name="color" placeholder="#3b82f6" /></label>
+                    <div className="flex flex-wrap gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                      <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_won" /> <span className="font-semibold text-emerald-700">Won</span></label>
+                      <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_lost" /> <span className="font-semibold text-rose-700">Lost</span></label>
+                      <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_closed" /> <span className="font-semibold text-slate-600">Closed</span></label>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                    <a href="#stages-top" className={secondaryButtonClass}>Cancel</a>
+                    <button type="submit" className={buttonClass}>Add stage</button>
+                  </div>
+                </form>
+              </aside>
+            </div>
+
+            {/* Edit pipeline drawer */}
+            <div id={`edit-pipeline-${pipeline.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+              <a href="#stages-top" className="absolute inset-0" aria-label="Close pipeline drawer" />
+              <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Edit pipeline</p><h2 className="mt-1 text-lg font-bold text-slate-950">{pipeline.name}</h2></div>
+                  <a href="#stages-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">X</a>
+                </div>
+                <form action={updatePipeline} className="flex flex-1 flex-col overflow-hidden">
+                  <input type="hidden" name="id" value={pipeline.id} />
+                  <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Pipeline name<input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={pipeline.name} required /></label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Lead type<select className={`${inputClass} mt-1 w-full`} name="lead_type" defaultValue={pipeline.lead_type}><option value="buyer">Buyer</option><option value="supplier">Supplier</option><option value="both">Both</option></select></label>
+                    <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_default" defaultChecked={pipeline.is_default ?? false} /> Default pipeline</label>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                    <a href="#stages-top" className={secondaryButtonClass}>Cancel</a>
+                    <button type="submit" className={buttonClass}>Save pipeline</button>
+                  </div>
+                </form>
+              </aside>
+            </div>
+          </SectionCard>
+        );
+      })}
+
+      {/* Add pipeline */}
+      <SectionCard title="Add pipeline" eyebrow="Pipeline setup" description="Create buyer, supplier, or shared pipelines." actions={<a href="#add-pipeline-drawer" className={buttonClass}>+ Add pipeline</a>}>
+        {pipelines.length === 0 && <p className="text-sm text-slate-500">No pipelines yet. Add one to unlock the pipeline board.</p>}
+      </SectionCard>
+      <div id="add-pipeline-drawer" className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+        <a href="#stages-top" className="absolute inset-0" aria-label="Close" />
+        <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Pipeline setup</p><h2 className="mt-1 text-lg font-bold text-slate-950">Add pipeline</h2></div>
+            <a href="#stages-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">X</a>
+          </div>
+          <form action={createPipeline} className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Pipeline name<input className={`${inputClass} mt-1 w-full`} name="name" placeholder="e.g. Buyers pipeline" required /></label>
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Lead type<select className={`${inputClass} mt-1 w-full`} name="lead_type" defaultValue="buyer"><option value="buyer">Buyer</option><option value="supplier">Supplier</option><option value="both">Both</option></select></label>
+              <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_default" /> Default pipeline</label>
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+              <a href="#stages-top" className={secondaryButtonClass}>Cancel</a>
+              <button type="submit" className={buttonClass}>Add pipeline</button>
+            </div>
+          </form>
+        </aside>
+      </div>
+
+      {/* Next steps */}
+      <SectionCard title="Next steps" eyebrow="Follow-up actions" description="Drag-and-drop list of next actions operators can assign to leads in the Command Center." actions={<a href="#add-next-step-drawer" className={buttonClass}>+ Add next step</a>}>
+        <div className="overflow-x-auto rounded-3xl border border-slate-200">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
+              <tr><th className="px-4 py-3">Next step</th><th className="px-4 py-3">Sort</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Edit</th></tr>
+            </thead>
+            <tbody>
+              {nextSteps.map((step) => (
+                <tr key={step.id} className="border-t border-slate-100 align-middle hover:bg-slate-50">
+                  <td className="px-4 py-3 font-semibold text-slate-900">{step.name}</td>
+                  <td className="px-4 py-3 text-slate-500">#{step.sort_order ?? 0}</td>
+                  <td className="px-4 py-3"><StatusBadge label={step.is_active ? 'Active' : 'Inactive'} tone={step.is_active ? 'success' : 'neutral'} dot={false} /></td>
+                  <td className="px-4 py-3"><a href={`#next-step-${step.id}`} className={secondaryButtonClass}>Edit</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {nextSteps.length === 0 && <p className="mt-3 text-sm text-slate-500">No next steps yet.</p>}
+        {nextSteps.map((step) => (
+          <div key={`ns-drawer-${step.id}`} id={`next-step-${step.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+            <a href="#stages-top" className="absolute inset-0" aria-label="Close" />
+            <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Edit next step</p><h2 className="mt-1 text-lg font-bold text-slate-950">{step.name}</h2></div>
+                <a href="#stages-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a>
+              </div>
+              <form action={updateNextStep} className="flex flex-1 flex-col overflow-hidden">
+                <input type="hidden" name="id" value={step.id} />
+                <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Name<input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={step.name} required /></label>
+                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Sort order<input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue={step.sort_order ?? 0} /></label>
+                  <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_active" defaultChecked={step.is_active ?? true} /> Active</label>
+                </div>
+                <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                  <a href="#stages-top" className={secondaryButtonClass}>Cancel</a>
+                  <button type="submit" className={buttonClass}>Save</button>
+                </div>
+              </form>
+            </aside>
+          </div>
+        ))}
+      </SectionCard>
+      <div id="add-next-step-drawer" className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+        <a href="#stages-top" className="absolute inset-0" aria-label="Close" />
+        <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Next step setup</p><h2 className="mt-1 text-lg font-bold text-slate-950">Add next step</h2></div>
+            <a href="#stages-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a>
+          </div>
+          <form action={createNextStep} className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Name<input className={`${inputClass} mt-1 w-full`} name="name" placeholder="e.g. Send sample" required /></label>
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Sort order<input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue="0" /></label>
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+              <a href="#stages-top" className={secondaryButtonClass}>Cancel</a>
+              <button type="submit" className={buttonClass}>Add</button>
+            </div>
+          </form>
+        </aside>
+      </div>
+      <span id="stages-top" />
+    </div>
+  );
 }
 
 export function PipelinesAdminWorkspace({ pipelines }: { pipelines: AnyRow[] }) {
@@ -30,95 +240,57 @@ export function TradeEventsAdminWorkspace({ events }: { events: AnyRow[] }) {
   return <div className="space-y-6"><SectionCard title="Capture defaults lane" eyebrow="Trade capture" description="New captures inherit event source, market review, owner assignment, and duplicate-check expectations before they become leads."><div className="grid gap-3 md:grid-cols-4"><StatusBadge label="Source event required" tone="info" dot={false} /><StatusBadge label="Market review" tone="warning" dot={false} /><StatusBadge label="Owner assignment" tone="info" dot={false} /><StatusBadge label="Duplicate check" tone="success" dot={false} /></div></SectionCard><SectionCard title="Add trade event" eyebrow="Capture source" description="Trade Events drive source attribution for scanned contacts and lead creation."><form action={createTradeEvent} className="grid gap-3 xl:grid-cols-[1fr_150px_150px_150px_150px]"><input className={inputClass} name="name" placeholder="Event name" required /><input className={inputClass} name="city" placeholder="City" /><input className={inputClass} name="country" placeholder="Country" /><input className={inputClass} name="starts_on" type="date" /><input className={inputClass} name="ends_on" type="date" /><textarea className={`${inputClass} xl:col-span-4`} name="notes" placeholder="Notes" /><button className={buttonClass} type="submit">Add event</button></form></SectionCard><div className="grid gap-4 xl:grid-cols-2">{events.map((event) => <SectionCard key={event.id} title={event.name} eyebrow="Trade event" actions={<StatusBadge label={event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'} tone={event.starts_on ? 'info' : 'warning'} dot={false} />}><form action={updateTradeEvent} className="grid gap-3"><input type="hidden" name="id" value={event.id} /><input className={inputClass} name="name" defaultValue={event.name} required /><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="city" defaultValue={event.city ?? ''} placeholder="City" /><input className={inputClass} name="country" defaultValue={event.country ?? ''} placeholder="Country" /></div><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="starts_on" type="date" defaultValue={event.starts_on ?? ''} /><input className={inputClass} name="ends_on" type="date" defaultValue={event.ends_on ?? ''} /></div><textarea className={inputClass} name="notes" defaultValue={event.notes ?? ''} placeholder="Notes" /><button type="submit" className={secondaryButtonClass}>Save event</button></form></SectionCard>)}</div></div>;
 }
 
+export const PERMISSION_GROUPS = [
+  { label: 'Leads', permissions: [
+    { key: 'leads.view',   label: 'View leads',   description: 'See lead list, details, and activities' },
+    { key: 'leads.create', label: 'Create leads',  description: 'Add new leads and contacts' },
+    { key: 'leads.edit',   label: 'Edit leads',    description: 'Update lead fields, stage, and assignment' },
+    { key: 'leads.delete', label: 'Delete leads',  description: 'Permanently remove lead records' },
+  ]},
+  { label: 'Quotes', permissions: [
+    { key: 'quotes.view',    label: 'View quotes',           description: 'See all org quotes and versions' },
+    { key: 'quotes.create',  label: 'Create & send quotes',  description: 'Draft, generate, and send to buyers' },
+    { key: 'quotes.approve', label: 'Approve quotes',        description: 'Override the approval gate for margin exceptions' },
+  ]},
+  { label: 'Orders', permissions: [
+    { key: 'orders.view',    label: 'View orders',           description: 'See order records and documents' },
+    { key: 'orders.advance', label: 'Advance order stages',  description: 'Move orders through the execution workflow' },
+  ]},
+  { label: 'Admin', permissions: [
+    { key: 'admin.access', label: 'Admin workspace access', description: 'View and modify Admin Settings pages' },
+  ]},
+] as const;
+
 export function SecurityAdminWorkspace({ roles, members, approvalThresholdPct = 15 }: { roles: AnyRow[]; members: AnyRow[]; approvalThresholdPct?: number | null }) {
   function roleBadgeStyle(name: string): { bg: string; border: string; color: string } {
     const l = (name ?? '').toLowerCase();
-    if (l.includes('owner'))   return { bg: '#f5f3ff', border: '#ddd6fe', color: '#5b21b6' };
-    if (l.includes('admin'))   return { bg: '#e0f2fe', border: '#bae6fd', color: '#0369a1' };
-    if (l.includes('sales'))   return { bg: '#f0fdf4', border: '#a7f3d0', color: '#15803d' };
-    if (l.includes('sourc'))   return { bg: '#fffbeb', border: '#fde68a', color: '#92400e' };
+    if (l.includes('owner'))  return { bg: '#f5f3ff', border: '#ddd6fe', color: '#5b21b6' };
+    if (l.includes('admin'))  return { bg: '#e0f2fe', border: '#bae6fd', color: '#0369a1' };
+    if (l.includes('sales'))  return { bg: '#f0fdf4', border: '#a7f3d0', color: '#15803d' };
+    if (l.includes('sourc'))  return { bg: '#fffbeb', border: '#fde68a', color: '#92400e' };
     return { bg: '#f1f5f9', border: '#e2e8f0', color: '#475569' };
   }
-
   return (
     <div className="space-y-6">
-      {/* Approval threshold */}
       <SectionCard title="Approval threshold" eyebrow="Commercial governance" description="Quotes deviating above this % require manager approval before they can be sent.">
         <form action={updateApprovalThreshold} className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1 text-sm font-semibold text-slate-700">
-            <span>Threshold percentage</span>
-            <div className="flex items-center gap-2">
-              <input className={`${inputClass} w-32`} name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={approvalThresholdPct ?? 15} />
-              <span className="text-sm text-slate-500">%</span>
-            </div>
-          </label>
+          <label className="grid gap-1 text-sm font-semibold text-slate-700"><span>Threshold percentage</span><div className="flex items-center gap-2"><input className={`${inputClass} w-32`} name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={approvalThresholdPct ?? 15} /><span className="text-sm text-slate-500">%</span></div></label>
           <button className={buttonClass} type="submit">Save threshold</button>
-          {!approvalThresholdPct && (
-            <p className="w-full text-xs text-amber-600">⚠ Threshold not set — any pricing override bypasses the approval flow.</p>
-          )}
+          {!approvalThresholdPct && <p className="w-full text-xs text-amber-600">⚠ Threshold not set — any pricing override bypasses the approval flow.</p>}
         </form>
       </SectionCard>
-      {/* Create role */}
-      <SectionCard title="Create organization role" eyebrow="Security model" description="Roles stay organization-scoped unless they are seeded global roles.">
-        <form action={createRole} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
-          <input className={inputClass} name="name" placeholder="Role name" required />
-          <input className={inputClass} name="description" placeholder="Description" />
-          <button className={buttonClass} type="submit">Create role</button>
-        </form>
+      <SectionCard title="Roles & permissions" eyebrow="Access control" description="Click Edit to open the visual permission matrix for a role." actions={<a href="#add-role-drawer" className={buttonClass}>+ Create role</a>}>
+        <div className="overflow-x-auto rounded-3xl border border-slate-200">
+          <table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500"><tr><th className="px-4 py-3">Role</th><th className="px-4 py-3">Description</th><th className="px-4 py-3">Permissions</th><th className="px-4 py-3">Members</th><th className="px-4 py-3">Edit</th></tr></thead>
+          <tbody>{roles.map((role) => { const s = roleBadgeStyle(role.name); const rolePerms = (role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean) as string[]; return (<tr key={role.id} className="border-t border-slate-100 align-middle hover:bg-slate-50"><td className="px-4 py-3"><span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{role.name}</span></td><td className="px-4 py-3 text-xs text-slate-500">{role.description ?? (role.organization_id ? 'Org role' : 'Global role')}</td><td className="px-4 py-3"><div className="flex flex-wrap gap-1 max-w-[200px]">{rolePerms.slice(0, 3).map((p) => <span key={p} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-600">{p}</span>)}{rolePerms.length > 3 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">+{rolePerms.length - 3}</span>}{rolePerms.length === 0 && <span className="text-xs text-slate-400">None</span>}</div></td><td className="px-4 py-3"><StatusBadge label={`${role.user_roles?.length ?? 0}`} tone="neutral" dot={false} /></td><td className="px-4 py-3"><a href={`#role-${role.id}`} className={secondaryButtonClass}>Edit</a></td></tr>); })}</tbody></table>
+        </div>
+        {roles.map((role) => { const rolePerms = new Set((role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean) as string[]); return (<div key={`role-drawer-${role.id}`} id={`role-${role.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block"><a href="#security-top" className="absolute inset-0" aria-label="Close role drawer" /><aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[500px] flex-col border-l border-slate-200 bg-white shadow-2xl"><div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Permission matrix</p><h2 className="mt-1 text-lg font-bold text-slate-950">{role.name}</h2><p className="mt-0.5 text-xs text-slate-500">{role.description ?? (role.organization_id ? 'Organization role' : 'Global role')}</p></div><a href="#security-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a></div><form action={updateRolePermissions} className="flex flex-1 flex-col overflow-hidden"><input type="hidden" name="role_id" value={role.id} /><div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">{PERMISSION_GROUPS.map((group) => (<div key={group.label}><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">{group.label}</p><div className="rounded-2xl border border-slate-200 overflow-hidden">{group.permissions.map((perm, idx) => (<label key={perm.key} className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition ${idx > 0 ? 'border-t border-slate-100' : ''}`}><input type="checkbox" name="permissions" value={perm.key} defaultChecked={rolePerms.has(perm.key)} className="mt-0.5 h-4 w-4 rounded" /><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900">{perm.label}</p><p className="text-xs text-slate-500">{perm.description}</p></div></label>))}</div></div>))}</div><div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4"><a href="#security-top" className={secondaryButtonClass}>Cancel</a><button type="submit" className={buttonClass}>Save permissions</button></div></form></aside></div>); })}
       </SectionCard>
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-        {/* Roles & permissions */}
-        <SectionCard title="Roles & permissions" eyebrow="Access control" description="Edit permissions as newline-separated keys.">
-          <div className="space-y-4">
-            {roles.map((role) => {
-              const s = roleBadgeStyle(role.name);
-              return (
-                <form key={role.id} action={updateRolePermissions} className="rounded-3xl border border-slate-200 p-4">
-                  <input type="hidden" name="role_id" value={role.id} />
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">{role.name}</p>
-                        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{role.name}</span>
-                      </div>
-                      <p className="text-sm text-slate-500">{role.description ?? (role.organization_id ? 'Organization role' : 'Global role')}</p>
-                    </div>
-                    <StatusBadge label={`${role.user_roles?.length ?? 0} assigned`} tone="neutral" dot={false} />
-                  </div>
-                  <textarea className={`${inputClass} mt-3 min-h-28 w-full font-mono text-xs`} name="permissions" defaultValue={(role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean).join('\n')} placeholder="quotes.read&#10;quotes.approve" />
-                  <button type="submit" className={`${secondaryButtonClass} mt-3`}>Save permissions</button>
-                </form>
-              );
-            })}
-          </div>
-        </SectionCard>
-        {/* Member role coverage */}
-        <SectionCard title="Member role coverage" eyebrow="Workspace access" description="Review active memberships and role assignment coverage.">
-          <div className="space-y-3">
-            {members.map((member) => {
-              const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
-              const memberRoles = (member.user_roles ?? []).map((row: AnyRow) => row.roles?.name).filter(Boolean) as string[];
-              return (
-                <div key={member.id} className="rounded-3xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-slate-900">{profile?.full_name ?? profile?.email ?? 'Unnamed member'}</p>
-                      <p className="text-sm text-slate-500">{profile?.email ?? 'No email'}</p>
-                    </div>
-                    <BoolBadge value={member.is_active} />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {memberRoles.length > 0 ? memberRoles.map(r => {
-                      const s = roleBadgeStyle(r);
-                      return <span key={r} style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{r}</span>;
-                    }) : <span className="text-xs text-slate-400">No role assigned</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
-      </div>
+      <div id="add-role-drawer" className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block"><a href="#security-top" className="absolute inset-0" aria-label="Close" /><aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl"><div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Security model</p><h2 className="mt-1 text-lg font-bold text-slate-950">Create role</h2></div><a href="#security-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a></div><form action={createRole} className="flex flex-1 flex-col overflow-hidden"><div className="flex-1 space-y-4 overflow-y-auto px-6 py-5"><label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Role name<input className={`${inputClass} mt-1 w-full`} name="name" placeholder="e.g. Sales Rep" required /></label><label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Description<input className={`${inputClass} mt-1 w-full`} name="description" placeholder="Brief description" /></label></div><div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4"><a href="#security-top" className={secondaryButtonClass}>Cancel</a><button type="submit" className={buttonClass}>Create role</button></div></form></aside></div>
+      <SectionCard title="Member role coverage" eyebrow="Workspace access" description="Review active memberships and role assignment coverage.">
+        <div className="space-y-3">{members.map((member) => { const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles; const memberRoles = (member.user_roles ?? []).map((row: AnyRow) => row.roles?.name).filter(Boolean) as string[]; return (<div key={member.id} className="rounded-3xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-slate-900">{profile?.full_name ?? profile?.email ?? 'Unnamed member'}</p><p className="text-sm text-slate-500">{profile?.email ?? 'No email'}</p></div><BoolBadge value={member.is_active} /></div><div className="mt-3 flex flex-wrap gap-1.5">{memberRoles.length > 0 ? memberRoles.map(r => { const s = roleBadgeStyle(r); return <span key={r} style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{r}</span>; }) : <span className="text-xs text-slate-400">No role assigned</span>}</div></div>); })}</div>
+      </SectionCard>
+      <span id="security-top" />
     </div>
   );
 }

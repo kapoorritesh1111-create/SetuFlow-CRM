@@ -117,6 +117,27 @@ function RequestCard({ request, countryCount }: { request: OnboardingRequest; co
   </article>;
 }
 
+function StatusPipeline({ request }: { request: OnboardingRequest }) {
+  const steps = [
+    { label: 'Intake',     done: true },
+    { label: 'Provision',  done: Boolean(request.linked_organization_id) },
+    { label: 'Invite',     done: ['admin_invite_ready','admin_invited','live'].includes(request.status) },
+    { label: 'Live',       done: request.status === 'live' },
+  ];
+  return (
+    <div className="flex items-center gap-0 mt-3">
+      {steps.map((step, i) => (
+        <div key={step.label} className="flex items-center">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${step.done ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+            {step.done ? '✓' : `0${i+1}`} {step.label}
+          </span>
+          {i < steps.length - 1 && <span className={`h-px w-4 ${steps[i+1].done ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default async function ClientOnboardingAdminPage({ searchParams }: { searchParams?: { notice?: string } }) {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using client onboarding." tone="warning" />;
   const { missingEnv, organization } = await requireSetuInternalAdminWorkspace();
@@ -124,29 +145,166 @@ export default async function ClientOnboardingAdminPage({ searchParams }: { sear
   if (!organization) return null;
   const supabase = (await createClient()) as any;
   const [{ data, error }, { count: countryCount }, productData] = await Promise.all([
-    supabase.from('client_onboarding_requests').select('*').order('created_at', { ascending: false }).limit(25),
+    supabase.from('client_onboarding_requests').select('*').order('created_at', { ascending: false }).limit(50),
     supabase.from('countries').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     getProductsData(organization.id),
   ]);
   const productImportView = productData ? buildProductsViewModel(productData) : { categories: [], products: [] };
   const requests = (data ?? []) as OnboardingRequest[];
-  const openRequests = requests.filter((request) => !['live', 'paused'].includes(request.status)).length;
-  const readyForInvite = requests.filter((request) => ['admin_invite_ready', 'admin_invited'].includes(request.status)).length;
-  const liveCount = requests.filter((request) => request.status === 'live').length;
+
+  const needsAction = requests.filter((r) => ['submitted','setup_in_progress','admin_invite_ready'].includes(r.status)).length;
+  const reviewing   = requests.filter((r) => r.status === 'reviewing').length;
+  const liveCount   = requests.filter((r) => r.status === 'live').length;
   const gapItems: AdminGapItem[] = error ? [{ icon: '🗄️', text: 'Apply onboarding migration', href: '/admin/client-onboarding' }] : [];
 
+  // Sort: needs-action first, live last
+  const sortedRequests = [...requests].sort((a, b) => {
+    const priorityA = ['submitted','setup_in_progress','admin_invite_ready'].includes(a.status) ? 0 : a.status === 'live' ? 2 : 1;
+    const priorityB = ['submitted','setup_in_progress','admin_invite_ready'].includes(b.status) ? 0 : b.status === 'live' ? 2 : 1;
+    return priorityA - priorityB;
+  });
+
   return <AdminSettingsShell active="client-onboarding" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Client onboarding" gapItems={gapItems}>
-    <AdminPageHero title="Client Onboarding" description="Provision client SaaS workspaces from public intake: create the organization ID, seed all countries and reference lists, prepare the first owner invite, and keep this page internal to Setu Flow only." badge="SaaS provisioning wizard" cta={<Link href="/onboarding" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open client form</Link>} stats={[{ label: 'Open requests', value: openRequests, tone: openRequests ? 'warning' : 'success' }, { label: 'Ready for invite', value: readyForInvite, tone: readyForInvite ? 'info' : 'default' }, { label: 'Live clients', value: liveCount, tone: liveCount ? 'success' : 'default' }]} />
-    {error ? <StateMessage title="Client onboarding table is not available yet" description="Apply the current onboarding migration, then reopen this page to manage submitted intake forms." tone="warning" /> : null}
-    <SectionCard eyebrow="Operating model" title="How SaaS client setup works" description="The client submits requirements, Setu Flow provisions a tenant-scoped organization, seeds shared reference data, then sends the first admin login. Client workspaces never see Client Onboarding.">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><AdminStep number="01" title="Client submits form" description="Company identity, first admin, focus markets/countries, desired pipelines, pricing notes, and trade event preference." href="/onboarding" /><AdminStep number="02" title="Create org tenant" description="Create a unique organization ID and reserve companyname.setuflowcrm.com under the wildcard domain." /><AdminStep number="03" title="Seed workspace" description={`Copy all ${countryCount ?? 195} countries plus editable markets, pipelines, stages, next steps, roles, and pricing settings.`} /><AdminStep number="04" title="Send first admin login" description="Create the first owner invitation. Product categories and products stay client-created after login." href="/admin/invitations" /></div>
-    </SectionCard>
-    <SectionCard eyebrow="First-login data setup" title="Import categories, products, leads, and pricing" description="Use the same CSV validation flow during customer setup so new clients can load their catalog and leads before they go live.">
-      <CatalogImportExportWizard products={productImportView.products} categories={productImportView.categories} canManageCatalog />
-    </SectionCard>
-    <SectionCard eyebrow="Default setup package" title="What gets preloaded" description="Countries are seeded completely. The other workflow lists are defaults and can be edited or removed by the client admin after first login.">
-      <div className="grid gap-4 md:grid-cols-2"><ListBlock title="Country reference" items={[`${countryCount ?? 195} countries copied into every new organization`]} /><ListBlock title="Pipeline stages" items={defaultPipelineStages} /><ListBlock title="Pipelines" items={defaultPipelines} /><ListBlock title="Next steps" items={defaultNextSteps} /><ListBlock title="Markets" items={defaultMarkets} /><ListBlock title="Product categories" items={['Not pre-created', 'Client creates after login']} /></div>
-    </SectionCard>
-    <SectionCard eyebrow="Requests" title="Submitted onboarding forms" description="Review intake, run the provisioning wizard, confirm tenant data, and prepare the first owner invitation.">{requests.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center"><p className="text-lg font-semibold text-slate-950">No client onboarding requests yet</p><p className="mt-2 text-sm leading-6 text-slate-600">Share the public onboarding form with the next client. Submissions appear here after the migration is applied.</p><Link href="/onboarding" className="mt-5 inline-flex min-h-11 items-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open client form</Link></div> : <div className="space-y-4">{requests.map((request) => <RequestCard key={request.id} request={request} countryCount={countryCount ?? 195} />)}</div>}</SectionCard>
+    <AdminPageHero title="Client Onboarding" description="Inbox view of client SaaS workspace requests. Needs Action requests are sorted first." badge="SaaS provisioning" cta={<Link href="/onboarding" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open client form</Link>} stats={[{ label: 'Needs action', value: needsAction, tone: needsAction ? 'warning' : 'success' }, { label: 'Reviewing', value: reviewing, tone: reviewing ? 'info' : 'default' }, { label: 'Live', value: liveCount, tone: liveCount ? 'success' : 'default' }, { label: 'Total', value: requests.length, tone: 'info' }]} />
+
+    {error && <StateMessage title="Client onboarding table is not available yet" description="Apply the current onboarding migration, then reopen this page." tone="warning" />}
+
+    {/* Dashboard stat bar */}
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {[
+        { label: 'Needs Action', value: needsAction, color: 'border-rose-200 bg-rose-50 text-rose-800' },
+        { label: 'Reviewing',    value: reviewing,   color: 'border-amber-200 bg-amber-50 text-amber-800' },
+        { label: 'Live',         value: liveCount,   color: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
+        { label: 'Total',        value: requests.length, color: 'border-slate-200 bg-white text-slate-700' },
+      ].map((stat) => (
+        <div key={stat.label} className={`rounded-2xl border p-4 text-center ${stat.color}`}>
+          <p className="text-2xl font-bold">{stat.value}</p>
+          <p className="text-xs font-semibold mt-0.5">{stat.label}</p>
+        </div>
+      ))}
+    </div>
+
+    {/* Request inbox */}
+    {sortedRequests.length === 0 ? (
+      <SectionCard eyebrow="Requests" title="No client requests yet">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+          <p className="text-sm leading-6 text-slate-600">Share the public onboarding form with the next client.</p>
+          <Link href="/onboarding" className="mt-4 inline-flex min-h-11 items-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Open client form</Link>
+        </div>
+      </SectionCard>
+    ) : (
+      <div className="space-y-4">
+        {sortedRequests.map((request) => {
+          const logo = request.logo_url || DEFAULT_SETU_FLOW_LOGO;
+          const workspaceProvisioned = Boolean(request.linked_organization_id);
+          const isPlanChangeRequest = request.status === 'live' && Boolean(request.pricing_rules_notes?.trim());
+          return (
+            <article key={request.id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.07)]">
+              {/* Header */}
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex gap-4">
+                  <img src={logo} alt="Client logo" width={48} height={48} className="h-12 w-12 rounded-2xl border border-slate-200 bg-white object-contain p-1 shrink-0" />
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-lg font-bold tracking-tight text-slate-950">{request.company_name}</h2>
+                      <StatusBadge label={formatStatus(request.status)} tone={toneForStatus(request.status)} dot={false} />
+                    </div>
+                    <p className="mt-0.5 text-sm text-slate-500">{request.workspace_domain ?? `${request.company_slug ?? 'companyname'}.setuflowcrm.com`}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Admin: {request.primary_admin_name ?? '—'} · {request.primary_admin_email ?? '—'}</p>
+                    <StatusPipeline request={request} />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  {externalUrl(request.website) ? <Link href={externalUrl(request.website) as string} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Website</Link> : null}
+                  <Link href="/admin/invitations" className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Invitations</Link>
+                </div>
+              </div>
+
+              {/* Plan change request banner */}
+              {isPlanChangeRequest && (
+                <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wide text-violet-700">📋 Plan change request</span>
+                    <form action={updateClientOnboardingStatus}>
+                      <input type="hidden" name="request_id" value={request.id} />
+                      <input type="hidden" name="status" value="live" />
+                      <button className="rounded-xl border border-violet-200 bg-white px-2.5 py-1 text-[10px] font-bold text-violet-700 hover:bg-violet-100">Dismiss</button>
+                    </form>
+                  </div>
+                  <p className="text-sm text-slate-700">{request.pricing_rules_notes}</p>
+                </div>
+              )}
+
+              {/* Requested markets + countries */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {listValue(request.requested_markets, defaultMarkets).map((m) => (
+                  <span key={m} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{m}</span>
+                ))}
+                {(request.requested_countries ?? []).length > 0 && (
+                  <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">{(request.requested_countries ?? []).length} countries</span>
+                )}
+              </div>
+
+              {/* Notification status */}
+              <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
+                <strong>Notification:</strong> {request.notification_status ?? 'pending'} → {request.notification_email ?? 'admin@setugroups.com'}
+                {request.notification_error && <span className="ml-2 text-amber-700">{request.notification_error}</span>}
+              </div>
+
+              {/* Actions */}
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                <form action={createWorkspaceFromOnboardingDraft}>
+                  <input type="hidden" name="request_id" value={request.id} />
+                  <button className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100">{workspaceProvisioned ? 'Refresh provisioning' : 'Start provisioning wizard'}</button>
+                </form>
+                <form action={sendFirstAdminInviteFromOnboardingRequest}>
+                  <input type="hidden" name="request_id" value={request.id} />
+                  <button className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100">Send first admin invite</button>
+                </form>
+                <form action={resendClientOnboardingNotification}>
+                  <input type="hidden" name="request_id" value={request.id} />
+                  <button className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Notify Setu admin</button>
+                </form>
+                <form action={updateClientOnboardingStatus} className="flex gap-2">
+                  <input type="hidden" name="request_id" value={request.id} />
+                  <select name="status" defaultValue={request.status} className="min-h-9 rounded-2xl border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                    {statusOptions.map((status) => <option key={status} value={status}>{formatStatus(status)}</option>)}
+                  </select>
+                  <button className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800">Update</button>
+                </form>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    )}
+
+    {/* Collapsible docs section (moved to bottom) */}
+    <details className="group rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+      <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-sm font-bold text-slate-900 marker:hidden list-none">
+        <span>📚 How SaaS client setup works + defaults reference</span>
+        <span className="text-slate-400 text-xs group-open:hidden">Show ▼</span>
+        <span className="text-slate-400 text-xs hidden group-open:inline">Hide ▲</span>
+      </summary>
+      <div className="border-t border-slate-100 px-6 pb-6 pt-5 space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdminStep number="01" title="Client submits form" description="Company identity, first admin, focus markets/countries, desired pipelines, pricing notes, and trade event preference." href="/onboarding" />
+          <AdminStep number="02" title="Create org tenant" description="Create a unique organization ID and reserve companyname.setuflowcrm.com under the wildcard domain." />
+          <AdminStep number="03" title="Seed workspace" description={`Copy all ${countryCount ?? 195} countries plus editable markets, pipelines, stages, next steps, roles, and pricing settings.`} />
+          <AdminStep number="04" title="Send first admin login" description="Create the first owner invitation. Product categories and products stay client-created after login." href="/admin/invitations" />
+        </div>
+        <SectionCard eyebrow="First-login data setup" title="Import categories, products, leads, and pricing" description="Use the same CSV validation flow during customer setup so new clients can load their catalog and leads before they go live.">
+          <CatalogImportExportWizard products={productImportView.products} categories={productImportView.categories} canManageCatalog />
+        </SectionCard>
+        <div className="grid gap-4 md:grid-cols-2">
+          <ListBlock title="Country reference" items={[`${countryCount ?? 195} countries copied into every new organization`]} />
+          <ListBlock title="Pipeline stages" items={defaultPipelineStages} />
+          <ListBlock title="Pipelines" items={defaultPipelines} />
+          <ListBlock title="Next steps" items={defaultNextSteps} />
+          <ListBlock title="Markets" items={defaultMarkets} />
+          <ListBlock title="Product categories" items={['Not pre-created', 'Client creates after login']} />
+        </div>
+      </div>
+    </details>
   </AdminSettingsShell>;
 }
