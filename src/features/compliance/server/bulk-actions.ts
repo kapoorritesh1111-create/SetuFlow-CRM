@@ -7,6 +7,26 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
 type ActionState = { error?: string; success?: string };
+type MutationError = { message: string } | null;
+type ComplianceItemRow = { id: string; lead_id: string | null };
+type ComplianceUpdateRow = { lead_id?: string | null };
+type ComplianceItemsQuery = {
+  eq(column: string, value: string): ComplianceItemsQuery;
+  in(column: string, values: string[]): Promise<{ data: ComplianceItemRow[] | null; error: MutationError }>;
+};
+type ComplianceMutationClient = {
+  from(table: 'lead_compliance_items'): {
+    select(columns: string): ComplianceItemsQuery;
+  };
+  rpc(name: 'app_update_compliance_workflow_tx', args: {
+    p_organization_id: string;
+    p_compliance_id: string;
+    p_actor_user_id: string;
+    p_status: 'waived';
+    p_review_notes: string;
+    p_action_source: 'bulkWaiveComplianceWorkflow';
+  }): Promise<{ data: ComplianceUpdateRow | ComplianceUpdateRow[] | null; error: MutationError }>;
+};
 
 export async function bulkWaiveComplianceWorkflow(_: ActionState | undefined, formData: FormData): Promise<ActionState> {
   if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
@@ -24,7 +44,7 @@ export async function bulkWaiveComplianceWorkflow(_: ActionState | undefined, fo
   if (complianceIds.length > 25) return { error: 'Bulk waive is limited to 25 requirements at a time.' };
   if (reviewNotes.length < 8) return { error: 'Add a waiver reason before approving these exceptions.' };
 
-  const db = await createClient();
+  const db = await createClient() as unknown as ComplianceMutationClient;
   const { data: existingItems, error: existingError } = await db
     .from('lead_compliance_items')
     .select('id, lead_id')
