@@ -24,6 +24,7 @@ function categoryTable(supabase: Awaited<ReturnType<typeof createClient>>) {
 export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   const context = await requireAdminWorkspace();
   if (context.missingEnv || !context.organization) return;
+  const organizationId = context.organization.id;
   const orderedIds = ids.filter((id) => typeof id === 'string' && id.trim().length > 0);
   if (!orderedIds.length) return;
 
@@ -31,7 +32,7 @@ export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   const categories = categoryTable(supabase);
   const { data: ownedCategories, error } = await categories
     .select('id')
-    .eq('organization_id', context.organization.id)
+    .eq('organization_id', organizationId)
     .in('id', orderedIds);
   if (error) return;
 
@@ -43,7 +44,7 @@ export async function updateCategorySortOrder(ids: string[]): Promise<void> {
         categories
           .update({ sort_order: index + 1, updated_at: new Date().toISOString() })
           .eq('id', id)
-          .eq('organization_id', context.organization.id),
+          .eq('organization_id', organizationId),
       ),
   );
 
