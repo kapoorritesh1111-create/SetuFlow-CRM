@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createProductCategory, updateProductCategory } from "@/features/admin/server/actions";
 import { updateCategorySortOrder } from "@/features/admin/server/category-sort-actions";
 import { AdminHelpDrawer } from "@/features/admin/components/admin-help-drawer";
@@ -65,7 +65,7 @@ function CategoryFields({ category, categories }: { category?: CategoryRow; cate
   );
 }
 
-function Drawer({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: React.ReactNode }) {
+function Drawer({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-sm" onClick={onClose}>
       <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[460px] flex-col border-l border-slate-200 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
