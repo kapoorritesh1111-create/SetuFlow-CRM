@@ -4,23 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 
-type CategoryIdRow = { id: string };
-type CategorySortPatch = { sort_order: number; updated_at: string };
-type CategorySelectQuery = {
-  eq(column: 'organization_id', value: string): { in(column: 'id', values: string[]): Promise<{ data: CategoryIdRow[] | null; error: { message: string } | null }> };
-};
-type CategoryUpdateQuery = {
-  eq(column: 'id' | 'organization_id', value: string): CategoryUpdateQuery;
-};
-type CategoryTableClient = {
-  select(columns: 'id'): CategorySelectQuery;
-  update(payload: CategorySortPatch): CategoryUpdateQuery;
-};
-
-function categoryTable(supabase: Awaited<ReturnType<typeof createClient>>) {
-  return supabase.from('product_categories') as unknown as CategoryTableClient;
-}
-
 export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   const context = await requireAdminWorkspace();
   if (context.missingEnv || !context.organization) return;
@@ -29,23 +12,27 @@ export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   if (!orderedIds.length) return;
 
   const supabase = await createClient();
-  const categories = categoryTable(supabase);
-  const { data: ownedCategories, error } = await categories
+
+  // Verify ownership first
+  const { data: owned } = await supabase
+    .from('product_categories')
     .select('id')
     .eq('organization_id', organizationId)
     .in('id', orderedIds);
-  if (error) return;
 
-  const ownedIds = new Set((ownedCategories ?? []).map((row) => row.id));
+  const ownedSet = new Set((owned ?? []).map((r: { id: string }) => r.id));
+
+  // Apply sort_order updates sequentially to avoid TypeScript inference issues
   await Promise.all(
     orderedIds
-      .filter((id) => ownedIds.has(id))
+      .filter((id) => ownedSet.has(id))
       .map((id, index) =>
-        categories
+        (supabase as any)
+          .from('product_categories')
           .update({ sort_order: index + 1, updated_at: new Date().toISOString() })
           .eq('id', id)
-          .eq('organization_id', organizationId),
-      ),
+          .eq('organization_id', organizationId)
+      )
   );
 
   revalidatePath('/admin/categories');

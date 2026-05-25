@@ -85,7 +85,29 @@ export default async function AdminNotificationsPage({ searchParams }: { searchP
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
 
-      <SectionCard eyebrow="Workspace defaults" title="Default delivery channels" description="These defaults feed the effective preference resolver used by server-side notification triggers.">
+      {/* 5-channel org control grid */}
+      <SectionCard title="Organisation channel controls" eyebrow="Workspace defaults" description="Enable or disable entire channels org-wide. In-App is always on.">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {([
+            { icon: '🔔', label: 'In-App',    sub: 'Always on',    locked: true,  on: true },
+            { icon: '📱', label: 'Push',       sub: 'Browser/PWA',  locked: false, on: true },
+            { icon: '📧', label: 'Email',      sub: 'Via Mailtrap', locked: false, on: true },
+            { icon: '💬', label: 'WhatsApp',   sub: 'Tracked links',locked: false, on: true },
+            { icon: '⚡', label: 'SMS',         sub: 'Critical only',locked: false, on: false },
+          ] as const).map((ch) => (
+            <div key={ch.label} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-4 text-center gap-2">
+              <span className="text-2xl">{ch.icon}</span>
+              <p className="text-xs font-bold text-slate-900">{ch.label}</p>
+              <p className="text-[10px] text-slate-400">{ch.sub}</p>
+              <span className={`inline-flex h-6 w-11 items-center rounded-full transition-colors ${ch.on ? 'bg-slate-900' : 'bg-slate-300'} ${ch.locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${ch.on ? 'translate-x-6' : 'translate-x-1'}`} />
+              </span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard eyebrow="Workspace defaults" title="Alert type defaults" description="These defaults feed the effective preference resolver. Locked rows prevent member overrides.">
         <form action={saveWorkspaceNotificationSettings} className="space-y-5">
           <PreferenceMatrix rows={rows} />
           <div className="flex flex-col gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">

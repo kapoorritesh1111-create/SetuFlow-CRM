@@ -153,11 +153,11 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
               <tr>
                 <th className="px-5 py-3">Name</th>
-                <th className="px-5 py-3">Email</th>
                 <th className="px-5 py-3">Role</th>
                 <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Identity</th>
                 <th className="px-5 py-3">Last active</th>
-                <th className="px-5 py-3">Actions</th>
+                <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -168,17 +168,20 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                       <UserAvatar row={row} />
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-slate-900">{row.name}</p>
-                        {row.identityHealth !== 'complete' ? <p className="mt-1 text-xs font-semibold text-amber-700">{IDENTITY_COPY[row.identityHealth]}</p> : null}
-                        {row.detailNote ? <p className="mt-1 truncate text-xs text-slate-500">{row.detailNote}</p> : null}
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{row.email ?? ''}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{row.email ?? '—'}</td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{row.roleName ?? '—'}</td>
+                  <td className="px-5 py-4 text-sm text-slate-600">{row.roleName ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{row.roleName}</span> : '—'}</td>
                   <td className="px-5 py-4 text-sm">
                     <StatusBadge label={row.status} tone={getStatusTone(row.status)} />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm">
+                    {row.identityHealth === 'complete'
+                      ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700">✓ Complete</span>
+                      : <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-semibold text-amber-700">⚠ {IDENTITY_COPY[row.identityHealth]}</span>}
+                  </td>
+                  <td className="px-5 py-4 text-xs text-slate-500">
                     {row.lastActiveAt ? formatDateTime(row.lastActiveAt) : '—'}
                   </td>
                   <td className="px-5 py-4 text-sm">

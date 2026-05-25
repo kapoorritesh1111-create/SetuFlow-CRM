@@ -54,7 +54,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
   {
     label: 'Organisation',
     items: [
-      { key: 'overview', href: '/admin/organization', icon: '🏢', label: 'Overview', statusDot: 'ok' },
+      { key: 'overview', href: '/admin/overview', icon: '🏢', label: 'Overview', statusDot: 'ok' },
       { key: 'profile', href: '/admin/organization', icon: '👤', label: 'Organization profile', statusDot: 'ok' },
       { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members', statusDot: 'ok' },
       { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations', statusDot: 'warn' },
