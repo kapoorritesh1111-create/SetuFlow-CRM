@@ -5,6 +5,21 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 
 type CategoryIdRow = { id: string };
+type CategorySortPatch = { sort_order: number; updated_at: string };
+type CategorySelectQuery = {
+  eq(column: 'organization_id', value: string): { in(column: 'id', values: string[]): Promise<{ data: CategoryIdRow[] | null; error: { message: string } | null }> };
+};
+type CategoryUpdateQuery = {
+  eq(column: 'id' | 'organization_id', value: string): CategoryUpdateQuery;
+};
+type CategoryTableClient = {
+  select(columns: 'id'): CategorySelectQuery;
+  update(payload: CategorySortPatch): CategoryUpdateQuery;
+};
+
+function categoryTable(supabase: Awaited<ReturnType<typeof createClient>>) {
+  return supabase.from('product_categories') as unknown as CategoryTableClient;
+}
 
 export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   const context = await requireAdminWorkspace();
@@ -13,21 +28,19 @@ export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   if (!orderedIds.length) return;
 
   const supabase = await createClient();
-  const { data: ownedCategories, error } = await supabase
-    .from('product_categories')
+  const categories = categoryTable(supabase);
+  const { data: ownedCategories, error } = await categories
     .select('id')
     .eq('organization_id', context.organization.id)
     .in('id', orderedIds);
   if (error) return;
 
-  const ownedRows = (ownedCategories ?? []) as CategoryIdRow[];
-  const ownedIds = new Set(ownedRows.map((row) => row.id));
+  const ownedIds = new Set((ownedCategories ?? []).map((row) => row.id));
   await Promise.all(
     orderedIds
       .filter((id) => ownedIds.has(id))
       .map((id, index) =>
-        supabase
-          .from('product_categories')
+        categories
           .update({ sort_order: index + 1, updated_at: new Date().toISOString() })
           .eq('id', id)
           .eq('organization_id', context.organization.id),
