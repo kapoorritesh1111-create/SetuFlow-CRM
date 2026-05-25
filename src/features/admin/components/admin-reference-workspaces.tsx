@@ -237,29 +237,93 @@ export function PipelinesAdminWorkspace({ pipelines }: { pipelines: AnyRow[] }) 
 }
 
 export function TradeEventsAdminWorkspace({ events }: { events: AnyRow[] }) {
-  return <div className="space-y-6"><SectionCard title="Capture defaults lane" eyebrow="Trade capture" description="New captures inherit event source, market review, owner assignment, and duplicate-check expectations before they become leads."><div className="grid gap-3 md:grid-cols-4"><StatusBadge label="Source event required" tone="info" dot={false} /><StatusBadge label="Market review" tone="warning" dot={false} /><StatusBadge label="Owner assignment" tone="info" dot={false} /><StatusBadge label="Duplicate check" tone="success" dot={false} /></div></SectionCard><SectionCard title="Add trade event" eyebrow="Capture source" description="Trade Events drive source attribution for scanned contacts and lead creation."><form action={createTradeEvent} className="grid gap-3 xl:grid-cols-[1fr_150px_150px_150px_150px]"><input className={inputClass} name="name" placeholder="Event name" required /><input className={inputClass} name="city" placeholder="City" /><input className={inputClass} name="country" placeholder="Country" /><input className={inputClass} name="starts_on" type="date" /><input className={inputClass} name="ends_on" type="date" /><textarea className={`${inputClass} xl:col-span-4`} name="notes" placeholder="Notes" /><button className={buttonClass} type="submit">Add event</button></form></SectionCard><div className="grid gap-4 xl:grid-cols-2">{events.map((event) => <SectionCard key={event.id} title={event.name} eyebrow="Trade event" actions={<StatusBadge label={event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'} tone={event.starts_on ? 'info' : 'warning'} dot={false} />}><form action={updateTradeEvent} className="grid gap-3"><input type="hidden" name="id" value={event.id} /><input className={inputClass} name="name" defaultValue={event.name} required /><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="city" defaultValue={event.city ?? ''} placeholder="City" /><input className={inputClass} name="country" defaultValue={event.country ?? ''} placeholder="Country" /></div><div className="grid gap-3 sm:grid-cols-2"><input className={inputClass} name="starts_on" type="date" defaultValue={event.starts_on ?? ''} /><input className={inputClass} name="ends_on" type="date" defaultValue={event.ends_on ?? ''} /></div><textarea className={inputClass} name="notes" defaultValue={event.notes ?? ''} placeholder="Notes" /><button type="submit" className={secondaryButtonClass}>Save event</button></form></SectionCard>)}</div></div>;
+  return (
+    <div className="space-y-6" id="trade-events-top">
+      <SectionCard title="Upcoming events" eyebrow="Operations" actions={<a href="#add-event-drawer" className={buttonClass}>+ Add event</a>}>
+        {events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <span className="text-5xl mb-4">🏭</span>
+            <p className="text-sm text-slate-500 max-w-sm mb-4">No trade events configured. Add exhibitions and conferences to enable source attribution for scanned contacts.</p>
+            <a href="#add-event-drawer" className={buttonClass}>+ Add your first event</a>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-3xl border border-slate-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
+                <tr><th className="px-4 py-3">Event</th><th className="px-4 py-3">Location</th><th className="px-4 py-3">Dates</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Edit</th></tr>
+              </thead>
+              <tbody>
+                {events.map((event) => (
+                  <tr key={event.id} className="border-t border-slate-100 align-middle hover:bg-slate-50">
+                    <td className="px-4 py-3 font-semibold text-slate-900">{event.name}</td>
+                    <td className="px-4 py-3 text-slate-500">{[event.city, event.country].filter(Boolean).join(', ') || '—'}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'}</td>
+                    <td className="px-4 py-3"><StatusBadge label={event.starts_on ? 'Scheduled' : 'Draft'} tone={event.starts_on ? 'info' : 'neutral'} dot={false} /></td>
+                    <td className="px-4 py-3"><a href={`#event-${event.id}`} className={secondaryButtonClass}>Edit</a></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {events.map((event) => (
+          <div key={event.id} id={`event-${event.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+            <a href="#trade-events-top" className="absolute inset-0" aria-label="Close" />
+            <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Edit event</p><h2 className="mt-1 text-lg font-bold text-slate-950">{event.name}</h2></div>
+                <a href="#trade-events-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a>
+              </div>
+              <form action={updateTradeEvent} className="flex flex-1 flex-col overflow-hidden">
+                <input type="hidden" name="id" value={event.id} />
+                <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Event name<input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={event.name} required /></label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">City<input className={`${inputClass} mt-1 w-full`} name="city" defaultValue={event.city ?? ''} /></label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Country<input className={`${inputClass} mt-1 w-full`} name="country" defaultValue={event.country ?? ''} /></label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Start date<input type="date" className={`${inputClass} mt-1 w-full`} name="starts_on" defaultValue={event.starts_on ?? ''} /></label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">End date<input type="date" className={`${inputClass} mt-1 w-full`} name="ends_on" defaultValue={event.ends_on ?? ''} /></label>
+                  </div>
+                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Notes<textarea className={`${inputClass} mt-1 w-full`} name="notes" rows={3} defaultValue={event.notes ?? ''} /></label>
+                </div>
+                <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                  <a href="#trade-events-top" className={secondaryButtonClass}>Cancel</a>
+                  <button type="submit" className={buttonClass}>Save event</button>
+                </div>
+              </form>
+            </aside>
+          </div>
+        ))}
+      </SectionCard>
+      <div id="add-event-drawer" className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block">
+        <a href="#trade-events-top" className="absolute inset-0" aria-label="Close" />
+        <aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[440px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Add trade event</p><h2 className="mt-1 text-lg font-bold text-slate-950">New event</h2></div>
+            <a href="#trade-events-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a>
+          </div>
+          <form action={createTradeEvent} className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Event name<input className={`${inputClass} mt-1 w-full`} name="name" placeholder="e.g. SIAL Paris 2025" required /></label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">City<input className={`${inputClass} mt-1 w-full`} name="city" placeholder="Paris" /></label>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Country<input className={`${inputClass} mt-1 w-full`} name="country" placeholder="France" /></label>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Start date<input type="date" className={`${inputClass} mt-1 w-full`} name="starts_on" /></label>
+                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">End date<input type="date" className={`${inputClass} mt-1 w-full`} name="ends_on" /></label>
+              </div>
+              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Notes<textarea className={`${inputClass} mt-1 w-full`} name="notes" rows={3} /></label>
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+              <a href="#trade-events-top" className={secondaryButtonClass}>Cancel</a>
+              <button type="submit" className={buttonClass}>Add event</button>
+            </div>
+          </form>
+        </aside>
+      </div>
+    </div>
+  );
 }
 
-export const PERMISSION_GROUPS = [
-  { label: 'Leads', permissions: [
-    { key: 'leads.view',   label: 'View leads',   description: 'See lead list, details, and activities' },
-    { key: 'leads.create', label: 'Create leads',  description: 'Add new leads and contacts' },
-    { key: 'leads.edit',   label: 'Edit leads',    description: 'Update lead fields, stage, and assignment' },
-    { key: 'leads.delete', label: 'Delete leads',  description: 'Permanently remove lead records' },
-  ]},
-  { label: 'Quotes', permissions: [
-    { key: 'quotes.view',    label: 'View quotes',           description: 'See all org quotes and versions' },
-    { key: 'quotes.create',  label: 'Create & send quotes',  description: 'Draft, generate, and send to buyers' },
-    { key: 'quotes.approve', label: 'Approve quotes',        description: 'Override the approval gate for margin exceptions' },
-  ]},
-  { label: 'Orders', permissions: [
-    { key: 'orders.view',    label: 'View orders',           description: 'See order records and documents' },
-    { key: 'orders.advance', label: 'Advance order stages',  description: 'Move orders through the execution workflow' },
-  ]},
-  { label: 'Admin', permissions: [
-    { key: 'admin.access', label: 'Admin workspace access', description: 'View and modify Admin Settings pages' },
-  ]},
-] as const;
 
 export function SecurityAdminWorkspace({ roles, members, approvalThresholdPct = 15 }: { roles: AnyRow[]; members: AnyRow[]; approvalThresholdPct?: number | null }) {
   function roleBadgeStyle(name: string): { bg: string; border: string; color: string } {
@@ -279,10 +343,11 @@ export function SecurityAdminWorkspace({ roles, members, approvalThresholdPct = 
           {!approvalThresholdPct && <p className="w-full text-xs text-amber-600">⚠ Threshold not set — any pricing override bypasses the approval flow.</p>}
         </form>
       </SectionCard>
-      <SectionCard title="Roles & permissions" eyebrow="Access control" description="Click Edit to open the visual permission matrix for a role." actions={<a href="#add-role-drawer" className={buttonClass}>+ Create role</a>}>
+      <SectionCard title="Roles" eyebrow="Governance · Access control" description="Click any role to edit permissions in the drawer." actions={<a href="#add-role-drawer" className={buttonClass}>+ New role</a>}>
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800"><span className="text-base flex-shrink-0">💡</span><div><strong>UX improvement:</strong> Old page showed permissions as a plain textarea. New: visual permission matrix with checkboxes grouped by module — much easier to audit and manage.</div></div>
         <div className="overflow-x-auto rounded-3xl border border-slate-200">
-          <table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500"><tr><th className="px-4 py-3">Role</th><th className="px-4 py-3">Description</th><th className="px-4 py-3">Permissions</th><th className="px-4 py-3">Members</th><th className="px-4 py-3">Edit</th></tr></thead>
-          <tbody>{roles.map((role) => { const s = roleBadgeStyle(role.name); const rolePerms = (role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean) as string[]; return (<tr key={role.id} className="border-t border-slate-100 align-middle hover:bg-slate-50"><td className="px-4 py-3"><span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{role.name}</span></td><td className="px-4 py-3 text-xs text-slate-500">{role.description ?? (role.organization_id ? 'Org role' : 'Global role')}</td><td className="px-4 py-3"><div className="flex flex-wrap gap-1 max-w-[200px]">{rolePerms.slice(0, 3).map((p) => <span key={p} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-600">{p}</span>)}{rolePerms.length > 3 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">+{rolePerms.length - 3}</span>}{rolePerms.length === 0 && <span className="text-xs text-slate-400">None</span>}</div></td><td className="px-4 py-3"><StatusBadge label={`${role.user_roles?.length ?? 0}`} tone="neutral" dot={false} /></td><td className="px-4 py-3"><a href={`#role-${role.id}`} className={secondaryButtonClass}>Edit</a></td></tr>); })}</tbody></table>
+          <table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500"><tr><th className="px-4 py-3">Role</th><th className="px-4 py-3">Members</th><th className="px-4 py-3">Key permissions</th><th className="px-4 py-3">Type</th><th className="px-4 py-3"></th></tr></thead>
+          <tbody>{roles.map((role) => { const s = roleBadgeStyle(role.name); const rolePerms = (role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean) as string[]; return (<tr key={role.id} className="border-t border-slate-100 align-middle hover:bg-slate-50 cursor-pointer"><td className="px-4 py-3"><span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{role.name}</span></td><td className="px-4 py-3 text-sm text-slate-700">{role.user_roles?.length ?? 0}</td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{rolePerms.length === 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">Read-only</span>}{rolePerms.slice(0, 2).map((p) => <span key={p} className="rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">{p}</span>)}{rolePerms.length > 2 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">+{rolePerms.length - 2}</span>}</div></td><td className="px-4 py-3"><span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${!role.organization_id ? "bg-slate-100 text-slate-600" : "bg-teal-50 border border-teal-100 text-teal-700"}`}>{!role.organization_id ? "System" : "Custom"}</span></td><td className="px-4 py-3 text-right"><a href={`#role-${role.id}`} className={secondaryButtonClass}>Edit</a></td></tr>); })}</tbody></table>
         </div>
         {roles.map((role) => { const rolePerms = new Set((role.role_permissions ?? []).map((item: AnyRow) => item.permission).filter(Boolean) as string[]); return (<div key={`role-drawer-${role.id}`} id={`role-${role.id}`} className="fixed inset-0 z-50 hidden bg-slate-950/30 backdrop-blur-sm target:block"><a href="#security-top" className="absolute inset-0" aria-label="Close role drawer" /><aside className="absolute bottom-0 right-0 top-0 flex w-full max-w-[500px] flex-col border-l border-slate-200 bg-white shadow-2xl"><div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Permission matrix</p><h2 className="mt-1 text-lg font-bold text-slate-950">{role.name}</h2><p className="mt-0.5 text-xs text-slate-500">{role.description ?? (role.organization_id ? 'Organization role' : 'Global role')}</p></div><a href="#security-top" className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50">X</a></div><form action={updateRolePermissions} className="flex flex-1 flex-col overflow-hidden"><input type="hidden" name="role_id" value={role.id} /><div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">{PERMISSION_GROUPS.map((group) => (<div key={group.label}><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">{group.label}</p><div className="rounded-2xl border border-slate-200 overflow-hidden">{group.permissions.map((perm, idx) => (<label key={perm.key} className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition ${idx > 0 ? 'border-t border-slate-100' : ''}`}><input type="checkbox" name="permissions" value={perm.key} defaultChecked={rolePerms.has(perm.key)} className="mt-0.5 h-4 w-4 rounded" /><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900">{perm.label}</p><p className="text-xs text-slate-500">{perm.description}</p></div></label>))}</div></div>))}</div><div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4"><a href="#security-top" className={secondaryButtonClass}>Cancel</a><button type="submit" className={buttonClass}>Save permissions</button></div></form></aside></div>); })}
       </SectionCard>

@@ -165,6 +165,9 @@ export default async function ClientOnboardingAdminPage({ searchParams }: { sear
   });
 
   return <AdminSettingsShell active="client-onboarding" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Client onboarding" gapItems={gapItems}>
+    {/* SETU internal banner */}
+    <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🔒</span><div><strong>SETU Flow internal only.</strong> Client workspaces never see this page. Manage SaaS client provisioning, workspace setup, and upgrade requests here.</div></div>
+
     <AdminPageHero title="Client Onboarding" description="Inbox view of client SaaS workspace requests. Needs Action requests are sorted first." badge="SaaS provisioning" cta={<Link href="/onboarding" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open client form</Link>} stats={[{ label: 'Needs action', value: needsAction, tone: needsAction ? 'warning' : 'success' }, { label: 'Reviewing', value: reviewing, tone: reviewing ? 'info' : 'default' }, { label: 'Live', value: liveCount, tone: liveCount ? 'success' : 'default' }, { label: 'Total', value: requests.length, tone: 'info' }]} />
 
     {error && <StateMessage title="Client onboarding table is not available yet" description="Apply the current onboarding migration, then reopen this page." tone="warning" />}

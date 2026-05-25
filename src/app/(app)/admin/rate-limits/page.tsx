@@ -74,8 +74,11 @@ export default async function RateLimitsPage() {
 
   return (
     <AdminSettingsShell active="rate-limits" organizationName={organization.name} sectionTitle="Rate Limits">
+      {/* SETU internal banner */}
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🔒</span><div><strong>SETU Flow internal only.</strong> Customer orgs cannot see or change their own rate limits. Only SETU Flow operators can grant exceptions.</div></div>
+
       <AdminPageHero
-        title="Rate Limits"
+        title="Rate Limits &amp; Quotas"
         description="Override per-org rate limits for specific endpoints. Changes take effect immediately and are recorded in the audit log."
         badge="SETU Internal"
         stats={[

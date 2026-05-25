@@ -88,10 +88,13 @@ export default async function GuruConfigPage() {
 
   return (
     <AdminSettingsShell active="guru-config" organizationName={organization.name} sectionTitle="Setu Guru Config">
+      {/* SETU internal banner */}
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🧠</span><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
+
       <AdminPageHero
-        title="Setu Guru Config"
-        description="Control AI model, live search, writeback, and daily budget per organisation. Changes take effect immediately without a Vercel redeploy."
-        badge="AI Platform"
+        title="Setu Guru Configuration"
+        description="Control Guru AI behaviour for this org — no Vercel deploys needed. Changes take effect immediately."
+        badge="Platform · AI · NEW"
         stats={[
           { label: 'Model', value: settings.model, tone: 'info' },
           { label: 'Live search', value: settings.live_search_enabled ? 'On' : 'Off', tone: settings.live_search_enabled ? 'success' : 'neutral' },
@@ -117,7 +120,7 @@ export default async function GuruConfigPage() {
       </SectionCard>
 
       {/* Config form */}
-      <SectionCard title="AI configuration" eyebrow="Platform settings" description="Settings stored in workspace_guru_settings and override Vercel env vars.">
+      <SectionCard title="Model & capabilities" eyebrow="Platform settings">
         <form action={saveGuruConfig} className="space-y-5">
           {/* Model selector */}
           <div>
@@ -130,12 +133,23 @@ export default async function GuruConfigPage() {
             <p className="mt-1.5 text-xs text-slate-500">Applies to all Guru live search and research calls for this org.</p>
           </div>
 
-          {/* Toggle grid */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ToggleRow name="live_search_enabled"    label="Live web search"        description="Allow Guru to perform live industry research via OpenAI web search." defaultChecked={settings.live_search_enabled} />
-            <ToggleRow name="writeback_enabled"      label="Data writeback"         description="Allow Guru to write enriched HS/HSN and margin data back to Supabase after review." defaultChecked={settings.writeback_enabled} />
-            <ToggleRow name="require_admin_approval" label="Require admin approval" description="Writeback changes require admin review before applying to product records." defaultChecked={settings.require_admin_approval} />
-            <ToggleRow name="ai_analytics_enabled"   label="AI analytics"           description="Track Guru usage, feedback, and topic patterns in the AI analytics dashboard." defaultChecked={settings.ai_analytics_enabled} />
+          {/* 2x2 toggle card grid */}
+          <div className="grid gap-3 sm:grid-cols-2 mb-4">
+            {([
+              { name: 'live_search_enabled',    icon: '🔍', label: 'Live web search',       desc: 'OpenAI web_search tool. Uses daily quota.',             checked: settings.live_search_enabled },
+              { name: 'writeback_enabled',      icon: '✏️',  label: 'HSN writeback',          desc: 'Guru can write HSN codes back to catalog.',            checked: settings.writeback_enabled },
+              { name: 'require_admin_approval', icon: '🔒', label: 'Require admin approval', desc: 'Admin sign-off before writeback applies.',              checked: settings.require_admin_approval },
+              { name: 'ai_analytics_enabled',   icon: '📊', label: 'AI analytics',           desc: 'Track Guru usage, feedback, and topic patterns.',      checked: settings.ai_analytics_enabled },
+            ] as const).map((t) => (
+              <label key={t.name} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 cursor-pointer hover:bg-slate-100 transition">
+                <span className="text-lg flex-shrink-0">{t.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-900">{t.label}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
+                </div>
+                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-4 w-4 rounded accent-slate-900 flex-shrink-0" />
+              </label>
+            ))}
           </div>
 
           {/* Daily budget */}

@@ -68,10 +68,10 @@ export default async function AdminIntegrationsPage() {
       name: 'PDF rendering',
       icon: '📄',
       status: 'live',
-      desc: 'Server-side quote and order PDF generation using a dependency-light route. PDFs upload to Supabase Storage and link back to documents.',
+      desc: 'Puppeteer-core + Sparticuz Chromium. Uploads to private storage bucket.',
       actions: [
-        { label: 'View quotes', href: '/quotes' },
-        { label: 'Document templates', href: '/admin/document-templates' },
+        { label: 'Test render', href: '/quotes' },
+        { label: 'View bucket', href: '/admin/audit' },
       ],
     },
     {
@@ -79,39 +79,40 @@ export default async function AdminIntegrationsPage() {
       name: 'WhatsApp',
       icon: '💬',
       status: 'manual',
-      desc: 'SetuFlow opens wa.me with a pre-filled tracked document link. The operator reviews and manually sends. No WhatsApp Business API is active.',
+      desc: 'Opens wa.me with tracked link. Operator manually reviews and sends. No API active.',
       actions: [
-        { label: 'View send history', href: '/admin/audit' },
+        { label: 'View links', href: '/admin/audit' },
+        { label: 'Upgrade to API', href: '#integrations-wa', primary: true },
       ],
     },
     {
       id: 'finance',
-      name: 'Finance (Xero / QB)',
+      name: 'Finance (Xero/Tally)',
       icon: '💰',
       status: intMap['finance'] ? 'live' : 'queue-ready',
-      desc: 'Finance events are queued and ready for sync to Xero, QuickBooks, or Tally. Human approval is required before queueing any event.',
+      desc: 'Event queue ready. No live Xero/QuickBooks connection. Human approval required.',
       actions: [
         { label: 'View queue', href: '/admin/audit' },
-        { label: 'Connect provider', href: '#integrations-finance' },
+        { label: 'Connect', href: '#integrations-finance', primary: true },
       ],
     },
     {
       id: 'freight',
-      name: 'Freight (Flexport / DHL)',
+      name: 'Freight (Flexport/DHL)',
       icon: '🚢',
       status: intMap['freight'] ? 'live' : 'queue-ready',
-      desc: 'Freight booking requests are queued internally. No live carrier adapter (Flexport, DHL, Freightos) is connected yet.',
+      desc: 'Booking queue ready. Carrier confirmation manual until provider selected.',
       actions: [
         { label: 'View queue', href: '/admin/audit' },
-        { label: 'Connect carrier', href: '#integrations-freight' },
+        { label: 'Connect', href: '#integrations-freight', primary: true },
       ],
     },
     {
       id: 'api',
-      name: 'Open API / Webhooks',
+      name: 'Open API & Webhooks',
       icon: '🔌',
       status: 'planned',
-      desc: 'Public API and partner webhooks are a future integration layer. Manage API keys and webhook endpoints when this layer is activated.',
+      desc: 'Public API and partner webhooks for ERP and B2B data sync. Coming soon.',
       actions: [
         { label: 'API & webhooks', href: '/admin/api-keys' },
       ],
@@ -145,7 +146,7 @@ export default async function AdminIntegrationsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {integrations.map((int) => (
-          <div key={int.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm flex flex-col">
+          <div key={int.id} className={`rounded-[1.5rem] border bg-white p-5 shadow-sm flex flex-col ${int.status === "planned" ? "border-dashed border-slate-300" : "border-slate-200"}`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-2xl">{int.icon}</span>
               <StatusBadge label={statusLabel(int.status)} tone={statusTone(int.status)} dot={false} />
@@ -157,7 +158,7 @@ export default async function AdminIntegrationsPage() {
                 <a
                   key={action.label}
                   href={action.href ?? '#'}
-                  className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                  className={`inline-flex items-center rounded-xl px-2.5 py-1.5 text-xs font-semibold transition ${(action as any).primary ? "bg-slate-950 text-white hover:bg-slate-800" : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"}`}
                 >
                   {action.label}
                 </a>

@@ -75,7 +75,7 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
   {
     label: 'Commerce',
     items: [
-      { key: 'pricing-engine', href: '/admin/product-management', icon: '💱', label: 'Pricing engine', statusDot: 'ok' },
+      { key: 'pricing-engine', href: '/admin/pricing-engine', icon: '💱', label: 'Pricing engine', statusDot: 'ok' },
       { key: 'document-templates', href: '/admin/document-templates', icon: '📄', label: 'Templates & terms', statusDot: 'ok' },
     ],
   },

@@ -76,10 +76,13 @@ export default async function ApiKeysPage({ searchParams }: { searchParams?: { n
 
   return (
     <AdminSettingsShell active="api-keys" organizationName={organization.name} sectionTitle="API & Webhooks">
+      {/* SETU internal banner */}
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🔑</span><div><strong>SETU Flow internal only.</strong> API key management is not available to customer orgs in the current phase.</div></div>
+
       <AdminPageHero
         title="API Keys & Webhooks"
-        description="Generate API keys for partner integrations. Keys are hashed on creation — the full key is shown once and never stored in plaintext."
-        badge="SETU Internal"
+        description="Manage API access for partner integrations. All keys are scoped to this organisation."
+        badge="Platform · NEW"
         stats={[
           { label: 'Active keys', value: activeKeys.length, tone: activeKeys.length > 0 ? 'success' : 'neutral' },
           { label: 'Revoked', value: revokedKeys.length, tone: 'neutral' },
@@ -104,7 +107,7 @@ export default async function ApiKeysPage({ searchParams }: { searchParams?: { n
       )}
 
       {/* Active keys table */}
-      <SectionCard title="Active API keys" eyebrow="Partner access" description="Keys are never stored in plaintext. Only the prefix is visible after creation." actions={<a href="#generate-key-drawer" className={buttonClass}>+ Generate key</a>}>
+      <SectionCard title="API Keys" eyebrow="Partner access" description="Rotate every 90 days" actions={<a href="#generate-key-drawer" className={buttonClass}>+ Generate key</a>}>
         {activeKeys.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
             <p className="text-sm font-semibold text-slate-700">No active API keys</p>
@@ -123,7 +126,7 @@ export default async function ApiKeysPage({ searchParams }: { searchParams?: { n
                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{key.key_prefix}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {(key.scopes ?? []).map((s: string) => <span key={s} className="rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-mono text-blue-700">{s}</span>)}
+                        {(key.scopes ?? []).map((s: string) => <span key={s} className="rounded-full bg-blue-50 border border-blue-100 px-2.5 py-1 text-[10px] font-bold text-blue-700">{s}</span>)}
                         {(key.scopes ?? []).length === 0 && <span className="text-xs text-slate-400">No scopes</span>}
                       </div>
                     </td>
@@ -177,13 +180,11 @@ export default async function ApiKeysPage({ searchParams }: { searchParams?: { n
         </div>
       </SectionCard>
 
-      {/* Webhooks empty state */}
-      <SectionCard title="Webhooks" eyebrow="Partner integrations" description="Register webhook endpoints to receive real-time SetuFlow events (order status, quote approval, lead stage changes).">
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-          <p className="text-2xl mb-3">🔗</p>
-          <p className="text-sm font-semibold text-slate-900">No webhook endpoints configured</p>
-          <p className="mt-2 text-xs text-slate-500 max-w-sm mx-auto">Webhook delivery is planned for the next Enterprise integration layer. Event contracts are being finalised.</p>
-          <span className="mt-4 inline-flex items-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed">+ Add endpoint — Coming soon</span>
+      {/* Webhooks */}
+      <SectionCard title="Webhooks" eyebrow="Partner integrations" actions={<button className="inline-flex min-h-10 items-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">+ Add endpoint</button>}>
+        <div className="flex flex-col items-center py-10 text-center">
+          <p className="text-3xl mb-2">🔗</p>
+          <p className="text-sm text-slate-500">No webhook endpoints. Add one to push CRM events to external systems.</p>
         </div>
       </SectionCard>
 
