@@ -1,7 +1,6 @@
-'use client';
-
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { setSetuGuruWorkspaceContext } from '@/lib/setu-guru/page-context';
+'use client';
 
 import Link from 'next/link';
 import * as React from 'react';
@@ -1502,41 +1501,20 @@ export function LeadsWorkspace({
           </div>
         )}
 
-        {/* SF-18-099: Multi-sort button + popover */}
-        <div className="relative">
-          <button type="button" onClick={() => setSortPopoverOpen(o => !o)}
-            className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 text-[11.5px] font-bold transition ${sortRules.length > 1 || (sortRules[0]?.field !== 'follow_up') ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white hover:border-slate-300'}`}>
-            ⇅ Sort {sortRules.length > 1 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{sortRules.length}</span>}
-          </button>
-          {sortPopoverOpen && (
-            <div className="absolute top-full left-0 mt-1.5 z-50 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 w-96">
-              <p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-3">Sort rules — applied in order</p>
-              {sortRules.map((rule, i) => (
-                <div key={i} className="flex items-center gap-2 py-2 border-b border-slate-100 last:border-0">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">{i + 1}</span>
-                  <select value={rule.field} onChange={e => { const next = [...sortRules]; next[i] = { ...next[i], field: e.target.value as SortField }; setSortRules(next); }}
-                    className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold outline-none">
-                    {SORT_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                  </select>
-                  <select value={rule.dir} onChange={e => { const next = [...sortRules]; next[i] = { ...next[i], dir: e.target.value as SortDirection }; setSortRules(next); }}
-                    className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold outline-none">
-                    <option value="asc">↑ Asc</option>
-                    <option value="desc">↓ Desc</option>
-                  </select>
-                  <button onClick={() => setSortRules(sortRules.filter((_, j) => j !== i))} className="w-6 h-6 rounded-md border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 text-xs flex items-center justify-center">✕</button>
-                </div>
-              ))}
-              {sortRules.length < 3 && (
-                <button onClick={() => setSortRules([...sortRules, { field: 'deal_value', dir: 'desc' }])}
-                  className="text-blue-600 text-xs font-bold mt-2 py-1">+ Add sort rule</button>
-              )}
-              <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                <button onClick={() => setSortPopoverOpen(false)} className="flex-1 h-8 rounded-xl border border-slate-200 text-xs font-bold text-slate-600">Close</button>
-                <button onClick={() => { setSortRules([{ field: 'follow_up', dir: 'asc' }]); setSortPopoverOpen(false); }} className="flex-1 h-8 rounded-xl border border-slate-200 text-xs font-bold text-slate-500">Reset</button>
-              </div>
-            </div>
+        {/* SF-18-099: Multi-sort button — opens inline sort panel below filter bar */}
+        <button type="button" onClick={() => setSortPopoverOpen(o => !o)}
+          className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 text-[11.5px] font-bold transition ${sortPopoverOpen || sortRules.length > 1 || (sortRules[0]?.field !== 'follow_up') ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white hover:border-slate-300'}`}>
+          ⇅ Sort
+          {(sortRules.length > 1 || sortRules[0]?.field !== 'follow_up') && (
+            <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{sortRules.length}</span>
           )}
-        </div>
+          {sortRules[0] && (
+            <span className="text-[10px] font-semibold opacity-70">
+              {SORT_FIELDS.find(f => f.value === sortRules[0].field)?.label?.split(' ')[0]}
+              {sortRules[0].dir === 'asc' ? ' ↑' : ' ↓'}
+            </span>
+          )}
+        </button>
 
         {/* SF-18-100: More filters button */}
         <button type="button" onClick={() => setShowAdvFilters(v => !v)}
@@ -1550,7 +1528,58 @@ export function LeadsWorkspace({
         </span>
       </div>
 
-            {/* ADVANCED FILTERS PANEL — SF-18-100 */}
+            {/* SORT PANEL — SF-18-099: inline below filter bar, never overflows */}
+      {sortPopoverOpen && (
+        <div className="bg-slate-50 border-b border-slate-200 px-5 py-3">
+          <div className="flex items-center gap-3 mb-3">
+            <p className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-500">Sort rules — applied in order ① → ②</p>
+            <div className="flex gap-2 ml-auto">
+              <button type="button" onClick={() => { setSortRules([{ field: 'follow_up', dir: 'asc' }]); setSortPopoverOpen(false); }}
+                className="h-7 rounded-lg border border-slate-200 bg-white px-3 text-[10.5px] font-bold text-slate-500 hover:bg-slate-50">Reset</button>
+              <button type="button" onClick={() => setSortPopoverOpen(false)}
+                className="h-7 rounded-lg border border-slate-200 bg-white px-3 text-[10.5px] font-bold text-slate-600 hover:bg-slate-50">Close ✕</button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            {sortRules.map((rule, i) => (
+              <div key={i} className="flex items-center gap-3 bg-white rounded-xl border border-slate-200 px-3 py-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[8px] font-extrabold uppercase tracking-[.1em] text-slate-400 mb-1">Sort field</div>
+                  <select
+                    value={rule.field}
+                    onChange={e => { const next = [...sortRules]; next[i] = { ...next[i], field: e.target.value as SortField }; setSortRules(next); }}
+                    className="w-full border-none bg-transparent outline-none text-[12px] font-bold text-slate-800 appearance-none cursor-pointer">
+                    {SORT_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </select>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="text-[8px] font-extrabold uppercase tracking-[.1em] text-slate-400 mb-1">Direction</div>
+                  <select
+                    value={rule.dir}
+                    onChange={e => { const next = [...sortRules]; next[i] = { ...next[i], dir: e.target.value as SortDirection }; setSortRules(next); }}
+                    className="border-none bg-transparent outline-none text-[12px] font-bold text-slate-700 appearance-none cursor-pointer">
+                    <option value="asc">↑ Earliest / Lowest first</option>
+                    <option value="desc">↓ Latest / Highest first</option>
+                  </select>
+                </div>
+                {sortRules.length > 1 && (
+                  <button type="button" onClick={() => setSortRules(sortRules.filter((_, j) => j !== i))}
+                    className="w-7 h-7 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 text-xs flex items-center justify-center flex-shrink-0">✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+          {sortRules.length < 3 && (
+            <button type="button" onClick={() => setSortRules([...sortRules, { field: 'deal_value', dir: 'desc' }])}
+              className="mt-2 flex items-center gap-1.5 text-blue-600 text-[11px] font-bold hover:text-blue-700 transition">
+              + Add sort rule <span className="text-slate-400 text-[10px] font-normal">(max 3)</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ADVANCED FILTERS PANEL — SF-18-100 */}
       {showAdvFilters && (
         <div className="bg-slate-50 border-b border-slate-200 px-5 py-4">
           <div className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400 mb-3">Advanced filters — 5 additional criteria</div>
@@ -1733,6 +1762,17 @@ export function LeadsWorkspace({
                 setSelectedLeadIds((cur) => [...new Set([...cur, ...visibleLeads.map((l) => l.id)])]);
               } else {
                 setSelectedLeadIds((cur) => cur.filter((id) => !visibleLeads.some((l) => l.id === id)));
+              }
+            }}
+            currentSortField={sortRules[0]?.field}
+            currentSortDir={sortRules[0]?.dir}
+            onColumnSort={(field) => {
+              const current = sortRules[0];
+              if (current?.field === field) {
+                // Toggle direction
+                setSortRules([{ field: field as typeof current.field, dir: current.dir === 'asc' ? 'desc' : 'asc' }]);
+              } else {
+                setSortRules([{ field: field as typeof current.field, dir: 'asc' }]);
               }
             }}
           />

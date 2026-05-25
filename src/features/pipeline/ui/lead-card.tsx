@@ -1,6 +1,5 @@
-"use client";
-
 import { GuruAvatar } from '@/components/ui/guru-avatar';
+"use client";
 
 import { useRouter } from 'next/navigation';
 import { useState, type KeyboardEvent } from 'react';
@@ -176,7 +175,10 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
       role="button"
       tabIndex={0}
       className={cn(
-        'group rounded-[1.35rem] border bg-white/96 p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)] dark:bg-slate-900/88',
+        'group border bg-white/96 transition hover:-translate-y-0.5 dark:bg-slate-900/88',
+        density === 'full' ? 'rounded-[1.35rem] p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)]' :
+        density === 'compact' ? 'rounded-2xl p-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_20px_rgba(15,23,42,0.10)]' :
+        /* micro */ 'rounded-xl px-2.5 py-2 shadow-none hover:shadow-[0_2px_8px_rgba(15,23,42,0.08)]',
         isSelected ? 'border-slate-900 ring-2 ring-slate-900/10 dark:border-white dark:ring-white/10' : 'border-slate-200/80 dark:border-slate-700/70',
       )}
     >
@@ -187,15 +189,21 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
               {countryCodeToFlagEmoji(countryCode)}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{lead.company_name}</p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{lead.contact_name ?? ownerLabel}</p>
+              <p className={cn("truncate font-semibold text-slate-950 dark:text-white", density === "micro" ? "text-xs" : "text-sm")}>{lead.company_name}</p>
+{density !== "micro" && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{lead.contact_name ?? ownerLabel}</p>}
             </div>
           </div>
-          <div className="flex flex-wrap gap-1.5 text-[11px]">
-            <span className={cn('rounded-full border px-2 py-1 font-semibold', getHealthTone(health))}>{health.replace(/_/g, ' ')}</span>
-            <span className={cn('rounded-full border px-2 py-1 font-semibold', getFollowUpBadgeClasses(state))}><FollowUpIcon className="mr-1 inline h-3.5 w-3.5" />{followUpLabel}</span>
-            <span className={cn('rounded-full border px-2 py-1 font-semibold', pricingClassName)}>{pricingLabel}</span>
-          </div>
+          {density !== 'micro' ? (
+            <div className="flex flex-wrap gap-1.5 text-[11px]">
+              <span className={cn('rounded-full border px-2 py-1 font-semibold', getHealthTone(health))}>{health.replace(/_/g, ' ')}</span>
+              <span className={cn('rounded-full border px-2 py-1 font-semibold', getFollowUpBadgeClasses(state))}><FollowUpIcon className="mr-1 inline h-3.5 w-3.5" />{followUpLabel}</span>
+              {density === 'full' && <span className={cn('rounded-full border px-2 py-1 font-semibold', pricingClassName)}>{pricingLabel}</span>}
+            </div>
+          ) : (
+            <span className={cn('inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', getFollowUpBadgeClasses(state))}>
+              <FollowUpIcon className="mr-0.5 inline h-3 w-3" />{followUpLabel}
+            </span>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {onSelectedChange ? (
@@ -215,7 +223,7 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
         </div>
       </div>
 
-      <div className="mt-3 space-y-2">
+      {density !== 'micro' && <div className="mt-3 space-y-2">
         <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
           <span>{ownerLabel}</span>
           <span>{safeFormatDateTime(lead.next_follow_up_at)}</span>
@@ -244,22 +252,23 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
           <span>{suggestedAction}</span>
         </div>{showCompact && visibleReadinessReasons.length ? <div className="rounded-2xl border border-rose-200/80 bg-rose-50/70 px-3 py-2 text-[11px] text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-200"><p className="font-semibold">Stage blockers</p><ul className="mt-1 list-disc pl-4">{visibleReadinessReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div> : null}{showFull && visibleActionItems.length ? <div className="flex flex-wrap gap-1.5">{visibleActionItems.map((item) => <span key={item} className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">{item}</span>)}</div> : null}{showFull && coverageSummary ? <div className="rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-[11px] text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/35 dark:text-sky-200">{coverageSummary}</div> : null}
         {cardMessage ? <StateMessage title={cardMessage} tone="neutral" description="The lead card reflects the latest action result." /> : null}
+      </div>}
+
+      {/* Compact: just show quick action buttons, micro: show only Advance */}
+      <div className={density === 'micro' ? 'mt-1.5 flex gap-1.5' : 'mt-3 flex flex-wrap gap-2'} onClick={(event) => event.stopPropagation()}>
+        {quickMoveOption && canManageLeads ? <button type="button" disabled={isPending || moveReadiness.status === 'blocked'} onClick={() => handleMove(lead.id, quickMoveOption.stageId)} className={density === 'micro' ? 'inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 px-2 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50' : 'inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'}>{quickMoveLabel}</button> : null}
+        {density !== 'micro' && <button type="button" onClick={() => setNoteOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Add note</button>}
+        {density !== 'micro' && <button type="button" onClick={() => setNextActionOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Next action</button>}
+        {density !== 'micro' && <button type="button" onClick={() => setMoveMenuOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Move</button>}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2" onClick={(event) => event.stopPropagation()}>
-        {quickMoveOption && canManageLeads ? <button type="button" disabled={isPending || moveReadiness.status === 'blocked'} onClick={() => handleMove(lead.id, quickMoveOption.stageId)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">{quickMoveLabel}</button> : null}
-        <button type="button" onClick={() => setNoteOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Add note</button>
-        <button type="button" onClick={() => setNextActionOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Next action</button>
-        <button type="button" onClick={() => setMoveMenuOpen((value) => !value)} className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Move</button>
-      </div>
-
-      {noteOpen ? <div className="mt-3 space-y-2" onClick={(event) => event.stopPropagation()}><textarea value={noteText} onChange={(event) => setNoteText(event.target.value)} className="min-h-[90px] w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none" placeholder="Add a pipeline note" /><button type="button" onClick={submitNote} disabled={isPending || !canManageLeads || !noteText.trim()} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white disabled:opacity-60">Save note</button></div> : null}
-      {nextActionOpen ? <div className="mt-3 space-y-2" onClick={(event) => event.stopPropagation()}><input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm text-slate-900 outline-none" /><button type="button" onClick={submitFollowUp} disabled={isPending || !canManageLeads || !scheduledAt.trim()} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white disabled:opacity-60">Schedule follow-up</button></div> : null}
-      {moveMenuOpen ? <div className="mt-3 grid gap-2" onClick={(event) => event.stopPropagation()}>{moveOptions.map((option) => <button key={option.stageId} type="button" disabled={isPending || option.disabled || option.stageId === lead.stage_id || !canManageLeads} onClick={() => handleMove(lead.id, option.stageId)} className="inline-flex min-h-10 items-center justify-between rounded-2xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"><span>{option.label}</span><span>{option.sortOrder}</span></button>)}</div> : null}
-      <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400" onClick={(event) => event.stopPropagation()}>
+      {noteOpen && density !== 'micro' ? <div className="mt-3 space-y-2" onClick={(event) => event.stopPropagation()}><textarea value={noteText} onChange={(event) => setNoteText(event.target.value)} className="min-h-[90px] w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none" placeholder="Add a pipeline note" /><button type="button" onClick={submitNote} disabled={isPending || !canManageLeads || !noteText.trim()} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white disabled:opacity-60">Save note</button></div> : null}
+      {nextActionOpen && density !== 'micro' ? <div className="mt-3 space-y-2" onClick={(event) => event.stopPropagation()}><input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm text-slate-900 outline-none" /><button type="button" onClick={submitFollowUp} disabled={isPending || !canManageLeads || !scheduledAt.trim()} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white disabled:opacity-60">Schedule follow-up</button></div> : null}
+      {moveMenuOpen && density !== 'micro' ? <div className="mt-3 grid gap-2" onClick={(event) => event.stopPropagation()}>{moveOptions.map((option) => <button key={option.stageId} type="button" disabled={isPending || option.disabled || option.stageId === lead.stage_id || !canManageLeads} onClick={() => handleMove(lead.id, option.stageId)} className="inline-flex min-h-10 items-center justify-between rounded-2xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"><span>{option.label}</span><span>{option.sortOrder}</span></button>)}</div> : null}
+{showFull && <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400" onClick={(event) => event.stopPropagation()}>
         <span>{secondaryMeta[0] ?? (blockerCount ? blockerSummary : `${history.length} follow-up${history.length === 1 ? '' : 's'}`)}</span>
         <span>{secondaryMeta[1] ?? 'Next step visible'}</span>
-      </div>
+      </div>}
       {!canManageLeads && readOnlyMessage ? <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{readOnlyMessage}</p> : null}
     </article>
   );
