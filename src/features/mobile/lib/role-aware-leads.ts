@@ -16,6 +16,9 @@ export type MobileLead = {
   market: string;
   productInterest: string;
   lastActivity: string;
+  // SF-18-118: Premium UX fields
+  nextFollowUpAt?: string | null;
+  dealValue?: number | null;
 };
 
 export type MobileUserContext = {

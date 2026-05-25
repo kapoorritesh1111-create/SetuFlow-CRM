@@ -20,7 +20,7 @@ function formatDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-async function confirmAndSendQuote(formData: FormData) {
+async function confirmAndSendQuote(formData: FormData): Promise<void> {
   'use server';
 
   const quoteId = String(formData.get('quote_id') ?? '').trim();
@@ -38,7 +38,11 @@ async function confirmAndSendQuote(formData: FormData) {
     .eq('id', quoteId)
     .maybeSingle();
 
-  if (quoteError || !quote) redirect('/quotes?status=pending_approval');
+  if (quoteError || !quote) {
+    // SF-18-048: Surface error via URL param so the page component can render it
+    const msg = quoteError ? encodeURIComponent(quoteError.message) : 'quote-not-found';
+    redirect(`/quotes?error=${msg}&status=pending_approval`);
+  }
 
   const sentAt = new Date().toISOString();
   await typedSupabase

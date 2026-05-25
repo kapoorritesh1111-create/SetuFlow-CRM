@@ -1,4 +1,8 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
+import { FilterBar, FilterSearch, FilterSelect, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { convertTradeEventEntryToLead } from '@/features/trade-events/server/actions';
@@ -234,6 +238,11 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
 
   const activeEvents = eventsByStartDate.length ? eventsByStartDate : data.events;
   const eventCards = activeEvents.slice(0, 3);
+  const filteredEventCards = eventCards.filter(event => {
+    const matchesSearch = !search || (event.name ?? '').toLowerCase().includes(search.toLowerCase()) || (event.city ?? '').toLowerCase().includes(search.toLowerCase());
+    const matchesCountry = countryFilter === 'all' || event.country === countryFilter;
+    return matchesSearch && matchesCountry;
+  });
   const queueEntries = data.entries.slice(0, 4);
   const todayFocusCards = [
     { icon: '💬', label: 'Need review', value: Math.max(data.entries.length - tradeEventKpis.convertedLeads, 0), sub: 'Booth entries', tone: 'from-sky-400 to-blue-600' },
@@ -241,6 +250,20 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
     { icon: '🛩️', label: 'Quotes ready', value: tradeEventKpis.quotesCreated, sub: 'Ready to send', tone: 'from-lime-300 to-emerald-500' },
     { icon: '🎯', label: 'High priority', value: Math.max(1, Math.min(tradeEventKpis.followUpsDue, 9)), sub: 'Follow up today', tone: 'from-fuchsia-400 to-purple-700' },
   ];
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [countryFilter, setCountryFilter] = useState('all');
+
+  const uniqueCountries = Array.from(new Set(eventCards.map((e: any) => e.country).filter(Boolean))).sort() as string[];
+  // filteredEvents used for count above
+  // filteredEvents used for countryFilter display
+  const filteredEvents = eventCards.filter((event: any) => {
+    const matchesSearch = !search || (event.name ?? '').toLowerCase().includes(search.toLowerCase()) || (event.city ?? '').toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
+    const matchesCountry = countryFilter === 'all' || event.country === countryFilter;
+    return matchesSearch && matchesStatus && matchesCountry;
+  });
 
   return (
     <div className="space-y-5 pb-4">
@@ -314,7 +337,22 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
             </div>
             {eventCards.length ? (
               <div className="grid gap-4 lg:grid-cols-3">
-                {eventCards.map((event, index) => {
+                <FilterBar>
+                  <FilterSearch value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events, cities…" minWidth={200} />
+                  <FilterSelect icon="⚡" label="Status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} active={statusFilter !== 'all'}>
+                    <option value="all">All statuses ▾</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="active">Active</option>
+                    <option value="past">Past</option>
+                  </FilterSelect>
+                  <FilterSelect icon="🌐" label="Country" value={countryFilter} onChange={e => setCountryFilter(e.target.value)} active={countryFilter !== 'all'}>
+                    <option value="all">All countries ▾</option>
+                    {uniqueCountries.map((c: any) => <option key={c} value={c}>{c}</option>)}
+                  </FilterSelect>
+                  {(search || statusFilter !== 'all' || countryFilter !== 'all') && <ClearAllButton onClick={() => { setSearch(''); setStatusFilter('all'); setCountryFilter('all'); }} />}
+                  <FilterMeta>{filteredEventCards.length} events</FilterMeta>
+                </FilterBar>
+                {filteredEventCards.map((event, index) => {
                   const analytics = analyticsByEventId.get(event.id) ?? { leadCount: 0, quotedCount: 0, openLeadCount: 0, pipelineValue: 0, currency: 'USD', ordersPlaced: 0, orderHandoffCount: 0 };
                   const eventEntryCount = entryCountByEvent.get(event.id) ?? 0;
                   const captureDefaults = captureDefaultsByEventId.get(event.id) ?? null;

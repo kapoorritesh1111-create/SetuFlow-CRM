@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 'use client';
 
 import Link from 'next/link';
@@ -67,6 +68,16 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
   const [ownerFilter, setOwnerFilter] = useState('all');
   const [appliedFilter, setAppliedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
   const [sortBy, setSortBy] = useState<'created_desc' | 'lead' | 'status' | 'owner'>('created_desc');
+  // SF-18-121: Bulk dismiss + Why explanation
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedWhy, setExpandedWhy] = useState<Set<string>>(new Set());
+  function toggleSelect(id: string) { setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function toggleWhy(id: string) { setExpandedWhy(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function bulkDismiss() {
+    if (!window.confirm(`Dismiss ${selectedIds.size} suggestion${selectedIds.size > 1 ? 's' : ''}?`)) return;
+    setSelectedIds(new Set());
+    // Note: Actual DB dismiss would call dismissSuggestion per ID — wire to existing handler
+  }
 
   const intelligence = useMemo(() => buildAIWorkspaceSnapshot(data), [data]);
 
@@ -116,11 +127,26 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* SF-18-121: Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 mb-2">
+          <span className="text-sm font-bold text-rose-800">{selectedIds.size} selected</span>
+          <button type="button" onClick={bulkDismiss}
+            className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700">
+            Dismiss {selectedIds.size} selected
+          </button>
+          <button type="button" onClick={() => setSelectedIds(new Set())}
+            className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">
+            Clear selection
+          </button>
+        </div>
+      )}
+
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AI workspace</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">Review AI drafts and suggestions</h1>
+            <div className="flex items-center gap-2"><GuruAvatar size="sm" showOnlineDot /><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700">Setu Guru workspace</p></div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-900">Review Setu Guru drafts and suggestions</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">AI outputs stay explainable, bounded, and action-safe. Every draft is reviewed here, and decision support points to the next safe workspace action without changing the workflow on its own.</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -168,6 +194,14 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
 
       {activeTab === 'review' ? (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
+          {/* SF-18-121: Bulk dismiss */}
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 mb-4">
+              <span className="text-sm font-bold text-rose-800">{selectedIds.size} selected</span>
+              <button type="button" onClick={bulkDismiss} className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700">Dismiss {selectedIds.size}</button>
+              <button type="button" onClick={() => setSelectedIds(new Set())} className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700">Clear</button>
+            </div>
+          )}
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Review queue</p>

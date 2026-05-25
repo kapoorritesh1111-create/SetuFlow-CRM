@@ -14,6 +14,8 @@ type ProfileRow = TasksWorkspaceData['profiles'][number];
 type Props = { data: TasksWorkspaceData; currentUserId: string };
 type ViewMode = 'list' | 'grouped';
 type FocusFilter = 'all' | 'my' | 'sla-risk' | 'lead-linked' | 'internal-ops';
+// SF-18-116: Calendar view type
+type TaskView = 'list' | 'calendar';
 type TaskPayload = { title?: string; notes?: string; priority?: string; assigned_to?: string; linked_entity_type?: string; linked_entity_id?: string };
 
 const PAGE_SIZE = 10;
@@ -72,6 +74,9 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
   const [searchValue, setSearchValue] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [focusFilter, setFocusFilter] = useState<FocusFilter>('all');
+  // SF-18-116: Calendar view state
+  const [taskView, setTaskView] = useState<TaskView>('list');
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [clock, setClock] = useState<Date | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -132,7 +137,58 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
 
   return (
     <div className="space-y-6 pb-24 md:pb-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
+      {/* SF-18-116: List / Calendar view toggle */}
+      <div className="flex items-center gap-3 px-1">
+        <div className="flex border border-slate-200 rounded-xl overflow-hidden">
+          {(['list', 'calendar'] as const).map(v => (
+            <button key={v} type="button" onClick={() => setTaskView(v)}
+              className={`h-8 px-4 text-[11px] font-bold capitalize transition ${taskView === v ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
+              {v === 'list' ? '☰ List' : '📅 Calendar'}
+            </button>
+          ))}
+        </div>
+        {taskView === 'calendar' && (
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth()-1, 1))} className="h-7 w-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center">‹</button>
+            <span className="text-sm font-bold text-slate-800 min-w-[130px] text-center">{calMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+            <button type="button" onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth()+1, 1))} className="h-7 w-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center">›</button>
+          </div>
+        )}
+      </div>
+
+      {taskView === 'calendar' && (() => {
+        const year = calMonth.getFullYear(); const month = calMonth.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month+1, 0).getDate();
+        const todayStr = new Date().toISOString().slice(0,10);
+        const cells: Array<number | null> = [...Array(firstDay).fill(null), ...Array.from({length:daysInMonth},(_,i)=>i+1)];
+        while (cells.length % 7 !== 0) cells.push(null);
+        return (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-7 text-center mb-2">
+              {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="text-[9px] font-extrabold uppercase text-slate-400 py-1">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-px bg-slate-100 rounded-xl overflow-hidden">
+              {cells.map((day, i) => {
+                if (!day) return <div key={i} className="bg-white min-h-[52px]" />;
+                const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const dayTasks = filteredTasks.filter(tk => ((payloadOf(tk) as any).scheduled_for ?? '').startsWith(ds));
+                const isToday = ds === todayStr;
+                return (
+                  <div key={i} className={`bg-white min-h-[52px] p-1 ${isToday ? 'ring-2 ring-inset ring-blue-500' : ''}`}>
+                    <div className={`text-[9px] font-bold mb-0.5 h-4 w-4 rounded-full flex items-center justify-center ${isToday ? 'bg-blue-600 text-white' : 'text-slate-600'}`}>{day}</div>
+                    {dayTasks.slice(0,2).map((task: any) => <div key={task.id} className="rounded text-[8px] font-semibold truncate px-0.5 mb-px bg-blue-50 text-blue-700">{(payloadOf(task) as any).title ?? 'Task'}</div>)}
+                    {dayTasks.length > 2 && <div className="text-[8px] text-slate-400">+{dayTasks.length-2}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {taskView === 'list' && <div className="space-y-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Tasks workspace</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Daily operator queue</h2><p className="mt-2 max-w-3xl text-sm text-slate-600">Run follow-ups, assignments, and linked work from one grouped queue.</p></div>
           <div className="grid gap-3 sm:grid-cols-3"><Metric label="Overdue" value={String(groupedTasks.find((g) => g.label === 'Overdue')?.items.length ?? 0)} helper="Needs action" /><Metric label="Today" value={String(groupedTasks.find((g) => g.label === 'Today')?.items.length ?? 0)} helper="Planned touches" /><Metric label="Mine" value={String(tasks.filter((task) => assignedTo(task) === currentUserId).length)} helper="Assigned to me" /></div>
@@ -146,8 +202,9 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
       <CaptureDrawer open={captureDrawerOpen} data={data} isPending={isPending} onClose={() => setCaptureDrawerOpen(false)} onSubmit={submitCapture} />
       <FieldNoteDrawer open={fieldNoteOpen} data={data} isPending={isPending} onClose={() => setFieldNoteOpen(false)} onSubmit={submitFieldNote} />
       <FieldDocumentDrawer open={fieldDocumentOpen} data={data} isPending={isPending} onClose={() => setFieldDocumentOpen(false)} onSubmit={submitFieldDocument} />
+      </div>}
     </div>
-  );
+    );
 }
 
 function GroupedTaskList({ groups, leadMap, profileMap, now, onEdit, onStatus }: { groups: { label: string; items: TaskRow[] }[]; leadMap: Map<string, TasksWorkspaceData['leads'][number]>; profileMap: Map<string, ProfileRow>; now: Date | null; onEdit: (task: TaskRow) => void; onStatus: (action: 'complete' | 'reopen', taskId: string) => void }) {

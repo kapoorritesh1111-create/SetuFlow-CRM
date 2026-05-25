@@ -1,3 +1,4 @@
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,9 +11,9 @@ import type { MobileSignedInIdentity } from "./mobile-shell";
 const standaloneTabs = [
   { href: "/mobile", label: "Home", icon: "⌂" },
   { href: "/mobile/leads", label: "Leads", icon: "◎" },
-  { href: "/mobile/quote", label: "Quote", icon: "◌" },
-  { href: "/mobile/capture", label: "Capture", icon: "+" },
-  { href: "/mobile/settings", label: "Settings", icon: "☼" },
+  { href: "/mobile/pipeline", label: "Pipeline", icon: "⊞" },
+  { href: "/mobile/guru", label: "Guru", icon: "🧠" },
+  { href: "/mobile/settings", label: "More", icon: "≡" },
 ];
 
 const canonicalTabs = [
@@ -227,7 +228,9 @@ export function MobileBottomTabs({
             href={tab.href}
             className={`flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${active ? "bg-blue-500/10 text-blue-600 dark:text-sky-300" : "text-slate-500 dark:text-slate-400"}`}
           >
-            <span className="text-lg">{tab.icon}</span>
+            {tab.label === 'Guru'
+              ? <GuruAvatar size="sm" className="mb-0.5" />
+              : <span className="text-lg">{tab.icon}</span>}
             {tab.label}
           </Link>
         );

@@ -1,3 +1,4 @@
+import { FilterBar, FilterSearch, FilterSelect, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
 'use client';
 
 import Link from 'next/link';
@@ -258,7 +259,20 @@ export function ContractsWorkspace({
       </div>
 
       <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-soft">
-        <div className="grid gap-3 lg:grid-cols-[1fr_180px_160px_auto]"><label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Search contracts<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Company, quote, status..." className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm normal-case tracking-normal text-slate-700 outline-none focus:border-brand-300" /></label><label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status<select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm normal-case tracking-normal text-slate-700 outline-none focus:border-brand-300"><option value="all">All statuses</option>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label><label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Updated<select value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setPage(1); }} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm normal-case tracking-normal text-slate-700 outline-none focus:border-brand-300"><option value="all">All time</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label><button type="button" onClick={resetFilters} className="self-end rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Reset</button></div>
+        <FilterBar className="px-0 border-0 bg-transparent">
+          <FilterSearch value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Company, quote, status..." minWidth={240} />
+          <FilterSelect icon="⚡" label="Status" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} active={statusFilter !== 'all'}>
+            <option value="all">All statuses ▾</option>
+            {statusOptions.map(status => <option key={status} value={status}>{status}</option>)}
+          </FilterSelect>
+          <FilterSelect icon="📅" label="Updated" value={dateFilter} onChange={e => { setDateFilter(e.target.value); setPage(1); }} active={dateFilter !== 'all'}>
+            <option value="all">All time ▾</option>
+            <option value="30">Last 30 days ▾</option>
+            <option value="90">Last 90 days ▾</option>
+          </FilterSelect>
+          {(search || statusFilter !== 'all' || dateFilter !== 'all') && <ClearAllButton onClick={resetFilters} />}
+          <FilterMeta>{filteredContracts.length} of {data.contracts.length} contracts</FilterMeta>
+        </FilterBar>
         <p className="mt-3 text-sm text-slate-600">Showing {paginatedContracts.length} of {filteredContracts.length} matching contracts.</p>
       </div>
 

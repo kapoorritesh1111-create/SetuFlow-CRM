@@ -1,5 +1,10 @@
+'use client';
+import { useState, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
+// SectionCard
 import { SectionCard } from '@/components/ui/section-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -35,6 +40,31 @@ function getWindowStart(dayOffset: number) {
 }
 
 export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData; readOnlyMessage?: string | null }) {
+  // SF-18-115: Date range filter
+  const [dateRange, setDateRange] = useState<30 | 60 | 90 | 180>(30);
+  const since = useMemo(() => Date.now() - dateRange * 24 * 60 * 60 * 1000, [dateRange]);
+
+  // SF-18-115: CSV export
+  function exportCSV(rows: Record<string, unknown>[], filename: string) {
+    if (!rows.length) return;
+    const keys = Object.keys(rows[0]);
+    const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = filename; a.click();
+  }
+
+  // SF-18-115: Build trend data (daily counts over selected range)
+  function buildTrend(records: Array<{ created_at?: string | null }>, label: string) {
+    const days: Record<string, number> = {};
+    const now = new Date();
+    for (let i = dateRange - 1; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      days[d.toISOString().slice(0, 10)] = 0;
+    }
+    records.forEach(r => { const k = (r.created_at ?? '').slice(0, 10); if (k in days) days[k]++; });
+    return Object.entries(days).map(([date, count]) => ({ date: date.slice(5), [label]: count }));
+  }
   const now = Date.now();
   const stageMap = new Map(data.stages.map((stage) => [stage.id, stage]));
   const quoteLineItemsByQuoteId = new Map<string, ReportsData['quoteLineItems']>();
@@ -139,6 +169,40 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
 
   return (
     <div className="space-y-6">
+      {/* SF-18-115: Date range filter + CSV export */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-white px-5 py-2">
+        <span className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400">Time range:</span>
+        {([30, 60, 90, 180] as const).map(d => (
+          <button key={d} type="button" onClick={() => setDateRange(d)}
+            className={`h-8 rounded-xl px-3 text-[11px] font-bold transition ${dateRange === d ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'}`}>
+            {d}d
+          </button>
+        ))}
+        <div className="flex items-center gap-1.5 ml-2">
+          <GuruAvatar size="xs" />
+          <span className="text-[10px] font-semibold text-sky-700">Setu Guru Insights</span>
+        </div>
+        <button type="button" onClick={() => exportCSV(data.leads.map(l => ({ id: l.id, stage: l.stage_id, deal: l.deal_value, created: l.created_at })), 'leads-report.csv')}
+          className="ml-auto flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition">
+          ⬇ Export CSV
+        </button>
+      </div>
+
+      {/* SF-18-115: Trend chart */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-slate-900">Lead activity trend — last {dateRange} days</h3>
+        </div>
+        <ResponsiveContainer width="100%" height={160}>
+          <AreaChart data={buildTrend(data.leads, 'Leads')} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+            <defs><linearGradient id="leadsGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/><stop offset="95%" stopColor="#2563eb" stopOpacity={0}/></linearGradient></defs>
+            <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval={Math.floor(dateRange / 6)} />
+            <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
+            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+            <Area type="monotone" dataKey="Leads" stroke="#2563eb" strokeWidth={2} fill="url(#leadsGrad)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {stats.map((item) => {
           const card = <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} />;

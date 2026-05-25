@@ -1,3 +1,4 @@
+import { FilterBar, FilterSearch, FilterSelect, ActiveChip, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -94,7 +95,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   if (!quotes.length) {
     return (
       <div style={{padding:'24px',background:'#f0f4f8',minHeight:'100vh'}}>
-        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',padding:'32px',textAlign:'center'}}>
+        <div className="rounded-[1.375rem] border border-slate-200 bg-white p-8 text-center">
           <p style={{fontSize:'14px',color:'#64748b'}}>No quotes yet.</p>
           <Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',marginTop:'16px',padding:'8px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link>
         </div>
@@ -262,21 +263,21 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
           {label:'Drafts',value:draftCount,meta:'Not yet sent',accent:'#cbd5e1'},
           {label:'Total value',value:formatQuoteMoney(totalValue,'USD'),meta:'All active quotes',accent:'#7c3aed'},
         ].map(sc => (
-          <div key={sc.label} style={{position:'relative',overflow:'hidden',borderRadius:'16px',border:'1px solid #e2e8f0',background:'white',padding:'13px 15px',boxShadow:'0 1px 3px rgba(15,23,42,.06)',cursor:'pointer'}}>
-            <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:sc.accent,borderRadius:'16px 16px 0 0'}}/>
-            <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'7px'}}>{sc.label}</div>
-            <div style={{fontSize:'22px',fontWeight:800,letterSpacing:'-.03em',color:'#0f172a',lineHeight:1}}>{sc.value}</div>
-            <div style={{fontSize:'10px',color:'#94a3b8',marginTop:'4px',fontWeight:600}}>{sc.meta}</div>
+          <div key={sc.label} className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,0.06)] cursor-pointer hover:shadow-[0_8px_28px_rgba(15,23,42,0.10)] transition">
+            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{background:sc.accent}}/>
+            <div className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400 mb-1.5">{sc.label}</div>
+            <div className="text-[22px] font-black tracking-tight text-slate-900 leading-none">{sc.value}</div>
+            <div className="text-[10px] text-slate-400 mt-1 font-semibold">{sc.meta}</div>
           </div>
         ))}
       </div>
 
       {/* ── CONTENT ────────────────────────────────────── */}
-      <div style={{padding:'14px 24px 40px',display:'flex',flexDirection:'column',gap:'14px'}}>
+      <div className="px-5 pb-10 pt-3 flex flex-col gap-4">
 
         {/* Approval banner */}
         {approvalQueueCount>0 && (
-          <div style={{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'12px',padding:'12px 16px'}}>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
             <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>{approvalQueueCount} quote{approvalQueueCount>1?'s':''} pending your approval — pricing override review required</div>
             <div style={{fontSize:'11px',color:'#92400e',lineHeight:'1.55'}}>Review overrides, approve or reject, and keep the send gate blocked until approval is logged.</div>
             <div style={{display:'flex',gap:'8px',marginTop:'10px'}}>

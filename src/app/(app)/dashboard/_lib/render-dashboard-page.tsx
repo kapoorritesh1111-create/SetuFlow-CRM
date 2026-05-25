@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { DashboardScope } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
@@ -113,8 +114,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
       <EmptyState
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization_members row is active for this user."
-      />
-    );
+      />    );
   }
 
   const resolvedScope = resolveRoleAwareDashboardScope(scope, workspace.currentRoles);
@@ -196,7 +196,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
           </div>
         </section>
       ) : null}
-      <DashboardInteractive
+      <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>}><DashboardInteractive
         data={data}
         initialLeadType={resolvedScope === 'all' ? '' : resolvedScope}
         currentRoles={workspace.currentRoles}
@@ -205,7 +205,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
         persistenceKey={`dashboard:${workspace.organization.id}:${workspace.membership.id}:${resolvedScope}`}
         serverNowIso={new Date().toISOString()}
         readOnlyMessage={readOnlyMessage}
-      />
+      /></Suspense>
       </div>
     </>
   );

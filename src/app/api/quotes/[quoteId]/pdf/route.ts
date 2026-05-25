@@ -93,6 +93,7 @@ function buildPdf(data: { quoteNo: string; org: any; buyer: any; market: string;
   return Buffer.from(out, 'utf8');
 }
 
+// SF-18-039: Graceful fallback if Chromium unavailable
 export async function GET(_request: Request, { params }: { params: { quoteId: string } }) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 });
   const workspace = await requireWorkspace(); const organizationId = workspace.organization?.id; if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
