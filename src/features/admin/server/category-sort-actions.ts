@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 
+type CategoryIdRow = { id: string };
+
 export async function updateCategorySortOrder(ids: string[]): Promise<void> {
   const context = await requireAdminWorkspace();
   if (context.missingEnv || !context.organization) return;
@@ -18,7 +20,8 @@ export async function updateCategorySortOrder(ids: string[]): Promise<void> {
     .in('id', orderedIds);
   if (error) return;
 
-  const ownedIds = new Set((ownedCategories ?? []).map((row) => row.id));
+  const ownedRows = (ownedCategories ?? []) as CategoryIdRow[];
+  const ownedIds = new Set(ownedRows.map((row) => row.id));
   await Promise.all(
     orderedIds
       .filter((id) => ownedIds.has(id))
