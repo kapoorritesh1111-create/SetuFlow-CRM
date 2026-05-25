@@ -1,6 +1,7 @@
 import { PageHeader } from '@/components/ui/page-header';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
+import { BulkWaiveCompliancePanel } from '@/features/compliance/components/bulk-waive-compliance-panel';
 import { ComplianceWorkspace } from '@/features/compliance/components/compliance-workspace';
 import { getComplianceWorkspaceData } from '@/lib/queries/compliance';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -36,6 +37,7 @@ export default async function CompliancePage() {
         ]}
       />
       <QueryIssuesAlert issues={data.queryIssues} />
+      <BulkWaiveCompliancePanel data={data} canReview={canReview} readOnlyMessage={readOnlyMessage} />
       <ComplianceWorkspace mode="compliance" data={data} canReview={canReview} readOnlyMessage={readOnlyMessage} />
     </div>
   );
