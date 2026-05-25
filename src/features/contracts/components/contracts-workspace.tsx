@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useFormState } from 'react-dom';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -9,6 +9,8 @@ import type { ContractsWorkspaceData } from '@/lib/queries/contracts';
 import { formatDate } from '@/lib/utils';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot, parseContractLineContinuitySnapshot } from '@/lib/contract-lock';
 import { progressContract, updateContractWorkspaceDetails, type ContractActionState } from '@/features/contracts/server/actions';
+
+const CONTRACT_PAGE_SIZE = 25;
 
 function isOpenStatus(status: string | null | undefined) {
   const value = String(status ?? '').toLowerCase();
@@ -156,6 +158,10 @@ export function ContractsWorkspace({
   readOnlyMessage: string | null;
   progressReadOnlyMessage: string | null;
 }) {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [page, setPage] = useState(1);
   const leadMap = useMemo(() => new Map(data.leads.map((lead) => [lead.id, lead])), [data.leads]);
   const quoteMap = useMemo(() => new Map(data.quotes.map((quote) => [quote.id, quote])), [data.quotes]);
   const documentCounts = useMemo(() => {
@@ -200,6 +206,22 @@ export function ContractsWorkspace({
     () => data.contracts.filter((contract) => !['completed', 'cancelled'].includes(String(contract.status ?? '').toLowerCase())).length,
     [data.contracts],
   );
+  const statusOptions = useMemo(() => Array.from(new Set(data.contracts.map((contract) => String(contract.status ?? 'Unknown')))).sort(), [data.contracts]);
+  const filteredContracts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return data.contracts.filter((contract) => {
+      const lead = leadMap.get(contract.lead_id);
+      const quote = quoteMap.get(contract.quote_id);
+      const searchable = [lead?.company_name, contract.id, contract.quote_id, contract.status, quote?.status].join(' ').toLowerCase();
+      const changedAt = Date.parse(contract.signed_at ?? contract.updated_at ?? '');
+      const days = dateFilter === '30' ? 30 : dateFilter === '90' ? 90 : null;
+      return (!query || searchable.includes(query)) && (statusFilter === 'all' || String(contract.status ?? 'Unknown') === statusFilter) && (!days || (Number.isFinite(changedAt) && changedAt >= Date.now() - days * 86400000));
+    });
+  }, [data.contracts, dateFilter, leadMap, quoteMap, search, statusFilter]);
+  const pageCount = Math.max(1, Math.ceil(filteredContracts.length / CONTRACT_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paginatedContracts = filteredContracts.slice((currentPage - 1) * CONTRACT_PAGE_SIZE, currentPage * CONTRACT_PAGE_SIZE);
+  const resetFilters = () => { setSearch(''); setStatusFilter('all'); setDateFilter('all'); setPage(1); };
 
   if (!data.contracts.length) {
     return <EmptyState title="No contracts yet" description="Signed quotes and commercial commitments will appear here once the contracts table starts receiving live records." actionHref="/leads" actionLabel="Return to leads" />;
@@ -236,6 +258,11 @@ export function ContractsWorkspace({
       </div>
 
       <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-soft">
+        <div className="grid gap-3 lg:grid-cols-[1fr_180px_160px_auto]"><label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Search contracts<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Company, quote, status..." className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm normal-case tracking-normal text-slate-700 outline-none focus:border-brand-300" /></label><label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status<select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm normal-case tracking-normal text-slate-700 outline-none focus:border-brand-300"><option value="all">All statuses</option>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label><label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Updated<select value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setPage(1); }} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm normal-case tracking-normal text-slate-700 outline-none focus:border-brand-300"><option value="all">All time</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label><button type="button" onClick={resetFilters} className="self-end rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Reset</button></div>
+        <p className="mt-3 text-sm text-slate-600">Showing {paginatedContracts.length} of {filteredContracts.length} matching contracts.</p>
+      </div>
+
+      <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Recent audit events</p>
@@ -256,8 +283,9 @@ export function ContractsWorkspace({
         </div>
       </div>
 
+      {!paginatedContracts.length ? <EmptyState title="No contracts match these filters" description="Clear search, status, or date filters to return to the full contract list." /> : null}
       <div className="grid gap-4 xl:grid-cols-2">
-        {data.contracts.map((contract) => {
+        {paginatedContracts.map((contract) => {
           const lead = leadMap.get(contract.lead_id);
           const quote = quoteMap.get(contract.quote_id);
           const blockers = complianceByLead.get(contract.lead_id) ?? 0;
@@ -355,6 +383,7 @@ export function ContractsWorkspace({
           );
         })}
       </div>
+      {pageCount > 1 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"><span>Page {currentPage} of {pageCount}</span><div className="flex gap-2"><button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1} className="rounded-xl border border-slate-200 px-3 py-2 font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400">Previous</button><button type="button" onClick={() => setPage((value) => Math.min(pageCount, value + 1))} disabled={currentPage === pageCount} className="rounded-xl border border-slate-200 px-3 py-2 font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400">Next</button></div></div> : null}
     </div>
   );
 }
