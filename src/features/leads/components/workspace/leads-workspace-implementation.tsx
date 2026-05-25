@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import * as React from 'react';
-import { useEffect, useMemo, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LeadDrawer } from '@/features/leads/components/lead-drawer';
 import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
@@ -242,6 +242,7 @@ export function LeadsWorkspace({
   const [savedView, setSavedView] = useState<SavedView>(
     initialLeadType === 'buyer' ? 'buyers' : initialLeadType === 'supplier' ? 'suppliers' : 'all',
   );
+  const [localSearch, setLocalSearch] = useState('');
   const [search, setSearch] = useState('');
   const [leadTypeFilter, setLeadTypeFilter] = useState<'' | LeadJourney>(initialLeadType);
   const [ownerId, setOwnerId] = useState('');
@@ -323,7 +324,7 @@ export function LeadsWorkspace({
       const parsed = JSON.parse(stored);
       const explicitMode = searchParams.get('mode');
       const routeLockedView = initialLeadType === 'buyer' ? 'buyers' : initialLeadType === 'supplier' ? 'suppliers' : null;
-      if (parsed.search) setSearch(parsed.search);
+      if (parsed.search) { setSearch(parsed.search); setLocalSearch(parsed.search); }
       if (routeLockedView) {
         setSavedView(routeLockedView);
         setLeadTypeFilter(initialLeadType);
@@ -346,9 +347,21 @@ export function LeadsWorkspace({
     } catch {}
   }, [initialLeadType, searchParams, storageKey]);
 
+  // URL restore — runs once on mount only, then hands off to localSearch debounce
+  const didRestoreFromUrl = useRef(false);
   useEffect(() => {
-    setSearch(searchParams.get('q') ?? '');
-  }, [searchParams]);
+    if (didRestoreFromUrl.current) return;
+    const q = searchParams.get('q') ?? '';
+    if (q) { setLocalSearch(q); setSearch(q); }
+    didRestoreFromUrl.current = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounce: only apply the search filter 350ms after the user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(localSearch.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [localSearch]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -361,7 +374,9 @@ export function LeadsWorkspace({
     if (nextQuery !== currentQuery) {
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     }
-  }, [pathname, router, search, searchParams, workspaceMode]);
+  // search (debounced) drives URL — not localSearch — preventing per-keystroke re-routes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, router, search, workspaceMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1201,11 +1216,14 @@ export function LeadsWorkspace({
     setMarketIdFilter('');
     setProductIdFilter('');
     handleTradeEventFilterChange('');
+    // SF-18-091 fix: also clear search so the chip is removed by Clear All
+    setSearch('');
+    setLocalSearch('');
   };
 
   const resetWorkspaceChrome = () => {
-    setSearch('');
-    clearFilters();
+    setLocalSearch('');
+    clearFilters(); // clearFilters now calls setSearch('') + setLocalSearch('')
     setShowFilters(false);
   };
 
@@ -1289,126 +1307,118 @@ export function LeadsWorkspace({
         </a>
       </div>
 
-      {/* ═══ FILTER BAR — matches spec .filter-bar ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '8px 20px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+      {/* ═══ FILTER BAR — SF-18-092: redesigned with Tailwind, no inline styles ═══ */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
 
-        {/* Search box inline */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '200px' }}>
-          <span style={{ fontSize: '13px' }}>🔍</span>
+        {/* Search box */}
+        <div className="flex items-center gap-2 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[200px] focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
+          <span className="text-sm text-slate-400 flex-shrink-0">🔍</span>
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             placeholder="Search company, contact…"
-            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', width: '100%' }}
+            className="border-none bg-transparent outline-none text-xs font-semibold text-slate-900 placeholder:text-slate-400 w-full"
           />
         </div>
 
         {/* Market filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>🌍</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Market</span>
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+          <span className="text-sm flex-shrink-0">🌍</span>
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Market</span>
             <select value={marketIdFilter} onChange={(e) => setMarketIdFilter(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
+              className="border-none bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
               <option value="">All markets ▾</option>
               {markets.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </div>
-        </div>
+        </label>
 
         {/* Product filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>📦</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Product</span>
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+          <span className="text-sm flex-shrink-0">📦</span>
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Product</span>
             <select value={productIdFilter} onChange={(e) => setProductIdFilter(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
+              className="border-none bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
               <option value="">All products ▾</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
-        </div>
+        </label>
 
         {/* Stage filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>◎</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Stage</span>
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+          <span className="text-sm flex-shrink-0">◎</span>
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Stage</span>
             <select value={stageIdFilter} onChange={(e) => setStageIdFilter(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
+              className="border-none bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
               <option value="">All stages ▾</option>
               {availableStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
-        </div>
+        </label>
 
         {/* Owner filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>👤</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Owner</span>
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+          <span className="text-sm flex-shrink-0">👤</span>
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Owner</span>
             <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
+              className="border-none bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
               <option value="">All owners ▾</option>
               {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id}</option>)}
             </select>
           </div>
-        </div>
+        </label>
 
-        {/* Country filter — required on all pages */}
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '120px' }}>
-          <span style={{ fontSize: '13px' }}>🌐</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', lineHeight: 1 }}>Country</span>
+        {/* Country filter */}
+        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+          <span className="text-sm flex-shrink-0">🌐</span>
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Country</span>
             <select value={countryIdFilter} onChange={(e) => setCountryIdFilter(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
+              className="border-none bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
               <option value="">All countries ▾</option>
-              {countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {countries.map((ctry) => <option key={ctry.id} value={ctry.id}>{ctry.name}</option>)}
             </select>
           </div>
-        </div>
+        </label>
 
         {/* Source event filter */}
-        <div style={{ display: 'flex', alignItems: 'center', border: tradeEventFilter ? '1px solid #10b981' : '1px solid #e2e8f0', borderRadius: '6px', background: tradeEventFilter ? '#ecfdf5' : '#f8fafc', padding: '0 10px', height: '32px', gap: '6px', minWidth: '150px' }}>
-          <span style={{ fontSize: '13px' }}>🎪</span>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: tradeEventFilter ? '#047857' : '#94a3b8', lineHeight: 1 }}>Source event</span>
+        <label className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 min-w-[130px] cursor-pointer transition hover:shadow-sm ${tradeEventFilter ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'}`}>
+          <span className="text-sm flex-shrink-0">🎪</span>
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className={`text-[9px] font-extrabold uppercase tracking-[0.12em] leading-none ${tradeEventFilter ? 'text-emerald-600' : 'text-slate-400'}`}>Source event</span>
             <select value={tradeEventFilter} onChange={(e) => handleTradeEventFilterChange(e.target.value)}
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '11px', fontWeight: 600, color: '#1e293b', appearance: 'none', cursor: 'pointer', lineHeight: 1.4 }}
-            >
+              className="border-none bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
               <option value="">All events ▾</option>
-              {tradeEvents.map((tradeEvent) => <option key={tradeEvent.id} value={tradeEvent.id}>{tradeEvent.name}</option>)}
+              {tradeEvents.map((te) => <option key={te.id} value={te.id}>{te.name}</option>)}
             </select>
           </div>
-        </div>
+        </label>
 
-        {/* Active filter chips: every active filter is named and individually clearable. */}
-        {activeFilterChips.length > 0 ? (
-          <div style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
             {activeFilterChips.map((chip) => (
               <button key={chip.key} type="button" onClick={chip.clear}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 800, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', boxShadow:'0 1px 3px rgba(15,23,42,.04)' }}
-              >
-                {chip.label} <span style={{ opacity: .65 }}>x</span>
+                className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 transition">
+                {chip.label} <span className="opacity-60 text-[9px]">✕</span>
               </button>
             ))}
             <button type="button" onClick={clearFilters}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '999px', fontSize: '10px', fontWeight: 800, border: '1px solid #e2e8f0', background: 'white', color: '#475569', cursor: 'pointer' }}
-            >
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-50 transition">
               Clear all
             </button>
           </div>
-        ) : null}
+        )}
 
         {/* Summary count */}
-        <div style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: '#94a3b8', letterSpacing: '.04em' }}>
+        <span className="ml-auto text-[10px] font-semibold text-slate-400 tracking-wide whitespace-nowrap">
           {summary.overdue > 0 ? `${summary.overdue} overdue · ` : ''}{sortedLeads.length} total leads
-        </div>
+        </span>
       </div>
 
       {/* ═══ SAVED VIEWS BAR — matches spec .saved-views ═══ */}
