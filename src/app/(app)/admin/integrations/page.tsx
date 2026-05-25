@@ -48,7 +48,7 @@ export default async function AdminIntegrationsPage() {
     icon: string;
     status: IntegrationStatus;
     desc: string;
-    actions: Array<{ label: string; href?: string; secondary?: boolean }>;
+    actions: Array<{ label: string; href?: string; secondary?: boolean; primary?: boolean }>;
   };
 
   const integrations: Integration[] = [

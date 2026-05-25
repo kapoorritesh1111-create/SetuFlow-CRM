@@ -15,7 +15,7 @@ async function savePricingControls(formData: FormData): Promise<void> {
   const { organization } = await req();
   if (!organization) return;
   const supabase = await mk();
-  await supabase.from('organizations').update({
+  await (supabase as any).from('organizations').update({
     approval_threshold_pct: Number(formData.get('threshold_pct') ?? 15),
     default_currency: String(formData.get('default_currency') ?? 'USD').toUpperCase(),
   }).eq('id', organization.id);

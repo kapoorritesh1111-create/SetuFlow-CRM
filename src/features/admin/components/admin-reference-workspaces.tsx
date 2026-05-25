@@ -325,6 +325,28 @@ export function TradeEventsAdminWorkspace({ events }: { events: AnyRow[] }) {
 }
 
 
+
+const PERMISSION_GROUPS = [
+  { label: 'Leads', permissions: [
+    { key: 'leads.view',   label: 'View leads',   description: 'See lead list, details, and activities' },
+    { key: 'leads.create', label: 'Create leads',  description: 'Add new leads and contacts' },
+    { key: 'leads.edit',   label: 'Edit leads',    description: 'Update lead fields, stage, and assignment' },
+    { key: 'leads.delete', label: 'Delete leads',  description: 'Permanently remove lead records' },
+  ]},
+  { label: 'Quotes', permissions: [
+    { key: 'quotes.view',    label: 'View quotes',           description: 'See all org quotes and versions' },
+    { key: 'quotes.create',  label: 'Create & send quotes',  description: 'Draft, generate, and send to buyers' },
+    { key: 'quotes.approve', label: 'Approve quotes',        description: 'Override the approval gate for margin exceptions' },
+  ]},
+  { label: 'Orders', permissions: [
+    { key: 'orders.view',    label: 'View orders',           description: 'See order records and documents' },
+    { key: 'orders.advance', label: 'Advance order stages',  description: 'Move orders through the execution workflow' },
+  ]},
+  { label: 'Admin', permissions: [
+    { key: 'admin.access', label: 'Admin workspace access', description: 'View and modify Admin Settings pages' },
+  ]},
+] as const;
+
 export function SecurityAdminWorkspace({ roles, members, approvalThresholdPct = 15 }: { roles: AnyRow[]; members: AnyRow[]; approvalThresholdPct?: number | null }) {
   function roleBadgeStyle(name: string): { bg: string; border: string; color: string } {
     const l = (name ?? '').toLowerCase();
