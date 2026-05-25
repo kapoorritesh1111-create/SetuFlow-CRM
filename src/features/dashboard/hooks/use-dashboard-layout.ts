@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { DashboardData } from '@/lib/queries/data';
+import type { DashboardData } from '@/lib/queries/dashboard';
 import type { AttentionItem, DashboardScope } from '@/features/dashboard/types';
 import type { DashboardWidgetId } from '@/features/dashboard/lib/widget-registry';
 import {

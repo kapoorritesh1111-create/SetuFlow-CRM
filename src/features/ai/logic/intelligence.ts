@@ -1,7 +1,7 @@
 import { buildOrderOperationalControlState } from '@/lib/order-operations';
 import { evaluateOrderExecution } from '@/lib/order-execution';
 import { parseTradeAttributes } from '@/lib/trade-attributes';
-import type { AISuggestionsData } from '@/lib/queries/data';
+import type { AISuggestionsData } from '@/lib/queries/ai-suggestions';
 import type { AIInsightLevel, AIGovernedDecision, AIWorkspaceSnapshot, DailyInsightSummary, LeadPrioritySummary, OrderDelayPrediction, QuoteRiskSummary } from '@/features/ai/types/intelligence';
 
 function daysSince(value: string | null | undefined) {

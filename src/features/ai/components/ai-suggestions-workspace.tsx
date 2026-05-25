@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { GenerateComplianceEvidenceButton, GenerateComplianceNextStepButton, GenerateDraftButton, GenerateLeadDraftControls, SuggestionDecisionControls } from '@/features/ai/components/ai-draft-controls';
 import { buildAIWorkspaceSnapshot } from '@/features/ai/logic/intelligence';
 import { AIDailyInsightsList, AIGovernedDecisionPanel, AILeadPriorityList, AIQuoteRiskList } from '@/features/ai/ui/intelligence-panels';
-import type { AISuggestionsData } from '@/lib/queries/data';
+import type { AISuggestionsData } from '@/lib/queries/ai-suggestions';
 import { getSuggestionBadgeClasses, getSuggestionFamily, getSuggestionFamilyLabel, getSuggestionLabel, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
 import { formatDate } from '@/lib/utils';
 

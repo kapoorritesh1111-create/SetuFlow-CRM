@@ -6,7 +6,7 @@ import RightDrawer, { DrawerActionBar, DrawerSection } from '@/components/RightD
 import { GenerateFollowUpDraftButton } from '@/features/ai/components/ai-draft-controls';
 import { completeScheduledTask, reopenScheduledTask, saveMobileFieldDocument, saveMobileFieldNote, saveScheduledTask } from '@/features/tasks/server/actions';
 import { saveLead } from '@/features/leads/server/actions';
-import type { TasksWorkspaceData } from '@/lib/queries/data';
+import type { TasksWorkspaceData } from '@/lib/queries/tasks';
 import { formatDate } from '@/lib/utils';
 
 type TaskRow = TasksWorkspaceData['tasks'][number];

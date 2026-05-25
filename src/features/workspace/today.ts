@@ -1,4 +1,4 @@
-import type { DashboardData } from '@/lib/queries/data';
+import type { DashboardData } from '@/lib/queries/dashboard';
 import { leadTypeMatchesMode } from './mode';
 import type { TodayCounts, TodayFilterKey, TodayLayerState, TodayLeadSignal, WorkspaceMode } from './types';
 

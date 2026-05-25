@@ -1,4 +1,4 @@
-import type { DashboardData } from '@/lib/queries/data';
+import type { DashboardData } from '@/lib/queries/dashboard';
 
 export type DashboardWidgetId =
   | 'kpi-strip'

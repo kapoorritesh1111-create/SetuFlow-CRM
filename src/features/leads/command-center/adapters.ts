@@ -1,4 +1,4 @@
-import type { LeadProfileData } from '@/lib/queries/data'
+import type { LeadProfileData } from '@/lib/queries/leads'
 import { buildStageMoveReadiness } from '@/lib/queries/pipeline-stage-gating'
 import { PRODUCT_ROUTES } from '@/lib/product-contract'
 import {

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
-import type { ReportsData } from '@/lib/queries/data';
+import type { ReportsData } from '@/lib/queries/reports';
 
 type DateRangeKey = '7d' | '30d' | '90d' | 'quarter';
 type DateRecord = { created_at?: string | null; updated_at?: string | null };

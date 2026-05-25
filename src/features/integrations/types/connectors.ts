@@ -1,4 +1,4 @@
-import type { IntegrationsWorkspaceData } from '@/lib/queries/data';
+import type { IntegrationsWorkspaceData } from '@/lib/queries/integrations';
 
 export type IntegrationRecord = IntegrationsWorkspaceData['integrations'][number];
 export type IntegrationEventRecord = IntegrationsWorkspaceData['integrationEvents'][number];

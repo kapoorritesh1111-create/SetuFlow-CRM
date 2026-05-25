@@ -1,4 +1,4 @@
-import type { IntegrationsWorkspaceData } from '@/lib/queries/data';
+import type { IntegrationsWorkspaceData } from '@/lib/queries/integrations';
 import { buildConnectorState, buildRetryQueueItem } from '@/features/integrations/logic/connectors';
 import { buildGovernedSyncCandidates, buildIntegrationGovernanceAlerts } from '@/features/integrations/logic/governance';
 import type { IntegrationsWorkspaceViewModel } from '@/features/integrations/types/connectors';

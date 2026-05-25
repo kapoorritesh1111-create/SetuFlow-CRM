@@ -1,6 +1,2 @@
-export type { TradeEventsData } from '@/lib/queries/data';
-
-export async function getTradeEventsData(organizationId: string) {
-  const queryModule = await import('@/lib/queries/data');
-  return queryModule.getTradeEventsData(organizationId);
-}
+export type { TradeEventsData } from './query-core';
+export { getTradeEventsData } from './query-core';

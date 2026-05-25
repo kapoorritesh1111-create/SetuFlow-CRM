@@ -3,7 +3,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
-import type { ReportsData } from '@/lib/queries/data';
+import type { ReportsData } from '@/lib/queries/reports';
 import { calculateCommercialSummaryMetrics, isWorkflowOpenStatus } from '@/lib/reporting/summary-metrics';
 import { formatDateTime } from '@/lib/utils';
 import { getAuditEventCategory, getAuditEventLabel, getAuditEventSummary, getAuditEventTone } from '@/lib/adminAuditEvents';

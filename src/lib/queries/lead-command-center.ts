@@ -1,4 +1,4 @@
-import type { LeadProfileData } from '@/lib/queries/data'
+import type { LeadProfileData } from '@/lib/queries/leads'
 import { normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-basis-contract'
 
 export type GateStatus = 'CLEAR' | 'WARNING' | 'BLOCKED'

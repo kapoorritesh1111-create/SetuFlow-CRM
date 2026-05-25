@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { IntegrationsWorkspaceData } from '@/lib/queries/data';
+import type { IntegrationsWorkspaceData } from '@/lib/queries/integrations';
 import { formatDate } from '@/lib/utils';
 import { buildIntegrationsViewModel } from '@/features/integrations/logic/build-integrations-view-model';
 import { ConnectorCard } from '@/features/integrations/ui/connector-card';

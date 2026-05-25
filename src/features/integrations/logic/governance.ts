@@ -1,6 +1,6 @@
 import { evaluateOrderExecution } from '@/lib/order-execution';
 import { buildOrderOperationalControlState } from '@/lib/order-operations';
-import type { IntegrationsWorkspaceData } from '@/lib/queries/data';
+import type { IntegrationsWorkspaceData } from '@/lib/queries/integrations';
 import { parseTradeAttributes } from '@/lib/trade-attributes';
 import type { GovernedSyncCandidate, IntegrationEventRecord, IntegrationGovernanceAlert } from '@/features/integrations/types/connectors';
 

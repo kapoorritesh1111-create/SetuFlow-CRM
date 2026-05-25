@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { useFormState } from 'react-dom';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
-import type { ContractsWorkspaceData } from '@/lib/queries/data';
+import type { ContractsWorkspaceData } from '@/lib/queries/contracts';
 import { formatDate } from '@/lib/utils';
 import { getCommercialLockStateLabel, parseContractCommercialSnapshot, parseContractLineContinuitySnapshot } from '@/lib/contract-lock';
 import { progressContract, updateContractWorkspaceDetails, type ContractActionState } from '@/features/contracts/server/actions';

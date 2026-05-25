@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StateMessage } from '@/components/ui/state-message';
-import type { ComplianceWorkspaceData } from '@/lib/queries/data';
+import type { ComplianceWorkspaceData } from '@/lib/queries/compliance';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { updateComplianceWorkflow, updateDocumentWorkflow, uploadWorkspaceDocument } from '@/features/compliance/server/actions';
 import { buildLeadDocumentRequirementState } from '@/lib/document-requirements';

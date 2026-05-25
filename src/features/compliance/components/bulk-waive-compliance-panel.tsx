@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { StateMessage } from '@/components/ui/state-message';
 import { bulkWaiveComplianceWorkflow } from '@/features/compliance/server/bulk-actions';
-import type { ComplianceWorkspaceData } from '@/lib/queries/data';
+import type { ComplianceWorkspaceData } from '@/lib/queries/compliance';
 import { formatDate } from '@/lib/utils';
 
 type ActionState = { error?: string; success?: string };
