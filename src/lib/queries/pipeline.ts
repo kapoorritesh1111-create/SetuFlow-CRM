@@ -1,7 +1,2 @@
-import { getLeadsPageData } from './data';
-
-export async function getPipelinePageData(
-  ...args: Parameters<typeof getLeadsPageData>
-) {
-  return getLeadsPageData(...args);
-}
+export type { LeadsPageData, PipelineData } from './data';
+export { getLeadsPageData as getPipelinePageData } from './data';
