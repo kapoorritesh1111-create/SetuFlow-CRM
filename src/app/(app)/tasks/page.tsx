@@ -7,7 +7,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 export default async function TasksPage() {
   const workspace = await requireWorkspace();
 
-  if (!workspace.membership || !workspace.organization) {
+  if (!workspace.membership || !workspace.organization || !workspace.user) {
     return (
       <WorkspaceState
         eyebrow="Tasks workspace"
@@ -35,7 +35,7 @@ export default async function TasksPage() {
   return (
     <div className="space-y-6">
       <QueryIssuesAlert issues={data.queryIssues} />
-      <TasksWorkspace data={data} />
+      <TasksWorkspace data={data} currentUserId={workspace.user.id} />
     </div>
   );
 }
