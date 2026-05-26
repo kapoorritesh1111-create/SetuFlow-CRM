@@ -1,6 +1,7 @@
 "use client";
 
 import { GuruAvatar } from '@/components/ui/guru-avatar';
+import { SetuIcon } from '@/components/ui/setu-icon';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,10 +12,10 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 
 function resolveTitle(pathname: string) {
-  if (pathname.startsWith("/leads")) return "Current Leads";
-  if (pathname.startsWith("/orders")) return "Orders";
+  if (pathname.startsWith("/leads") || pathname.startsWith("/mobile/leads")) return "Current Leads";
+  if (pathname.startsWith("/orders") || pathname.startsWith("/mobile/orders")) return "Orders";
   if (pathname.includes("capture")) return "Capture";
-  if (pathname.includes("quote")) return "Quick Quote";
+  if (pathname.includes("quote")) return "Quote";
   if (pathname.includes("settings")) return "Settings";
   if (pathname.includes("notifications")) return "Notifications";
   return "Home Dashboard";
@@ -178,7 +179,7 @@ export function MobileActionDrawer({
               onClick={onClose}
               className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
-              <span>{tab.icon}</span>
+              {tab.label === 'Guru' ? <GuruAvatar size="sm" /> : <SetuIcon name={tab.icon} className="h-5 w-5" />}
               {tab.label}
             </Link>
           ))}
@@ -209,11 +210,12 @@ export function MobileBottomTabs({
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={active ? 'page' : undefined}
             className={`flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${active ? "bg-blue-500/10 text-blue-600 dark:text-sky-300" : "text-slate-500 dark:text-slate-400"}`}
           >
             {tab.label === 'Guru'
               ? <GuruAvatar size="sm" className="mb-0.5" />
-              : <span className="text-lg">{tab.icon}</span>}
+              : <SetuIcon name={tab.icon} className="mb-0.5 h-5 w-5" />}
             {tab.label}
           </Link>
         );
@@ -277,54 +279,25 @@ export function MobileDashboardHome() {
     <div className="space-y-4">
       <MobileHomeHero />
       <section className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">
-          Actions
-        </p>
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Actions</p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           {actions.map((action) => (
-            <Link
-              key={action.title}
-              href={action.href}
-              aria-label={action.title}
-              className="min-h-[112px] rounded-[1.5rem] border border-white/70 bg-white/86 p-4 shadow-lg shadow-blue-950/5 transition hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-800 dark:bg-slate-950/60"
-            >
-              <ThreeDIconOrb icon={action.icon} tone={action.tone} />
-              <b className="mt-3 block text-sm font-black text-slate-950 dark:text-white">
-                {action.title}
-              </b>
+            <Link key={action.title} href={action.href} className="rounded-[1.5rem] bg-white p-4 shadow-lg shadow-slate-200/60 transition hover:-translate-y-0.5 dark:bg-slate-950 dark:shadow-black/20">
+              <ThreeDIconOrb icon={action.icon} tone={action.tone} size="sm" />
+              <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">{action.title}</p>
             </Link>
           ))}
         </div>
       </section>
-      <section className="grid gap-3">
-        <a
-          href="/leads?handoff=dashboard-overdue"
-          className="rounded-[1.5rem] border border-rose-200 bg-white/90 p-5 shadow-xl shadow-blue-950/5 dark:border-rose-900/60 dark:bg-slate-900/90"
-        >
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">
-            Follow-ups
-          </p>
-          <b className="mt-2 block text-4xl font-black text-slate-950 dark:text-white">
-            9
-          </b>
-          <span className="mt-2 block text-sm text-slate-500 dark:text-slate-300">
-            Overdue
-          </span>
-        </a>
-        <a
-          href="/quotes"
-          className="rounded-[1.5rem] border border-sky-200 bg-white/90 p-5 shadow-xl shadow-blue-950/5 dark:border-sky-900/60 dark:bg-slate-900/90"
-        >
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-500">
-            Quotes
-          </p>
-          <b className="mt-2 block text-4xl font-black text-slate-950 dark:text-white">
-            5
-          </b>
-          <span className="mt-2 block text-sm text-slate-500 dark:text-slate-300">
-            Awaiting response
-          </span>
-        </a>
+      <section className="rounded-[1.5rem] border border-rose-200 bg-white/90 p-5 dark:border-rose-900/50 dark:bg-slate-900/90">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">Follow-ups</p>
+        <b className="mt-3 block text-3xl text-slate-950 dark:text-white">9</b>
+        <p className="text-sm text-slate-500 dark:text-slate-300">Overdue</p>
+      </section>
+      <section className="rounded-[1.5rem] border border-sky-200 bg-white/90 p-5 dark:border-sky-900/50 dark:bg-slate-900/90">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-500">Quotes</p>
+        <b className="mt-3 block text-3xl text-slate-950 dark:text-white">5</b>
+        <p className="text-sm text-slate-500 dark:text-slate-300">Ready to send</p>
       </section>
     </div>
   );
