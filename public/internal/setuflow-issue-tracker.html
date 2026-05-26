@@ -144,6 +144,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100%;
 .sb-count{font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,.1);color:var(--text2);font-weight:700;min-width:20px;text-align:center;flex-shrink:0;font-family:var(--mono)}
 .sb-item.active .sb-count{background:rgba(59,130,246,.2);color:var(--blue-hi)}
 .sb-divider{height:1px;background:var(--border);margin:6px 10px}
+/* Sprint accordion */
+.sb-sprint-chevron{margin-left:auto;flex-shrink:0;transition:transform .2s;color:var(--text3);font-size:11px}
+.sb-sprint-chevron.open{transform:rotate(90deg)}
+.sb-sprint-sub{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.sb-sprint-sub.open{max-height:400px}
+.sb-sprint-sub .sb-item{padding-left:28px;font-size:12px}
+.sb-sprint-done{font-size:10px;color:var(--green-hi);font-weight:700;margin-left:3px}
 .sb-cta-wrap{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
 .sb-cta{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border-radius:var(--r);background:var(--grad);color:#fff;font-size:12px;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:opacity .15s;font-family:var(--font)}
 .sb-cta:hover{opacity:.88}
@@ -1506,8 +1513,9 @@ let hideResolved=true; // auto-hide resolved by default
 let selectedCat='Bug';
 // SF-19 FIX: sprint filter — 'all' loads every sprint, number loads specific sprint
 let activeSprint='all';
+let sprintDropdownOpen=false; // sprints collapsed by default under "All Sprints"
 const STATUSES=['Open','In Progress','Resolved',"Won't Fix",'Deferred'];
-const SEV_ORD={'Critical':0,'High':1,'Medium':2,'Low':3};
+const SEV_ORD={'Critical':0,'High':1,'Medium':2,'Low':3,'critical':0,'high':1,'medium':2,'low':3};
 const AREA_ICONS={'Security':'ic-shield','Engineering':'ic-code','UI/UX':'ic-layout','Supabase':'ic-database','Docs':'ic-file','Product':'ic-box','Infrastructure':'ic-server','Multiple':'ic-settings','Testing':'ic-check'};
 
 /* ══════════════════════════════════════
@@ -1538,28 +1546,64 @@ function buildSprintFilter(sprints){
   const container=$('sb-sprint-filter');
   if(!container)return;
   const allActive=activeSprint==='all';
+  const totalCount=ALL.length;
+
+  const sprintRows=sprints.slice().reverse().map(s=>{
+    const items=ALL.filter(i=>i.sprint_number===s);
+    const res=items.filter(i=>isResolved(i)).length;
+    const pct=items.length?Math.round(res/items.length*100):0;
+    const isDone=pct===100;
+    const isActive=activeSprint===s;
+    return `
+      <div class="sb-item ${isActive?'active':''}" id="sb-sprint-${s}" onclick="filterBySprint(${s})">
+        <svg class="ico sb-icon" style="width:11px;height:11px;flex-shrink:0"><use href="${isDone?'#ic-check':'#ic-circle'}"/></svg>
+        <span class="sb-item-text">Sprint ${s}</span>
+        ${isDone
+          ? `<span style="font-size:10px;color:var(--green-hi);font-weight:700;margin-left:auto">✓ 100%</span>`
+          : `<span class="sb-count" style="font-size:9px;margin-left:auto">${res}/${items.length}</span>`
+        }
+      </div>`;
+  }).join('');
+
   container.innerHTML=`
-    <div class="sb-item ${allActive?'active':''}" id="sb-sprint-all" onclick="filterBySprint('all')">
+    <div class="sb-item ${allActive?'active':''}" id="sb-sprint-all"
+         style="cursor:pointer"
+         onclick="toggleSprintDropdown()">
       <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-zap"/></svg>
       <span class="sb-item-text">All Sprints</span>
-      <span class="sb-count">${sprints.length}</span>
+      <span class="sb-count" style="margin-right:4px">${totalCount}</span>
+      <span style="font-size:11px;color:var(--text3);transition:transform .2s;display:inline-block;transform:${sprintDropdownOpen?'rotate(90deg)':'rotate(0deg)'}">›</span>
     </div>
-    ${sprints.slice().reverse().map(s=>`
-      <div class="sb-item ${activeSprint===s?'active':''}" id="sb-sprint-${s}" onclick="filterBySprint(${s})">
-        <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-circle"/></svg>
-        <span class="sb-item-text">Sprint ${s}</span>
-        <span class="sb-count" id="cnt-sprint-${s}">${ALL.filter(i=>i.sprint_number===s).length}</span>
-      </div>`).join('')}`;
+    <div id="sb-sprint-sub" style="overflow:hidden;max-height:${sprintDropdownOpen?'600px':'0'};transition:max-height .25s ease">
+      ${sprintRows}
+    </div>`;
+}
+
+function toggleSprintDropdown(){
+  sprintDropdownOpen=!sprintDropdownOpen;
+  // If a specific sprint was active and user collapses, reset to all
+  if(!sprintDropdownOpen && activeSprint!=='all'){
+    activeSprint='all';
+    buildAreaFilter();buildSidebar();render();animateKPIs();
+  }
+  buildSprintFilter([...new Set(ALL.map(i=>i.sprint_number))].sort((a,b)=>a-b));
 }
 
 function filterBySprint(sprint){
   activeSprint=sprint;
   activeFlt='all';
+  // Auto-show resolved when drilling into a fully-resolved historical sprint
+  if(typeof sprint==='number' && sprint<18){
+    hideResolved=false;
+    const btn=$('hide-toggle-btn');
+    if(btn){btn.classList.remove('hiding');setText('hide-toggle-label','Show all');}
+  }
+  // Keep dropdown open so user can switch sprints easily
+  sprintDropdownOpen=true;
   buildSprintFilter([...new Set(ALL.map(i=>i.sprint_number))].sort((a,b)=>a-b));
   buildAreaFilter();buildSidebar();render();animateKPIs();
-  // Update new issue form sprint if modal is open
   const niSprint=$('ni-sprint-number');
-  if(niSprint) niSprint.value=typeof sprint==='number'?sprint:18;
+  if(niSprint) niSprint.value=typeof sprint==='number'?sprint:19;
 }
 
 async function manualRefresh(){
@@ -1638,7 +1682,16 @@ function buildSidebar(){
   const catRes={Bug:0,Enhancement:0,Testing:0,UX:0};
   const ac={};
   sprintFiltered.forEach(i=>{
-    sc[i.status]=(sc[i.status]||0)+1;sev[i.severity]=(sev[i.severity]||0)+1;
+    // Normalise status to title-case for counting (Sprint 11-17 stored lowercase)
+    const normStatus = i.status
+      ? i.status.charAt(0).toUpperCase()+i.status.slice(1).replace('_',' ')
+      : 'Open';
+    sc[normStatus]=(sc[normStatus]||0)+1;
+    // Normalise severity to title-case
+    const normSev = i.severity
+      ? i.severity.charAt(0).toUpperCase()+i.severity.slice(1)
+      : 'Medium';
+    sev[normSev]=(sev[normSev]||0)+1;
     if(i.sprint_target)t[i.sprint_target]=(t[i.sprint_target]||0)+1;
     const a=areaOf(i);ac[a]=(ac[a]||0)+1;
     const c=normCat(i.issue_category);cat[c]=(cat[c]||0)+1;
@@ -1687,7 +1740,7 @@ function buildSidebar(){
   const total=sprintFiltered.length;
   const resolved=sprintFiltered.filter(i=>isResolved(i)).length;
   const open=total-resolved;
-  const critOpen=sprintFiltered.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
+  const critOpen=sprintFiltered.filter(i=>(i.severity||'').toLowerCase()==='critical'&&!isResolved(i)).length;
   const pct=total?Math.round(resolved/total*100):0;
   const circ=113,offset=circ-(circ*pct/100);
   document.querySelector('.ring-fill').style.strokeDashoffset=offset;
@@ -1696,7 +1749,7 @@ function buildSidebar(){
 
   // Health strip
   const inProg=ALL.filter(i=>i.status==='In Progress').length;
-  const highOpen=ALL.filter(i=>i.severity==='High'&&!isResolved(i)).length;
+  const highOpen=ALL.filter(i=>(i.severity||'').toLowerCase()==='high'&&!isResolved(i)).length;
   setText('hs-crit',critOpen+' crit');setText('hs-high',highOpen+' high');setText('hs-prog',inProg+' active');
 
   // Dual progress bars
@@ -1716,8 +1769,8 @@ function animateKPIs(){
   const sf= activeSprint==='all' ? ALL : ALL.filter(i=>i.sprint_number===activeSprint);
   const total=sf.length;
   const resolved=sf.filter(i=>isResolved(i)).length;
-  const critOpen=sf.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
-  const highOpen=sf.filter(i=>i.severity==='High'&&!isResolved(i)).length;
+  const critOpen=sf.filter(i=>(i.severity||'').toLowerCase()==='critical'&&!isResolved(i)).length;
+  const highOpen=sf.filter(i=>(i.severity||'').toLowerCase()==='high'&&!isResolved(i)).length;
   const inProg=sf.filter(i=>i.status==='In Progress').length;
   const r7=sf.filter(i=>i.sprint_target==='7-Day Rescue');
   const r7open=r7.filter(i=>!isResolved(i)).length;
@@ -1777,7 +1830,11 @@ function toggleHideResolved(){
   else render();
 }
 
-function isResolved(i){return i.status==='Resolved'||i.status==="Won't Fix";}
+// SF-19 FIX: handle legacy lowercase status values from Sprint 11-17
+function isResolved(i){
+  const s=(i.status||'').toLowerCase();
+  return s==='resolved'||s==="won't fix";
+}
 
 /* ══════════════════════════════════════
    FILTER & RENDER
@@ -1842,11 +1899,16 @@ function getFiltered(){
     if(hideResolved && !viewingResolved && isResolved(i)) return false;
 
     if(activeFlt!=='all'){
-      if(activeFlt.startsWith('sev:')&&i.severity!==activeFlt.slice(4))return false;
+      if(activeFlt.startsWith('sev:')&&(i.severity||'').toLowerCase()!==(activeFlt.slice(4)).toLowerCase())return false;
       else if(activeFlt.startsWith('area:')&&area!==activeFlt.slice(5))return false;
       else if(activeFlt.startsWith('target:')&&i.sprint_target!==activeFlt.slice(7))return false;
       else if(activeFlt.startsWith('cat:')&&normCat(i.issue_category)!==activeFlt.slice(4))return false;
-      else if(!activeFlt.startsWith('sev:')&&!activeFlt.startsWith('area:')&&!activeFlt.startsWith('target:')&&!activeFlt.startsWith('cat:')&&i.status!==activeFlt)return false;
+      else if(!activeFlt.startsWith('sev:')&&!activeFlt.startsWith('area:')&&!activeFlt.startsWith('target:')&&!activeFlt.startsWith('cat:')){
+        // Compare normalised: handle 'resolved' vs 'Resolved', 'open' vs 'Open', etc.
+        const normFlt=activeFlt.toLowerCase();
+        const normStatus=(i.status||'').toLowerCase();
+        if(normStatus!==normFlt)return false;
+      }
     }
     if(aF&&area!==aF)return false;
     if(tF&&i.sprint_target!==tF)return false;
@@ -1867,8 +1929,9 @@ function render(){
   setText('res-count',VISIBLE.length+' issue'+(VISIBLE.length!==1?'s':''));
 
   // Show/hide "X resolved hidden" note
-  const hiddenCount=hideResolved&&activeFlt!=='Resolved'&&activeFlt!=="Won't Fix"
-    ? ALL.filter(i=>isResolved(i)).length : 0;
+  const sfForNote = activeSprint==='all' ? ALL : ALL.filter(i=>i.sprint_number===activeSprint);
+  const hiddenCount=hideResolved&&activeFlt!=='Resolved'&&activeFlt!=="Won't Fix"&&activeFlt!=='resolved'
+    ? sfForNote.filter(i=>isResolved(i)).length : 0;
   const noteEl=$('res-hidden-note');
   if(hiddenCount>0){noteEl.classList.add('visible');setText('res-hidden-count',hiddenCount);}
   else noteEl.classList.remove('visible');
@@ -1877,17 +1940,22 @@ function render(){
   tbl.style.display='table';empty.style.display='none';
   tbody.innerHTML=VISIBLE.map(i=>{
     const area=areaOf(i),iconId=AREA_ICONS[area]||'ic-zap';
-    const sc=statusCls(i.status),isRes=isResolved(i);
+    // Normalise severity and status to title-case for CSS class matching (Sprint 11-17 stored lowercase)
+    const normSev=i.severity?(i.severity.charAt(0).toUpperCase()+i.severity.slice(1)):'Medium';
+    const normStat=i.status?(i.status.charAt(0).toUpperCase()+i.status.slice(1)):'Open';
+    const sc=statusCls(normStat),isRes=isResolved(i);
     const tc=i.sprint_target==='7-Day Rescue'?'<span class="target-chip tc-rescue">7-Day</span>':i.sprint_target?'<span class="target-chip tc-cleanup">30-Day</span>':'';
     const catCls=i.issue_category?`cc-${normCat(i.issue_category)}`:'cc-Bug';
     const catBadge=i.issue_category&&i.issue_category!=='Bug'?`<span class="cat-chip ${catCls}">${i.issue_category}</span>`:'';
-    return`<tr onclick="openPanel('${i.id}')" class="sev-${i.severity}${isRes?' row-resolved':''}">
+    // Sprint badge for context in All Sprints view
+    const sprintBadge=activeSprint==='all'?`<span style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-left:4px">S${i.sprint_number}</span>`:'';
+    return`<tr onclick="openPanel('${i.id}')" class="sev-${normSev}${isRes?' row-resolved':''}">
       <td class="col-num">${i.issue_number}</td>
-      <td class="col-ref">${esc(i.issue_ref||'')}</td>
+      <td class="col-ref">${esc(i.issue_ref||'')}${sprintBadge}</td>
       <td class="col-title"><span class="title-main">${esc(i.title)}</span><span class="title-sub"><svg class="ico" style="width:11px;height:11px;stroke:var(--icon-clr)"><use href="#${iconId}"/></svg>${esc(area)} ${catBadge}</span></td>
-      <td class="col-sev"><span class="sev-chip sev-${i.severity}">${i.severity}</span></td>
+      <td class="col-sev"><span class="sev-chip sev-${normSev}">${normSev}</span></td>
       <td class="col-area"><span class="area-cell"><svg class="ico area-icon"><use href="#${iconId}"/></svg>${esc(area)}</span></td>
-      <td class="col-status"><span class="status-chip ${sc}" onclick="cycleStatus(event,'${i.id}')"><span class="sc-dot"></span>${i.status}</span></td>
+      <td class="col-status"><span class="status-chip ${sc}" onclick="cycleStatus(event,'${i.id}')"><span class="sc-dot"></span>${normStat}</span></td>
       <td class="col-target">${tc}</td>
       <td class="col-date">${fmtDateCell(i.created_at,false)}</td>
       <td class="col-date">${fmtDateCell(i.resolved_at,true)}</td>
@@ -1933,10 +2001,12 @@ function openPanel(id){
 
 function fillPanel(i){
   const area=areaOf(i);
-  setText('p-ref',i.issue_ref||'SF-18-'+String(i.issue_number).padStart(3,'0'));
-  $('p-sev').textContent=i.severity;$('p-sev').className='p-sev-tag';
+  const normSev=i.severity?(i.severity.charAt(0).toUpperCase()+i.severity.slice(1)):'Medium';
+  const normStat=i.status?(i.status.charAt(0).toUpperCase()+i.status.slice(1)):'Open';
+  setText('p-ref',i.issue_ref||'SF-'+i.sprint_number+'-'+String(i.issue_number).padStart(3,'0'));
+  $('p-sev').textContent=normSev;$('p-sev').className='p-sev-tag';
   const sevBg={'Critical':'rgba(239,68,68,.35)','High':'rgba(245,158,11,.3)','Medium':'rgba(100,116,139,.25)','Low':'rgba(77,98,128,.2)'};
-  $('p-sev').style.background=sevBg[i.severity]||'rgba(77,98,128,.2)';
+  $('p-sev').style.background=sevBg[normSev]||'rgba(77,98,128,.2)';
   setText('p-title',i.title);
   $('p-desc').textContent=i.description||'–';
   const fixEl=$('p-fix');fixEl.textContent=i.how_to_fix||'No step-by-step fix recorded. Check the audit report or add steps in fix notes.';
@@ -1948,12 +2018,14 @@ function fillPanel(i){
   const catLabel=normCat(i.issue_category);
   const catCls=`cc-${catLabel}`;
   $('p-meta').innerHTML=[
+    ['Sprint','S'+i.sprint_number],
     ['Area',esc(area)],
     ['Category',`<span class="cat-chip ${catCls}">${catLabel}</span>`],
     ['Target',i.sprint_target==='7-Day Rescue'?'<span class="target-chip tc-rescue">7-Day Rescue</span>':i.sprint_target?'<span class="target-chip tc-cleanup">'+esc(i.sprint_target)+'</span>':'–'],
     ['Updated',new Date(i.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})],
+    ['Resolved',i.resolved_at?new Date(i.resolved_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'–'],
     ['Assignee',esc(i.assigned_to||'Unassigned')],
-    ['Status',`<span class="status-chip ${statusCls(i.status)}" style="font-size:10.5px;padding:3px 8px"><span class="sc-dot"></span>${i.status}</span>`],
+    ['Status',`<span class="status-chip ${statusCls(normStat)}" style="font-size:10.5px;padding:3px 8px"><span class="sc-dot"></span>${normStat}</span>`],
   ].map(([l,v])=>`<span class="pm-chip">${l}: <span style="color:#fff;font-weight:500">${v}</span></span>`).join('');
 
   const files=i.files_changed||[];
