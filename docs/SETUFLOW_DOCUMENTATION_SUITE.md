@@ -1869,12 +1869,12 @@ Important source modules:
 - Quote pricing/compilation services under quote pricing features.
 - Contract actions: `src/features/contracts/server/actions.ts`.
 - Order actions:
-  - `src/features/orders/server/execution-order-actions.ts`
-  - `src/features/orders/server/stage-gate-actions.ts`
-  - `src/features/orders/server/packing-freight-actions.ts`
-  - `src/features/orders/server/trade-requirement-actions.ts`
-  - `src/features/orders/server/dispatch-invoice-gate-actions.ts`
-  - `src/features/orders/server/share-actions.ts`
+  - `src/features/orders/server/order-stage-gates.ts`
+  - `src/features/orders/server/order-stage-gates.ts`
+  - `src/features/orders/server/order-integrations.ts`
+  - `src/features/orders/server/order-integrations.ts`
+  - `src/features/orders/server/order-stage-gates.ts`
+  - `src/features/orders/server/order-documents.ts`
 - Order preview route: `src/app/order-documents/preview/[token]/page.tsx`.
 
 Existing docs alignment:

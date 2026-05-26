@@ -342,7 +342,7 @@ Files likely involved:
 src/features/quotes/server/actions.ts
 src/features/quotes/components/quote-wizard-form.tsx
 src/lib/quoteWorkflow.ts
-src/features/orders/server/execution-order-actions.ts
+src/features/orders/server/order-stage-gates.ts
 src/features/orders/components/OrderDetailPanel.tsx
 src/app/(app)/orders/page.tsx
 docs/help/quotes.md

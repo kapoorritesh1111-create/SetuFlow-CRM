@@ -1,4 +1,4 @@
-import { advanceOrderStageAction } from '@/features/orders/server/stage-actions';
+import { advanceOrderStageAction } from '@/features/orders/server';
 
 const ACTIONS = [
   ['Request payment', 'payment_requested'],

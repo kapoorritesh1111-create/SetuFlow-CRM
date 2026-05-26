@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { test } from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -34,7 +34,7 @@ test('8.2A Proforma and Order Confirmation preview use ordered quantity snapshot
 });
 
 test('8.2A preview-only document flow cannot create approved documents', () => {
-  const shareActions = read('src/features/orders/server/share-actions.ts');
+  const shareActions = read('src/features/orders/server/_documents/share-actions.ts');
   assert.doesNotMatch(shareActions, /findOrCreateApprovedOrderDocument/);
   assert.match(shareActions, /findApprovedOrderDocument/);
   assert.match(shareActions, /initialStatus: 'previewed'/);
@@ -58,9 +58,9 @@ test('8.2A order workspace exposes actual line discounts, gates, locks, and clos
 });
 
 test('8.2A server actions enforce stage gates before later stages and closeout', () => {
-  const stageActions = read('src/features/orders/server/stage-gate-actions.ts');
-  const firstDocActions = read('src/features/orders/server/execution-order-actions.ts');
-  const invoiceActions = read('src/features/orders/server/dispatch-invoice-gate-actions.ts');
+  const stageActions = read('src/features/orders/server/_stage-gates/stage-gate-actions.ts');
+  const firstDocActions = read('src/features/orders/server/_stage-gates/execution-order-actions.ts');
+  const invoiceActions = read('src/features/orders/server/_stage-gates/dispatch-invoice-gate-actions.ts');
   assert.match(stageActions, /requireApprovedGate/);
   assert.match(stageActions, /first-document-approval-required/);
   assert.match(stageActions, /packing-approval-required/);
@@ -81,4 +81,17 @@ test('8.2A order layout carries gate and discount snapshots into UI model', () =
   assert.match(ordersLayout, /line_discount_type/);
   assert.match(ordersLayout, /orderDiscountType/);
   assert.match(ordersLayout, /gates: gatesForOrder\.map/);
+});
+
+test('SF-18-055 orders server exposes only canonical root domain files', () => {
+  const rootFiles = ['index.ts', 'order-documents.ts', 'order-integrations.ts', 'order-lifecycle.ts', 'order-stage-gates.ts'];
+  const rootEntries = readdirSync(new URL('../src/features/orders/server', import.meta.url))
+    .filter((entry) => statSync(new URL(`../src/features/orders/server/${entry}`, import.meta.url)).isFile())
+    .sort();
+  assert.deepEqual(rootEntries, rootFiles);
+  const index = read('src/features/orders/server/index.ts');
+  assert.match(index, /order-lifecycle/);
+  assert.match(index, /order-stage-gates/);
+  assert.match(index, /order-documents/);
+  assert.match(index, /order-integrations/);
 });

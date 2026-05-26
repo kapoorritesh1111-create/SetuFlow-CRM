@@ -40,7 +40,7 @@ Reviewed surfaces:
 - roadmap/control docs
 - `src/app/(app)/orders/page.tsx`
 - `src/features/orders/components/OrderDetailPanel.tsx`
-- `src/features/orders/server/actions.ts`
+- `src/features/orders/server/order-lifecycle.ts`
 - `src/lib/order-execution.ts`
 - `src/lib/order-operations.ts`
 - `src/lib/document-requirements.ts`

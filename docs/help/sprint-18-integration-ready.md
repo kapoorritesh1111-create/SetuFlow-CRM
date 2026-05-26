@@ -31,7 +31,7 @@ Current production truth:
 - Catalog rows are scoped to the verified workspace organization.
 - The loader tries active + quoteable rows first, then active rows.
 - If the authenticated view/query path returns no rows while the workspace organization is verified, the loader may use a service-role/admin fallback scoped strictly to that same `organization_id`.
-- The add-line server action re-verifies the selected `catalog_pricing_rule_id` in `src/features/orders/server/order-line-actions.ts` before insert.
+- The add-line server action re-verifies the selected `catalog_pricing_rule_id` in `src/features/orders/server/order-integrations.ts` before insert.
 - The submit action uses the same safe verified-organization fallback, scoped by `organization_id` and selected rule id, so products shown by the loader can also be inserted.
 - Catalog-linked actual lines use `change_type='added_catalog_after_quote'` and preserve product/pricing lineage through snapshots.
 - Manual lines remain separate and require reason/context.

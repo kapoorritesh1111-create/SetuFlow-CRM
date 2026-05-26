@@ -33,7 +33,7 @@ Because this touches high-risk server actions, the work should proceed in PR che
 
 ## PR #16 checkpoint
 
-PR #16 focuses only on `src/features/orders/server/actions.ts`.
+PR #16 focuses only on `src/features/orders/server/order-lifecycle.ts`.
 
 The first branch deployment failed because the generated Supabase client inferred the `contracts` query result as `never` in this legacy server action file. Commit `4b1d26919b21c7798bda8b711e71695ad52afba2` replaced that failure path with a narrow `unknown`-based order action query bridge and explicit row shapes while preserving runtime behavior.
 

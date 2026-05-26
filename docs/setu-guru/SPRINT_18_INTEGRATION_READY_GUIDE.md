@@ -24,7 +24,7 @@ Current production behavior:
 - If the authenticated query path fails while workspace membership and organization are already verified, the loader may use the service-role/admin client as a verified-organization fallback. This fallback must remain strictly scoped by `organization_id`.
 - The product option label should expose product name, pack label, SKU/code, HSN/HS code, pricing type, price basis, and price.
 - The add-line form submits `catalog_pricing_rule_id`.
-- `addManualActualOrderLineAction` re-resolves the selected rule in `src/features/orders/server/order-line-actions.ts` using the same verified-organization pattern, scoped by `organization_id` and selected rule id.
+- `addManualActualOrderLineAction` re-resolves the selected rule in `src/features/orders/server/order-integrations.ts` using the same verified-organization pattern, scoped by `organization_id` and selected rule id.
 - Catalog-linked inserted rows use `change_type='added_catalog_after_quote'`.
 - The inserted line preserves catalog/pricing lineage through product and pricing snapshots, including product/variant IDs, SKU, HSN, pricing type, price basis, price columns, and FX metadata where available.
 - If unit price is blank, the server resolves a default from the selected Catalog rule.
