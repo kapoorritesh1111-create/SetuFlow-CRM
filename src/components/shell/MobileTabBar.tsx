@@ -2,40 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { canonicalMobileNavItems } from '@/lib/navigation/nav-items';
 import { cn } from '@/lib/utils';
-
-const tabs = [
-  {
-    label: 'Home',
-    href: '/dashboard',
-    icon: '⌂',
-    match: ['/dashboard'],
-  },
-  {
-    label: 'Leads',
-    href: '/leads',
-    icon: '👤',
-    match: ['/leads'],
-  },
-  {
-    label: 'Capture',
-    href: '/contact-exchange/scan',
-    icon: '📷',
-    match: ['/contact-exchange/scan', '/trade-events'],
-  },
-  {
-    label: 'Orders',
-    href: '/orders',
-    icon: '📦',
-    match: ['/orders'],
-  },
-  {
-    label: 'More',
-    href: '/tasks',
-    icon: '⋯',
-    match: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance'],
-  },
-] as const;
 
 export function MobileTabBar() {
   const pathname = usePathname();
@@ -47,7 +15,7 @@ export function MobileTabBar() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="mx-auto flex h-16 max-w-[430px] items-stretch">
-        {tabs.map((tab) => {
+        {canonicalMobileNavItems.map((tab) => {
           const active = tab.match.some(
             (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
           );
@@ -61,7 +29,6 @@ export function MobileTabBar() {
                 active ? 'text-[#0c7fff]' : 'text-slate-400',
               )}
             >
-              {/* Active indicator line at top */}
               <span
                 className={cn(
                   'absolute inset-x-3 top-0 h-[2px] rounded-b-full transition-colors',
