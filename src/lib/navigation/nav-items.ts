@@ -48,9 +48,9 @@ export const UTILITY_NAV_LABELS: Record<string, string> = {
 const MOBILE_NAV_META: Record<string, Pick<SharedNavItem, 'mobileHref' | 'mobileLabel' | 'mobileIcon' | 'mobileMatch'>> = {
   '/dashboard': { mobileHref: '/dashboard', mobileLabel: 'Home', mobileIcon: 'home', mobileMatch: ['/dashboard'] },
   '/leads': { mobileHref: '/leads', mobileLabel: 'Leads', mobileIcon: 'lead', mobileMatch: ['/leads'] },
-  '/quotes': { mobileHref: '/quotes', mobileLabel: 'Quotes', mobileIcon: 'quote', mobileMatch: ['/quotes'] },
-  '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: 'orders', mobileMatch: ['/orders'] },
-  '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: 'more', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance'] },
+  '/quotes': { mobileHref: '/mobile/quote', mobileLabel: 'Quotes', mobileIcon: 'quote', mobileMatch: ['/mobile/quote', '/quotes'] },
+  '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: 'orders', mobileMatch: ['/orders', '/mobile/orders'] },
+  '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: 'more', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance', '/mobile/settings'] },
   '/pipeline': { mobileHref: null, mobileLabel: 'Pipeline', mobileIcon: 'workflow', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
   '/products': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: 'box', mobileMatch: ['/products'] },
   '/trade-events': { mobileHref: null, mobileLabel: 'Events', mobileIcon: 'calendar', mobileMatch: ['/trade-events'] },
@@ -100,9 +100,9 @@ export function getCanonicalMobileNavItems(): MobileNavItem[] {
 
 export const standaloneMobileNavItems: MobileNavItem[] = [
   { href: '/mobile', label: 'Home', icon: 'home', match: ['/mobile'] },
-  { href: '/mobile/leads', label: 'Leads', icon: 'lead', match: ['/mobile/leads'] },
-  { href: '/mobile/pipeline', label: 'Pipeline', icon: 'workflow', match: ['/mobile/pipeline'] },
-  { href: '/mobile/guru', label: 'Guru', icon: 'sparkles', match: ['/mobile/guru'] },
+  { href: '/mobile/leads', label: 'Leads', icon: 'lead', match: ['/mobile/leads', '/leads'] },
+  { href: '/mobile/quote', label: 'Quotes', icon: 'quote', match: ['/mobile/quote', '/quotes'] },
+  { href: '/orders', label: 'Orders', icon: 'orders', match: ['/orders', '/mobile/orders'] },
   { href: '/mobile/settings', label: 'More', icon: 'more', match: ['/mobile/settings'] },
 ];
 
