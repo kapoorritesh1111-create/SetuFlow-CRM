@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { SetuIcon } from '@/components/ui/setu-icon';
 import { canonicalMobileNavItems } from '@/lib/navigation/nav-items';
 import { cn } from '@/lib/utils';
 
@@ -35,9 +36,7 @@ export function MobileTabBar() {
                   active ? 'bg-[#0c7fff]' : 'bg-transparent',
                 )}
               />
-              <span className="text-[22px] leading-none" aria-hidden="true">
-                {tab.icon}
-              </span>
+              <SetuIcon name={tab.icon} className="h-[22px] w-[22px]" />
               <span>{tab.label}</span>
             </Link>
           );
