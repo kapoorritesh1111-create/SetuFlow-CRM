@@ -6,7 +6,14 @@ import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database as GeneratedDatabase } from '@/types/database.generated';
+import { QuoteSentConfirmation } from '@/features/quotes/components/QuoteSentConfirmation';
 import { SendWhatsAppQuoteButton } from '@/features/quotes/components/send-whatsapp-quote-button';
+
+const PRODUCTION_SHARE_ORIGIN = 'https://www.setuflowcrm.com';
+
+type LeadSendSummary = Pick<GeneratedDatabase['public']['Tables']['leads']['Row'], 'id' | 'company_name' | 'contact_name' | 'whatsapp_number'>;
+
+type QuoteVersionLineSummary = Pick<GeneratedDatabase['public']['Tables']['quote_version_line_items']['Row'], 'final_case_price' | 'final_kg_price' | 'final_unit_price' | 'product_name' | 'display_currency' | 'is_overridden'>;
 
 function readParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -18,6 +25,42 @@ function formatMoney(amount: number, currency: string | null) {
 
 function formatDate(value: Date) {
   return value.toISOString().slice(0, 10);
+}
+
+function cleanWhatsAppNumber(value: string | null | undefined) {
+  return String(value ?? '').replace(/[+\s\-()]/g, '').replace(/[^0-9]/g, '');
+}
+
+function appBaseUrl() {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  const clean = configured?.replace(/\/$/, '');
+  if (clean && !clean.includes('vercel.app') && !clean.includes('localhost')) return clean;
+  return PRODUCTION_SHARE_ORIGIN;
+}
+
+function buildShareUrl(input: { quoteId: string; quoteNumber: string; buyerName: string; products: string; total: string; validity: string; currency: string }) {
+  const url = new URL(`/api/quotes/${input.quoteId}/share`, appBaseUrl());
+  url.searchParams.set('quote', input.quoteNumber);
+  url.searchParams.set('buyer', input.buyerName);
+  url.searchParams.set('products', input.products);
+  url.searchParams.set('total', input.total);
+  url.searchParams.set('validity', input.validity);
+  url.searchParams.set('currency', input.currency);
+  return url.toString();
+}
+
+function buildWhatsAppLink(input: { number: string | null | undefined; buyerName: string; quoteNumber: string; trackedLink: string }) {
+  const number = cleanWhatsAppNumber(input.number);
+  if (!number) return null;
+  const message = [
+    `Hello ${input.buyerName},`,
+    '',
+    `Please find quote ${input.quoteNumber}.`,
+    `View quote: ${input.trackedLink}`,
+    '',
+    'Please reply here if you would like any revisions or have questions.',
+  ].join('\n');
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
 async function confirmAndSendQuote(formData: FormData): Promise<void> {
@@ -39,7 +82,6 @@ async function confirmAndSendQuote(formData: FormData): Promise<void> {
     .maybeSingle();
 
   if (quoteError || !quote) {
-    // SF-18-048: Surface error via URL param so the page component can render it
     const msg = quoteError ? encodeURIComponent(quoteError.message) : 'quote-not-found';
     redirect(`/quotes?error=${msg}&status=pending_approval`);
   }
@@ -66,7 +108,7 @@ async function confirmAndSendQuote(formData: FormData): Promise<void> {
 
   revalidatePath('/quotes');
   revalidatePath('/orders');
-  redirect(`/orders?notice=quote-sent&eId=${quoteId}`);
+  redirect(`/approval-send?quoteId=${quoteId}&sent=1`);
 }
 
 type ApprovalSendPageProps = {
@@ -76,6 +118,7 @@ type ApprovalSendPageProps = {
 export default async function ApprovalSendPage({ searchParams }: ApprovalSendPageProps) {
   const workspace = await requireWorkspace();
   const quoteId = readParam(searchParams?.quoteId).trim();
+  const sent = readParam(searchParams?.sent).trim() === '1';
 
   if (!workspace.membership || !workspace.organization) {
     return (
@@ -122,18 +165,6 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
     );
   }
 
-  if (String(quote.status ?? '').toLowerCase() === 'sent') {
-    return (
-      <WorkspaceState
-        eyebrow="Approval → Send"
-        title="Quote already sent"
-        description="This quote has already moved into the order execution loop. Open Orders to continue fulfilment."
-        primaryActionHref="/orders"
-        primaryActionLabel="Open orders"
-      />
-    );
-  }
-
   const [{ data: lead }, { data: versions }] = await Promise.all([
     typedSupabase
       .from('leads')
@@ -149,20 +180,38 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
       .limit(5),
   ]);
 
+  const typedLead = lead as LeadSendSummary | null;
   const version = (versions ?? []).find((entry) => entry.id === quote.accepted_version_id || entry.id === quote.current_version_id) ?? versions?.[0] ?? null;
   const { data: lines } = version?.id
     ? await typedSupabase
       .from('quote_version_line_items')
-      .select('id, final_case_price, final_kg_price, final_unit_price, display_currency, is_overridden')
+      .select('id, product_name, final_case_price, final_kg_price, final_unit_price, display_currency, is_overridden')
       .eq('quote_version_id', version.id)
       .order('sort_order', { ascending: true })
     : { data: [] };
 
-  const lineItems = lines ?? [];
+  const lineItems = (lines ?? []) as QuoteVersionLineSummary[];
   const subtotal = lineItems.reduce((sum, line) => sum + Number(line.final_case_price ?? line.final_kg_price ?? line.final_unit_price ?? 0), 0);
   const currency = version?.display_currency ?? quote.display_currency ?? quote.currency ?? 'USD';
   const hasOverride = lineItems.some((line) => Boolean(line.is_overridden));
   const validUntil = formatDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  const quoteRef = quote.quote_number ?? `Quote ${quote.id.slice(0, 8)}`;
+  const buyerName = typedLead?.company_name ?? typedLead?.contact_name ?? 'buyer';
+  const productSummary = lineItems.map((line) => line.product_name).filter(Boolean).slice(0, 4).join(', ') || `${version?.total_line_count ?? lineItems.length} line items`;
+  const trackedLink = buildShareUrl({ quoteId: quote.id, quoteNumber: quoteRef, buyerName, products: productSummary, total: formatMoney(subtotal, currency), validity: validUntil, currency });
+  const whatsappLink = buildWhatsAppLink({ number: typedLead?.whatsapp_number, buyerName, quoteNumber: quoteRef, trackedLink });
+
+  if (sent || String(quote.status ?? '').toLowerCase() === 'sent') {
+    return (
+      <QuoteSentConfirmation
+        quoteRef={quoteRef}
+        buyerName={buyerName}
+        trackedLink={trackedLink}
+        whatsappLink={whatsappLink}
+        quoteHref={`/quotes?quoteId=${quote.id}`}
+      />
+    );
+  }
 
   return (
     <main className="space-y-6 p-4 sm:p-6">
@@ -186,7 +235,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Quote summary</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{quote.quote_number ?? `Quote ${quote.id.slice(0, 8)}`}</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">{quoteRef}</h2>
               <p className="mt-1 text-sm text-slate-500">Version {version?.version_no ?? '—'} · {String(quote.status ?? 'approved').replaceAll('_', ' ')}</p>
             </div>
           </div>
@@ -194,11 +243,11 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
           <dl className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Buyer company</dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-900">{lead?.company_name ?? 'Buyer pending'}</dd>
+              <dd className="mt-1 text-sm font-semibold text-slate-900">{typedLead?.company_name ?? 'Buyer pending'}</dd>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Contact</dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-900">{lead?.contact_name ?? 'Contact pending'}</dd>
+              <dd className="mt-1 text-sm font-semibold text-slate-900">{typedLead?.contact_name ?? 'Contact pending'}</dd>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Lines</dt>
@@ -223,7 +272,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Send actions</p>
           <p className="mt-2 text-sm text-slate-500">WhatsApp is the primary send path for SME exporters. Email stays available as a secondary delivery action.</p>
           <div className="mt-6 space-y-3">
-            {(lead as any)?.whatsapp_number ? (
+            {typedLead?.whatsapp_number ? (
               <SendWhatsAppQuoteButton quoteId={quote.id} leadId={quote.lead_id} organizationId={workspace.organization.id} />
             ) : (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
