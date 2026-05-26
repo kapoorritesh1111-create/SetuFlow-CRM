@@ -46,8 +46,8 @@ export const UTILITY_NAV_LABELS: Record<string, string> = {
 };
 
 const MOBILE_NAV_META: Record<string, Pick<SharedNavItem, 'mobileHref' | 'mobileLabel' | 'mobileIcon' | 'mobileMatch'>> = {
-  '/dashboard': { mobileHref: '/dashboard', mobileLabel: 'Home', mobileIcon: 'home', mobileMatch: ['/dashboard'] },
-  '/leads': { mobileHref: '/leads', mobileLabel: 'Leads', mobileIcon: 'lead', mobileMatch: ['/leads'] },
+  '/dashboard': { mobileHref: '/dashboard', mobileLabel: 'Home', mobileIcon: 'home', mobileMatch: ['/dashboard', '/mobile'] },
+  '/leads': { mobileHref: '/leads', mobileLabel: 'Leads', mobileIcon: 'lead', mobileMatch: ['/leads', '/mobile/leads'] },
   '/quotes': { mobileHref: '/mobile/quote', mobileLabel: 'Quotes', mobileIcon: 'quote', mobileMatch: ['/mobile/quote', '/quotes'] },
   '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: 'orders', mobileMatch: ['/orders', '/mobile/orders'] },
   '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: 'more', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance', '/mobile/settings'] },
@@ -99,11 +99,11 @@ export function getCanonicalMobileNavItems(): MobileNavItem[] {
 }
 
 export const standaloneMobileNavItems: MobileNavItem[] = [
-  { href: '/mobile', label: 'Home', icon: 'home', match: ['/mobile'] },
-  { href: '/mobile/leads', label: 'Leads', icon: 'lead', match: ['/mobile/leads', '/leads'] },
+  { href: '/dashboard', label: 'Home', icon: 'home', match: ['/dashboard', '/mobile'] },
+  { href: '/leads', label: 'Leads', icon: 'lead', match: ['/leads', '/mobile/leads'] },
   { href: '/mobile/quote', label: 'Quotes', icon: 'quote', match: ['/mobile/quote', '/quotes'] },
   { href: '/orders', label: 'Orders', icon: 'orders', match: ['/orders', '/mobile/orders'] },
-  { href: '/mobile/settings', label: 'More', icon: 'more', match: ['/mobile/settings'] },
+  { href: '/tasks', label: 'More', icon: 'more', match: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance', '/mobile/settings'] },
 ];
 
 export const canonicalMobileNavItems = getCanonicalMobileNavItems();
