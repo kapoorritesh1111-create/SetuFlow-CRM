@@ -78,11 +78,22 @@ export function getUtilityShellNavItems(sections: ProductNavSection[]) {
     .sort((a, b) => Object.keys(UTILITY_NAV_LABELS).indexOf(a.href) - Object.keys(UTILITY_NAV_LABELS).indexOf(b.href));
 }
 
+function toMobileNavItem(item: ProductNavLink): MobileNavItem | null {
+  const meta = MOBILE_NAV_META[item.href];
+  if (!meta?.mobileHref) return null;
+  return {
+    href: meta.mobileHref,
+    label: meta.mobileLabel,
+    icon: meta.mobileIcon,
+    match: meta.mobileMatch,
+  };
+}
+
 export function getCanonicalMobileNavItems(): MobileNavItem[] {
-  return getPrimaryShellNavItems(canonicalShellSections as ProductNavSection[])
-    .map((item) => ({ ...item, compactLabel: PRIMARY_NAV_LABELS[item.href], ...MOBILE_NAV_META[item.href] }))
-    .filter((item): item is SharedNavItem => Boolean(item.mobileHref))
-    .map((item) => ({ href: item.mobileHref, label: item.mobileLabel, icon: item.mobileIcon, match: item.mobileMatch }));
+  return getPrimaryShellNavItems(canonicalShellSections as ProductNavSection[]).flatMap((item) => {
+    const mobileItem = toMobileNavItem(item);
+    return mobileItem ? [mobileItem] : [];
+  });
 }
 
 export const standaloneMobileNavItems: MobileNavItem[] = [
