@@ -50,8 +50,9 @@ const MOBILE_NAV_META: Record<string, Pick<SharedNavItem, 'mobileHref' | 'mobile
   '/quotes': { mobileHref: '/quotes', mobileLabel: 'Quotes', mobileIcon: '□', mobileMatch: ['/quotes'] },
   '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: '◇', mobileMatch: ['/orders'] },
   '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: '•••', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance'] },
-  '/pipeline': { mobileHref: '/mobile/pipeline', mobileLabel: 'Pipeline', mobileIcon: '⊞', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
-  '/trade-events': { mobileHref: '/contact-exchange/scan', mobileLabel: 'Capture', mobileIcon: '◌', mobileMatch: ['/contact-exchange/scan', '/trade-events'] },
+  '/pipeline': { mobileHref: null, mobileLabel: 'Pipeline', mobileIcon: '⊞', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
+  '/products': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: '□', mobileMatch: ['/products'] },
+  '/trade-events': { mobileHref: null, mobileLabel: 'Events', mobileIcon: '◌', mobileMatch: ['/trade-events'] },
 };
 
 function uniqueByHref(items: ProductNavLink[]) {
