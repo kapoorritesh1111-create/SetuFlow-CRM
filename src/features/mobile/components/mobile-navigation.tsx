@@ -4,26 +4,11 @@ import { GuruAvatar } from '@/components/ui/guru-avatar';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { canonicalMobileNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
 import { ThreeDIconOrb } from "./icon-3d-orb";
 import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
-
-const standaloneTabs = [
-  { href: "/mobile", label: "Home", icon: "⌂" },
-  { href: "/mobile/leads", label: "Leads", icon: "◎" },
-  { href: "/mobile/pipeline", label: "Pipeline", icon: "⊞" },
-  { href: "/mobile/guru", label: "Guru", icon: "🧠" },
-  { href: "/mobile/settings", label: "More", icon: "≡" },
-];
-
-const canonicalTabs = [
-  { href: "/dashboard", label: "Home", icon: "⌂" },
-  { href: "/leads", label: "Leads", icon: "◎" },
-  { href: "/leads?quickLead=1", label: "Capture", icon: "◌" },
-  { href: "/orders", label: "Orders", icon: "◇" },
-  { href: "/settings/lists", label: "More", icon: "•••" },
-];
 
 function resolveTitle(pathname: string) {
   if (pathname.startsWith("/leads")) return "Current Leads";
@@ -148,7 +133,7 @@ export function MobileActionDrawer({
   onShareVCard?: () => void;
 }) {
   if (!open) return null;
-  const tabs = canonical ? canonicalTabs : standaloneTabs;
+  const tabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
   return (
     <div
       className="fixed inset-0 z-[90] bg-slate-950/55 backdrop-blur-sm"
@@ -212,17 +197,14 @@ export function MobileBottomTabs({
   canonical?: boolean;
 }) {
   const pathname = usePathname();
-  const tabs = canonical ? canonicalTabs : standaloneTabs;
+  const tabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
   return (
     <nav
       className="fixed bottom-0 left-1/2 z-[60] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-[24px] border border-slate-200/80 border-b-0 bg-white/92 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/92"
       aria-label="Mobile navigation"
     >
       {tabs.map((tab) => {
-        const baseHref = tab.href.split("?")[0];
-        const active =
-          pathname === baseHref ||
-          (baseHref !== "/dashboard" && pathname.startsWith(baseHref + "/"));
+        const active = tab.match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
         return (
           <Link
             key={tab.href}
@@ -259,7 +241,7 @@ export function MobileHomeHero() {
           href="/leads"
           className="rounded-3xl bg-white/10 p-4 transition hover:bg-white/15"
         >
-          <b className="text-3xl">46</b>
+          <b className="text-3xl">12</b>
           <p className="text-xs text-slate-300">Open leads</p>
         </Link>
         <Link
