@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const mobileFeatures = [
   { icon: '⌂', label: 'Dashboard — at-a-glance view' },
@@ -11,6 +12,10 @@ const mobileFeatures = [
   { icon: '📦', label: 'Order status — read-only' },
 ];
 
+const mobileRedirects: Record<string, string> = {
+  '/quotes': '/mobile/quote',
+};
+
 export function DesktopRedirect({
   title = 'Open on desktop',
   description = 'Pipeline, Quote Builder, Catalog, and Reports are designed for a full screen. They\'re available at the link below on your computer.',
@@ -18,14 +23,20 @@ export function DesktopRedirect({
   title?: string;
   description?: string;
 }) {
+  const pathname = usePathname();
   const [copied, setCopied] = useState(false);
   const [href, setHref] = useState('');
   const [hostname, setHostname] = useState('setuflowcrm.com');
 
   useEffect(() => {
+    const mobileHref = mobileRedirects[pathname];
+    if (mobileHref && window.matchMedia('(max-width: 767px)').matches) {
+      window.location.replace(mobileHref);
+      return;
+    }
     setHref(window.location.href);
     setHostname(window.location.hostname);
-  }, []);
+  }, [pathname]);
 
   const copyLink = async () => {
     if (!href || !navigator.clipboard) return;
