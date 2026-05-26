@@ -2,38 +2,22 @@
 
 import { useMemo } from 'react';
 import { FaIcon } from '@/components/ui/fa-icon';
-import type { NavSection } from '@/components/shell/types';
+import type { ProductNavSection } from '@/lib/product-contract';
 import { getNavItemIcon, isNavItemActive, withWorkspaceMode } from '@/components/shell/utils';
-import { canonicalShellSections } from '@/lib/product-contract';
+import {
+  filterShellSections,
+  getPrimaryShellNavItems,
+  getUtilityShellNavItems,
+  PRIMARY_NAV_LABELS,
+  UTILITY_NAV_LABELS,
+} from '@/lib/navigation/nav-items';
 import { cn } from '@/lib/utils';
 
-function filterSections(canAccessAdmin: boolean) {
-  return canonicalShellSections
-    .map((section) => ({ ...section, items: section.items.filter((item) => canAccessAdmin || !item.requiresAdmin) }))
-    .filter((section) => section.items.length > 0) as NavSection[];
-}
-
-const PRIMARY_LABELS: Record<string, string> = {
-  '/dashboard': 'Dash',
-  '/dashboard/analytics': 'Analytics',
-  '/leads': 'Leads',
-  '/quotes': 'Quotes',
-  '/orders': 'Orders',
-  '/tasks': 'Tasks',
-  '/pipeline': 'Pipeline',
-  '/products': 'Catalog',
-  '/trade-events': 'Events',
-};
-
-const UTILITY_LABELS: Record<string, string> = {
-  '/admin/organization': 'Admin',
-};
-
 export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compact = false, onNavigate }: { pathname: string; canAccessAdmin: boolean; workspaceMode: 'all' | 'buyers' | 'suppliers'; compact?: boolean; onNavigate?: () => void }) {
-  const sections = useMemo<NavSection[]>(() => filterSections(canAccessAdmin), [canAccessAdmin]);
+  const sections = useMemo<ProductNavSection[]>(() => filterShellSections(canAccessAdmin), [canAccessAdmin]);
   const items = useMemo(() => sections.flatMap((section) => section.items).filter((item, index, arr) => arr.findIndex((entry) => entry.href === item.href) === index), [sections]);
-  const primaryItems = items.filter((item) => item.href in PRIMARY_LABELS).sort((a, b) => Object.keys(PRIMARY_LABELS).indexOf(a.href) - Object.keys(PRIMARY_LABELS).indexOf(b.href));
-  const utilityItems = items.filter((item) => item.href in UTILITY_LABELS).sort((a, b) => Object.keys(UTILITY_LABELS).indexOf(a.href) - Object.keys(UTILITY_LABELS).indexOf(b.href));
+  const primaryItems = useMemo(() => getPrimaryShellNavItems(sections), [sections]);
+  const utilityItems = useMemo(() => getUtilityShellNavItems(sections), [sections]);
 
   if (compact) {
     return (
@@ -47,14 +31,14 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
                 href={withWorkspaceMode(item.href, workspaceMode)}
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
-                title={PRIMARY_LABELS[item.href]}
+                title={PRIMARY_NAV_LABELS[item.href]}
                 className={cn(
                   'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
                   active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
                 )}
               >
                 <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
-                <span className="mt-1 normal-case tracking-normal text-[9px]">{PRIMARY_LABELS[item.href]}</span>
+                <span className="mt-1 normal-case tracking-normal text-[9px]">{PRIMARY_NAV_LABELS[item.href]}</span>
               </a>
             );
           })}
@@ -70,14 +54,14 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
                   href={withWorkspaceMode(item.href, workspaceMode)}
                   onClick={onNavigate}
                   aria-current={active ? 'page' : undefined}
-                  title={UTILITY_LABELS[item.href]}
+                  title={UTILITY_NAV_LABELS[item.href]}
                   className={cn(
                     'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
                     active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
                   )}
                 >
                   <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
-                  <span className="mt-1 normal-case tracking-normal text-[8px]">{UTILITY_LABELS[item.href]}</span>
+                  <span className="mt-1 normal-case tracking-normal text-[8px]">{UTILITY_NAV_LABELS[item.href]}</span>
                 </a>
               );
             })}
