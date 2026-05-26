@@ -1,3 +1,4 @@
+import type { SetuIconName } from '@/components/ui/setu-icon';
 import { canonicalShellSections } from '@/lib/product-contract';
 import type { ProductNavLink, ProductNavSection } from '@/lib/product-contract';
 
@@ -5,14 +6,14 @@ export type SharedNavItem = ProductNavLink & {
   compactLabel: string;
   mobileHref: string | null;
   mobileLabel: string;
-  mobileIcon: string;
+  mobileIcon: SetuIconName;
   mobileMatch: readonly string[];
 };
 
 export type MobileNavItem = {
   href: string;
   label: string;
-  icon: string;
+  icon: SetuIconName;
   match: readonly string[];
 };
 
@@ -45,14 +46,14 @@ export const UTILITY_NAV_LABELS: Record<string, string> = {
 };
 
 const MOBILE_NAV_META: Record<string, Pick<SharedNavItem, 'mobileHref' | 'mobileLabel' | 'mobileIcon' | 'mobileMatch'>> = {
-  '/dashboard': { mobileHref: '/dashboard', mobileLabel: 'Home', mobileIcon: '⌂', mobileMatch: ['/dashboard'] },
-  '/leads': { mobileHref: '/leads', mobileLabel: 'Leads', mobileIcon: '◎', mobileMatch: ['/leads'] },
-  '/quotes': { mobileHref: '/quotes', mobileLabel: 'Quotes', mobileIcon: '□', mobileMatch: ['/quotes'] },
-  '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: '◇', mobileMatch: ['/orders'] },
-  '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: '•••', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance'] },
-  '/pipeline': { mobileHref: null, mobileLabel: 'Pipeline', mobileIcon: '⊞', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
-  '/products': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: '□', mobileMatch: ['/products'] },
-  '/trade-events': { mobileHref: null, mobileLabel: 'Events', mobileIcon: '◌', mobileMatch: ['/trade-events'] },
+  '/dashboard': { mobileHref: '/dashboard', mobileLabel: 'Home', mobileIcon: 'home', mobileMatch: ['/dashboard'] },
+  '/leads': { mobileHref: '/leads', mobileLabel: 'Leads', mobileIcon: 'lead', mobileMatch: ['/leads'] },
+  '/quotes': { mobileHref: '/quotes', mobileLabel: 'Quotes', mobileIcon: 'quote', mobileMatch: ['/quotes'] },
+  '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: 'orders', mobileMatch: ['/orders'] },
+  '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: 'more', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance'] },
+  '/pipeline': { mobileHref: null, mobileLabel: 'Pipeline', mobileIcon: 'workflow', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
+  '/products': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: 'box', mobileMatch: ['/products'] },
+  '/trade-events': { mobileHref: null, mobileLabel: 'Events', mobileIcon: 'calendar', mobileMatch: ['/trade-events'] },
 };
 
 function uniqueByHref(items: ProductNavLink[]) {
@@ -98,11 +99,11 @@ export function getCanonicalMobileNavItems(): MobileNavItem[] {
 }
 
 export const standaloneMobileNavItems: MobileNavItem[] = [
-  { href: '/mobile', label: 'Home', icon: '⌂', match: ['/mobile'] },
-  { href: '/mobile/leads', label: 'Leads', icon: '◎', match: ['/mobile/leads'] },
-  { href: '/mobile/pipeline', label: 'Pipeline', icon: '⊞', match: ['/mobile/pipeline'] },
-  { href: '/mobile/guru', label: 'Guru', icon: '🧠', match: ['/mobile/guru'] },
-  { href: '/mobile/settings', label: 'More', icon: '≡', match: ['/mobile/settings'] },
+  { href: '/mobile', label: 'Home', icon: 'home', match: ['/mobile'] },
+  { href: '/mobile/leads', label: 'Leads', icon: 'lead', match: ['/mobile/leads'] },
+  { href: '/mobile/pipeline', label: 'Pipeline', icon: 'workflow', match: ['/mobile/pipeline'] },
+  { href: '/mobile/guru', label: 'Guru', icon: 'sparkles', match: ['/mobile/guru'] },
+  { href: '/mobile/settings', label: 'More', icon: 'more', match: ['/mobile/settings'] },
 ];
 
 export const canonicalMobileNavItems = getCanonicalMobileNavItems();
