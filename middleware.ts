@@ -100,9 +100,7 @@ const PUBLIC_PREFIXES = [
   '/order-documents/preview/',
   '/v/',
   '/public/',
-  // NOTE: /internal/ is intentionally NOT listed here — all /internal/* pages
-  // require an authenticated Supabase session AND SETU Flow org membership.
-  // The HTML files themselves enforce a second client-side auth gate.
+  '/internal/', // Static HTML files — auth enforced client-side via Supabase session + org check
 ];
 
 function hasSupabaseMiddlewareEnv() {
