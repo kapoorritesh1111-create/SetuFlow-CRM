@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 
 const mobileFeatures = [
   { icon: '⌂', label: 'Dashboard — at-a-glance view' },
@@ -23,20 +22,20 @@ export function DesktopRedirect({
   title?: string;
   description?: string;
 }) {
-  const pathname = usePathname();
   const [copied, setCopied] = useState(false);
   const [href, setHref] = useState('');
   const [hostname, setHostname] = useState('setuflowcrm.com');
 
   useEffect(() => {
-    const mobileHref = mobileRedirects[pathname];
+    const path = window.location.pathname;
+    const mobileHref = mobileRedirects[path];
     if (mobileHref && window.matchMedia('(max-width: 767px)').matches) {
       window.location.replace(mobileHref);
       return;
     }
     setHref(window.location.href);
     setHostname(window.location.hostname);
-  }, [pathname]);
+  }, []);
 
   const copyLink = async () => {
     if (!href || !navigator.clipboard) return;
