@@ -7,15 +7,7 @@ import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
 import type { QuoteWorkspaceListItem } from '@/features/quotes/types/workspace';
 import { cn } from '@/lib/utils';
 
-type QuoteFilter = 'all' | 'needs_action' | 'awaiting' | 'accepted' | 'sent';
-
-const filters: Array<{ key: QuoteFilter; label: string }> = [
-  { key: 'all', label: 'All' },
-  { key: 'needs_action', label: 'Needs Action' },
-  { key: 'awaiting', label: 'Awaiting' },
-  { key: 'accepted', label: 'Accepted' },
-  { key: 'sent', label: 'Sent' },
-];
+type QuoteFilter = 'all' | 'needs_action' | 'accepted';
 
 function labelizeStatus(value: string) {
   return value.replaceAll('_', ' ');
@@ -25,15 +17,9 @@ function isNeedsAction(item: QuoteWorkspaceListItem) {
   return item.status === 'pending_approval' || item.status === 'approved' || item.hasPriceOverride;
 }
 
-function isAwaiting(item: QuoteWorkspaceListItem) {
-  return item.status === 'sent' || item.status === 'negotiating';
-}
-
 function filterQuote(item: QuoteWorkspaceListItem, filter: QuoteFilter) {
   if (filter === 'needs_action') return isNeedsAction(item);
-  if (filter === 'awaiting') return isAwaiting(item);
   if (filter === 'accepted') return item.status === 'accepted' || item.hasAcceptedContract;
-  if (filter === 'sent') return item.status === 'sent';
   return true;
 }
 
@@ -135,33 +121,53 @@ function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose:
   );
 }
 
+function KpiFilterCard({ label, value, active, onClick }: { label: string; value: number; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-2xl p-3 text-center transition',
+        active ? 'bg-white text-blue-700 shadow-lg shadow-blue-950/20' : 'bg-white/10 text-white hover:bg-white/15',
+      )}
+    >
+      <p className="text-2xl font-black">{value}</p>
+      <p className={cn('text-[10px] font-black uppercase tracking-[0.12em]', active ? 'text-blue-600' : 'text-blue-100')}>{label}</p>
+    </button>
+  );
+}
+
 export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] }) {
   const [filter, setFilter] = useState<QuoteFilter>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const filteredItems = useMemo(() => items.filter((item) => filterQuote(item, filter)), [items, filter]);
   const selected = selectedId ? filteredItems.find((item) => item.id === selectedId) ?? null : null;
+  const actionCount = items.filter(isNeedsAction).length;
+  const acceptedCount = items.filter((item) => item.status === 'accepted' || item.hasAcceptedContract).length;
+  const activeLabel = filter === 'needs_action' ? 'Needs action' : filter === 'accepted' ? 'Accepted' : 'All quotes';
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-28 pt-4">
       <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white shadow-xl shadow-blue-950/20">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Mobile quotes</p>
-        <h1 className="mt-2 text-3xl font-black">Quote workspace</h1>
-        <p className="mt-2 text-sm font-semibold text-blue-100">Track quote status, line items, negotiations, and the next action from the trade floor.</p>
-        <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-2xl bg-white/10 p-3"><p className="text-2xl font-black">{items.length}</p><p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-100">Total</p></div>
-          <div className="rounded-2xl bg-white/10 p-3"><p className="text-2xl font-black">{items.filter(isNeedsAction).length}</p><p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-100">Action</p></div>
-          <div className="rounded-2xl bg-white/10 p-3"><p className="text-2xl font-black">{items.filter((item) => item.status === 'accepted' || item.hasAcceptedContract).length}</p><p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-100">Accepted</p></div>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Quotes</p>
+        <h1 className="mt-2 text-2xl font-black">Work queue</h1>
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <KpiFilterCard label="Total" value={items.length} active={filter === 'all'} onClick={() => setFilter('all')} />
+          <KpiFilterCard label="Action" value={actionCount} active={filter === 'needs_action'} onClick={() => setFilter('needs_action')} />
+          <KpiFilterCard label="Accepted" value={acceptedCount} active={filter === 'accepted'} onClick={() => setFilter('accepted')} />
         </div>
       </section>
 
-      <div className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {filters.map((option) => (
-          <button key={option.key} type="button" onClick={() => setFilter(option.key)} className={cn('shrink-0 rounded-full px-4 py-2 text-xs font-black transition', filter === option.key ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-600 ring-1 ring-slate-200')}>{option.label}</button>
-        ))}
-      </div>
+      <section className="mt-4 flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">{activeLabel}</p>
+          <p className="text-xs font-semibold text-slate-500">Showing {filteredItems.length} of {items.length}</p>
+        </div>
+        {filter !== 'all' ? <button type="button" onClick={() => setFilter('all')} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600">Clear</button> : null}
+      </section>
 
       <section className="mt-4 space-y-3">
-        {filteredItems.length ? filteredItems.map((item) => <QuoteCard key={item.id} item={item} active={selected?.id === item.id} onSelect={() => setSelectedId(item.id)} />) : <div className="rounded-[1.5rem] bg-white p-6 text-center text-sm font-semibold text-slate-500">No quotes match this filter.</div>}
+        {filteredItems.length ? filteredItems.map((item) => <QuoteCard key={item.id} item={item} active={selected?.id === item.id} onSelect={() => setSelectedId(item.id)} />) : <div className="rounded-[1.5rem] bg-white p-6 text-center text-sm font-semibold text-slate-500">No quotes match this KPI filter.</div>}
       </section>
       {selected ? <QuoteDetail item={selected} onClose={() => setSelectedId(null)} /> : null}
     </main>
