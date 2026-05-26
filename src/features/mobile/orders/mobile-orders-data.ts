@@ -26,6 +26,7 @@ export type MobileOrderLine = {
 
 export type MobileOrder = {
   id: string;
+  contractId: string | null;
   orderNumber: string;
   companyName: string;
   contactName: string | null;
@@ -117,6 +118,7 @@ function toMobileOrder(order: OrderRow, lead: LeadDisplayRow | undefined, docume
   const orderLines = lines.filter((line) => line.order_id === order.id);
   return {
     id: order.id,
+    contractId: clean(order.legacy_contract_id),
     orderNumber: clean(order.order_number) ?? order.id.slice(0, 8),
     companyName: clean(lead?.company_name) ?? 'Order customer',
     contactName: clean(lead?.contact_name),
