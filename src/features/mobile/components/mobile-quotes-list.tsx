@@ -100,7 +100,7 @@ function QuoteCard({ item, active, onSelect }: { item: QuoteWorkspaceListItem; a
 
 function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose: () => void }) {
   return (
-    <aside className="fixed inset-x-0 bottom-0 z-[320] max-h-[86vh] overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-white p-5 shadow-[0_-18px_45px_rgba(15,23,42,0.18)] md:hidden">
+    <aside className="fixed inset-x-0 bottom-0 z-[320] max-h-[82vh] overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-white p-5 pb-[calc(92px+env(safe-area-inset-bottom))] shadow-[0_-18px_45px_rgba(15,23,42,0.18)] md:hidden">
       <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -137,9 +137,9 @@ function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose:
 
 export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] }) {
   const [filter, setFilter] = useState<QuoteFilter>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const filteredItems = useMemo(() => items.filter((item) => filterQuote(item, filter)), [items, filter]);
-  const selected = filteredItems.find((item) => item.id === selectedId) ?? filteredItems[0] ?? null;
+  const selected = selectedId ? filteredItems.find((item) => item.id === selectedId) ?? null : null;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-28 pt-4">
