@@ -185,6 +185,7 @@ export function AppShell({
   const [topbarDate, setTopbarDate] = useState('');
   const [absoluteShareUrl, setAbsoluteShareUrl] = useState('');
   const [helpOpen, setHelpOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   const normalizedRoles = useMemo(() => normalizeWorkspaceRoles(currentRoles), [currentRoles]);
   const currentRole = useMemo(() => getPrimaryWorkspaceRole(normalizedRoles) ?? 'member', [normalizedRoles]);
@@ -257,6 +258,16 @@ export function AppShell({
 
   useEffect(() => {
     setTopbarDate(new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()));
+  }, []);
+
+  // SF-19-002: Global ⌘K / Ctrl+K keyboard listener
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCommandOpen(v => !v); }
+      if (e.key === 'Escape') { setCommandOpen(false); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   useEffect(() => {
@@ -396,6 +407,64 @@ export function AppShell({
 
       {shellNotice ? <NoticeToast key={noticeParam ?? shellNotice.title} title={shellNotice.title} description={shellNotice.description} tone={shellNotice.tone ?? 'neutral'} /> : null}
 
+      {/* SF-19-002: Command Palette Modal — ⌘K */}
+      {commandOpen ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-start justify-center bg-slate-950/60 px-4 pt-16 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setCommandOpen(false); }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_32px_80px_rgba(15,23,42,0.3)]">
+            <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+              <FaIcon icon="search" fixedWidth className="text-slate-400 text-sm" />
+              <input
+                autoFocus
+                className="flex-1 bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+                placeholder="Search or type a command…"
+                onKeyDown={(e) => { if (e.key === 'Escape') setCommandOpen(false); }}
+              />
+              <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">Esc</kbd>
+            </div>
+            <div className="max-h-72 overflow-y-auto py-2">
+              <p className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Quick actions</p>
+              <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} onClick={() => setCommandOpen(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition cursor-pointer">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm">＋</span>
+                <div><p className="text-sm font-semibold text-slate-900">Quick Lead</p><p className="text-xs text-slate-500">Capture a new buyer or supplier</p></div>
+                <kbd className="ml-auto rounded border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-bold text-slate-500">⌘L</kbd>
+              </a>
+              <button type="button" onClick={() => { setCommandOpen(false); setVcardModalOpen(true); }} className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-sm"><FaIcon icon="address-card-o" fixedWidth className="text-[#0c7fff]" /></span>
+                <div><p className="text-sm font-semibold text-slate-900">Share my vCard</p><p className="text-xs text-slate-500">QR code, download, wallet</p></div>
+              </button>
+              <a href="/trade-events/new" onClick={() => setCommandOpen(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm"><FaIcon icon="calendar" fixedWidth className="text-slate-600" /></span>
+                <div><p className="text-sm font-semibold text-slate-900">New Trade Event</p><p className="text-xs text-slate-500">Create or manage trade events</p></div>
+              </a>
+              <p className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400 border-t border-slate-100 mt-2 pt-2.5">Navigate</p>
+              {[
+                { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
+                { href: withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode), label: 'Leads', icon: '◎' },
+                { href: '/pipeline', label: 'Pipeline', icon: '⊞' },
+                { href: '/quotes', label: 'Quotes', icon: '📋' },
+                { href: '/orders', label: 'Orders', icon: '📦' },
+                { href: '/tasks', label: 'Tasks', icon: '✅' },
+                { href: '/products', label: 'Products', icon: '🏷' },
+                { href: '/admin', label: 'Admin', icon: '⚙' },
+              ].map(({ href, label, icon }) => (
+                <a key={href} href={href} onClick={() => setCommandOpen(false)} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-sm">{icon}</span>
+                  <p className="text-sm font-medium text-slate-700">Go to {label}</p>
+                </a>
+              ))}
+            </div>
+            <div className="flex items-center gap-4 border-t border-slate-100 bg-slate-50 px-4 py-2 text-[11px] text-slate-400">
+              <span><kbd className="rounded border border-slate-200 bg-white px-1 text-[10px] font-bold">↑↓</kbd> navigate</span>
+              <span><kbd className="rounded border border-slate-200 bg-white px-1 text-[10px] font-bold">↵</kbd> open</span>
+              <span><kbd className="rounded border border-slate-200 bg-white px-1 text-[10px] font-bold">Esc</kbd> close</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {showContextHelp && helpOpen ? (
         <div
           className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/50 px-4 py-8 backdrop-blur-sm"
@@ -501,7 +570,7 @@ export function AppShell({
         <main id="app-content" className="relative mx-auto min-w-0 max-w-[430px] overflow-x-clip md:mx-0 md:max-w-none md:pl-5 xl:pl-6">
           <div className="min-h-screen md:rounded-[2rem] md:border md:border-white/80 md:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,255,0.98))] md:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:ring-1 lg:ring-slate-950/[0.03]">
             <header className="setu-mobile-header sticky top-0 z-40">
-              {/* ── MOBILE TOP BAR (navy, reference-HTML style) ── */}
+              {/* ── MOBILE TOP BAR — vCard prominent + workspace mode ── */}
               <div className="flex h-14 items-center justify-between bg-[#0b2e4a] px-4 shadow-[0_1px_8px_rgba(0,0,0,0.2)] md:hidden">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <button
@@ -524,29 +593,49 @@ export function AppShell({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <OfflineIndicator />
+                  {/* vCard — major function, always on mobile header */}
                   <button
                     type="button"
                     onClick={() => setVcardModalOpen(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-[18px]"
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#0c7fff,rgba(12,127,255,0.6))] text-white text-[18px] shadow-[0_4px_12px_rgba(12,127,255,0.4)]"
                     aria-label="Share my vCard"
                     title="Share my vCard"
                   >
                     📇
                   </button>
-                  {showContextHelp ? (
-                    <button
-                      type="button"
-                      onClick={() => setHelpOpen(true)}
-                      className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-sm font-black"
-                      aria-label={`Open help for ${routeMeta.title}`}
-                      title="Help"
-                    >
-                      ?
-                    </button>
-                  ) : null}
+                  {/* ⌘K on mobile */}
+                  <button
+                    type="button"
+                    onClick={() => setCommandOpen(true)}
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-white/85 text-[15px]"
+                    aria-label="Search"
+                    title="Search (⌘K)"
+                  >
+                    🔍
+                  </button>
                   <ProfileMenu compact />
                 </div>
               </div>
+              {/* Mobile workspace mode strip — All / Buyers / Suppliers */}
+              {showWorkspaceModeSwitch ? (
+                <div className="flex items-center justify-center gap-1 bg-[#061c2e] px-4 py-1.5 md:hidden">
+                  {(['all', 'buyers', 'suppliers'] as const).map((value) => {
+                    const active = workspaceMode === value;
+                    return (
+                      <a
+                        key={value}
+                        href={currentWorkspaceModeHref(value)}
+                        className={cn(
+                          'rounded-lg px-4 py-1 text-xs font-bold transition',
+                          active ? 'bg-[#0c7fff] text-white' : 'text-white/55 hover:text-white',
+                        )}
+                      >
+                        {value === 'all' ? 'All' : value === 'buyers' ? 'Buyers' : 'Suppliers'}
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : null}
 
               {/* ── DESKTOP HEADER (white, all controls) ── */}
               <div className="hidden border-b border-slate-200 bg-white/95 backdrop-blur md:block md:rounded-t-[2rem]">
@@ -566,18 +655,30 @@ export function AppShell({
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <OfflineIndicator />
-                      {/* SF-19-006: ⌘K command bar — replaces Filters, Help, Events buttons */}
+
+                      {/* vCard — major product function, always prominent */}
                       <button
                         type="button"
-                        onClick={() => {/* Command palette — SF-19-002 */}}
-                        className="inline-flex items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 hover:bg-white hover:border-slate-300 transition"
-                        aria-label="Open command palette"
+                        onClick={() => setVcardModalOpen(true)}
+                        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)] hover:opacity-95"
                       >
-                        <span className="text-xs">🔍</span>
-                        <span className="hidden sm:inline text-xs">Search or command…</span>
+                        <FaIcon icon="address-card-o" fixedWidth className="text-sm" />
+                        <span>Share vCard</span>
+                      </button>
+
+                      {/* SF-19-002: ⌘K command bar — triggers command palette */}
+                      <button
+                        type="button"
+                        onClick={() => setCommandOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400 hover:bg-white hover:border-slate-300 transition"
+                        aria-label="Open command palette (⌘K)"
+                      >
+                        <FaIcon icon="search" fixedWidth className="text-xs" />
+                        <span className="hidden sm:inline text-xs text-slate-400">Search…</span>
                         <kbd className="hidden sm:inline rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500">⌘K</kbd>
                       </button>
 
+                      {/* All / Buyers / Suppliers — global key feature, always shown */}
                       {showWorkspaceModeSwitch ? (
                         <div className="inline-flex shrink-0 items-center rounded-[0.9rem] border border-slate-200 bg-slate-100 p-1">
                           {(['all', 'buyers', 'suppliers'] as const).map((value) => {
@@ -599,7 +700,7 @@ export function AppShell({
                         </div>
                       ) : null}
 
-                      {/* SF-19-006: Single context-aware primary CTA */}
+                      {/* Quick Lead — primary CTA */}
                       <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
                         <span>＋</span>
                         <span>Quick Lead</span>

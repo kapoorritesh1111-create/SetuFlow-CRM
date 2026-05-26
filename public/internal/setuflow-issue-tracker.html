@@ -589,7 +589,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
     </div>
   </a>
   <div class="topbar-divider"></div>
-  <div class="sprint-pill"><span class="sprint-dot"></span>Sprint 18 · Live</div>
+  <div class="sprint-pill"><span class="sprint-dot"></span><span id="sprint-pill-label">All Sprints · Live</span></div>
   <div class="health-strip" id="health-strip">
     <span class="hs-label">Health:</span>
     <span class="hs-crit" id="hs-crit">– crit</span>
@@ -640,10 +640,13 @@ input.p-in:focus{border-color:var(--brand-teal)}
       </div>
     </div>
 
-    <div class="sb-section" style="margin-top:8px"><div class="sb-section-label">Sprint 18</div></div>
-    <div class="sb-item active" id="sb-all" onclick="filterSb('all')">
-      <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-zap"/></svg>
-      <span class="sb-item-text">All Issues</span><span class="sb-count" id="cnt-all">–</span>
+    <div class="sb-section" style="margin-top:8px"><div class="sb-section-label">By Sprint</div></div>
+    <div id="sb-sprint-filter">
+      <!-- populated by buildSprintFilter() -->
+      <div class="sb-item active" id="sb-sprint-all" onclick="filterBySprint('all')">
+        <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-zap"/></svg>
+        <span class="sb-item-text">All Sprints</span><span class="sb-count" id="cnt-all">–</span>
+      </div>
     </div>
 
     <div class="sb-divider"></div>
@@ -769,7 +772,7 @@ LIVE PRODUCTION WORKFLOW:
 - Deployment: live Vercel project setu-flow-crm
 - Vercel project ID: prj_j3kkTnBcjXKyLLEw9IEMXBfVzfFG
 - Tracker: live Supabase sprint_issues table
-- Sprint: 18
+- Active sprint: 19 (UX Enhancement). Full tracker covers all sprints.
 
 Current tracker baseline to verify from live DB at start:
 - 66 total issues
@@ -869,7 +872,7 @@ ISSUE TRACKER — LIVE SUPABASE TRACKER ACCESS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Base URL: https://sjzfzloggabsmcuxktnl.supabase.co/rest/v1
 Table: sprint_issues
-Sprint filter: sprint_number=18
+Sprint filter: ALL sprints — Sprint 18, Sprint 19, future sprints. Current active: Sprint 19 (UX Enhancement)
 Anon key:
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w
 
@@ -880,11 +883,14 @@ If REST/DNS is unavailable but connected Supabase project access is available, u
 Never use, request, expose, or assume a service-role key for tracker reads/writes.
 Never block live issue work solely because REST is unavailable if connected Supabase tracker read/write access is confirmed.
 
-REST READ Open issues:
-GET /sprint_issues?sprint_number=eq.18&amp;status=eq.Open&amp;order=severity.asc,issue_number.asc
+REST READ Open issues across ALL sprints:
+GET /sprint_issues?status=eq.Open&amp;order=sprint_number.asc,severity.asc,issue_number.asc
 
-REST READ all Sprint 18 issues for progress:
-GET /sprint_issues?sprint_number=eq.18&amp;order=severity.asc,issue_number.asc
+REST READ all issues across ALL sprints:
+GET /sprint_issues?order=sprint_number.asc,severity.asc,issue_number.asc
+
+REST READ Sprint 19 only:
+GET /sprint_issues?sprint_number=eq.19&amp;order=severity.asc,issue_number.asc
 
 Tracker updates may be performed through either:
 1. REST PATCH /sprint_issues?issue_ref=eq.{REF}, or
@@ -926,10 +932,10 @@ Set issue to Resolved only after live proof exists:
 LIVE WORKFLOW — FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 0. Run the Live Access Preflight. Do not select or update an issue until preflight passes.
-1. Read all Open Sprint 18 issues from the tracker.
-2. Read all Sprint 18 issues to calculate progress.
+1. Read all Open issues across ALL sprints from the tracker (no sprint_number filter).
+2. Read all issues across ALL sprints to calculate progress.
 3. Report:
-   - total Sprint 18 issues
+   - total issues across all sprints (Sprint 18 + Sprint 19 + any future)
    - total Open issues
    - total In Progress issues
    - resolved count
@@ -944,7 +950,7 @@ LIVE WORKFLOW — FOLLOW EXACTLY
 4. Select the highest-severity Open issue where sprint_target = "7-Day Rescue" and dependencies are clear.
 5. If no eligible 7-Day Rescue issue is Open, select the highest-severity Open issue overall where dependencies are clear.
 6. If the selected issue is a sub-task, state the parent_ref and keep the fix scoped to that sub-task.
-7. State clearly: "Starting SF-18-XXX: [title]".
+7. State clearly: "Starting SF-{SPRINT}-{NUM}: [title]" (use actual sprint number from the issue_ref).
 8. Immediately update the issue to In Progress with a checkpoint note.
 9. Read and use these tracker fields:
    - issue_ref
@@ -1195,7 +1201,7 @@ Then select the first eligible issue, update it to In Progress, inspect current 
       <div class="kpi-row">
         <div class="kpi-card kc-total">
           <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--icon-clr)"><use href="#ic-zap"/></svg>Total</div>
-          <div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub">Sprint 18 issues</div>
+          <div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub" id="kpi-total-sub">All sprint issues</div>
         </div>
         <div class="kpi-card kc-crit">
           <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--red-hi)"><use href="#ic-alert"/></svg>Critical Open</div>
@@ -1483,7 +1489,13 @@ Then select the first eligible issue, update it to In Progress, inspect current 
 
 <script>
 // Category normalization: DB stores descriptive labels, tracker uses short keys
-const CAT_NORM={'UX Issue':'UX','UX Issues':'UX','Testing Find':'Testing','Testing Finds':'Testing'};
+// SF-19 FIX: added UI/UX → UX, enhancement → Enhancement, bug → Bug mappings for Sprint 19 issues
+const CAT_NORM={
+  'UX Issue':'UX','UX Issues':'UX','UI/UX':'UX','ux':'UX','ui/ux':'UX',
+  'Testing Find':'Testing','Testing Finds':'Testing','testing':'Testing',
+  'enhancement':'Enhancement','Enhancement':'Enhancement',
+  'bug':'Bug','Bug':'Bug',
+};
 function normCat(c){return CAT_NORM[c]||c||'Bug';}
 
 const SB='https://sjzfzloggabsmcuxktnl.supabase.co';
@@ -1492,24 +1504,62 @@ const db=supabase.createClient(SB,KEY);
 let ALL=[],VISIBLE=[],activeFlt='all',sortFld='issue_number',sortDir=1,openIssue=null,gptOpen=false;
 let hideResolved=true; // auto-hide resolved by default
 let selectedCat='Bug';
+// SF-19 FIX: sprint filter — 'all' loads every sprint, number loads specific sprint
+let activeSprint='all';
 const STATUSES=['Open','In Progress','Resolved',"Won't Fix",'Deferred'];
 const SEV_ORD={'Critical':0,'High':1,'Medium':2,'Low':3};
 const AREA_ICONS={'Security':'ic-shield','Engineering':'ic-code','UI/UX':'ic-layout','Supabase':'ic-database','Docs':'ic-file','Product':'ic-box','Infrastructure':'ic-server','Multiple':'ic-settings','Testing':'ic-check'};
 
 /* ══════════════════════════════════════
-   LOAD & CORE
+   LOAD & CORE — All Sprints
 ══════════════════════════════════════ */
 let realtimeChannel=null;
 let realtimeEventCount=0;
 
 async function load(showLoader=true){
   if(showLoader && $('loading-state')) $('loading-state').style.display='flex';
-  const{data,error}=await db.from('sprint_issues').select('*').eq('sprint_number',18).order('issue_number');
+  // SF-19 FIX: load ALL sprint issues, no sprint_number filter
+  const{data,error}=await db.from('sprint_issues').select('*').order('sprint_number').order('issue_number');
   if($('loading-state')) $('loading-state').style.display='none';
   if(error){toast('DB error: '+error.message,false);setLiveStatus('stale','Error loading data');return;}
-  ALL=data||[];buildAreaFilter();buildSidebar();render();animateKPIs();
+  ALL=data||[];
+  // Derive available sprints and update sprint pill
+  const sprints=[...new Set(ALL.map(i=>i.sprint_number))].sort((a,b)=>a-b);
+  const maxSprint=sprints.length?sprints[sprints.length-1]:18;
+  const sprintPill=$('sprint-pill-label');
+  if(sprintPill) sprintPill.textContent='All Sprints · S'+(sprints[0]||18)+'–S'+maxSprint;
+  buildSprintFilter(sprints);
+  buildAreaFilter();buildSidebar();render();animateKPIs();
   updateLastRefresh();
   if(!realtimeChannel) subscribeRealtime();
+}
+
+function buildSprintFilter(sprints){
+  const container=$('sb-sprint-filter');
+  if(!container)return;
+  const allActive=activeSprint==='all';
+  container.innerHTML=`
+    <div class="sb-item ${allActive?'active':''}" id="sb-sprint-all" onclick="filterBySprint('all')">
+      <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-zap"/></svg>
+      <span class="sb-item-text">All Sprints</span>
+      <span class="sb-count">${sprints.length}</span>
+    </div>
+    ${sprints.slice().reverse().map(s=>`
+      <div class="sb-item ${activeSprint===s?'active':''}" id="sb-sprint-${s}" onclick="filterBySprint(${s})">
+        <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-circle"/></svg>
+        <span class="sb-item-text">Sprint ${s}</span>
+        <span class="sb-count" id="cnt-sprint-${s}">${ALL.filter(i=>i.sprint_number===s).length}</span>
+      </div>`).join('')}`;
+}
+
+function filterBySprint(sprint){
+  activeSprint=sprint;
+  activeFlt='all';
+  buildSprintFilter([...new Set(ALL.map(i=>i.sprint_number))].sort((a,b)=>a-b));
+  buildAreaFilter();buildSidebar();render();animateKPIs();
+  // Update new issue form sprint if modal is open
+  const niSprint=$('ni-sprint-number');
+  if(niSprint) niSprint.value=typeof sprint==='number'?sprint:18;
 }
 
 async function manualRefresh(){
@@ -1579,13 +1629,15 @@ function buildAreaFilter(){
    SIDEBAR & COUNTS
 ══════════════════════════════════════ */
 function buildSidebar(){
+  // SF-19 FIX: compute counts against sprint-filtered set
+  const sprintFiltered = activeSprint==='all' ? ALL : ALL.filter(i=>i.sprint_number===activeSprint);
   const sc={},sev={},t={},cat={};
   STATUSES.forEach(s=>sc[s]=0);['Critical','High','Medium','Low'].forEach(s=>sev[s]=0);
   ['7-Day Rescue','30-Day Cleanup'].forEach(t2=>t[t2]=0);
   ['Bug','Enhancement','Testing','UX'].forEach(c=>{cat[c]=0;});
   const catRes={Bug:0,Enhancement:0,Testing:0,UX:0};
   const ac={};
-  ALL.forEach(i=>{
+  sprintFiltered.forEach(i=>{
     sc[i.status]=(sc[i.status]||0)+1;sev[i.severity]=(sev[i.severity]||0)+1;
     if(i.sprint_target)t[i.sprint_target]=(t[i.sprint_target]||0)+1;
     const a=areaOf(i);ac[a]=(ac[a]||0)+1;
@@ -1594,8 +1646,8 @@ function buildSidebar(){
   });
 
   // Active (non-resolved) count for "All Issues"
-  const activeCount=ALL.filter(i=>!isResolved(i)).length;
-  const totalCount=ALL.length;
+  const activeCount=sprintFiltered.filter(i=>!isResolved(i)).length;
+  const totalCount=sprintFiltered.length;
   setText('cnt-all', hideResolved ? activeCount+' / '+totalCount : totalCount);
   setText('cnt-Open',sc.Open||0);setText('cnt-InProgress',sc['In Progress']||0);
   setText('cnt-Resolved',sc.Resolved||0);setText('cnt-Deferred',sc.Deferred||0);setText('cnt-WontFix',sc["Won't Fix"]||0);
@@ -1631,11 +1683,11 @@ function buildSidebar(){
     return`<div class="sb-item" id="sb-area-${esc(a)}" onclick="filterSb('area:${a}')"><svg class="ico sb-icon" style="width:13px;height:13px"><use href="#${iconId}"/></svg><span class="sb-item-text">${esc(a)}</span><span class="sb-count" id="cnt-area-${esc(a)}">${c}</span></div>`;
   }).join('');
 
-  // Sprint ring (exclude resolved)
-  const total=ALL.length;
-  const resolved=ALL.filter(i=>isResolved(i)).length;
+  // Sprint ring (exclude resolved) — uses sprint-filtered set
+  const total=sprintFiltered.length;
+  const resolved=sprintFiltered.filter(i=>isResolved(i)).length;
   const open=total-resolved;
-  const critOpen=ALL.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
+  const critOpen=sprintFiltered.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
   const pct=total?Math.round(resolved/total*100):0;
   const circ=113,offset=circ-(circ*pct/100);
   document.querySelector('.ring-fill').style.strokeDashoffset=offset;
@@ -1661,14 +1713,15 @@ function buildSidebar(){
    KPI ANIMATION (incl. temporal)
 ══════════════════════════════════════ */
 function animateKPIs(){
-  const total=ALL.length;
-  const resolved=ALL.filter(i=>isResolved(i)).length;
-  const critOpen=ALL.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
-  const highOpen=ALL.filter(i=>i.severity==='High'&&!isResolved(i)).length;
-  const inProg=ALL.filter(i=>i.status==='In Progress').length;
-  const r7=ALL.filter(i=>i.sprint_target==='7-Day Rescue');
+  const sf= activeSprint==='all' ? ALL : ALL.filter(i=>i.sprint_number===activeSprint);
+  const total=sf.length;
+  const resolved=sf.filter(i=>isResolved(i)).length;
+  const critOpen=sf.filter(i=>i.severity==='Critical'&&!isResolved(i)).length;
+  const highOpen=sf.filter(i=>i.severity==='High'&&!isResolved(i)).length;
+  const inProg=sf.filter(i=>i.status==='In Progress').length;
+  const r7=sf.filter(i=>i.sprint_target==='7-Day Rescue');
   const r7open=r7.filter(i=>!isResolved(i)).length;
-  const r30=ALL.filter(i=>i.sprint_target==='30-Day Cleanup');
+  const r30=sf.filter(i=>i.sprint_target==='30-Day Cleanup');
   const r30open=r30.filter(i=>!isResolved(i)).length;
   const pct=total?Math.round(resolved/total*100):0;
 
@@ -1680,10 +1733,10 @@ function animateKPIs(){
   const daysSinceMonday=(dow+6)%7; // 0=Monday
   const weekStart=new Date(todayStart);weekStart.setDate(weekStart.getDate()-daysSinceMonday);
 
-  const addedToday=ALL.filter(i=>new Date(i.created_at)>=todayStart).length;
-  const addedWeek=ALL.filter(i=>new Date(i.created_at)>=weekStart).length;
-  const resolvToday=ALL.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=todayStart).length;
-  const resolvWeek=ALL.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=weekStart).length;
+  const addedToday=sf.filter(i=>new Date(i.created_at)>=todayStart).length;
+  const addedWeek=sf.filter(i=>new Date(i.created_at)>=weekStart).length;
+  const resolvToday=sf.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=todayStart).length;
+  const resolvWeek=sf.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=weekStart).length;
 
   function countUp(id,target,duration=600){
     const el=$(id);if(!el)return;let start=0,step=target/Math.max(1,Math.ceil(duration/16));
@@ -1779,6 +1832,9 @@ function getFiltered(){
   const q=$('search-in').value.toLowerCase().trim();
   const aF=$('fsel-area').value,tF=$('fsel-target').value,cF=$('fsel-cat')?.value||'';
   return ALL.filter(i=>{
+    // SF-19 FIX: apply sprint filter first
+    if(activeSprint!=='all' && i.sprint_number!==activeSprint) return false;
+
     const area=areaOf(i);
 
     // ── AUTO-HIDE RESOLVED (unless explicitly viewing Resolved filter) ──
@@ -1975,7 +2031,8 @@ async function submitNewIssue(){
   const maxNum=Math.max(...ALL.map(i=>i.issue_number||0),50);
   const nextNum=maxNum+1;
   const catPfx={Bug:'',Enhancement:'E-',Testing:'T-',UX:'UX-'};
-  const issueRef=`SF-18-${catPfx[selectedCat]||''}${String(nextNum).padStart(3,'0')}`;
+  const currentSprintNum = typeof activeSprint==='number' ? activeSprint : (ALL.length?Math.max(...ALL.map(i=>i.sprint_number)):19);
+  const issueRef=`SF-${currentSprintNum}-${catPfx[selectedCat]||''}${String(nextNum).padStart(3,'0')}`;
 
   // Parse code files
   const filesRaw=($('ni-files').value||'').trim();
@@ -1994,9 +2051,10 @@ async function submitNewIssue(){
 
   const payload={
     issue_number:nextNum,
-    sprint_number:18,
-    sprint_name:'Sprint 18',
-    sprint_label:'Sprint 18',
+    // SF-19 FIX: use activeSprint if specific sprint selected, otherwise use max sprint from ALL
+    sprint_number: typeof activeSprint==='number' ? activeSprint : (ALL.length?Math.max(...ALL.map(i=>i.sprint_number)):19),
+    sprint_name: typeof activeSprint==='number' ? 'Sprint '+activeSprint : 'Sprint '+(ALL.length?Math.max(...ALL.map(i=>i.sprint_number)):19),
+    sprint_label: typeof activeSprint==='number' ? 'Sprint '+activeSprint : 'Sprint '+(ALL.length?Math.max(...ALL.map(i=>i.sprint_number)):19),
     sprint_target:$('ni-target').value,
     issue_ref:issueRef,
     title,
