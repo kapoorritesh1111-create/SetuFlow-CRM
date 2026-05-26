@@ -1,4 +1,5 @@
 import { GuruAvatar } from '@/components/ui/guru-avatar';
+import { SetuIcon, type SetuIconName } from '@/components/ui/setu-icon';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { WorkspaceHeader, ToolbarStat } from '@/components/ui/workspace-toolbar';
@@ -29,11 +30,12 @@ export type AdminNavKey =
   | 'seo';
 
 type AdminNavStatusDot = 'ok' | 'warn' | 'none';
+type AdminNavIcon = SetuIconName | 'guru';
 
 type AdminNavItem = {
   key: AdminNavKey;
   href: string;
-  icon: string;
+  icon: AdminNavIcon;
   label: string;
   badge?: string;
   badgeTone?: 'success' | 'warning' | 'danger' | 'info';
@@ -55,51 +57,55 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
   {
     label: 'Organisation',
     items: [
-      { key: 'overview', href: '/admin/overview', icon: '🏢', label: 'Overview', statusDot: 'ok' },
-      { key: 'profile', href: '/admin/organization', icon: '👤', label: 'Organization profile', statusDot: 'ok' },
-      { key: 'users', href: '/admin/users', icon: '👥', label: 'Team members', statusDot: 'ok' },
-      { key: 'invitations', href: '/admin/invitations', icon: '✉', label: 'Invitations', statusDot: 'warn' },
-      { key: 'notifications', href: '/admin/notifications', icon: '🔔', label: 'Notifications', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
-      { key: 'client-onboarding', href: '/admin/client-onboarding', icon: '🚀', label: 'Client onboarding', statusDot: 'warn', internalOnly: true },
+      { key: 'overview', href: '/admin/overview', icon: 'building', label: 'Overview', statusDot: 'ok' },
+      { key: 'profile', href: '/admin/organization', icon: 'user', label: 'Organization profile', statusDot: 'ok' },
+      { key: 'users', href: '/admin/users', icon: 'users', label: 'Team members', statusDot: 'ok' },
+      { key: 'invitations', href: '/admin/invitations', icon: 'mail', label: 'Invitations', statusDot: 'warn' },
+      { key: 'notifications', href: '/admin/notifications', icon: 'bell', label: 'Notifications', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
+      { key: 'client-onboarding', href: '/admin/client-onboarding', icon: 'rocket', label: 'Client onboarding', statusDot: 'warn', internalOnly: true },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { key: 'markets', href: '/admin/markets', icon: '🌍', label: 'Markets', statusDot: 'ok' },
-      { key: 'categories', href: '/admin/categories', icon: '📦', label: 'Categories', statusDot: 'ok' },
-      { key: 'stages', href: '/admin/stages', icon: '◎', label: 'Pipelines & stages', statusDot: 'ok' },
-      { key: 'product-management', href: '/admin/product-management', icon: '📚', label: 'Products', statusDot: 'ok' },
-      { key: 'trade-events', href: '/admin/trade-events', icon: '🏭', label: 'Trade events', statusDot: 'ok' },
+      { key: 'markets', href: '/admin/markets', icon: 'globe', label: 'Markets', statusDot: 'ok' },
+      { key: 'categories', href: '/admin/categories', icon: 'box', label: 'Categories', statusDot: 'ok' },
+      { key: 'stages', href: '/admin/stages', icon: 'workflow', label: 'Pipelines & stages', statusDot: 'ok' },
+      { key: 'product-management', href: '/admin/product-management', icon: 'clipboard', label: 'Products', statusDot: 'ok' },
+      { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade events', statusDot: 'ok' },
     ],
   },
   {
     label: 'Commerce',
     items: [
-      { key: 'pricing-engine', href: '/admin/pricing-engine', icon: '💱', label: 'Pricing engine', statusDot: 'ok' },
-      { key: 'document-templates', href: '/admin/document-templates', icon: '📄', label: 'Templates & terms', statusDot: 'ok' },
+      { key: 'pricing-engine', href: '/admin/pricing-engine', icon: 'dollar', label: 'Pricing engine', statusDot: 'ok' },
+      { key: 'document-templates', href: '/admin/document-templates', icon: 'file', label: 'Templates & terms', statusDot: 'ok' },
     ],
   },
   {
     label: 'Platform',
     items: [
-      { key: 'integrations', href: '/admin/integrations', icon: '🔌', label: 'Integrations', statusDot: 'warn', internalOnly: true },
-      { key: 'rate-limits', href: '/admin/rate-limits', icon: '⚡', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
-      { key: 'guru-config', href: '/admin/guru-config', icon: '__guru__', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
-      { key: 'api-keys', href: '/admin/api-keys', icon: '🔑', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'integrations', href: '/admin/integrations', icon: 'plug', label: 'Integrations', statusDot: 'warn', internalOnly: true },
+      { key: 'rate-limits', href: '/admin/rate-limits', icon: 'zap', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'guru-config', href: '/admin/guru-config', icon: 'guru', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'api-keys', href: '/admin/api-keys', icon: 'key', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
     ],
   },
   {
     label: 'Governance',
     items: [
-      { key: 'security', href: '/admin/security', icon: '🔒', label: 'Security & roles', statusDot: 'warn' },
-      { key: 'audit', href: '/admin/audit', icon: '📋', label: 'Audit log', statusDot: 'ok' },
-      { key: 'ai-analytics', href: '/admin/ai-analytics', icon: '✦', label: 'AI analytics', badge: 'Internal', badgeTone: 'info', statusDot: 'ok', internalOnly: true },
+      { key: 'security', href: '/admin/security', icon: 'security', label: 'Security & roles', statusDot: 'warn' },
+      { key: 'audit', href: '/admin/audit', icon: 'audit', label: 'Audit log', statusDot: 'ok' },
+      { key: 'ai-analytics', href: '/admin/ai-analytics', icon: 'analytics', label: 'AI analytics', badge: 'Internal', badgeTone: 'info', statusDot: 'ok', internalOnly: true },
     ],
   },
 ] as const;
 
 export type AdminGapItem = { icon: string; text: string; href: string };
+
+function AdminNavIconGlyph({ icon }: { icon: AdminNavIcon }) {
+  return icon === 'guru' ? <GuruAvatar size="sm" /> : <SetuIcon name={icon} className="h-[17px] w-[17px]" />;
+}
 
 function AdminNavBadge({ label, tone = 'success' }: { label: string; tone?: 'success' | 'warning' | 'danger' | 'info' }) {
   return (
@@ -163,7 +169,7 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
                             : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950',
                         )}
                       >
-                        <span className="w-5 text-center text-[15px] flex items-center justify-center" aria-hidden="true">{item.icon === '__guru__' ? <GuruAvatar size="sm" /> : item.icon}</span>
+                        <span className="flex w-5 items-center justify-center" aria-hidden="true"><AdminNavIconGlyph icon={item.icon} /></span>
                         <span className="min-w-0 flex-1 truncate">{item.label}</span>
                         {badgeLabel ? <AdminNavBadge label={badgeLabel} tone={badgeTone} /> : null}
                         <AdminNavStatusDot dot={statusDot} />
@@ -194,7 +200,7 @@ function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: numbe
   return <section className={cn('rounded-[2rem] border p-4', clear ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50')}>
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex gap-3">
-        <span className="text-2xl" aria-hidden="true">{clear ? '✅' : '⚠️'}</span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/80" aria-hidden="true"><SetuIcon name={clear ? 'security' : 'bell'} className="h-5 w-5" /></span>
         <div>
           <p className={cn('text-sm font-bold', clear ? 'text-emerald-800' : 'text-amber-800')}>{clear ? 'Governance clear' : 'Governance attention needed'}</p>
           <p className="mt-1 text-sm leading-6 text-slate-700">{clear ? 'Markets, stages, pipelines, trade events, and security controls are configured.' : `${missingCount} setup area${missingCount === 1 ? '' : 's'} still need attention before every workflow is fully governed.`}</p>
@@ -202,7 +208,7 @@ function GovernanceBanner({ missingCount, gapItems = [] }: { missingCount: numbe
             <div className="mt-3 flex flex-wrap gap-2">
               {gapItems.map(item => (
                 <Link key={item.href} href={item.href} className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-200">
-                  <span>{item.icon === '__guru__' ? <GuruAvatar size="sm" /> : item.icon}</span><span>{item.text}</span><span className="text-amber-600">→ Fix</span>
+                  <span>{item.icon === '__guru__' ? <GuruAvatar size="sm" /> : item.icon}</span><span>{item.text}</span><span className="text-amber-600">Fix</span>
                 </Link>
               ))}
             </div>
