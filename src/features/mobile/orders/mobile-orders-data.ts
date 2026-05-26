@@ -45,6 +45,20 @@ export type MobileOrder = {
   updatedAt: string | null;
 };
 
+type QueryResult = { data: unknown; error?: unknown };
+type MobileOrderQuery = PromiseLike<QueryResult> & {
+  select(columns: string): MobileOrderQuery;
+  eq(column: string, value: unknown): MobileOrderQuery;
+  in(column: string, values: readonly unknown[]): MobileOrderQuery;
+  neq(column: string, value: unknown): MobileOrderQuery;
+  order(column: string, options?: { ascending?: boolean }): MobileOrderQuery;
+  limit(count: number): MobileOrderQuery;
+};
+type MobileOrderDb = {
+  from(table: string): MobileOrderQuery;
+  rpc(fn: string, args?: Record<string, unknown>): Promise<QueryResult>;
+};
+
 type OrderRow = {
   id: string;
   lead_id: string | null;
@@ -68,6 +82,10 @@ type LeadDisplayRow = { order_id: string | null; company_name?: string | null; c
 type DocumentRow = { id: string; order_id: string | null; document_type: string | null; status: string | null; sent_at: string | null; opened_at: string | null };
 type GateRow = { id: string; order_id: string | null; stage_key: string | null; status: string | null; reason?: string | null };
 type LineRow = { id: string; order_id: string | null; product_name_snapshot: string | null; ordered_quantity: number | string | null; packed_quantity: number | string | null; dispatched_quantity: number | string | null; delivered_quantity: number | string | null };
+
+function rows<T>(value: unknown) {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
 
 function clean(value: unknown) {
   const text = String(value ?? '').trim();
@@ -122,7 +140,7 @@ function toMobileOrder(order: OrderRow, lead: LeadDisplayRow | undefined, docume
 export async function loadMobileOrders() {
   const workspace = await getWorkspaceAccess();
   if (!workspace.organization) return [] as MobileOrder[];
-  const db = await createClient();
+  const db = (await createClient()) as unknown as MobileOrderDb;
   const orgId = workspace.organization.id;
   const ordersResult = await db
     .from('orders')
@@ -130,7 +148,7 @@ export async function loadMobileOrders() {
     .eq('organization_id', orgId)
     .order('updated_at', { ascending: false })
     .limit(80);
-  const orders = (ordersResult.data ?? []) as OrderRow[];
+  const orders = rows<OrderRow>(ordersResult.data);
   const orderIds = orders.map((order) => order.id);
   if (!orderIds.length) return [] as MobileOrder[];
 
@@ -141,10 +159,10 @@ export async function loadMobileOrders() {
     db.from('order_lines').select('id, order_id, product_name_snapshot, ordered_quantity, packed_quantity, dispatched_quantity, delivered_quantity').eq('organization_id', orgId).in('order_id', orderIds).neq('line_status', 'removed'),
   ]);
 
-  const leads = (leadResult.data ?? []) as LeadDisplayRow[];
-  const docs = (documentResult.data ?? []) as DocumentRow[];
-  const gates = (gateResult.data ?? []) as GateRow[];
-  const lines = (lineResult.data ?? []) as LineRow[];
+  const leads = rows<LeadDisplayRow>(leadResult.data);
+  const docs = rows<DocumentRow>(documentResult.data);
+  const gates = rows<GateRow>(gateResult.data);
+  const lines = rows<LineRow>(lineResult.data);
   return orders.map((order) => toMobileOrder(order, leads.find((lead) => lead.order_id === order.id), docs, gates, lines));
 }
 
