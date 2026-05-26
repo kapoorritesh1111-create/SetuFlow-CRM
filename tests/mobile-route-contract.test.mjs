@@ -63,10 +63,25 @@ test('canonical dashboard and leads use the blueprint-grade mobile shell on phon
   assert.match(dashboardPage, /MobileDashboardHome/);
   assert.match(dashboardPage, /<div className="md:hidden">/);
   assert.match(mobileShell, /data-mobile-shell=\{canonical \? 'canonical' : 'standalone'\}/);
-  assert.match(mobileNav, /canonicalTabs/);
-  assert.match(mobileNav, /\/dashboard/);
-  assert.match(mobileNav, /\/leads/);
+  assert.match(mobileNav, /canonicalMobileNavItems/);
+  assert.match(mobileNav, /standaloneMobileNavItems/);
   assert.match(mobileNav, /Share vCard/);
+});
+
+test('mobile navigation is derived from the shared shell nav config', () => {
+  const sharedNav = readFileSync('src/lib/navigation/nav-items.ts', 'utf8');
+  const shellNav = readFileSync('src/components/shell/navigation.tsx', 'utf8');
+  const mobileNav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  const mobileTabBar = readFileSync('src/components/shell/MobileTabBar.tsx', 'utf8');
+
+  assert.match(sharedNav, /canonicalShellSections/);
+  assert.match(sharedNav, /getCanonicalMobileNavItems/);
+  assert.match(shellNav, /filterShellSections/);
+  assert.match(shellNav, /getPrimaryShellNavItems/);
+  assert.match(mobileNav, /canonicalMobileNavItems/);
+  assert.match(mobileNav, /standaloneMobileNavItems/);
+  assert.match(mobileTabBar, /canonicalMobileNavItems/);
+  assert.doesNotMatch(mobileTabBar, /const tabs = \[/);
 });
 
 test('mobile docs preserve signed-in identity and Share vCard without reference HTML handoff files', () => {
