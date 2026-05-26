@@ -283,7 +283,7 @@ export function MobileDashboardHome() {
         <div className="mt-4 grid grid-cols-2 gap-3">
           {actions.map((action) => (
             <Link key={action.title} href={action.href} className="rounded-[1.5rem] bg-white p-4 shadow-lg shadow-slate-200/60 transition hover:-translate-y-0.5 dark:bg-slate-950 dark:shadow-black/20">
-              <ThreeDIconOrb icon={action.icon} tone={action.tone} size="sm" />
+              <ThreeDIconOrb icon={action.icon} tone={action.tone} />
               <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">{action.title}</p>
             </Link>
           ))}
