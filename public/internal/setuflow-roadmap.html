@@ -459,8 +459,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 <script>
 const SB='https://sjzfzloggabsmcuxktnl.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
-const _ck={getItem(k){try{const j={};document.cookie.split(';').forEach(c=>{const i=c.indexOf('=');if(i<0)return;j[c.slice(0,i).trim()]=c.slice(i+1).trim();});if(j[k])return decodeURIComponent(j[k]);let r='',i=0;while(j[`${k}.${i}`]!==undefined){r+=decodeURIComponent(j[`${k}.${i}`]);i++;}return r||localStorage.getItem(k);}catch{try{return localStorage.getItem(k);}catch{return null;}}},setItem(k,v){try{localStorage.setItem(k,v);}catch{}try{document.cookie=`${k}=${encodeURIComponent(v)};path=/;max-age=31536000;SameSite=Lax`;}catch{}},removeItem(k){try{localStorage.removeItem(k);}catch{}try{document.cookie=`${k}=;path=/;max-age=0`;}catch{}}};
-const db=supabase.createClient(SB,KEY,{auth:{storage:_ck,storageKey:'sb-sjzfzloggabsmcuxktnl-auth-token',detectSessionInUrl:true,persistSession:true}});
+// Auth verified server-side via /api/internal/auth-check; tokens set via setSession()
+const db=supabase.createClient(SB,KEY);
 const SETU_ORG='3327b9a7-aadb-44b0-9793-30c4045d3c92';
 
 let ALL=[], currentUser=null, currentUserName='', isOrgMember=false;
@@ -474,27 +474,36 @@ document.getElementById('ag-signin-btn').onclick=()=>{
 
 async function initAuth(){
   const gate=document.getElementById('auth-gate');
-  // Check for token in URL
+  // Check for share token in URL first (external viewers)
   const urlToken=new URLSearchParams(window.location.search).get('token');
   if(urlToken){
     const ok=await verifyToken(urlToken);
     if(ok){gate.classList.add('hidden');await load();return;}
+    gate.classList.remove('hidden');
+    document.getElementById('ag-err').textContent='Share link is invalid or has expired.';
+    return;
   }
-  // Try session
-  const{data:{session},error}=await db.auth.getSession();
-  if(error||!session){gate.classList.remove('hidden');return;}
-  const{data:mem}=await db.from('organization_members').select('organization_id').eq('user_id',session.user.id).eq('organization_id',SETU_ORG).maybeSingle();
-  if(!mem){gate.classList.remove('hidden');document.getElementById('ag-err').textContent='SETU Flow organisation membership required.';return;}
-  const{data:prof}=await db.from('profiles').select('full_name').eq('id',session.user.id).maybeSingle();
-  currentUser=session.user;
-  currentUserName=prof?.full_name||session.user.email||'Member';
-  isOrgMember=true;
-  setUserPill(currentUserName);
-  gate.classList.add('hidden');
-  document.getElementById('add-item-btn').style.display='';
-  document.getElementById('share-panel').style.display='';
-  await load();
-  await loadTokens();
+  // Server-side auth check — reads @supabase/ssr session cookies correctly
+  try{
+    const res=await fetch('/api/internal/auth-check',{credentials:'include'});
+    if(res.status===401){gate.classList.remove('hidden');return;}
+    if(res.status===403){gate.classList.remove('hidden');document.getElementById('ag-err').textContent='SETU Flow organisation membership required.';return;}
+    if(!res.ok){gate.classList.remove('hidden');return;}
+    const auth=await res.json();
+    // Set session so RLS-protected roadmap queries work
+    if(auth.access_token&&auth.refresh_token){
+      await db.auth.setSession({access_token:auth.access_token,refresh_token:auth.refresh_token});
+    }
+    currentUser={id:auth.user.id,email:auth.user.email};
+    currentUserName=auth.user.name||'Member';
+    isOrgMember=true;
+    setUserPill(currentUserName);
+    gate.classList.add('hidden');
+    document.getElementById('add-item-btn').style.display='';
+    document.getElementById('share-panel').style.display='';
+    await load();
+    await loadTokens();
+  }catch{gate.classList.remove('hidden');}
 }
 
 async function verifyToken(tok){
