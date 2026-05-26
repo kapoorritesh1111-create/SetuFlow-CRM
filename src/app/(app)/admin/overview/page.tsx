@@ -135,22 +135,15 @@ export default async function AdminOverviewPage() {
         <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-500">Trade Command Center</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Organization setup · <span className="text-xl font-normal text-slate-400">{organization.name}</span></h1>
         <p className="mt-1 text-sm text-slate-500">Configure company identity, team access, markets, catalog readiness, and governance controls.</p>
-        {/* Tag row */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {govItems.map((item) => (
-            <span key={item.label} className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${item.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{item.label}</span>
-          ))}
-          <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 text-xs font-semibold">{myRole.charAt(0).toUpperCase() + myRole.slice(1)} · {currency}</span>
-        </div>
       </div>
 
-      {/* Governance bar */}
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      {/* SF-19-019: Single governance status strip — removed duplicate governance bar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400 mr-1">Governance</span>
         {govItems.map((item) => (
-          <div key={item.label} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${item.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}`}>
-            {item.label}
-          </div>
+          <span key={item.label} className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${item.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{item.label}</span>
         ))}
+        <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 text-xs font-semibold ml-auto">{myRole.charAt(0).toUpperCase() + myRole.slice(1)} · {currency}</span>
       </div>
 
       {/* 6-card overview grid */}

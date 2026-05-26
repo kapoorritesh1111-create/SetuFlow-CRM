@@ -33,8 +33,10 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
                 aria-current={active ? 'page' : undefined}
                 title={PRIMARY_NAV_LABELS[item.href]}
                 className={cn(
-                  'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
-                  active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
+                  'relative flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+                  active
+                    ? 'bg-white/12 text-white before:absolute before:left-[-8px] before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-[#0c7fff]'
+                    : 'text-white/60 hover:bg-white/8 hover:text-white',
                 )}
               >
                 <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />
@@ -56,8 +58,10 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
                   aria-current={active ? 'page' : undefined}
                   title={UTILITY_NAV_LABELS[item.href]}
                   className={cn(
-                    'flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
-                    active ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white',
+                    'relative flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+                    active
+                      ? 'bg-white/12 text-white before:absolute before:left-[-8px] before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-[#0c7fff]'
+                      : 'text-white/60 hover:bg-white/8 hover:text-white',
                   )}
                 >
                   <FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />

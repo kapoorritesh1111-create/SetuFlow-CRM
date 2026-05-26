@@ -63,6 +63,9 @@ function profileLabel(profile: ProfileRow | undefined, fallback = 'Unassigned') 
   return profile?.full_name || profile?.username || fallback;
 }
 
+// SF-19-018: Groups expanded by default (Overdue + Today only)
+const DEFAULT_EXPANDED = new Set(['Overdue', 'Today']);
+
 export function TasksWorkspace({ data, currentUserId }: Props) {
   const [tasks, setTasks] = useState<TaskRow[]>(data.tasks);
   const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
@@ -70,6 +73,8 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
   const [fieldNoteOpen, setFieldNoteOpen] = useState(false);
   const [fieldDocumentOpen, setFieldDocumentOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
+  // SF-19-005: pre-fill date when clicking a calendar cell
+  const [newTaskDate, setNewTaskDate] = useState('');
   const [message, setMessage] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
@@ -80,6 +85,17 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [clock, setClock] = useState<Date | null>(null);
   const [isPending, startTransition] = useTransition();
+  // SF-19-018: collapsible groups — Overdue + Today open by default
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    const allGroups = new Set(GROUPS as unknown as string[]);
+    DEFAULT_EXPANDED.forEach(g => allGroups.delete(g));
+    return allGroups;
+  });
+  const toggleGroup = (label: string) => setCollapsedGroups(prev => {
+    const next = new Set(prev);
+    next.has(label) ? next.delete(label) : next.add(label);
+    return next;
+  });
 
   useEffect(() => setClock(new Date()), []);
 
@@ -102,6 +118,21 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
 
   const groupedTasks = useMemo(() => GROUPS.map((label) => ({ label, items: filteredTasks.filter((task) => groupForTask(task, today) === label) })), [filteredTasks, today]);
   const listTasks = filteredTasks.slice(0, visibleCount);
+
+  // SF-19-011: per-filter counts for chip bar
+  const filterCounts: Record<FocusFilter, number> = useMemo(() => {
+    const base = tasks.filter((task) => {
+      const text = [taskTitle(task), taskNotes(task)].join(' ').toLowerCase();
+      return !normalizedSearch || text.includes(normalizedSearch);
+    });
+    return {
+      all: base.length,
+      my: base.filter(t => assignedTo(t) === currentUserId).length,
+      'sla-risk': base.filter(t => !!(clock && t.status !== 'completed' && new Date(t.scheduled_for) < clock)).length,
+      'lead-linked': base.filter(t => !!t.lead_id).length,
+      'internal-ops': base.filter(t => !t.lead_id).length,
+    };
+  }, [tasks, normalizedSearch, currentUserId, clock]);
 
   const upsertTask = (task?: TaskRow | null) => {
     if (!task) return;
@@ -156,6 +187,7 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
         )}
       </div>
 
+      {/* SF-19-005: Redesigned calendar — 80px cells, 11px colour-coded pills, click-to-create */}
       {taskView === 'calendar' && (() => {
         const year = calMonth.getFullYear(); const month = calMonth.getMonth();
         const firstDay = new Date(year, month, 1).getDay();
@@ -163,25 +195,74 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
         const todayStr = new Date().toISOString().slice(0,10);
         const cells: Array<number | null> = [...Array(firstDay).fill(null), ...Array.from({length:daysInMonth},(_,i)=>i+1)];
         while (cells.length % 7 !== 0) cells.push(null);
+        // derive task colour by state
+        function pillClasses(task: TaskRow, cellDateStr: string) {
+          if (task.status === 'completed') return 'bg-slate-100 text-slate-400 line-through';
+          if (today && new Date(cellDateStr) < today) return 'bg-red-50 text-red-700';
+          if (cellDateStr === todayStr) return 'bg-amber-50 text-amber-700';
+          return 'bg-blue-50 text-blue-700';
+        }
         return (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid grid-cols-7 text-center mb-2">
-              {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="text-[9px] font-extrabold uppercase text-slate-400 py-1">{d}</div>)}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            {/* Day-of-week header */}
+            <div className="grid grid-cols-7 border-b border-slate-100">
+              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                <div key={d} className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-slate-400 text-center py-2">{d}</div>
+              ))}
             </div>
-            <div className="grid grid-cols-7 gap-px bg-slate-100 rounded-xl overflow-hidden">
+            {/* Calendar grid */}
+            <div className="grid grid-cols-7 gap-px bg-slate-100">
               {cells.map((day, i) => {
-                if (!day) return <div key={i} className="bg-white min-h-[52px]" />;
+                if (!day) return <div key={i} className="bg-slate-50 min-h-[80px]" />;
                 const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                const dayTasks = filteredTasks.filter(tk => ((payloadOf(tk) as any).scheduled_for ?? '').startsWith(ds));
+                // match tasks whose scheduled_for date part equals this cell's date string
+                const dayTasks = filteredTasks.filter(tk => {
+                  const sf = tk.scheduled_for ?? '';
+                  return sf.slice(0, 10) === ds;
+                });
                 const isToday = ds === todayStr;
+                const hasOverdue = dayTasks.some(t => t.status !== 'completed' && today && new Date(ds) < today);
                 return (
-                  <div key={i} className={`bg-white min-h-[52px] p-1 ${isToday ? 'ring-2 ring-inset ring-blue-500' : ''}`}>
-                    <div className={`text-[9px] font-bold mb-0.5 h-4 w-4 rounded-full flex items-center justify-center ${isToday ? 'bg-blue-600 text-white' : 'text-slate-600'}`}>{day}</div>
-                    {dayTasks.slice(0,2).map((task: any) => <div key={task.id} className="rounded text-[8px] font-semibold truncate px-0.5 mb-px bg-blue-50 text-blue-700">{(payloadOf(task) as any).title ?? 'Task'}</div>)}
-                    {dayTasks.length > 2 && <div className="text-[8px] text-slate-400">+{dayTasks.length-2}</div>}
+                  <div
+                    key={i}
+                    className={`bg-white min-h-[80px] p-1.5 cursor-pointer hover:bg-slate-50 transition-colors ${isToday ? 'bg-blue-50/40' : ''}`}
+                    onClick={() => {
+                      // SF-19-005: click empty cell → open task drawer pre-filled with this date
+                      setNewTaskDate(`${ds}T09:00`);
+                      setEditingTask(null);
+                      setTaskDrawerOpen(true);
+                    }}
+                  >
+                    {/* Day number */}
+                    <div className={`text-[12px] font-bold mb-1 h-[22px] w-[22px] rounded-full flex items-center justify-center mx-auto ${isToday ? 'bg-blue-600 text-white' : hasOverdue ? 'text-red-600' : 'text-slate-600'}`}>
+                      {day}
+                    </div>
+                    {/* Task pills — max 3 visible */}
+                    {dayTasks.slice(0, 3).map((task) => (
+                      <div
+                        key={task.id}
+                        className={`rounded-[4px] text-[11px] font-semibold truncate px-1 py-0.5 mb-0.5 ${pillClasses(task, ds)}`}
+                        onClick={(e) => { e.stopPropagation(); setEditingTask(task); setTaskDrawerOpen(true); }}
+                        title={taskTitle(task)}
+                      >
+                        {taskTitle(task)}
+                      </div>
+                    ))}
+                    {/* Overflow indicator */}
+                    {dayTasks.length > 3 && (
+                      <div className="text-[10px] font-semibold text-slate-400 pl-1">+{dayTasks.length - 3} more</div>
+                    )}
                   </div>
                 );
               })}
+            </div>
+            {/* Legend */}
+            <div className="flex items-center gap-4 px-4 py-2 border-t border-slate-100 bg-slate-50/50">
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Overdue</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Today</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />Upcoming</span>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />Done</span>
+              <span className="ml-auto text-[11px] text-slate-400">Click any cell to create a task</span>
             </div>
           </div>
         );
@@ -195,10 +276,64 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
         </div>
         <div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => { setEditingTask(null); setTaskDrawerOpen(true); }} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Add task</button><button type="button" onClick={() => setCaptureDrawerOpen(true)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Capture lead</button><button type="button" onClick={() => setFieldNoteOpen(true)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Field note</button><button type="button" onClick={() => setFieldDocumentOpen(true)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Field doc</button><Link href="/trade-events" className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100">Trade-show desk</Link></div>
         {message ? <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{message}</p> : null}
-        <div className="mt-4 grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 lg:grid-cols-4"><label className="grid gap-2 text-sm text-slate-600"><span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Search queue</span><input value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Task, lead, notes, assignee" className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900" /></label><label className="grid gap-2 text-sm text-slate-600"><span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Focus</span><select value={focusFilter} onChange={(event) => { setFocusFilter(event.target.value as FocusFilter); setVisibleCount(PAGE_SIZE); }} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"><option value="all">All tasks</option><option value="my">My tasks</option><option value="sla-risk">SLA risk</option><option value="lead-linked">Lead linked</option><option value="internal-ops">Internal ops</option></select></label><label className="grid gap-2 text-sm text-slate-600"><span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">View</span><select value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"><option value="grouped">Grouped by due date</option><option value="list">List</option></select></label><div className="flex items-end"><button type="button" onClick={resetFilters} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Reset filters</button></div></div>
+
+        {/* SF-19-011: Premium chip filter bar — replaces native <select> dropdowns */}
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* Search input — compact */}
+          <input
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search tasks, leads, notes…"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 w-full sm:w-64 focus:outline-none focus:border-brand-400 focus:bg-white"
+          />
+          {/* Filter chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {([
+              { key: 'all' as FocusFilter, label: 'All' },
+              { key: 'my' as FocusFilter, label: 'My Tasks' },
+              { key: 'sla-risk' as FocusFilter, label: 'SLA Risk' },
+              { key: 'lead-linked' as FocusFilter, label: 'Lead Linked' },
+              { key: 'internal-ops' as FocusFilter, label: 'Internal Ops' },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { setFocusFilter(key); setVisibleCount(PAGE_SIZE); }}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  focusFilter === key
+                    ? 'bg-[#0b2e4a] text-white'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {label}
+                <span className={`rounded-full px-1.5 text-[10px] font-bold ${focusFilter === key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  {filterCounts[key]}
+                </span>
+              </button>
+            ))}
+            {/* View mode inline toggle */}
+            <div className="ml-auto flex items-center rounded-lg border border-slate-200 overflow-hidden">
+              {(['grouped', 'list'] as ViewMode[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setViewMode(v)}
+                  className={`px-3 py-1.5 text-xs font-semibold capitalize transition ${viewMode === v ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                >
+                  {v === 'grouped' ? '⊞ Grouped' : '☰ List'}
+                </button>
+              ))}
+            </div>
+            {(searchValue || focusFilter !== 'all') && (
+              <button type="button" onClick={resetFilters} className="text-xs font-medium text-slate-500 hover:text-slate-900 transition">
+                Clear ×
+              </button>
+            )}
+          </div>
+        </div>
       </section>
-      {viewMode === 'grouped' ? <GroupedTaskList groups={groupedTasks} leadMap={leadMap} profileMap={profileMap} now={clock} onEdit={(task) => { setEditingTask(task); setTaskDrawerOpen(true); }} onStatus={runTaskStatus} /> : <ListTaskList tasks={listTasks} total={filteredTasks.length} leadMap={leadMap} profileMap={profileMap} now={clock} onEdit={(task) => { setEditingTask(task); setTaskDrawerOpen(true); }} onStatus={runTaskStatus} onMore={() => setVisibleCount((count) => count + PAGE_SIZE)} />}
-      <TaskDrawer open={taskDrawerOpen} task={editingTask} data={data} currentUserId={currentUserId} isPending={isPending} onClose={() => { setTaskDrawerOpen(false); setEditingTask(null); }} onSubmit={submitTask} />
+      {viewMode === 'grouped' ? <GroupedTaskList groups={groupedTasks} leadMap={leadMap} profileMap={profileMap} now={clock} collapsedGroups={collapsedGroups} onToggleGroup={toggleGroup} onEdit={(task) => { setEditingTask(task); setTaskDrawerOpen(true); }} onStatus={runTaskStatus} /> : <ListTaskList tasks={listTasks} total={filteredTasks.length} leadMap={leadMap} profileMap={profileMap} now={clock} onEdit={(task) => { setEditingTask(task); setTaskDrawerOpen(true); }} onStatus={runTaskStatus} onMore={() => setVisibleCount((count) => count + PAGE_SIZE)} />}
+      <TaskDrawer open={taskDrawerOpen} task={editingTask} data={data} currentUserId={currentUserId} isPending={isPending} prefillDate={newTaskDate} onClose={() => { setTaskDrawerOpen(false); setEditingTask(null); setNewTaskDate(''); }} onSubmit={submitTask} />
       <CaptureDrawer open={captureDrawerOpen} data={data} isPending={isPending} onClose={() => setCaptureDrawerOpen(false)} onSubmit={submitCapture} />
       <FieldNoteDrawer open={fieldNoteOpen} data={data} isPending={isPending} onClose={() => setFieldNoteOpen(false)} onSubmit={submitFieldNote} />
       <FieldDocumentDrawer open={fieldDocumentOpen} data={data} isPending={isPending} onClose={() => setFieldDocumentOpen(false)} onSubmit={submitFieldDocument} />
@@ -207,8 +342,55 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
     );
 }
 
-function GroupedTaskList({ groups, leadMap, profileMap, now, onEdit, onStatus }: { groups: { label: string; items: TaskRow[] }[]; leadMap: Map<string, TasksWorkspaceData['leads'][number]>; profileMap: Map<string, ProfileRow>; now: Date | null; onEdit: (task: TaskRow) => void; onStatus: (action: 'complete' | 'reopen', taskId: string) => void }) {
-  return <div className="grid gap-4 xl:grid-cols-2">{groups.map((group) => <section key={group.label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><div className="flex items-start justify-between"><div><h3 className="text-lg font-semibold text-slate-900">{group.label}</h3><p className="mt-1 text-sm text-slate-600">Tasks grouped by due date and completion state.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{group.items.length}</span></div><div className="mt-4 space-y-3">{group.items.length ? group.items.slice(0, PAGE_SIZE).map((task) => <TaskCard key={task.id} task={task} lead={task.lead_id ? leadMap.get(task.lead_id) : undefined} assignee={assignedTo(task) ? profileMap.get(assignedTo(task) ?? '') : undefined} now={now} onEdit={onEdit} onStatus={onStatus} />) : <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">No items in this group.</p>}</div></section>)}</div>;
+function GroupedTaskList({ groups, leadMap, profileMap, now, collapsedGroups, onToggleGroup, onEdit, onStatus }: {
+  groups: { label: string; items: TaskRow[] }[];
+  leadMap: Map<string, TasksWorkspaceData['leads'][number]>;
+  profileMap: Map<string, ProfileRow>;
+  now: Date | null;
+  collapsedGroups: Set<string>;
+  onToggleGroup: (label: string) => void;
+  onEdit: (task: TaskRow) => void;
+  onStatus: (action: 'complete' | 'reopen', taskId: string) => void;
+}) {
+  // SF-19-018: hide empty groups; Completed always at bottom
+  const visibleGroups = groups.filter(g => g.items.length > 0);
+  return (
+    <div className="space-y-3">
+      {visibleGroups.map((group) => {
+        const isCollapsed = collapsedGroups.has(group.label);
+        const isOverdue = group.label === 'Overdue';
+        const isToday = group.label === 'Today';
+        return (
+          <section key={group.label} className={`rounded-2xl border bg-white shadow-soft overflow-hidden ${isOverdue ? 'border-red-200' : isToday ? 'border-amber-200' : 'border-slate-200'}`}>
+            {/* Group header — clickable to collapse */}
+            <button
+              type="button"
+              onClick={() => onToggleGroup(group.label)}
+              className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition"
+            >
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-bold ${isOverdue ? 'text-red-700' : isToday ? 'text-amber-700' : 'text-slate-900'}`}>
+                  {group.label}
+                </span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${isOverdue ? 'bg-red-50 text-red-600' : isToday ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
+                  {group.items.length}
+                </span>
+              </div>
+              <span className={`text-slate-400 transition-transform text-sm ${isCollapsed ? '' : 'rotate-90'}`}>›</span>
+            </button>
+            {/* Task rows — hidden when collapsed */}
+            {!isCollapsed && (
+              <div className="divide-y divide-slate-100 border-t border-slate-100">
+                {group.items.slice(0, PAGE_SIZE).map((task) => (
+                  <TaskCard key={task.id} task={task} lead={task.lead_id ? leadMap.get(task.lead_id) : undefined} assignee={assignedTo(task) ? profileMap.get(assignedTo(task) ?? '') : undefined} now={now} onEdit={onEdit} onStatus={onStatus} />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
 }
 
 function ListTaskList({ tasks, total, leadMap, profileMap, now, onEdit, onStatus, onMore }: { tasks: TaskRow[]; total: number; leadMap: Map<string, TasksWorkspaceData['leads'][number]>; profileMap: Map<string, ProfileRow>; now: Date | null; onEdit: (task: TaskRow) => void; onStatus: (action: 'complete' | 'reopen', taskId: string) => void; onMore: () => void }) {
@@ -222,9 +404,10 @@ function TaskCard({ task, lead, assignee, now, onEdit, onStatus }: { task: TaskR
   return <article className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-slate-900">{taskTitle(task)}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600">{taskPriority(task)}</span><span className="rounded-full bg-brand-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-800">{task.task_type.replace(/_/g, ' ')}</span></div><p className="mt-1 text-sm text-slate-600">{linkedLabel}</p><p className="mt-1 text-xs text-slate-500">Assigned to {profileLabel(assignee)}</p>{taskNotes(task) ? <p className="mt-2 text-sm text-slate-500">{taskNotes(task)}</p> : null}</div><div className="text-sm text-slate-600"><p>{formatDate(task.scheduled_for)}</p><p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">{completed ? 'Completed' : now && new Date(task.scheduled_for) < now ? 'Needs action' : 'Scheduled'}</p></div></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => onEdit(task)} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</button><button type="button" onClick={() => onStatus(completed ? 'reopen' : 'complete', task.id)} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">{completed ? 'Reopen' : 'Complete'}</button>{lead && !completed ? <GenerateFollowUpDraftButton leadId={lead.id} targetEntityType="task" targetEntityId={task.id} compact /> : null}{lead ? <Link href={`/leads/${lead.id}`} className="rounded-2xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100">Open lead</Link> : null}</div></article>;
 }
 
-function TaskDrawer({ open, task, data, currentUserId, isPending, onClose, onSubmit }: { open: boolean; task: TaskRow | null; data: TasksWorkspaceData; currentUserId: string; isPending: boolean; onClose: () => void; onSubmit: (formData: FormData) => void }) {
+function TaskDrawer({ open, task, data, currentUserId, isPending, prefillDate, onClose, onSubmit }: { open: boolean; task: TaskRow | null; data: TasksWorkspaceData; currentUserId: string; isPending: boolean; prefillDate?: string; onClose: () => void; onSubmit: (formData: FormData) => void }) {
   const payload = task ? payloadOf(task) : {};
-  return <RightDrawer open={open} onClose={onClose} title={task ? 'Edit task' : 'Create task'} description="Capture title, due date, assignee, and linked context." footer={<DrawerActionBar title={task ? 'Update task' : 'Create task'} description="Tasks stay tied to assignees and lead context."><button type="button" onClick={onClose} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button><button type="submit" form="task-drawer-form" disabled={isPending} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isPending ? 'Saving…' : task ? 'Save task' : 'Create task'}</button></DrawerActionBar>}><form id="task-drawer-form" action={onSubmit} className="space-y-5"><DrawerSection title="Task details" description="Assign ownership and keep lead context visible in the queue."><div className="grid gap-3 md:grid-cols-2"><input type="hidden" name="id" defaultValue={task?.id ?? ''} /><input type="hidden" name="linked_entity_type" value={task?.lead_id ? 'lead' : 'internal'} /><input type="hidden" name="linked_entity_id" value={task?.lead_id ?? ''} /><input name="title" placeholder="Task title" defaultValue={task ? taskTitle(task) : ''} required /><select name="task_type" defaultValue={task?.task_type ?? 'follow_up'}><option value="follow_up">Follow up</option><option value="quote_review">Quote review</option><option value="document_review">Document review</option><option value="internal_handoff">Internal handoff</option></select><input name="scheduled_for" type="datetime-local" defaultValue={(task?.scheduled_for ?? new Date(Date.now() + 3_600_000).toISOString()).slice(0, 16)} required /><select name="lead_id" defaultValue={task?.lead_id ?? ''}><option value="">Internal task</option>{data.leads.map((lead) => <option key={lead.id} value={lead.id}>{lead.company_name} · {lead.lead_type}</option>)}</select><select name="assigned_to" defaultValue={payload.assigned_to ?? task?.created_by ?? currentUserId}>{data.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profileLabel(profile, profile.id)}</option>)}</select><select name="priority" defaultValue={task ? taskPriority(task) : 'normal'}><option value="high">High priority</option><option value="normal">Normal priority</option><option value="low">Low priority</option></select><textarea name="notes" className="md:col-span-2" rows={4} placeholder="Notes, blockers, or handoff detail" defaultValue={task ? taskNotes(task) : ''} /></div></DrawerSection></form></RightDrawer>;
+  const defaultDate = task?.scheduled_for ? task.scheduled_for.slice(0,16) : (prefillDate || new Date(Date.now() + 3_600_000).toISOString().slice(0, 16));
+  return <RightDrawer open={open} onClose={onClose} title={task ? 'Edit task' : 'Create task'} description="Capture title, due date, assignee, and linked context." footer={<DrawerActionBar title={task ? 'Update task' : 'Create task'} description="Tasks stay tied to assignees and lead context."><button type="button" onClick={onClose} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button><button type="submit" form="task-drawer-form" disabled={isPending} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isPending ? 'Saving…' : task ? 'Save task' : 'Create task'}</button></DrawerActionBar>}><form id="task-drawer-form" action={onSubmit} className="space-y-5"><DrawerSection title="Task details" description="Assign ownership and keep lead context visible in the queue."><div className="grid gap-3 md:grid-cols-2"><input type="hidden" name="id" defaultValue={task?.id ?? ''} /><input type="hidden" name="linked_entity_type" value={task?.lead_id ? 'lead' : 'internal'} /><input type="hidden" name="linked_entity_id" value={task?.lead_id ?? ''} /><input name="title" placeholder="Task title" defaultValue={task ? taskTitle(task) : ''} required /><select name="task_type" defaultValue={task?.task_type ?? 'follow_up'}><option value="follow_up">Follow up</option><option value="quote_review">Quote review</option><option value="document_review">Document review</option><option value="internal_handoff">Internal handoff</option></select><input name="scheduled_for" type="datetime-local" defaultValue={defaultDate} required /><select name="lead_id" defaultValue={task?.lead_id ?? ''}><option value="">Internal task</option>{data.leads.map((lead) => <option key={lead.id} value={lead.id}>{lead.company_name} · {lead.lead_type}</option>)}</select><select name="assigned_to" defaultValue={payload.assigned_to ?? task?.created_by ?? currentUserId}>{data.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profileLabel(profile, profile.id)}</option>)}</select><select name="priority" defaultValue={task ? taskPriority(task) : 'normal'}><option value="high">High priority</option><option value="normal">Normal priority</option><option value="low">Low priority</option></select><textarea name="notes" className="md:col-span-2" rows={4} placeholder="Notes, blockers, or handoff detail" defaultValue={task ? taskNotes(task) : ''} /></div></DrawerSection></form></RightDrawer>;
 }
 
 function CaptureDrawer({ open, data, isPending, onClose, onSubmit }: { open: boolean; data: TasksWorkspaceData; isPending: boolean; onClose: () => void; onSubmit: (formData: FormData) => void }) {

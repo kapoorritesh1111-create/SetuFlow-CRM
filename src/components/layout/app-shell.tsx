@@ -332,11 +332,17 @@ export function AppShell({
 
   const sidebar = (
     <>
+      {/* SF-19-010: Sidebar 88px, org abbr below logo */}
       <div className="flex justify-center">
         <div className="flex h-11 w-11 items-center justify-center rounded-[0.9rem] bg-white/8 ring-1 ring-white/10">
           <img src="/logos/setu-flow-logo.svg" alt="SETU Flow" className="h-7 w-7 object-contain" />
         </div>
       </div>
+      {organization?.name ? (
+        <p className="mt-1 text-center text-[8px] font-extrabold uppercase tracking-[0.14em] text-white/30 truncate px-1">
+          {(organization.name.match(/\b\w/g) ?? []).slice(0, 6).join('').toUpperCase()}
+        </p>
+      ) : null}
       <div className="mt-6 flex min-h-0 flex-1 flex-col">
         <ShellNavigation
           pathname={pathname}
@@ -487,8 +493,8 @@ export function AppShell({
         </div>
       ) : null}
 
-      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 md:grid-cols-[72px_minmax(0,1fr)] md:px-4 md:py-4 xl:px-5">
-        <aside className="hidden flex-col rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:sticky md:top-4 md:flex md:h-[calc(100vh-2rem)] md:overflow-y-auto">
+      <div className="grid min-h-screen grid-cols-1 gap-0 px-0 md:grid-cols-[88px_minmax(0,1fr)] md:px-4 md:py-4 xl:px-5">
+        <aside className="hidden flex-col rounded-[2rem] border border-[#d9e2ec] bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:sticky md:top-4 md:flex md:h-[calc(100vh-2rem)] md:w-[88px] md:overflow-y-auto">
           {sidebar}
         </aside>
 
@@ -560,13 +566,16 @@ export function AppShell({
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <OfflineIndicator />
+                      {/* SF-19-006: ⌘K command bar — replaces Filters, Help, Events buttons */}
                       <button
                         type="button"
-                        onClick={() => setVcardModalOpen(true)}
-                        className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)] hover:opacity-95"
+                        onClick={() => {/* Command palette — SF-19-002 */}}
+                        className="inline-flex items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 hover:bg-white hover:border-slate-300 transition"
+                        aria-label="Open command palette"
                       >
-                        <FaIcon icon="address-card-o" fixedWidth className="text-sm" />
-                        <span>Share my vCard</span>
+                        <span className="text-xs">🔍</span>
+                        <span className="hidden sm:inline text-xs">Search or command…</span>
+                        <kbd className="hidden sm:inline rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500">⌘K</kbd>
                       </button>
 
                       {showWorkspaceModeSwitch ? (
@@ -590,27 +599,11 @@ export function AppShell({
                         </div>
                       ) : null}
 
-                      <button type="button" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <FaIcon icon="sliders" fixedWidth className="text-sm" />
-                        <span>Filters</span>
-                      </button>
-
+                      {/* SF-19-006: Single context-aware primary CTA */}
                       <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-[#0b2e4a] bg-[#0b2e4a] px-4 text-sm font-semibold text-white hover:bg-[#061c2e]">
                         <span>＋</span>
                         <span>Quick Lead</span>
                       </a>
-
-                      <a href={pathname.startsWith('/trade-events') ? '/admin/trade-events' : '/trade-events'} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" title={pathname.startsWith('/trade-events') ? 'Add event' : 'Trade events'}>
-                        <FaIcon icon="calendar" fixedWidth className="text-sm" />
-                        <span>{pathname.startsWith('/trade-events') ? 'Add Event' : 'Events'}</span>
-                      </a>
-
-                      {showContextHelp ? (
-                        <button type="button" onClick={() => setHelpOpen(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" aria-label={`Open help for ${routeMeta.title}`}>
-                          <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-900 text-[11px] font-black text-white">?</span>
-                          <span>Help</span>
-                        </button>
-                      ) : null}
 
                       <ProfileMenu />
                     </div>
