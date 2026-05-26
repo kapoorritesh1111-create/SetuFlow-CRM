@@ -1537,7 +1537,35 @@ function normCat(c){return CAT_NORM[c]||c||'Bug';}
 
 const SB='https://sjzfzloggabsmcuxktnl.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
-const db=supabase.createClient(SB,KEY);
+
+/* ── Cookie storage adapter ─────────────────────────────────────────────
+   The CRM login (server action via @supabase/ssr) stores the Supabase
+   session in HTTP cookies, NOT localStorage. This adapter makes the
+   browser supabase-js client read from cookies so getSession() works
+   after the standard CRM login flow.                                    */
+const _ck={
+  getItem(key){
+    try{
+      const jar={};
+      document.cookie.split(';').forEach(c=>{const i=c.indexOf('=');if(i<0)return;jar[c.slice(0,i).trim()]=c.slice(i+1).trim();});
+      if(jar[key])return decodeURIComponent(jar[key]);
+      // chunked: key.0, key.1 ...
+      let r='',i=0;
+      while(jar[`${key}.${i}`]!==undefined){r+=decodeURIComponent(jar[`${key}.${i}`]);i++;}
+      // fall back to localStorage
+      return r||localStorage.getItem(key);
+    }catch{try{return localStorage.getItem(key);}catch{return null;}}
+  },
+  setItem(key,val){
+    try{localStorage.setItem(key,val);}catch{}
+    try{document.cookie=`${key}=${encodeURIComponent(val)};path=/;max-age=31536000;SameSite=Lax`;}catch{}
+  },
+  removeItem(key){
+    try{localStorage.removeItem(key);}catch{}
+    try{document.cookie=`${key}=;path=/;max-age=0`;}catch{}
+  }
+};
+const db=supabase.createClient(SB,KEY,{auth:{storage:_ck,storageKey:'sb-sjzfzloggabsmcuxktnl-auth-token',detectSessionInUrl:true,persistSession:true}});
 let ALL=[],VISIBLE=[],activeFlt='all',sortFld='issue_number',sortDir=1,openIssue=null,gptOpen=false;
 let hideResolved=true; // auto-hide resolved by default
 let selectedCat='Bug';
