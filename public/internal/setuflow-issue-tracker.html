@@ -540,9 +540,31 @@ input.p-in:focus{border-color:var(--brand-teal)}
 /* ══ CATEGORY FILTER SELECT ══ */
 @media(max-width:900px){.sidebar{display:none}.kpi-row{grid-template-columns:repeat(4,1fr);grid-auto-rows:auto}.donut-card{grid-column:span 2}.kpi-row2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.col-ref,.col-area,.col-date{display:none}.panel{width:100vw}}
+/* ══ AUTH GATE ══ */
+#auth-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg);flex-direction:column}
+#auth-gate.hidden{display:none}
+.ag-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rxl);padding:40px 44px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.ag-lock{font-size:44px;margin-bottom:16px}.ag-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px}
+.ag-sub{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.6}
+.ag-btn{width:100%;padding:13px;border-radius:var(--r);background:var(--grad);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;font-family:var(--font);box-shadow:0 4px 20px rgba(53,159,145,.35);transition:opacity .15s}
+.ag-btn:hover{opacity:.9}.ag-err{color:var(--red-hi);font-size:12px;margin-top:12px;min-height:18px}
+.user-pill{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:20px;background:var(--bg3);border:1px solid var(--border2);font-size:12px;color:var(--text2)}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-weight:600;color:var(--text)}.user-org{font-size:10px;color:var(--brand-teal);font-weight:600}
 </style>
 </head>
 <body>
+
+<!-- ══ AUTH GATE OVERLAY ══ -->
+<div id="auth-gate">
+  <div class="ag-card">
+    <div class="ag-lock">🔒</div>
+    <div class="ag-title">Internal Access Only</div>
+    <div class="ag-sub">The <strong>SETU Flow Issue Tracker</strong> is restricted to authorised SETU Flow organisation members. Please sign in with your SETU Flow account to continue.</div>
+    <button class="ag-btn" onclick="signInRedirect()">Sign In with SETU Flow</button>
+    <div class="ag-err" id="ag-err"></div>
+  </div>
+</div>
 
 <!-- SVG DEFS -->
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
@@ -610,6 +632,10 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Docs Hub
     </a>
+    <a href="setuflow-roadmap.html" class="nav-link">
+      <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Roadmap
+    </a>
     <a href="https://www.setuflowcrm.com" target="_blank" class="nav-link">
       <svg class="ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       CRM Live
@@ -618,6 +644,10 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <svg class="ico" style="width:13px;height:13px" stroke="#fff" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Report Issue
     </button>
+    <div class="user-pill" id="user-pill" style="display:none">
+      <div class="user-avatar" id="user-avatar">R</div>
+      <div><div class="user-name" id="user-name-lbl">...</div><div class="user-org">SETU Flow ORG</div></div>
+    </div>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark theme">🌙</button>
     <button class="nav-link primary" onclick="toggleGPT()">
       <svg class="ico" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -2142,6 +2172,9 @@ async function submitNewIssue(){
     regression_test:$('ni-test').value.trim()||null,
     assigned_to:$('ni-assignee').value.trim()||null,
     organization_id:null,
+    reporter_name: getReporterName(false),
+    reporter_user_id: currentUser ? currentUser.id : null,
+    submitted_via: 'manual',
   };
 
   const{data,error}=await db.from('sprint_issues').insert(payload).select().single();
@@ -2472,7 +2505,74 @@ function applyQuickSort(){
 }
 
 
-load();
+/* ══════════════════════════════════════
+   AUTH GATE — SETU Flow ORG-ONLY ACCESS
+   Org ID: 3327b9a7-aadb-44b0-9793-30c4045d3c92
+══════════════════════════════════════ */
+const SETU_FLOW_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+let currentUser = null;
+let currentUserName = 'Ritesh Kapoor'; // default for AI submissions
+
+function signInRedirect(){
+  window.location.href = '/client-login?next=/internal/setuflow-issue-tracker.html';
+}
+
+async function initAuth(){
+  const gate = document.getElementById('auth-gate');
+  const errEl = document.getElementById('ag-err');
+
+  // 1. Get current session
+  const { data: { session }, error: sessErr } = await db.auth.getSession();
+
+  if (sessErr || !session) {
+    // Not logged in — show gate
+    gate.classList.remove('hidden');
+    return;
+  }
+
+  // 2. Verify org membership in SETU Flow
+  const { data: membership, error: memErr } = await db
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', session.user.id)
+    .eq('organization_id', SETU_FLOW_ORG_ID)
+    .maybeSingle();
+
+  if (memErr || !membership) {
+    gate.classList.remove('hidden');
+    if(errEl) errEl.textContent = 'Access denied — SETU Flow organisation membership required.';
+    return;
+  }
+
+  // 3. Authenticated & authorised — fetch profile
+  const { data: profile } = await db
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  currentUser = session.user;
+  currentUserName = profile?.full_name || session.user.email || 'SETU Flow Member';
+
+  // Show user pill in topbar
+  const pill = document.getElementById('user-pill');
+  const nameEl = document.getElementById('user-name-lbl');
+  const avatarEl = document.getElementById('user-avatar');
+  if (pill) pill.style.display = 'flex';
+  if (nameEl) nameEl.textContent = currentUserName;
+  if (avatarEl) avatarEl.textContent = (currentUserName.charAt(0) || 'R').toUpperCase();
+
+  // Hide gate and load data
+  gate.classList.add('hidden');
+  load();
+}
+
+// AI tool issue submissions ALWAYS use Ritesh Kapoor regardless of session
+function getReporterName(isAiSubmission = false){
+  return isAiSubmission ? 'Ritesh Kapoor' : currentUserName;
+}
+
+initAuth();
 </script>
 
 <!-- NEW ISSUE MODAL -->

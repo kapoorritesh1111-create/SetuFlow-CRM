@@ -161,9 +161,32 @@
   .slide-arrow { color: var(--amber); font-weight: 700; font-size: 16px; }
   .slide-rules { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
   .slide-rule { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; opacity: 0.8; }
+  /* ── AUTH GATE ── */
+  #auth-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#0d1724;flex-direction:column}
+  #auth-gate.hidden{display:none}
+  .ag-card{background:#121f33;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:40px 44px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+  .ag-lock{font-size:44px;margin-bottom:16px}.ag-title{font-size:20px;font-weight:700;color:#ecf2fa;margin-bottom:8px}
+  .ag-sub{font-size:13px;color:#b0c8e0;margin-bottom:28px;line-height:1.6}
+  .ag-btn{width:100%;padding:13px;border-radius:8px;background:linear-gradient(135deg,#1F487C,#359F91);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(53,159,145,.35);transition:opacity .15s}
+  .ag-btn:hover{opacity:.9}.ag-err{color:#f87171;font-size:12px;margin-top:12px;min-height:18px}
+  .docs-user-pill{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);font-size:12px;position:relative;z-index:1}
+  .docs-user-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#1F487C,#359F91);display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+  .docs-user-name{font-weight:600;color:#ecf2fa}.docs-user-org{font-size:10px;color:#359F91;font-weight:600}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
+
+<!-- ══ AUTH GATE OVERLAY ══ -->
+<div id="auth-gate">
+  <div class="ag-card">
+    <div class="ag-lock">🔒</div>
+    <div class="ag-title">Internal Access Only</div>
+    <div class="ag-sub">The <strong>SETU Flow Documentation Hub</strong> is restricted to authorised SETU Flow organisation members. Please sign in to continue.</div>
+    <button class="ag-btn" onclick="window.location.href='/client-login?next=/internal/setuflow-docs.html'">Sign In with SETU Flow</button>
+    <div class="ag-err" id="ag-err"></div>
+  </div>
+</div>
 
 <style>
 /* ── BRAND NAV UPGRADE ── */
@@ -216,10 +239,18 @@
       <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       Issue Tracker
     </a>
+    <a href="setuflow-roadmap.html" class="tnav-link">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Roadmap
+    </a>
     <a href="https://www.setuflowcrm.com" target="_blank" class="tnav-link">
       <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       CRM Live
     </a>
+    <div class="docs-user-pill" id="docs-user-pill" style="display:none">
+      <div class="docs-user-avatar" id="docs-user-avatar">R</div>
+      <div><div class="docs-user-name" id="docs-user-name">...</div><div class="docs-user-org">SETU Flow ORG</div></div>
+    </div>
   </div>
 </div>
 
@@ -1853,6 +1884,29 @@ flowchart LR
 </div>
 
 <script>
+const _SB='https://sjzfzloggabsmcuxktnl.supabase.co';
+const _KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
+const _db=supabase.createClient(_SB,_KEY);
+const SETU_ORG='3327b9a7-aadb-44b0-9793-30c4045d3c92';
+
+(async()=>{
+  const gate=document.getElementById('auth-gate');
+  const errEl=document.getElementById('ag-err');
+  const{data:{session}}=await _db.auth.getSession();
+  if(!session){gate.classList.remove('hidden');return;}
+  const{data:mem}=await _db.from('organization_members').select('organization_id').eq('user_id',session.user.id).eq('organization_id',SETU_ORG).maybeSingle();
+  if(!mem){gate.classList.remove('hidden');if(errEl)errEl.textContent='SETU Flow organisation membership required.';return;}
+  const{data:prof}=await _db.from('profiles').select('full_name').eq('id',session.user.id).maybeSingle();
+  const name=prof?.full_name||session.user.email||'Member';
+  const pill=document.getElementById('docs-user-pill');
+  const nameEl=document.getElementById('docs-user-name');
+  const av=document.getElementById('docs-user-avatar');
+  if(pill)pill.style.display='flex';
+  if(nameEl)nameEl.textContent=name;
+  if(av)av.textContent=(name.charAt(0)||'R').toUpperCase();
+  gate.classList.add('hidden');
+})();
+
 mermaid.initialize({
   startOnLoad:true,theme:'base',
   themeVariables:{primaryColor:'#dbeafe',primaryTextColor:'#1e3a8a',primaryBorderColor:'#93c5fd',lineColor:'#3b82f6',secondaryColor:'#f0fdf4',tertiaryColor:'#fff7ed',fontFamily:'"Segoe UI",system-ui,sans-serif',fontSize:'13px',edgeLabelBackground:'#f8fafc'},
