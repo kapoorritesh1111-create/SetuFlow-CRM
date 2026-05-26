@@ -47,12 +47,14 @@ export async function GET() {
       );
     }
 
-    // Get profile for display name
-    const { data: profile } = await supabase
+    // Get profile for display name — cast to any to bypass generated-type narrowing
+    const { data: profileData } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', user.id)
       .maybeSingle();
+
+    const profile = profileData as { full_name?: string | null } | null;
 
     // Get session tokens so the browser Supabase client can authenticate
     // for RLS-protected data queries (e.g. roadmap_items)
