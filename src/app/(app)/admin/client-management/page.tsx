@@ -13,7 +13,33 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 
-type RequestRow = { id: string; company_name: string; company_slug: string | null; workspace_domain: string | null; logo_url: string | null; website: string | null; primary_admin_name: string | null; primary_admin_email: string | null; requested_markets: string[] | null; requested_countries: string[] | null; pricing_rules_notes: string | null; status: string; linked_organization_id: string | null; created_at: string };
+type RequestRow = {
+  id: string;
+  company_name: string;
+  company_slug: string | null;
+  workspace_domain: string | null;
+  logo_url: string | null;
+  website: string | null;
+  primary_admin_name: string | null;
+  primary_admin_email: string | null;
+  primary_phone: string | null;
+  headquarters_country: string | null;
+  requested_markets: string[] | null;
+  requested_countries: string[] | null;
+  requested_pipelines: string[] | null;
+  requested_next_steps: string[] | null;
+  requested_modules: string[] | null;
+  requested_seat_count: number | null;
+  requested_plan: string | null;
+  is_trial_request: boolean | null;
+  wants_trade_events: boolean | null;
+  pricing_rules_notes: string | null;
+  product_category_notes: string | null;
+  additional_notes: string | null;
+  status: string;
+  linked_organization_id: string | null;
+  created_at: string;
+};
 type OrgRow = { id: string; name: string; slug: string; logo_url: string | null; created_at: string };
 type EntitlementRow = { organization_id: string; plan_key: string; billing_status: string; seat_limit: number; onboarding_stage: string; guru_monthly_request_limit: number; guru_monthly_spend_limit: number; overage_policy: string; renews_at: string | null };
 type UsageRow = { organization_id: string; active_users: number; pending_invites: number; guru_requests_used: number; guru_spend_used: number };
@@ -27,8 +53,20 @@ type ClientManagementDb = {
   };
 };
 
-const INTAKE_URL = ['https://www.setuflowcrm.com', 'onboarding'].join('/');
+const INTAKE_URL = 'https://www.setuflowcrm.com/onboarding';
+const MARKET_KEYS = ['North America', 'Middle East', 'Europe', 'Asia Pacific', 'Southeast Asia', 'South Asia', 'GCC', 'Australia'];
+const COUNTRY_KEYS = ['United States', 'United Arab Emirates', 'India', 'Australia', 'Canada', 'United Kingdom', 'Saudi Arabia', 'Qatar', 'Oman', 'Kuwait', 'Bahrain', 'Singapore'];
 const statusOrder: Record<string, number> = { submitted: 0, setup_in_progress: 1, admin_invite_ready: 2, reviewing: 3, admin_invited: 4, live: 5, paused: 6 };
+
+function normalizeList(values: string[] | null | undefined, dictionary: string[] = []) {
+  const raw = (values ?? []).flatMap((value) => String(value).split(/[,;|]/).map((part) => part.trim()).filter(Boolean));
+  if (raw.length === 1 && dictionary.length > 0) {
+    const joined = raw[0];
+    const matches = dictionary.filter((item) => joined.includes(item));
+    if (matches.length > 0) return matches;
+  }
+  return raw;
+}
 
 function requestStage(status: string) {
   if (status === 'live') return 'Live';
@@ -73,12 +111,17 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{label}{children}</label>;
 }
 
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-2xl font-bold tracking-tight text-emerald-900">{value}</p><p className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">{label}</p></div>;
+function Metric({ label, value, tone = 'success' }: { label: string; value: string | number; tone?: 'success' | 'info' | 'warning' }) {
+  const styles = tone === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-900' : tone === 'info' ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900';
+  return <div className={`rounded-3xl border p-4 ${styles}`}><p className="text-2xl font-bold tracking-tight">{value}</p><p className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.16em] opacity-75">{label}</p></div>;
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">{label}</p><p className="mt-1 truncate text-sm font-semibold text-slate-700">{value}</p></div>;
+}
+
+function ChipList({ label, values, empty = 'Not selected' }: { label: string; values: string[]; empty?: string }) {
+  return <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">{label}</p><div className="mt-2 flex flex-wrap gap-2">{values.length ? values.slice(0, 12).map((value) => <span key={value} className="rounded-full border border-blue-100 bg-white px-2.5 py-1 text-xs font-bold text-slate-700">{value}</span>) : <span className="text-sm font-semibold text-slate-500">{empty}</span>}{values.length > 12 ? <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-600">+{values.length - 12}</span> : null}</div></div>;
 }
 
 function StepPill({ done, active, children }: { done?: boolean; active?: boolean; children: string }) {
@@ -92,12 +135,12 @@ function ClientCard({ request, selected }: { request: RequestRow; selected: bool
   </Link>;
 }
 
-function EntitlementForm({ orgId, entitlement, selectedClient }: { orgId: string; entitlement?: EntitlementRow; selectedClient: string }) {
+function EntitlementForm({ orgId, entitlement, selectedClient, requestedSeats, requestedPlan }: { orgId: string; entitlement?: EntitlementRow; selectedClient: string; requestedSeats: number | null; requestedPlan: string | null }) {
   return <form action={updateClientEntitlement} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
     <input type="hidden" name="organization_id" value={orgId} /><input type="hidden" name="return_client" value={selectedClient} />
-    <Field label="Plan"><select name="plan_key" defaultValue={entitlement?.plan_key ?? 'enterprise'} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><option value="starter">Starter</option><option value="growth">Growth</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option><option value="custom">Custom</option></select></Field>
+    <Field label="Plan"><select name="plan_key" defaultValue={entitlement?.plan_key ?? requestedPlan ?? 'enterprise'} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><option value="starter">Starter</option><option value="growth">Growth</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option><option value="custom">Custom</option></select></Field>
     <Field label="Billing"><select name="billing_status" defaultValue={entitlement?.billing_status ?? 'active'} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><option value="trial">Trial</option><option value="active">Active</option><option value="past_due">Past due</option><option value="paused">Paused</option><option value="cancelled">Cancelled</option></select></Field>
-    <Field label="Seats"><input name="seat_limit" type="number" min="1" defaultValue={entitlement?.seat_limit ?? 25} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" /></Field>
+    <Field label="Seats"><input name="seat_limit" type="number" min="1" defaultValue={entitlement?.seat_limit ?? requestedSeats ?? 25} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" /></Field>
     <Field label="Stage"><select name="onboarding_stage" defaultValue={entitlement?.onboarding_stage ?? 'entitlements'} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><option value="intake">Intake</option><option value="provision">Provision</option><option value="invite">Invite</option><option value="entitlements">Entitlements</option><option value="live">Live</option><option value="paused">Paused</option></select></Field>
     <Field label="Guru requests"><input name="guru_monthly_request_limit" type="number" min="0" defaultValue={entitlement?.guru_monthly_request_limit ?? 25000} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" /></Field>
     <Field label="Guru spend"><input name="guru_monthly_spend_limit" type="number" min="0" step="1" defaultValue={entitlement?.guru_monthly_spend_limit ?? 2500} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" /></Field>
@@ -112,6 +155,7 @@ export default async function ClientManagementPage({ searchParams }: { searchPar
   const { missingEnv, organization } = await requireSetuInternalAdminWorkspace();
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure Supabase before using client management." tone="warning" />;
   if (!organization) return null;
+
   const supabase = (createAdminSupabaseClient() ?? (await createClient())) as unknown as ClientManagementDb;
   const [requestResult, orgResult, entitlementResult, usageResult, grantResult, memberResult, inviteResult] = await Promise.all([
     supabase.from('client_onboarding_requests').select('*').order('created_at', { ascending: false }).limit(80),
@@ -122,6 +166,7 @@ export default async function ClientManagementPage({ searchParams }: { searchPar
     supabase.from('organization_members').select('organization_id, is_active').order('updated_at', { ascending: false }).limit(2000),
     supabase.from('organization_invitations').select('organization_id, status').order('created_at', { ascending: false }).limit(2000),
   ]);
+
   const requests = ((requestResult.data ?? []) as RequestRow[]).sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9));
   const orgs = ((orgResult.data ?? []) as OrgRow[]).filter((org) => org.id !== organization.id);
   const entitlements = (entitlementResult.data ?? []) as EntitlementRow[];
@@ -138,6 +183,12 @@ export default async function ClientManagementPage({ searchParams }: { searchPar
   const pendingInvites = inviteRows.filter((row) => row.organization_id === selectedOrgId && ['draft', 'pending', 'sent'].includes(String(row.status ?? ''))).length || rollup?.pending_invites || 0;
   const grants: OrgModuleGrant[] = moduleRows.filter((row) => row.organization_id === selectedOrgId).map((row) => { const key = normalizeModuleKey(row.module_key); return key ? { module_key: key, enabled: row.enabled } : null; }).filter((row): row is OrgModuleGrant => row !== null);
   const enabledModules = getEnabledModuleSet(grants);
+  const markets = normalizeList(selectedRequest?.requested_markets, MARKET_KEYS);
+  const countries = normalizeList(selectedRequest?.requested_countries, COUNTRY_KEYS);
+  const modules = normalizeList(selectedRequest?.requested_modules).map((value) => value.replace(/_/g, ' '));
+  const pipelines = normalizeList(selectedRequest?.requested_pipelines);
+  const requestedSeats = selectedRequest?.requested_seat_count ?? null;
+  const requestedPlan = selectedRequest?.requested_plan ?? null;
   const needsAction = requests.filter((row) => ['submitted', 'setup_in_progress', 'admin_invite_ready'].includes(row.status)).length;
   const reviewing = requests.filter((row) => row.status === 'reviewing').length;
   const live = requests.filter((row) => row.status === 'live').length;
@@ -148,11 +199,14 @@ export default async function ClientManagementPage({ searchParams }: { searchPar
     <Notice notice={searchParams?.notice} />
     {requestResult.error ? <StateMessage title="Onboarding data needs attention" description={requestResult.error.message} tone="warning" /> : null}
     {entitlementResult.error ? <StateMessage title="Entitlement tables need migration" description={entitlementResult.error.message} tone="warning" /> : null}
-    <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]"><aside className="space-y-3 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)]"><div className="flex items-center justify-between px-2 py-1"><h2 className="text-sm font-bold text-slate-950">Client pipeline</h2><span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">Private</span></div>{requests.map((request) => <ClientCard key={request.id} request={request} selected={(request.linked_organization_id === selectedOrgId) || (searchParams?.client === request.id)} />)}</aside>
-      <section className="space-y-5"><SectionCard eyebrow="Selected client" title={selectedOrg?.name ?? selectedRequest?.company_name ?? 'Client pending'} description="Review onboarding status, commercial controls, access, and usage."><div className="grid gap-3 md:grid-cols-4"><Metric label="Stage" value={selectedRequest ? requestStage(selectedRequest.status) : 'Live'} /><Metric label="Seats" value={`${activeUsers} / ${selectedEntitlement?.seat_limit ?? 25}`} /><Metric label="Modules" value={`${MODULE_DEFINITIONS.filter((moduleDef) => enabledModules.has(moduleDef.key)).length} / ${MODULE_DEFINITIONS.length}`} /><Metric label="Guru MTD" value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rollup?.guru_spend_used ?? 0)} /></div></SectionCard>
-        {selectedRequest ? <SectionCard eyebrow="Onboarding" title="Client setup" description="Current provisioning path for this client."><div className="flex flex-wrap gap-2"><StepPill done>Intake</StepPill><StepPill active={selectedRequest.status === 'setup_in_progress'} done={Boolean(selectedRequest.linked_organization_id)}>Provision</StepPill><StepPill active={selectedRequest.status === 'admin_invite_ready'} done={['admin_invited', 'live'].includes(selectedRequest.status)}>Invite</StepPill><StepPill active>Entitlements</StepPill><StepPill done={selectedRequest.status === 'live'}>Live</StepPill></div><div className="mt-4 grid gap-3 lg:grid-cols-3"><Info label="Admin" value={`${selectedRequest.primary_admin_name ?? 'Pending'} · ${selectedRequest.primary_admin_email ?? 'Email pending'}`} /><Info label="Workspace" value={selectedRequest.workspace_domain ?? `${selectedRequest.company_slug ?? 'client'}.setuflowcrm.com`} /><Info label="Markets" value={(selectedRequest.requested_markets ?? defaultMarkets).slice(0, 3).join(', ')} /></div><div className="mt-3 grid gap-3 lg:grid-cols-2"><Info label="Countries" value={(selectedRequest.requested_countries ?? []).length ? (selectedRequest.requested_countries ?? []).slice(0, 4).join(', ') : 'Not selected'} /><Info label="Website" value={selectedRequest.website ?? 'Not provided'} /></div>{selectedRequest.pricing_rules_notes ? <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-800">{selectedRequest.pricing_rules_notes}</div> : null}<div className="mt-4 flex flex-wrap gap-2"><form action={createWorkspaceFromOnboardingDraft}><input type="hidden" name="request_id" value={selectedRequest.id} /><button className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Refresh provisioning</button></form><form action={sendFirstAdminInviteFromOnboardingRequest}><input type="hidden" name="request_id" value={selectedRequest.id} /><button className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Send first admin invite</button></form><form action={resendClientOnboardingNotification}><input type="hidden" name="request_id" value={selectedRequest.id} /><button className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">Notify SETU admin</button></form><form action={updateClientOnboardingStatus} className="flex gap-2"><input type="hidden" name="request_id" value={selectedRequest.id} /><select name="status" defaultValue={selectedRequest.status} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><option value="reviewing">Reviewing</option><option value="setup_in_progress">Provision</option><option value="admin_invite_ready">Invite ready</option><option value="admin_invited">Invited</option><option value="live">Live</option><option value="paused">Paused</option></select><button className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">Update</button></form></div></SectionCard> : null}
-        {selectedOrgId ? <SectionCard eyebrow="Commercial controls" title="Plan and seats" description="HQ-owned limits that client admins cannot self-upgrade."><EntitlementForm orgId={selectedOrgId} entitlement={selectedEntitlement} selectedClient={searchParams?.client ?? selectedOrgId} /></SectionCard> : null}
+    <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className="space-y-3 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)]"><div className="flex items-center justify-between px-2 py-1"><h2 className="text-sm font-bold text-slate-950">Client pipeline</h2><span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">Private</span></div>{requests.map((request) => <ClientCard key={request.id} request={request} selected={(request.linked_organization_id === selectedOrgId) || (searchParams?.client === request.id)} />)}</aside>
+      <section className="space-y-5">
+        <SectionCard eyebrow="Selected client" title={selectedOrg?.name ?? selectedRequest?.company_name ?? 'Client pending'} description="Clear setup summary for provisioning and entitlement decisions."><div className="grid gap-3 md:grid-cols-4"><Metric label="Stage" value={selectedRequest ? requestStage(selectedRequest.status) : 'Live'} tone="info" /><Metric label="Seats" value={selectedOrgId ? `${activeUsers} / ${selectedEntitlement?.seat_limit ?? requestedSeats ?? 25}` : `Requested ${requestedSeats ?? 'TBD'}`} tone={requestedSeats ? 'success' : 'warning'} /><Metric label="Plan" value={selectedEntitlement?.plan_key ?? requestedPlan ?? 'TBD'} tone={requestedPlan ? 'success' : 'warning'} /><Metric label="Guru MTD" value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rollup?.guru_spend_used ?? 0)} /></div></SectionCard>
+        {selectedRequest ? <SectionCard eyebrow="Onboarding" title="Client setup" description="Use this summary to provision the workspace, invite the first admin, and set plan limits."><div className="flex flex-wrap gap-2"><StepPill done>Intake</StepPill><StepPill active={selectedRequest.status === 'setup_in_progress'} done={Boolean(selectedRequest.linked_organization_id)}>Provision</StepPill><StepPill active={selectedRequest.status === 'admin_invite_ready'} done={['admin_invited', 'live'].includes(selectedRequest.status)}>Invite</StepPill><StepPill active>Entitlements</StepPill><StepPill done={selectedRequest.status === 'live'}>Live</StepPill></div><div className="mt-4 grid gap-3 lg:grid-cols-3"><Info label="Admin" value={`${selectedRequest.primary_admin_name ?? 'Pending'} · ${selectedRequest.primary_admin_email ?? 'Email pending'}`} /><Info label="Workspace" value={selectedRequest.workspace_domain ?? `${selectedRequest.company_slug ?? 'client'}.setuflowcrm.com`} /><Info label="Requested users" value={requestedSeats ? `${requestedSeats} seats` : 'Not provided'} /></div><div className="mt-3 grid gap-3 lg:grid-cols-3"><Info label="Requested plan" value={requestedPlan ?? 'Review required'} /><Info label="Trade events" value={selectedRequest.wants_trade_events ? 'Requested' : 'Not requested'} /><Info label="Website" value={selectedRequest.website ?? 'Not provided'} /></div><div className="mt-3 grid gap-3 lg:grid-cols-2"><ChipList label="Markets" values={markets.length ? markets : defaultMarkets} /><ChipList label="Countries" values={countries} /></div><div className="mt-3 grid gap-3 lg:grid-cols-2"><ChipList label="Requested modules" values={modules} empty="Use default package" /><ChipList label="Pipelines" values={pipelines} empty="Use buyer/supplier defaults" /></div><div className="mt-4 grid gap-3 lg:grid-cols-3"><div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">Next setup move</p><p className="mt-1 text-sm font-semibold text-blue-950">{selectedRequest.linked_organization_id ? 'Set entitlements, then send admin invite.' : 'Create workspace, then save plan and seats.'}</p></div><div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-emerald-700">Suggested seat cap</p><p className="mt-1 text-sm font-semibold text-emerald-950">{requestedSeats ?? selectedEntitlement?.seat_limit ?? 25}</p></div><div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-amber-700">Plan guidance</p><p className="mt-1 text-sm font-semibold text-amber-950">{requestedPlan ?? 'Choose Growth or Enterprise after review'}</p></div></div>{selectedRequest.pricing_rules_notes || selectedRequest.product_category_notes || selectedRequest.additional_notes ? <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-800">{[selectedRequest.pricing_rules_notes, selectedRequest.product_category_notes, selectedRequest.additional_notes].filter(Boolean).join(' · ')}</div> : null}<div className="mt-4 flex flex-wrap gap-2"><form action={createWorkspaceFromOnboardingDraft}><input type="hidden" name="request_id" value={selectedRequest.id} /><button className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Create / refresh workspace</button></form><form action={sendFirstAdminInviteFromOnboardingRequest}><input type="hidden" name="request_id" value={selectedRequest.id} /><button className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Send first admin invite</button></form><form action={resendClientOnboardingNotification}><input type="hidden" name="request_id" value={selectedRequest.id} /><button className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">Notify SETU admin</button></form><form action={updateClientOnboardingStatus} className="flex gap-2"><input type="hidden" name="request_id" value={selectedRequest.id} /><select name="status" defaultValue={selectedRequest.status} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"><option value="reviewing">Reviewing</option><option value="setup_in_progress">Provision</option><option value="admin_invite_ready">Invite ready</option><option value="admin_invited">Invited</option><option value="live">Live</option><option value="paused">Paused</option></select><button className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">Update</button></form></div></SectionCard> : null}
+        {selectedOrgId ? <SectionCard eyebrow="Commercial controls" title="Plan and seats" description="HQ-owned limits that client admins cannot self-upgrade."><EntitlementForm orgId={selectedOrgId} entitlement={selectedEntitlement} selectedClient={searchParams?.client ?? selectedOrgId} requestedSeats={requestedSeats} requestedPlan={requestedPlan} /></SectionCard> : null}
         {selectedOrgId ? <SectionCard eyebrow="Feature access" title="Modules" description="Default all on, then adjust per paid package."><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{MODULE_DEFINITIONS.map((moduleDef) => { const enabled = enabledModules.has(moduleDef.key); return <form key={moduleDef.key} action={updateClientModuleGrant} className="rounded-3xl border border-slate-200 bg-white p-4"><input type="hidden" name="organization_id" value={selectedOrgId} /><input type="hidden" name="return_client" value={searchParams?.client ?? selectedOrgId} /><input type="hidden" name="module_key" value={moduleDef.key} /><input type="hidden" name="enabled" value={enabled ? 'false' : 'true'} /><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">{moduleDef.key.replace(/_/g, ' ')}</p><h3 className="mt-1 text-sm font-bold text-slate-950">{moduleDef.title}</h3></div><StatusBadge label={enabled ? 'On' : 'Off'} tone={enabled ? 'success' : 'warning'} dot={false} /></div><p className="mt-2 min-h-10 text-xs leading-5 text-slate-500">{moduleDef.subtitle}</p><button className={(enabled ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-900 bg-slate-950 text-white') + ' mt-4 rounded-2xl border px-3 py-2 text-xs font-bold'}>{enabled ? 'Disable' : 'Enable'}</button></form>; })}</div></SectionCard> : null}
-      </section></div>
+      </section>
+    </div>
   </AdminSettingsShell>;
 }
