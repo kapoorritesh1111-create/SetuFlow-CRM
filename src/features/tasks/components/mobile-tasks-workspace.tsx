@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import RightDrawer, { DrawerActionBar, DrawerSection } from '@/components/RightDrawer';
-import { SetuIcon } from '@/components/ui/setu-icon';
+import { SetuIcon, type SetuIconName } from '@/components/ui/setu-icon';
 import { saveScheduledTask } from '@/features/tasks/server/actions';
 import type { TasksWorkspaceData } from '@/lib/queries/tasks';
 import { formatDate } from '@/lib/utils';
@@ -33,10 +33,6 @@ function taskTitle(task: TaskRow) {
 
 function taskNotes(task: TaskRow) {
   return payloadOf(task).notes ?? '';
-}
-
-function taskPriority(task: TaskRow) {
-  return payloadOf(task).priority ?? 'normal';
 }
 
 function assignedTo(task: TaskRow) {
@@ -71,10 +67,11 @@ function statusLabel(task: TaskRow, now: Date) {
   return 'Scheduled';
 }
 
-function taskIcon(task: TaskRow) {
-  if (task.task_type.includes('quote')) return 'message-square';
-  if (task.task_type.includes('document')) return 'box';
-  return 'phone';
+function taskIcon(task: TaskRow): SetuIconName {
+  if (task.task_type.includes('quote')) return 'quote';
+  if (task.task_type.includes('document')) return 'file';
+  if (task.lead_id) return 'lead';
+  return 'clipboard';
 }
 
 function taskTone(task: TaskRow, now: Date) {
