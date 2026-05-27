@@ -27,6 +27,12 @@ function MarketStatus({ active }: { active: boolean | null }) {
   );
 }
 
+function getErrorDigest(err: unknown) {
+  if (!err || typeof err !== 'object' || !('digest' in err)) return '';
+  const digest = (err as { digest?: unknown }).digest;
+  return typeof digest === 'string' ? digest : '';
+}
+
 function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
   return (
     <div id="markets" className="space-y-6">
@@ -145,8 +151,9 @@ export default async function Page() {
       <MarketsWorkspace markets={rows} />
     </AdminSettingsShell>;
   } catch (err) {
-    const isNextRedirect = err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (typeof err.digest === 'string' && err.digest.startsWith('NEXT_REDIRECT')));
-    const isNextNotFound = err instanceof Error && typeof err.digest === 'string' && err.digest.startsWith('NEXT_NOT_FOUND');
+    const digest = getErrorDigest(err);
+    const isNextRedirect = err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || digest.startsWith('NEXT_REDIRECT'));
+    const isNextNotFound = digest.startsWith('NEXT_NOT_FOUND');
     if (isNextRedirect || isNextNotFound) throw err;
     console.error('[markets page] unhandled error:', err);
     return (
