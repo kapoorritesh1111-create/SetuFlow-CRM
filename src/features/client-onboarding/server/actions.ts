@@ -27,6 +27,7 @@ import { provisionWorkspaceFromOnboardingRequest } from '@/features/client-onboa
 function onboardingRedirect(path: string, params: Record<string, string | null | undefined>): never { const query = new URLSearchParams(); for (const [key, value] of Object.entries(params)) if (value) query.set(key, value); redirect(`${path}${query.size ? `?${query.toString()}` : ''}`); }
 function selectedClient(formData: FormData, requestId: string) { return normalizeText(formData.get('return_client')) ?? requestId; }
 function clientManagementRedirect(notice: string, requestId: string, client?: string | null): never { const params = new URLSearchParams({ notice, client: client || requestId }); redirect(`/admin/client-management?${params.toString()}`); }
+function provisioningErrorMessage(error: unknown) { if (error instanceof Error && error.message) return error.message; if (error && typeof error === 'object') { const record = error as Record<string, unknown>; return String(record.message ?? record.details ?? record.hint ?? record.code ?? 'unknown database error'); } return 'unknown error'; }
 
 export async function submitClientOnboardingRequest(formData: FormData): Promise<void> {
   const companyName = normalizeText(formData.get('company_name'));
@@ -122,7 +123,7 @@ export async function sendFirstAdminInviteFromOnboardingRequest(formData: FormDa
       workspaceDomain = result.workspaceDomain;
       await admin.from('client_onboarding_requests').update({ status: 'admin_invite_ready', workspace_domain: workspaceDomain, linked_organization_id: organizationId, updated_at: new Date().toISOString() }).eq('id', requestId);
     } catch (error) {
-      await admin.from('client_onboarding_requests').update({ status: 'setup_in_progress', additional_notes: `Workspace provisioning needs attention: ${error instanceof Error ? error.message : 'unknown error'}`, updated_at: new Date().toISOString() }).eq('id', requestId);
+      await admin.from('client_onboarding_requests').update({ status: 'setup_in_progress', additional_notes: `Workspace provisioning needs attention: ${provisioningErrorMessage(error)}`, updated_at: new Date().toISOString() }).eq('id', requestId);
       clientManagementRedirect('workspace-create-failed', requestId, client);
     }
   }
@@ -157,7 +158,7 @@ export async function createWorkspaceFromOnboardingDraft(formData: FormData): Pr
     const result = await provisionWorkspaceFromOnboardingRequest({ admin, request, platformOrganizationId: organization.id, actorMembershipId: membership.id, actorUserId: membership.user_id ?? null });
     await admin.from('client_onboarding_requests').update({ status: 'admin_invite_ready', workspace_domain: result.workspaceDomain, linked_organization_id: result.organizationId, updated_at: new Date().toISOString() }).eq('id', requestId);
   } catch (error) {
-    await admin.from('client_onboarding_requests').update({ status: 'setup_in_progress', additional_notes: `Workspace provisioning needs attention: ${error instanceof Error ? error.message : 'unknown error'}`, updated_at: new Date().toISOString() }).eq('id', requestId);
+    await admin.from('client_onboarding_requests').update({ status: 'setup_in_progress', additional_notes: `Workspace provisioning needs attention: ${provisioningErrorMessage(error)}`, updated_at: new Date().toISOString() }).eq('id', requestId);
     clientManagementRedirect('workspace-create-failed', requestId, client);
   }
   revalidatePath('/admin/client-management');
