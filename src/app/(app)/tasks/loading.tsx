@@ -1,5 +1,5 @@
-import { RouteLoadingState } from '@/components/app/route-loading-state';
+import { SkeletonWorkspace } from '@/components/ui/skeleton';
 
 export default function Loading() {
-  return <RouteLoadingState eyebrow="Workspace" title="Loading tasks" description="Preparing live data, permissions, and operator surfaces for this workspace." />;
+  return <SkeletonWorkspace className="max-w-7xl mx-auto" />;
 }

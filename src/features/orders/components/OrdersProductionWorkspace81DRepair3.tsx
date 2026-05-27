@@ -239,15 +239,40 @@ type KpiFilter = 'all' | 'ready_now' | 'blocked' | 'finance_ready' | 'freight_re
 type ReadinessFilter = 'all' | 'ready' | 'blocked' | 'finance_ready' | 'freight_ready' | 'whatsapp_ready';
 type DrawerState = { type: 'finance' | 'freight'; order: ProductionOrder8S } | null;
 
+/* SF-18-046: SVG icon map — replaces all emoji stage/KPI icons */
+function OrdIcon({ k, size = 14 }: { k: string; size?: number }) {
+  const s = `${size}px`;
+  const paths: Record<string, string> = {
+    'list-check': 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4',
+    'file': 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm4 18H6V4h7v5h5z',
+    'package': 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM12 2l7 4-7 4-7-4zm0 20-7-4v-8l7 4z',
+    'truck': 'M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
+    'check-circle': 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
+    'clipboard': 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z',
+    'receipt': 'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1zm3 5h10M7 12h10M7 17h6',
+    'flag': 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7',
+    'bar-chart': 'M18 20V10M12 20V4M6 20v-6',
+    'block': 'M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zM4.93 4.93l14.14 14.14',
+    'credit-card': 'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM1 10h22',
+    'message': 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  };
+  const d = paths[k] ?? paths['file'];
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
+
 const STAGES = [
-  { key: 'actual_lines', label: 'Actual Lines', icon: '🧾' },
-  { key: 'buyer_doc', label: 'Buyer Doc', icon: '📄' },
-  { key: 'packing', label: 'Packing', icon: '📦' },
-  { key: 'freight_queue', label: 'Freight Queue', icon: '🚚' },
-  { key: 'processing', label: 'Processing', icon: '✅' },
-  { key: 'delivery_note', label: 'Delivery Note', icon: '🧍' },
-  { key: 'final_invoice', label: 'Final Invoice', icon: '💳' },
-  { key: 'paid_closed', label: 'Paid & Closed', icon: '🏁' },
+  { key: 'actual_lines', label: 'Actual Lines', icon: 'list-check' },
+  { key: 'buyer_doc', label: 'Buyer Doc', icon: 'file' },
+  { key: 'packing', label: 'Packing', icon: 'package' },
+  { key: 'freight_queue', label: 'Freight Queue', icon: 'truck' },
+  { key: 'processing', label: 'Processing', icon: 'check-circle' },
+  { key: 'delivery_note', label: 'Delivery Note', icon: 'clipboard' },
+  { key: 'final_invoice', label: 'Final Invoice', icon: 'receipt' },
+  { key: 'paid_closed', label: 'Paid & Closed', icon: 'flag' },
 ] as const;
 
 type StageKey = typeof STAGES[number]['key'];
@@ -756,12 +781,12 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
   }, [orders]);
 
   const kpis = useMemo(() => [
-    { key: 'all' as KpiFilter, icon: '📊', tone: 'value', label: 'All orders', count: orders.length, detail: 'Loaded execution orders' },
-    { key: 'ready_now' as KpiFilter, icon: '✅', tone: 'ready', label: 'Ready now', count: orders.filter((order) => nextBestAction(order).blocks.length === 0 && !isBlocked(order)).length, detail: 'No current blocker' },
-    { key: 'blocked' as KpiFilter, icon: '⛔', tone: 'blocked', label: 'Blocked', count: orders.filter(isBlocked).length, detail: 'Needs human review' },
-    { key: 'finance_ready' as KpiFilter, icon: '💳', tone: 'finance', label: 'Finance queue-ready', count: orders.filter(isFinanceQueueReady).length, detail: 'Final invoice approved' },
-    { key: 'freight_ready' as KpiFilter, icon: '🚚', tone: 'freight', label: 'Freight queue-ready', count: orders.filter(isFreightQueueReady).length, detail: 'Packing payload approved' },
-    { key: 'whatsapp_ready' as KpiFilter, icon: '💬', tone: 'whatsapp', label: 'WhatsApp-ready docs', count: orders.filter(isWhatsappReady).length, detail: 'Approved tracked link docs' },
+    { key: 'all' as KpiFilter, icon: 'bar-chart', tone: 'value', label: 'All orders', count: orders.length, detail: 'Loaded execution orders' },
+    { key: 'ready_now' as KpiFilter, icon: 'check-circle', tone: 'ready', label: 'Ready now', count: orders.filter((order) => nextBestAction(order).blocks.length === 0 && !isBlocked(order)).length, detail: 'No current blocker' },
+    { key: 'blocked' as KpiFilter, icon: 'block', tone: 'blocked', label: 'Blocked', count: orders.filter(isBlocked).length, detail: 'Needs human review' },
+    { key: 'finance_ready' as KpiFilter, icon: 'credit-card', tone: 'finance', label: 'Finance queue-ready', count: orders.filter(isFinanceQueueReady).length, detail: 'Final invoice approved' },
+    { key: 'freight_ready' as KpiFilter, icon: 'truck', tone: 'freight', label: 'Freight queue-ready', count: orders.filter(isFreightQueueReady).length, detail: 'Packing payload approved' },
+    { key: 'whatsapp_ready' as KpiFilter, icon: 'message', tone: 'whatsapp', label: 'WhatsApp-ready docs', count: orders.filter(isWhatsappReady).length, detail: 'Approved tracked link docs' },
   ], [orders]);
 
   const filteredOrders = useMemo(() => {
@@ -856,7 +881,7 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
           const active = kpiFilter === kpi.key || (!kpiFilter && kpi.key === 'all');
           return (
             <button key={kpi.label} className={`kpi-card ${kpi.tone} ${active ? 'active' : ''}`} onClick={() => setKpiFilter(active && kpi.key !== 'all' ? null : kpi.key === 'all' ? null : kpi.key)}>
-              <span className="kpi-top"><em>{kpi.label}</em><i>{kpi.icon}</i></span>
+              <span className="kpi-top"><em>{kpi.label}</em><i><OrdIcon k={kpi.icon} size={13} /></i></span>
               <strong>{kpi.count}</strong>
               <small>{kpi.detail}</small>
             </button>
@@ -958,7 +983,7 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
                   const blocked = !unlocked;
                   return (
                     <button key={stage.key} className={`stage-pill ${active ? 'active' : ''} ${done ? 'done' : ''} ${blocked ? 'blocked' : ''}`} onClick={() => setSelectedStage(stage.key)}>
-                      <span><em>{stage.icon}</em>{index + 1}</span>
+                      <span><em><OrdIcon k={stage.icon} size={12} /></em>{index + 1}</span>
                       <b>{stage.label}</b>
                       <small>{done ? 'Done' : active ? 'Active' : blocked ? 'Blocked' : 'Open'}</small>
                     </button>

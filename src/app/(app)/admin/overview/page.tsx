@@ -58,6 +58,7 @@ export default async function AdminOverviewPage() {
       cta: 'Review profile',
       href: '/admin/organization',
       stripGrad: 'from-teal-500 to-blue-700',
+      iconPath: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
       dot: Boolean(slug && org.default_country_id),
     },
     {
@@ -69,6 +70,7 @@ export default async function AdminOverviewPage() {
       cta: 'Set defaults',
       href: '/admin/pricing-engine',
       stripGrad: 'from-indigo-500 to-violet-500',
+      iconPath: 'M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6',
       dot: threshold != null,
     },
     {
@@ -80,6 +82,7 @@ export default async function AdminOverviewPage() {
       cta: 'Manage team',
       href: '/admin/users',
       stripGrad: 'from-amber-400 to-amber-500',
+      iconPath: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
       dot: ownerCount > 0 && openInvites === 0,
       dotWarn: openInvites > 0,
     },
@@ -92,6 +95,7 @@ export default async function AdminOverviewPage() {
       cta: 'Configure lists',
       href: '/admin/markets',
       stripGrad: 'from-cyan-500 to-teal-500',
+      iconPath: 'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
       dot: marketsCount > 0 && stagesCount > 0,
     },
     {
@@ -103,6 +107,7 @@ export default async function AdminOverviewPage() {
       cta: 'Open catalog',
       href: '/admin/product-management',
       stripGrad: 'from-emerald-500 to-green-500',
+      iconPath: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM12 2l7 4-7 4-7-4z',
       dot: productsCount > 0,
     },
     {
@@ -114,6 +119,7 @@ export default async function AdminOverviewPage() {
       cta: 'Review governance',
       href: '/admin/security',
       stripGrad: 'from-rose-500 to-red-400',
+      iconPath: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
       dot: rolesCount > 0 && threshold != null,
     },
   ];
@@ -153,8 +159,16 @@ export default async function AdminOverviewPage() {
             {/* Color strip */}
             <div className={`h-1 w-full bg-gradient-to-r ${card.stripGrad}`} />
             <div className="p-5">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{card.eyebrow}</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">{card.title}</h2>
+              {/* SF-19-024: Icon zone */}
+              <div className="mb-3 flex items-center gap-3">
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.stripGrad} shadow-sm`} aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={card.iconPath} />
+                  </svg>
+                </div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{card.eyebrow}</p>
+              </div>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-950">{card.title}</h2>
               <p className="mt-1.5 min-h-[3.5rem] text-sm leading-6 text-slate-600">{card.desc}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {card.tags.map((tag, i) => (

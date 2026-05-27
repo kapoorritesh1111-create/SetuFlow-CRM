@@ -88,6 +88,9 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   const titleId = useId();
   const descriptionId = useId();
 
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!open) return;
 
@@ -121,10 +124,38 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
       }
     };
 
+    // SF-19-020: Swipe-right-to-close gesture
+    const handleTouchStart = (e: TouchEvent) => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const touch = e.touches[0];
+      // Only trigger if touch starts within the drawer panel
+      if (panel.contains(e.target as Node)) {
+        touchStartXRef.current = touch.clientX;
+        touchStartYRef.current = touch.clientY;
+      }
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartXRef.current;
+      const dy = Math.abs(touch.clientY - (touchStartYRef.current ?? 0));
+      // Swipe right ≥ 80px with horizontal dominance
+      if (dx > 80 && dy < 60) {
+        onClose();
+      }
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+    };
+
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
     return () => {
       window.clearTimeout(focusFirst);
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
       document.body.classList.remove('drawer-open');
       previouslyFocusedRef.current?.focus();
     };

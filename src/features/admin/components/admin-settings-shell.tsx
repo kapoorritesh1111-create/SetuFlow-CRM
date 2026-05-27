@@ -61,45 +61,31 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     label: 'Organisation',
     items: [
       { key: 'overview', href: '/admin/overview', icon: 'building', label: 'Overview', statusDot: 'ok' },
-      { key: 'profile', href: '/admin/organization', icon: 'user', label: 'Organization profile', statusDot: 'ok' },
-      { key: 'users', href: '/admin/users', icon: 'users', label: 'Team members', statusDot: 'ok' },
-      { key: 'client-management', href: '/admin/client-management', icon: 'rocket', label: 'Client management', statusDot: 'warn', badge: 'HQ', badgeTone: 'info' as const, internalOnly: true },
+      { key: 'profile', href: '/admin/organization', icon: 'user', label: 'Org profile', statusDot: 'ok' },
+      { key: 'users', href: '/admin/users', icon: 'users', label: 'Team', statusDot: 'ok' },
       { key: 'invitations', href: '/admin/invitations', icon: 'mail', label: 'Invitations', statusDot: 'warn' },
       { key: 'notifications', href: '/admin/notifications', icon: 'bell', label: 'Notifications', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
     ],
   },
   {
-    label: 'Operations',
+    label: 'Operations & Commerce',
     items: [
       { key: 'markets', href: '/admin/markets', icon: 'globe', label: 'Markets', statusDot: 'ok' },
-      { key: 'categories', href: '/admin/categories', icon: 'box', label: 'Categories', statusDot: 'ok' },
-      { key: 'stages', href: '/admin/stages', icon: 'workflow', label: 'Pipelines & stages', statusDot: 'ok' },
+      { key: 'stages', href: '/admin/stages', icon: 'workflow', label: 'Stages & pipelines', statusDot: 'ok' },
       { key: 'product-management', href: '/admin/product-management', icon: 'clipboard', label: 'Products', statusDot: 'ok' },
       { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade events', statusDot: 'ok' },
-    ],
-  },
-  {
-    label: 'Commerce',
-    items: [
       { key: 'pricing-engine', href: '/admin/pricing-engine', icon: 'dollar', label: 'Pricing engine', statusDot: 'ok' },
       { key: 'document-templates', href: '/admin/document-templates', icon: 'file', label: 'Templates & terms', statusDot: 'ok' },
     ],
   },
   {
-    label: 'Platform',
-    items: [
-      { key: 'integrations', href: '/admin/integrations', icon: 'plug', label: 'Integrations', statusDot: 'warn', internalOnly: true },
-      { key: 'rate-limits', href: '/admin/rate-limits', icon: 'zap', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
-      { key: 'guru-config', href: '/admin/guru-config', icon: 'guru', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
-      { key: 'api-keys', href: '/admin/api-keys', icon: 'key', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
-    ],
-  },
-  {
-    label: 'Governance',
+    label: 'Governance & Platform',
     items: [
       { key: 'security', href: '/admin/security', icon: 'security', label: 'Security & roles', statusDot: 'warn' },
       { key: 'audit', href: '/admin/audit', icon: 'audit', label: 'Audit log', statusDot: 'ok' },
-      { key: 'ai-analytics', href: '/admin/ai-analytics', icon: 'analytics', label: 'AI analytics', badge: 'Internal', badgeTone: 'info', statusDot: 'ok', internalOnly: true },
+      { key: 'guru-config', href: '/admin/guru-config', icon: 'guru', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'api-keys', href: '/admin/api-keys', icon: 'key', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'rate-limits', href: '/admin/rate-limits', icon: 'zap', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
     ],
   },
 ] as const;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import RightDrawer, { DrawerActionBar, DrawerSection } from '@/components/RightDrawer';
 import { GenerateFollowUpDraftButton } from '@/features/ai/components/ai-draft-controls';
@@ -401,7 +401,73 @@ function TaskCard({ task, lead, assignee, now, onEdit, onStatus }: { task: TaskR
   const completed = task.status === 'completed';
   const payload = payloadOf(task);
   const linkedLabel = lead ? `Lead: ${lead.company_name}` : payload.linked_entity_type ? `${payload.linked_entity_type}: ${payload.linked_entity_id?.slice(0, 8) ?? 'context'}` : 'Internal task';
-  return <article className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-slate-900">{taskTitle(task)}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600">{taskPriority(task)}</span><span className="rounded-full bg-brand-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-800">{task.task_type.replace(/_/g, ' ')}</span></div><p className="mt-1 text-sm text-slate-600">{linkedLabel}</p><p className="mt-1 text-xs text-slate-500">Assigned to {profileLabel(assignee)}</p>{taskNotes(task) ? <p className="mt-2 text-sm text-slate-500">{taskNotes(task)}</p> : null}</div><div className="text-sm text-slate-600"><p>{formatDate(task.scheduled_for)}</p><p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">{completed ? 'Completed' : now && new Date(task.scheduled_for) < now ? 'Needs action' : 'Scheduled'}</p></div></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => onEdit(task)} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</button><button type="button" onClick={() => onStatus(completed ? 'reopen' : 'complete', task.id)} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">{completed ? 'Reopen' : 'Complete'}</button>{lead && !completed ? <GenerateFollowUpDraftButton leadId={lead.id} targetEntityType="task" targetEntityId={task.id} compact /> : null}{lead ? <Link href={`/leads/${lead.id}`} className="rounded-2xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100">Open lead</Link> : null}</div></article>;
+
+  // SF-19-025: Swipe-right-to-complete gesture
+  const swipeTouchStartX = React.useRef<number | null>(null);
+  const swipeTouchStartY = React.useRef<number | null>(null);
+  const [swipeHint, setSwipeHint] = React.useState(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeTouchStartX.current = e.touches[0].clientX;
+    swipeTouchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (swipeTouchStartX.current === null) return;
+    const dx = e.touches[0].clientX - swipeTouchStartX.current;
+    const dy = Math.abs(e.touches[0].clientY - (swipeTouchStartY.current ?? 0));
+    if (dx > 40 && dy < 40 && !completed) setSwipeHint(true);
+    else setSwipeHint(false);
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    setSwipeHint(false);
+    if (swipeTouchStartX.current === null || swipeTouchStartY.current === null) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - swipeTouchStartX.current;
+    const dy = Math.abs(touch.clientY - swipeTouchStartY.current);
+    if (dx > 80 && dy < 60 && !completed) {
+      onStatus('complete', task.id);
+    }
+    swipeTouchStartX.current = null;
+    swipeTouchStartY.current = null;
+  };
+
+  return (
+    <article
+      className={`rounded-2xl border p-4 transition-colors ${swipeHint ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {swipeHint && (
+        <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+          <span>→</span> Release to complete
+        </div>
+      )}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-slate-900">{taskTitle(task)}</p>
+            <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600">{taskPriority(task)}</span>
+            <span className="rounded-full bg-brand-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-800">{task.task_type.replace(/_/g, ' ')}</span>
+          </div>
+          <p className="mt-1 text-sm text-slate-600">{linkedLabel}</p>
+          <p className="mt-1 text-xs text-slate-500">Assigned to {profileLabel(assignee)}</p>
+          {taskNotes(task) ? <p className="mt-2 text-sm text-slate-500">{taskNotes(task)}</p> : null}
+        </div>
+        <div className="text-sm text-slate-600">
+          <p>{formatDate(task.scheduled_for)}</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">{completed ? 'Completed' : now && new Date(task.scheduled_for) < now ? 'Needs action' : 'Scheduled'}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" onClick={() => onEdit(task)} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</button>
+        <button type="button" onClick={() => onStatus(completed ? 'reopen' : 'complete', task.id)} className={`rounded-2xl border px-3 py-2 text-sm font-medium transition-colors ${completed ? 'border-slate-200 text-slate-700 hover:bg-slate-50' : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'}`}>{completed ? 'Reopen' : '✓ Complete'}</button>
+        {lead && !completed ? <GenerateFollowUpDraftButton leadId={lead.id} targetEntityType="task" targetEntityId={task.id} compact /> : null}
+        {lead ? <Link href={`/leads/${lead.id}`} className="rounded-2xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100">Open lead</Link> : null}
+      </div>
+      {!completed && <p className="mt-2 text-[10px] text-slate-300 sm:hidden">← Swipe right to complete</p>}
+    </article>
+  );
 }
 
 function TaskDrawer({ open, task, data, currentUserId, isPending, prefillDate, onClose, onSubmit }: { open: boolean; task: TaskRow | null; data: TasksWorkspaceData; currentUserId: string; isPending: boolean; prefillDate?: string; onClose: () => void; onSubmit: (formData: FormData) => void }) {
