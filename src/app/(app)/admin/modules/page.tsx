@@ -1,7 +1,7 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { updateOrgModuleGrant } from '@/features/admin/server/module-actions';
-import { MODULE_DEFINITIONS, getEnabledModuleSet, normalizeModuleKey, type ModuleKey, type OrgModuleGrant } from '@/lib/modules/module-grants';
+import { MODULE_DEFINITIONS, getEnabledModuleSet, normalizeModuleKey, type OrgModuleGrant } from '@/lib/modules/module-grants';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -91,7 +91,7 @@ export default async function AdminModulesPage({ searchParams }: { searchParams?
               </div>
 
               <form action={updateOrgModuleGrant} className="mt-5 flex justify-end">
-                <input type="hidden" name="module_key" value={moduleDef.key satisfies ModuleKey} />
+                <input type="hidden" name="module_key" value={moduleDef.key} />
                 <input type="hidden" name="enabled" value={enabled ? 'false' : 'true'} />
                 <button type="submit" className={enabled ? 'rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100' : 'rounded-2xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800'}>
                   {enabled ? 'Disable module' : 'Enable module'}
