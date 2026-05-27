@@ -45,7 +45,7 @@ function profileLabel(profile: ProfileRow | undefined, fallback = 'Unassigned') 
 }
 
 function leadLabel(lead: LeadRow) {
-  return [lead.company_name, lead.contact_name].filter(Boolean).join(' · ') || lead.id;
+  return lead.company_name || lead.id;
 }
 
 function startOfDay(date: Date) {
@@ -204,8 +204,9 @@ export function MobileTasksWorkspace({ data, currentUserId }: Props) {
   const submitTask = (formData: FormData) => startTransition(() => {
     void saveScheduledTask(undefined, formData).then((result) => {
       setMessage(result?.error ?? result?.success ?? 'Task saved.');
-      if (!result?.error && result.task) {
-        setTasks((current) => [result.task, ...current]);
+      const savedTask = result?.error ? undefined : result?.task;
+      if (savedTask) {
+        setTasks((current) => [savedTask, ...current]);
         setDrawerOpen(false);
       }
     });
