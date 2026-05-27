@@ -6,8 +6,8 @@ import { getPipelinePageData } from '@/lib/queries/pipeline';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 
-const PipelineBoard = dynamic(
-  () => import('@/features/pipeline/components/pipeline-board').then((mod) => mod.PipelineBoard),
+const PipelineBoardViewShell = dynamic(
+  () => import('@/features/pipeline/components/PipelineBoardViewShell').then((mod) => mod.PipelineBoardViewShell),
   {
     ssr: false,
     loading: () => null,
@@ -61,7 +61,7 @@ export default async function PipelinePage({
   return (
     <div className="space-y-4">
       <QueryIssuesAlert issues={data.queryIssues} />
-      <PipelineBoard
+      <PipelineBoardViewShell
         currentUserId={workspace.user?.id ?? ''}
         canManageLeads={pipelineView.canManageLeads}
         readOnlyMessage={pipelineView.readOnlyMessage}
