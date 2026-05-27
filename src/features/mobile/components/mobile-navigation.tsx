@@ -11,16 +11,6 @@ import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 
-function resolveTitle(pathname: string) {
-  if (pathname.startsWith("/leads") || pathname.startsWith("/mobile/leads")) return "Current Leads";
-  if (pathname.startsWith("/orders") || pathname.startsWith("/mobile/orders")) return "Orders";
-  if (pathname.includes("capture")) return "Capture";
-  if (pathname.includes("quote")) return "Quote";
-  if (pathname.includes("settings")) return "Settings";
-  if (pathname.includes("notifications")) return "Notifications";
-  return "Home Dashboard";
-}
-
 function initialsFrom(name?: string | null) {
   return (
     (name ?? "SF")
@@ -32,29 +22,41 @@ function initialsFrom(name?: string | null) {
   );
 }
 
+function firstNameFrom(name: string) {
+  return name.split(/\s+/).filter(Boolean)[0] ?? name;
+}
+
+function greetingFor(date: Date) {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export function BrandedMobileTopBar({
   signedIn,
-  canonical = false,
 }: {
   signedIn?: MobileSignedInIdentity;
   canonical?: boolean;
 }) {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState("");
-  const title = resolveTitle(pathname);
+  const [greeting, setGreeting] = useState("Good day");
   const displayName = signedIn?.name ?? "SETU Flow";
+  const firstName = firstNameFrom(displayName);
   const initials = signedIn?.initials ?? initialsFrom(displayName);
+  const notificationCount = 0;
 
   useEffect(() => {
+    const now = new Date();
+    setGreeting(greetingFor(now));
     setDateLabel(
       new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
+        weekday: "long",
         month: "short",
         day: "2-digit",
-        year: "numeric",
-      }).format(new Date()),
+      }).format(now),
     );
   }, []);
 
@@ -62,43 +64,30 @@ export function BrandedMobileTopBar({
     <>
       <header className="sticky top-0 z-40 bg-[linear-gradient(180deg,rgba(8,18,37,.96),rgba(8,18,37,.78))] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] text-white shadow-[0_16px_40px_rgba(15,23,42,.18)] backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[430px] items-center gap-3">
-          <button
-            onClick={() => setOpen(true)}
-            className="grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-white/10 text-xl"
-            aria-label="Open mobile menu"
-          >
-            ☰
-          </button>
-          <img
-            src="/logos/setu-flow-logo.svg"
-            alt="SETU Flow"
-            className="h-10 w-10 rounded-2xl bg-white p-1 shadow-lg"
-          />
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-200">
-              SETU Flow
+            <p className="truncate text-lg font-black tracking-tight">
+              {greeting}, {firstName}
             </p>
-            <p className="truncate text-base font-black tracking-tight">
-              {title}
-            </p>
-            <p className="truncate text-[10px] text-white/55">
-              {dateLabel || "Today"} · {displayName}
+            <p className="mt-0.5 truncate text-xs font-semibold text-white/60">
+              {dateLabel || "Today"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShareOpen(true)}
-            className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-lg"
-            aria-label="Share my vCard"
+          <Link
+            href="/mobile/settings"
+            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
+            aria-label="Open notifications"
           >
-            📇
-          </button>
+            <SetuIcon name="bell" className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-slate-900 bg-amber-400 px-1 text-[10px] font-black leading-none text-slate-950">
+              {notificationCount}
+            </span>
+          </Link>
           <button
             type="button"
             onClick={() => setOpen(true)}
             className="grid h-11 w-11 place-items-center rounded-full"
             title={`Signed in as ${displayName}`}
-            aria-label="Open profile and quick actions"
+            aria-label="Open profile settings"
           >
             <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" />
           </button>
@@ -107,7 +96,6 @@ export function BrandedMobileTopBar({
       <MobileActionDrawer
         open={open}
         onClose={() => setOpen(false)}
-        canonical={canonical}
         signedIn={signedIn}
         onShareVCard={() => setShareOpen(true)}
       />
@@ -123,7 +111,6 @@ export function BrandedMobileTopBar({
 export function MobileActionDrawer({
   open,
   onClose,
-  canonical = false,
   signedIn,
   onShareVCard,
 }: {
@@ -134,7 +121,8 @@ export function MobileActionDrawer({
   onShareVCard?: () => void;
 }) {
   if (!open) return null;
-  const tabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
+  const displayName = signedIn?.name ?? "SETU Flow user";
+  const initials = signedIn?.initials ?? initialsFrom(displayName);
   return (
     <div
       className="fixed inset-0 z-[90] bg-slate-950/55 backdrop-blur-sm"
@@ -146,10 +134,10 @@ export function MobileActionDrawer({
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
         <div className="flex items-start gap-3">
-          <ThreeDIconOrb icon="✦" tone="blue" />
+          <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="lg" />
           <div className="min-w-0">
             <h2 className="truncate text-lg font-black text-slate-950 dark:text-white">
-              {signedIn?.name ?? "SETU Flow user"}
+              {displayName}
             </h2>
             <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-300">
               {signedIn?.email ?? "Signed in to workspace"}
@@ -160,8 +148,7 @@ export function MobileActionDrawer({
           </div>
         </div>
         <div className="mt-4 grid gap-2">
-          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile</Link>
-          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
+          <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
           <button
             type="button"
             onClick={() => {
@@ -172,17 +159,6 @@ export function MobileActionDrawer({
           >
             <span>📇</span>Share vCard
           </button>
-          {tabs.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              onClick={onClose}
-              className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            >
-              {tab.label === 'Guru' ? <GuruAvatar size="sm" /> : <SetuIcon name={tab.icon} className="h-5 w-5" />}
-              {tab.label}
-            </Link>
-          ))}
           <form action="/api/logout" method="post">
             <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 text-left font-black text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200"><span>↪</span>Sign out</button>
           </form>
@@ -255,50 +231,5 @@ export function MobileHomeHero() {
         </Link>
       </div>
     </section>
-  );
-}
-
-export function MobileDashboardHome() {
-  const actions = [
-    { href: "/leads", title: "Leads", icon: "◎", tone: "blue" as const },
-    {
-      href: "/leads?quickLead=1",
-      title: "Buyer",
-      icon: "🛒",
-      tone: "teal" as const,
-    },
-    {
-      href: "/leads?quickLead=1&sourceType=supplier",
-      title: "Supplier",
-      icon: "🏭",
-      tone: "violet" as const,
-    },
-    { href: "/orders", title: "Orders", icon: "◇", tone: "gold" as const },
-  ];
-  return (
-    <div className="space-y-4">
-      <MobileHomeHero />
-      <section className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Actions</p>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {actions.map((action) => (
-            <Link key={action.title} href={action.href} className="rounded-[1.5rem] bg-white p-4 shadow-lg shadow-slate-200/60 transition hover:-translate-y-0.5 dark:bg-slate-950 dark:shadow-black/20">
-              <ThreeDIconOrb icon={action.icon} tone={action.tone} />
-              <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">{action.title}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-      <section className="rounded-[1.5rem] border border-rose-200 bg-white/90 p-5 dark:border-rose-900/50 dark:bg-slate-900/90">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">Follow-ups</p>
-        <b className="mt-3 block text-3xl text-slate-950 dark:text-white">9</b>
-        <p className="text-sm text-slate-500 dark:text-slate-300">Overdue</p>
-      </section>
-      <section className="rounded-[1.5rem] border border-sky-200 bg-white/90 p-5 dark:border-sky-900/50 dark:bg-slate-900/90">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-500">Quotes</p>
-        <b className="mt-3 block text-3xl text-slate-950 dark:text-white">5</b>
-        <p className="text-sm text-slate-500 dark:text-slate-300">Ready to send</p>
-      </section>
-    </div>
   );
 }
