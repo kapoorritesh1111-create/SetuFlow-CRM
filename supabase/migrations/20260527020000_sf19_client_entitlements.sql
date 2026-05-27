@@ -46,38 +46,38 @@ drop policy if exists client_entitlement_profiles_manage_admin on public.client_
 drop policy if exists client_entitlement_profiles_select_platform_admin on public.client_entitlement_profiles;
 drop policy if exists client_entitlement_profiles_insert_platform_admin on public.client_entitlement_profiles;
 drop policy if exists client_entitlement_profiles_update_platform_admin on public.client_entitlement_profiles;
-create policy client_entitlement_profiles_select_platform_admin
+drop policy if exists client_entitlement_profiles_select_member_or_platform on public.client_entitlement_profiles;
+drop policy if exists client_entitlement_profiles_manage_admin_or_platform on public.client_entitlement_profiles;
+
+create policy client_entitlement_profiles_select_member_or_platform
   on public.client_entitlement_profiles
   for select
-  using (public.is_setu_platform_admin());
-create policy client_entitlement_profiles_insert_platform_admin
+  using (public.is_org_member(organization_id) or public.is_setu_platform_admin());
+
+create policy client_entitlement_profiles_manage_admin_or_platform
   on public.client_entitlement_profiles
-  for insert
-  with check (public.is_setu_platform_admin());
-create policy client_entitlement_profiles_update_platform_admin
-  on public.client_entitlement_profiles
-  for update
-  using (public.is_setu_platform_admin())
-  with check (public.is_setu_platform_admin());
+  for all
+  using (public.is_org_admin(organization_id) or public.is_setu_platform_admin())
+  with check (public.is_org_admin(organization_id) or public.is_setu_platform_admin());
 
 drop policy if exists client_usage_rollups_select_member on public.client_usage_rollups;
 drop policy if exists client_usage_rollups_manage_admin on public.client_usage_rollups;
 drop policy if exists client_usage_rollups_select_platform_admin on public.client_usage_rollups;
 drop policy if exists client_usage_rollups_insert_platform_admin on public.client_usage_rollups;
 drop policy if exists client_usage_rollups_update_platform_admin on public.client_usage_rollups;
-create policy client_usage_rollups_select_platform_admin
+drop policy if exists client_usage_rollups_select_member_or_platform on public.client_usage_rollups;
+drop policy if exists client_usage_rollups_manage_admin_or_platform on public.client_usage_rollups;
+
+create policy client_usage_rollups_select_member_or_platform
   on public.client_usage_rollups
   for select
-  using (public.is_setu_platform_admin());
-create policy client_usage_rollups_insert_platform_admin
+  using (public.is_org_member(organization_id) or public.is_setu_platform_admin());
+
+create policy client_usage_rollups_manage_admin_or_platform
   on public.client_usage_rollups
-  for insert
-  with check (public.is_setu_platform_admin());
-create policy client_usage_rollups_update_platform_admin
-  on public.client_usage_rollups
-  for update
-  using (public.is_setu_platform_admin())
-  with check (public.is_setu_platform_admin());
+  for all
+  using (public.is_org_admin(organization_id) or public.is_setu_platform_admin())
+  with check (public.is_org_admin(organization_id) or public.is_setu_platform_admin());
 
 drop trigger if exists client_entitlement_profiles_set_updated_at on public.client_entitlement_profiles;
 create trigger client_entitlement_profiles_set_updated_at

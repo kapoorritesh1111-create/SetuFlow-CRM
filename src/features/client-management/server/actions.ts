@@ -34,16 +34,24 @@ function optionalDate(value: FormDataEntryValue | null) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
-function redirectBack(notice: string): never {
-  redirect(`/admin/client-management?notice=${encodeURIComponent(notice)}`);
+function redirectBack(notice: string, client?: string): never {
+  const params = new URLSearchParams({ notice });
+  if (client) params.set('client', client);
+  redirect(`/admin/client-management?${params.toString()}`);
+}
+
+function returnClient(formData: FormData) {
+  const value = textValue(formData.get('return_client'));
+  return value || textValue(formData.get('organization_id'));
 }
 
 export async function updateClientEntitlement(formData: FormData): Promise<void> {
   const context = await requireSetuInternalAdminWorkspace();
-  if (context.missingEnv || !context.organization || !context.membership) redirectBack('entitlement-save-failed');
+  const client = returnClient(formData);
+  if (context.missingEnv || !context.organization || !context.membership) redirectBack('entitlement-save-failed', client);
 
   const organizationId = textValue(formData.get('organization_id'));
-  if (!organizationId) redirectBack('client-missing');
+  if (!organizationId) redirectBack('client-missing', client);
 
   const supabase = (await createClient()) as unknown as EntitlementClient;
   const { error } = await supabase.from('client_entitlement_profiles').upsert(
@@ -63,18 +71,19 @@ export async function updateClientEntitlement(formData: FormData): Promise<void>
     { onConflict: 'organization_id' },
   );
 
-  if (error) redirectBack('entitlement-save-failed');
+  if (error) redirectBack('entitlement-save-failed', client);
   revalidatePath('/admin/client-management');
-  redirectBack('entitlement-saved');
+  redirectBack('entitlement-saved', client);
 }
 
 export async function updateClientModuleGrant(formData: FormData): Promise<void> {
   const context = await requireSetuInternalAdminWorkspace();
-  if (context.missingEnv || !context.membership) redirectBack('module-save-failed');
+  const client = returnClient(formData);
+  if (context.missingEnv || !context.membership) redirectBack('module-save-failed', client);
 
   const organizationId = textValue(formData.get('organization_id'));
   const moduleKey = normalizeModuleKey(formData.get('module_key'));
-  if (!organizationId || !moduleKey || !MODULE_KEYS.includes(moduleKey)) redirectBack('module-invalid');
+  if (!organizationId || !moduleKey || !MODULE_KEYS.includes(moduleKey)) redirectBack('module-invalid', client);
 
   const enabled = formData.get('enabled') === 'true';
   const supabase = (await createClient()) as unknown as EntitlementClient;
@@ -88,7 +97,7 @@ export async function updateClientModuleGrant(formData: FormData): Promise<void>
     { onConflict: 'organization_id,module_key' },
   );
 
-  if (error) redirectBack('module-save-failed');
+  if (error) redirectBack('module-save-failed', client);
   revalidatePath('/admin/client-management');
-  redirectBack(enabled ? 'module-enabled' : 'module-disabled');
+  redirectBack(enabled ? 'module-enabled' : 'module-disabled', client);
 }
