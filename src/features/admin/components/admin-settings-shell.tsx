@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 export type AdminNavKey =
   | 'overview'
   | 'profile'
+  | 'client-management'
   | 'modules'
   | 'client-onboarding'
   | 'users'
@@ -47,6 +48,7 @@ type AdminNavItem = {
 const internalOnlyAdminKeys: AdminNavKey[] = [
   'ai-analytics',
   'api-keys',
+  'client-management',
   'client-onboarding',
   'guru-config',
   'integrations',
@@ -61,10 +63,9 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
       { key: 'overview', href: '/admin/overview', icon: 'building', label: 'Overview', statusDot: 'ok' },
       { key: 'profile', href: '/admin/organization', icon: 'user', label: 'Organization profile', statusDot: 'ok' },
       { key: 'users', href: '/admin/users', icon: 'users', label: 'Team members', statusDot: 'ok' },
-      { key: 'modules', href: '/admin/modules', icon: 'box', label: 'Modules', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
+      { key: 'client-management', href: '/admin/client-management', icon: 'rocket', label: 'Client management', statusDot: 'warn', badge: 'HQ', badgeTone: 'info' as const, internalOnly: true },
       { key: 'invitations', href: '/admin/invitations', icon: 'mail', label: 'Invitations', statusDot: 'warn' },
       { key: 'notifications', href: '/admin/notifications', icon: 'bell', label: 'Notifications', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
-      { key: 'client-onboarding', href: '/admin/client-onboarding', icon: 'rocket', label: 'Client onboarding', statusDot: 'warn', internalOnly: true },
     ],
   },
   {

@@ -60,7 +60,7 @@ export async function submitClientOnboardingRequest(formData: FormData): Promise
   if (!admin) onboardingRedirect('/onboarding/received', { company: companyName, domain: workspaceDomain, notice: 'service-role-missing' });
   const { error } = await admin.from('client_onboarding_requests').insert(payload);
   if (error) onboardingRedirect('/onboarding/received', { company: companyName, domain: workspaceDomain, notice: 'storage-pending' });
-  revalidatePath('/admin/client-onboarding');
+  revalidatePath('/admin/client-management');
   onboardingRedirect('/onboarding/received', { company: companyName, domain: workspaceDomain, notice: 'submitted' });
 }
 
@@ -74,8 +74,8 @@ export async function updateClientOnboardingStatus(formData: FormData): Promise<
   if (missingEnv || !membership) return;
   const supabase = (await createClient()) as any;
   await supabase.from('client_onboarding_requests').update({ status, updated_at: new Date().toISOString() }).eq('id', requestId);
-  revalidatePath('/admin/client-onboarding');
-  redirect('/admin/client-onboarding?notice=status-updated');
+  revalidatePath('/admin/client-management');
+  redirect('/admin/client-management?notice=status-updated');
 }
 
 
@@ -96,7 +96,7 @@ export async function resendClientOnboardingNotification(formData: FormData): Pr
     .maybeSingle();
 
   if (error || !request?.id || !request.company_name) {
-    redirect('/admin/client-onboarding?notice=request-not-found');
+    redirect('/admin/client-management?notice=request-not-found');
   }
 
   const adminEmail = getOnboardingAdminEmail() || request.notification_email;
@@ -134,8 +134,8 @@ export async function resendClientOnboardingNotification(formData: FormData): Pr
     })
     .eq('id', request.id);
 
-  revalidatePath('/admin/client-onboarding');
-  redirect(`/admin/client-onboarding?request=${request.id}&notice=${notification.status === 'email_sent' ? 'notification-sent' : 'notification-failed'}`);
+  revalidatePath('/admin/client-management');
+  redirect(`/admin/client-management?request=${request.id}&notice=${notification.status === 'email_sent' ? 'notification-sent' : 'notification-failed'}`);
 }
 
 function pickDelivery(metadata: unknown): Record<string, any> {
@@ -161,7 +161,7 @@ export async function sendFirstAdminInviteFromOnboardingRequest(formData: FormDa
     .maybeSingle();
 
   if (requestError || !request?.company_name || !request.primary_admin_email) {
-    redirect('/admin/client-onboarding?notice=request-not-found');
+    redirect('/admin/client-management?notice=request-not-found');
   }
 
   let organizationId = request.linked_organization_id as string | null;
@@ -211,7 +211,7 @@ export async function sendFirstAdminInviteFromOnboardingRequest(formData: FormDa
         updated_at: new Date().toISOString(),
       })
       .eq('id', requestId);
-    redirect(`/admin/client-onboarding?request=${requestId}&notice=invite-link-missing`);
+    redirect(`/admin/client-management?request=${requestId}&notice=invite-link-missing`);
   }
 
   const roleName = Array.isArray(invitation.roles) ? invitation.roles[0]?.name : invitation.roles?.name;
@@ -257,9 +257,9 @@ export async function sendFirstAdminInviteFromOnboardingRequest(formData: FormDa
     })
     .eq('id', requestId);
 
-  revalidatePath('/admin/client-onboarding');
+  revalidatePath('/admin/client-management');
   revalidatePath('/admin/invitations');
-  redirect(`/admin/client-onboarding?request=${requestId}&notice=${notification.status === 'email_sent' ? 'first-admin-invite-sent' : 'first-admin-invite-failed'}`);
+  redirect(`/admin/client-management?request=${requestId}&notice=${notification.status === 'email_sent' ? 'first-admin-invite-sent' : 'first-admin-invite-failed'}`);
 }
 
 export async function createWorkspaceFromOnboardingDraft(formData: FormData): Promise<void> {
@@ -278,7 +278,7 @@ export async function createWorkspaceFromOnboardingDraft(formData: FormData): Pr
     .eq('id', requestId)
     .maybeSingle();
 
-  if (requestError || !request?.company_name) redirect('/admin/client-onboarding?notice=request-not-found');
+  if (requestError || !request?.company_name) redirect('/admin/client-management?notice=request-not-found');
 
   try {
     const result = await provisionWorkspaceFromOnboardingRequest({
@@ -307,10 +307,10 @@ export async function createWorkspaceFromOnboardingDraft(formData: FormData): Pr
         updated_at: new Date().toISOString(),
       })
       .eq('id', requestId);
-    redirect('/admin/client-onboarding?notice=workspace-create-failed');
+    redirect('/admin/client-management?notice=workspace-create-failed');
   }
 
-  revalidatePath('/admin/client-onboarding');
+  revalidatePath('/admin/client-management');
   revalidatePath('/admin/invitations');
-  redirect(`/admin/client-onboarding?request=${requestId}&notice=workspace-provisioned`);
+  redirect(`/admin/client-management?request=${requestId}&notice=workspace-provisioned`);
 }

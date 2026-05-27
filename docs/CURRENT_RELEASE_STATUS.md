@@ -50,3 +50,11 @@ This cleanup improves handoff quality and removes stale static artifacts, but it
 - `docs/setu-guru/` now contains chatbot-ready onboarding, workflow, troubleshooting, repo-review, learning-loop, and GPT build instructions.
 - Runtime assets for the bot and diagrams live in `public/setu-guru/`.
 - Current widget uses route-aware static knowledge and local feedback capture; a future backend pass should persist feedback and connect live retrieval/generation.
+
+## SF-19-016 Checkpoint
+
+- Added `/admin/client-management` as the SETU Flow HQ-only client management console.
+- Unified client onboarding, provisioning, plan controls, seats, module access, and Guru usage into one internal screen.
+- Added source migration for `client_entitlements` and `client_usage_rollups`.
+- Kept `/admin/modules` and `/admin/client-onboarding` as guarded redirects to the unified internal route.
+- Added module direct-route access guard for client workspaces.

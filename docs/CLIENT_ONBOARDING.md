@@ -156,3 +156,18 @@ Wildcard workspace routing is supported by `*.setuflowcrm.com` in Vercel. New cl
 ## First admin invite acceptance
 
 After the provisioning wizard creates the tenant organization, Setu admins use **Send first admin invite** from `/admin/client-onboarding`. The email sends a secure tenant-domain `/invite/[token]` link to the requested first admin. The invited user creates their own Supabase Auth account, sets a password, accepts the owner/admin role, and lands in the new organization workspace. No manual Supabase Auth user creation is part of the production onboarding workflow.
+
+## SF-19-016 Client Management Expansion
+
+The internal onboarding workspace is now unified under `/admin/client-management` for SETU Flow HQ users. The legacy `/admin/client-onboarding` route redirects there after the same Setu-internal guard passes.
+
+The unified console keeps onboarding actions together with client entitlements:
+
+- intake review and workspace provisioning
+- first admin invite handoff
+- client plan and billing state
+- seat caps and invite policy
+- module access toggles
+- Setu Guru request and spend limits
+
+Client workspaces do not see this route or the HQ-only entitlement controls.

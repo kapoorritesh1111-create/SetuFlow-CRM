@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/layout/app-shell';
 import { InAppNotificationCenter } from '@/components/notifications/in-app-notification-center';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
+import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -62,7 +63,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <InAppNotificationCenter organizationId={workspace.organization.id} userId={workspace.user.id} />
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
-      {children}
+      <ModuleAccessGuard>{children}</ModuleAccessGuard>
     </AppShell>
   );
 }

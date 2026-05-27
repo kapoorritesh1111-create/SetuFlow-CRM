@@ -15,26 +15,35 @@ create index if not exists org_module_grants_enabled_idx on public.org_module_gr
 
 alter table public.org_module_grants enable row level security;
 
-create policy org_module_grants_select_member
+drop policy if exists org_module_grants_select_member on public.org_module_grants;
+drop policy if exists org_module_grants_insert_admin on public.org_module_grants;
+drop policy if exists org_module_grants_update_admin on public.org_module_grants;
+drop policy if exists org_module_grants_delete_admin on public.org_module_grants;
+drop policy if exists org_module_grants_select_member_or_platform on public.org_module_grants;
+drop policy if exists org_module_grants_insert_admin_or_platform on public.org_module_grants;
+drop policy if exists org_module_grants_update_admin_or_platform on public.org_module_grants;
+drop policy if exists org_module_grants_delete_admin_or_platform on public.org_module_grants;
+
+create policy org_module_grants_select_member_or_platform
   on public.org_module_grants
   for select
-  using (public.is_org_member(organization_id));
+  using (public.is_org_member(organization_id) or public.is_setu_platform_admin());
 
-create policy org_module_grants_insert_admin
+create policy org_module_grants_insert_admin_or_platform
   on public.org_module_grants
   for insert
-  with check (public.is_org_admin(organization_id));
+  with check (public.is_org_admin(organization_id) or public.is_setu_platform_admin());
 
-create policy org_module_grants_update_admin
+create policy org_module_grants_update_admin_or_platform
   on public.org_module_grants
   for update
-  using (public.is_org_admin(organization_id))
-  with check (public.is_org_admin(organization_id));
+  using (public.is_org_admin(organization_id) or public.is_setu_platform_admin())
+  with check (public.is_org_admin(organization_id) or public.is_setu_platform_admin());
 
-create policy org_module_grants_delete_admin
+create policy org_module_grants_delete_admin_or_platform
   on public.org_module_grants
   for delete
-  using (public.is_org_admin(organization_id));
+  using (public.is_org_admin(organization_id) or public.is_setu_platform_admin());
 
 create or replace function public.set_updated_at()
 returns trigger
