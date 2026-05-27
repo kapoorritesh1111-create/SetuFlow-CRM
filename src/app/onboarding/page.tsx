@@ -7,10 +7,10 @@ export const metadata = {
   description: 'Set up your Setu Flow trade CRM workspace. Takes 3 minutes.',
 };
 
-const NOTICE_COPY: Record<string, { title: string; description: string; tone: 'warning' | 'success' | 'info' }> = {
+const NOTICE_COPY: Record<string, { title: string; description: string; tone: 'warning' | 'success' | 'neutral' }> = {
   'missing-required': { title: 'Required fields missing', description: 'Company name and primary admin email are required to continue.', tone: 'warning' },
   'too-many-submissions': { title: 'Too many submissions', description: 'Please wait a few minutes before submitting again.', tone: 'warning' },
-  'storage-pending': { title: 'Setup required', description: 'Apply the onboarding database migration before production intake.', tone: 'warning' },
+  'storage-pending': { title: 'Setup required', description: 'Apply the onboarding database migration before production intake.', tone: 'neutral' },
 };
 
 export default function ClientOnboardingPage({ searchParams }: { searchParams?: { notice?: string } }) {
