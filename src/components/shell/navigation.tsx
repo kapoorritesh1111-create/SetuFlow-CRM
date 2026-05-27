@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FaIcon } from '@/components/ui/fa-icon';
 import type { ProductNavSection } from '@/lib/product-contract';
 import { getNavItemIcon, isNavItemActive, withWorkspaceMode } from '@/components/shell/utils';
@@ -12,9 +12,57 @@ import {
   UTILITY_NAV_LABELS,
 } from '@/lib/navigation/nav-items';
 import { cn } from '@/lib/utils';
+import { getEnabledModuleSet, getModuleForNavHref, type ModuleKey, type OrgModuleGrant } from '@/lib/modules/module-grants';
+
+type GrantsResponse = {
+  grants?: OrgModuleGrant[];
+  enabledModules?: ModuleKey[];
+};
+
+function useModuleGrantSections(canAccessAdmin: boolean) {
+  const [grants, setGrants] = useState<OrgModuleGrant[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/modules/grants', { cache: 'no-store' })
+      .then((response) => response.json() as Promise<GrantsResponse>)
+      .then((payload) => {
+        if (!active) return;
+        if (payload.grants?.length) {
+          setGrants(payload.grants);
+          return;
+        }
+        if (payload.enabledModules?.length) {
+          setGrants(payload.enabledModules.map((moduleKey) => ({ module_key: moduleKey, enabled: true })));
+          return;
+        }
+        setGrants([]);
+      })
+      .catch(() => {
+        if (active) setGrants([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return useMemo<ProductNavSection[]>(() => {
+    const enabledModules = getEnabledModuleSet(grants);
+    return filterShellSections(canAccessAdmin)
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          const moduleDef = getModuleForNavHref(item.href);
+          return !moduleDef || enabledModules.has(moduleDef.key);
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [canAccessAdmin, grants]);
+}
 
 export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compact = false, onNavigate }: { pathname: string; canAccessAdmin: boolean; workspaceMode: 'all' | 'buyers' | 'suppliers'; compact?: boolean; onNavigate?: () => void }) {
-  const sections = useMemo<ProductNavSection[]>(() => filterShellSections(canAccessAdmin), [canAccessAdmin]);
+  const sections = useModuleGrantSections(canAccessAdmin);
   const items = useMemo(() => sections.flatMap((section) => section.items).filter((item, index, arr) => arr.findIndex((entry) => entry.href === item.href) === index), [sections]);
   const primaryItems = useMemo(() => getPrimaryShellNavItems(sections), [sections]);
   const utilityItems = useMemo(() => getUtilityShellNavItems(sections), [sections]);
