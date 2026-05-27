@@ -124,12 +124,10 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
       }
     };
 
-    // SF-19-020: Swipe-right-to-close gesture
     const handleTouchStart = (e: TouchEvent) => {
       const panel = panelRef.current;
       if (!panel) return;
       const touch = e.touches[0];
-      // Only trigger if touch starts within the drawer panel
       if (panel.contains(e.target as Node)) {
         touchStartXRef.current = touch.clientX;
         touchStartYRef.current = touch.clientY;
@@ -139,8 +137,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
       if (touchStartXRef.current === null || touchStartYRef.current === null) return;
       const touch = e.changedTouches[0];
       const dx = touch.clientX - touchStartXRef.current;
-      const dy = Math.abs(touch.clientY - (touchStartYRef.current ?? 0));
-      // Swipe right ≥ 80px with horizontal dominance
+      const dy = Math.abs(touch.clientY - touchStartYRef.current);
       if (dx > 80 && dy < 60) {
         onClose();
       }
@@ -164,7 +161,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   if (!open) return null;
 
   const drawer = (
-    <div className="fixed inset-0 z-[120] flex justify-end" role="presentation">
+    <div className="fixed inset-0 z-[520] flex justify-end" role="presentation">
       <button type="button" className="flex-1 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
       <div
         ref={panelRef}
@@ -191,7 +188,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
           </div>
         ) : null}
         <div className={['flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5', bodyClassName].join(' ')}>{children}</div>
-        {footer ? <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/92 px-4 py-4 backdrop-blur sm:px-5">{footer}</div> : null}
+        {footer ? <div className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white/95 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(15,23,42,.12)] backdrop-blur sm:px-5 sm:pb-4">{footer}</div> : null}
       </div>
     </div>
   );
