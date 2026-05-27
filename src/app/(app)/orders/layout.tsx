@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/ui/empty-state';
+import { MobileOrdersWorkspace } from '@/features/orders/components/mobile-orders-workspace';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -61,6 +62,15 @@ function whatsappContact(lead: any) {
   return clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
+function ResponsiveOrdersWorkspace({ orders, catalogOptions }: { orders: ProductionOrder8S[]; catalogOptions: CatalogOrderOption8S[] }) {
+  return (
+    <>
+      <div className="md:hidden"><MobileOrdersWorkspace orders={orders} catalogOptions={catalogOptions} /></div>
+      <div className="hidden md:block"><OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} /></div>
+    </>
+  );
+}
+
 // This layout IS the Orders view. The child page is intentionally a null route placeholder.
 export default async function OrdersLayout({ children: _children }: { children: React.ReactNode }) {
   const workspace = await getWorkspaceAccess();
@@ -85,31 +95,13 @@ export default async function OrdersLayout({ children: _children }: { children: 
 
   if (ordersError) return <EmptyState title="Could not load structured orders" description={String(ordersError.message ?? 'Unknown error')} />;
   const orderRows = Array.isArray(rawOrders) ? rawOrders : [];
-  if (!orderRows.length) return <OrdersProductionWorkspace8S orders={[]} catalogOptions={[]} />;
+  if (!orderRows.length) return <ResponsiveOrdersWorkspace orders={[]} catalogOptions={[]} />;
 
   const quoteIds = [...new Set(orderRows.map((order: any) => order.source_quote_id).filter(Boolean))];
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
   const sourceVersionIds = [...new Set(orderRows.map((order: any) => order.source_quote_version_id).filter(Boolean))];
 
-  const [
-    quotesResult,
-    leadDisplayResult,
-    documentsResult,
-    gatesResult,
-    quoteLinesResult,
-    versionsResult,
-    orderLinesResult,
-    catalogResult,
-    orderDocumentsResult,
-    sendHistoryResult,
-    packingPlansResult,
-    freightRequestsResult,
-    financeEventsResult,
-    freightEventsResult,
-    stageEventsResult,
-    processingChecksResult,
-    shipmentsResult,
-  ] = await Promise.all([
+  const [quotesResult, leadDisplayResult, documentsResult, gatesResult, quoteLinesResult, versionsResult, orderLinesResult, catalogResult, orderDocumentsResult, sendHistoryResult, packingPlansResult, freightRequestsResult, financeEventsResult, freightEventsResult, stageEventsResult, processingChecksResult, shipmentsResult] = await Promise.all([
     quoteIds.length ? db.from('quotes').select('id, status, currency, lead_id, current_version_id, accepted_version_id, approved_at, pricing_basis').eq('organization_id', orgId).in('id', quoteIds) : Promise.resolve({ data: [] }),
     db.rpc('get_orders_execution_lead_display', { p_org_id: orgId }),
     quoteIds.length || orderIds.length ? db.from('documents').select('id, related_id, linked_quote_id, related_entity, status, doc_type, file_name').eq('organization_id', orgId).or(`linked_quote_id.in.(${quoteIds.join(',')}),related_id.in.(${[...quoteIds, ...orderIds].join(',')})`).order('uploaded_at', { ascending: false }) : Promise.resolve({ data: [] }),
@@ -380,5 +372,5 @@ export default async function OrdersLayout({ children: _children }: { children: 
     } as ProductionOrder8S;
   });
 
-  return <OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} />;
+  return <ResponsiveOrdersWorkspace orders={orders} catalogOptions={catalogOptions} />;
 }
