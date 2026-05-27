@@ -7,6 +7,27 @@ export const defaultPipelines = ['Buyer pipeline', 'Supplier pipeline'];
 export const defaultNextSteps = ['Call back', 'Send catalog', 'Send quote', 'Share sample details', 'Follow up after trade show', 'Schedule meeting'];
 export const defaultMarkets = ['North America', 'Middle East', 'Europe', 'Asia Pacific'];
 
+const KNOWN_LIST_VALUES = [
+  ...defaultPipelineStages,
+  ...defaultPipelines,
+  ...defaultNextSteps,
+  ...defaultMarkets,
+  'South Asia',
+  'Africa',
+  'Latin America',
+  'Southeast Asia',
+  'GCC',
+  'Australia',
+  'United States',
+  'United Arab Emirates',
+  'India',
+  'United Kingdom',
+  'Saudi Arabia',
+  'Germany',
+  'Singapore',
+  'Canada',
+];
+
 export function slugifyCompanyName(value: string) {
   return value
     .toLowerCase()
@@ -31,11 +52,23 @@ export function normalizeEmail(value: FormDataEntryValue | null | undefined) {
   return String(value ?? '').trim().toLowerCase();
 }
 
-export function normalizeList(value: FormDataEntryValue | null | undefined) {
-  return String(value ?? '')
-    .split(/\r?\n|,/)
+function splitConcatenatedKnownValues(value: string) {
+  const matches = KNOWN_LIST_VALUES.filter((item) => value.includes(item));
+  return matches.length > 1 ? matches : [value];
+}
+
+export function normalizeList(value: FormDataEntryValue | FormDataEntryValue[] | null | undefined) {
+  const values = Array.isArray(value) ? value : [value];
+  return Array.from(new Set(values
+    .flatMap((entry) => String(entry ?? '').split(/\r?\n|,|;/))
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .flatMap(splitConcatenatedKnownValues)));
+}
+
+export function normalizeFormList(formData: FormData, key: string) {
+  const values = formData.getAll(key);
+  return normalizeList(values.length > 0 ? values : formData.get(key));
 }
 
 export function checked(formData: FormData, key: string) {
