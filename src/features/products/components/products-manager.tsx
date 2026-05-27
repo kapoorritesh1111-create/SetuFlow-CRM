@@ -634,7 +634,7 @@ export function ProductsManager({
         <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
           <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'5px 12px',borderRadius:'6px',background:'rgba(11,46,74,.06)',border:'1px solid rgba(11,46,74,.12)'}}>
             <div style={{width:'22px',height:'22px',borderRadius:'4px',background:'linear-gradient(135deg,#0b2e4a,#0c7fff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'9px',fontWeight:800,color:'white'}}>BO</div>
-            <div><div style={{fontSize:'10px',fontWeight:800,color:'#0b2e4a'}}>Blue Orbit Int&apos;l</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Flow CRM</div></div>
+            <div><div style={{fontSize:'10px',fontWeight:800,color:'#0b2e4a'}}>Setu Flow client Int&apos;l</div><div style={{fontSize:'8px',color:'#94a3b8',letterSpacing:'.1em',textTransform:'uppercase'}}>SETU Flow CRM</div></div>
           </div>
           <div style={{width:'1px',height:'24px',background:'#e2e8f0'}}/>
           <div><div style={{fontSize:'10px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#0c7fff'}}>Catalog</div><div style={{fontSize:'16px',fontWeight:700,color:'#1e293b',letterSpacing:'-.3px'}}>Product Catalog</div></div>
