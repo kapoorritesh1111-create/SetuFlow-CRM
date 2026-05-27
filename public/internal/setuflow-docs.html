@@ -370,13 +370,98 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
 .token-revoke { padding: 3px 10px; background: rgba(239,68,68,.12); color: #F87171; border: 1px solid rgba(239,68,68,.2); border-radius: 5px; font-size: 11px; cursor: pointer; }
 .token-revoke:hover { background: rgba(239,68,68,.2); }
 
+/* ── SWIMLANE ── */
+.swim-diagram { margin: 14px 0 28px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+.swim-header { padding: 12px 18px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--surface); }
+.swim-title { font-family: var(--display); font-size: 13px; font-weight: 600; color: var(--text-mid); }
+.swim-tag { font-family: var(--mono); font-size: 9.5px; color: #7C3AED; background: #F5F3FF; padding: 2px 7px; border-radius: 4px; border: 1px solid #DDD6FE; }
+.swim-body { display: flex; flex-direction: column; }
+.swim-lane { display: flex; align-items: stretch; min-height: 64px; border-bottom: 1px solid var(--border); }
+.swim-lane:last-child { border-bottom: none; }
+.swim-lane-label { 
+  width: 110px; flex-shrink: 0; background: var(--navy); color: rgba(255,255,255,.7);
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 8px 10px; border-right: 2px solid rgba(12,155,130,.3);
+}
+.swim-lane-label.op { background: #1B3F74; }
+.swim-lane-label.sys { background: #0B2A24; color: rgba(12,155,130,.85); }
+.swim-lane-content { flex: 1; display: flex; align-items: center; padding: 12px 14px; gap: 0; flex-wrap: wrap; overflow-x: auto; }
+.swim-node {
+  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px;
+  padding: 7px 11px; font-size: 11.5px; color: #1E3A8A; white-space: nowrap;
+  font-weight: 500; flex-shrink: 0;
+}
+.swim-node.sys-node { background: #F0FDFB; border-color: #99F6E4; color: #065F46; }
+.swim-node.gate { background: #FFF7ED; border-color: #FED7AA; color: #92400E; font-weight: 700; }
+.swim-node.locked { background: #F5F3FF; border-color: #C4B5FD; color: #5B21B6; }
+.swim-arr { color: var(--slate-light); font-size: 13px; padding: 0 5px; flex-shrink: 0; }
+.swim-arr.teal { color: var(--teal); font-weight: 700; }
+
+/* ── SLIDE DIAGRAMS FIXED ── */
+.slide-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.slide-node { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; }
+.slide-arr { color: #5EEAD4; font-weight: 700; font-size: 16px; }
+
+/* ── AI GURU SECTION ── */
+.guru-card { background: linear-gradient(135deg, #0B1929 0%, #0D2535 100%); border: 1px solid rgba(12,155,130,.25); border-radius: 14px; padding: 24px 28px; margin: 16px 0; color: #E2E8F0; position: relative; overflow: hidden; }
+.guru-card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(12,155,130,.12) 0%, transparent 70%); border-radius: 50%; }
+.guru-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #1B3F74, #0C9B82); display: grid; place-items: center; margin-bottom: 16px; font-size: 22px; }
+.guru-title { font-family: var(--display); font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.guru-desc { font-size: 13.5px; color: rgba(255,255,255,.6); line-height: 1.7; max-width: 620px; }
+.guru-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+.guru-feature { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 16px 18px; }
+.guru-feature-icon { font-size: 20px; margin-bottom: 8px; }
+.guru-feature-title { font-family: var(--display); font-size: 13px; font-weight: 600; color: #E2E8F0; margin-bottom: 4px; }
+.guru-feature-desc { font-size: 12px; color: rgba(255,255,255,.5); line-height: 1.55; }
+.guru-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; padding: 16px; background: rgba(0,0,0,.2); border-radius: 10px; }
+.guru-step { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.8); white-space: nowrap; }
+.guru-arr { color: #5EEAD4; font-size: 15px; font-weight: 700; }
+.guru-rule { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+.guru-rule:last-child { border-bottom: none; }
+.guru-rule-icon { flex-shrink: 0; }
+.guru-rule-text { color: rgba(255,255,255,.65); }
+.guru-rule-text strong { color: rgba(255,255,255,.9); }
+
 /* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  :root { --sidebar-w: 220px; }
+  .main { padding: 40px 36px 60px; }
+}
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); transition: transform .25s; }
+  :root { --sidebar-w: 240px; }
+  .sidebar { transform: translateX(-100%); transition: transform .25s; z-index: 200; box-shadow: 4px 0 24px rgba(0,0,0,.3); }
   .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; padding: 40px 24px 60px; }
+  .main { margin-left: 0; padding: 32px 20px 60px; }
+  .topbar { padding: 0 16px; }
+  .tb-brand { width: auto; padding: 0 12px 0 0; }
+  .tb-divider { display: none; }
+  .tb-version { display: none; }
+  .tb-btn:not(.tb-share-btn) { display: none; }
+  .menu-btn { display: flex; }
+  .doc-h1 { font-size: 22px; }
+  .doc-h2 { font-size: 16px; }
   .cheat-cols { grid-template-columns: 1fr; }
   .ui-grid { grid-template-columns: 1fr; }
+  .card-row { grid-template-columns: 1fr 1fr; }
+  .flow-strip { flex-direction: column; }
+  .flow-stage:first-child { border-radius: 8px 8px 0 0; }
+  .flow-stage:last-child { border-radius: 0 0 8px 8px; }
+  .flow-stage:not(:last-child) { border-right: 1px solid var(--border); border-bottom: none; }
+  .flow-stage::after { content: '↓'; right: auto; left: 50%; top: auto; bottom: -12px; transform: translateX(-50%); }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .guru-grid { grid-template-columns: 1fr; }
+  .swim-lane-label { width: 80px; font-size: 9px; }
+  .tbl { font-size: 12px; }
+  th, td { padding: 7px 10px; }
+}
+@media (max-width: 600px) {
+  .main { padding: 24px 16px 60px; }
+  .card-row { grid-template-columns: 1fr; }
+  .doc-h1 { font-size: 20px; }
+  .cheat-card .cheat-cols { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .tb-right { gap: 4px; }
 }
 @media print {
   .topbar, .sidebar, #auth-gate, #shared-banner { display: none !important; }
@@ -447,6 +532,7 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
 </div>
 
 <!-- TOPBAR -->
+<style>.menu-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);cursor:pointer;color:rgba(255,255,255,.7);flex-shrink:0}.menu-btn:hover{background:rgba(255,255,255,.1);color:#fff}</style>
 <header class="topbar">
   <a href="#" class="tb-brand">
     <div class="tb-logomark">
@@ -460,9 +546,12 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
     </div>
     <div>
       <div class="tb-name">SETU Flow</div>
-      <div class="tb-sub">CRM Documentation</div>
+      <div class="tb-sub">Technical Docs</div>
     </div>
   </a>
+  <button class="menu-btn" id="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="tb-divider"></div>
   <div class="tb-version">
     <span class="tb-dot"></span>
@@ -497,15 +586,15 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
   <div class="sb-group">
     <div class="sb-group-label">Product</div>
     <a href="#s-overview" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Product Overview
     </a>
     <a href="#s-arch" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="4" r="2"/><circle cx="3" cy="12" r="2"/><circle cx="13" cy="12" r="2"/><line x1="8" y1="6" x2="3" y2="10"/><line x1="8" y1="6" x2="13" y2="10"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg>
       Architecture
     </a>
     <a href="#s-modules" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4z"/><path d="M2 4l6-3 6 3"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       Module Reference
     </a>
   </div>
@@ -513,31 +602,35 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
   <div class="sb-group">
     <div class="sb-group-label">Workflows</div>
     <a href="#s-workflows" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><path d="M2 8h3l2-4 2 8 2-4h3"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Commercial Flows
     </a>
     <a href="#s-diagrams" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><rect x="1" y="6" width="4" height="4" rx="1"/><rect x="11" y="2" width="4" height="4" rx="1"/><rect x="11" y="10" width="4" height="4" rx="1"/><line x1="5" y1="8" x2="11" y2="4"/><line x1="5" y1="8" x2="11" y2="12"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><line x1="9" y1="11" x2="15" y2="6"/><line x1="9" y1="11" x2="15" y2="18"/></svg>
       Flow Diagrams
     </a>
     <a href="#s-guides" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><path d="M4 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
       Operator Guides
     </a>
   </div>
   <div class="sb-divider"></div>
   <div class="sb-group">
     <div class="sb-group-label">Technical</div>
+    <a href="#s-guru" class="sb-link">
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17H8v-2.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="9" y1="17" x2="9" y2="21"/><line x1="15" y1="17" x2="15" y2="21"/></svg>
+      Setu Guru AI
+    </a>
     <a href="#s-data" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="5" rx="6" ry="2"/><path d="M2 5v3c0 1.1 2.69 2 6 2s6-.9 6-2V5"/><path d="M2 8v3c0 1.1 2.69 2 6 2s6-.9 6-2V8"/></svg>
-      Data & Security
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v4c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 9v4c0 1.66 4.03 3 9 3s9-1.34 9-3V9"/><path d="M3 13v4c0 1.66 4.03 3 9 3s9-1.34 9-3v-4"/></svg>
+      Data &amp; Security
     </a>
     <a href="#s-api" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><polyline points="9 2 14 8 9 14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
-      API & Integrations
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      API &amp; Integrations
     </a>
     <a href="#s-mobile" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="8" height="14" rx="2"/><line x1="8" y1="12" x2="8" y2="12.5" stroke-linecap="round"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
       Mobile
     </a>
   </div>
@@ -545,11 +638,11 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
   <div class="sb-group">
     <div class="sb-group-label">Reference</div>
     <a href="#s-cheatsheets" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 7h8M2 11h10"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       Quick Reference
     </a>
     <a href="#s-ui" class="sb-link">
-      <svg class="sb-icon" fill="none" viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="11" rx="1"/><line x1="5" y1="15" x2="11" y2="15"/><line x1="8" y1="13" x2="8" y2="15"/></svg>
+      <svg class="sb-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Live UI Snapshots
     </a>
   </div>
@@ -955,196 +1048,499 @@ pre code { display: block; padding: 16px; font-size: 12px; line-height: 1.6; bor
 <p class="doc-lead">Formal flowcharts, swimlane diagrams, and slide-format visual summaries for each major workflow.</p>
 
 <h2 class="doc-h2">Flowcharts</h2>
+<div class="diagram-card">
+  <div class="diagram-header">
+    <div class="diagram-title-text">Lead Workflow</div>
+    <span class="diagram-tag">Mermaid</span>
+  </div>
+  <div class="diagram-body">
+    <pre class="mermaid">
+flowchart LR
+  A([Capture]) --> B{Review Contact}
+  B -->|Valid| C[Save Lead]
+  B -->|Invalid| A
+  C --> D[Follow-up Queue /leads]
+  D --> E[Open Lead Command Center]
+  E --> F{Qualify?}
+  F -->|Disqualified| G([Dead End])
+  F -->|Qualified| H[Add Product Coverage]
+  H --> I{Coverage Saved?}
+  I -->|No| H
+  I -->|Yes| J[Plan Follow-up]
+  J --> K{Compliance Blocker?}
+  K -->|Yes| L{Resolution}
+  L -->|Attach Evidence| M[Upload Doc]
+  L -->|Waive for Quote| N[Record Reviewer Reason]
+  L -->|Defer to Dispatch| O[Record Dispatch Obligation]
+  M & N & O --> K
+  K -->|No| P([Create Quote / Continue Quote])
+</pre>
+  </div>
+</div>
+<div class="diagram-card">
+  <div class="diagram-header">
+    <div class="diagram-title-text">Quote Workflow</div>
+    <span class="diagram-tag">Mermaid</span>
+  </div>
+  <div class="diagram-body">
+    <pre class="mermaid">
+flowchart LR
+  A([Open Quote Workspace]) --> B[Select / Create Quote for Lead]
+  B --> C[Add Catalog Products]
+  C --> D[Set Currency / FX / Incoterm / Validity]
+  D --> E{FX Available?}
+  E -->|No| F([Block — No FX Snapshot])
+  E -->|Yes| G[Review Pricing & Overrides]
+  G --> H{Override > 15%?}
+  H -->|Yes| I{Approval}
+  I -->|Rejected| J[Revise Quote]
+  J --> G
+  I -->|Approved| K
+  H -->|No| K[Save Draft / Create Quote]
+  K --> L{Compliance Send Blocker?}
+  L -->|Yes| M[Resolve Blocker]
+  M --> L
+  L -->|No| N[Send Quote]
+  N --> O[Quote Status → Sent — LOCKED]
+  O --> P{Buyer Outcome}
+  P -->|Accepted| Q([Mark Accepted → Create Order])
+  P -->|Rejected| R([Mark Rejected — Archive])
+  P -->|No Response| S[Revise → New Version]
+</pre>
+  </div>
+</div>
+<div class="diagram-card">
+  <div class="diagram-header">
+    <div class="diagram-title-text">Quote Versioning Workflow</div>
+    <span class="diagram-tag">Mermaid</span>
+  </div>
+  <div class="diagram-body">
+    <pre class="mermaid">
+flowchart LR
+  A([New Quote]) --> B[Draft Version]
+  B -->|Edit freely| B
+  B -->|Save| C[Current Version]
+  C -->|Approval required| D[Pending Approval]
+  D -->|Rejected| B
+  D -->|Approved| E
+  C -->|No approval needed| E[Send]
+  E --> F[Sent — IMMUTABLE]
+  F -->|Buyer accepts| G[Accepted — IMMUTABLE]
+  F -->|Buyer rejects| H[Rejected — IMMUTABLE]
+  F -->|Expires| I[Expired — IMMUTABLE]
+  F -->|Revise| J[New Version → Draft]
+  G --> K([Order Source — executes contract])
+  J --> B
+</pre>
+  </div>
+</div>
+<div class="diagram-card">
+  <div class="diagram-header">
+    <div class="diagram-title-text">Order Execution Workflow</div>
+    <span class="diagram-tag">Mermaid</span>
+  </div>
+  <div class="diagram-body">
+    <pre class="mermaid">
+flowchart LR
+  A([Accepted Quote]) --> B[Stage 1: Quote Approved]
+  B --> C[Prepare Actual Lines]
+  C --> D[Review Quote vs Actual — Save Reasons]
+  D --> E[Approve Actual Lines]
+  E --> F[Stage 2: First Document]
+  F --> G[Prepare Document]
+  G --> H[Preview Document]
+  H --> I[Approve Document]
+  I --> J[Send Tracked / Print PDF]
+  J --> K[Stage 3: Packing / Freight]
+  K --> L[Prepare Packing Sheet]
+  L --> M[Approve Packing Sheet]
+  M --> N[Prepare Freight Request]
+  N --> O[Approve Freight Request]
+  O --> P[Stage 4: Processing]
+  P --> Q{Pick + Pack + QC?}
+  Q -->|Incomplete| P
+  Q -->|Complete| R[Stage 5: Logistics]
+  R --> S[Approve Logistics Docs]
+  S --> T[Create Shipment Draft]
+  T --> U{Trade Requirements Clear?}
+  U -->|Blocking Open| V[Resolve Requirements]
+  V --> U
+  U -->|Clear| W[Approve Dispatch]
+  W --> X[Stage 6: Invoice / Closeout]
+  X --> Y[Prepare + Approve Final Invoice]
+  Y --> Z[Generate Receipt + Close]
+  Z --> AA([Paid & Closed])
+</pre>
+  </div>
+</div>
+<div class="diagram-card">
+  <div class="diagram-header">
+    <div class="diagram-title-text">Packing Workflow</div>
+    <span class="diagram-tag">Mermaid</span>
+  </div>
+  <div class="diagram-body">
+    <pre class="mermaid">
+flowchart LR
+  A{First Document Approved?} -->|No| B([Blocked])
+  A -->|Yes| C[Prepare Packing Sheet from Actual Lines]
+  C --> D[Preview Packing Sheet]
+  D --> E{Quantities Correct?}
+  E -->|No| F[Amend Actual Lines]
+  F --> C
+  E -->|Yes| G[Approve Packing Sheet]
+  G --> H{Unlocks}
+  H --> I([Processing Stage])
+  H --> J([Freight Request Stage])
+</pre>
+  </div>
+</div>
+<div class="diagram-card">
+  <div class="diagram-header">
+    <div class="diagram-title-text">Finance & Closeout Workflow</div>
+    <span class="diagram-tag">Mermaid</span>
+  </div>
+  <div class="diagram-body">
+    <pre class="mermaid">
+flowchart LR
+  A([Dispatch Approved]) --> B[Prepare Final Invoice]
+  B --> C[Preview Final Invoice — Actual Dispatched Qty]
+  C --> D[Approve Final Invoice]
+  D --> E[Send Final Invoice Tracked]
+  E --> F[Payment Received]
+  F --> G[Enter Payment Reference]
+  G --> H[Confirm Reconciliation — Outstanding = Zero]
+  H --> I[Confirm Receipt Acknowledged]
+  I --> J[Confirm Document Archive]
+  J --> K{All Closeout Checks Pass?}
+  K -->|No| L([Blocked — Cannot Close])
+  K -->|Yes| M[Generate Receipt + Close]
+  M --> N([Order Completed])
+</pre>
+  </div>
+</div>
+
 <h2 class="doc-h2">Swimlane Diagrams</h2>
-<div class="diagram-card">
-  <div class="diagram-header">
-    <div class="diagram-title-text">Lead-to-Quote Swimlane</div>
-    <span class="diagram-tag">Swimlane</span>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Operator actions (blue) and system responses (teal) shown side-by-side in sequence.</p>
+
+<!-- SWIMLANE 1: Lead to Quote -->
+<div class="swim-diagram">
+  <div class="swim-header">
+    <div class="swim-title">Lead to Quote</div>
+    <span class="swim-tag">Swimlane</span>
   </div>
-  <div class="diagram-body">
-    <pre class="mermaid">
-flowchart LR
-  subgraph Operator
-    O1[Capture / Scan card]
-    O2[Review parsed data]
-    O3[Save lead]
-    O4[Open Lead Command Center]
-    O5[Link product coverage]
-    O6[Plan follow-up]
-    O7[Attach evidence / Waive]
-    O8[Click Create Quote]
-  end
-  subgraph System
-    S1[Parse contact via AI vision]
-    S2[Create lead record]
-    S3[Run lead quote gate check]
-    S4[Write lead_product_interests]
-    S5[Write lead_follow_ups]
-    S6[Record compliance decision]
-    S7[Open quote workspace]
-  end
-  O1 --> S1 --> O2 --> O3 --> S2 --> O4 --> S3
-  S3 -->|Gate passes| O5 --> S4 --> O6 --> S5 --> O7 --> S6 --> O8 --> S7
-</pre>
+  <div class="swim-body">
+    <div class="swim-lane">
+      <div class="swim-lane-label op">Operator</div>
+      <div class="swim-lane-content">
+        <span class="swim-node">Capture / Scan card</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Review parsed data</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Save lead</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Open Lead Command Center</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Link product coverage</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Plan follow-up</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Attach evidence / Waive</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Click Create Quote</span>
+      </div>
+    </div>
+    <div class="swim-lane">
+      <div class="swim-lane-label sys">System</div>
+      <div class="swim-lane-content">
+        <span class="swim-node sys-node">Parse via AI Vision</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Create lead record</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Run quote gate check</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Write product interests</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Write follow-up row</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Record compliance decision</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Open quote workspace</span>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="diagram-card">
-  <div class="diagram-header">
-    <div class="diagram-title-text">Quote Build & Send Swimlane</div>
-    <span class="diagram-tag">Swimlane</span>
+<!-- SWIMLANE 2: Quote Build & Send -->
+<div class="swim-diagram">
+  <div class="swim-header">
+    <div class="swim-title">Quote Build &amp; Send</div>
+    <span class="swim-tag">Swimlane</span>
   </div>
-  <div class="diagram-body">
-    <pre class="mermaid">
-flowchart LR
-  subgraph Operator
-    O1[Open Quote / Create Quote]
-    O2[Add catalog products]
-    O3[Set currency / terms / FX]
-    O4[Enter override reason]
-    O5[Resolve compliance blocker]
-    O6[Click Send Quote]
-    O7[Review customer PDF]
-    O8[Mark Accepted or Rejected]
-  end
-  subgraph System
-    S1[Load catalog / pricing rules]
-    S2[Capture FX snapshot]
-    S3[Flag approval if override > 15%]
-    S4[Write quote / version / lines / snapshot]
-    S5[Check send gate]
-    S6[Lock version status = sent]
-    S7[Write communications row]
-    S8[Set accepted_version_id — create order]
-  end
-  O1 --> S1 --> O2 --> O3 --> S2 --> O4 --> S3 --> S4 --> O5 --> S5
-  S5 -->|Cleared| O6 --> S6 --> S7 --> O7 --> O8 --> S8
-</pre>
-  </div>
-</div>
-
-<div class="diagram-card">
-  <div class="diagram-header">
-    <div class="diagram-title-text">Order Execution Swimlane</div>
-    <span class="diagram-tag">Swimlane</span>
-  </div>
-  <div class="diagram-body">
-    <pre class="mermaid">
-flowchart LR
-  subgraph Operator
-    O1[Open order in queue]
-    O2[Prepare actual lines]
-    O3[Save quantity changes + reasons]
-    O4[Approve actual lines]
-    O5[Prepare + Preview + Approve document]
-    O6[Send tracked]
-    O7[Approve packing sheet]
-    O8[Approve freight request]
-    O9[Confirm trade requirements]
-    O10[Save processing checks]
-    O11[Create shipment draft]
-    O12[Approve dispatch]
-    O13[Approve final invoice]
-    O14[Generate receipt + close]
-  end
-  subgraph System
-    S1[Load accepted quote lineage]
-    S2[Seed order_lines from quote]
-    S3[Write order_lines changes]
-    S4[Approve actual_lines gate]
-    S5[Prepare order_documents]
-    S6[Create order_document_sends row]
-    S7[Create packing_plans + lines]
-    S8[Create freight_rate_requests]
-    S9[Match trade_requirements rules]
-    S10[Write processing_checks metadata]
-    S11[Create shipments draft]
-    S12[Dispatch shipments — stage event]
-    S13[Approve final invoice gate]
-    S14[Write finance_sync_records — order completed]
-  end
-  O1 --> S1 --> O2 --> S2 --> O3 --> S3 --> O4 --> S4
-  S4 --> O5 --> S5 --> O6 --> S6 --> O7 --> S7 --> O8 --> S8
-  S8 --> O9 --> S9 --> O10 --> S10 --> O11 --> S11 --> O12 --> S12
-  S12 --> O13 --> S13 --> O14 --> S14
-</pre>
+  <div class="swim-body">
+    <div class="swim-lane">
+      <div class="swim-lane-label op">Operator</div>
+      <div class="swim-lane-content">
+        <span class="swim-node">Open / Create Quote</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Add catalog products</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Set currency / terms / FX</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Enter override reason</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Resolve compliance blocker</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Click Send Quote</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Review customer PDF</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Mark Accepted / Rejected</span>
+      </div>
+    </div>
+    <div class="swim-lane">
+      <div class="swim-lane-label sys">System</div>
+      <div class="swim-lane-content">
+        <span class="swim-node sys-node">Load catalog &amp; pricing rules</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Capture FX snapshot</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Flag approval if override &gt;15%</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Write quote / version / lines</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Check send gate</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node locked">Lock version = sent</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Write communications row</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Set accepted_version_id → create order</span>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="diagram-card">
-  <div class="diagram-header">
-    <div class="diagram-title-text">Document Send Tracking Swimlane</div>
-    <span class="diagram-tag">Swimlane</span>
+<!-- SWIMLANE 3: Order Execution -->
+<div class="swim-diagram">
+  <div class="swim-header">
+    <div class="swim-title">Order Execution</div>
+    <span class="swim-tag">Swimlane</span>
   </div>
-  <div class="diagram-body">
-    <pre class="mermaid">
-flowchart LR
-  subgraph Operator
-    O1[Click Prepare Document]
-    O2[Click Preview]
-    O3[Click Approve]
-    O4[Select channel + verify recipient]
-    O5[Click Send Tracked]
-    O6[Open preview link]
-    O7[Click Download / Print PDF]
-  end
-  subgraph System
-    S1[Create order_documents gate row]
-    S2[Open preview route — increment open count]
-    S3[Set order_documents.status = approved]
-    S4[Create order_document_sends row — status link_created]
-    S5[Return tokenized preview URL]
-    S6[Increment open_count on send row]
-    S7[Browser print dialog — no server PDF binary yet]
-  end
-  O1 --> S1 --> O2 --> S2 --> O3 --> S3 --> O4 --> O5 --> S4 --> S5
-  S5 --> O6 --> S6
-  O6 --> O7 --> S7
-</pre>
+  <div class="swim-body">
+    <div class="swim-lane">
+      <div class="swim-lane-label op">Operator</div>
+      <div class="swim-lane-content">
+        <span class="swim-node">Open order in queue</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Prepare actual lines</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Approve actual lines</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Prepare + Approve document</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Send tracked</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Approve packing sheet</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Approve freight request</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Confirm trade requirements</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Save processing checks</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Approve dispatch</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Approve final invoice</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Generate receipt + close</span>
+      </div>
+    </div>
+    <div class="swim-lane">
+      <div class="swim-lane-label sys">System</div>
+      <div class="swim-lane-content">
+        <span class="swim-node sys-node">Load accepted quote lineage</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Seed order_lines from quote</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Approve actual_lines gate</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Create order_documents</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Create order_document_sends row</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Create packing_plans + lines</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Create freight_rate_requests</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Match trade_requirements rules</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Write processing_checks</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node locked">Dispatch shipments — stage event</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Approve final invoice gate</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node locked">Write finance_sync_records — COMPLETED</span>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- SWIMLANE 4: Document Send Tracking -->
+<div class="swim-diagram">
+  <div class="swim-header">
+    <div class="swim-title">Document Send &amp; Tracking</div>
+    <span class="swim-tag">Swimlane</span>
+  </div>
+  <div class="swim-body">
+    <div class="swim-lane">
+      <div class="swim-lane-label op">Operator</div>
+      <div class="swim-lane-content">
+        <span class="swim-node">Click Prepare Document</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Click Preview</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Click Approve</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Select channel + verify recipient</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Click Send Tracked</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Open preview link</span>
+        <span class="swim-arr">→</span>
+        <span class="swim-node">Click Download / Print PDF</span>
+      </div>
+    </div>
+    <div class="swim-lane">
+      <div class="swim-lane-label sys">System</div>
+      <div class="swim-lane-content">
+        <span class="swim-node sys-node">Create order_documents gate row</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Open preview route → increment open_count</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node gate">Set status = approved</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Create order_document_sends row</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Return tokenized preview URL</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Increment open_count on send row</span>
+        <span class="swim-arr teal">↕</span>
+        <span class="swim-node sys-node">Browser print dialog — no PDF binary</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <h2 class="doc-h2">Summary Diagrams</h2>
+
 <div class="slide-card">
-  <div class="slide-name">Slide 1: Lead Workflow</div>
+  <div class="slide-name">Lead Workflow</div>
   <div class="slide-sub">Turn captured contacts into quote-ready leads</div>
-  <div class="slide-flow"></div>
-  
+  <div class="slide-flow">
+    <span class="slide-node">📱 Capture</span><span class="slide-arr">→</span>
+    <span class="slide-node">📋 Follow-up</span><span class="slide-arr">→</span>
+    <span class="slide-node">🔍 Command Center</span><span class="slide-arr">→</span>
+    <span class="slide-node">📦 Coverage</span><span class="slide-arr">→</span>
+    <span class="slide-node">✅ Quote Ready</span>
+  </div>
+  <div class="slide-rules">
+    <span class="slide-rule">No product coverage = No quote</span>
+    <span class="slide-rule">Disqualified = Dead end</span>
+    <span class="slide-rule">Compliance can block send later</span>
+    <span class="slide-rule">Waive/Defer requires reviewer reason</span>
+  </div>
 </div>
 
 <div class="slide-card">
-  <div class="slide-name">Slide 2: Quote Workflow</div>
+  <div class="slide-name">Quote Workflow</div>
   <div class="slide-sub">Build a clean, approved quote before sending</div>
-  <div class="slide-flow"></div>
-  
+  <div class="slide-flow">
+    <span class="slide-node">✏️ Create Quote</span><span class="slide-arr">→</span>
+    <span class="slide-node">➕ Add Products</span><span class="slide-arr">→</span>
+    <span class="slide-node">💱 Review Terms</span><span class="slide-arr">→</span>
+    <span class="slide-node">🚫 Clear Blockers</span><span class="slide-arr">→</span>
+    <span class="slide-node">📨 Send Quote</span>
+  </div>
+  <div class="slide-rules">
+    <span class="slide-rule">Sent quotes are LOCKED</span>
+    <span class="slide-rule">Override &gt;15% = Approval required</span>
+    <span class="slide-rule">Revise instead of editing sent versions</span>
+    <span class="slide-rule">Production-domain share links only</span>
+  </div>
 </div>
 
 <div class="slide-card">
-  <div class="slide-name">Slide 3: Quote Versioning</div>
+  <div class="slide-name">Quote Versioning</div>
   <div class="slide-sub">Keep sent offers locked and traceable</div>
-  <div class="slide-flow"></div>
-  
+  <div class="slide-flow">
+    <span class="slide-node">📝 Draft</span><span class="slide-arr">→</span>
+    <span class="slide-node">📤 Sent <small style="opacity:.6;font-weight:400">LOCKED</small></span><span class="slide-arr">→</span>
+    <span class="slide-node">✅ Accepted <small style="opacity:.6;font-weight:400">LOCKED</small></span><span class="slide-arr">→</span>
+    <span class="slide-node">📦 Order Source</span>
+  </div>
+  <div class="slide-rules">
+    <span class="slide-rule">current_version_id ≠ accepted_version_id</span>
+    <span class="slide-rule">Revision creates NEW version</span>
+    <span class="slide-rule">History preserved for audit</span>
+    <span class="slide-rule">Orders start from accepted_version_id only</span>
+  </div>
 </div>
 
 <div class="slide-card">
-  <div class="slide-name">Slide 4: Order Execution</div>
+  <div class="slide-name">Order Execution</div>
   <div class="slide-sub">Turn an accepted quote into controlled execution</div>
-  <div class="slide-flow"></div>
-  
+  <div class="slide-flow">
+    <span class="slide-node">📋 Actual Lines</span><span class="slide-arr">→</span>
+    <span class="slide-node">📄 First Document</span><span class="slide-arr">→</span>
+    <span class="slide-node">📦 Packing</span><span class="slide-arr">→</span>
+    <span class="slide-node">🚚 Dispatch</span><span class="slide-arr">→</span>
+    <span class="slide-node">💰 Close</span>
+  </div>
+  <div class="slide-rules">
+    <span class="slide-rule">Actual lines can differ from quote</span>
+    <span class="slide-rule">Record reason for differences</span>
+    <span class="slide-rule">Approve before any external send</span>
+    <span class="slide-rule">link_created ≠ delivered</span>
+  </div>
 </div>
 
 <div class="slide-card">
-  <div class="slide-name">Slide 5: Packing → Processing → Dispatch</div>
+  <div class="slide-name">Packing → Processing → Dispatch</div>
   <div class="slide-sub">Physical execution gates — sequential and human-approved</div>
-  <div class="slide-flow"></div>
-  
+  <div class="slide-flow">
+    <span class="slide-node">📄 First Doc ✓</span><span class="slide-arr">→</span>
+    <span class="slide-node">📦 Packing Sheet ✓</span><span class="slide-arr">→</span>
+    <span class="slide-node">✔️ Pick+Pack+QC</span><span class="slide-arr">→</span>
+    <span class="slide-node">🚢 Shipment Draft</span><span class="slide-arr">→</span>
+    <span class="slide-node">🚀 Approve Dispatch</span>
+  </div>
+  <div class="slide-rules">
+    <span class="slide-rule">Each gate is sequential — no skipping</span>
+    <span class="slide-rule">Freight booking is NOT automatic</span>
+    <span class="slide-rule">Blocking trade requirements stop dispatch</span>
+    <span class="slide-rule">QC must PASS — not just checked</span>
+  </div>
 </div>
 
 <div class="slide-card">
-  <div class="slide-name">Slide 6: Finance & Closeout</div>
+  <div class="slide-name">Finance &amp; Closeout</div>
   <div class="slide-sub">Close only when all financial evidence is confirmed</div>
-  <div class="slide-flow"></div>
-  
+  <div class="slide-flow">
+    <span class="slide-node">📄 Final Invoice ✓</span><span class="slide-arr">→</span>
+    <span class="slide-node">💳 Payment ✓</span><span class="slide-arr">→</span>
+    <span class="slide-node">⚖️ Reconciliation ✓</span><span class="slide-arr">→</span>
+    <span class="slide-node">📁 Archive ✓</span><span class="slide-arr">→</span>
+    <span class="slide-node">🔒 Closed</span>
+  </div>
+  <div class="slide-rules">
+    <span class="slide-rule">Final invoice ≠ proforma invoice</span>
+    <span class="slide-rule">Outstanding amount must be zero</span>
+    <span class="slide-rule">Finance sync not automatic</span>
+    <span class="slide-rule">All 5 closeout checks must pass</span>
+  </div>
 </div>
+
 </section>
 
 <section class="doc-section" id="s-guides">
@@ -1152,6 +1548,136 @@ flowchart LR
 <h1 class="doc-h1">Operator Guides</h1>
 <p class="doc-lead">Click-by-click procedures for each major workflow. Expected UI state and data outcome at each step.</p>
 <h2 class="doc-h2">Guide 1: Lead to Quote</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Click <code>Follow-up</code> in main navigation</strong><span>Expected UI: Lead queue loads from <code>leads</code>. Expected data: All org leads visible per RLS policy.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Open</code> on the lead row</strong><span>Expected UI: Lead Command Center opens with workflow cards (qualification, coverage, follow-up, compliance). Verify lead has buyer/supplier context and is not disqualified.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Open coverage manager</code> if product coverage is missing</strong><span>Select product interest → Save. Expected data: <code>lead_product_interests</code> row created. Quote CTA becomes dominant when gate passes.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Click <code>Plan follow-up</code> if next action is missing</strong><span>Enter follow-up date and note. Expected data: <code>lead_follow_ups</code> row written.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Check compliance card for any quote-send blockers</strong><span>If red: click <code>Compliance check</code> or <code>Full screen</code>. Choose one: <code>Attach evidence</code>, <code>Waive for quote</code> (with reviewer reason), or <code>Defer to dispatch</code>.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Click <code>Create quote</code> or <code>Continue quote</code></strong><span>Verify: lead not disqualified, product interest exists, country/market set, compliance posture acceptable.</span></div></div></div><div class="callout c-warn"><div class="callout-icon">⚠</div><div class="callout-body"><strong>Do NOT:</strong> Treat a free-text product note as saved product coverage. Do NOT bypass compliance by creating a disconnected quote. Do NOT assume WhatsApp/email activity means delivery was confirmed.</div></div><h2 class="doc-h2">Guide 2: Quote Build and Send</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Click <code>Quote</code> in navigation or open from lead</strong><span>Select/create quote for the correct lead. Expected data: Draft <code>quote_versions</code> record exists or will be created.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Add product</code> and select catalog products</strong><span>System loads pack size, MOQ, pricing basis defaults from catalog. Verify each line has product, quantity, unit, price.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Confirm currency, pricing basis, validity, incoterm, freight profile</strong><span>For non-USD: verify FX snapshot exists or manual FX is enabled. Expected: FX context recorded in <code>quote_pricing_snapshots</code>.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Review pricing and enter override reasons for any manual changes</strong><span>Override &gt;15% triggers pending approval. Expected data: Approval flag set on <code>quote_versions</code>.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Click <code>Save draft</code> or <code>Create quote</code></strong><span>Expected data: <code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code> all written.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Resolve any approval/compliance blockers</strong><span>If approval pending: owner/admin approves from Quotes workspace approval queue. If compliance blocker: use Step 4 → Review card inside quote workspace.</span></div></div><div class="step"><div class="step-n">7</div><div class="step-content"><strong>Click <code>Send quote</code></strong><span>Expected data: <code>quotes.sent_at</code> set, <code>quote_versions.status = 'sent'</code>, <code>communications</code> row created. Quote is now LOCKED from direct editing.</span></div></div><div class="step"><div class="step-n">8</div><div class="step-content"><strong>Click <code>Open customer PDF</code> to review output</strong><span>Verify: org logo, correct currency, all line items, incoterm/payment terms, tax ID visible.</span></div></div><div class="step"><div class="step-n">9</div><div class="step-content"><strong>Record buyer outcome: <code>Mark accepted</code> or <code>Mark rejected</code></strong><span>Only after actual buyer response. Expected data: <code>quotes.accepted_version_id</code> set on acceptance.</span></div></div></div><h2 class="doc-h2">Guide 3: Accepted Quote to Order</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>In <code>/quotes</code>, open a sent quote → Click <code>Mark accepted</code></strong><span>Expected data: <code>quotes.accepted_version_id</code> set; contract/order handoff RPCs called; <code>orders</code> record created.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Navigate to <code>/orders</code> → Click <code>Open</code> on the new order</strong><span>Expected UI: Order workspace shows stage strip. Stage 1 = "Quote Approved". Verify <code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Prepare actual lines</code></strong><span>Expected: System seeds <code>order_lines</code> from accepted quote/contract. Gate status set to "prepared". Quote version lines remain UNCHANGED.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Review quote vs actual lines. Save quantity/price/reason for any differences</strong><span>Expected data: <code>order_lines</code> rows reflect actual order. Changes stored with reason fields. <code>quote_version_line_items</code> remain unchanged.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Click <code>Approve actual lines</code></strong><span>Expected data: <code>order_approval_gates</code> entry approved; <code>order_stage_events</code> written; order moves to Internal Approval stage.</span></div></div></div><h2 class="doc-h2">Guide 4: First Document and Send Tracking</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open the order → Stage: "Internal Approval" → Click <code>Prepare document</code></strong><span>System creates order document draft. Type: <code>proforma_invoice</code> (export) or <code>order_confirmation</code> (regional).</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Preview</code> → Review the rendered document</strong><span>Check: product, quantity, price, parties, incoterm, terms, org logo, tax IDs, bank details. Expected: Preview route opens, open count tracked.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Approve</code></strong><span>Expected data: <code>order_documents.status = 'approved'</code>. Gate approved. Non-preview sends now permitted.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Click <code>Send tracked</code> → Select channel (Email/WhatsApp) → Verify recipient</strong><span>Expected data: <code>order_document_sends</code> row created with <code>status = 'link_created'</code>. Recipient defaults from lead contact info.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Use <code>Download / Print PDF</code> if a file is needed</strong><span>Opens browser print dialog. Expected: toolbar hidden from PDF output. Note: This is browser-print, not server-generated PDF binary.</span></div></div></div><div class="callout c-danger"><div class="callout-icon">✕</div><div class="callout-body"><strong>Critical:</strong> <code>link_created</code> ≠ delivered. Do NOT treat a tracked link as confirmed email/WhatsApp delivery. Do NOT send unapproved documents to buyers.</div></div><h2 class="doc-h2">Guide 5: Packing, Freight & Trade Requirements</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open order after first document approval → Click <code>Prepare packing sheet</code></strong><span>Expected data: <code>packing_plans</code> and <code>packing_plan_lines</code> created. Based on actual order lines.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Preview packing sheet</code> → Click <code>Approve packing sheet</code></strong><span>Expected: Packing stage complete. Processing and freight request actions now unlocked.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Prepare freight request</code></strong><span>Confirm: origin, destination, incoterm, packing basis. Expected data: <code>freight_rate_requests</code> created.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Search and attach trade requirements → Click <code>Confirm source</code></strong><span>Expected data: <code>trade_requirements</code> and <code>trade_requirement_sources</code> rows created. No rule match = human review, NOT automatic clearance.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Resolve all blocking trade requirements before dispatch</strong><span>Blocking severity requirements must be reviewed by a human. Dispatch blocked until clear.</span></div></div></div><h2 class="doc-h2">Guide 6: Processing, Dispatch & Closeout</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open <code>Processing</code> stage → Save picked/packed/QC checks</strong><span>Mark: Picked ✓, Packed ✓, QC Passed ✓. Add notes for exceptions. Expected data: <code>order_processing_checks</code> metadata written.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Complete processing only when all three checks pass</strong><span>Expected: Delivery note and logistics unlocked. Processing gate approved.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Approve logistics documents → Click <code>Create shipment draft</code></strong><span>Enter: shipment mode, carrier, forwarder, booking/tracking reference. Expected data: <code>shipments</code> draft record created.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Resolve all blocking trade requirements → Click <code>Approve dispatch</code></strong><span>Expected data: <code>shipments.status = 'dispatched'</code>. Order stage moves to Dispatch/Invoice.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Prepare/Preview/Approve final invoice → Click <code>Approve invoice</code></strong><span>Expected: Final invoice document approved. <strong>Note:</strong> Final invoice must reflect actual dispatched quantities, NOT quoted quantities.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Enter payment reference, reconciliation confirmation, outstanding amount = 0, archive confirmation → Click <code>Generate receipt + close</code></strong><span>Expected data: <code>orders.status = 'completed'</code>. <code>finance_sync_records</code> written. Closeout gate approved.</span></div></div></div></section>
+
+
+<section class="doc-section" id="s-guru">
+<div class="section-eyebrow"><span class="section-tag">Technical</span></div>
+<h1 class="doc-h1">Setu Guru — AI Integration</h1>
+<p class="doc-lead">Setu Guru is SETU Flow's embedded AI assistant. It lives in every authenticated page as a persistent right-edge panel, generates reviewable drafts and suggestions, and is explicitly prevented from taking autonomous actions.</p>
+
+<div class="guru-card">
+  <div class="guru-icon">🤖</div>
+  <div class="guru-title">What is Setu Guru?</div>
+  <div class="guru-desc">A context-aware AI copilot built directly into the CRM workspace. It reads the current route, organisation context, and user role to provide relevant help — lead qualification guidance, quote drafting suggestions, compliance reminders, and data lookups. Every AI action is reviewable, logged, and requires operator confirmation before anything is sent or saved.</div>
+  <div class="guru-flow">
+    <span class="guru-step">User asks Guru</span>
+    <span class="guru-arr">→</span>
+    <span class="guru-step">AI generates draft / suggestion</span>
+    <span class="guru-arr">→</span>
+    <span class="guru-step">Operator reviews</span>
+    <span class="guru-arr">→</span>
+    <span class="guru-step">Operator confirms or dismisses</span>
+    <span class="guru-arr">→</span>
+    <span class="guru-step">Action recorded in ai_suggestions</span>
+  </div>
+</div>
+
+<h2 class="doc-h2">What Guru Can Do</h2>
+<div class="guru-grid">
+  <div class="guru-feature">
+    <div class="guru-feature-icon">📋</div>
+    <div class="guru-feature-title">Lead Qualification Help</div>
+    <div class="guru-feature-desc">Suggests qualification criteria, flags missing product coverage, and recommends follow-up timing based on lead stage and activity history.</div>
+  </div>
+  <div class="guru-feature">
+    <div class="guru-feature-icon">💬</div>
+    <div class="guru-feature-title">Quote Drafting</div>
+    <div class="guru-feature-desc">Drafts introductory and quote cover messages based on the lead's company, region, product interests, and quote value. Operator reviews before sending.</div>
+  </div>
+  <div class="guru-feature">
+    <div class="guru-feature-icon">📊</div>
+    <div class="guru-feature-title">Dashboard Interpretation</div>
+    <div class="guru-feature-desc">Explains current KPI state, identifies overdue follow-ups, and surfaces priority actions based on what's visible on the current screen.</div>
+  </div>
+  <div class="guru-feature">
+    <div class="guru-feature-icon">🔍</div>
+    <div class="guru-feature-title">Compliance Guidance</div>
+    <div class="guru-feature-desc">Answers questions about document requirements, waiver rules, and what each compliance gate means. Does not auto-resolve blockers.</div>
+  </div>
+  <div class="guru-feature">
+    <div class="guru-feature-icon">📦</div>
+    <div class="guru-feature-title">Order & Document Help</div>
+    <div class="guru-feature-desc">Guides operators through execution stages, explains what each gate requires, and drafts document cover text for proforma invoices and packing notes.</div>
+  </div>
+  <div class="guru-feature">
+    <div class="guru-feature-icon">🔎</div>
+    <div class="guru-feature-title">Live Research (Optional)</div>
+    <div class="guru-feature-desc">Can search for market information, company background, or trade regulations. Research results are surfaced as suggestions — not automatically written into records.</div>
+  </div>
+</div>
+
+<h2 class="doc-h2">Where Guru Appears</h2>
+<div class="tbl"><table>
+<thead><tr><th>Location</th><th>Form</th><th>How to Access</th></tr></thead>
+<tbody>
+<tr><td>All authenticated pages</td><td>Persistent bottom-right avatar button</td><td>Click the bot avatar to open the right-side drawer</td></tr>
+<tr><td>Right-edge tab</td><td>Collapsible "Guru" tab on right edge</td><td>Click to expand / collapse the panel without losing context</td></tr>
+<tr><td>Lead Command Center</td><td>Inline suggestion cards inside lead workflow</td><td>Guru proactively surfaces relevant suggestions based on lead state</td></tr>
+<tr><td>Quote workspace</td><td>Draft message suggestions in approval/send panel</td><td>Appears when initiating a quote send or approval request</td></tr>
+<tr><td>Admin — Guru Config</td><td>Configuration panel per organisation</td><td><code>/admin/guru-config</code> — model selector, toggles, daily budget</td></tr>
+</tbody>
+</table></div>
+
+<h2 class="doc-h2">AI Guardrails — What Guru Cannot Do</h2>
+<div class="guru-card" style="padding:20px 24px">
+  <div style="display:flex;flex-direction:column;gap:0">
+    <div class="guru-rule">
+      <span class="guru-rule-icon">🚫</span>
+      <span class="guru-rule-text"><strong>Never auto-sends</strong> — Guru cannot send emails, WhatsApp messages, or quote PDFs. All sends require operator action.</span>
+    </div>
+    <div class="guru-rule">
+      <span class="guru-rule-icon">🚫</span>
+      <span class="guru-rule-text"><strong>Never modifies records autonomously</strong> — Guru cannot update leads, approve quotes, change order lines, or modify any database record without explicit operator confirmation.</span>
+    </div>
+    <div class="guru-rule">
+      <span class="guru-rule-icon">🚫</span>
+      <span class="guru-rule-text"><strong>Never bypasses gates</strong> — Guru cannot waive compliance blockers, approve overrides, or clear order gates. These are always human decisions.</span>
+    </div>
+    <div class="guru-rule">
+      <span class="guru-rule-icon">✅</span>
+      <span class="guru-rule-text"><strong>All AI decisions are stored</strong> — every Guru suggestion and operator decision (accepted / dismissed) is written to <code>ai_suggestions</code> with a full audit trail.</span>
+    </div>
+    <div class="guru-rule">
+      <span class="guru-rule-icon">✅</span>
+      <span class="guru-rule-text"><strong>Configurable per org</strong> — model, daily token budget, feature toggles (live research, compliance help, draft messages) are controlled per organisation at <code>/admin/guru-config</code>.</span>
+    </div>
+  </div>
+</div>
+
+<h2 class="doc-h2">Technical Configuration</h2>
+<div class="tbl"><table>
+<thead><tr><th>Setting</th><th>Default</th><th>Configured Via</th></tr></thead>
+<tbody>
+<tr><td>Model</td><td><code>gpt-4.1-mini</code></td><td><code>workspace_guru_settings.model</code> or <code>OPENAI_CONTACT_SCAN_MODEL</code> env var</td></tr>
+<tr><td>Daily budget</td><td>Configurable</td><td><code>workspace_guru_settings.daily_budget</code> per org</td></tr>
+<tr><td>Live research</td><td>Toggle on/off</td><td><code>workspace_guru_settings</code> checkbox</td></tr>
+<tr><td>Draft messages</td><td>Toggle on/off</td><td><code>workspace_guru_settings</code> checkbox</td></tr>
+<tr><td>Rate limits</td><td>Per-endpoint overrides</td><td><code>rate_limit_overrides</code> table · managed at <code>/admin/rate-limits</code></td></tr>
+<tr><td>Usage tracking</td><td>Monthly usage bar</td><td>Read from <code>rate_limit_hits</code> for current org · shown in Guru Config page</td></tr>
+<tr><td>AI suggestion store</td><td>All decisions logged</td><td><code>ai_suggestions</code> table — SSOT for all AI interactions</td></tr>
+</tbody>
+</table></div>
+
+<h2 class="doc-h2">Mobile Scan — AI Vision</h2>
+<p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Separate from Setu Guru, the mobile business card scan uses OpenAI Vision directly at the point of capture.</p>
+<div class="tbl"><table>
+<thead><tr><th>Step</th><th>AI Involvement</th><th>Operator Role</th></tr></thead>
+<tbody>
+<tr><td>Camera / upload</td><td>None — image captured by device</td><td>Takes photo or uploads image</td></tr>
+<tr><td>Parse contact</td><td>OpenAI Vision (<code>gpt-4.1-mini</code>) extracts name, company, phone, email, title from image</td><td>Waits for parse result</td></tr>
+<tr><td>Review fields</td><td>None — parsed fields displayed for review</td><td>Reviews and corrects any parsed fields before saving</td></tr>
+<tr><td>Save lead</td><td>None</td><td>Confirms save — creates lead record</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout c-info">
+  <div class="callout-icon">ℹ</div>
+  <div class="callout-body">
+    <strong>Scan readiness check</strong>
+    Before any scan attempt, the app calls <code>GET /api/mobile/scan-readiness</code> to verify the vision provider is configured and responsive. If the primary provider (OpenAI Vision) fails, it falls back to Google Cloud Vision. Provider is set via <code>CONTACT_SCAN_PROVIDER</code> env var.
+  </div>
+</div>
+</section>
 
 <section class="doc-section" id="s-data">
 <div class="section-eyebrow"><span class="section-tag">Technical</span></div>
@@ -1575,6 +2101,8 @@ mermaid.initialize({
 });
 
 // ── ACTIVE SIDEBAR TRACKING ──
+// close sidebar on mobile link click
+document.querySelectorAll('.sb-link').forEach(l=>l.addEventListener('click',()=>{if(window.innerWidth<900)document.getElementById('sidebar').classList.remove('open');}));
 const sections=document.querySelectorAll('section[id]');
 const links=document.querySelectorAll('.sb-link');
 window.addEventListener('scroll',()=>{
