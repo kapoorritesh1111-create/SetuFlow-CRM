@@ -9,6 +9,7 @@ import type { TasksWorkspaceData } from '@/lib/queries/tasks';
 import { formatDate } from '@/lib/utils';
 
 type TaskRow = TasksWorkspaceData['tasks'][number];
+type LeadRow = TasksWorkspaceData['leads'][number];
 type ProfileRow = TasksWorkspaceData['profiles'][number];
 type FilterKey = 'all' | 'today' | 'overdue' | 'mine';
 type TaskPayload = {
@@ -41,6 +42,10 @@ function assignedTo(task: TaskRow) {
 
 function profileLabel(profile: ProfileRow | undefined, fallback = 'Unassigned') {
   return profile?.full_name || profile?.username || fallback;
+}
+
+function leadLabel(lead: LeadRow) {
+  return [lead.company_name, lead.contact_name].filter(Boolean).join(' · ') || lead.id;
 }
 
 function startOfDay(date: Date) {
@@ -104,7 +109,7 @@ function MobileStatCard({ label, value, helper, tone }: { label: string; value: 
   );
 }
 
-function MobileTaskCard({ task, lead, assignee, now }: { task: TaskRow; lead?: TasksWorkspaceData['leads'][number]; assignee?: ProfileRow; now: Date }) {
+function MobileTaskCard({ task, lead, assignee, now }: { task: TaskRow; lead?: LeadRow; assignee?: ProfileRow; now: Date }) {
   const due = safeDate(task.scheduled_for);
   const status = statusLabel(task, now);
   return (
@@ -159,7 +164,7 @@ function TaskDrawer({ open, data, currentUserId, isPending, onClose, onSubmit }:
             <input name="title" placeholder="Enter a clear task title" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required />
             <select name="task_type" defaultValue="follow_up" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"><option value="follow_up">Follow up</option><option value="quote_review">Quote review</option><option value="document_review">Document review</option><option value="internal_handoff">Internal handoff</option></select>
             <input name="scheduled_for" type="datetime-local" defaultValue={defaultDate} className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required />
-            <select name="lead_id" defaultValue="" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"><option value="">Internal task</option>{data.leads.map((lead) => <option key={lead.id} value={lead.id}>{lead.company_name} · {lead.lead_type}</option>)}</select>
+            <select name="lead_id" defaultValue="" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"><option value="">Internal task</option>{data.leads.map((lead) => <option key={lead.id} value={lead.id}>{leadLabel(lead)}</option>)}</select>
             <select name="assigned_to" defaultValue={currentUserId} className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">{data.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profileLabel(profile, profile.id)}</option>)}</select>
             <select name="priority" defaultValue="normal" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"><option value="high">High priority</option><option value="normal">Normal priority</option><option value="low">Low priority</option></select>
             <textarea name="notes" rows={4} placeholder="Add any additional details..." className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
