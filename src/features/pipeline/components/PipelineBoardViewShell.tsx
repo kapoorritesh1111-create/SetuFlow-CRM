@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { isPipelineInJourney } from '@/lib/journey';
 import type { LeadJourney } from '@/lib/journey';
 import type { PipelineBoardProps, Stage } from '@/features/pipeline/types/board';
@@ -10,6 +10,7 @@ import { PipelineForecastView } from './PipelineForecastView';
 import { PipelineSwimlaneView } from './PipelineSwimlaneView';
 
 type BoardView = 'kanban' | 'swimlane' | 'forecast';
+type Density = 'full' | 'compact' | 'micro';
 
 type StageGroup = {
   name: string;
@@ -30,9 +31,22 @@ const tabLabel: Record<BoardView, string> = {
   forecast: 'Forecast',
 };
 
+const densityLabel: Record<Density, string> = {
+  full: 'Full detail view',
+  compact: 'Compact scan mode',
+  micro: 'Micro scanning mode',
+};
+
 export function PipelineBoardViewShell(props: PipelineBoardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [boardView, setBoardView] = useState<BoardView>('kanban');
+  const [density, setDensity] = useState<Density>(() => {
+    if (typeof window === 'undefined') return 'compact';
+    const saved = window.localStorage.getItem('pipeline-density');
+    return saved === 'full' || saved === 'compact' || saved === 'micro' ? saved : 'compact';
+  });
 
   const activeLeadType = normalizeMode(searchParams.get('mode')) || props.initialLeadType || '';
   const search = searchParams.get('q')?.trim().toLowerCase() ?? '';
@@ -41,6 +55,18 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
   const marketId = searchParams.get('market') ?? '';
   const countryId = searchParams.get('country') ?? '';
   const tradeEventId = searchParams.get('event') ?? '';
+
+  const setJourneyMode = (mode: '' | LeadJourney) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (mode) params.set('mode', mode);
+    else params.delete('mode');
+    router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
+  };
+
+  const setPipelineDensity = (nextDensity: Density) => {
+    setDensity(nextDensity);
+    if (typeof window !== 'undefined') window.localStorage.setItem('pipeline-density', nextDensity);
+  };
 
   const leadMarketsMap = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -91,29 +117,96 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
   const valueCurrency = filteredLeads.find((lead) => lead.deal_currency)?.deal_currency ?? 'USD';
   const buildLeadHref = (leadId: string) => `/leads/${leadId}?returnTo=/pipeline`;
 
+  const leadTypeTabs: Array<{ value: '' | LeadJourney; label: string; count: number }> = [
+    { value: '', label: 'All', count: props.leads.length },
+    { value: 'buyer', label: 'Buyer', count: props.leads.filter((lead) => lead.lead_type === 'buyer').length },
+    { value: 'supplier', label: 'Supplier', count: props.leads.filter((lead) => lead.lead_type === 'supplier').length },
+  ];
+
   return (
-    <div className="space-y-4">
-      <div className="mx-5 mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <div>
-          <p className="text-[9px] font-extrabold uppercase tracking-[.16em] text-slate-400">Pipeline view</p>
-          <p className="text-sm font-bold text-slate-700">Switch between board, portfolio swimlane, and forecast review.</p>
-        </div>
-        <div className="flex overflow-hidden rounded-xl border border-slate-200">
+    <div className="sf-pipeline-shell" data-pipeline-density={density}>
+      <style jsx global>{`
+        .sf-pipeline-shell-kanban > div[style*="min-height"] > div.flex.items-center.gap-3.border-b.border-slate-100.bg-white.px-5.py-2 {
+          display: none !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='compact'] .sf-pipeline-shell-kanban div[style*='width: 256px'] {
+          width: 220px !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='micro'] .sf-pipeline-shell-kanban div[style*='width: 256px'] {
+          width: 180px !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='compact'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] {
+          padding: 8px 9px !important;
+          border-radius: 11px !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='micro'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] {
+          padding: 7px 8px !important;
+          border-radius: 10px !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='compact'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] > div:nth-child(2),
+        .sf-pipeline-shell[data-pipeline-density='compact'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] > div:nth-child(3) {
+          display: none !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='micro'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] > div:nth-child(n+2) {
+          display: none !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='micro'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] div[style*='font-size: 10px'] {
+          display: none !important;
+        }
+        .sf-pipeline-shell[data-pipeline-density='micro'] .sf-pipeline-shell-kanban div[style*='border-left: 3px solid'] div[style*='font-size: 12px'] {
+          font-size: 11px !important;
+        }
+      `}</style>
+
+      <div className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-slate-100 bg-white px-5 py-2 shadow-sm">
+        <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
           {(['kanban', 'swimlane', 'forecast'] as const).map((view) => (
             <button
               key={view}
               type="button"
               onClick={() => setBoardView(view)}
-              className={`h-9 px-4 text-[11px] font-bold transition ${boardView === view ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
+              className={`h-9 px-4 text-[11px] font-bold transition ${boardView === view ? 'bg-[#0b1f3a] text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
             >
               {tabLabel[view]}
             </button>
           ))}
         </div>
+
+        <div className="hidden items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 md:flex" aria-label="Lead type filter">
+          {leadTypeTabs.map((tab) => (
+            <button
+              key={tab.label}
+              type="button"
+              onClick={() => setJourneyMode(tab.value)}
+              className={`h-7 rounded-lg px-3 text-[10px] font-extrabold transition ${activeLeadType === tab.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-700'}`}
+            >
+              {tab.label} <span className="ml-1 text-[9px] opacity-60">{tab.count}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-[9px] font-extrabold uppercase tracking-[.12em] text-slate-400">Density:</span>
+          <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {(['full', 'compact', 'micro'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setPipelineDensity(option)}
+                className={`h-9 px-4 text-[11px] font-bold capitalize transition ${density === option ? 'bg-[#0b1f3a] text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <span className="hidden text-[10px] font-medium text-slate-400 lg:inline">{densityLabel[density]}</span>
+        </div>
       </div>
 
       {boardView === 'kanban' ? (
-        <PipelineBoard {...props} />
+        <div className="sf-pipeline-shell-kanban">
+          <PipelineBoard {...props} />
+        </div>
       ) : boardView === 'swimlane' ? (
         <PipelineSwimlaneView
           leads={filteredLeads}
