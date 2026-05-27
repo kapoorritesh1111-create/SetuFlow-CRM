@@ -46,7 +46,6 @@ export function BrandedMobileTopBar({
   const displayName = signedIn?.name ?? "SETU Flow";
   const firstName = firstNameFrom(displayName);
   const initials = signedIn?.initials ?? initialsFrom(displayName);
-  const notificationCount = 0;
 
   useEffect(() => {
     const now = new Date();
@@ -72,16 +71,15 @@ export function BrandedMobileTopBar({
               {dateLabel || "Today"}
             </p>
           </div>
-          <Link
-            href="/mobile/settings"
-            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
-            aria-label="Open notifications"
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200"
+            aria-label="Share my vCard"
+            title="Share vCard"
           >
-            <SetuIcon name="bell" className="h-5 w-5" />
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-slate-900 bg-amber-400 px-1 text-[10px] font-black leading-none text-slate-950">
-              {notificationCount}
-            </span>
-          </Link>
+            📇
+          </button>
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -129,11 +127,11 @@ export function MobileActionDrawer({
       onClick={onClose}
     >
       <div
-        className="absolute bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-slate-900"
+        className="absolute bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 rounded-t-[2rem] bg-white p-5 pb-[calc(100px+env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 rounded-[1.5rem] bg-slate-50 p-3 dark:bg-slate-800/70">
           <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="lg" />
           <div className="min-w-0">
             <h2 className="truncate text-lg font-black text-slate-950 dark:text-white">
@@ -148,17 +146,20 @@ export function MobileActionDrawer({
           </div>
         </div>
         <div className="mt-4 grid gap-2">
-          <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
           <button
             type="button"
             onClick={() => {
               onClose();
               onShareVCard?.();
             }}
-            className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"
+            className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"
           >
             <span>📇</span>Share vCard
           </button>
+          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile card</Link>
+          <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
+          {signedIn?.primaryPhone ? <a href={`tel:${signedIn.primaryPhone}`} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>☎</span>Call profile phone</a> : null}
+          {signedIn?.website ? <a href={signedIn.website} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>↗</span>Open website</a> : null}
           <form action="/api/logout" method="post">
             <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 text-left font-black text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200"><span>↪</span>Sign out</button>
           </form>
