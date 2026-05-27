@@ -719,7 +719,9 @@ export function AppShell({
           </div>
         </main>
       </div>
-      <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead" className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#0c7fff] text-2xl font-semibold text-white shadow-[0_4px_16px_rgba(12,127,255,0.42)] md:hidden">＋</a>
+      <a href={(() => { const base = withWorkspaceMode(PRODUCT_ROUTES.app.leads, workspaceMode); return base.includes('?') ? `${base}&quickLead=1` : `${base}?quickLead=1`; })()} aria-label="Quick Lead — capture a new lead" className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-[#0c7fff] to-[#0052cc] text-white shadow-[0_6px_22px_rgba(12,127,255,0.5)] ring-2 ring-white/80 transition hover:shadow-[0_8px_28px_rgba(12,127,255,0.6)] active:scale-95 md:hidden">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </a>
       <MobileTabBar />
       </div>
       <SetuGuruWidget

@@ -56,13 +56,13 @@ const internalOnlyAdminKeys: AdminNavKey[] = [
   'seo',
 ];
 
-const nav: Array<{ label: string; items: AdminNavItem[] }> = [
+const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boolean }> = [
   {
     label: 'Organisation',
     items: [
       { key: 'overview', href: '/admin/overview', icon: 'building', label: 'Overview', statusDot: 'ok' },
-      { key: 'profile', href: '/admin/organization', icon: 'user', label: 'Org profile', statusDot: 'ok' },
-      { key: 'users', href: '/admin/users', icon: 'users', label: 'Team', statusDot: 'ok' },
+      { key: 'profile', href: '/admin/organization', icon: 'user', label: 'Organization profile', statusDot: 'ok' },
+      { key: 'users', href: '/admin/users', icon: 'users', label: 'Team members', statusDot: 'ok' },
       { key: 'invitations', href: '/admin/invitations', icon: 'mail', label: 'Invitations', statusDot: 'warn' },
       { key: 'notifications', href: '/admin/notifications', icon: 'bell', label: 'Notifications', statusDot: 'ok', badge: 'NEW', badgeTone: 'info' as const },
     ],
@@ -71,7 +71,8 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     label: 'Operations & Commerce',
     items: [
       { key: 'markets', href: '/admin/markets', icon: 'globe', label: 'Markets', statusDot: 'ok' },
-      { key: 'stages', href: '/admin/stages', icon: 'workflow', label: 'Stages & pipelines', statusDot: 'ok' },
+      { key: 'categories', href: '/admin/categories', icon: 'box', label: 'Categories', statusDot: 'ok' },
+      { key: 'stages', href: '/admin/stages', icon: 'workflow', label: 'Pipelines & stages', statusDot: 'ok' },
       { key: 'product-management', href: '/admin/product-management', icon: 'clipboard', label: 'Products', statusDot: 'ok' },
       { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade events', statusDot: 'ok' },
       { key: 'pricing-engine', href: '/admin/pricing-engine', icon: 'dollar', label: 'Pricing engine', statusDot: 'ok' },
@@ -79,13 +80,24 @@ const nav: Array<{ label: string; items: AdminNavItem[] }> = [
     ],
   },
   {
-    label: 'Governance & Platform',
+    label: 'Governance',
     items: [
       { key: 'security', href: '/admin/security', icon: 'security', label: 'Security & roles', statusDot: 'warn' },
       { key: 'audit', href: '/admin/audit', icon: 'audit', label: 'Audit log', statusDot: 'ok' },
+      { key: 'seo', href: '/admin/seo-intelligence', icon: 'globe', label: 'SEO intelligence', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+    ],
+  },
+  {
+    label: 'SETU Flow Internal',
+    internalSection: true,
+    items: [
+      { key: 'client-onboarding', href: '/admin/client-onboarding', icon: 'rocket', label: 'Client onboarding', statusDot: 'ok', internalOnly: true },
+      { key: 'client-management', href: '/admin/client-management', icon: 'users', label: 'Client management', statusDot: 'warn', badge: 'HQ', badgeTone: 'info' as const, internalOnly: true },
+      { key: 'integrations', href: '/admin/integrations', icon: 'plug', label: 'Integrations', statusDot: 'warn', internalOnly: true },
       { key: 'guru-config', href: '/admin/guru-config', icon: 'guru', label: 'Setu Guru config', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
       { key: 'api-keys', href: '/admin/api-keys', icon: 'key', label: 'API & webhooks', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
       { key: 'rate-limits', href: '/admin/rate-limits', icon: 'zap', label: 'Rate limits', statusDot: 'ok', badge: 'NEW', badgeTone: 'success' as const, internalOnly: true },
+      { key: 'ai-analytics', href: '/admin/ai-analytics', icon: 'analytics', label: 'AI analytics', badge: 'Internal', badgeTone: 'info', statusDot: 'ok', internalOnly: true },
     ],
   },
 ] as const;
@@ -136,7 +148,38 @@ export function AdminSettingsShell({ active, organizationName, missingCount = 0,
         <nav className="space-y-4">
           {nav.map((section, index) => {
             const visibleItems = section.items.filter((item) => showInternalOnlyTools || !item.internalOnly && !internalOnlyAdminKeys.includes(item.key));
-            if (!visibleItems.length) return null;
+            if (!visibleItems.length && !section.internalSection) return null;
+            // SETU Flow Internal section: only show to internal org users, as collapsible
+            if (section.internalSection) {
+              if (!showInternalOnlyTools) return null;
+              return (
+                <details key={section.label} className="border-t border-slate-200 pt-4" open={section.items.some((i) => i.key === active)}>
+                  <summary className="flex cursor-pointer list-none items-center gap-2 px-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-amber-600 hover:text-amber-700">
+                    <span className="flex h-4 w-4 items-center justify-center rounded bg-amber-100 text-amber-600">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </span>
+                    {section.label}
+                    <span className="ml-auto text-[8px] text-slate-400">▾</span>
+                  </summary>
+                  <div className="mt-2 space-y-1">
+                    {visibleItems.map((item) => {
+                      const isActive = item.key === active;
+                      return (
+                        <Link key={item.key} href={item.href}
+                          className={cn('relative flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition',
+                            isActive ? 'bg-amber-50 text-slate-950 shadow-[inset_3px_0_0_#f59e0b]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+                          )}>
+                          <span className="flex w-5 items-center justify-center" aria-hidden="true"><AdminNavIconGlyph icon={item.icon} /></span>
+                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                          {item.badge ? <AdminNavBadge label={item.badge} tone={item.badgeTone} /> : null}
+                          <AdminNavStatusDot dot={item.statusDot} />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </details>
+              );
+            }
             return (
               <div key={section.label} className={cn(index > 0 && 'border-t border-slate-200 pt-4')}>
                 <p className="px-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-400">{section.label}</p>

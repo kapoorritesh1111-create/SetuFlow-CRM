@@ -291,7 +291,7 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
         : 'Mobile push uses the installed PWA service worker and your notification preferences.';
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(86px+env(safe-area-inset-bottom)+0.5rem)] z-[320] flex flex-col items-end gap-3 md:inset-x-auto md:right-8 md:top-[6.25rem] md:bottom-auto md:w-[min(360px,calc(100vw-2rem))]">
+    <div className="pointer-events-none fixed inset-x-4 top-[calc(4rem+env(safe-area-inset-top))] z-[320] flex flex-col items-end gap-3 md:inset-x-auto md:right-8 md:top-[6.25rem] md:w-[min(360px,calc(100vw-2rem))]">
       {alertBanner ? (
         <div className="pointer-events-auto w-full overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5 md:w-[min(360px,calc(100vw-2rem))]">
           <div className="flex items-start gap-3 p-4">
