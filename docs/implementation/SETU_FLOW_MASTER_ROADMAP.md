@@ -1,6 +1,6 @@
 # SETU Flow CRM Master Implementation Roadmap
 
-Last updated: 2026-05-12
+Last updated: 2026-05-27
 Owner: Ritesh Kapoor
 Repository: `kapoorritesh1111-create/SetuFlow-CRM`
 Production domain: `https://www.setuflowcrm.com/`
@@ -446,16 +446,82 @@ Progress: 100%
 
 ---
 
+### Sprint 18 — Security hardening, TypeScript safety, and notifications
+
+Status: `DONE`
+Progress: 100%
+
+Completed (confirmed via repo + Supabase bug tracker cross-check, May 2026):
+
+- Security headers: CSP, X-Frame, HSTS, nosniff applied via middleware.
+- Webhook signature verification guard added.
+- Rate limiting on all public-facing API routes.
+- Notification bell and alert drawer: full event delivery infrastructure (SF-18-059–SF-18-070 complete).
+- Admin & Settings UX overhaul: 11-panel redesign, role management, org settings, integrations hub (SF-18-078 A–K complete).
+- Pipeline Premium UX: drag-and-drop Kanban, stage health indicators, deal value totals (SF-18-090–SF-18-106 complete).
+- Leads Premium UX: filter bar rebuild, advanced search, duplicate protection.
+- Live site screenshot bugs resolved: navigation, dashboard, mobile views, build errors cleared.
+- Quote-order handoff data integrity fixed.
+- Dead component pruning and prototype deletion protection.
+- SEO autobot guard, CRON_SECRET enforcement, Suspense boundaries.
+
+Open carry-forward to Sprint 20 (TypeScript safety):
+- SF-18-007: 6 files still exceed 3500-line limit (leads-workspace, data.ts, query-core.ts).
+- SF-18-008 A–C: `as any` casts remain in server actions, orders components, leads/quotes components.
+- SF-18-028: `data.ts` monolith not fully split — split added without removing original.
+- SF-18-049: Enum sprawl in free-text status fields.
+
+---
+
+### Sprint 19 — Mobile UX overhaul and UX polish
+
+Status: `DONE`
+Progress: 100%
+
+Completed (confirmed via repo + Supabase bug tracker cross-check, May 2026):
+
+- Mobile navigation bar: bottom tab bar with correct active states and z-index isolation.
+- Command palette: keyboard/touch-accessible global search and action launcher.
+- Mobile Quotes workspace: mobile-first list, detail, and action flow.
+- Mobile Orders workspace: mobile-first order queue and stage strip.
+- Mobile Tasks: redesigned list with swipe-right-to-complete interaction (SF-19-025).
+- Emoji → SVG icon migration across all production workspaces (SF-19-013).
+- Skeleton loading states added to all major list views (SF-19-015).
+- Empty state illustrations added for all zero-data screens (SF-19-023).
+- Mobile home screen redesign: hero action, KPI summary, quick lead FAB (SF-19-017).
+- RightDrawer swipe-right-to-close gesture (SF-19-020).
+- Mobile workspace mode strip (SF-19-026).
+- Admin sidebar: reduced from 22 items to focused grouped navigation (SF-19-012).
+- Admin overview cards with icon zones (SF-19-024).
+- OrderStageAdvanceStrip redesign from 10-button grid to staged workflow (SF-19-022).
+
+Open carry-forward to Sprint 20 (floating fixed-position elements):
+- SF-19-008: Alert bell launcher floating position refinement.
+- SF-19-009: Setu Guru widget launcher fixed position.
+- SF-19-014: Mobile Quick Lead FAB refinement.
+- SF-19-021: Client org health score dashboard (new feature, not a bug).
+- SF-18-112: Pipeline swimlane + forecast views (new feature).
+- SF-18-044: OrderDetailPanel visual animation integration.
+- SF-18-037: Offline lead queue service worker connection.
+- SF-18-038: SEO autobot GitHub Actions write access isolation.
+- SF-18-045: Playwright E2E test suite (not yet started).
+
+---
+
 ## 5. Readiness tracking
 
-- Overall CRM readiness: 99.62%
+- Overall CRM readiness: 99.78%
 - Sprint 7 Lead command center cleanup: 100%
-- Active Sprint 8 Orders and execution workflow: 58%
+- Sprint 8 Orders and execution workflow (active): 58%
+- Sprint 10 Import wizard and catalog onboarding: 100%
+- Sprint 18 Security, notifications, admin UX: 100%
+- Sprint 19 Mobile UX overhaul: 100%
 - Dashboard map UX readiness: 100%
 - Setu Guru intelligence readiness: 99.79%
-- UX cleanup readiness: 93%
+- UX cleanup readiness: 97%
 - Quote/compliance maturity: 96.5%
 - Product catalog maturity: 94%
+- TypeScript safety (carry-forward): 65% — `as any` casts and file size limits remain open
 
 ---
 
@@ -491,7 +557,13 @@ Before making changes, read:
 
 Rules: check Vercel first, protect prior fixes, do not run npm ci, ask approval before GitHub writes unless the current prompt explicitly requests repository updates, commit the full approved pass once to main, wait 1 minute 5 seconds after pushing before checking Vercel, and report readiness/sprint percentages at the end.
 
-Current status: Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, Sprint 7, and Sprint 10 are 100% complete. Sprint 8 Orders is active and replanned around the exact approved HTML preview `Orders Full Redesign Approval Walkthrough`. Sprint 8 must become an industry-neutral import/export/distribution execution workflow, not food-only compliance and not generic PDF buttons. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, lead row Open/More behavior, Source Event narrowing, advanced filter grouping, country/market correctness, and dashboard map country auto-focus/reset.
+Current status: Sprints 1–7, Sprint 10, Sprint 18, and Sprint 19 are 100% complete. Sprint 8 Orders is active and replanned around the exact approved HTML preview `Orders Full Redesign Approval Walkthrough`. Sprint 8 must become an industry-neutral import/export/distribution execution workflow, not food-only compliance and not generic PDF buttons. Preserve quote continuation, quote PDF/share/send, quote-review compliance, catalog import/product cleanup, lead row Open/More behavior, Source Event narrowing, advanced filter grouping, country/market correctness, and dashboard map country auto-focus/reset.
+
+Sprint 18 completed: security headers, webhook verification, rate limiting, full notification system, admin/settings UX overhaul (11 panels), pipeline premium UX (Kanban + deal health), leads premium UX, and live-site screenshot bug resolution.
+
+Sprint 19 completed: mobile navigation bar, command palette, mobile quotes/orders workspaces, mobile tasks swipe-to-complete, emoji-to-SVG migration, skeleton loaders, empty states, mobile home screen redesign, RightDrawer swipe-close, admin sidebar condensed, OrderStageAdvanceStrip redesign.
+
+Open carry-forward for Sprint 20: TypeScript safety (`as any` casts, file size limits, data.ts split), floating fixed-position element refinements (alert bell, Setu Guru launcher, Quick Lead FAB), Pipeline swimlane/forecast views, OrderDetailPanel animation, offline lead queue, Playwright E2E tests.
 
 Critical quote-version rule: `quote_versions` and `quote_version_line_items` are the quote commercial source of truth. Never mutate sent/approved/accepted quote versions. Editing a sent quote creates a new version. Sending a quote does not mean acceptance. `accepted_version_id` changes only through explicit quote acceptance/conversion. Orders must start from accepted quote version lineage.
 ```

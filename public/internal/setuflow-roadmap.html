@@ -84,20 +84,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* ── BODY LAYOUT ── */
 .page-body{overflow-y:auto;height:calc(100vh - 54px)}
 
-/* ── LAUNCHED SECTION ── */
-.launched-section{padding:20px 20px 0}
-.section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.section-hdr-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--green-hi);display:flex;align-items:center;gap:7px}
-.section-hdr-rule{flex:1;height:1px;background:linear-gradient(90deg,rgba(34,197,94,.3),transparent)}
-.section-hdr-count{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--green-d);color:var(--green-hi);border:1px solid rgba(34,197,94,.25)}
-.launched-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
-.launched-scroll::-webkit-scrollbar{display:none}
-.lcard{background:var(--bg2);border:1px solid rgba(34,197,94,.2);border-top:2px solid var(--green);border-radius:var(--rl);padding:14px 16px;min-width:220px;max-width:220px;flex-shrink:0;position:relative;transition:border-color .15s,transform .15s}
-.lcard:hover{border-color:rgba(34,197,94,.45);transform:translateY(-2px)}
-.lcard-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:5px}
-.lcard-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:6px}
-.lcard-value{font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px}
-.lcard-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:var(--green-d);color:var(--green-hi);font-size:10px;font-weight:700;border:1px solid rgba(34,197,94,.3)}
+/* ── SHIPPED GRID VIEW ── */
+.shipped-view{padding:16px 20px 32px}
+.shipped-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0}
+.shipped-hdr-title{font-size:13px;font-weight:800;color:var(--amber-hi);display:flex;align-items:center;gap:7px}
+.shipped-hdr-count{font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:rgba(245,158,11,.12);color:var(--amber-hi);border:1px solid rgba(245,158,11,.25)}
+.shipped-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.scard{background:var(--bg2);border:1px solid rgba(245,158,11,.2);border-top:2px solid var(--amber);border-radius:var(--rl);padding:16px;position:relative;transition:border-color .15s,transform .15s}
+.scard:hover{border-color:rgba(245,158,11,.45);transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.scard-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.scard-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:6px}
+.scard-value{font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px}
+.scard-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;background:rgba(245,158,11,.12);color:var(--amber-hi);font-size:10px;font-weight:700;border:1px solid rgba(245,158,11,.3)}
+.shipped-empty{text-align:center;padding:48px 16px;color:var(--text3);font-size:12px}
+/* ── LAUNCHED SECTION (legacy - keep for compat) ── */
+.launched-section{display:none!important}
 
 /* ── HORIZON TABS ── */
 .tabs-row{display:flex;align-items:center;gap:0;padding:16px 20px 0;background:transparent}
@@ -109,6 +110,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .htd-now{background:#22c55e;box-shadow:0 0 5px #22c55e}
 .htd-next{background:var(--brand-teal)}
 .htd-later{background:var(--purple-hi)}
+.htd-shipped{background:var(--amber-hi)}
 
 /* ── TOOLBAR ── */
 .toolbar{display:flex;align-items:center;gap:8px;padding:12px 20px;flex-wrap:wrap}
@@ -320,20 +322,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
 
-  <!-- ── ALREADY SHIPPED ── -->
-  <div class="launched-section" id="launched-section" style="display:none">
-    <div class="section-hdr">
-      <div class="section-hdr-title">
-        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Already Shipped
-      </div>
-      <span class="section-hdr-count" id="launched-count">0 features</span>
-      <div class="section-hdr-rule"></div>
-    </div>
-    <div class="launched-scroll" id="launched-scroll"></div>
-  </div>
+  <!-- ── SHIPPED VIEW (shown via tab) ── -->
+  <div id="launched-section" class="launched-section" style="display:none"></div>
 
-  <!-- ── HORIZON TABS ── -->
+  <!-- ── COLUMNS ── -->
   <div class="tabs-row">
     <div class="h-tabs">
       <button class="h-tab active" id="tab-all" onclick="setHorizon('all')">All</button>
@@ -345,6 +337,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       </button>
       <button class="h-tab" id="tab-later" onclick="setHorizon('later')">
         <span class="htd htd-later"></span>Later
+      </button>
+      <button class="h-tab" id="tab-launched" onclick="setHorizon('launched')">
+        <span class="htd htd-shipped"></span>Shipped
       </button>
     </div>
   </div>
@@ -393,6 +388,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         <span class="col-cnt" id="cnt-later">0</span>
       </div>
       <div class="col-body" id="col-later"></div>
+    </div>
+  </div>
+
+  <!-- ── SHIPPED TAB VIEW ── -->
+  <div class="shipped-view" id="shipped-view" style="display:none">
+    <div class="shipped-hdr">
+      <div class="shipped-hdr-title">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Shipped to Production
+      </div>
+      <span class="shipped-hdr-count" id="shipped-count">0 features</span>
+    </div>
+    <div class="shipped-grid" id="shipped-grid">
+      <div class="shipped-empty">Loading…</div>
     </div>
   </div>
 
@@ -604,26 +613,38 @@ function updateKPIs(){
   setText('kv-votes',votes);
 }
 
-/* ─── LAUNCHED STRIP ─── */
+/* ─── LAUNCHED STRIP (legacy compat) ─── */
 function renderLaunched(){
+  // No longer renders a strip — shipped items are shown via the Shipped tab
+  // Just keep the KPI updated; the shipped-view is populated by renderShippedGrid()
+}
+
+/* ─── SHIPPED GRID VIEW ─── */
+function renderShippedGrid(){
   const launched=ALL.filter(i=>i.status==='launched');
-  const sec=document.getElementById('launched-section');
-  const scroll=document.getElementById('launched-scroll');
-  const cnt=document.getElementById('launched-count');
-  if(!launched.length){sec.style.display='none';return;}
-  sec.style.display='';
+  const grid=document.getElementById('shipped-grid');
+  const cnt=document.getElementById('shipped-count');
   cnt.textContent=launched.length+' feature'+(launched.length!==1?'s':'');
-  scroll.innerHTML=launched.map(item=>`
-    <div class="lcard">
-      <div class="lcard-cat">
+  if(!launched.length){
+    grid.innerHTML='<div class="shipped-empty"><div style="font-size:28px;margin-bottom:8px;opacity:.5">📦</div>No shipped features yet.</div>';
+    return;
+  }
+  grid.innerHTML=launched.map(item=>`
+    <div class="scard">
+      <div class="scard-cat">
         <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         ${esc(item.category||'Feature')}
       </div>
-      <div class="lcard-title">${esc(item.title)}</div>
-      ${item.value_statement?`<div class="lcard-value">${esc(item.value_statement)}</div>`:''}
-      <div class="lcard-badge">
-        <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Shipped
+      <div class="scard-title">${esc(item.title)}</div>
+      ${item.value_statement?`<div class="scard-value">${esc(item.value_statement)}</div>`:''}
+      ${item.description?`<div class="scard-value" style="color:var(--text3)">${esc(item.description)}</div>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+        <span class="scard-badge">
+          <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Shipped
+        </span>
+        ${item.votes_count?`<span style="font-size:10px;color:var(--text3)">▲ ${item.votes_count}</span>`:''}
+        ${isOrgMember?`<button class="btn btn-ghost" style="padding:3px 6px;font-size:10px" onclick="openEditModal('${item.id}',event)">✏️</button>`:''}
       </div>
     </div>`).join('');
 }
@@ -702,8 +723,12 @@ async function toggleVote(itemId,e){
 /* ─── FILTERS ─── */
 function setHorizon(h){
   activeHorizon=h;
-  ['all','now','next','later'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('active',t===h);});
-  renderAll();
+  ['all','now','next','later','launched'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('active',t===h);});
+  const isShipped=(h==='launched');
+  document.getElementById('columns-view').style.display=isShipped?'none':'';
+  document.getElementById('shipped-view').style.display=isShipped?'':'none';
+  document.getElementById('status-filters').style.display=isShipped?'none':'';
+  if(isShipped){renderShippedGrid();}else{renderAll();}
 }
 function setStatus(s){
   activeStatus=s;
