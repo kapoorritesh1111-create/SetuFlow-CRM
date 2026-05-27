@@ -80,6 +80,14 @@ export function BrandedMobileTopBar({
           >
             📇
           </button>
+          <Link
+            href="/notifications"
+            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
+            aria-label="Open notifications"
+            title="Notifications"
+          >
+            <SetuIcon name="bell" className="h-5 w-5" />
+          </Link>
           <button
             type="button"
             onClick={() => setOpen(true)}
