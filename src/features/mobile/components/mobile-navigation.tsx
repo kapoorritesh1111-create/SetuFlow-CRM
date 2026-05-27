@@ -233,3 +233,48 @@ export function MobileHomeHero() {
     </section>
   );
 }
+
+export function MobileDashboardHome() {
+  const actions = [
+    { href: "/leads", title: "Leads", icon: "◎", tone: "blue" as const },
+    {
+      href: "/leads?quickLead=1",
+      title: "Buyer",
+      icon: "🛒",
+      tone: "teal" as const,
+    },
+    {
+      href: "/leads?quickLead=1&sourceType=supplier",
+      title: "Supplier",
+      icon: "🏭",
+      tone: "violet" as const,
+    },
+    { href: "/orders", title: "Orders", icon: "◇", tone: "gold" as const },
+  ];
+  return (
+    <div className="space-y-4">
+      <MobileHomeHero />
+      <section className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Actions</p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {actions.map((action) => (
+            <Link key={action.title} href={action.href} className="rounded-[1.5rem] bg-white p-4 shadow-lg shadow-slate-200/60 transition hover:-translate-y-0.5 dark:bg-slate-950 dark:shadow-black/20">
+              <ThreeDIconOrb icon={action.icon} tone={action.tone} />
+              <p className="mt-3 text-sm font-black text-slate-950 dark:text-white">{action.title}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="rounded-[1.5rem] border border-rose-200 bg-white/90 p-5 dark:border-rose-900/50 dark:bg-slate-900/90">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">Follow-ups</p>
+        <b className="mt-3 block text-3xl text-slate-950 dark:text-white">9</b>
+        <p className="text-sm text-slate-500 dark:text-slate-300">Overdue</p>
+      </section>
+      <section className="rounded-[1.5rem] border border-sky-200 bg-white/90 p-5 dark:border-sky-900/50 dark:bg-slate-900/90">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-500">Quotes</p>
+        <b className="mt-3 block text-3xl text-slate-950 dark:text-white">5</b>
+        <p className="text-sm text-slate-500 dark:text-slate-300">Ready to send</p>
+      </section>
+    </div>
+  );
+}
