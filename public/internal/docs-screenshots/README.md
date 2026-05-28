@@ -1,22 +1,5 @@
-# Live UI Screenshots
+# SETU Flow Docs Screenshots
 
-Add production screenshots for the documentation workspace here.
+Screenshots can be uploaded directly from the documentation workspace using **Add screenshot**.
 
-## How to add a screenshot
-
-1. Capture the production screen.
-2. Save the image in this folder, for example:
-   `pipeline-workspace.png`
-3. Add an entry to `manifest.json`:
-
-```json
-{
-  "title": "Pipeline Workspace",
-  "route": "/pipeline",
-  "description": "Kanban, swimlane, forecast, density controls, and global filters.",
-  "image": "pipeline-workspace.png",
-  "updated": "2026-05-27"
-}
-```
-
-The documentation page reads this manifest and renders the gallery under **Live UI Snapshots**.
+For persistent shared screenshots, apply the Supabase migration and deploy the API route included in this build. If the API/migration is not available yet, uploads fall back to browser localStorage for the current user.

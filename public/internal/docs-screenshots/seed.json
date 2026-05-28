@@ -1,0 +1,10 @@
+[
+  {
+    "id": "seed-test",
+    "title": "Test live UI screenshot",
+    "route": "/internal/setuflow-docs.html",
+    "description": "Initial screenshot uploaded for workspace validation.",
+    "image_url": "docs-screenshots/test-live-ui.png",
+    "created_at": "2026-05-27"
+  }
+]
