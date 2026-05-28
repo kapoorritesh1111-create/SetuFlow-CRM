@@ -90,5 +90,24 @@
 </div>
 <div class="mobile-topic-bar"><button id="mobilePrev" onclick="Docs.goPrev()">← Previous</button><span id="mobileProgress">1 / 12</span><button id="mobileNext" onclick="Docs.goNext()">Next →</button></div>
 <script src="setuflow-docs-workspace.js"></script>
+<div id="diagModal" class="diag-modal">
+  <div class="diag-topbar">
+    <span id="diagModalTitle" class="diag-modal-title">Diagram</span>
+    <div class="diag-controls">
+      <button class="dc" onclick="Docs.diagZoom(-0.2)" title="Zoom out (-)">&#8722;</button>
+      <span id="diagZoomPct" class="diag-zoom-pct">100%</span>
+      <button class="dc" onclick="Docs.diagZoom(0.2)" title="Zoom in (+)">+</button>
+      <div class="diag-sep"></div>
+      <button class="dc dc-sm" onclick="Docs.diagReset()">Reset</button>
+      <button class="dc dc-sm" onclick="Docs.downloadDiagram()">&#8595; SVG</button>
+      <div class="diag-sep"></div>
+      <button class="dc" onclick="Docs.closeDiagramViewer()" title="Close (Esc)">&#x2715;</button>
+    </div>
+  </div>
+  <div id="diagViewport" class="diag-viewport">
+    <div id="diagCanvas" class="diag-canvas"></div>
+    <div class="diag-hint">Scroll to zoom &nbsp;&middot;&nbsp; Drag to pan &nbsp;&middot;&nbsp; + / &minus; / 0 / Esc</div>
+  </div>
+</div>
 </body>
 </html>
