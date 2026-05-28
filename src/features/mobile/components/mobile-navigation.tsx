@@ -3,7 +3,7 @@
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { SetuIcon, type SetuIconName } from '@/components/ui/setu-icon';
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { RecentActivityItem } from '@/features/dashboard/types';
 import type { DashboardData } from '@/lib/queries/dashboard';
@@ -25,14 +25,7 @@ type MobileMetric = {
 };
 
 function initialsFrom(name?: string | null) {
-  return (
-    (name ?? "SF")
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "SF"
-  );
+  return ((name ?? "SF").split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "SF");
 }
 
 function firstNameFrom(name: string) {
@@ -67,18 +60,25 @@ function activityTitle(activity: RecentActivityItem) {
   return activity.companyName ?? activity.stageName ?? activity.type.charAt(0).toUpperCase() + activity.type.slice(1);
 }
 
+function scopeFromMode(value: string | null): MobileScope {
+  if (value === 'buyers' || value === 'buyer') return 'buyer';
+  if (value === 'suppliers' || value === 'supplier') return 'supplier';
+  return 'all';
+}
+
+function modeParam(scope: MobileScope) {
+  if (scope === 'buyer') return 'buyers';
+  if (scope === 'supplier') return 'suppliers';
+  return 'all';
+}
+
 function scopedHref(baseHref: string, scope: MobileScope) {
   if (scope === 'all') return baseHref;
   const separator = baseHref.includes('?') ? '&' : '?';
-  return `${baseHref}${separator}sourceType=${scope}`;
+  return `${baseHref}${separator}mode=${modeParam(scope)}`;
 }
 
-export function BrandedMobileTopBar({
-  signedIn,
-}: {
-  signedIn?: MobileSignedInIdentity;
-  canonical?: boolean;
-}) {
+export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState("");
@@ -90,13 +90,7 @@ export function BrandedMobileTopBar({
   useEffect(() => {
     const now = new Date();
     setGreeting(greetingFor(now));
-    setDateLabel(
-      new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        month: "short",
-        day: "2-digit",
-      }).format(now),
-    );
+    setDateLabel(new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "2-digit" }).format(now));
   }, []);
 
   return (
@@ -104,39 +98,12 @@ export function BrandedMobileTopBar({
       <header className="sticky top-0 z-40 bg-[linear-gradient(180deg,rgba(8,18,37,.96),rgba(8,18,37,.78))] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] text-white shadow-[0_16px_40px_rgba(15,23,42,.18)] backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[430px] items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-black tracking-tight">
-              {greeting}, {firstName}
-            </p>
-            <p className="mt-0.5 truncate text-xs font-semibold text-white/60">
-              {dateLabel || "Today"}
-            </p>
+            <p className="truncate text-lg font-black tracking-tight">{greeting}, {firstName}</p>
+            <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShareOpen(true)}
-            className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200"
-            aria-label="Share my vCard"
-            title="Share vCard"
-          >
-            📇
-          </button>
-          <Link
-            href="/mobile/notifications"
-            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
-            aria-label="Open notifications"
-            title="Notifications"
-          >
-            <SetuIcon name="bell" className="h-5 w-5" />
-          </Link>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="grid h-11 w-11 place-items-center rounded-full"
-            title={`Signed in as ${displayName}`}
-            aria-label="Open profile settings"
-          >
-            <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" />
-          </button>
+          <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button>
+          <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
+          <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
         </div>
       </header>
       <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} onShareVCard={() => setShareOpen(true)} />
@@ -145,18 +112,7 @@ export function BrandedMobileTopBar({
   );
 }
 
-export function MobileActionDrawer({
-  open,
-  onClose,
-  signedIn,
-  onShareVCard,
-}: {
-  open: boolean;
-  onClose: () => void;
-  canonical?: boolean;
-  signedIn?: MobileSignedInIdentity;
-  onShareVCard?: () => void;
-}) {
+export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity; onShareVCard?: () => void }) {
   if (!open) return null;
   const displayName = signedIn?.name ?? "SETU Flow user";
   const initials = signedIn?.initials ?? initialsFrom(displayName);
@@ -218,27 +174,31 @@ export function MobileHomeHero({ data }: { data?: DashboardData }) {
   return (
     <section className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Today</p>
-          <h1 className="mt-2 text-2xl font-black leading-none tracking-tight">Trade work</h1>
-          <p className="mt-2 text-xs font-semibold text-slate-300">Live workspace pulse</p>
-        </div>
+        <div><p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Today</p><h1 className="mt-2 text-2xl font-black leading-none tracking-tight">Trade work</h1><p className="mt-2 text-xs font-semibold text-slate-300">Live workspace pulse</p></div>
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400 text-slate-950 shadow-[0_12px_34px_rgba(245,158,11,.35)]"><SetuIcon name="sparkles" className="h-5 w-5" /></span>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3">
-        {metrics.map((metric) => (
-          <Link key={metric.label} href={metric.href} className={`rounded-3xl p-4 transition hover:bg-white/15 ${metric.tone}`}>
-            <b className="text-3xl">{metric.value}</b>
-            <p className="text-xs text-slate-300">{metric.label}</p>
-          </Link>
-        ))}
+        {metrics.map((metric) => <Link key={metric.label} href={metric.href} className={`rounded-3xl p-4 transition hover:bg-white/15 ${metric.tone}`}><b className="text-3xl">{metric.value}</b><p className="text-xs text-slate-300">{metric.label}</p></Link>)}
       </div>
     </section>
   );
 }
 
 export function MobileDashboardHome({ data }: { data: DashboardData }) {
-  const [scope, setScope] = useState<MobileScope>('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [scope, setScope] = useState<MobileScope>(() => scopeFromMode(searchParams.get('mode')));
+
+  useEffect(() => {
+    setScope(scopeFromMode(searchParams.get('mode')));
+  }, [searchParams]);
+
+  function changeScope(nextScope: MobileScope) {
+    setScope(nextScope);
+    const href = nextScope === 'all' ? '/dashboard' : `/dashboard?mode=${modeParam(nextScope)}`;
+    router.replace(href, { scroll: false });
+  }
+
   const openLeads = getKpiValue(data, 'open-leads');
   const overdueFollowUps = getKpiValue(data, 'overdue-followups');
   const pipelineValue = getKpiValue(data, 'pipeline-value');
@@ -260,42 +220,16 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
     <div className="space-y-4">
       <section className="rounded-[2rem] border border-white/70 bg-white/90 p-3 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
         <div className="grid grid-cols-3 gap-1 rounded-[1.5rem] bg-slate-100 p-1 dark:bg-slate-950">
-          {(['all', 'buyer', 'supplier'] as const).map((item) => (
-            <button key={item} type="button" onClick={() => setScope(item)} className={`min-h-11 rounded-[1.15rem] px-3 text-sm font-black transition ${scope === item ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 dark:text-slate-300'}`}>
-              {item === 'all' ? 'All' : item === 'buyer' ? 'Buyer' : 'Supplier'}
-            </button>
-          ))}
+          {(['all', 'buyer', 'supplier'] as const).map((item) => <button key={item} type="button" onClick={() => changeScope(item)} className={`min-h-11 rounded-[1.15rem] px-3 text-sm font-black transition ${scope === item ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 dark:text-slate-300'}`}>{item === 'all' ? 'All' : item === 'buyer' ? 'Buyer' : 'Supplier'}</button>)}
         </div>
       </section>
       <section className="grid grid-cols-2 gap-3">
-        {metrics.map((metric) => (
-          <Link key={metric.label} href={metric.href} className="rounded-[1.5rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 transition active:scale-[.98] dark:border-slate-800 dark:bg-slate-900/90">
-            <div className="flex items-start justify-between gap-3">
-              <span className={`grid h-11 w-11 place-items-center rounded-2xl ${metric.tone}`}><SetuIcon name={metric.icon} className="h-5 w-5" /></span>
-              <span className="text-lg font-black text-slate-300">›</span>
-            </div>
-            <b className={`mt-3 block text-3xl ${metric.valueTone}`}>{metric.value}</b>
-            <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{metric.label}</p>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{metric.sub}</p>
-          </Link>
-        ))}
+        {metrics.map((metric) => <Link key={metric.label} href={metric.href} className="rounded-[1.5rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 transition active:scale-[.98] dark:border-slate-800 dark:bg-slate-900/90"><div className="flex items-start justify-between gap-3"><span className={`grid h-11 w-11 place-items-center rounded-2xl ${metric.tone}`}><SetuIcon name={metric.icon} className="h-5 w-5" /></span><span className="text-lg font-black text-slate-300">›</span></div><b className={`mt-3 block text-3xl ${metric.valueTone}`}>{metric.value}</b><p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{metric.label}</p><p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{metric.sub}</p></Link>)}
       </section>
       <section className="rounded-[2rem] border border-slate-200 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Activity feed</p>
-            <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">Latest movement</h2>
-          </div>
-          <Link href="/dashboard" className="text-xs font-black text-blue-600 dark:text-sky-300">View all</Link>
-        </div>
+        <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Activity feed</p><h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">Latest movement</h2></div><Link href="/dashboard" className="text-xs font-black text-blue-600 dark:text-sky-300">View all</Link></div>
         <div className="mt-3 grid gap-2">
-          {recentActivity.length ? recentActivity.map((activity) => (
-            <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800">
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black uppercase text-white dark:bg-slate-700">{activity.iconKey.slice(0, 2)}</span>
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{activityTitle(activity)}</p><p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-300">{activity.message}</p></div>
-              <span className="text-[10px] font-bold text-slate-400">{formatActivityTime(activity.timestamp)}</span>
-            </Link>
-          )) : <div className="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300">No recent activity yet.</div>}
+          {recentActivity.length ? recentActivity.map((activity) => <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800"><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black uppercase text-white dark:bg-slate-700">{activity.iconKey.slice(0, 2)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{activityTitle(activity)}</p><p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-300">{activity.message}</p></div><span className="text-[10px] font-bold text-slate-400">{formatActivityTime(activity.timestamp)}</span></Link>) : <div className="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300">No recent activity yet.</div>}
         </div>
       </section>
     </div>
