@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-label="SETU Flow architecture diagram">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f9fcff"/><stop offset="1" stop-color="#f2f7fd"/></linearGradient>
+    <linearGradient id="blue" x1="0" x2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#14b8a6"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#0f2746" flood-opacity="0.12"/></filter>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <rect x="36" y="30" width="1128" height="700" rx="34" fill="#ffffff" stroke="#d8e5f3" filter="url(#shadow)"/>
+  <text x="74" y="92" font-family="Inter, sans-serif" font-size="28" font-weight="800" fill="#10233a">SETU Flow CRM architecture</text>
+  <text x="74" y="122" font-family="Inter, sans-serif" font-size="16" fill="#5b738f">Premium documentation diagram — application, services and data boundaries</text>
+
+  <rect x="74" y="166" width="1052" height="118" rx="28" fill="#0b1a2e"/>
+  <text x="104" y="204" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#77a8ff">USER SURFACES</text>
+  <rect x="104" y="220" width="210" height="40" rx="14" fill="#132944" stroke="#27496f"/>
+  <text x="124" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Internal workspace</text>
+  <rect x="328" y="220" width="210" height="40" rx="14" fill="#132944" stroke="#27496f"/>
+  <text x="350" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Mobile capture routes</text>
+  <rect x="552" y="220" width="210" height="40" rx="14" fill="#132944" stroke="#27496f"/>
+  <text x="575" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Public / shared surfaces</text>
+  <rect x="776" y="220" width="320" height="40" rx="14" fill="#132944" stroke="#27496f"/>
+  <text x="798" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Internal docs, roadmap and issue tracker</text>
+
+  <rect x="74" y="322" width="338" height="140" rx="26" fill="#f7fbff" stroke="#d8e5f3"/>
+  <text x="98" y="356" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#156a8f">NEXT.JS APPLICATION</text>
+  <text x="98" y="388" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#10233a">UI, route groups & page composition</text>
+  <text x="98" y="420" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Dashboard, leads, pipeline, quotes, orders, admin, mobile, docs workspace</text>
+  <rect x="98" y="436" width="286" height="10" rx="5" fill="#e1ebf7"/>
+  <rect x="98" y="436" width="192" height="10" rx="5" fill="url(#blue)"/>
+
+  <rect x="430" y="322" width="338" height="140" rx="26" fill="#f7fbff" stroke="#d8e5f3"/>
+  <text x="454" y="356" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#156a8f">SERVER ACTIONS & APIS</text>
+  <text x="454" y="388" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#10233a">Workflow logic, PDFs, AI & integrations</text>
+  <text x="454" y="420" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Quotes, orders, compliance, card scan, Setu Guru, webhooks, internal docs helpers</text>
+  <rect x="454" y="436" width="286" height="10" rx="5" fill="#e1ebf7"/>
+  <rect x="454" y="436" width="236" height="10" rx="5" fill="url(#blue)"/>
+
+  <rect x="786" y="322" width="340" height="140" rx="26" fill="#f7fbff" stroke="#d8e5f3"/>
+  <text x="810" y="356" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#156a8f">SECURITY & STATE</text>
+  <text x="810" y="388" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#10233a">Auth, org scope & permission normalization</text>
+  <text x="810" y="420" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Organisation context, roles, route guards, internal shared-doc protection</text>
+  <rect x="810" y="436" width="286" height="10" rx="5" fill="#e1ebf7"/>
+  <rect x="810" y="436" width="220" height="10" rx="5" fill="url(#blue)"/>
+
+  <rect x="74" y="520" width="480" height="158" rx="26" fill="#0d1f37"/>
+  <text x="102" y="556" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#79fff4">SUPABASE PLATFORM</text>
+  <text x="102" y="588" font-family="Inter, sans-serif" font-size="24" font-weight="800" fill="#ffffff">Persistence, auth and storage</text>
+  <text x="102" y="620" font-family="Inter, sans-serif" font-size="15" fill="#b7c8da">profiles · organizations · leads · quotes · orders · audit artifacts · docs screenshots</text>
+  <rect x="102" y="640" width="420" height="10" rx="5" fill="#27496f"/>
+  <rect x="102" y="640" width="320" height="10" rx="5" fill="#22d3ee"/>
+
+  <rect x="584" y="520" width="542" height="158" rx="26" fill="#ffffff" stroke="#d8e5f3"/>
+  <text x="612" y="556" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#7c5cff">EXTERNAL SERVICES</text>
+  <text x="612" y="588" font-family="Inter, sans-serif" font-size="24" font-weight="800" fill="#10233a">OpenAI, mail, files and partner systems</text>
+  <text x="612" y="622" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Setu Guru model calls, business card OCR / vision, mail and PDF delivery, webhook targets</text>
+  <rect x="612" y="640" width="470" height="10" rx="5" fill="#e1ebf7"/>
+  <rect x="612" y="640" width="250" height="10" rx="5" fill="#8b5cf6"/>
+
+  <path d="M243 260 C243 295,243 295,243 322" fill="none" stroke="#7aa5ff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M599 260 C599 295,599 295,599 322" fill="none" stroke="#7aa5ff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M942 260 C942 295,942 295,942 322" fill="none" stroke="#7aa5ff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M244 462 C244 494,244 494,244 520" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M598 462 C598 494,598 494,598 520" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M956 462 C956 494,956 494,956 520" fill="none" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/>
+</svg>

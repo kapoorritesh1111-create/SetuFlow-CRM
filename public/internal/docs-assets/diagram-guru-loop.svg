@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 520" role="img" aria-label="Setu Guru review loop diagram">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#14b8a6"/></linearGradient>
+  </defs>
+  <rect width="860" height="520" rx="26" fill="#f7f9fe"/>
+  <text x="42" y="58" font-family="Inter, sans-serif" font-size="26" font-weight="800" fill="#10233a">Setu Guru review loop</text>
+  <text x="42" y="88" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">AI suggestions are part of the workflow, never a hidden substitute for human review.</text>
+  <circle cx="430" cy="270" r="88" fill="#ffffff" stroke="#d8e5f3" stroke-width="2"/>
+  <circle cx="430" cy="270" r="50" fill="url(#g1)" opacity="0.14"/>
+  <text x="387" y="263" font-family="Inter, sans-serif" font-size="18" font-weight="800" fill="#10233a">Setu</text>
+  <text x="387" y="288" font-family="Inter, sans-serif" font-size="18" font-weight="800" fill="#10233a">Guru</text>
+  <g font-family="Inter, sans-serif">
+    <rect x="98" y="102" width="198" height="88" rx="22" fill="#ffffff" stroke="#d8e5f3"/><text x="124" y="136" font-size="14" font-weight="700" fill="#7c5cff">1 · Context intake</text><text x="124" y="162" font-size="14" fill="#5b738f">Route, record, user intent</text>
+    <rect x="564" y="102" width="198" height="88" rx="22" fill="#ffffff" stroke="#d8e5f3"/><text x="590" y="136" font-size="14" font-weight="700" fill="#7c5cff">2 · Prompt shaping</text><text x="590" y="162" font-size="14" fill="#5b738f">Policy, org settings, task form</text>
+    <rect x="610" y="350" width="198" height="88" rx="22" fill="#ffffff" stroke="#d8e5f3"/><text x="636" y="384" font-size="14" font-weight="700" fill="#0d8b81">3 · Draft output</text><text x="636" y="410" font-size="14" fill="#5b738f">Suggestion, explanation, structure</text>
+    <rect x="52" y="350" width="198" height="88" rx="22" fill="#ffffff" stroke="#d8e5f3"/><text x="78" y="384" font-size="14" font-weight="700" fill="#0d8b81">4 · Human review</text><text x="78" y="410" font-size="14" fill="#5b738f">Accept, edit, reject or ignore</text>
+  </g>
+  <path d="M297 146 C352 146,370 184,394 214" fill="none" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M563 146 C520 146,492 184,466 214" fill="none" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M610 349 C560 332,514 316,476 304" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M251 349 C301 332,347 316,385 304" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M150 439 C206 470,654 470,710 439" fill="none" stroke="#c7d7ea" stroke-width="5" stroke-linecap="round" stroke-dasharray="8 10"/>
+  <text x="322" y="492" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#5b738f">No auto-send • Explicit user action • Auditable feedback loop</text>
+</svg>
