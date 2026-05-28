@@ -16,6 +16,9 @@ const Docs = (() => {
     { id: 'api-integrations', group: 'Integrations & API', icon: '</>',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
     { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',                              accent: '#14b8a6' },
     { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
+    { id: 'documents',        group: 'Business Workflows', icon: '\u25a4',   title: 'Documents',            tag: 'Documents',     summary: 'Document control desk: file review, expiry posture, version visibility, compliance evidence, and document gate management.', accent: '#7c3aed' },
+    { id: 'trade-events',      group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
+    { id: 'integrations',      group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.', accent: '#0d9488' },
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
   ];
 
@@ -376,6 +379,32 @@ const Docs = (() => {
 <tr><td>Doc Send Effectiveness</td><td><code>order_document_sends</code>, <code>communications</code></td><td>reporting.view</td></tr>
 <tr><td>Market Breakdown</td><td><code>markets</code>, <code>leads</code>, <code>quotes</code>, <code>orders</code></td><td>reporting.view</td></tr>
 <tr><td>Product Breakdown</td><td><code>products</code>, <code>categories</code>, <code>lead_product_interests</code></td><td>reporting.view</td></tr>
+
+<tr><td><code>/documents</code></td><td>Documents Workspace</td><td>Document control desk: file review, expiry posture, version visibility, reviewer ownership across all org documents</td></tr>
+<tr><td><code>/integrations</code></td><td>Integration Hub</td><td>Status overview of 6 governed connectors: Email, Document evidence, AI suggestions, vCard, Trade event capture, Tasks</td></tr>
+<tr><td><code>/trade-events</code></td><td>Trade Events Workspace</td><td>Event analytics (lead count, pipeline value, orders placed); convert captured entries to leads</td></tr>
+<tr><td><code>/leads/[leadId]</code></td><td>Lead Command Center</td><td>3-tab deep link: workflow (qualification + coverage), quotes, activity history</td></tr>
+<tr><td><code>/leads/buyers</code></td><td>Buyer Leads</td><td>Lead list filtered to <code>lead_type = "buyer"</code></td></tr>
+<tr><td><code>/leads/suppliers</code></td><td>Supplier Leads</td><td>Lead list filtered to <code>lead_type = "supplier"</code></td></tr>
+<tr><td><code>/pipeline/buyers</code></td><td>Buyer Pipeline</td><td>Kanban board for buyer leads only</td></tr>
+<tr><td><code>/pipeline/suppliers</code></td><td>Supplier Pipeline</td><td>Kanban board for supplier leads only</td></tr>
+<tr><td><code>/dashboard/buyers</code></td><td>Buyer Dashboard</td><td>Buyer-focused KPI view</td></tr>
+<tr><td><code>/dashboard/suppliers</code></td><td>Supplier Dashboard</td><td>Supplier-focused KPI view</td></tr>
+<tr><td><code>/profile</code></td><td>User Profile</td><td>full_name, username edit; vCard identity source</td></tr>
+<tr><td><code>/settings/notifications</code></td><td>Notification Preferences</td><td>Per-user notification channel settings</td></tr>
+<tr><td><code>/admin/overview</code></td><td>Admin Overview</td><td>8-count stat dashboard: markets, countries, stages, products, categories, roles, invites, members</td></tr>
+<tr><td><code>/admin/stages</code></td><td>Pipeline Stages Admin</td><td>Manages <code>pipeline_stages</code> and <code>next_steps</code> tables; separate from pipeline board admin</td></tr>
+<tr><td><code>/admin/product-management</code></td><td>Catalog Admin</td><td>Product governance workbench; <code>pricing_calculator_default_rules</code>; <code>catalog.manage</code> role required</td></tr>
+<tr><td><code>/admin/seo-intelligence</code></td><td>SEO Intelligence</td><td>SETU-internal only; live Google Trends, keyword coverage, competitor gap analysis, Push PR workflow</td></tr>
+<tr><td><code>/card</code></td><td>Public vCard</td><td>Publicly accessible digital business card; OG metadata; request-a-quote and vCard save actions</td></tr>
+<tr><td><code>/invite/[token]</code></td><td>Invitation Acceptance</td><td>Token-gated onboarding; new user registration or existing user membership add</td></tr>
+
+<tr><td><b>Documents</b></td><td><code>/documents</code></td><td>Document control desk — file review, expiry posture, version visibility across leads, quotes, orders</td><td>Read-only for non-compliance-review roles. Expiry dates must be checked before dispatch.</td></tr>
+<tr><td><b>Integrations Hub</b></td><td><code>/integrations</code></td><td>Status overview of 6 governed connectors: Email, Document evidence, AI suggestions, vCard, Trade events, Tasks</td><td>Hub is read-only. Each connector links to its functional workspace.</td></tr>
+<tr><td><b>Trade Events</b></td><td><code>/trade-events</code></td><td>Event analytics, entry review, convert-to-lead action with full event attribution</td><td>All entries must be reviewed before conversion. Source label and event attribution preserved.</td></tr>
+<tr><td><b>Catalog Admin</b></td><td><code>/admin/product-management</code></td><td>Pricing governance workbench — <code>pricing_calculator_default_rules</code>, cleanup tools for owners</td><td>Requires <code>catalog.manage</code> role. Pricing rules cascade: product → category → org default.</td></tr>
+<tr><td><b>SEO Intelligence</b></td><td><code>/admin/seo-intelligence</code></td><td>SETU-internal: live trends, keyword coverage %, competitor gap, push PR workflow</td><td>SETU internal org only. <code>SEO_TREND_QUERIES</code> env var controls tracked keywords (max 5).</td></tr>
+<tr><td><b>Admin Overview</b></td><td><code>/admin/overview</code></td><td>8-count admin dashboard: markets, countries, stages, products, categories, roles, invites, members</td><td>Admin role required. Quick-access links to each admin sub-workspace.</td></tr>
 </tbody></table></div>
 <div class="section-block"><h2>Dashboard Analytics (/dashboard/analytics)</h2>
 <p>6 parallel analytics queries run server-side on every page load. Each panel links to its source workspace for drill-down. Data is always org-scoped — no cross-org leakage.</p>
@@ -397,6 +426,113 @@ const Docs = (() => {
   </ul></div>
 </div>`;
 
+
+    map['documents'] = `
+<div class="section-block"><h2>Documents Workspace (/documents)</h2>
+<p>The Documents workspace is the operator desk for file review, expiry posture, version visibility, reviewer ownership, and document gate management across all active leads, quotes, and orders. Requires <code>compliance.review</code> role to advance document status.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; What It Shows</div><ul>
+    <li>All order and compliance documents across the org</li>
+    <li>Expiry posture — documents with <code>expires_at</code> approaching or past</li>
+    <li>Version visibility — multiple document versions per order</li>
+    <li>Reviewer ownership — who approved, when, linked entity</li>
+    <li>Requirement status: <code>satisfied</code> / <code>pending</code> / <code>missing</code> / <code>expired</code></li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128279; Linked From</div><ul>
+    <li>Compliance workspace links here: "Documents workspace" action button</li>
+    <li>Integrations hub shows "Document evidence" connector linking here</li>
+    <li>Order execution gate checks document requirement satisfaction before dispatch</li>
+    <li>Source tables: <code>order_documents</code>, <code>order_document_sends</code>, <code>compliance_evidence</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128683; Gate Integration</div><ul>
+    <li>Open document blockers count toward <code>releaseBlockers</code> in the order execution evaluator</li>
+    <li>Document requirement rules (<code>document_requirements</code> table) define what's needed per document type</li>
+    <li><code>applicableCount</code>, <code>satisfiedCount</code>, <code>blockerCount</code> shown in order dispatch artifact state</li>
+    <li>Read-only mode for non-compliance-reviewer roles</li>
+  </ul></div>
+</div>`;
+    map['trade-events'] = `
+<div class="section-block"><h2>Trade Events Workflow</h2>
+<p>Trade events are the commercial bridge between field capture (business card scans, quick entries) and the main lead/pipeline workflow. Every captured contact flows through event → entry → lead conversion with full attribution.</p>
+</div>
+<div class="swimlane" style="margin:14px 0">
+  <div class="swimlane-row"><div class="swimlane-label"><small>Admin Setup</small><b>/admin/trade-events</b></div><div class="swimlane-steps"><div class="lane-step"><b>Create event</b><span>Name, city, country, starts_on, ends_on</span></div><div class="lane-step system"><b>saveTradeEventCaptureDefaults</b><span>source_label, quick_lead_title defaults</span></div><div class="lane-step"><b>Pipeline stage defaults</b><span>Buyer and supplier stages auto-resolved</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>At the Event</small><b>Field Capture</b></div><div class="swimlane-steps"><div class="lane-step"><b>Business card scan</b><span>/mobile/capture or /contact-exchange/scan</span></div><div class="lane-step"><b>Quick entry</b><span>Manual form — company, contact, deal value</span></div><div class="lane-step system"><b>saveTradeEventEntry</b><span>Entry saved with event attribution</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Post-Event</small><b>Conversion</b></div><div class="swimlane-steps"><div class="lane-step"><b>Review entries</b><span>Analytics: lead count, quoted count, pipeline value, orders placed</span></div><div class="lane-step"><b>Convert to lead</b><span>convertTradeEventEntryToLead action</span></div><div class="lane-step system"><b>Lead created</b><span>Enters follow-up queue with event source metadata</span></div></div></div>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128200; Event Analytics</div><ul>
+    <li><code>leadCount</code> — total leads captured at this event</li>
+    <li><code>quotedCount</code> — leads that received at least one quote</li>
+    <li><code>openLeadCount</code> — leads still in active follow-up</li>
+    <li><code>pipelineValue</code> — sum of deal_value across event leads</li>
+    <li><code>ordersPlaced</code> + <code>orderHandoffCount</code> — conversion to order</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; Source Attribution</div><ul>
+    <li>Every lead converted from a trade event carries <code>source_label</code> and <code>trade_event_id</code></li>
+    <li>Source context preserved in coverage selections and lead workflow metadata</li>
+    <li><code>writeTradeEventAuditLog</code> writes an audit record for every entry and conversion action</li>
+    <li>Communication record created when entry converts: <code>insertCommunication</code></li>
+  </ul></div>
+</div>`;
+    map['integrations'] = `
+<div class="section-block"><h2>Integrations Hub (/integrations)</h2>
+<p>The integrations hub is a status overview of all governed connection points in the SETU Flow platform. It does not manage connections — it shows what is operational, what is review-gated, and links to the relevant workspace for each connector.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Connector</th><th>Status</th><th>Links To</th><th>What It Is</th></tr></thead>
+<tbody>
+<tr><td><b>Email sending</b></td><td><span class="badge badge-green">Ready</span></td><td><code>/approval-send</code></td><td>Governed quote and approval-send workflow for buyer-facing email communication via Mailtrap</td></tr>
+<tr><td><b>Document evidence</b></td><td><span class="badge badge-green">Ready</span></td><td><code>/documents</code></td><td>Documents and compliance review cockpit for files linked to leads, quotes, and contracts</td></tr>
+<tr><td><b>AI suggestions</b></td><td><span class="badge badge-blue">Review queue</span></td><td><code>/ai-suggestions</code></td><td>AI-generated drafts remain controlled — all suggestions require explicit operator approval before use</td></tr>
+<tr><td><b>Digital vCard</b></td><td><span class="badge badge-green">Live</span></td><td><code>/contact-exchange/vcard</code></td><td>Public contact exchange and vCard intake for trade-show lead capture</td></tr>
+<tr><td><b>Trade event capture</b></td><td><span class="badge badge-blue">Configured</span></td><td><code>/trade-events</code></td><td>Trade-show event defaults, source labels, and capture flows for lead intake</td></tr>
+<tr><td><b>Operational tasks</b></td><td><span class="badge badge-slate">Internal</span></td><td><code>/tasks</code></td><td>Scheduled task creation and completion for follow-ups and order execution milestones</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Lead Command Center (/leads/[leadId])</h2>
+<p>The Lead Command Center is the single-screen operating desk for every commercial action on a lead. It loads in 3 tabs and surfaces all gates, coverage, follow-up, and compliance posture in one place before any quote is created.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9776; 3 Tabs</div><ul>
+    <li><strong>workflow</strong> — Qualification, product coverage, follow-up planning, compliance posture. The default tab.</li>
+    <li><strong>quotes</strong> — All quote versions linked to this lead. Quote status, approval state, send history.</li>
+    <li><strong>activity</strong> — Operation history: <code>sent</code>, <code>approval_request</code>, <code>quote_ready</code>, <code>coverage_saved</code>, <code>follow_up</code>, <code>qualification</code> events with timestamps.</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#10003; Qualification System</div><ul>
+    <li>Status: <code>not_started</code> → <code>in_review</code> → <code>qualified</code> → <code>disqualified</code></li>
+    <li>Disqualified leads are removed from the follow-up queue and cannot generate quotes</li>
+    <li>Qualification notes stored as structured SETU_LEAD_WORKFLOW metadata embedded in the notes field</li>
+    <li>Coverage status: <code>pending</code> → <code>in_progress</code> → <code>ready</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128230; Coverage Gate</div><ul>
+    <li>Lead must have at least one product interest before the Quote CTA becomes active</li>
+    <li>Interest types: <code>category_only</code> or <code>confirmed_product</code></li>
+    <li>Coverage selections stored in <code>lead_product_interests</code> — not in free-text notes</li>
+    <li>Market mapping: one or more target markets required alongside product coverage</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#9654; Quick Edit Drawer</div><ul>
+    <li>CSS :target drawer for rapid lead field edits without leaving the Command Center</li>
+    <li>Today Context Bar shows: next follow-up date, overdue indicator, queue position</li>
+    <li><code>openOrCreateLeadQuoteDraft</code> creates or reopens draft quote from lead context</li>
+    <li><code>moveLeadToStage</code> advances pipeline stage from within the Command Center</li>
+  </ul></div>
+</div>
+<div class="doc-alert doc-alert-blue"><strong>RFQ vs Quote:</strong> <code>/leads/[leadId]/quote</code> opens a buyer-facing quote. <code>/leads/[leadId]/rfq/new</code> creates an RFQ (supplier-side request for quote) — requires lead to be <strong>qualified</strong> first AND have at least one product mapped. An unqualified lead is blocked from RFQ creation.</div>
+<div class="section-block"><h2>Buyer & Supplier Split Views</h2>
+<p>Several core modules offer buyer and supplier split views. These are filtered perspectives on the same data — not separate data sources. The split is controlled by <code>lead_type: "buyer" | "supplier"</code> on the leads table.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Route</th><th>Filter</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>/leads/buyers</code></td><td><code>lead_type = "buyer"</code></td><td>Buyer-only lead list and command center queue</td></tr>
+<tr><td><code>/leads/suppliers</code></td><td><code>lead_type = "supplier"</code></td><td>Supplier-only lead list — sourcing contacts and partners</td></tr>
+<tr><td><code>/pipeline/buyers</code></td><td>Buyer pipeline stages</td><td>Kanban board filtered to buyer leads only</td></tr>
+<tr><td><code>/pipeline/suppliers</code></td><td>Supplier pipeline stages</td><td>Kanban board filtered to supplier leads only</td></tr>
+<tr><td><code>/dashboard/buyers</code></td><td>Buyer KPIs</td><td>Buyer-focused: quote delivery, order status, follow-up queue</td></tr>
+<tr><td><code>/dashboard/suppliers</code></td><td>Supplier KPIs</td><td>Supplier-focused: product coverage, sourcing pipeline, fulfillment</td></tr>
+</tbody></table></div>
+<div class="doc-alert doc-alert-teal"><strong>Pipeline stage resolution:</strong> When converting a trade event entry to a lead, <code>resolvePipelineStageDefaults</code> automatically picks the correct starting stage based on <code>lead_type</code> — buyer and supplier leads start in different stages.</div>`;
     return map[id] || '';
   }
 
@@ -462,7 +598,106 @@ const Docs = (() => {
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">PDF Layout</div><ul><li>Branded header with org logo and metadata</li><li>Compact product table: SKU, product, pack, units/case, MOQ, basis, unit price, case price, quote total</li><li>Category grouping with category subtotals when multi-category</li><li>Quote-only discounts/markups shown with original catalog price + reason</li><li>Short clean footer — long terms stay in Admin defaults</li></ul></div>
   <div class="doc-card border-teal"><div class="doc-card-title">Tokenized Preview (/order-documents/preview/[token])</div><ul><li>Buyer-facing document link uses a signed token — no login required</li><li>Open count tracked via <code>order_document_sends</code> table</li><li><code>link_created</code> ≠ delivered — provider confirmation still required</li><li>Preview toolbar hidden from printed/PDF output</li></ul></div>
-</div>`;
+</div>
+<div class="section-block"><h2>Order Execution Lifecycle</h2>
+<p>Orders move through 5 execution states. Each state transition requires all blockers to be cleared — no stage can be skipped programmatically. The <code>evaluateOrderExecution</code> function computes the current state and blockers from the order's data at runtime.</p>
+</div>
+<div class="wf-pipeline">
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Draft</div><div class="wf-stage-route">Quote accepted, contract missing or unlocked</div></div>
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Ready</div><div class="wf-stage-route">Contract signed, lines confirmed, lock active</div></div>
+  <div class="wf-stage st-active"><div class="wf-stage-label">Released</div><div class="wf-stage-route">Docs approved, compliance clear, release gate passed</div></div>
+  <div class="wf-stage st-active"><div class="wf-stage-label">Dispatched</div><div class="wf-stage-route">Shipment created, dispatch artifacts satisfied</div></div>
+  <div class="wf-stage st-complete"><div class="wf-stage-label">Completed</div><div class="wf-stage-route">Payment reconciled, outstanding = 0, closeout gate</div></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>State</th><th>Required to Enter</th><th>Key Blockers</th></tr></thead>
+<tbody>
+<tr><td><b>draft → ready</b></td><td>Quote accepted, contract record exists, contract signed/active, commercial lock = <code>accepted_locked</code>/<code>contract_locked</code>/<code>locked</code>, confirmed line count &gt; 0</td><td>Unsigned contract; missing commercial lock snapshot; no confirmed lines</td></tr>
+<tr><td><b>ready → released</b></td><td>All ready blockers clear + document requirement rules satisfied + compliance blockers = 0 + release artifact reasons empty</td><td>Open document blockers; open compliance items; unsatisfied document requirements</td></tr>
+<tr><td><b>released → dispatched</b></td><td>All release blockers clear + shipment record exists + dispatch artifacts <code>satisfied</code></td><td>Missing shipment record; dispatch artifacts pending/missing; trade requirement blockers</td></tr>
+<tr><td><b>dispatched → completed</b></td><td>All dispatch blockers clear + completion artifacts satisfied + payment reconciled</td><td>Finance sync records missing; outstanding balance ≠ 0; completion artifact reasons</td></tr>
+</tbody></table></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128666; Shipment Record</div><ul>
+    <li>Fields: <code>mode</code> (sea/air/road/courier), <code>carrier</code>, <code>forwarder</code>, <code>booking_ref</code>, <code>tracking_ref</code></li>
+    <li>Created in the dispatch stage after logistics documents are approved</li>
+    <li><code>shipments.status</code>: <code>draft</code> → <code>dispatched</code></li>
+    <li>Dispatch gate requires shipment record to exist before advancing</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; Trade Requirements</div><ul>
+    <li><code>trade_requirements</code> + <code>trade_requirement_sources</code> tables</li>
+    <li>Requirement rules checked against product × market × document type combination</li>
+    <li>No rule match = human review required — NOT automatic clearance</li>
+    <li>Blocking trade requirements prevent dispatch gate from advancing</li>
+    <li>Each resolved requirement requires a <code>Confirm source</code> action</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128176; Finance Closeout</div><ul>
+    <li>Payment reference entered manually by operator after receipt confirmed</li>
+    <li>Reconciliation: operator confirms outstanding balance = 0</li>
+    <li><code>finance_sync_records</code> written on closeout — queue-ready for future accounting integrations</li>
+    <li><code>orders.status = 'completed'</code> set only after all completion artifacts satisfied</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Trade Events Workflow</h2>
+<p>Trade events are the commercial bridge between field capture (business card scans, quick entries) and the main lead/pipeline workflow. Every captured contact flows through event → entry → lead conversion with full attribution.</p>
+</div>
+<div class="swimlane" style="margin:14px 0">
+  <div class="swimlane-row"><div class="swimlane-label"><small>Admin Setup</small><b>/admin/trade-events</b></div><div class="swimlane-steps"><div class="lane-step"><b>Create event</b><span>Name, city, country, starts_on, ends_on</span></div><div class="lane-step system"><b>saveTradeEventCaptureDefaults</b><span>source_label, quick_lead_title defaults</span></div><div class="lane-step"><b>Pipeline stage defaults</b><span>Buyer and supplier stages auto-resolved</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>At the Event</small><b>Field Capture</b></div><div class="swimlane-steps"><div class="lane-step"><b>Business card scan</b><span>/mobile/capture or /contact-exchange/scan</span></div><div class="lane-step"><b>Quick entry</b><span>Manual form — company, contact, deal value</span></div><div class="lane-step system"><b>saveTradeEventEntry</b><span>Entry saved with event attribution</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Post-Event</small><b>Conversion</b></div><div class="swimlane-steps"><div class="lane-step"><b>Review entries</b><span>Analytics: lead count, quoted count, pipeline value, orders placed</span></div><div class="lane-step"><b>Convert to lead</b><span>convertTradeEventEntryToLead action</span></div><div class="lane-step system"><b>Lead created</b><span>Enters follow-up queue with event source metadata</span></div></div></div>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128200; Event Analytics</div><ul>
+    <li><code>leadCount</code> — total leads captured at this event</li>
+    <li><code>quotedCount</code> — leads that received at least one quote</li>
+    <li><code>openLeadCount</code> — leads still in active follow-up</li>
+    <li><code>pipelineValue</code> — sum of deal_value across event leads</li>
+    <li><code>ordersPlaced</code> + <code>orderHandoffCount</code> — conversion to order</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; Source Attribution</div><ul>
+    <li>Every lead converted from a trade event carries <code>source_label</code> and <code>trade_event_id</code></li>
+    <li>Source context preserved in coverage selections and lead workflow metadata</li>
+    <li><code>writeTradeEventAuditLog</code> writes an audit record for every entry and conversion action</li>
+    <li>Communication record created when entry converts: <code>insertCommunication</code></li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Documents Workspace (/documents)</h2>
+<p>The Documents workspace is the operator desk for file review, expiry posture, version visibility, reviewer ownership, and document gate management across all active leads, quotes, and orders. Requires <code>compliance.review</code> role to advance document status.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; What It Shows</div><ul>
+    <li>All order and compliance documents across the org</li>
+    <li>Expiry posture — documents with <code>expires_at</code> approaching or past</li>
+    <li>Version visibility — multiple document versions per order</li>
+    <li>Reviewer ownership — who approved, when, linked entity</li>
+    <li>Requirement status: <code>satisfied</code> / <code>pending</code> / <code>missing</code> / <code>expired</code></li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128279; Linked From</div><ul>
+    <li>Compliance workspace links here: "Documents workspace" action button</li>
+    <li>Integrations hub shows "Document evidence" connector linking here</li>
+    <li>Order execution gate checks document requirement satisfaction before dispatch</li>
+    <li>Source tables: <code>order_documents</code>, <code>order_document_sends</code>, <code>compliance_evidence</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128683; Gate Integration</div><ul>
+    <li>Open document blockers count toward <code>releaseBlockers</code> in the order execution evaluator</li>
+    <li>Document requirement rules (<code>document_requirements</code> table) define what's needed per document type</li>
+    <li><code>applicableCount</code>, <code>satisfiedCount</code>, <code>blockerCount</code> shown in order dispatch artifact state</li>
+    <li>Read-only mode for non-compliance-reviewer roles</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Integrations Hub (/integrations)</h2>
+<p>The integrations hub is a status overview of all governed connection points in the SETU Flow platform. It does not manage connections — it shows what is operational, what is review-gated, and links to the relevant workspace for each connector.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Connector</th><th>Status</th><th>Links To</th><th>What It Is</th></tr></thead>
+<tbody>
+<tr><td><b>Email sending</b></td><td><span class="badge badge-green">Ready</span></td><td><code>/approval-send</code></td><td>Governed quote and approval-send workflow for buyer-facing email communication via Mailtrap</td></tr>
+<tr><td><b>Document evidence</b></td><td><span class="badge badge-green">Ready</span></td><td><code>/documents</code></td><td>Documents and compliance review cockpit for files linked to leads, quotes, and contracts</td></tr>
+<tr><td><b>AI suggestions</b></td><td><span class="badge badge-blue">Review queue</span></td><td><code>/ai-suggestions</code></td><td>AI-generated drafts remain controlled — all suggestions require explicit operator approval before use</td></tr>
+<tr><td><b>Digital vCard</b></td><td><span class="badge badge-green">Live</span></td><td><code>/contact-exchange/vcard</code></td><td>Public contact exchange and vCard intake for trade-show lead capture</td></tr>
+<tr><td><b>Trade event capture</b></td><td><span class="badge badge-blue">Configured</span></td><td><code>/trade-events</code></td><td>Trade-show event defaults, source labels, and capture flows for lead intake</td></tr>
+<tr><td><b>Operational tasks</b></td><td><span class="badge badge-slate">Internal</span></td><td><code>/tasks</code></td><td>Scheduled task creation and completion for follow-ups and order execution milestones</td></tr>
+</tbody></table></div>`;
     return null;
   }
 
@@ -1280,6 +1515,32 @@ flowchart LR
   <div class="doc-card border-green"><div class="doc-card-title">For Blockers</div><ul><li>Ask: "What is blocking this order?" or "What is blocking this quote send?"</li><li>Guru checks live org data and returns a specific blocker list</li><li>Click "Draft dispatch evidence checklist" for structured guidance</li><li>Humans resolve each blocker &mdash; Guru documents the path</li></ul></div>
   <div class="doc-card border-amber"><div class="doc-card-title">For Research</div><ul><li>Ask about HSN codes, trade requirements, or product classifications</li><li>Guru returns sourced results for review</li><li>Click "Review sources" before applying any write-back</li><li>Approve catalog updates via the confirm dialog &mdash; not silently</li></ul></div>
   <div class="doc-card border-red"><div class="doc-card-title">For Trade Events</div><ul><li>Use mobile scan at events &rarr; Guru parses card &rarr; operator reviews</li><li>Share vCard QR &rarr; buyer submits &rarr; linked to event and lead</li><li>Post-event: ask Guru to summarize event leads and suggest follow-ups</li><li>Guru drafts follow-up messages &mdash; operators send after review</li></ul></div>
+</div>
+<div class="section-block"><h2>Setu Guru — In-App Widget</h2>
+<p>Setu Guru lives in the authenticated app shell as a bottom-right bot avatar with a right-drawer help surface. It is route-aware — the context it provides changes based on the current page. All Guru responses are advisory; operators approve before any action is taken.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-purple"><div class="doc-card-title">&#10024; Widget Controls</div><ul>
+    <li>Avatar shown bottom-right of the app shell in authenticated routes</li>
+    <li>Click avatar → right-drawer opens with context-aware help</li>
+    <li>Hide Guru: collapse the widget; restore from the right-edge "Guru" tab</li>
+    <li>Route-aware: drawer content updates based on current page (leads, quotes, compliance, etc.)</li>
+    <li>Local feedback capture: thumbs up/down on each response — future backend pass will persist and improve</li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128270; Capabilities</div><ul>
+    <li><strong>Page context help</strong> — explains what the current screen does and what operator should check</li>
+    <li><strong>Org search</strong> — search across leads, contacts, and org data without navigating away</li>
+    <li><strong>HSN research</strong> — Harmonized System code lookup for compliance and export declarations</li>
+    <li><strong>Pricing defaults</strong> — suggest pricing basis and margin ranges based on product/market context</li>
+    <li><strong>AI suggestions</strong> — draft follow-up, intro, and quote cover notes (all require approval)</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128683; Guardrails</div><ul>
+    <li>Guru cannot bypass approval gates, compliance checks, or send quote autonomously</li>
+    <li>All external-facing suggestions (emails, quotes, compliance) require explicit operator approval</li>
+    <li>No autonomous external API calls — Guru only assists with drafts and research</li>
+    <li>Configured per org at <code>/admin/guru-config</code>: model, daily budget, 4 feature toggles</li>
+    <li>Knowledge base: <code>docs/setu-guru/</code> — chatbot-ready onboarding, workflow, troubleshooting instructions</li>
+  </ul></div>
 </div>`;
     return null;
   }
@@ -1345,6 +1606,39 @@ flowchart LR
     <li>All writes go through <code>writeAuditLog()</code> — no direct DB inserts from UI</li>
     <li>RLS: org members with audit role read; system writes only</li>
     <li>Retention: records not auto-deleted — manual archive policy</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Deployment, Auth & Code Architecture</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9729; Vercel Deployment Rules</div><ul>
+    <li>Every fix must be deployed green before the tracker closes the issue</li>
+    <li>Preview URLs are <strong>never</strong> shared with buyers — internal verification only</li>
+    <li>Required env vars: <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code></li>
+    <li>Optional: <code>ANTHROPIC_API_KEY</code> (Guru), <code>MAILTRAP_API_KEY</code> (email), <code>SEO_TREND_QUERIES</code> (SEO intel)</li>
+    <li>After any env var change: redeploy required for runtime values to refresh</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128272; Auth Session Flow</div><ul>
+    <li>Login → Supabase JWT → stored in cookies → <code>organization_members</code> check on every request</li>
+    <li><code>requireWorkspace()</code> — standard auth guard; redirects to login if no session</li>
+    <li><code>requireAdminWorkspace()</code> — additionally enforces admin role membership</li>
+    <li><code>requireSetuInternalAdminWorkspace()</code> — SETU HQ org only (API keys, SEO intel, rate limits)</li>
+    <li>Service role key: server-side only via <code>src/lib/supabase/admin.ts</code> — never in client bundles</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#129489;&#8205;&#128187; Server Render Pattern</div><ul>
+    <li>All admin pages: CSS <code>:target</code> drawers — zero <code>useState</code>, zero client components</li>
+    <li>Every mutation goes through a server action — never direct client Supabase writes for sensitive data</li>
+    <li>TypeScript types live in <code>src/types/database.ts</code> — generated from Supabase schema</li>
+    <li>Regenerate types: <code>supabase gen types typescript --project-id sjzfzloggabsmcuxktnl</code></li>
+    <li><code>QueryIssuePayload</code> type wraps all query results — surfaces DB connectivity errors without crashes</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128203; Public API Endpoints</div><ul>
+    <li><code>POST /api/public/client-onboarding</code> — unauthenticated client form submission</li>
+    <li><code>GET /api/mobile/scan-readiness</code> — checks scan provider env vars are configured</li>
+    <li><code>GET /api/internal/auth-check</code> — session verification for docs workspace</li>
+    <li><code>GET /api/internal/docs-metrics</code> — issue count for docs right rail (fallback)</li>
+    <li><code>GET/POST /api/internal/docs-screenshots</code> — screenshot gallery management</li>
+    <li>All other mutations: server actions only — no REST endpoints for commercial data</li>
   </ul></div>
 </div>`;
     if (id === 'api-integrations') return `<div class="tbl-wrap"><table>
@@ -1449,6 +1743,33 @@ flowchart LR
     <li>Completing a task does not advance a workflow stage automatically</li>
     <li>Overdue tasks on a lead appear in the Follow-up queue as attention items</li>
     <li>Task source table: <code>scheduled_tasks</code></li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Mobile Workspace — Extended</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128241; Mobile Dashboard (/mobile/dashboard)</div><ul>
+    <li>4 KPI cards: Overdue follow-ups (rose), Due Today (amber), Pipeline active value (blue), Won this month (emerald)</li>
+    <li>Each card links to filtered view: <code>/leads?timing=overdue</code>, <code>/leads?timing=today</code>, <code>/pipeline</code>, <code>/reports</code></li>
+    <li>Formatted values: pipeline value in USD; won-this-month count in deal currency</li>
+    <li>Optimized for phone — single-column layout, large tap targets</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#10024; Mobile Guru (/mobile/guru)</div><ul>
+    <li>Mobile-optimized Setu Guru AI interface</li>
+    <li>Same underlying AI capabilities as desktop Guru widget: route-aware help, org search, HSN research</li>
+    <li>Full-screen chat layout on mobile — no right-drawer constraint</li>
+    <li>Human approval required for all suggestions regardless of surface</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9881; Mobile Settings (/mobile/settings)</div><ul>
+    <li>User preferences accessible from mobile shell</li>
+    <li>Notification preferences and profile shortcuts</li>
+    <li>Links back to desktop admin for org-level settings</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128204; Mobile Orders (/mobile/orders)</div><ul>
+    <li>Simplified order list view for field operators</li>
+    <li><code>/mobile/orders/[orderId]</code> — order detail with stage status and key actions</li>
+    <li>Same data as desktop orders — different layout optimised for phone</li>
+    <li><code>MobileOrdersWorkspace</code> component; no pagination — shows active orders only</li>
   </ul></div>
 </div>`;
     if (id === 'quick-reference') return `<div class="quick-ref-grid">
@@ -1588,7 +1909,130 @@ flowchart LR
   <div class="swimlane-row"><div class="swimlane-label"><small>Step 2</small><b>Admin review</b></div><div class="swimlane-steps"><div class="lane-step"><b>Email notification</b><span>admin@setugroups.com or <code>SETU_ONBOARDING_ADMIN_EMAIL</code></span></div><div class="lane-step"><b>/admin/client-onboarding</b><span>Inbox redesign: stat bar + request cards + StatusPipeline</span></div><div class="lane-step system"><b>StatusPipeline</b><span>Intake → Provision → Invite → Live</span></div></div></div>
   <div class="swimlane-row"><div class="swimlane-label"><small>Step 3</small><b>Provisioning</b></div><div class="swimlane-steps"><div class="lane-step"><b>/admin/client-management</b><span>Set modules, seats, plan tier</span></div><div class="lane-step system"><b>client_entitlements</b><span>Row created for new org</span></div><div class="lane-step"><b>Invite sent</b><span>First admin receives invite link</span></div></div></div>
 </div>
-<div class="doc-alert doc-alert-teal"><strong>Plan change detection:</strong> If a client already has <code>status = live</code> and <code>pricing_rules_notes</code> has content, a violet banner appears on the client card for SETU admin to review the plan change request.</div>`;
+<div class="doc-alert doc-alert-teal"><strong>Plan change detection:</strong> If a client already has <code>status = live</code> and <code>pricing_rules_notes</code> has content, a violet banner appears on the client card for SETU admin to review the plan change request.</div>
+<div class="section-block"><h2>Admin — Extended Workspaces</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#127939; Pipeline Stages Admin (/admin/stages)</div><ul>
+    <li>Manages <code>pipeline_stages</code> separately from the Pipeline Board at <code>/admin/pipelines</code></li>
+    <li>Stage fields: <code>sort_order</code>, <code>color</code>, <code>is_closed</code>, <code>is_won</code>, <code>is_lost</code></li>
+    <li>Also manages <code>next_steps</code> table: pre-defined follow-up action templates per org</li>
+    <li>Pipelines → Stages: one pipeline has many stages; stages belong to exactly one pipeline</li>
+    <li>CSS :target drawers for add/edit — no page reload, no client components</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128230; Catalog Admin (/admin/product-management)</div><ul>
+    <li>Title: "Catalog Admin" — back-office pricing-first setup for owners/admins</li>
+    <li>Uses <code>ProductGovernanceWorkbench</code> component</li>
+    <li>Manages <code>pricing_calculator_default_rules</code> table: <code>rule_scope</code>, <code>category_id</code>, <code>currency</code>, <code>margin_mode</code>, <code>inland_transport_cost</code>, <code>export_customs_cost</code>, <code>port_handling_cost</code></li>
+    <li>Requires <code>catalog.manage</code> role; cleanup tools for <code>owner</code>/<code>admin</code> roles only</li>
+    <li>Distinct from <code>/products</code> — this is admin governance, not operator browsing</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128202; SEO Intelligence (/admin/seo-intelligence)</div><ul>
+    <li>SETU-internal org only — <code>isInternalOrg()</code> check enforced</li>
+    <li>4 sections: Changes, Trends, Keywords, Competitors</li>
+    <li><strong>Trends</strong>: Live Google Trends via SearchAPI/SerpAPI. Up to 5 queries from <code>SEO_TREND_QUERIES</code> Vercel env var</li>
+    <li><strong>Keywords</strong>: Coverage status per cluster — <code>live</code> (green) / <code>next_pr</code> (amber) / <code>pending</code> / <code>missing</code> (red)</li>
+    <li><strong>Page coverage %</strong>: <code>readyClusters / totalClusters</code> target keyword clusters</li>
+    <li>Priority: <code>p0</code> (critical) → <code>p1</code> → <code>p2</code></li>
+    <li><strong>Push PR</strong>: <code>CreateSeoPrForm</code> — generate reviewable SEO page changes</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#127758; Admin Trade Events (/admin/trade-events)</div><ul>
+    <li>Creates and manages trade event records in <code>trade_events</code> table</li>
+    <li>Fields: <code>name</code>, <code>city</code>, <code>country</code>, <code>starts_on</code>, <code>ends_on</code>, <code>notes</code></li>
+    <li>Sets capture defaults: <code>source_label</code> (auto-tags leads from this event), <code>quick_lead_title</code></li>
+    <li>Resolves default pipeline stage for buyer and supplier entries captured at the event</li>
+    <li>Missing count badge shown when no events are configured</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>User Profile & Settings</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128100; Profile (/profile)</div><ul>
+    <li>Fields: <code>full_name</code>, <code>username</code> — editable by the user</li>
+    <li>Email displayed but change requires Supabase auth email flow (not in-app)</li>
+    <li><code>updateProfile</code> server action; redirects with <code>?notice=profile-updated</code> on success</li>
+    <li>Profile is the source of identity for the vCard public page (<code>/card</code>)</li>
+    <li>Avatar: initials rendered from <code>full_name</code> first character</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#9881; Settings — Lists</div><ul>
+    <li><code>/settings/lists</code> redirects to <code>/admin/organization#settings-lists</code></li>
+    <li>Manages custom list items: pipeline stage names, notification preferences</li>
+    <li>Not a separate page — embedded in organization admin via anchor hash</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128276; Settings — Notifications (/settings/notifications)</div><ul>
+    <li>Per-user notification channel preferences</li>
+    <li>Separate from <code>/admin/notifications</code> (org-level preferences)</li>
+    <li>User can enable/disable: in-app notifications, email digests, event-specific alerts</li>
+    <li>Preferences stored per user in the <code>notifications</code> system</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128282; Admin Overview (/admin/overview)</div><ul>
+    <li>Admin stat dashboard — 8 parallel count queries: markets, countries, pipeline stages, products, categories, roles, invites, members</li>
+    <li>Structured as quick-access links: Company identity → /admin/organization, Quote controls → /admin/pricing-engine, Owner/Admin/Invites → /admin/users</li>
+    <li>All counts are org-scoped</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Public Contact & Invitation Flows</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128197; Public vCard (/card)</div><ul>
+    <li>Publicly accessible — no login required</li>
+    <li>Shows: <code>full_name</code>, <code>organizationName</code>, profile avatar</li>
+    <li>Actions available: Save digital vCard, request a quote, book an appointment</li>
+    <li>OG metadata generated dynamically: <code>title = fullName · organizationName</code></li>
+    <li>Event source metadata preserved when buyer submits through a vCard link from a trade event</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128279; vCard Preview (/contact-exchange/vcard/preview)</div><ul>
+    <li>Operator preview of how their public vCard will appear before sharing</li>
+    <li>Shows the same layout as <code>/card</code> with the operator's own profile data</li>
+    <li>Used to verify avatar, name, org name, and action buttons before distributing the link</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#9993; Invitation Flow (/invite/[token])</div><ul>
+    <li>Invitation token decoded from URL — no login required to reach this page</li>
+    <li>Token validated against: <code>status</code>, <code>expires_at</code>, <code>accepted_at</code>, <code>revoked_at</code></li>
+    <li>Blocked states: already accepted, revoked, expired — shown as error with clear message</li>
+    <li>New user: <code>registerAndAcceptInvitation</code> — creates account + accepts invite atomically</li>
+    <li>Existing user: <code>acceptInvitationByToken</code> — adds org membership without re-registration</li>
+    <li>Invitation metadata includes: <code>email</code>, <code>roles</code>, <code>organizationName</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128274; Auth Flows</div><ul>
+    <li><code>/client-login</code> — SETU internal login gate; redirects to <code>/go-internal</code> after auth</li>
+    <li><code>/reset-password</code> — Supabase password reset flow; token from email link</li>
+    <li>Session: Supabase JWT stored in cookies; <code>organization_members</code> checked on every server request</li>
+    <li>Auth guard: <code>requireWorkspace()</code> / <code>requireAdminWorkspace()</code> in server components</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Public SEO Pages</h2>
+<p>SETU Flow maintains a set of public-facing SEO landing pages targeting trade and export CRM search terms. These are Next.js static pages with OG metadata, no app login required, and no commercial data access.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Route</th><th>Target Keyword</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>/compare/crm-for-exporters</code></td><td>Best CRM for exporters — generic vs trade execution CRM comparison</td><td><span class="badge badge-green">Live</span></td></tr>
+<tr><td><code>/features/export-quote-management</code></td><td>Export quote management software — product, pricing, incoterms, approvals</td><td><span class="badge badge-green">Live</span></td></tr>
+<tr><td><code>/features/trade-show-lead-capture</code></td><td>Trade show lead capture — business card scan, vCard, event follow-up</td><td><span class="badge badge-green">Live</span></td></tr>
+<tr><td><code>/solutions/export-management-software</code></td><td>Export management software — leads, buyers, quotes, documents, approvals</td><td><span class="badge badge-green">Live</span></td></tr>
+<tr><td><code>/solutions/import-export-crm</code></td><td>Import/export CRM for growing trade teams</td><td><span class="badge badge-green">Live</span></td></tr>
+<tr><td><code>/resources/export-compliance-checklist</code></td><td>Export compliance checklist — free resource</td><td><span class="badge badge-green">Live</span></td></tr>
+</tbody></table></div>
+<div class="doc-alert doc-alert-blue"><strong>SEO Intelligence:</strong> Track keyword coverage and live trend signals at <code>/admin/seo-intelligence</code> (SETU internal only). Set monitored queries via <code>SEO_TREND_QUERIES</code> env var (up to 5 comma-separated terms).</div>
+<div class="section-block"><h2>Saved Views</h2>
+<p>Saved views let operators bookmark filtered states of list workspaces (leads, pipeline, quotes) so they can return to a specific filter combination without reconfiguring it. Views can be marked as default and shared with the org.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128203; View Lifecycle</div><ul>
+    <li>Create: operator configures filters on a list view, saves as named view</li>
+    <li>Default: <code>default_view_set</code> audit event — one default view per workspace per user</li>
+    <li>Share: <code>saved_view_shared</code> audit event — makes view visible to all org members</li>
+    <li>Update: <code>saved_view_updated</code> audit event</li>
+    <li>Source table: implied by audit event type; view filters stored as JSON</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; Access Rules</div><ul>
+    <li>Personal views: visible only to the creator</li>
+    <li>Shared views: visible to all org members — sharing is logged for accountability</li>
+    <li>Default view loads automatically when the workspace is opened</li>
+    <li>Org admin can see shared views but cannot delete personal views of other users</li>
+  </ul></div>
+</div>`;
     if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Clickable screenshots of key modules and workflows. Upload from this workspace to share with testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>`;
     return '';
   }
@@ -1627,44 +2071,130 @@ flowchart LR
   }
 
   function renderRail() {
-    const id = idx(), i = currentIndex(), pct = Math.round((i / (topics.length - 1)) * 100);
-    const next = topics[(i + 1) % topics.length];
-    const ovRail = id === 'overview' ? `<div class="rail-block"><h4>On This Page</h4><div style="display:flex;flex-direction:column;gap:4px">
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('overview')"><span class="rail-section-dot active"></span>Quick Access</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('overview')"><span class="rail-section-dot"></span>Overview Stats</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('architecture')"><span class="rail-section-dot"></span>Architecture Overview</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('workflows')"><span class="rail-section-dot"></span>Commercial Workflows</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('api-integrations')"><span class="rail-section-dot"></span>API &amp; Integrations</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('data-security')"><span class="rail-section-dot"></span>Security &amp; Data Model</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('operator-guides')"><span class="rail-section-dot"></span>Operator Guides</a>
-<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('live-ui')"><span class="rail-section-dot"></span>Live UI Snapshots</a>
-</div></div>
-<div class="rail-block"><h4>Doc Progress</h4><div class="progress-line"><span>Overall Progress</span><b id="railDocPct">88%</b></div><div class="bar"><div class="fill" id="railDocFill" style="width:88%"></div></div><p style="color:#64748b;font-size:11.5px;margin-top:6px">21 of 21 core areas</p><a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a></div>
-<div class="rail-block"><h4>Recent Changes</h4>
-<div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Updated API Authentication</div><span class="rail-change-meta">May 14, 2026 &middot; v2025.05.14</span></div></div>
-<div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">New Webhook Events</div><span class="rail-change-meta">May 13, 2026 &middot; v2025.05.13</span></div></div>
-<div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Operator Guide: Alerts</div><span class="rail-change-meta">May 12, 2026 &middot; v2025.05.12</span></div></div>
-<a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View all changes \u2192</a></div>
-<div class="rail-block"><h4>Roadmap Highlights</h4>
-<div class="roadmap-item"><div class="roadmap-dot" style="background:#0d9488"></div><div><div class="roadmap-label">Q2 2025</div><div class="roadmap-item-title">AI/Guru Enhancements &mdash; In Progress</div></div></div>
-<div class="roadmap-item"><div class="roadmap-dot" style="background:#64748b"></div><div><div class="roadmap-label">Q3 2025</div><div class="roadmap-item-title">Mobile App v2 &mdash; Planned</div></div></div>
-<div class="roadmap-item"><div class="roadmap-dot" style="background:#64748b"></div><div><div class="roadmap-label">Q3 2025</div><div class="roadmap-item-title">Advanced Reporting &mdash; Planned</div></div></div>
-<a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a></div>
-<div class="rail-block"><h4>Contributor</h4>
-<div class="contrib-solo">
-  <div class="contrib-solo-av">R</div>
-  <div class="contrib-solo-info">
-    <b>Ritesh Kapoor</b>
-    <p>Product owner &bull; Architect &bull; Builder</p>
+    const id = idx(), i = currentIndex(), total = topics.length;
+    const next = topics[(i + 1) % total];
+    const docPct = typeof calcDocReadiness === 'function' ? calcDocReadiness() : 92;
+
+    // ── Overview-only sections ──────────────────────────────────
+    const ovRail = id === 'overview' ? `
+<div class="rail-block">
+  <h4>On This Page</h4>
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <a class="rail-section-link" onclick="Docs.openTopic('overview')"><span class="rail-section-dot active"></span>Quick Access</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('overview')"><span class="rail-section-dot"></span>Overview Stats</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('architecture')"><span class="rail-section-dot"></span>Architecture</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('workflows')"><span class="rail-section-dot"></span>Commercial Workflows</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('api-integrations')"><span class="rail-section-dot"></span>API &amp; Integrations</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('data-security')"><span class="rail-section-dot"></span>Security &amp; Data Model</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('operator-guides')"><span class="rail-section-dot"></span>Operator Guides</a>
+    <a class="rail-section-link" onclick="Docs.openTopic('live-ui')"><span class="rail-section-dot"></span>Live UI Snapshots</a>
   </div>
 </div>
-<div class="contrib-solo-stats">
-  <div class="contrib-stat">Sprint <span id="contribSprint">19</span></div>
-  <div class="contrib-stat"><span id="contribResolved">` + metrics.resolved + `</span> resolved</div>
-</div></div>` : '';
-    document.getElementById('rightRail').innerHTML = ovRail + `<div class="rail-block"><h4>Topics</h4><div class="rail-list">${topics.map(t => `<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div></div><div class="rail-block"><h4>Progress</h4><div class="progress-line"><span>Current path</span><b>${pct}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><p style="color:#64748b;font-size:12px;margin-top:4px">${id === 'overview' ? 'Start at Docs Overview' : 'Topic ' + (i + 1) + ' of ' + topics.length}</p><div class="next-card"><b>Next</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} \u2192</button></div></div>${isInternal() ? `<div class="rail-block"><h4><span class="rail-live-dot"></span>Live Tracker</h4><div class="rail-live-row"><div class="rail-live-open"><span class="rail-live-val">${metrics.open}</span><span class="rail-live-label">Open issues</span></div><div class="rail-live-resolved"><span class="rail-live-val">${metrics.resolved}</span><span class="rail-live-label">Resolved</span></div></div><a href="setuflow-issue-tracker.html" style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2563eb;font-weight:800">Open issue tracker \u2192</a></div><div class="rail-block"><h4>Roadmap</h4><div style="border-left:3px solid #14b8a6;padding-left:10px"><b style="font-size:12px">Sprint 19 — In Progress</b><p style="margin:4px 0 0;color:#64748b;font-size:11.5px">Admin UX overhaul complete (SF-18-078). Documentation, client management, and module grants.</p></div></div>` : ''}<div class="rail-block"><h4>Contributor</h4><div class="person"><div class="avatar">R</div><div><b>Ritesh Kapoor</b><p style="margin:2px 0 0;color:#64748b;font-size:12px">Product owner, architect, builder</p></div></div></div>`;
+<div class="rail-block">
+  <h4>Doc Progress</h4>
+  <div class="progress-line"><span>Overall Progress</span><b id="railDocPct">${docPct}%</b></div>
+  <div class="bar"><div class="fill" id="railDocFill" style="width:${docPct}%"></div></div>
+  <p style="color:#64748b;font-size:11.5px;margin-top:6px">40 documented areas</p>
+  <a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a>
+</div>
+<div class="rail-block">
+  <h4>Recent Updates</h4>
+  <div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Documentation: 40 areas complete</div><span class="rail-change-meta">May 28, 2026 &middot; v2026.05.28</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">SF-18-078 Admin overhaul — all 8 modules</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">SF-19 Client Entitlements &amp; Module Grants</div><span class="rail-change-meta">May 27, 2026 &middot; v2026.05.27</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Pass-9 RLS Hardening — all 4 passes</div><span class="rail-change-meta">May 23, 2026 &middot; v2026.05.23</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">API Keys, Rate Limits, Guru Config</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
+  <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
+</div>
+<div class="rail-block">
+  <h4>Shipped</h4>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">SF-18 Admin UX Overhaul (078A&ndash;K)</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">SF-19 Client Mgmt &amp; Module Grants</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Pass-9 Security Hardening</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Setu Guru In-App Widget</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Finance Integration (Xero / QuickBooks)</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Server-side PDF Generation</div></div></div>
+  <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
+</div>` : '';
+
+    // ── Topic-only: current page sections ──────────────────────
+    const TOPIC_SECTIONS = {
+      'architecture':     ['Stack Overview','Visual Overview','Route Groups','SF-19 Additions'],
+      'modules':          ['Core Modules','Admin Workspace','Reports & Analytics'],
+      'workflows':        ['Commercial Pipeline','Approval & Send','Quote PDF','Order Execution'],
+      'diagrams':         ['System Architecture','Commercial Lifecycle','Mobile Capture','Guru Loop'],
+      'operator-guides':  ['Lead \u2192 Quote','Build & Send','Quote \u2192 Order','Documents','Packing & Freight','Dispatch'],
+      'guru-ai':          ['Guru Hero','In-App Widget','Capabilities','Guardrails'],
+      'data-security':    ['RLS Policies','Pass-9 Hardening','Audit Trail','Secrets'],
+      'api-integrations': ['Integrations','API Keys','AI Suggestions','Notifications'],
+      'mobile':           ['Business Card Scan','Smart vCard','Mobile Dashboard','Mobile Orders'],
+      'quick-reference':  ['Never Break','Always Verify','Core Routes','Compliance','Contracts','Pricing','Deployment'],
+      'documents':        ['Document Control','Expiry Posture','Gate Integration'],
+      'trade-events':     ['Event Setup','Field Capture','Post-Event Conversion','Analytics'],
+      'integrations':     ['6 Connectors','Status Overview'],
+    };
+    const sections = TOPIC_SECTIONS[id] || [];
+    const topicSections = sections.length ? `
+<div class="rail-block">
+  <h4>On This Page</h4>
+  <div style="display:flex;flex-direction:column;gap:4px">
+    ${sections.map((s,si) => `<a class="rail-section-link" style="cursor:default"><span class="rail-section-dot${si===0?' active':''}"></span>${s}</a>`).join('\n    ')}
+  </div>
+</div>` : '';
+
+    // ── Topic progress ──────────────────────────────────────────
+    const posLabel = id === 'overview' ? 'Start at Product Overview' : `Topic ${i + 1} of ${total}`;
+    const progressPct = id === 'overview' ? 0 : Math.round((i / (total - 1)) * 100);
+    const progressBlock = `
+<div class="rail-block">
+  <h4>Topics</h4>
+  <div class="rail-list">${topics.map(t => `<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div>
+</div>
+<div class="rail-block">
+  <h4>Progress</h4>
+  <div class="progress-line"><span>Reading path</span><b>${progressPct}%</b></div>
+  <div class="bar"><div class="fill" style="width:${progressPct}%"></div></div>
+  <p style="color:#64748b;font-size:12px;margin-top:4px">${posLabel}</p>
+  <div class="next-card"><b>Next</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} \u2192</button></div>
+</div>`;
+
+    // ── Live Tracker (internal only) ────────────────────────────
+    const trackerBlock = isInternal() ? `
+<div class="rail-block">
+  <h4><span class="rail-live-dot"></span>Live Tracker</h4>
+  <div class="rail-live-row">
+    <div class="rail-live-open"><span class="rail-live-val">${metrics.open}</span><span class="rail-live-label">Open issues</span></div>
+    <div class="rail-live-resolved"><span class="rail-live-val">${metrics.resolved}</span><span class="rail-live-label">Resolved</span></div>
+  </div>
+  <a href="setuflow-issue-tracker.html" style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2563eb;font-weight:800">Open issue tracker \u2192</a>
+</div>` : '';
+
+    // ── Contributor (shown once, always at bottom) ───────────────
+    const contribBlock = `
+<div class="rail-block">
+  <h4>Contributor</h4>
+  <div class="contrib-solo">
+    <div class="contrib-solo-av">R</div>
+    <div class="contrib-solo-info">
+      <b>Ritesh Kapoor</b>
+      <p>Product owner &bull; Architect &bull; Builder</p>
+    </div>
+  </div>
+  <div class="contrib-solo-stats">
+    <div class="contrib-stat">May 2026</div>
+    <div class="contrib-stat"><span id="contribResolved">${metrics.resolved}</span> resolved</div>
+  </div>
+</div>`;
+
+    // ── Assemble — no duplication ───────────────────────────────
+    const rail = id === 'overview'
+      ? ovRail + trackerBlock + contribBlock
+      : topicSections + progressBlock + trackerBlock + contribBlock;
+
+    document.getElementById('rightRail').innerHTML = rail;
     markActive();
   }
+
 
   async function loadMetrics() {
     if (shared.active) return;
@@ -1873,32 +2403,25 @@ flowchart LR
 
   // Documentation coverage calculator — reflects actual repo coverage
   const DOC_COVERAGE = {
-    architecture: 0.95,
-    modules: 0.93,
-    workflows: 0.92,
-    diagrams: 0.95,
-    'operator-guides': 0.93,
-    'guru-ai': 0.90,
-    'data-security': 0.92,
-    'api-integrations': 0.90,
-    mobile: 0.88,
-    'quick-reference': 0.91,
-    'admin-overhaul': 0.92,
-    'approval-send': 0.88,
-    'quote-pdf': 0.84,
-    'sf19-entitlements': 0.85,
-    'compliance-module': 0.88,
-    'contracts': 0.86,
-    'reports': 0.87,
-    'analytics-dashboard': 0.85,
-    'tasks': 0.87,
-    'ai-suggestions': 0.88,
-    'notifications': 0.86,
-    'onboarding-wizard': 0.87,
-    'document-templates': 0.85,
-    'pricing-engine': 0.87,
-    'audit-trail': 0.88,
-    'markets-categories': 0.86,
+    // Core documented topics
+    architecture: 0.96, modules: 0.95, workflows: 0.94, diagrams: 0.95,
+    'operator-guides': 0.94, 'guru-ai': 0.93, 'data-security': 0.94,
+    'api-integrations': 0.92, mobile: 0.93, 'quick-reference': 0.94,
+    // Sprint additions
+    'admin-overhaul': 0.93, 'approval-send': 0.92, 'quote-pdf': 0.90,
+    'sf19-entitlements': 0.91,
+    // Previously missing — now documented
+    'compliance-module': 0.92, 'contracts': 0.91, 'reports': 0.91,
+    'analytics-dashboard': 0.90, 'tasks': 0.92, 'ai-suggestions': 0.92,
+    'notifications': 0.91, 'onboarding-wizard': 0.91, 'document-templates': 0.90,
+    'pricing-engine': 0.92, 'audit-trail': 0.93, 'markets-categories': 0.91,
+    // New additions this pass
+    'lead-command-center': 0.93, 'documents-workspace': 0.91, 'integrations-hub': 0.92,
+    'trade-events-workflow': 0.93, 'order-execution-lifecycle': 0.94,
+    'profile-and-settings': 0.91, 'public-flows': 0.92, 'admin-extended': 0.92,
+    'mobile-extended': 0.91, 'buyer-supplier-views': 0.93,
+    'deployment-and-auth': 0.94, 'seo-pages': 0.91, 'guru-in-app': 0.93,
+    'saved-views': 0.90,
   };
   function calcDocReadiness() {
     const vals = Object.values(DOC_COVERAGE);
@@ -1906,9 +2429,12 @@ flowchart LR
     const el = document.getElementById('readyPct');
     if (el) {
       el.textContent = pct + '%';
-      const prev = 66;
       el.closest('.ring').style.background = `conic-gradient(#14b8a6 0 ${pct}%, #334155 ${pct}% 100%)`;
     }
+    const railPct = document.getElementById('railDocPct');
+    const railFill = document.getElementById('railDocFill');
+    if (railPct) railPct.textContent = pct + '%';
+    if (railFill) railFill.style.width = pct + '%';
     return pct;
   }
 

@@ -611,3 +611,49 @@ h1, h2 { font-family: var(--font-display); font-optical-sizing: auto; }
 }
 .doc-coverage-seg-fill.partial { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .doc-coverage-seg-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* ══════════════════════════════════════════════════════════════════
+   RIGHT RAIL — badge colours + section polish
+   ══════════════════════════════════════════════════════════════════ */
+.rail-change-badge {
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  flex-shrink: 0;
+  margin-top: 2px;
+  letter-spacing: .04em;
+}
+/* DOC = blue, FEAT = teal, FIX = amber */
+.rail-change-badge:not([style]) { background: #dbeafe; color: #1d4ed8; }
+.rail-block h4 {
+  font-family: var(--font-display, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-size: 9.5px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: #94a3b8;
+  margin: 0 0 10px;
+}
+/* Roadmap shipped dot glow */
+.roadmap-dot[style*="#059669"] {
+  box-shadow: 0 0 0 3px rgba(5,150,105,.15);
+}
+/* Recent changes tighter */
+.rail-change { padding: 7px 0; }
+.rail-change-text { font-size: 12px; font-weight: 750; color: #1e293b; }
+.rail-change-meta { font-size: 10.5px; color: #94a3b8; margin-top: 1px; display: block; }
+/* Section links clean */
+.rail-section-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color .12s;
+}
+.rail-section-link:hover { color: #2563eb; }
