@@ -162,6 +162,14 @@ const Docs = (() => {
     <div class="metric-badge latest">Latest</div>
   </div>
 </section>
+<div class="arch-highlight" onclick="Docs.openTopic('architecture')">
+  <div class="arch-highlight-icon">&#9874;</div>
+  <div class="arch-highlight-text">
+    <h3>System Architecture — Detailed View</h3>
+    <p>Operators &rarr; Frontend routes &rarr; Server actions &rarr; Supabase &rarr; Document engine &amp; integrations. Risks and gaps flagged.</p>
+  </div>
+  <div class="arch-highlight-arrow">&#8599;</div>
+</div>
 <div class="overview-title">
   <div>
     <h2>Product overview and guided topics</h2>
@@ -201,7 +209,7 @@ const Docs = (() => {
   function topicContent(id) {
     const map = {};
 
-    map['architecture'] = `<div class="pro-grid">
+    map['architecture'] =     map['architecture'] = `<div class="arch-tabs"><button class="arch-tab arch-active" onclick="Docs.switchArchTab(0)">Stack Overview</button><button class="arch-tab" onclick="Docs.switchArchTab(1)">Detailed Architecture</button></div><div class="arch-panel arch-active"><div class="arch-tabs"><button class="arch-tab arch-active" onclick="Docs.switchArchTab(0)">Stack Overview</button><button class="arch-tab" onclick="Docs.switchArchTab(1)">&#128443; Detailed Architecture</button></div><div class="arch-panel arch-active"><div class="pro-grid">
   <div class="pro-card"><b>App Shell</b><p>Next.js App Router with server-rendered workspaces, focused client components, and route contracts for every CRM module. All screens represent workflow states and gates.</p></div>
   <div class="pro-card"><b>Data Boundary</b><p>Supabase Postgres with organization-scoped RLS. Every server action must filter by <code>organization_id</code>. No cross-org leakage permitted. RLS is the final enforcement layer.</p></div>
   <div class="pro-card"><b>Integration Boundary</b><p>Email, WhatsApp, freight, finance, and AI integrations stay adapter-backed and auditable. No live external provider call from UI code without an approved adapter.</p></div>
@@ -236,7 +244,132 @@ const Docs = (() => {
 <tr><td><code>/mobile/*</code></td><td>Mobile Workspace</td><td>Business card scan, smart vCard, field capture, mobile leads/quotes</td></tr>
 <tr><td><code>/contact-exchange/scan</code></td><td>Capture</td><td>Business card scan — creates reviewable lead drafts</td></tr>
 <tr><td><code>/order-documents/preview/[token]</code></td><td>Document Preview</td><td>Tokenized buyer-facing document preview — tracks open count</td></tr>
-</tbody></table></div>`;
+</tbody></table></div></div><div class="arch-panel"><div class="section-block"><h2>System Architecture — Detailed View</h2><p>Five-column view showing how operators, frontend routes, server actions, Supabase, and document/integration layers connect. Risks and known gaps are flagged inline.</p></div><div class="arch-swim">
+  <!-- Col 1: Operators -->
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#0f172a;color:white"><h4>Operators</h4><p>Who acts</p></div>
+    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Sales</b><small>Quote &bull; Lead</small></div>
+    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Operations</b><small>Orders &bull; Docs</small></div>
+    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Admin</b><small>Org &bull; Roles</small></div>
+    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Mobile</b><small>Capture &bull; vCard</small></div>
+  </div>
+  <!-- Col 2: Next.js Frontend -->
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#1d4ed8;color:white"><h4>Next.js Frontend</h4><p>Vercel App Router</p></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/leads</b><small>Lead Command Center</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/quotes</b><small>Versioning &bull; PDF &bull; Share</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/orders</b><small>Stage Panel &bull; Doc Tray</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/approval-send</b><small>Approval &bull; Send Gate</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/pipeline &bull; /products</b><small>Pipeline &bull; Catalog</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/admin/* routes</b><small>Org &bull; Users &bull; Catalog Admin</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/mobile/capture</b><small>Mobile &bull; vCard &bull; Scan</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/order-documents/preview</b><small>Tokenized Doc Preview</small></div>
+  </div>
+  <!-- Col 3: Server Actions / API -->
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#15803d;color:white"><h4>Server Actions / API</h4><p>Validated mutations</p></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Lead / Coverage / Compliance</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>createQuote &bull; updateQuoteWorkflow</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendQuote &bull; recordOutcome &bull; RPC fanout</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>ensureActualOrderLines</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Document Gate Actions</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Packing &bull; Freight &bull; Processing</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Shipment &bull; Dispatch &bull; Trade Req</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Finance &bull; Closeout</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendOrderDocumentLink</b></div>
+    <div class="arch-node arch-warn" style="background:#dcfce7;color:#14532d"><b>RLS Permission Checks</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Middleware &bull; Auth Guard</b></div>
+    <div class="arch-node" style="background:#bbf7d0;color:#14532d;border:1px dashed #4ade80"><b>Public API: /api/public/*</b></div>
+  </div>
+  <!-- Col 4: Supabase -->
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#b45309;color:white"><h4>Supabase</h4><p>Database &amp; Auth</p></div>
+    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Auth</b><small>JWT &bull; Sessions &bull; Org membership</small></div>
+    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>Postgres Database</b><small>leads &bull; quotes &bull; orders &bull; quote_versions &bull; order_lines &bull; order_documents &bull; shipments &bull; packing_plans &bull; trade_requirements &bull; finance_sync_records + 60+ tables</small></div>
+    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RLS Policies</b><small>Row-level workspace isolation &bull; ⚠ Many tables missing policies</small></div>
+    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RPCs / Functions</b><small>create_rfq_fanout &bull; send_quote_fanout &bull; ⚠ SECURITY DEFINER issues</small></div>
+    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Storage</b><small>Documents &bull; Logos &bull; Uploads &bull; Compliance evidence files</small></div>
+  </div>
+  <!-- Col 5: Document Engine + Integrations -->
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#c2410c;color:white"><h4>Document Engine</h4><p>Render &amp; track</p></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>v3 Doc Renderer</b></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Terms Profiles</b></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Send Tracking</b></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Open Tracking</b><small>Browser print &bull; No server PDF yet</small></div>
+    <div class="arch-col-head" style="background:#7c3aed;color:white;margin-top:10px;border-radius:10px 10px 0 0"><h4>Integrations</h4><p>Adapter boundaries</p></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#9993; Email</b><small>Mailtrap / Resend</small></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#128241; WhatsApp</b><small>Manual tracked links only</small></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#128666; Freight</b><small>Not auto-connected</small></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#128200; Finance</b><small>Not auto-connected</small></div>
+    <div class="arch-node" style="background:#fce7f3;color:#831843;font-size:11px;border:1px solid #fbcfe8"><small>⚠ <code>link_created</code> &ne; provider delivered. Adapter boundaries not auto-connected.</small></div>
+  </div>
+</div>
+<div class="arch-legend">
+  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#1d4ed8"></div>User action / data flow</div>
+  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#dc2626"></div>⚠ Known risk / gap</div>
+  <div class="arch-legend-item"><div class="arch-legend-dash" style="border-color:#7c3aed"></div>Integration boundary (adapter needed)</div>
+</div></div></div><div class="arch-panel"><div class="section-block"><h2>System Architecture — Detailed View</h2><p>Five-column view: Operators to frontend routes to server actions to Supabase to document engine and integrations. Risks and known gaps flagged inline.</p></div><div class="arch-swim">
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#0f172a;color:white"><h4>Operators</h4><p>Who acts</p></div>
+    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Sales</b><small>Quote &bull; Lead</small></div>
+    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Operations</b><small>Orders &bull; Docs</small></div>
+    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Admin</b><small>Org &bull; Roles</small></div>
+    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Mobile</b><small>Capture &bull; vCard</small></div>
+  </div>
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#1d4ed8;color:white"><h4>Next.js Frontend</h4><p>Vercel App Router</p></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/leads</b><small>Lead Command Center</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/quotes</b><small>Versioning &bull; PDF &bull; Share</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/orders</b><small>Stage Panel &bull; Doc Tray</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/approval-send</b><small>Approval &bull; Send Gate</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/pipeline &bull; /products</b><small>Pipeline &bull; Catalog</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/admin/* routes</b><small>Org &bull; Users &bull; Catalog Admin</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/mobile/capture</b><small>Mobile &bull; vCard &bull; Scan</small></div>
+    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/order-documents/preview</b><small>Tokenized Doc Preview</small></div>
+  </div>
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#15803d;color:white"><h4>Server Actions / API</h4><p>Validated mutations</p></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Lead / Coverage / Compliance</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>createQuote &bull; updateQuoteWorkflow</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendQuote &bull; recordOutcome &bull; RPC fanout</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>ensureActualOrderLines</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Document Gate Actions</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Packing &bull; Freight &bull; Processing</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Shipment &bull; Dispatch &bull; Trade Req</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Finance &bull; Closeout</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendOrderDocumentLink</b></div>
+    <div class="arch-node arch-warn" style="background:#dcfce7;color:#14532d"><b>RLS Permission Checks</b></div>
+    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Middleware &bull; Auth Guard</b></div>
+    <div class="arch-node" style="background:#bbf7d0;color:#14532d;border:1px dashed #4ade80"><b>Public API: /api/public/*</b></div>
+  </div>
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#b45309;color:white"><h4>Supabase</h4><p>Database &amp; Auth</p></div>
+    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Auth</b><small>JWT &bull; Sessions &bull; Org membership</small></div>
+    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>Postgres Database</b><small>leads &bull; quotes &bull; orders &bull; quote_versions &bull; order_lines &bull; order_documents &bull; shipments &bull; packing_plans &bull; trade_requirements &bull; finance_sync_records + 60+ tables</small></div>
+    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RLS Policies</b><small>Row-level workspace isolation &bull; Many tables missing policies</small></div>
+    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RPCs / Functions</b><small>create_rfq_fanout &bull; send_quote_fanout &bull; SECURITY DEFINER issues</small></div>
+    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Storage</b><small>Documents &bull; Logos &bull; Uploads &bull; Compliance evidence</small></div>
+  </div>
+  <div class="arch-col">
+    <div class="arch-col-head" style="background:#c2410c;color:white"><h4>Document Engine</h4><p>Render &amp; track</p></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>v3 Doc Renderer</b></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Terms Profiles</b></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Send Tracking</b></div>
+    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Open Tracking</b><small>Browser print &bull; No server PDF yet</small></div>
+    <div class="arch-col-head" style="background:#7c3aed;color:white;margin-top:10px;border-radius:10px 10px 0 0"><h4>Integrations</h4><p>Adapter boundaries</p></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>Email</b><small>Mailtrap / Resend</small></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>WhatsApp</b><small>Manual tracked links only</small></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>Freight</b><small>Not auto-connected</small></div>
+    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>Finance</b><small>Not auto-connected</small></div>
+    <div class="arch-node" style="background:#fce7f3;color:#831843;font-size:11px;border:1px solid #fbcfe8"><small>link_created is NOT provider-delivered. Adapter boundaries require manual confirmation.</small></div>
+  </div>
+</div>
+<div class="arch-legend">
+  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#1d4ed8"></div>User action / data flow</div>
+  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#dc2626"></div>Known risk / gap</div>
+  <div class="arch-legend-item"><div class="arch-legend-dash" style="border-color:#7c3aed"></div>Integration boundary (adapter needed)</div>
+</div></div>`;
 
     map['modules'] = `<div class="tbl-wrap"><table>
 <thead><tr><th>Module</th><th>Route</th><th>What It Owns</th><th>Ready Signal</th></tr></thead>
@@ -639,6 +772,17 @@ flowchart LR
   function switchGuideTab(n) {
     document.querySelectorAll('.og-tab').forEach((b, i) => b.classList.toggle('og-active', i === n));
     document.querySelectorAll('.og-panel').forEach((p, i) => p.classList.toggle('og-active', i === n));
+    const panels = document.querySelectorAll('.og-panel');
+    if (panels[n]) { selectStep(n, 0); }
+  }
+
+  function selectStep(guideIdx, stepIdx) {
+    const panels = document.querySelectorAll('.og-panel');
+    const panel = panels[guideIdx];
+    if (!panel) return;
+    panel.querySelectorAll('.og3-nav-item').forEach((el, i) => el.classList.toggle('og3-active', i === stepIdx));
+    panel.querySelectorAll('.og3-step-content').forEach((el, i) => el.classList.toggle('og3-step-active', i === stepIdx));
+    panel.querySelectorAll('.og3-prog-dot').forEach((el, i) => el.classList.toggle('og3-prog-active', i === stepIdx));
   }
 
 
@@ -907,9 +1051,20 @@ flowchart LR
     if (!svg) { alert('Diagram not yet rendered — try again in a moment.'); return; }
     const title = (wrap.querySelector('.diagram-title') || {}).textContent || 'Diagram';
     const clone = svg.cloneNode(true);
-    // Remove fixed dimensions so SVG scales naturally
-    clone.removeAttribute('width'); clone.removeAttribute('height');
-    clone.style.cssText = 'display:block;max-width:90vw;max-height:80vh;width:auto;height:auto';
+    // Derive explicit pixel dimensions from viewBox so SVG renders at full size in the modal
+    const vb = svg.getAttribute('viewBox');
+    if (vb) {
+      const parts = vb.trim().split(/[\s,]+/);
+      if (parts.length >= 4) {
+        clone.setAttribute('width',  parts[2]);
+        clone.setAttribute('height', parts[3]);
+      }
+    } else {
+      const bb = svg.getBoundingClientRect();
+      if (bb.width)  clone.setAttribute('width',  bb.width);
+      if (bb.height) clone.setAttribute('height', bb.height);
+    }
+    clone.style.cssText = 'display:block;';
     const canvas = document.getElementById('diagCanvas');
     canvas.innerHTML = ''; canvas.appendChild(clone);
     document.getElementById('diagModalTitle').textContent = title;
@@ -992,7 +1147,12 @@ flowchart LR
     });
   }
 
-    function render() { const id = idx(); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
+
+  function switchArchTab(n) {
+    document.querySelectorAll('.arch-tab').forEach((b, i) => b.classList.toggle('arch-active', i === n));
+    document.querySelectorAll('.arch-panel').forEach((p, i) => p.classList.toggle('arch-active', i === n));
+  }
+    function render() { const id = idx(); document.body.style.overflow = ''; document.getElementById('diagModal')?.classList.remove('dm-open'); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
   function goPrev() { let i = currentIndex(); openTopic(i === 0 ? 'overview' : topics[i - 1].id); }
   function goNext() { let i = currentIndex(); openTopic(i === topics.length - 1 ? 'overview' : topics[i + 1].id); }
   function toggleNav() { document.getElementById('leftNav').classList.toggle('open'); }
@@ -1005,7 +1165,7 @@ flowchart LR
 
   window.addEventListener('hashchange', () => { render(); openHashSnapshot(); });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { document.getElementById('leftNav').classList.remove('open'); document.querySelectorAll('.modal,.lightbox').forEach(m => m.classList.add('hidden')); }
+    if (e.key === 'Escape') { document.getElementById('leftNav').classList.remove('open'); document.querySelectorAll('.modal,.lightbox').forEach(m => m.classList.add('hidden')); closeDiagramViewer(); }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); document.getElementById('globalSearch')?.focus(); }
   });
   document.addEventListener('click', e => { if (innerWidth < 760 && !document.getElementById('leftNav').contains(e.target) && !e.target.closest('.mobile-only')) document.getElementById('leftNav').classList.remove('open'); });
@@ -1019,6 +1179,6 @@ flowchart LR
   }
 
   init();
-  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram };
+  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
 })();
 
