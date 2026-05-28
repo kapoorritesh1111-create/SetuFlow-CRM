@@ -306,11 +306,64 @@ const Docs = (() => {
   }
 
   function topicContentDiagrams(id) {
-    if (id === 'diagrams') return `
-<div class="section-block"><h2>Mermaid Flowcharts</h2><p>These diagrams show the decision logic for each major workflow.</p></div>
-<h3>Lead to Quote Readiness</h3>
-<div class="mermaid-wrap"><div class="diagram-title">Lead Workflow Flowchart</div>
-<pre class="mermaid">
+    if (id !== 'diagrams') return null;
+    return `
+<div class="section-block"><h2>System Architecture</h2><p>Full stack topology: route groups, feature domains, Supabase backend, and external service boundaries.</p></div>
+<div class="mermaid-wrap">
+  <div class="diagram-title">SETU Flow CRM — Architecture</div>
+  <pre class="mermaid">
+flowchart TD
+    Browser(["🌐 Browser & Mobile Client"])
+
+    subgraph Vercel["▲ Vercel — Next.js 14 App Router"]
+        direction LR
+        Public["Public Routes\n/onboarding • /card • /invite\n/compare • /features"]
+        AppR["App Routes\n/dashboard • /leads • /quotes\n/orders • /pipeline • /products\n/compliance • /contracts • /tasks"]
+        AdminR["Admin Routes\n/admin/organization\n/admin/users • /admin/client-onboarding\n/admin/pipelines • /admin/markets"]
+        MobileR["Mobile PWA\n/mobile/capture\n/mobile/leads • /mobile/orders\n/mobile/guru • /mobile/pipeline"]
+        APIR["API Routes\n/api/leads • /api/quotes • /api/orders\n/api/compliance • /api/setu-guru\n/api/contact-exchange • /api/notifications"]
+    end
+
+    subgraph Domains["Feature Domains — src/features"]
+        direction LR
+        D1["Leads &\nPipeline"]
+        D2["Quotes &\nPricing Engine"]
+        D3["Orders &\nExecution"]
+        D4["Products &\nCatalog"]
+        D5["Compliance &\nDocuments"]
+        D6["Setu Guru\nAI Panel"]
+    end
+
+    subgraph Supa["Supabase"]
+        direction TB
+        SAuth["Auth Service\nJWT + Session Management"]
+        SRLS["Row Level Security\nOrg-scoped data isolation"]
+        SPG["PostgreSQL\nCore tables + Transaction RPCs\n+ Supabase Migrations"]
+        SStore["Storage\nDocuments • Avatars • Exports"]
+    end
+
+    subgraph Ext["External Services"]
+        direction LR
+        EAI["AI / Vision Provider\nSetu Guru responses\nBusiness card OCR"]
+        EEmail["Email Service\nMailtrap / Resend\nNotifications & digests"]
+        EWA["WhatsApp\nManual tracked links\nNo live API — operator sends"]
+    end
+
+    Browser --> Public & AppR & AdminR & MobileR
+    AppR & AdminR & MobileR --> Domains
+    Domains --> APIR
+    Public --> APIR
+    APIR --> SAuth
+    SAuth --> SRLS --> SPG --> SStore
+    APIR --> EAI & EEmail & EWA
+  </pre>
+</div>
+
+<div class="section-block" style="margin-top:28px"><h2>Commercial Workflow Flowcharts</h2><p>Decision logic for each major workflow. Click <strong>⤢ Expand</strong> on any diagram to zoom, pan, and inspect details.</p></div>
+<h3 style="margin:18px 0 6px">Lead to Quote Readiness</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Lead Workflow Flowchart</div>
+  <pre class="mermaid">
 flowchart LR
   A([Capture]) --> B{Review Contact}
   B -->|Valid| C[Save Lead]
@@ -330,10 +383,12 @@ flowchart LR
   L -->|Defer to Dispatch| O[Record Obligation]
   M & N & O --> K
   K -->|No| P([Create Quote])
-</pre></div>
-<h3>Quote Build to Send to Outcome</h3>
-<div class="mermaid-wrap"><div class="diagram-title">Quote Workflow Flowchart</div>
-<pre class="mermaid">
+  </pre>
+</div>
+<h3 style="margin:18px 0 6px">Quote Build to Send to Outcome</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Quote Workflow Flowchart</div>
+  <pre class="mermaid">
 flowchart LR
   A([Open Quote Workspace]) --> B[Select or Create Quote]
   B --> C[Add Catalog Products]
@@ -356,10 +411,12 @@ flowchart LR
   P -->|Accepted| Q([Mark Accepted - Create Order])
   P -->|Rejected| R([Mark Rejected])
   P -->|No Response| S[Revise - New Version]
-</pre></div>
-<h3>Quote Version State Machine</h3>
-<div class="mermaid-wrap"><div class="diagram-title">Quote Versioning</div>
-<pre class="mermaid">
+  </pre>
+</div>
+<h3 style="margin:18px 0 6px">Quote Version State Machine</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Quote Version States</div>
+  <pre class="mermaid">
 flowchart LR
   A([New Quote]) --> B[Draft Version]
   B -->|Edit freely| B
@@ -374,10 +431,12 @@ flowchart LR
   F -->|Revise| J[New Version Draft]
   G --> K([Order Source])
   J --> B
-</pre></div>
-<h3>Order Execution Stage by Stage</h3>
-<div class="mermaid-wrap"><div class="diagram-title">Order Execution Flowchart</div>
-<pre class="mermaid">
+  </pre>
+</div>
+<h3 style="margin:18px 0 6px">Order Execution Stage by Stage</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Order Execution Flowchart</div>
+  <pre class="mermaid">
 flowchart LR
   A([Accepted Quote]) --> B[Stage 1 Quote Approved]
   B --> C[Prepare Actual Lines]
@@ -405,9 +464,11 @@ flowchart LR
   W --> X[Stage 6 Invoice Closeout]
   X --> Y[Approve Final Invoice]
   Y --> Z([Paid and Closed])
-</pre></div>
-<div class="section-block"><h2>Swimlane Diagrams</h2><p>Operator and system responsibilities shown side by side so testers can validate both UI behavior and data writes.</p></div>
-<h3>Lead to Quote Swimlane</h3>
+  </pre>
+</div>
+
+<div class="section-block" style="margin-top:28px"><h2>Swimlane Diagrams</h2><p>Operator and system responsibilities shown side by side so testers can validate both UI behavior and data writes.</p></div>
+<h3 style="margin:18px 0 6px">Lead to Quote Swimlane</h3>
 <div class="swimlane">
   <div class="swimlane-row">
     <div class="swimlane-label"><small>Operator</small><b>Capture &amp; Qualify</b></div>
@@ -430,7 +491,7 @@ flowchart LR
     </div>
   </div>
 </div>
-<h3>Quote Build &amp; Send Swimlane</h3>
+<h3 style="margin:18px 0 6px">Quote Build &amp; Send Swimlane</h3>
 <div class="swimlane">
   <div class="swimlane-row">
     <div class="swimlane-label"><small>Operator</small><b>Build &amp; Send</b></div>
@@ -455,7 +516,7 @@ flowchart LR
     </div>
   </div>
 </div>
-<h3>Order Execution Swimlane</h3>
+<h3 style="margin:18px 0 6px">Order Execution Swimlane</h3>
 <div class="swimlane">
   <div class="swimlane-row">
     <div class="swimlane-label"><small>Operator</small><b>Execute Order</b></div>
@@ -480,15 +541,15 @@ flowchart LR
     </div>
   </div>
 </div>
-<div class="section-block"><h2>Slide Diagrams</h2></div>
+
+<div class="section-block" style="margin-top:28px"><h2>Slide Diagrams</h2></div>
 <div class="slide"><div class="slide-title">Lead Workflow</div><div class="slide-sub">Turn captured contacts into quote-ready leads</div><div class="slide-flow"><div class="slide-node">Capture</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Follow-up</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Command Center</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Coverage</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Quote Ready</div></div><div class="slide-rules"><div class="slide-rule">No product coverage = No quote</div><div class="slide-rule">Disqualified = Dead end</div><div class="slide-rule">Compliance can block send later</div><div class="slide-rule">Waive / Defer requires reviewer reason</div></div></div>
 <div class="slide"><div class="slide-title">Quote Versioning</div><div class="slide-sub">Keep sent offers locked and traceable</div><div class="slide-flow"><div class="slide-node">Draft</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Sent <small style="opacity:.6">LOCKED</small></div><div class="slide-arrow">&rarr;</div><div class="slide-node">Accepted <small style="opacity:.6">LOCKED</small></div><div class="slide-arrow">&rarr;</div><div class="slide-node">Order Source</div></div><div class="slide-rules"><div class="slide-rule">current_version_id &ne; accepted_version_id</div><div class="slide-rule">Revision creates NEW version</div><div class="slide-rule">History preserved for audit</div><div class="slide-rule">Orders start from accepted_version_id only</div></div></div>
 <div class="slide"><div class="slide-title">Order Execution</div><div class="slide-sub">Turn an accepted quote into controlled execution</div><div class="slide-flow"><div class="slide-node">Actual Lines</div><div class="slide-arrow">&rarr;</div><div class="slide-node">First Document</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Packing</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Dispatch</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Close</div></div><div class="slide-rules"><div class="slide-rule">Actual lines can differ from quote lines &mdash; record reason</div><div class="slide-rule">Approve before any external send</div><div class="slide-rule">link_created &ne; provider delivered</div><div class="slide-rule">Each gate is sequential &mdash; no skipping</div></div></div>
 <div class="slide"><div class="slide-title">Finance &amp; Closeout</div><div class="slide-sub">Close only when all financial evidence is confirmed</div><div class="slide-flow"><div class="slide-node">Final Invoice &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Payment &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Reconciliation &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Archive &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Closed</div></div><div class="slide-rules"><div class="slide-rule">Final invoice &ne; proforma invoice</div><div class="slide-rule">Outstanding amount must be zero</div><div class="slide-rule">Finance sync is not automatic</div><div class="slide-rule">All 5 closeout checks must pass</div></div></div>`;
-    return null;
   }
 
-  function topicContentGuides(id) {
+ntentGuides(id) {
     if (id !== 'operator-guides') return null;
     return `<div class="og-tabs-wrap">
 <div class="og-tabs" role="tablist">
@@ -740,7 +801,8 @@ flowchart LR
     renderRail(); markActive();
     if (id === 'live-ui') renderScreenshots();
     if (id === 'diagrams' && window.mermaid) {
-      setTimeout(() => { try { mermaid.run({ nodes: Array.from(document.querySelectorAll('.mermaid')) }); } catch (e) {} }, 80);
+      _initDiagViewer();
+      setTimeout(() => { try { mermaid.run({ nodes: Array.from(document.querySelectorAll('.mermaid')) }); } catch (e) {} setTimeout(_injectExpandButtons, 900); }, 80);
     }
     if (shared.active) document.querySelectorAll('.internal-only').forEach(e => e.classList.add('hidden'));
   }
@@ -835,7 +897,102 @@ flowchart LR
     screenshots.unshift(item); status.textContent = 'Saved in this browser.'; renderScreenshots();
   }
 
-  function render() { const id = idx(); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
+
+  // ── Diagram viewer (zoom / pan / fullscreen) ──────────────────────────────
+  const dv = { scale: 1, tx: 0, ty: 0, drag: false, sx: 0, sy: 0 };
+
+  function openDiagramViewer(btn) {
+    const wrap = btn.closest('.mermaid-wrap');
+    const svg  = wrap.querySelector('svg');
+    if (!svg) { alert('Diagram not yet rendered — try again in a moment.'); return; }
+    const title = (wrap.querySelector('.diagram-title') || {}).textContent || 'Diagram';
+    const clone = svg.cloneNode(true);
+    // Remove fixed dimensions so SVG scales naturally
+    clone.removeAttribute('width'); clone.removeAttribute('height');
+    clone.style.cssText = 'display:block;max-width:90vw;max-height:80vh;width:auto;height:auto';
+    const canvas = document.getElementById('diagCanvas');
+    canvas.innerHTML = ''; canvas.appendChild(clone);
+    document.getElementById('diagModalTitle').textContent = title;
+    dv.scale = 1; dv.tx = 0; dv.ty = 0;
+    _diagApply();
+    document.getElementById('diagZoomPct').textContent = '100%';
+    document.getElementById('diagModal').classList.add('dm-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDiagramViewer() {
+    document.getElementById('diagModal').classList.remove('dm-open');
+    document.body.style.overflow = '';
+  }
+
+  function diagZoom(delta) {
+    dv.scale = Math.min(5, Math.max(0.2, dv.scale + delta));
+    document.getElementById('diagZoomPct').textContent = Math.round(dv.scale * 100) + '%';
+    _diagApply();
+  }
+
+  function diagReset() {
+    dv.scale = 1; dv.tx = 0; dv.ty = 0;
+    document.getElementById('diagZoomPct').textContent = '100%';
+    _diagApply();
+  }
+
+  function downloadDiagram() {
+    const svg = document.getElementById('diagCanvas').querySelector('svg');
+    if (!svg) return;
+    const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = (document.getElementById('diagModalTitle').textContent || 'diagram').replace(/\s+/g,'-').toLowerCase() + '.svg';
+    a.click();
+  }
+
+  function _diagApply() {
+    document.getElementById('diagCanvas').style.transform = `translate(${dv.tx}px,${dv.ty}px) scale(${dv.scale})`;
+  }
+
+  function _initDiagViewer() {
+    const vp = document.getElementById('diagViewport');
+    if (!vp || vp._dvInit) return; vp._dvInit = true;
+    vp.addEventListener('wheel', e => { e.preventDefault(); diagZoom(e.deltaY < 0 ? 0.18 : -0.18); }, { passive: false });
+    vp.addEventListener('mousedown', e => { dv.drag = true; dv.sx = e.clientX - dv.tx; dv.sy = e.clientY - dv.ty; vp.classList.add('dm-drag'); e.preventDefault(); });
+    document.addEventListener('mousemove', e => { if (!dv.drag) return; dv.tx = e.clientX - dv.sx; dv.ty = e.clientY - dv.sy; _diagApply(); });
+    document.addEventListener('mouseup', () => { dv.drag = false; document.getElementById('diagViewport')?.classList.remove('dm-drag'); });
+    // Touch pinch-zoom
+    let tDist = 0;
+    vp.addEventListener('touchstart', e => { if (e.touches.length === 2) { const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY; tDist = Math.hypot(dx, dy); } }, { passive: true });
+    vp.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY;
+        const nd = Math.hypot(dx, dy); const ratio = nd / tDist; tDist = nd;
+        dv.scale = Math.min(5, Math.max(0.2, dv.scale * ratio));
+        document.getElementById('diagZoomPct').textContent = Math.round(dv.scale * 100) + '%';
+        _diagApply();
+      }
+    }, { passive: false });
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('diagModal')?.classList.contains('dm-open')) return;
+      if (e.key === 'Escape') closeDiagramViewer();
+      if (e.key === '+' || e.key === '=') diagZoom(0.2);
+      if (e.key === '-') diagZoom(-0.2);
+      if (e.key === '0') diagReset();
+    });
+  }
+
+  function _injectExpandButtons() {
+    document.querySelectorAll('.mermaid-wrap').forEach(wrap => {
+      if (wrap.querySelector('.diagram-expand-btn')) return;
+      const svg = wrap.querySelector('svg');
+      if (!svg) return;
+      const btn = document.createElement('button');
+      btn.className = 'diagram-expand-btn';
+      btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2h4v4M6 14H2v-4M14 2l-5 5M2 14l5-5"/></svg> Expand';
+      btn.addEventListener('click', () => openDiagramViewer(btn));
+      wrap.appendChild(btn);
+    });
+  }
+
+    function render() { const id = idx(); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
   function goPrev() { let i = currentIndex(); openTopic(i === 0 ? 'overview' : topics[i - 1].id); }
   function goNext() { let i = currentIndex(); openTopic(i === topics.length - 1 ? 'overview' : topics[i + 1].id); }
   function toggleNav() { document.getElementById('leftNav').classList.toggle('open'); }
@@ -862,6 +1019,6 @@ flowchart LR
   }
 
   init();
-  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab };
+  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram };
 })();
 
