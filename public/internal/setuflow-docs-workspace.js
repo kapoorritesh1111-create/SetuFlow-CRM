@@ -1,29 +1,836 @@
-const Docs=(()=>{const shared={active:false,token:null,recipient:null,expiry:null};let authUser=null;let screenshots=[];let metrics={open:9,resolved:199,criticalHigh:1,milestones:3};const topics=[{id:'overview',group:'Get Started',icon:'⌂',title:'Product Overview',tag:'Start Here',summary:'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',accent:'#2563eb',next:'architecture',sections:[]},{id:'architecture',group:'System Overview',icon:'⌬',title:'Architecture',tag:'System Overview',summary:'How the app, database, auth, RLS, integration boundaries, and documentation workspace fit together.',accent:'#0d9488'},{id:'modules',group:'System Overview',icon:'▦',title:'Module Reference',tag:'System Overview',summary:'Routes, workspaces, source tables, and ownership responsibilities for every major module.',accent:'#2563eb'},{id:'workflows',group:'Business Workflows',icon:'⇄',title:'Commercial Workflows',tag:'Workflows',summary:'The professional business view of how leads become quotes, quotes become orders, and orders close out.',accent:'#0d9488'},{id:'diagrams',group:'Business Workflows',icon:'◇',title:'Flow Diagrams',tag:'Workflows',summary:'Professional swimlane diagrams showing operator actions and system responses without broken raw text.',accent:'#7c3aed'},{id:'operator-guides',group:'Operations',icon:'☷',title:'Operator Guides',tag:'Operations',summary:'Click-by-click guidance for testers and operators with expected UI state, expected data, and do-not-break rules.',accent:'#f97316'},{id:'guru-ai',group:'Operations',icon:'✦',title:'Setu Guru AI',tag:'AI Assistant',summary:'How Guru helps users understand pages, draft next steps, and support mobile scan/vCard workflows without autonomous external sends.',accent:'#db2777'},{id:'data-security',group:'Security & Data',icon:'⬟',title:'Data & Security',tag:'Security',summary:'Organization-scoped data, RLS, membership, roles, audit trails, and safe integration boundaries.',accent:'#059669'},{id:'api-integrations',group:'Integrations & API',icon:'</>',title:'API & Integrations',tag:'Integrations',summary:'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',accent:'#2563eb'},{id:'mobile',group:'Operations',icon:'▯',title:'Mobile Workspace',tag:'Mobile',summary:'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',accent:'#14b8a6'},{id:'quick-reference',group:'Reference',icon:'☰',title:'Quick Reference',tag:'Reference',summary:'Fast rules, gates, routes, and checks for testers and technical leads.',accent:'#334155'},{id:'live-ui',group:'Reference',icon:'▣',title:'Live UI Snapshots',tag:'Screenshots',summary:'Clickable screen library for testers and tech leads. Internal users can upload screenshots directly from this workspace.',accent:'#db2777'}];
-function idx(){const h=(location.hash||'#overview').replace('#','').split('=');if(h[0]==='snapshot')return 'live-ui';return topics.some(t=>t.id===h[0])?h[0]:'overview'}function byId(id){return topics.find(t=>t.id===id)||topics[0]}function currentIndex(){return Math.max(0,topics.findIndex(t=>t.id===idx()))}function isInternal(){return !shared.active}function escapeHtml(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}function validToken(token){try{const d=JSON.parse(atob(token));if(!d.expiry||d.expiry<Date.now())return null;return d}catch{return null}}
-async function initAuth(){const p=new URLSearchParams(location.search);const token=p.get('share_token');if(token){const d=validToken(token);if(d){shared.active=true;shared.token=token;shared.recipient=d.recipient||'External reviewer';shared.expiry=d.expiry;document.body.classList.add('shared-mode');document.getElementById('sharedBanner').classList.remove('hidden');document.getElementById('sharedRecipient').textContent=shared.recipient;document.getElementById('sharedExpiry').textContent='Expires '+new Date(shared.expiry).toLocaleString();document.querySelectorAll('.internal-only').forEach(e=>e.classList.add('hidden'));document.getElementById('authGate').classList.add('hidden');return}document.getElementById('authGate').classList.remove('hidden');document.getElementById('authError').textContent='This shared review link is invalid or expired.';return}try{const r=await fetch('/api/internal/auth-check',{credentials:'include'});if(!r.ok)throw new Error('auth');const d=await r.json();authUser=d.user||null;document.getElementById('userName').textContent=authUser?.name||'Ritesh Kapoor';document.getElementById('userInitial').textContent=(authUser?.name||'R').charAt(0).toUpperCase();document.getElementById('authGate').classList.add('hidden')}catch(e){document.getElementById('authGate').classList.remove('hidden')}}
-function renderNav(){const nav=document.getElementById('topicNav');let html='';let g='';topics.forEach(t=>{if(t.group!==g){g=t.group;html+=`<div class="nav-group">${g}</div>`}html+=`<button class="nav-link" data-topic="${t.id}" onclick="Docs.openTopic('${t.id}')"><span class="dot">${t.icon}</span>${t.title}</button>`});nav.innerHTML=html;markActive()}
-function markActive(){const id=idx();document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.topic===id));document.querySelectorAll('[data-rail-topic]').forEach(b=>b.classList.toggle('active',b.dataset.railTopic===id));const i=currentIndex();document.getElementById('mobileProgress').textContent=(i+1)+' / '+topics.length;document.getElementById('mobilePrev').textContent=i===0?'Overview':'← '+topics[i-1].title;document.getElementById('mobileNext').textContent=i===topics.length-1?'Start over':topics[i+1].title+' →'}function openTopic(id){location.hash=id;document.getElementById('leftNav').classList.remove('open')}
-function renderOverview(){const ov=document.getElementById('overviewView');ov.innerHTML=`<section class="hero"><div><div class="eyebrow">Mission-critical docs workspace</div><h1>SETU Flow CRM — Technical Documentation</h1><p>Everything a tester, architect, developer, or new tech lead needs to understand the system, validate flows, and start working immediately.</p><div class="hero-search"><span>⌕</span><input placeholder="Search docs, APIs, workflows, tables..." oninput="Docs.search(this.value)"><kbd>⌘K</kbd></div><div class="hero-chips"><button onclick="Docs.openTopic('api-integrations')">API Reference</button><button onclick="Docs.openTopic('workflows')">Commercial Workflows</button><button onclick="Docs.openTopic('data-security')">Data Model</button><button onclick="Docs.openTopic('operator-guides')">Operator Guides</button><button onclick="Docs.openTopic('live-ui')">Live UI Snapshots</button></div></div><div class="readiness-card"><div class="ring"><span id="readyPct">66%</span></div><b>Documentation Readiness</b><p>Live issue counts and roadmap signals refresh from Supabase when available.</p></div></section><section class="quick-grid"><div class="quick-card internal-only"><div class="quick-icon" style="background:#0d9488">➤</div><h3>Share Doc</h3><p>Generate a time-limited onboarding link for a tester or tech lead.</p><button onclick="Docs.openShare()">Open modal →</button></div><div class="quick-card internal-only"><div class="quick-icon" style="background:#2563eb">◎</div><h3>Issue Tracker <span id="issueQuick">${metrics.open}</span></h3><p>Review current defects, validation gaps, and implementation tasks.</p><a href="setuflow-issue-tracker.html">Open tracker →</a></div><div class="quick-card internal-only"><div class="quick-icon" style="background:#7c3aed">⚑</div><h3>Roadmap <span id="roadQuick">${metrics.milestones}</span></h3><p>Understand product direction, milestones, and cleanup plan.</p><a href="setuflow-roadmap.html">Open roadmap →</a></div><div class="quick-card"><div class="quick-icon" style="background:#db2777">▣</div><h3>${isInternal()?'Add / Review':'View'} Screenshots</h3><p>Use the screenshot library to understand production UI states.</p><button onclick="Docs.openTopic('live-ui')">Open snapshots →</button></div></section><section class="metrics"><div class="metric"><small>Total Topics</small><strong>${topics.length}</strong><p>Workspace sections</p></div><div class="metric internal-only"><small>Open Issues</small><strong id="openMetric">${metrics.open}</strong><p id="riskMetric">${metrics.criticalHigh} critical/high open</p></div><div class="metric internal-only"><small>Roadmap Milestones</small><strong id="roadMetric">${metrics.milestones}</strong><p>Active sprint lanes</p></div><div class="metric"><small>Latest Release</small><strong>v2026.05</strong><p>Internal docs build</p></div></section><div class="overview-title"><div><h2>Product overview and guided topics</h2><p>Choose a topic. Each page is designed to explain what the system does, how to test it, and what can break.</p></div></div><section class="topic-grid">${topics.slice(0).map((t,i)=>`<article class="topic-card" onclick="Docs.openTopic('${t.id}')"><div class="topic-card-top"><div class="topic-icon">${t.icon}</div><div><h3>${t.title}</h3><p>${t.summary}</p></div></div><div class="topic-card-footer"><span>${t.group}</span><span>Open topic ${i+1} →</span></div></article>`).join('')}</section>`;if(shared.active)document.querySelectorAll('.internal-only').forEach(e=>e.classList.add('hidden'))}
-function renderTopic(){const id=idx(),t=byId(id),i=currentIndex();document.getElementById('crumbCurrent').textContent=t.title;document.documentElement.style.setProperty('--accent',t.accent);document.getElementById('overviewView').classList.toggle('hidden',id!=='overview');document.getElementById('topicView').classList.toggle('hidden',id==='overview');if(id==='overview'){renderOverview();renderRail();markActive();return}document.getElementById('topicView').innerHTML=`<div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${topicContent(id)}<div class="topic-footer"><div class="topic-stepper"><button onclick="Docs.goPrev()">← ${i>0?topics[i-1].title:'Overview'}</button><span>${i+1} / ${topics.length}</span><button onclick="Docs.goNext()">${i<topics.length-1?topics[i+1].title:'Start over'} →</button></div></div></div>`;renderRail();markActive();if(id==='live-ui')renderScreenshots()}
-function topicContent(id){const map={
-'architecture':`<div class="pro-grid"><div class="pro-card"><b>App shell</b><p>Next.js App Router, server-rendered workspaces, focused client components, and route contracts for CRM modules.</p></div><div class="pro-card"><b>Data boundary</b><p>Supabase Postgres with organization-scoped RLS. Server actions must filter by organization_id.</p></div><div class="pro-card"><b>Integration boundary</b><p>Email, WhatsApp, freight, finance, and AI integrations stay adapter-backed and auditable.</p></div></div><div class="section-block"><h2>Architecture narrative</h2><p>SETU Flow CRM is a controlled commercial operating system. The app is organized around authenticated workspaces: Dashboard, Leads, Pipeline, Quotes, Orders, Products, Trade Events, Admin, and Mobile. The database remains the source of truth, while UI screens represent workflow states and gates rather than isolated pages.</p></div><div class="table-wrap"><table><thead><tr><th>Layer</th><th>Responsibility</th><th>Tester focus</th></tr></thead><tbody><tr><td>Next.js App</td><td>Routes, UI state, server actions, PDF/document previews</td><td>Confirm every CTA writes expected rows and preserves org scope.</td></tr><tr><td>Supabase</td><td>Auth, RLS, workflow data, audit records, tracker</td><td>Validate org members see only their workspace data.</td></tr><tr><td>Vercel</td><td>Production deployment and build proof</td><td>Every fix must deploy green before the tracker closes.</td></tr></tbody></table></div>`,
-'modules':`<div class="table-wrap"><table><thead><tr><th>Module</th><th>Route</th><th>What it owns</th><th>Ready signal</th></tr></thead><tbody><tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Executive KPIs, activity, follow-up queue, workspace health.</td><td>KPIs load without cross-org leakage.</td></tr><tr><td>Leads</td><td><code>/leads</code></td><td>Buyer/supplier records, follow-ups, product/market coverage.</td><td>Lead Command Center opens with clear next actions.</td></tr><tr><td>Pipeline</td><td><code>/pipeline</code></td><td>Kanban, swimlane, forecast, density, and filters.</td><td>View controls do not break stage logic.</td></tr><tr><td>Quotes</td><td><code>/quotes</code></td><td>Versioned quotes, FX, pricing rules, approval gates.</td><td>Sent quote versions are immutable.</td></tr><tr><td>Orders</td><td><code>/orders</code></td><td>Actual lines, documents, packing, freight, processing, dispatch, finance.</td><td>No stage skips without gate approval.</td></tr><tr><td>Mobile</td><td><code>/mobile</code></td><td>Business card scan, smart vCard, field capture.</td><td>Mobile capture creates reviewable lead drafts.</td></tr></tbody></table></div>`,
-'workflows':`<div class="section-block"><h2>Commercial lifecycle</h2><p>The system is built around a six-stage commercial journey. Each stage has a business purpose, required data, and a gate that prevents disconnected records.</p></div><div class="timeline"><div class="timeline-row"><div class="timeline-num">01</div><div><h3>Capture</h3><p>Business cards, trade events, or manual entry create a lead draft. The user confirms identity, company, market, and relationship type.</p></div></div><div class="timeline-row"><div class="timeline-num">02</div><div><h3>Qualify</h3><p>Owner, product interests, market, country, follow-up, and compliance posture are completed before quote creation becomes dominant.</p></div></div><div class="timeline-row"><div class="timeline-num">03</div><div><h3>Quote</h3><p>Catalog products, FX snapshot, incoterms, freight profile, pricing basis, and override reason are captured in a versioned quote.</p></div></div><div class="timeline-row"><div class="timeline-num">04</div><div><h3>Approve & Send</h3><p>Approval and compliance blockers are resolved before a customer PDF is sent by tracked email or WhatsApp link. The quote locks on send.</p></div></div><div class="timeline-row"><div class="timeline-num">05</div><div><h3>Execute</h3><p>Accepted quotes seed order lines. Actual line approval, documents, packing, freight, processing, dispatch, and final invoice are gated.</p></div></div><div class="timeline-row"><div class="timeline-num">06</div><div><h3>Close</h3><p>Finance sync, final invoice approval, payment reference, reconciliation, and archive complete the lifecycle.</p></div></div></div>`,
-'diagrams':`<div class="section-block"><h2>Lead to Quote swimlane</h2><p>Operator and system responsibilities are shown side by side so testers can validate both UI behavior and data writes.</p><div class="swimlane"><div class="swimlane-row"><div class="swimlane-label"><small>Operator</small><b>Capture and qualify</b></div><div class="swimlane-steps"><div class="lane-step"><b>Scan or add lead</b><span>Review parsed card data.</span></div><div class="lane-step"><b>Open command center</b><span>Confirm buyer/supplier context.</span></div><div class="lane-step"><b>Link coverage</b><span>Add product and market interest.</span></div><div class="lane-step"><b>Create quote</b><span>CTA appears only after gates pass.</span></div></div></div><div class="swimlane-row"><div class="swimlane-label"><small>System</small><b>Data and gates</b></div><div class="swimlane-steps"><div class="lane-step system"><b>Create lead</b><span>Write lead and profile rows.</span></div><div class="lane-step system"><b>Check gate</b><span>Validate coverage, country, compliance.</span></div><div class="lane-step system"><b>Open quote</b><span>Seed quote workspace.</span></div></div></div></div></div><div class="section-block"><h2>Order execution swimlane</h2><div class="swimlane"><div class="swimlane-row"><div class="swimlane-label"><small>Operator</small><b>Execute order</b></div><div class="swimlane-steps"><div class="lane-step"><b>Approve actuals</b><span>Confirm quantities and price.</span></div><div class="lane-step"><b>Approve document</b><span>Preview before external use.</span></div><div class="lane-step"><b>Approve packing</b><span>Confirm packs and lines.</span></div><div class="lane-step"><b>Dispatch</b><span>Approve shipment event.</span></div></div></div><div class="swimlane-row"><div class="swimlane-label"><small>System</small><b>Persistence</b></div><div class="swimlane-steps"><div class="lane-step system"><b>Seed order</b><span>Accepted quote becomes order.</span></div><div class="lane-step system"><b>Write documents</b><span>Create document and send rows.</span></div><div class="lane-step system"><b>Gate final invoice</b><span>Finance closeout cannot skip.</span></div></div></div></div></div>`,
-'operator-guides':`<div class="operator-guide"><div class="guide-step"><div class="guide-step-num">1</div><div><h3>Start from the workspace queue</h3><p>Open the relevant queue or module. Confirm filters, ownership, and organization context before changing records.</p></div></div><div class="guide-step"><div class="guide-step-num">2</div><div><h3>Validate expected UI and expected data together</h3><p>Every click must produce both a visible UI state and a predictable database write. If one is missing, create or update an issue.</p></div></div><div class="guide-step"><div class="guide-step-num">3</div><div><h3>Use blockers as proof, not friction</h3><p>Compliance, approval, pricing, and order gates must explain why a user cannot advance and what they should do next.</p></div></div><div class="guide-step"><div class="guide-step-num">4</div><div><h3>Close with deployment proof</h3><p>A workflow is not complete until the tracker, GitHub commit, and Vercel deployment evidence all agree.</p></div></div></div><div class="callout"><b>Do not bypass gates.</b>Do not create disconnected quotes, assume WhatsApp activity means delivery, or treat a draft PDF preview as a sent customer document.</div>`,
-'guru-ai':`<div class="feature-strip"><div class="feature-card"><div class="big-icon" style="background:#db2777">✦</div><h3>Setu Guru AI</h3><p>Guru explains the current page, summarizes blockers, drafts next actions, and supports operators without autonomously sending external messages.</p></div><div class="feature-card"><div class="big-icon" style="background:#0d9488">▣</div><h3>Business Card Scan</h3><p>Mobile capture parses cards into reviewable lead drafts. Operators approve the parsed data before it becomes commercial truth.</p></div><div class="feature-card"><div class="big-icon" style="background:#2563eb">⌁</div><h3>Smart vCard</h3><p>Field teams can exchange contact information quickly, then link the resulting relationship to follow-up, product interest, and event context.</p></div></div><div class="section-block"><h2>AI guardrails</h2><p>AI helps users understand and draft. It does not bypass approval, compliance, order, or external-send gates. Every AI-assisted action remains reviewable and attributable.</p></div>`,
-'data-security':`<div class="pro-grid"><div class="pro-card"><b>Organization scope</b><p>Every server action and query must be filtered by organization_id through workspace access.</p></div><div class="pro-card"><b>RLS policies</b><p>Tables are protected by workspace membership and role-aware policies.</p></div><div class="pro-card"><b>Auditability</b><p>Stage moves, approval decisions, sends, and major workflow changes must be traceable.</p></div></div><div class="table-wrap"><table><thead><tr><th>Area</th><th>Tables / controls</th><th>Risk if broken</th></tr></thead><tbody><tr><td>Auth</td><td><code>profiles</code>, <code>organization_members</code></td><td>Wrong users see internal workspaces.</td></tr><tr><td>Commercial</td><td><code>leads</code>, <code>quotes</code>, <code>orders</code></td><td>Deals detach from customer or organization truth.</td></tr><tr><td>Documents</td><td><code>order_documents</code>, <code>order_document_sends</code></td><td>External send proof becomes unreliable.</td></tr><tr><td>Tracker</td><td><code>sprint_issues</code></td><td>Production work loses evidence and accountability.</td></tr></tbody></table></div>`,
-'api-integrations':`<div class="table-wrap"><table><thead><tr><th>Integration</th><th>Rule</th><th>Status</th></tr></thead><tbody><tr><td>WhatsApp</td><td>Manual tracked <code>wa.me</code> links only. No live WhatsApp Business API.</td><td>Manual tracked-link</td></tr><tr><td>Email</td><td>Provider events confirm delivery. UI activity is not delivery proof.</td><td>Webhook-backed</td></tr><tr><td>PDF</td><td>Use puppeteer-core and @sparticuz/chromium only. No paid PDF API.</td><td>Guarded</td></tr><tr><td>Finance/Freight</td><td>Adapter-backed, no uncontrolled live provider calls from UI.</td><td>Boundary-ready</td></tr></tbody></table></div>`,
-'mobile':`<div class="feature-strip"><div class="feature-card"><div class="big-icon" style="background:#0d9488">▣</div><h3>Business card scan</h3><p>Scan, parse, review, and save buyer/supplier leads from trade shows or field meetings.</p></div><div class="feature-card"><div class="big-icon" style="background:#2563eb">⌁</div><h3>Smart vCard</h3><p>Share a professional contact card and preserve event/source context for later follow-up.</p></div><div class="feature-card"><div class="big-icon" style="background:#7c3aed">⚡</div><h3>Mobile action footer</h3><p>Critical next actions remain accessible without forcing desktop-style navigation.</p></div></div><div class="section-block"><h2>Mobile testing focus</h2><p>Validate camera permission, upload limits, fallback manual entry, parsed-data review, lead save, product coverage, and role-aware access.</p></div>`,
-'quick-reference':`<div class="quick-ref-grid"><div class="ref-card"><h3>Never break</h3><ul><li>No service-role key in client code.</li><li>No external live provider calls outside approved adapters.</li><li>No sent quote mutation.</li><li>No order stage skip without explicit gate.</li></ul></div><div class="ref-card"><h3>Always verify</h3><ul><li>GitHub main contains the change.</li><li>Vercel deployment is green.</li><li>Tracker notes include proof.</li><li>RLS remains organization-scoped.</li></ul></div><div class="ref-card"><h3>Core routes</h3><ul><li><code>/leads</code> command center</li><li><code>/pipeline</code> kanban, swimlane, forecast</li><li><code>/quotes</code> versioned quote workspace</li><li><code>/orders</code> execution and closeout</li></ul></div><div class="ref-card"><h3>Signals of quality</h3><ul><li>Clear next action.</li><li>Visible blocker reason.</li><li>Data write matches UI state.</li><li>Audit record exists for sensitive moves.</li></ul></div></div>`,
-'live-ui':`<div class="screenshot-toolbar"><div><h2>Live UI screenshot library</h2><p>Upload screenshots directly from this workspace. Each screenshot gets a clickable preview/link for testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>`};return map[id]||''}
-function renderRail(){const id=idx(),i=currentIndex(),pct=Math.round((i/(topics.length-1))*100),next=topics[(i+1)%topics.length];document.getElementById('rightRail').innerHTML=`<div class="rail-block"><h4>On this workspace</h4><div class="rail-list">${topics.map(t=>`<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div></div><div class="rail-block"><h4>Progress</h4><div class="progress-line"><span>Current path</span><b>${pct}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><p style="color:#64748b;font-size:12px">${id==='overview'?'Start at Docs Overview':'Topic '+(i+1)+' of '+topics.length}</p><div class="next-card"><b>Next step</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} →</button></div></div>${isInternal()?`<div class="rail-block"><h4>Live tracker</h4><div class="progress-line"><span>Open</span><b>${metrics.open}</b></div><div class="progress-line"><span>Resolved</span><b>${metrics.resolved}</b></div><a href="setuflow-issue-tracker.html" style="color:#2563eb;font-weight:900;font-size:12px">Open issue tracker →</a></div><div class="rail-block"><h4>Roadmap highlights</h4><div style="border-left:3px solid #14b8a6;padding-left:10px"><b>Sprint 19</b><p style="margin:4px 0;color:#64748b;font-size:12px">UX enhancement and documentation workspace cleanup.</p></div></div>`:''}<div class="rail-block"><h4>Contributor</h4><div class="person"><div class="avatar">R</div><div><b>Ritesh Kapoor</b><p style="margin:2px 0 0;color:#64748b;font-size:12px">Product owner, architect, builder</p></div></div></div>`;markActive()}
-async function loadMetrics(){if(shared.active)return;try{const r=await fetch('/api/internal/docs-metrics',{credentials:'include'});if(!r.ok)return;const d=await r.json();metrics={...metrics,...d};const pill=document.getElementById('issuePill');if(pill)pill.textContent=metrics.open;render()}catch(e){}}
-async function loadScreenshots(){screenshots=[{id:'seed-test',title:'Test live UI screenshot',route:'/internal/setuflow-docs.html',description:'Initial screenshot uploaded for workspace validation. Replace or add more from the Add screenshot action.',image_url:'docs-screenshots/test-live-ui.png',created_at:'2026-05-27'}];try{const url='/api/internal/docs-screenshots'+(shared.active?`?share_token=${encodeURIComponent(shared.token)}`:'');const r=await fetch(url,{credentials:'include'});if(r.ok){const d=await r.json();if(Array.isArray(d.screenshots)&&d.screenshots.length)screenshots=d.screenshots.concat(screenshots)}}catch(e){}try{const local=JSON.parse(localStorage.getItem('setu_docs_screenshots')||'[]');screenshots=local.concat(screenshots)}catch{}renderScreenshots();openHashSnapshot()}
-function renderScreenshots(){const grid=document.getElementById('screenshotGrid');if(!grid)return;grid.innerHTML=screenshots.map(s=>`<article class="shot-card"><img src="${escapeHtml(s.image_data||s.image_url)}" alt="${escapeHtml(s.title)}"><div><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.description)}</p><code>${escapeHtml(s.route||'/')}</code><br><button onclick="Docs.openLightbox('${s.id}')">View screen</button><button onclick="Docs.copySnapshotLink('${s.id}')">Copy link</button></div></article>`).join('')||'<p>No screenshots yet.</p>'}
-function openLightbox(id){const s=screenshots.find(x=>String(x.id)===String(id));if(!s)return;document.getElementById('lightboxImage').src=s.image_data||s.image_url;document.getElementById('lightboxTitle').textContent=s.title;document.getElementById('lightboxDescription').textContent=s.description||'';document.getElementById('lightboxRoute').textContent=s.route||'';document.getElementById('imageLightbox').classList.remove('hidden')}function closeLightbox(e){if(e&&e.target!==document.getElementById('imageLightbox')&&!e.target.classList.contains('lightbox-close'))return;document.getElementById('imageLightbox').classList.add('hidden')}function copySnapshotLink(id){const url=location.origin+location.pathname+location.search+'#snapshot='+encodeURIComponent(id);navigator.clipboard?.writeText(url)}function openHashSnapshot(){const h=location.hash||'';if(h.startsWith('#snapshot=')){openTopic('live-ui');setTimeout(()=>openLightbox(decodeURIComponent(h.split('=')[1]||'')),250)}}
-function openScreenshotModal(){document.getElementById('screenshotModal').classList.remove('hidden')}function closeScreenshotModal(){document.getElementById('screenshotModal').classList.add('hidden')}function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}async function uploadScreenshot(){const f=document.getElementById('shotFile').files[0],status=document.getElementById('shotStatus');if(!f){status.textContent='Choose an image first.';return}status.textContent='Uploading screenshot...';const image_data=await fileToDataURL(f);const payload={title:document.getElementById('shotTitle').value||f.name,route:document.getElementById('shotRoute').value||'/',description:document.getElementById('shotDescription').value||'',image_name:f.name,image_data};try{const r=await fetch('/api/internal/docs-screenshots',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.ok){const d=await r.json();screenshots.unshift(d.screenshot);status.textContent='Uploaded. Screenshot link is now available.';renderScreenshots();return}}catch(e){}const local=JSON.parse(localStorage.getItem('setu_docs_screenshots')||'[]');const item={...payload,id:'local-'+Date.now(),created_at:new Date().toISOString()};local.unshift(item);localStorage.setItem('setu_docs_screenshots',JSON.stringify(local));screenshots.unshift(item);status.textContent='Saved in this browser. Apply Supabase migration/API for shared persistence.';renderScreenshots()}
-function render(){const id=idx();renderNav();if(id==='overview')renderOverview();renderTopic();renderRail();markActive()}function goPrev(){let i=currentIndex();openTopic(i===0?'overview':topics[i-1].id)}function goNext(){let i=currentIndex();openTopic(i===topics.length-1?'overview':topics[i+1].id)}function toggleNav(){document.getElementById('leftNav').classList.toggle('open')}function search(q){q=String(q||'').toLowerCase();document.querySelectorAll('.nav-link').forEach(b=>{const t=byId(b.dataset.topic);b.style.display=!q||t.title.toLowerCase().includes(q)||t.summary.toLowerCase().includes(q)?'flex':'none'});document.querySelectorAll('.topic-card').forEach(c=>{c.style.display=!q||c.innerText.toLowerCase().includes(q)?'flex':'none'})}
-function openShare(){document.getElementById('shareModal').classList.remove('hidden')}function closeShare(){document.getElementById('shareModal').classList.add('hidden')}function generateShareLink(){const rec=document.getElementById('shareRecipient').value||'External reviewer',hrs=Number(document.getElementById('shareDuration').value||72),data={recipient:rec,expiry:Date.now()+hrs*3600000,issued:Date.now()},tok=btoa(JSON.stringify(data)),url=location.origin+location.pathname+'?share_token='+encodeURIComponent(tok);document.getElementById('shareOutput').value=url;document.getElementById('shareMeta').textContent=`For ${rec}. Expires ${new Date(data.expiry).toLocaleString()}. Internal issue tracker and roadmap are hidden.`;document.getElementById('shareResult').classList.remove('hidden')}function copyShareLink(){navigator.clipboard?.writeText(document.getElementById('shareOutput').value)}function showFullDocument(){const w=window.open('','_blank');w.document.write('<html><head><title>SETU Flow Full Documentation</title><link rel="stylesheet" href="setuflow-docs-workspace.css"></head><body><main class="main" style="max-width:980px;margin:auto">'+topics.filter(t=>t.id!=='overview').map(t=>`<section class="topic-view" style="margin:18px 0"><div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${topicContent(t.id)}</div></section>`).join('')+'</main></body></html>')}
-window.addEventListener('hashchange',()=>{render();openHashSnapshot()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('leftNav').classList.remove('open');document.querySelectorAll('.modal,.lightbox').forEach(m=>m.classList.add('hidden'))}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('globalSearch')?.focus()}});document.addEventListener('click',e=>{if(innerWidth<760&&!document.getElementById('leftNav').contains(e.target)&&!e.target.closest('.mobile-only'))document.getElementById('leftNav').classList.remove('open')});
-async function init(){await initAuth();render();await loadMetrics();await loadScreenshots();if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:'base'})}init();return{openTopic,goPrev,goNext,toggleNav,search,openShare,closeShare,generateShareLink,copyShareLink,showFullDocument,openScreenshotModal,closeScreenshotModal,uploadScreenshot,openLightbox,closeLightbox,copySnapshotLink};})();
+const Docs = (() => {
+  const shared = { active: false, token: null, recipient: null, expiry: null };
+  let authUser = null;
+  let screenshots = [];
+  let metrics = { open: 9, resolved: 199, criticalHigh: 1, milestones: 3 };
+
+  const topics = [
+    { id: 'overview',         group: 'Get Started',        icon: '\u2302',   title: 'Product Overview',     tag: 'Start Here',    summary: 'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',                         accent: '#2563eb', next: 'architecture', sections: [] },
+    { id: 'architecture',     group: 'System Overview',    icon: '\u2bec',   title: 'Architecture',         tag: 'System',        summary: 'App shell, database, auth, RLS, integration boundaries, route groups, and deployment topology.',                           accent: '#0d9488' },
+    { id: 'modules',          group: 'System Overview',    icon: '\u25a6',   title: 'Module Reference',     tag: 'System',        summary: 'Routes, workspaces, source tables, and ownership responsibilities for every major module.',                               accent: '#2563eb' },
+    { id: 'workflows',        group: 'Business Workflows', icon: '\u21c4',   title: 'Commercial Workflows', tag: 'Workflows',     summary: 'Full commercial lifecycle: Lead \u2192 Follow-up \u2192 Quote \u2192 Approval &amp; Send \u2192 Order Execution \u2192 Closeout.',                     accent: '#0d9488' },
+    { id: 'diagrams',         group: 'Business Workflows', icon: '\u25c7',   title: 'Flow Diagrams',        tag: 'Diagrams',      summary: 'Mermaid flowcharts, swimlane diagrams, and slide-ready simplified flow diagrams.',                                        accent: '#7c3aed' },
+    { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Operations',    summary: 'Six click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
+    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, business card scan, smart vCard, live org search \u2014 all with human approval guardrails.',          accent: '#db2777' },
+    { id: 'data-security',    group: 'Security & Data',    icon: '\u2bcf',   title: 'Data & Security',      tag: 'Security',      summary: 'Organization-scoped data, RLS policies, membership, roles, audit trails, and safe integration boundaries.',               accent: '#059669' },
+    { id: 'api-integrations', group: 'Integrations & API', icon: '</>',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
+    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',                              accent: '#14b8a6' },
+    { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
+    { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
+  ];
+
+  function idx() { const h = (location.hash || '#overview').replace('#', '').split('='); if (h[0] === 'snapshot') return 'live-ui'; return topics.some(t => t.id === h[0]) ? h[0] : 'overview'; }
+  function byId(id) { return topics.find(t => t.id === id) || topics[0]; }
+  function currentIndex() { return Math.max(0, topics.findIndex(t => t.id === idx())); }
+  function isInternal() { return !shared.active; }
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
+  function validToken(token) { try { const d = JSON.parse(atob(token)); if (!d.expiry || d.expiry < Date.now()) return null; return d; } catch { return null; } }
+
+  async function initAuth() {
+    const p = new URLSearchParams(location.search);
+    const token = p.get('share_token');
+    if (token) {
+      const d = validToken(token);
+      if (d) {
+        shared.active = true; shared.token = token; shared.recipient = d.recipient || 'External reviewer'; shared.expiry = d.expiry;
+        document.body.classList.add('shared-mode');
+        document.getElementById('sharedBanner').classList.remove('hidden');
+        document.getElementById('sharedRecipient').textContent = shared.recipient;
+        document.getElementById('sharedExpiry').textContent = 'Expires ' + new Date(shared.expiry).toLocaleString();
+        document.querySelectorAll('.internal-only').forEach(e => e.classList.add('hidden'));
+        document.getElementById('authGate').classList.add('hidden');
+        return;
+      }
+      document.getElementById('authGate').classList.remove('hidden');
+      document.getElementById('authError').textContent = 'This shared review link is invalid or expired.';
+      return;
+    }
+    try {
+      const r = await fetch('/api/internal/auth-check', { credentials: 'include' });
+      if (!r.ok) throw new Error('auth');
+      const d = await r.json();
+      authUser = d.user || null;
+      document.getElementById('userName').textContent = authUser?.name || 'Ritesh Kapoor';
+      document.getElementById('userInitial').textContent = (authUser?.name || 'R').charAt(0).toUpperCase();
+      document.getElementById('authGate').classList.add('hidden');
+    } catch (e) {
+      document.getElementById('authGate').classList.remove('hidden');
+    }
+  }
+
+  function renderNav() {
+    const nav = document.getElementById('topicNav');
+    let html = '', g = '';
+    topics.forEach(t => {
+      if (t.group !== g) { g = t.group; html += `<div class="nav-group">${g}</div>`; }
+      html += `<button class="nav-link" data-topic="${t.id}" onclick="Docs.openTopic('${t.id}')"><span class="dot">${t.icon}</span>${t.title}</button>`;
+    });
+    nav.innerHTML = html;
+    markActive();
+  }
+
+  function markActive() {
+    const id = idx();
+    document.querySelectorAll('.nav-link').forEach(b => b.classList.toggle('active', b.dataset.topic === id));
+    document.querySelectorAll('[data-rail-topic]').forEach(b => b.classList.toggle('active', b.dataset.railTopic === id));
+    const i = currentIndex();
+    document.getElementById('mobileProgress').textContent = (i + 1) + ' / ' + topics.length;
+    document.getElementById('mobilePrev').textContent = i === 0 ? 'Overview' : '\u2190 ' + topics[i - 1].title;
+    document.getElementById('mobileNext').textContent = i === topics.length - 1 ? 'Start over' : topics[i + 1].title + ' \u2192';
+  }
+
+  function openTopic(id) { location.hash = id; document.getElementById('leftNav').classList.remove('open'); }
+
+  function renderOverview() {
+    const ov = document.getElementById('overviewView');
+    const openIssues = metrics.open || 9;
+    const milestones = metrics.milestones || 3;
+    ov.innerHTML = `
+<section class="hero">
+  <div>
+    <div class="eyebrow">Mission-critical documentation workspace</div>
+    <h1>SETU Flow CRM &mdash; Technical Documentation</h1>
+    <p>Comprehensive technical resources for architects, developers, and operators building and running mission-critical commercial workflows on SETU Flow CRM.</p>
+    <div class="hero-search"><span>&#x2315;</span><input placeholder="Search docs, modules, APIs, workflows..." oninput="Docs.search(this.value)"><kbd>&#x2318;K</kbd></div>
+    <div class="hero-chips">
+      <button onclick="Docs.openTopic('api-integrations')">API Reference</button>
+      <button onclick="Docs.openTopic('workflows')">Commercial Workflows</button>
+      <button onclick="Docs.openTopic('data-security')">Data Model</button>
+      <button onclick="Docs.openTopic('operator-guides')">Operator Guides</button>
+      <button onclick="Docs.openTopic('live-ui')">Live UI Snapshots</button>
+    </div>
+  </div>
+  <div class="readiness-card">
+    <div class="ring"><span id="readyPct">66%</span></div>
+    <b>Documentation Readiness</b>
+    <p>Live issue counts and roadmap signals refresh from Supabase when available.</p>
+  </div>
+</section>
+<section class="quick-grid">
+  <div class="quick-card internal-only">
+    <div class="quick-icon" style="background:#0d9488">&#x27A4;</div>
+    <h3>Share Doc</h3>
+    <p>Share this documentation with team members or external stakeholders.</p>
+    <button onclick="Docs.openShare()">Share documentation</button>
+    <div class="quick-card-arrow">&#x2192;</div>
+  </div>
+  <div class="quick-card internal-only">
+    <div class="quick-icon" style="background:#2563eb">&#x25CE;</div>
+    <h3>Issue Tracker <span class="quick-card-count" id="issueQuick">${openIssues}</span></h3>
+    <p>View open issues, report bugs, or track documentation tasks and improvements.</p>
+    <a href="setuflow-issue-tracker.html">Open issue tracker</a>
+    <div class="quick-card-arrow">&#x2192;</div>
+  </div>
+  <div class="quick-card internal-only">
+    <div class="quick-icon" style="background:#7c3aed">&#x2691;</div>
+    <h3>Roadmap <span class="quick-card-count" style="background:#7c3aed">${milestones}</span></h3>
+    <p>Explore upcoming features, milestones, and product delivery timelines.</p>
+    <a href="setuflow-roadmap.html">Open roadmap</a>
+    <div class="quick-card-arrow">&#x2192;</div>
+  </div>
+  <div class="quick-card">
+    <div class="quick-icon" style="background:#db2777">&#x25a3;</div>
+    <h3>${isInternal() ? 'Add / Review' : 'View'} Screenshots</h3>
+    <p>Browse all documentation sections and live UI snapshots at a glance.</p>
+    <button onclick="Docs.openTopic('live-ui')">Open snapshots</button>
+    <div class="quick-card-arrow">&#x2192;</div>
+  </div>
+</section>
+<section class="metrics">
+  <div class="metric">
+    <span class="metric-icon">&#x25a6;</span>
+    <small>Total Modules</small>
+    <strong>28</strong>
+    <div class="metric-badge up">&#x2191; 3 this month</div>
+  </div>
+  <div class="metric internal-only">
+    <span class="metric-icon">&#x25CE;</span>
+    <small>Open Issues</small>
+    <strong id="openMetric">${openIssues}</strong>
+    <div class="metric-badge warn" id="riskMetric">${metrics.criticalHigh || 1} critical / high</div>
+  </div>
+  <div class="metric internal-only">
+    <span class="metric-icon">&#x2691;</span>
+    <small>Roadmap Milestones</small>
+    <strong id="roadMetric">${milestones}</strong>
+    <div class="metric-badge good">On Track</div>
+  </div>
+  <div class="metric">
+    <span class="metric-icon">&#x25C8;</span>
+    <small>Latest Release</small>
+    <strong>v2026.05</strong>
+    <div class="metric-badge latest">Latest</div>
+  </div>
+</section>
+<div class="overview-title">
+  <div>
+    <h2>Product overview and guided topics</h2>
+    <p>Choose a topic. Each page explains what the system does, how to test it, and what can break.</p>
+  </div>
+</div>
+<section class="topic-grid">${overviewTopicCards()}</section>`;
+    if (shared.active) document.querySelectorAll('.internal-only').forEach(e => e.classList.add('hidden'));
+  }
+
+  function overviewTopicCards() {
+    const links = {
+      'architecture':     ['High-Level Architecture','Component Diagram','Deployment Topology','Tech Stack'],
+      'workflows':        ['Lead to Opportunity','Quote to Contract','Order to Cash','Renewal & Upsell'],
+      'diagrams':         ['Lead Flowchart','Quote Flowchart','Order Execution','Swimlane Diagrams'],
+      'operator-guides':  ['Lead to Quote','Quote Build & Send','Order Execution','Finance Closeout'],
+      'guru-ai':          ['Page Context Help','Business Card Scan','Smart vCard','Live Org Search'],
+      'live-ui':          ['Dashboard Snapshots','Pipeline Workspace','Orders Cockpit','Mobile Capture'],
+      'data-security':    ['Data Model Overview','Entity Relationship','Roles & Permissions','Security Practices'],
+      'api-integrations': ['API Reference','Authentication','Webhooks','SDKs & Libraries'],
+      'modules':          ['Dashboard','Leads','Pipeline','Quotes & Orders'],
+      'mobile':           ['Business Card Scan','Smart vCard','Trade Event Capture','Field Qualification'],
+      'quick-reference':  ['Never Break Rules','Always Verify','Core Routes','Quality Signals'],
+    };
+    return topics.filter(t => t.id !== 'overview').map(t => {
+      const ls = (links[t.id] || []).map(l => `<span style="display:block;font-size:11.5px;color:#2563eb;font-weight:700;padding:1px 0">${l}</span>`).join('');
+      return `<article class="topic-card" style="--t-accent:${t.accent}" onclick="Docs.openTopic('${t.id}')">
+  <div class="topic-card-top">
+    <div class="topic-icon" style="background:${t.accent}">${t.icon}</div>
+    <div style="flex:1;min-width:0"><h3>${t.title}</h3><p>${t.summary}</p>${ls ? `<div style="margin-top:8px">${ls}</div>` : ''}</div>
+  </div>
+  <div class="topic-card-footer"><span>${t.group}</span><span>View all &#x2192;</span></div>
+</article>`;
+    }).join('');
+  }
+
+  function topicContent(id) {
+    const map = {};
+
+    map['architecture'] = `<div class="pro-grid">
+  <div class="pro-card"><b>App Shell</b><p>Next.js App Router with server-rendered workspaces, focused client components, and route contracts for every CRM module. All screens represent workflow states and gates.</p></div>
+  <div class="pro-card"><b>Data Boundary</b><p>Supabase Postgres with organization-scoped RLS. Every server action must filter by <code>organization_id</code>. No cross-org leakage permitted. RLS is the final enforcement layer.</p></div>
+  <div class="pro-card"><b>Integration Boundary</b><p>Email, WhatsApp, freight, finance, and AI integrations stay adapter-backed and auditable. No live external provider call from UI code without an approved adapter.</p></div>
+</div>
+<div class="section-block"><h2>Architecture Narrative</h2>
+<p>SETU Flow CRM is a controlled commercial operating system organized around authenticated workspaces: Dashboard, Leads, Pipeline, Quotes, Orders, Products, Trade Events, Admin, and Mobile. The database is the source of truth, while UI screens represent workflow states and gates — not isolated pages.</p>
+<p>Every commercial transaction follows a strict gate-and-approve model. No stage can be skipped without explicit human approval. AI assists but does not act autonomously on external sends, approvals, or compliance decisions.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Layer</th><th>Technology</th><th>Responsibility</th><th>Tester Focus</th></tr></thead>
+<tbody>
+<tr><td><b>UI</b></td><td>Next.js 14 App Router</td><td>Routes, workspace views, server components, document previews</td><td>Confirm every CTA writes expected rows and preserves org scope.</td></tr>
+<tr><td><b>Server Actions</b></td><td>Next.js Server Actions</td><td>Validated mutations, gate checks, workflow RPCs, audit writes</td><td>All mutations go through server actions — never direct client Supabase writes for sensitive data.</td></tr>
+<tr><td><b>Database</b></td><td>Supabase Postgres</td><td>Auth, RLS, workflow data, audit records, issue tracker, docs screenshots</td><td>Validate org members see only their workspace data. RLS is the last defense.</td></tr>
+<tr><td><b>Auth</b></td><td>Supabase Auth + JWT</td><td>Session management, workspace membership, role-based permission helpers</td><td>Confirm sign-in and session expiry. Role boundaries enforced server-side.</td></tr>
+<tr><td><b>Deployment</b></td><td>Vercel</td><td>Production deployment, build proof, environment variables</td><td>Every fix must deploy green before the tracker closes. Preview URLs are never buyer links.</td></tr>
+<tr><td><b>AI</b></td><td>Anthropic API via Setu Guru</td><td>Page context help, org search, HSN research, pricing defaults — human-approved only</td><td>AI cannot bypass approval, compliance, or send gates. All Guru actions are reviewable.</td></tr>
+<tr><td><b>Email</b></td><td>Mailtrap (production-ready)</td><td>Order document sends, invitation emails, webhook delivery confirmation</td><td>link_created is not delivered. Delivery confirmation requires MAILTRAP_WEBHOOK_SECRET in Vercel.</td></tr>
+<tr><td><b>PDF</b></td><td>puppeteer-core + @sparticuz/chromium</td><td>Document generation via free OSS path — no paid PDF API</td><td>Browser-print available as fallback. Server-side via approved OSS path only.</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Route Groups</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Route</th><th>Module</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>/dashboard</code></td><td>Dashboard</td><td>Executive KPIs, market command map, activity feed, follow-up queue</td></tr>
+<tr><td><code>/leads</code></td><td>Follow-up / Lead Command Center</td><td>Buyer/supplier records, qualification, product coverage, compliance</td></tr>
+<tr><td><code>/pipeline</code></td><td>Pipeline</td><td>Kanban (11 stages), swimlane, forecast, density controls</td></tr>
+<tr><td><code>/quotes</code></td><td>Quote Builder</td><td>Versioned quotes, FX, pricing, approval gates, send tracking</td></tr>
+<tr><td><code>/orders</code></td><td>Order Execution Cockpit</td><td>Actual lines, documents, packing, freight, processing, dispatch, finance</td></tr>
+<tr><td><code>/products</code></td><td>Catalog</td><td>Categories, products, variants, pricing rule sets, bulk CSV import</td></tr>
+<tr><td><code>/admin/*</code></td><td>Admin</td><td>Org settings, users, invitations, roles, trade events, document templates</td></tr>
+<tr><td><code>/mobile/*</code></td><td>Mobile Workspace</td><td>Business card scan, smart vCard, field capture, mobile leads/quotes</td></tr>
+<tr><td><code>/contact-exchange/scan</code></td><td>Capture</td><td>Business card scan — creates reviewable lead drafts</td></tr>
+<tr><td><code>/order-documents/preview/[token]</code></td><td>Document Preview</td><td>Tokenized buyer-facing document preview — tracks open count</td></tr>
+</tbody></table></div>`;
+
+    map['modules'] = `<div class="tbl-wrap"><table>
+<thead><tr><th>Module</th><th>Route</th><th>What It Owns</th><th>Ready Signal</th></tr></thead>
+<tbody>
+<tr><td><b>Dashboard</b></td><td><code>/dashboard</code></td><td>Executive KPIs, market command map, commercial feed, follow-up queue</td><td>KPIs load without cross-org leakage.</td></tr>
+<tr><td><b>Leads</b></td><td><code>/leads</code></td><td>Buyer/supplier records, Lead Command Center, product coverage, compliance posture, follow-up planning</td><td>Command Center opens with clear next actions. Quote CTA appears only when gate passes.</td></tr>
+<tr><td><b>Pipeline</b></td><td><code>/pipeline</code></td><td>Kanban board (11 stages), swimlane view, forecast mode, density controls, stage filters</td><td>View controls do not break stage logic. Cards show overdue indicators.</td></tr>
+<tr><td><b>Quotes</b></td><td><code>/quotes</code></td><td>Versioned quote workspace, FX snapshots, pricing rules, approval gates, send tracking</td><td>Sent quote versions are immutable. Accepted version cannot be edited.</td></tr>
+<tr><td><b>Orders</b></td><td><code>/orders</code></td><td>Actual lines, first document, packing, freight, trade requirements, processing, shipment, finance closeout</td><td>No stage skips without gate approval. link_created is not delivered.</td></tr>
+<tr><td><b>Products</b></td><td><code>/products</code></td><td>Categories, products, variants (pack size, UOM, MOQ), pricing rule sets, bulk CSV import</td><td>Pricing cascades: org then category then product.</td></tr>
+<tr><td><b>Admin</b></td><td><code>/admin/*</code></td><td>Org settings, user invitations, role management, trade event setup, document template profiles</td><td>Role-based access enforced server-side. Non-admin users cannot invite.</td></tr>
+<tr><td><b>Mobile</b></td><td><code>/mobile/*</code></td><td>Business card scan, smart vCard, field capture, mobile leads, mobile order view</td><td>Scan creates reviewable lead drafts — operators approve before commercial record created.</td></tr>
+<tr><td><b>Analytics</b></td><td><code>/dashboard/analytics</code></td><td>Lead to Order funnel, quote performance, order execution stats, document send effectiveness, top markets</td><td>Charts render without crashing. Filters shared across panels.</td></tr>
+</tbody></table></div>`;
+
+    return map[id] || '';
+  }
+
+  function topicContentWorkflows(id) {
+    if (id === 'workflows') return `
+<div class="doc-alert doc-alert-teal">The SETU Flow operating spine: <strong>Capture &rarr; Follow-up &rarr; Quote &rarr; Approval &amp; Send &rarr; Orders / Execution &rarr; Closeout</strong>. Every commercial deal flows through these stages in sequence. No stage can be skipped without explicit gate approval.</div>
+<div class="section-block"><h2>Commercial Pipeline</h2></div>
+<div class="wf-pipeline">
+  <div class="wf-stage st-complete"><div class="wf-stage-label">Capture</div><div class="wf-stage-route">/contact-exchange/scan</div></div>
+  <div class="wf-stage st-complete"><div class="wf-stage-label">Follow-up</div><div class="wf-stage-route">/leads</div></div>
+  <div class="wf-stage st-active"><div class="wf-stage-label">Quote</div><div class="wf-stage-route">/quotes</div></div>
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Approval &amp; Send</div><div class="wf-stage-route">/approval-send</div></div>
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Order Execution</div><div class="wf-stage-route">/orders</div></div>
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Closeout</div><div class="wf-stage-route">/orders [Paid]</div></div>
+</div>
+<div class="section-block"><h2>Full Workflow Reference Table</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Stage</th><th>Route</th><th>Primary CTAs</th><th>System Behavior</th><th>Blockers</th><th>Main Tables</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-teal">Capture</span></td><td><code>/contact-exchange/scan</code></td><td>Review, Save lead, Open follow-up</td><td>Creates/updates lead intake records; links source &amp; event metadata</td><td>Missing company / contact / product / country</td><td><code>leads</code>, <code>trade_events</code>, <code>lead_activities</code></td></tr>
+<tr><td><span class="badge badge-blue">Follow-up</span></td><td><code>/leads</code></td><td>Open, More, Continue quote, Edit lead, Plan follow-up</td><td>Owns qualification, follow-ups, product interests, stage, compliance posture</td><td>Disqualified lead, no product interest, missing buyer country, compliance blocker</td><td><code>leads</code>, <code>lead_product_interests</code>, <code>lead_markets</code>, <code>lead_follow_ups</code></td></tr>
+<tr><td><span class="badge badge-slate">RFQ (Optional)</span></td><td><code>/leads/[id]/rfq/new</code></td><td>Create RFQ, Update RFQ, Open quote workspace</td><td>Captures supplier request context before quote</td><td>Supplier response rows required before sent_to_suppliers</td><td><code>rfqs</code>, <code>rfq_line_items</code></td></tr>
+<tr><td><span class="badge badge-blue">Quote Draft</span></td><td><code>/quotes</code></td><td>Create quote, Add product, Save draft</td><td>Builds quote from catalog data, line items, FX, freight assumptions, manual override reasons</td><td>Needs org, lead, currency, line items, valid pricing context</td><td><code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code></td></tr>
+<tr><td><span class="badge badge-amber">Quote Approval &amp; Send</span></td><td><code>/quotes</code></td><td>Send quote, Approve &amp; allow send, Attach evidence, Waive, Defer</td><td>Send checks current version, approval, blockers, compliance posture</td><td>Pending approval, missing evidence, send blockers, no current version</td><td><code>quotes</code>, <code>quote_versions</code>, <code>communications</code></td></tr>
+<tr><td><span class="badge badge-green">Quote Outcome</span></td><td><code>/quotes</code></td><td>Mark accepted, Mark rejected, Create order</td><td>Accepted version becomes commercial source for contract/order execution</td><td>Only sent quotes can be accepted/rejected</td><td><code>quotes.accepted_version_id</code>, <code>contracts</code>, <code>orders</code></td></tr>
+<tr><td><span class="badge badge-green">Order Actual Lines</span></td><td><code>/orders</code></td><td>Open, Prepare actual lines, Save, Add line, Approve actual lines</td><td>Seeds order lines from accepted quote; permits actual differences with reasons</td><td>Accepted quote lineage required; preview lines cannot be edited before prepare</td><td><code>orders</code>, <code>order_lines</code>, <code>order_approval_gates</code></td></tr>
+<tr><td><span class="badge badge-blue">First Buyer Document</span></td><td><code>/orders</code></td><td>Prepare document, Preview, Approve, Send tracked, Print PDF</td><td>Creates proforma invoice (export) or order confirmation (regional)</td><td>Actual lines gate must be approved before document gates</td><td><code>order_documents</code>, <code>order_document_sends</code></td></tr>
+<tr><td><span class="badge badge-teal">Packing &amp; Freight</span></td><td><code>/orders</code></td><td>Prepare packing sheet, Preview, Approve, Prepare freight request</td><td>Creates packing plans and freight requests after first document approval</td><td>First document approval required before packing; packing before freight</td><td><code>packing_plans</code>, <code>packing_plan_lines</code>, <code>freight_rate_requests</code></td></tr>
+<tr><td><span class="badge badge-slate">Trade Requirements</span></td><td><code>/orders</code></td><td>Search and attach requirements, Confirm source</td><td>Matches rules by order/product/country/HS; creates human-review fallback</td><td>Blocking severities must be reviewed before dispatch</td><td><code>trade_requirements</code>, <code>trade_requirement_sources</code></td></tr>
+<tr><td><span class="badge badge-amber">Processing</span></td><td><code>/orders</code></td><td>Save processing check, Approve pick-pack-QC</td><td>Records picked, packed, QC, notes; unlocks delivery note when complete</td><td>Packing sheet approval required</td><td><code>order_processing_checks</code>, gates, events</td></tr>
+<tr><td><span class="badge badge-amber">Logistics &amp; Dispatch</span></td><td><code>/orders</code></td><td>Approve logistics docs, Create shipment draft, Approve dispatch</td><td>Dispatch requires shipment draft and open blocking requirements resolved</td><td>Delivery note ordering enforced by server gates</td><td><code>shipments</code>, <code>order_approval_gates</code></td></tr>
+<tr><td><span class="badge badge-green">Finance &amp; Closeout</span></td><td><code>/orders</code></td><td>Prepare final invoice, Approve, Generate receipt + close</td><td>Final invoice approval gates paid closeout; requires payment, reconciliation, receipt, archive</td><td>Final invoice approved; all 5 closeout conditions must pass</td><td><code>finance_sync_records</code>, <code>orders.status</code></td></tr>
+</tbody></table></div>
+<div class="doc-alert doc-alert-amber"><strong>Immutability rule:</strong> Commercial immutability starts at sent/accepted quote versions, NOT at lead stage. Order changes happen in <code>order_lines</code>, never by mutating the accepted quote version lines.</div>
+<div class="section-block"><h2>Data Truth Hierarchy</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#x1F4CB; Quote Versions</div><ul><li><code>quote_versions</code> &mdash; immutable once sent</li><li><code>quote_version_line_items</code> &mdash; commercial source</li><li><code>quote_pricing_snapshots</code> &mdash; FX at time of quote</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#x1F4E6; Order Execution</div><ul><li><code>orders</code> + <code>order_lines</code> &mdash; actual execution</li><li><code>order_documents</code> + <code>order_document_sends</code></li><li><code>packing_plans</code>, <code>shipments</code>, <code>finance_sync_records</code></li></ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#x1F3F7; Catalog Pricing</div><ul><li><code>pricing_rule_sets</code> &mdash; org-level defaults</li><li><code>product_pricing_rules</code> &mdash; product-level overrides</li><li><code>pricing_engine_settings</code> &mdash; threshold/approval config</li></ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">&#x1F510; Permissions</div><ul><li><code>profiles</code>, <code>organizations</code></li><li><code>organization_members</code></li><li><code>roles</code>, <code>role_permissions</code>, <code>user_roles</code></li></ul></div>
+</div>
+<div class="section-block"><h2>Support Workflows</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card"><div class="doc-card-title">&#x1F4E6; Product Setup</div><ul><li>Admin &rarr; Categories (parent first, then child)</li><li>Set category-level pricing defaults</li><li>Products workspace &rarr; Add Product, Variants, Pricing</li><li>Bulk import via CSV: Categories &rarr; Products &rarr; Pricing</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">&#x1F465; User Onboarding</div><ul><li>Admin &rarr; Invitations &rarr; Enter email + role &rarr; Send</li><li>User clicks link, creates password, lands in workspace</li><li>Admin &rarr; Users &rarr; Verify role is correct</li><li>User sets up Profile &rarr; My Card &rarr; vCard</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">&#x1F3AA; Trade Events</div><ul><li>Admin &rarr; Trade Events &rarr; Create event</li><li>Assign team members; confirm scan readiness</li><li>During event: Business Card Scan or Quick Entry</li><li>Post-event: filter leads by Source Event</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">&#x1F4CB; Compliance</div><ul><li>Document Blocker = required doc not uploaded</li><li>Compliance Blocker = checklist item unresolved</li><li>Attach evidence &rarr; Waive for quote &rarr; Defer to dispatch</li><li>Waivers require human reviewer reason</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">&#x1F4B1; FX &amp; Pricing</div><ul><li>USD identity handled automatically</li><li>Non-USD requires <code>exchange_rates</code> snapshot</li><li>Override &gt;15% triggers pending approval</li><li>Pricing rule sets cascade: org &rarr; category &rarr; product</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">&#x1F916; AI Suggestions</div><ul><li>AI drafts follow-up emails, cover notes, summaries</li><li>AI does NOT set prices, approve quotes, or send messages</li><li>AI does NOT advance order states autonomously</li><li>Always review and edit before using a draft</li></ul></div>
+</div>`;
+    return null;
+  }
+
+  function topicContentDiagrams(id) {
+    if (id === 'diagrams') return `
+<div class="section-block"><h2>Mermaid Flowcharts</h2><p>These diagrams show the decision logic for each major workflow.</p></div>
+<h3>Lead to Quote Readiness</h3>
+<div class="mermaid-wrap"><div class="diagram-title">Lead Workflow Flowchart</div>
+<pre class="mermaid">
+flowchart LR
+  A([Capture]) --> B{Review Contact}
+  B -->|Valid| C[Save Lead]
+  B -->|Invalid| A
+  C --> D[Follow-up Queue]
+  D --> E[Open Command Center]
+  E --> F{Qualify?}
+  F -->|Disqualified| G([Dead End])
+  F -->|Qualified| H[Add Product Coverage]
+  H --> I{Coverage Saved?}
+  I -->|No| H
+  I -->|Yes| J[Plan Follow-up]
+  J --> K{Compliance Blocker?}
+  K -->|Yes| L{Resolution}
+  L -->|Attach Evidence| M[Upload Doc]
+  L -->|Waive for Quote| N[Record Reason]
+  L -->|Defer to Dispatch| O[Record Obligation]
+  M & N & O --> K
+  K -->|No| P([Create Quote])
+</pre></div>
+<h3>Quote Build to Send to Outcome</h3>
+<div class="mermaid-wrap"><div class="diagram-title">Quote Workflow Flowchart</div>
+<pre class="mermaid">
+flowchart LR
+  A([Open Quote Workspace]) --> B[Select or Create Quote]
+  B --> C[Add Catalog Products]
+  C --> D[Set Currency and FX and Incoterm]
+  D --> E{FX Available?}
+  E -->|No| F([Block - No FX Snapshot])
+  E -->|Yes| G[Review Pricing and Overrides]
+  G --> H{Override greater than 15 percent?}
+  H -->|Yes| I{Approval}
+  I -->|Rejected| J[Revise Quote]
+  J --> G
+  I -->|Approved| K
+  H -->|No| K[Save Draft]
+  K --> L{Compliance Blocker?}
+  L -->|Yes| M[Resolve Blocker]
+  M --> L
+  L -->|No| N[Send Quote]
+  N --> O[Quote LOCKED - Sent]
+  O --> P{Buyer Outcome}
+  P -->|Accepted| Q([Mark Accepted - Create Order])
+  P -->|Rejected| R([Mark Rejected])
+  P -->|No Response| S[Revise - New Version]
+</pre></div>
+<h3>Quote Version State Machine</h3>
+<div class="mermaid-wrap"><div class="diagram-title">Quote Versioning</div>
+<pre class="mermaid">
+flowchart LR
+  A([New Quote]) --> B[Draft Version]
+  B -->|Edit freely| B
+  B -->|Approval required| D[Pending Approval]
+  D -->|Rejected| B
+  D -->|Approved| E
+  B -->|No approval needed| E[Send]
+  E --> F[Sent - IMMUTABLE]
+  F -->|Buyer accepts| G[Accepted - IMMUTABLE]
+  F -->|Buyer rejects| H[Rejected]
+  F -->|Expires| I[Expired]
+  F -->|Revise| J[New Version Draft]
+  G --> K([Order Source])
+  J --> B
+</pre></div>
+<h3>Order Execution Stage by Stage</h3>
+<div class="mermaid-wrap"><div class="diagram-title">Order Execution Flowchart</div>
+<pre class="mermaid">
+flowchart LR
+  A([Accepted Quote]) --> B[Stage 1 Quote Approved]
+  B --> C[Prepare Actual Lines]
+  C --> D[Review Quote vs Actual]
+  D --> E[Approve Actual Lines]
+  E --> F[Stage 2 First Document]
+  F --> G[Prepare Document]
+  G --> H[Preview Document]
+  H --> I[Approve Document]
+  I --> J[Send Tracked or Print PDF]
+  J --> K[Stage 3 Packing and Freight]
+  K --> L[Prepare Packing Sheet]
+  L --> M[Approve Packing Sheet]
+  M --> N[Prepare Freight Request]
+  N --> O[Stage 4 Processing]
+  O --> P{Pick Pack QC?}
+  P -->|Incomplete| O
+  P -->|Complete| R[Stage 5 Logistics]
+  R --> S[Approve Logistics Docs]
+  S --> T[Create Shipment Draft]
+  T --> U{Trade Requirements Clear?}
+  U -->|Blocking Open| V[Resolve]
+  V --> U
+  U -->|Clear| W[Approve Dispatch]
+  W --> X[Stage 6 Invoice Closeout]
+  X --> Y[Approve Final Invoice]
+  Y --> Z([Paid and Closed])
+</pre></div>
+<div class="section-block"><h2>Swimlane Diagrams</h2><p>Operator and system responsibilities shown side by side so testers can validate both UI behavior and data writes.</p></div>
+<h3>Lead to Quote Swimlane</h3>
+<div class="swimlane">
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>Operator</small><b>Capture &amp; Qualify</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step"><b>Scan or add lead</b><span>Review parsed card data, verify company and contact.</span></div>
+      <div class="lane-step"><b>Open Command Center</b><span>Confirm buyer/supplier context and qualification status.</span></div>
+      <div class="lane-step"><b>Link coverage</b><span>Add product and market interest. CTA appears when gate passes.</span></div>
+      <div class="lane-step"><b>Resolve compliance</b><span>Attach evidence, waive for quote, or defer to dispatch.</span></div>
+      <div class="lane-step"><b>Create quote</b><span>Gate confirmed &mdash; open quote workspace.</span></div>
+    </div>
+  </div>
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>System</small><b>Data &amp; Gates</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step system"><b>Parse contact via AI</b><span>Create lead + profile rows. Write source metadata.</span></div>
+      <div class="lane-step system"><b>Run lead quote gate</b><span>Validate coverage, country, compliance posture.</span></div>
+      <div class="lane-step system"><b>Write interests</b><span>Save <code>lead_product_interests</code> row. Update readiness.</span></div>
+      <div class="lane-step system"><b>Record compliance</b><span>Write compliance decision / waiver / deferral rows.</span></div>
+      <div class="lane-step system"><b>Open quote workspace</b><span>Seed quote with lead context and catalog defaults.</span></div>
+    </div>
+  </div>
+</div>
+<h3>Quote Build &amp; Send Swimlane</h3>
+<div class="swimlane">
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>Operator</small><b>Build &amp; Send</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step"><b>Open Quote</b><span>Select or create quote for the lead.</span></div>
+      <div class="lane-step"><b>Add catalog products</b><span>System loads pack size, MOQ, pricing defaults.</span></div>
+      <div class="lane-step"><b>Set currency / terms</b><span>Verify FX snapshot exists for non-USD quotes.</span></div>
+      <div class="lane-step"><b>Enter override reason</b><span>Override &gt;15% triggers approval pending flag.</span></div>
+      <div class="lane-step"><b>Send quote</b><span>Requires cleared compliance and approval gate.</span></div>
+      <div class="lane-step"><b>Mark accepted/rejected</b><span>Only after actual buyer response received.</span></div>
+    </div>
+  </div>
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>System</small><b>Persistence</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step system"><b>Load catalog rules</b><span>Apply pricing cascade: org &rarr; category &rarr; product.</span></div>
+      <div class="lane-step system"><b>Capture FX snapshot</b><span>Write <code>quote_pricing_snapshots</code> record.</span></div>
+      <div class="lane-step system"><b>Flag approval</b><span>Set <code>approval_required = true</code> on version.</span></div>
+      <div class="lane-step system"><b>Write quote rows</b><span>Save <code>quotes</code>, <code>quote_versions</code>, <code>line_items</code>.</span></div>
+      <div class="lane-step system"><b>Lock version = sent</b><span>Write <code>communications</code> row. Version now immutable.</span></div>
+      <div class="lane-step system"><b>Set accepted_version_id</b><span>Create contract / order lineage on acceptance.</span></div>
+    </div>
+  </div>
+</div>
+<h3>Order Execution Swimlane</h3>
+<div class="swimlane">
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>Operator</small><b>Execute Order</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step"><b>Prepare actual lines</b><span>Confirm quantities and price vs accepted quote.</span></div>
+      <div class="lane-step"><b>Approve document</b><span>Preview before any external use.</span></div>
+      <div class="lane-step"><b>Approve packing</b><span>Confirm packing lines match actual order.</span></div>
+      <div class="lane-step"><b>Confirm trade requirements</b><span>All blocking requirements resolved before dispatch.</span></div>
+      <div class="lane-step"><b>Dispatch</b><span>Approve shipment event.</span></div>
+      <div class="lane-step"><b>Closeout</b><span>Approve final invoice. Enter payment + reconciliation.</span></div>
+    </div>
+  </div>
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>System</small><b>Persistence</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step system"><b>Seed order lines</b><span>Accepted quote version becomes <code>order_lines</code> source.</span></div>
+      <div class="lane-step system"><b>Write order documents</b><span>Create document + send rows. Track open count.</span></div>
+      <div class="lane-step system"><b>Create packing plans</b><span>Write <code>packing_plans</code> + <code>packing_plan_lines</code>.</span></div>
+      <div class="lane-step system"><b>Match trade rules</b><span>Create <code>trade_requirements</code> rows. Fallback = human review.</span></div>
+      <div class="lane-step system"><b>Dispatch stage event</b><span>Write <code>shipments.status = dispatched</code> + order event.</span></div>
+      <div class="lane-step system"><b>Write finance sync</b><span>Write <code>finance_sync_records</code>. Set <code>orders.status = completed</code>.</span></div>
+    </div>
+  </div>
+</div>
+<div class="section-block"><h2>Slide Diagrams</h2></div>
+<div class="slide"><div class="slide-title">Lead Workflow</div><div class="slide-sub">Turn captured contacts into quote-ready leads</div><div class="slide-flow"><div class="slide-node">Capture</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Follow-up</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Command Center</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Coverage</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Quote Ready</div></div><div class="slide-rules"><div class="slide-rule">No product coverage = No quote</div><div class="slide-rule">Disqualified = Dead end</div><div class="slide-rule">Compliance can block send later</div><div class="slide-rule">Waive / Defer requires reviewer reason</div></div></div>
+<div class="slide"><div class="slide-title">Quote Versioning</div><div class="slide-sub">Keep sent offers locked and traceable</div><div class="slide-flow"><div class="slide-node">Draft</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Sent <small style="opacity:.6">LOCKED</small></div><div class="slide-arrow">&rarr;</div><div class="slide-node">Accepted <small style="opacity:.6">LOCKED</small></div><div class="slide-arrow">&rarr;</div><div class="slide-node">Order Source</div></div><div class="slide-rules"><div class="slide-rule">current_version_id &ne; accepted_version_id</div><div class="slide-rule">Revision creates NEW version</div><div class="slide-rule">History preserved for audit</div><div class="slide-rule">Orders start from accepted_version_id only</div></div></div>
+<div class="slide"><div class="slide-title">Order Execution</div><div class="slide-sub">Turn an accepted quote into controlled execution</div><div class="slide-flow"><div class="slide-node">Actual Lines</div><div class="slide-arrow">&rarr;</div><div class="slide-node">First Document</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Packing</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Dispatch</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Close</div></div><div class="slide-rules"><div class="slide-rule">Actual lines can differ from quote lines &mdash; record reason</div><div class="slide-rule">Approve before any external send</div><div class="slide-rule">link_created &ne; provider delivered</div><div class="slide-rule">Each gate is sequential &mdash; no skipping</div></div></div>
+<div class="slide"><div class="slide-title">Finance &amp; Closeout</div><div class="slide-sub">Close only when all financial evidence is confirmed</div><div class="slide-flow"><div class="slide-node">Final Invoice &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Payment &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Reconciliation &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Archive &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Closed</div></div><div class="slide-rules"><div class="slide-rule">Final invoice &ne; proforma invoice</div><div class="slide-rule">Outstanding amount must be zero</div><div class="slide-rule">Finance sync is not automatic</div><div class="slide-rule">All 5 closeout checks must pass</div></div></div>`;
+    return null;
+  }
+
+  function topicContentGuides(id) {
+    if (id === 'operator-guides') return `
+<div class="doc-alert doc-alert-blue">Click-by-click guides for operators, testers, and new tech leads. Each step shows the expected UI state and expected database write.</div>
+<div class="section-block"><h2>Guide 1: Lead to Quote</h2></div>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Click Follow-up in main navigation</strong><span>Expected UI: Lead queue loads from <code>leads</code> table. Expected data: All org leads visible per RLS policy.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click Open on the lead row</strong><span>Expected UI: Lead Command Center opens with four workflow cards &mdash; qualification, coverage, follow-up, compliance. Verify lead has buyer/supplier context and is not disqualified.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click Open coverage manager if product coverage is missing</strong><span>Select product interest then Save. Expected data: <code>lead_product_interests</code> row created. Quote CTA becomes the dominant action when the gate passes.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Click Plan follow-up if next action is missing</strong><span>Enter follow-up date and note. Expected data: <code>lead_follow_ups</code> row written. Overdue follow-up clears from the queue when complete.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Check compliance card for any quote-send blockers</strong><span>If red: click Compliance check or Full screen. Choose one: Attach evidence, Waive for quote (with reviewer reason), or Defer to dispatch. Each requires a written record.</span></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body"><strong>Click Create quote or Continue quote</strong><span>Verify: lead not disqualified, product interest exists, country/market set, compliance posture acceptable. Quote workspace opens with lead context pre-seeded.</span></div></div>
+</div>
+<div class="doc-alert doc-alert-amber"><strong>Do NOT:</strong> Treat a free-text product note as saved product coverage. Do not bypass compliance by creating a disconnected quote. Do not assume WhatsApp/email activity means delivery was confirmed.</div>
+<div class="section-block"><h2>Guide 2: Quote Build and Send</h2></div>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Click Quote in navigation or open from lead</strong><span>Select or create quote for the correct lead. Expected data: Draft <code>quote_versions</code> record exists or will be created.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click Add product and select catalog products</strong><span>System loads pack size, MOQ, pricing basis defaults from catalog. Verify each line has product, quantity, unit, and price.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Confirm currency, pricing basis, validity, incoterm, freight profile</strong><span>For non-USD: verify FX snapshot exists or manual FX is enabled. Expected: FX context recorded in <code>quote_pricing_snapshots</code>.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Review pricing and enter override reasons for any manual changes</strong><span>Override &gt;15% triggers pending approval. Expected data: Approval flag set on <code>quote_versions</code>. Send button disabled until approval received.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Click Save draft or Create quote</strong><span>Expected data: <code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code> all written.</span></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body"><strong>Resolve any approval or compliance blockers</strong><span>If approval pending: owner/admin approves from Quotes workspace approval queue. If compliance blocker: use Review card inside quote workspace.</span></div></div>
+  <div class="step"><div class="step-num">7</div><div class="step-body"><strong>Click Send quote</strong><span>Expected data: <code>quotes.sent_at</code> set, <code>quote_versions.status = 'sent'</code>, <code>communications</code> row created. Quote is now LOCKED from direct editing.</span></div></div>
+  <div class="step"><div class="step-num">8</div><div class="step-body"><strong>Click Open customer PDF to review output</strong><span>Verify: org logo, correct currency (not hardcoded USD if AUD/EUR/GBP/INR), all line items, incoterm/payment terms, tax ID visible.</span></div></div>
+  <div class="step"><div class="step-num">9</div><div class="step-body"><strong>Record buyer outcome: Mark accepted or Mark rejected</strong><span>Only after actual buyer response. Expected data: <code>quotes.accepted_version_id</code> set on acceptance. Contract and order lineage created.</span></div></div>
+</div>
+<div class="section-block"><h2>Guide 3: Accepted Quote to Order</h2></div>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>In /quotes, open a sent quote and click Mark accepted</strong><span>Expected data: <code>quotes.accepted_version_id</code> set; contract/order handoff RPCs called; <code>orders</code> record created.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Navigate to /orders and click Open on the new order</strong><span>Expected UI: Order workspace shows stage strip. Stage 1 = Quote Approved. Verify <code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click Prepare actual lines</strong><span>Expected: System seeds <code>order_lines</code> from accepted quote/contract. Gate status set to prepared. Quote version lines remain UNCHANGED.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Review quote vs actual lines. Save quantity/price/reason for any differences</strong><span>Expected data: <code>order_lines</code> rows reflect actual order. Changes stored with reason fields. <code>quote_version_line_items</code> remain unchanged.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Click Approve actual lines</strong><span>Expected data: <code>order_approval_gates</code> entry approved; <code>order_stage_events</code> written; order moves to Internal Approval stage.</span></div></div>
+</div>
+<div class="section-block"><h2>Guide 4: First Document and Send Tracking</h2></div>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Open the order and click Prepare document</strong><span>System creates order document draft. Type: <code>proforma_invoice</code> (export) or <code>order_confirmation</code> (regional).</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click Preview and review the rendered document</strong><span>Check: product, quantity, price, parties, incoterm, terms, org logo, tax IDs, bank details. Preview route opens, open count tracked.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click Approve</strong><span>Expected data: <code>order_documents.status = 'approved'</code>. Gate approved. Non-preview sends now permitted.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Click Send tracked, select channel, verify recipient</strong><span>Expected data: <code>order_document_sends</code> row created with <code>status = 'link_created'</code>. Recipient defaults from lead contact info.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Use Download / Print PDF if a file is needed</strong><span>Opens browser print dialog. Toolbar hidden from PDF output. Note: This is browser-print, not server-generated PDF binary.</span></div></div>
+</div>
+<div class="doc-alert doc-alert-red"><strong>Critical:</strong> <code>link_created</code> is not delivered. Do NOT treat a tracked link as confirmed email/WhatsApp delivery. Do NOT send unapproved documents to buyers.</div>
+<div class="section-block"><h2>Guide 5: Packing, Freight &amp; Trade Requirements</h2></div>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Open order after first document approval and click Prepare packing sheet</strong><span>Expected data: <code>packing_plans</code> and <code>packing_plan_lines</code> created based on actual order lines.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click Preview packing sheet then Approve packing sheet</strong><span>Expected: Packing stage complete. Processing and freight request actions now unlocked.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Click Prepare freight request</strong><span>Confirm: origin, destination, incoterm, packing basis. Expected data: <code>freight_rate_requests</code> created.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Search and attach trade requirements then click Confirm source</strong><span>Expected data: <code>trade_requirements</code> and <code>trade_requirement_sources</code> rows created. No rule match = human review &mdash; NOT automatic clearance.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Resolve all blocking trade requirements before dispatch</strong><span>Blocking severity requirements must be reviewed by a human. Dispatch is blocked until all resolved.</span></div></div>
+</div>
+<div class="section-block"><h2>Guide 6: Processing, Dispatch &amp; Closeout</h2></div>
+<div class="step-guide">
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Open Processing stage and save picked/packed/QC checks</strong><span>Mark: Picked, Packed, QC Passed. Add notes for exceptions. Expected data: <code>order_processing_checks</code> metadata written.</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Complete processing only when all three checks pass</strong><span>Expected: Delivery note and logistics unlocked. Processing gate approved.</span></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Approve logistics documents then click Create shipment draft</strong><span>Enter: shipment mode, carrier, forwarder, booking/tracking reference. Expected data: <code>shipments</code> draft record created.</span></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Resolve all blocking trade requirements then click Approve dispatch</strong><span>Expected data: <code>shipments.status = 'dispatched'</code>. Order stage moves to Dispatch/Invoice.</span></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Prepare / Preview / Approve final invoice then click Approve invoice</strong><span>Final invoice must reflect actual dispatched quantities, NOT quoted quantities.</span></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body"><strong>Enter payment reference, reconciliation, outstanding = 0, archive confirmation then click Generate receipt + close</strong><span>Expected data: <code>orders.status = 'completed'</code>. <code>finance_sync_records</code> written. Closeout gate approved.</span></div></div>
+</div>
+<div class="callout"><b>Do not bypass gates.</b> Do not create disconnected quotes, assume WhatsApp activity means delivery, or treat a draft PDF preview as a sent customer document. All gate approvals are required and auditable.</div>`;
+    return null;
+  }
+
+  function topicContentGuru(id) {
+    if (id === 'guru-ai') return `
+<div class="guru-hero">
+  <div class="guru-avatar" style="position:relative;width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#2563eb,#4f46e5);padding:3px;flex-shrink:0">
+    <img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=&quot;font-size:36px;color:#fff;display:grid;place-items:center;width:100%;height:100%&quot;>&#x2726;</span>'">
+    <span style="position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid #0f172a"></span>
+  </div>
+  <div class="guru-hero-text">
+    <h2>Setu Guru &mdash; Context-Aware AI Assistant</h2>
+    <p>Setu Guru is SETU Flow's built-in AI panel that understands the current page, live organization data, and commercial workflows. Guru helps operators understand blockers, draft next steps, and research product and compliance information &mdash; without autonomously bypassing any human approval gate.</p>
+    <div class="guru-caps">
+      <span class="guru-cap">Page Context Help</span>
+      <span class="guru-cap">Live Org Search</span>
+      <span class="guru-cap">HSN Research</span>
+      <span class="guru-cap">Pricing Defaults</span>
+      <span class="guru-cap">Compliance Guidance</span>
+      <span class="guru-cap">Human Approval Required</span>
+    </div>
+  </div>
+</div>
+<div class="guru-grid">
+  <div class="guru-card" style="--gc1:#38bdf8;--gc2:#2563eb">
+    <div class="guru-card-icon" style="background:#eff6ff;font-size:20px">&#x1F916;</div>
+    <h3>Page Context Help</h3>
+    <p>Guru reads the current route, role, and organization context automatically. Ask "what should I do next?" on any page and Guru surfaces the most relevant workflow guidance &mdash; Leads, Quotes, Orders, or Pipeline.</p>
+  </div>
+  <div class="guru-card" style="--gc1:#ec4899;--gc2:#7c3aed">
+    <div class="guru-card-icon" style="background:#fdf2f8;font-size:20px">&#x1F4F7;</div>
+    <h3>Business Card Scan</h3>
+    <p>On mobile, Setu Guru processes captured business card images through AI vision. Parsed contact data (name, company, email, phone) is surfaced as a reviewable lead draft. Operators always approve before it becomes a commercial record.</p>
+  </div>
+  <div class="guru-card" style="--gc1:#0d9488;--gc2:#2563eb">
+    <div class="guru-card-icon" style="background:#f0fdfa;font-size:20px">&#x1F4C7;</div>
+    <h3>Smart vCard</h3>
+    <p>Field teams share a professional digital contact card via QR code or link. When a buyer submits their details through the public capture form, the resulting contact is linked to follow-up context, product interest, and trade event source.</p>
+  </div>
+  <div class="guru-card" style="--gc1:#f59e0b;--gc2:#ef4444">
+    <div class="guru-card-icon" style="background:#fffbeb;font-size:20px">&#x1F50D;</div>
+    <h3>Live Org Search</h3>
+    <p>Guru can query live organization data to check for open blockers, existing leads, quote status, and order state. All results are read-only &mdash; Guru cannot write to the database without human approval.</p>
+  </div>
+  <div class="guru-card" style="--gc1:#059669;--gc2:#0d9488">
+    <div class="guru-card-icon" style="background:#f0fdf4;font-size:20px">&#x1F4B0;</div>
+    <h3>Pricing Defaults</h3>
+    <p>Guru suggests pricing calculator defaults based on product, market, and historical context. Suggested defaults are shown for review &mdash; operators enter and confirm all pricing manually. Guru never sets or overrides pricing autonomously.</p>
+  </div>
+  <div class="guru-card" style="--gc1:#7c3aed;--gc2:#db2777">
+    <div class="guru-card-icon" style="background:#faf5ff;font-size:20px">&#x1F4CB;</div>
+    <h3>HSN Code Research</h3>
+    <p>Guru researches Harmonized System (HS) classification codes for catalog items, pulling from sources and suggesting the best match with justification. Operators review and approve any catalog write-back via a confirm dialog.</p>
+  </div>
+</div>
+<div class="section-block"><h2>What Guru Does and Does Not Do</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Capability</th><th>Guru Can</th><th>Guru Cannot</th></tr></thead>
+<tbody>
+<tr><td>Workflow guidance</td><td>Explain blockers, suggest next steps, surface help topics for the current route</td><td>Advance order stages, approve gates, or skip compliance checks</td></tr>
+<tr><td>Drafting</td><td>Draft follow-up emails, cover notes, compliance evidence summaries, dispatch checklists</td><td>Send emails, submit forms, or trigger external communication autonomously</td></tr>
+<tr><td>Pricing</td><td>Suggest pricing defaults, explain pricing rule logic</td><td>Set prices, override pricing rules, or apply discounts without human review</td></tr>
+<tr><td>Compliance</td><td>Explain what evidence is needed, draft an evidence checklist</td><td>Clear compliance blockers, waive requirements, or approve compliance actions</td></tr>
+<tr><td>Catalog</td><td>Research HSN codes, suggest classification with sourced justification</td><td>Apply HSN updates without explicit operator confirmation via confirm dialog</td></tr>
+<tr><td>Data access</td><td>Read live org data: leads, quotes, orders, blockers</td><td>Write, delete, or mutate any database record without human approval</td></tr>
+<tr><td>External sends</td><td>Draft message text for review before sending</td><td>Send WhatsApp messages, trigger email delivery, or dispatch documents externally</td></tr>
+</tbody></table></div>
+<div class="guru-guardrails">
+  <h3>&#x1F6E1; AI Guardrails &mdash; Non-Negotiable</h3>
+  <ul>
+    <li><strong>Human approval on all external sends.</strong> Guru cannot trigger WhatsApp messages, email deliveries, or document sends. Operators always click the send button after reviewing the draft.</li>
+    <li><strong>No autonomous order state changes.</strong> Guru cannot approve actual lines, approve packing, approve documents, create shipments, or move orders between stages.</li>
+    <li><strong>No autonomous compliance decisions.</strong> Guru cannot waive compliance blockers, attach evidence, or defer requirements. These require human reviewer reason and explicit action.</li>
+    <li><strong>No service-role key usage.</strong> Guru API calls use user-scoped authentication. No privileged database access from AI context.</li>
+    <li><strong>Every AI action is attributable.</strong> Actions Guru suggests or applies (like HSN updates) are logged with the human approver's identity &mdash; not as system-initiated.</li>
+    <li><strong>Feedback is captured.</strong> Helpful / Missing detail buttons let operators improve Guru quality locally without sending data externally.</li>
+  </ul>
+</div>
+<div class="section-block"><h2>How to Use Setu Guru Effectively</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">On Any CRM Page</div><ul><li>Click the Guru floating button (bottom right or right edge tab)</li><li>Choose a quick start from the panel header</li><li>Or type your question &mdash; Guru reads page context automatically</li><li>Use action buttons in Guru's reply to queue follow-up questions</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">For Blockers</div><ul><li>Ask: "What is blocking this order?" or "What is blocking this quote send?"</li><li>Guru checks live org data and returns a specific blocker list</li><li>Click "Draft dispatch evidence checklist" for structured guidance</li><li>Humans resolve each blocker &mdash; Guru documents the path</li></ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">For Research</div><ul><li>Ask about HSN codes, trade requirements, or product classifications</li><li>Guru returns sourced results for review</li><li>Click "Review sources" before applying any write-back</li><li>Approve catalog updates via the confirm dialog &mdash; not silently</li></ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">For Trade Events</div><ul><li>Use mobile scan at events &rarr; Guru parses card &rarr; operator reviews</li><li>Share vCard QR &rarr; buyer submits &rarr; linked to event and lead</li><li>Post-event: ask Guru to summarize event leads and suggest follow-ups</li><li>Guru drafts follow-up messages &mdash; operators send after review</li></ul></div>
+</div>`;
+    return null;
+  }
+
+  function topicContentOther(id) {
+    if (id === 'data-security') return `<div class="pro-grid">
+  <div class="pro-card"><b>Organization Scope</b><p>Every server action and query must be filtered by <code>organization_id</code>. No cross-org query is ever permitted &mdash; even for admin users who belong to multiple organizations.</p></div>
+  <div class="pro-card"><b>RLS Policies</b><p>Tables are protected by workspace membership and role-aware Row Level Security policies in Supabase. Client-side filtering is NOT a substitute &mdash; RLS is the final enforcement layer.</p></div>
+  <div class="pro-card"><b>Auditability</b><p>Stage moves, approval decisions, sends, compliance actions, and major workflow changes must be traceable through activity or audit tables. Attribution is required for every sensitive action.</p></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Area</th><th>Tables / Controls</th><th>Risk If Broken</th></tr></thead>
+<tbody>
+<tr><td>Auth</td><td><code>profiles</code>, <code>organization_members</code></td><td>Wrong users see internal workspaces.</td></tr>
+<tr><td>Commercial</td><td><code>leads</code>, <code>quotes</code>, <code>orders</code></td><td>Deals detach from customer or organization truth.</td></tr>
+<tr><td>Documents</td><td><code>order_documents</code>, <code>order_document_sends</code></td><td>External send proof becomes unreliable.</td></tr>
+<tr><td>Tracker</td><td><code>sprint_issues</code></td><td>Production work loses evidence and accountability.</td></tr>
+<tr><td>Roles</td><td><code>roles</code>, <code>role_permissions</code>, <code>user_roles</code></td><td>Unauthorized users can approve quotes or trigger sends.</td></tr>
+</tbody></table></div>`;
+    if (id === 'api-integrations') return `<div class="tbl-wrap"><table>
+<thead><tr><th>Integration</th><th>Rule</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><b>WhatsApp</b></td><td>Manual tracked wa.me links only. No live WhatsApp Business API. Operators click to send &mdash; system records the link, not delivery.</td><td><span class="badge badge-amber">Manual tracked-link</span></td></tr>
+<tr><td><b>Email</b></td><td>Mailtrap is the production email integration. Provider events confirm delivery. UI activity is not delivery proof without MAILTRAP_WEBHOOK_SECRET set.</td><td><span class="badge badge-green">Live &mdash; Mailtrap</span></td></tr>
+<tr><td><b>PDF</b></td><td>Use puppeteer-core and @sparticuz/chromium only. No paid PDF API. Browser-print is the client-side fallback.</td><td><span class="badge badge-green">Free OSS path</span></td></tr>
+<tr><td><b>Finance</b></td><td>Queue-ready integration only. Finance sync records created for future Xero / QuickBooks / Tally adapters. No live external sync yet.</td><td><span class="badge badge-blue">Queue-ready</span></td></tr>
+<tr><td><b>Freight</b></td><td>Adapter-backed, pending live carriers. Freight rate requests are created and queued. No automatic carrier booking from UI.</td><td><span class="badge badge-blue">Queue-ready</span></td></tr>
+<tr><td><b>Banks / Payments</b></td><td>Manual payment reference entry only. Operators record payment received, enter reference, confirm reconciliation.</td><td><span class="badge badge-slate">Manual / planned</span></td></tr>
+<tr><td><b>AI (Guru)</b></td><td>Anthropic API via Setu Guru widget. Used for page help, drafting, org search, HSN research. No autonomous external actions.</td><td><span class="badge badge-purple">Live &mdash; Anthropic</span></td></tr>
+<tr><td><b>Open API / Webhooks</b></td><td>Planned for partner integrations. Public API not yet available.</td><td><span class="badge badge-slate">Planned</span></td></tr>
+</tbody></table></div>`;
+    if (id === 'mobile') return `<div class="feature-strip">
+  <div class="feature-card"><div class="big-icon" style="background:#0d9488">&#x1F4F7;</div><h3>Business Card Scan</h3><p>Scan, parse, review, and save buyer/supplier leads from trade shows or field meetings. AI parses the card &mdash; operators approve before any commercial record is created.</p></div>
+  <div class="feature-card"><div class="big-icon" style="background:#2563eb">&#x1F4C7;</div><h3>Smart vCard</h3><p>Share a professional contact card and preserve event/source context for later follow-up. Buyer submissions automatically link to the event and lead flow.</p></div>
+  <div class="feature-card"><div class="big-icon" style="background:#7c3aed">&#x26A1;</div><h3>Mobile Action Footer</h3><p>Critical next actions remain accessible without forcing desktop-style navigation. Role-aware controls shown only to appropriate users.</p></div>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card"><div class="doc-card-title">Camera &amp; Capture</div><ul><li>Camera permission handling and fallback manual entry</li><li>Upload size limits and image quality requirements</li><li>Parsed data review UI before saving</li><li>Lead save from scan creates correct database rows</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">vCard &amp; QR</div><ul><li>vCard generation from profile data</li><li>QR code display and scanning</li><li>Public capture form submission creates lead draft</li><li>Event source metadata preserved on link</li></ul></div>
+  <div class="doc-card"><div class="doc-card-title">Role &amp; Access</div><ul><li>Mobile workspace shows role-appropriate modules</li><li>Leads, pipeline, and orders visible per membership</li><li>No admin controls on mobile for non-admin users</li><li>Offline behavior and sync on reconnect</li></ul></div>
+</div>`;
+    if (id === 'quick-reference') return `<div class="quick-ref-grid">
+  <div class="ref-card"><h3>Never Break</h3><ul><li>No service-role key in client code.</li><li>No external live provider calls outside approved adapters.</li><li>No sent quote version mutation &mdash; create new version.</li><li>No order stage skip without explicit gate approval.</li><li>No cross-org data visible to org members.</li></ul></div>
+  <div class="ref-card"><h3>Always Verify</h3><ul><li>GitHub main contains the change.</li><li>Vercel deployment is green before tracker closes.</li><li>Tracker notes include commit/deploy proof.</li><li>RLS remains organization-scoped after any schema change.</li><li>Sent/accepted quote version is not mutated.</li></ul></div>
+  <div class="ref-card"><h3>Core Routes</h3><ul><li><code>/leads</code> &mdash; command center &amp; follow-up queue</li><li><code>/pipeline</code> &mdash; kanban, swimlane, forecast</li><li><code>/quotes</code> &mdash; versioned quote workspace</li><li><code>/orders</code> &mdash; execution cockpit</li><li><code>/admin/*</code> &mdash; org, users, catalog admin</li></ul></div>
+  <div class="ref-card"><h3>Signals of Quality</h3><ul><li>Clear next action visible to operator.</li><li>Blocker explains why and what to do next.</li><li>Data write matches UI state.</li><li>Audit record exists for every sensitive move.</li><li>link_created &ne; delivered &mdash; never conflate.</li></ul></div>
+</div>`;
+    if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Clickable screenshots of key modules and workflows. Upload from this workspace to share with testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>`;
+    return '';
+  }
+
+  // Central dispatcher - replaces the stub added earlier
+  // Remove the stub comment and use the full dispatcher
+  function getTopicContent(id) {
+    const c1 = topicContent(id);
+    if (c1) return c1;
+    const c2 = topicContentWorkflows(id);
+    if (c2) return c2;
+    const c3 = topicContentDiagrams(id);
+    if (c3) return c3;
+    const c4 = topicContentGuides(id);
+    if (c4) return c4;
+    const c5 = topicContentGuru(id);
+    if (c5) return c5;
+    return topicContentOther(id) || '';
+  }
+
+  function renderTopic() {
+    const id = idx(), t = byId(id), i = currentIndex();
+    document.getElementById('crumbCurrent').textContent = t.title;
+    document.documentElement.style.setProperty('--accent', t.accent);
+    document.getElementById('overviewView').classList.toggle('hidden', id !== 'overview');
+    document.getElementById('topicView').classList.toggle('hidden', id === 'overview');
+    if (id === 'overview') { renderOverview(); renderRail(); markActive(); return; }
+    document.getElementById('topicView').innerHTML = `<div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${getTopicContent(id)}<div class="topic-footer"><div class="topic-stepper"><button onclick="Docs.goPrev()">\u2190 ${i > 0 ? topics[i - 1].title : 'Overview'}</button><span>${i + 1} / ${topics.length}</span><button onclick="Docs.goNext()">${i < topics.length - 1 ? topics[i + 1].title : 'Start over'} \u2192</button></div></div></div>`;
+    renderRail(); markActive();
+    if (id === 'live-ui') renderScreenshots();
+    if (id === 'diagrams' && window.mermaid) {
+      setTimeout(() => { try { mermaid.run({ nodes: Array.from(document.querySelectorAll('.mermaid')) }); } catch (e) {} }, 80);
+    }
+    if (shared.active) document.querySelectorAll('.internal-only').forEach(e => e.classList.add('hidden'));
+  }
+
+  function renderRail() {
+    const id = idx(), i = currentIndex(), pct = Math.round((i / (topics.length - 1)) * 100);
+    const next = topics[(i + 1) % topics.length];
+    const ovRail = id === 'overview' ? `<div class="rail-block"><h4>On This Page</h4><div style="display:flex;flex-direction:column;gap:4px">
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('overview')"><span class="rail-section-dot active"></span>Quick Access</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('overview')"><span class="rail-section-dot"></span>Overview Stats</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('architecture')"><span class="rail-section-dot"></span>Architecture Overview</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('workflows')"><span class="rail-section-dot"></span>Commercial Workflows</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('api-integrations')"><span class="rail-section-dot"></span>API &amp; Integrations</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('data-security')"><span class="rail-section-dot"></span>Security &amp; Data Model</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('operator-guides')"><span class="rail-section-dot"></span>Operator Guides</a>
+<a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('live-ui')"><span class="rail-section-dot"></span>Live UI Snapshots</a>
+</div></div>
+<div class="rail-block"><h4>Doc Progress</h4><div class="progress-line"><span>Overall Progress</span><b>66%</b></div><div class="bar"><div class="fill" style="width:66%"></div></div><p style="color:#64748b;font-size:11.5px;margin-top:6px">342 / 500 topics</p><a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a></div>
+<div class="rail-block"><h4>Recent Changes</h4>
+<div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Updated API Authentication</div><span class="rail-change-meta">May 14, 2026 &middot; v2025.05.14</span></div></div>
+<div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">New Webhook Events</div><span class="rail-change-meta">May 13, 2026 &middot; v2025.05.13</span></div></div>
+<div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Operator Guide: Alerts</div><span class="rail-change-meta">May 12, 2026 &middot; v2025.05.12</span></div></div>
+<a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View all changes \u2192</a></div>
+<div class="rail-block"><h4>Roadmap Highlights</h4>
+<div class="roadmap-item"><div class="roadmap-dot" style="background:#0d9488"></div><div><div class="roadmap-label">Q2 2025</div><div class="roadmap-item-title">AI/Guru Enhancements &mdash; In Progress</div></div></div>
+<div class="roadmap-item"><div class="roadmap-dot" style="background:#64748b"></div><div><div class="roadmap-label">Q3 2025</div><div class="roadmap-item-title">Mobile App v2 &mdash; Planned</div></div></div>
+<div class="roadmap-item"><div class="roadmap-dot" style="background:#64748b"></div><div><div class="roadmap-label">Q3 2025</div><div class="roadmap-item-title">Advanced Reporting &mdash; Planned</div></div></div>
+<a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a></div>
+<div class="rail-block"><h4>Top Contributors</h4>
+<div class="contrib-avatars">
+<div class="contrib-av" style="--c1:#0d9488;--c2:#2563eb">R</div>
+<div class="contrib-av" style="--c1:#7c3aed;--c2:#db2777">A</div>
+<div class="contrib-av" style="--c1:#f97316;--c2:#f59e0b">M</div>
+<div class="contrib-av" style="--c1:#059669;--c2:#0d9488">K</div>
+</div>
+<a href="#" style="font-size:11.5px;color:#2563eb;font-weight:800">View all contributors \u2192</a></div>` : '';
+    document.getElementById('rightRail').innerHTML = ovRail + `<div class="rail-block"><h4>Topics</h4><div class="rail-list">${topics.map(t => `<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div></div><div class="rail-block"><h4>Progress</h4><div class="progress-line"><span>Current path</span><b>${pct}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><p style="color:#64748b;font-size:12px;margin-top:4px">${id === 'overview' ? 'Start at Docs Overview' : 'Topic ' + (i + 1) + ' of ' + topics.length}</p><div class="next-card"><b>Next</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} \u2192</button></div></div>${isInternal() ? `<div class="rail-block"><h4>Live Tracker</h4><div class="progress-line"><span>Open</span><b>${metrics.open}</b></div><div class="progress-line"><span>Resolved</span><b>${metrics.resolved}</b></div><a href="setuflow-issue-tracker.html" style="color:#2563eb;font-weight:900;font-size:12px;display:block;margin-top:6px">Open issue tracker \u2192</a></div><div class="rail-block"><h4>Roadmap</h4><div style="border-left:3px solid #14b8a6;padding-left:10px"><b style="font-size:12px">Sprint 19</b><p style="margin:4px 0 0;color:#64748b;font-size:11.5px">UX enhancement and documentation workspace cleanup.</p></div></div>` : ''}<div class="rail-block"><h4>Contributor</h4><div class="person"><div class="avatar">R</div><div><b>Ritesh Kapoor</b><p style="margin:2px 0 0;color:#64748b;font-size:12px">Product owner, architect, builder</p></div></div></div>`;
+    markActive();
+  }
+
+  async function loadMetrics() {
+    if (shared.active) return;
+    try {
+      const r = await fetch('/api/internal/docs-metrics', { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      metrics = { ...metrics, ...d };
+      const pill = document.getElementById('issuePill');
+      if (pill) pill.textContent = metrics.open;
+      render();
+    } catch (e) {}
+  }
+
+  async function loadScreenshots() {
+    screenshots = [{ id: 'seed-test', title: 'Test live UI screenshot', route: '/internal/setuflow-docs.html', description: 'Initial screenshot uploaded for workspace validation.', image_url: 'docs-screenshots/test-live-ui.png', created_at: '2026-05-27' }];
+    try {
+      const url = '/api/internal/docs-screenshots' + (shared.active ? `?share_token=${encodeURIComponent(shared.token)}` : '');
+      const r = await fetch(url, { credentials: 'include' });
+      if (r.ok) { const d = await r.json(); if (Array.isArray(d.screenshots) && d.screenshots.length) screenshots = d.screenshots.concat(screenshots); }
+    } catch (e) {}
+    try { const local = JSON.parse(localStorage.getItem('setu_docs_screenshots') || '[]'); screenshots = local.concat(screenshots); } catch {}
+    renderScreenshots(); openHashSnapshot();
+  }
+
+  function renderScreenshots() {
+    const grid = document.getElementById('screenshotGrid');
+    if (!grid) return;
+    grid.innerHTML = screenshots.map(s => `<article class="shot-card"><img src="${escapeHtml(s.image_data || s.image_url)}" alt="${escapeHtml(s.title)}"><div><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.description)}</p><code>${escapeHtml(s.route || '/')}</code><br><button onclick="Docs.openLightbox('${s.id}')">View screen</button><button onclick="Docs.copySnapshotLink('${s.id}')">Copy link</button></div></article>`).join('') || '<p style="color:#64748b;padding:24px">No screenshots yet. Add one with the button above.</p>';
+  }
+
+  function openLightbox(id) { const s = screenshots.find(x => String(x.id) === String(id)); if (!s) return; document.getElementById('lightboxImage').src = s.image_data || s.image_url; document.getElementById('lightboxTitle').textContent = s.title; document.getElementById('lightboxDescription').textContent = s.description || ''; document.getElementById('lightboxRoute').textContent = s.route || ''; document.getElementById('imageLightbox').classList.remove('hidden'); }
+  function closeLightbox(e) { if (e && e.target !== document.getElementById('imageLightbox') && !e.target.classList.contains('lightbox-close')) return; document.getElementById('imageLightbox').classList.add('hidden'); }
+  function copySnapshotLink(id) { const url = location.origin + location.pathname + location.search + '#snapshot=' + encodeURIComponent(id); navigator.clipboard?.writeText(url); }
+  function openHashSnapshot() { const h = location.hash || ''; if (h.startsWith('#snapshot=')) { openTopic('live-ui'); setTimeout(() => openLightbox(decodeURIComponent(h.split('=')[1] || '')), 250); } }
+  function openScreenshotModal() { document.getElementById('screenshotModal').classList.remove('hidden'); }
+  function closeScreenshotModal() { document.getElementById('screenshotModal').classList.add('hidden'); }
+  function fileToDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
+
+  async function uploadScreenshot() {
+    const f = document.getElementById('shotFile').files[0], status = document.getElementById('shotStatus');
+    if (!f) { status.textContent = 'Choose an image first.'; return; }
+    status.textContent = 'Uploading screenshot...';
+    const image_data = await fileToDataURL(f);
+    const payload = { title: document.getElementById('shotTitle').value || f.name, route: document.getElementById('shotRoute').value || '/', description: document.getElementById('shotDescription').value || '', image_name: f.name, image_data };
+    try {
+      const r = await fetch('/api/internal/docs-screenshots', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (r.ok) { const d = await r.json(); screenshots.unshift(d.screenshot); status.textContent = 'Uploaded.'; renderScreenshots(); return; }
+    } catch (e) {}
+    const local = JSON.parse(localStorage.getItem('setu_docs_screenshots') || '[]');
+    const item = { ...payload, id: 'local-' + Date.now(), created_at: new Date().toISOString() };
+    local.unshift(item); localStorage.setItem('setu_docs_screenshots', JSON.stringify(local));
+    screenshots.unshift(item); status.textContent = 'Saved in this browser.'; renderScreenshots();
+  }
+
+  function render() { const id = idx(); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
+  function goPrev() { let i = currentIndex(); openTopic(i === 0 ? 'overview' : topics[i - 1].id); }
+  function goNext() { let i = currentIndex(); openTopic(i === topics.length - 1 ? 'overview' : topics[i + 1].id); }
+  function toggleNav() { document.getElementById('leftNav').classList.toggle('open'); }
+  function search(q) { q = String(q || '').toLowerCase(); document.querySelectorAll('.nav-link').forEach(b => { const t = byId(b.dataset.topic); b.style.display = !q || t.title.toLowerCase().includes(q) || t.summary.toLowerCase().includes(q) ? 'flex' : 'none'; }); document.querySelectorAll('.topic-card').forEach(c => { c.style.display = !q || c.innerText.toLowerCase().includes(q) ? 'flex' : 'none'; }); }
+  function openShare() { document.getElementById('shareModal').classList.remove('hidden'); }
+  function closeShare() { document.getElementById('shareModal').classList.add('hidden'); }
+  function generateShareLink() { const rec = document.getElementById('shareRecipient').value || 'External reviewer', hrs = Number(document.getElementById('shareDuration').value || 72), data = { recipient: rec, expiry: Date.now() + hrs * 3600000, issued: Date.now() }, tok = btoa(JSON.stringify(data)), url = location.origin + location.pathname + '?share_token=' + encodeURIComponent(tok); document.getElementById('shareOutput').value = url; document.getElementById('shareMeta').textContent = `For ${rec}. Expires ${new Date(data.expiry).toLocaleString()}. Issue tracker and roadmap are hidden.`; document.getElementById('shareResult').classList.remove('hidden'); }
+  function copyShareLink() { navigator.clipboard?.writeText(document.getElementById('shareOutput').value); }
+  function showFullDocument() { const w = window.open('', '_blank'); w.document.write('<html><head><title>SETU Flow Full Documentation</title><link rel="stylesheet" href="setuflow-docs-workspace.css"></head><body><main class="main" style="max-width:980px;margin:auto">' + topics.filter(t => t.id !== 'overview').map(t => `<section class="topic-view" style="margin:18px 0"><div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${getTopicContent(t.id)}</div></section>`).join('') + '</main></body></html>'); }
+
+  window.addEventListener('hashchange', () => { render(); openHashSnapshot(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { document.getElementById('leftNav').classList.remove('open'); document.querySelectorAll('.modal,.lightbox').forEach(m => m.classList.add('hidden')); }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); document.getElementById('globalSearch')?.focus(); }
+  });
+  document.addEventListener('click', e => { if (innerWidth < 760 && !document.getElementById('leftNav').contains(e.target) && !e.target.closest('.mobile-only')) document.getElementById('leftNav').classList.remove('open'); });
+
+  async function init() {
+    await initAuth();
+    if (window.mermaid) mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: { primaryColor: '#dbeafe', primaryTextColor: '#1e3a8a', primaryBorderColor: '#2563eb', lineColor: '#64748b', secondaryColor: '#f0fdf4', tertiaryColor: '#faf5ff' } });
+    render();
+    await loadMetrics();
+    await loadScreenshots();
+  }
+
+  init();
+  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink };
+})();

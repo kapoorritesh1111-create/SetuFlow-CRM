@@ -14,7 +14,10 @@
 <body>
 <div id="authGate" class="auth-gate hidden">
   <div class="auth-card">
-    <div class="auth-logo">⌁</div>
+    <div class="auth-logo">
+      <img src="../logos/setu-flow-logo.svg" alt="SETU Flow" style="width:34px;height:34px;object-fit:contain;filter:brightness(10)" onerror="this.style.display='none';this.nextSibling.style.display='block'">
+      <span style="display:none;font-size:24px">⌁</span>
+    </div>
     <h1>SETU Flow documentation is restricted</h1>
     <p>Sign in with your SETU Flow workspace account, or use a valid shared review link.</p>
     <button onclick="window.location.href='/client-login?next=/go-internal?f=setuflow-docs.html'">Sign in to continue</button>
@@ -49,7 +52,12 @@
 <div id="imageLightbox" class="lightbox hidden" onclick="Docs.closeLightbox(event)"><div class="lightbox-card"><button class="lightbox-close" onclick="Docs.closeLightbox(event)">×</button><img id="lightboxImage" alt="Screenshot preview" /><div class="lightbox-caption"><h3 id="lightboxTitle"></h3><p id="lightboxDescription"></p><code id="lightboxRoute"></code></div></div></div>
 <header class="topbar">
   <button class="icon-button mobile-only" onclick="Docs.toggleNav()" aria-label="Open navigation">☰</button>
-  <a class="brand" href="#overview"><span class="brand-mark">⌁</span><strong>SETU Flow</strong><em>CRM</em></a>
+  <a class="brand" href="#overview">
+    <span class="brand-mark-img">
+      <img src="../logos/setu-flow-logo.svg" alt="SETU Flow" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px;color:#2dd4bf\'>⌁</span>'">
+    </span>
+    <strong>SETU Flow</strong><em>CRM</em>
+  </a>
   <div class="workspace-pill desktop-only"><span>Workspace</span><strong>SETU Development</strong></div>
   <div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search docs, screens, workflows..." oninput="Docs.search(this.value)" /><kbd>⌘K</kbd></div>
   <nav class="top-actions">
@@ -62,13 +70,18 @@
 </header>
 <div class="shell">
   <aside id="leftNav" class="left-nav">
-    <div class="nav-title">Documentation</div>
+    <div class="nav-title">
+      <span class="nav-title-icon">
+        <img src="../logos/setu-flow-logo.svg" alt="" onerror="this.style.display='none'">
+      </span>
+      Documentation
+    </div>
     <div class="nav-search"><input placeholder="Filter topics..." oninput="Docs.search(this.value)" /></div>
     <div id="topicNav"></div>
     <div class="nav-footer internal-only"><button onclick="Docs.showFullDocument()">Full document</button><a href="setuflow-issue-tracker.html">Issues</a><a href="setuflow-roadmap.html">Roadmap</a></div>
   </aside>
   <main class="main">
-    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
+    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><span>SETU Flow CRM</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
     <section id="overviewView" class="overview-view"></section>
     <section id="topicView" class="topic-view hidden"></section>
   </main>
