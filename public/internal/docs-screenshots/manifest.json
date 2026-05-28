@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Dashboard Command Center",
+    "route": "/dashboard",
+    "description": "KPI cards, world market map, follow-up queue, and commercial activity feed.",
+    "image": "",
+    "updated": "2026-05-27"
+  },
+  {
+    "title": "Pipeline Workspace",
+    "route": "/pipeline",
+    "description": "Kanban, swimlane, forecast, density controls, and buyer/supplier filtering.",
+    "image": "",
+    "updated": "2026-05-27"
+  },
+  {
+    "title": "Quote Builder",
+    "route": "/quotes",
+    "description": "Versioned quote workflow, approval gates, PDF/send readiness, and tracked links.",
+    "image": "",
+    "updated": "2026-05-27"
+  }
+]
