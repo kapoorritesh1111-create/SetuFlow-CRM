@@ -556,84 +556,492 @@ flowchart LR
 <div class="slide"><div class="slide-title">Finance &amp; Closeout</div><div class="slide-sub">Close only when all financial evidence is confirmed</div><div class="slide-flow"><div class="slide-node">Final Invoice &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Payment &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Reconciliation &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Archive &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Closed</div></div><div class="slide-rules"><div class="slide-rule">Final invoice &ne; proforma invoice</div><div class="slide-rule">Outstanding amount must be zero</div><div class="slide-rule">Finance sync is not automatic</div><div class="slide-rule">All 5 closeout checks must pass</div></div></div>`;
   }
 
+
+  const guideJourney = ['Dashboard','Lead','Quote','Approval','Order','Docs','Packing','Dispatch'];
   const guideSets = [
-    { title:'Lead → Quote', steps:[
-      ['click','Click Follow-up in main navigation','Expected UI','Lead queue loads. All organization leads are visible per RLS.','DB','<code>leads</code> table is read through org-scoped policies.'],
-      ['click','Click Open on the lead row','Expected UI','Lead Command Center opens with qualification, coverage, follow-up, and compliance cards.','Verify','Buyer/supplier context exists and lead is not disqualified.'],
-      ['review','Open coverage manager if product coverage is missing','Expected UI','Select product interest and save. Quote CTA becomes dominant when the gate passes.','DB Write','<code>lead_product_interests</code> row is created.'],
-      ['save','Plan follow-up if next action is missing','Expected UI','Enter date and note. Overdue item clears from queue when complete.','DB Write','<code>lead_follow_ups</code> row is written.'],
-      ['review','Check compliance card for quote-send blockers','Expected UI','If red, click Compliance check or Full screen and choose attach evidence, waive with reason, or defer.','Requirement','Each resolution requires a written record.'],
-      ['click','Click Create quote or Continue quote','Expected UI','Quote workspace opens with lead context pre-seeded.','Gate','Not disqualified, product interest exists, country/market set, and compliance acceptable.']
-    ], no:'Treat free-text product notes as saved coverage. Bypass compliance by creating a disconnected quote. Assume WhatsApp or email activity means delivery was confirmed.' },
-    { title:'Build & Send', steps:[
-      ['click','Open Quote from navigation or from lead','Expected UI','Select or create the quote for the correct lead.','DB State','Draft <code>quote_versions</code> record exists or will be created.'],
-      ['click','Click Add product and select catalog products','Expected UI','Pack size, MOQ, and pricing defaults load from catalog.','Verify','Each line has product, quantity, unit, and price.'],
-      ['review','Confirm currency, pricing basis, validity, incoterm, and freight profile','Expected UI','For non-USD, verify FX snapshot exists or manual FX is enabled.','DB Write','FX context is written in <code>quote_pricing_snapshots</code>.'],
-      ['review','Review pricing and enter override reasons for manual changes','Expected UI','Override greater than 15% triggers pending approval. Send disabled until approved.','DB Write','Approval flag is set on <code>quote_versions</code>.'],
-      ['save','Click Save draft or Create quote','Expected UI','Draft saved and line items preserved.','DB Write','<code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, and snapshots written.'],
-      ['resolve','Resolve approval or compliance blockers','Expected UI','Admin approves quote; compliance is reviewed inside quote workspace.','Gate','Both gates must clear before Send is enabled.'],
-      ['send','Click Send quote','Expected UI','Quote becomes locked from direct editing.','DB Write','<code>quotes.sent_at</code>, <code>quote_versions.status = sent</code>, and <code>communications</code> are written.'],
-      ['review','Open customer PDF and review output','Verify','Logo, currency, line items, Incoterm, Tax ID, and totals are correct.','Status','Sent version is immutable from this point.'],
-      ['record','Record buyer outcome: accepted or rejected','Timing','Only after actual buyer response, not immediately after send.','DB Write','<code>quotes.accepted_version_id</code> set and contract/order lineage created.']
-    ], no:'Send while approval is pending. Treat a draft PDF as sent customer document. Mark accepted before receiving actual buyer confirmation.' },
-    { title:'Quote → Order', steps:[
-      ['click','In /quotes, open a sent quote and click Mark accepted','Expected UI','Status changes to Accepted. Order is created in background.','DB Write','<code>quotes.accepted_version_id</code> is set and <code>orders</code> record is created.'],
-      ['nav','Navigate to /orders and click Open on the new order','Expected UI','Order workspace shows stage strip. Stage 1 = Quote Approved.','Verify','<code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.'],
-      ['prepare','Click Prepare actual lines','Expected UI','System seeds order lines from accepted contract. Gate status is prepared.','Critical','Quote version lines remain unchanged after this point.'],
-      ['review','Review quote vs actual lines and save changes with reason','Expected UI','Differences shown side by side. Reason is required for every variance.','DB Write','<code>order_lines</code> reflect actuals; quote lines stay immutable.'],
-      ['approve','Click Approve actual lines','Expected UI','Order moves to Internal Approval stage.','DB Write','<code>order_approval_gates</code> and <code>order_stage_events</code> are written.']
-    ], no:'Modify quote version line items after send. Approve actual lines without reviewing every variance against the quote.' },
-    { title:'Documents', steps:[
-      ['prepare','Open the order and click Prepare document','Expected UI','Order document draft is created.','Type','<code>proforma_invoice</code> for export or <code>order_confirmation</code> for regional.'],
-      ['review','Click Preview and review the rendered document','Verify','Product, quantity, price, parties, Incoterm, terms, logo, Tax IDs, and bank details.','Tracking','Preview open count is tracked.'],
-      ['approve','Click Approve','Expected UI','Send button unlocked. Non-preview sends now permitted.','DB Write','<code>order_documents.status = approved</code>; gate approved.'],
-      ['send','Click Send tracked, select channel, verify recipient','Expected UI','Recipient defaults from lead contact info. Confirm before sending.','DB Write','<code>order_document_sends</code> row with <code>status = link_created</code>.'],
-      ['click','Use Download / Print PDF if a physical file is needed','Expected UI','Browser print dialog opens and toolbar is hidden from PDF output.','Note','Browser-print only; not a server-generated PDF binary.']
-    ], critical:'<code>link_created</code> is NOT delivered. Do not treat a tracked link as confirmed email/WhatsApp delivery. Do not send unapproved documents to buyers.' },
-    { title:'Packing & Freight', steps:[
-      ['prepare','After first document approval, click Prepare packing sheet','Expected UI','Packing sheet is created from actual order lines.','DB Write','<code>packing_plans</code> and <code>packing_plan_lines</code> created.'],
-      ['approve','Click Preview packing sheet, then Approve packing sheet','Expected UI','Packing stage complete; processing and freight actions unlock.','Gate','Packing approval gate written.'],
-      ['prepare','Click Prepare freight request','Confirm','Origin, destination, Incoterm, packing basis, and freight profile.','DB Write','<code>freight_rate_requests</code> created.'],
-      ['review','Search and attach trade requirements, then confirm source','Expected UI','No rule match means human review required, not automatic clearance.','DB Write','<code>trade_requirements</code> and sources created.'],
-      ['resolve','Resolve all blocking trade requirements before dispatch','Required','Blocking severity requires human review.','Gate','Dispatch blocked until all blocking items are resolved.']
-    ], no:'Treat no rule-match as automatic clearance. Move to dispatch while any blocking trade requirement is unresolved.' },
-    { title:'Dispatch & Closeout', steps:[
-      ['save','Open Processing stage and save picked/packed/QC checks','Expected UI','Mark picked, packed, QC passed; add notes for exceptions.','DB Write','<code>order_processing_checks</code> metadata written.'],
-      ['complete','Complete processing only when all three checks pass','Expected UI','Delivery note and logistics actions unlock.','Gate','Processing gate approved.'],
-      ['prepare','Approve logistics documents, then click Create shipment draft','Required','Mode, carrier, forwarder, and booking/tracking reference.','DB Write','<code>shipments</code> draft record created.'],
-      ['resolve','Resolve all blocking trade requirements, then approve dispatch','Expected UI','Order stage moves to Dispatch/Invoice.','DB Write','<code>shipments.status = dispatched</code>.'],
-      ['approve','Prepare, preview, and approve final invoice','Critical','Final invoice must reflect actual dispatched quantities, not quoted quantities.','Gate','Invoice approval gate required before closeout.'],
-      ['complete','Enter payment reference, reconcile, confirm outstanding = 0, then close','Expected UI','Order status changes to Completed and all gates close.','DB Write','<code>orders.status = completed</code> and <code>finance_sync_records</code> written.']
-    ], no:'Invoice for quoted quantities if actual dispatch differed. Close the order before payment reconciliation is complete and outstanding equals zero.' }
-  ];
+  {
+    "id": "orientation",
+    "icon": "🧭",
+    "title": "Start Here",
+    "question": "I am new. Where am I in the CRM?",
+    "role": "All operators",
+    "stageLabel": "Dashboard orientation",
+    "stageIndex": 0,
+    "cta": "Learn the layout",
+    "steps": [
+      {
+        "short": "Dashboard",
+        "title": "Understand the main dashboard",
+        "action": "Start at the <strong>Dashboard</strong>. Use it as the command map for markets, follow-ups, pipeline value, and blocked revenue.",
+        "why": "This screen tells you what needs attention before you open a lead, quote, or order.",
+        "screen": "operator-01-dashboard-nav.png",
+        "screenCaption": "Dashboard with left navigation and market command map.",
+        "success": [
+          "Left navigation is visible on the far left.",
+          "Action cards show open opportunities, follow-ups, quotes, blockers, and pipeline value.",
+          "The map and action zone tell you what to open next."
+        ],
+        "warning": "Do not start work from memory. Use Dashboard or Follow-up so every action is attached to a system record.",
+        "system": [
+          "Read: dashboard rollups",
+          "Route: /dashboard",
+          "Role: Sales, Ops, Admin",
+          "Risk: working outside CRM"
+        ]
+      },
+      {
+        "short": "Left Nav",
+        "title": "Use the left navigation",
+        "action": "Use the left rail to move between <strong>Leads</strong>, <strong>Quotes</strong>, <strong>Orders</strong>, Pipeline, Catalog, Events, and Admin.",
+        "why": "The left rail is the fastest way for a road user to find the correct workspace without knowing URLs.",
+        "screen": "operator-01-dashboard-nav.png",
+        "screenCaption": "Left navigation is always the starting orientation point.",
+        "success": [
+          "Dash, Leads, Quotes, and Orders are visible.",
+          "The active workspace is highlighted.",
+          "Share vCard and Quick Lead are visible for fast capture."
+        ],
+        "warning": "Do not use browser history as the workflow. Use the app navigation so you land in the correct workspace.",
+        "system": [
+          "Navigation: app shell",
+          "State: active route",
+          "Write: none",
+          "Risk: wrong workspace"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lead-quote",
+    "icon": "💬",
+    "title": "Lead → Quote",
+    "question": "Customer asked for price.",
+    "role": "Sales",
+    "stageLabel": "Lead to quote",
+    "stageIndex": 1,
+    "cta": "Create a quote",
+    "steps": [
+      {
+        "short": "Open Leads",
+        "title": "Open the Follow-up lead queue",
+        "action": "Click <strong>Leads / Follow-up</strong> from the left navigation.",
+        "why": "Every quote should begin from a real lead so buyer, product interest, owner, follow-up, and compliance context stay connected.",
+        "screen": "operator-02-lead-queue.png",
+        "screenCaption": "Lead queue with Open buttons and follow-up priority.",
+        "success": [
+          "You see the lead queue table.",
+          "Each row has company/contact, stage progress, follow-up, priority, owner, and Open.",
+          "Urgent or overdue leads are clearly marked."
+        ],
+        "warning": "Do not create a disconnected quote from loose notes if the buyer already exists in the lead queue.",
+        "system": [
+          "Table: leads",
+          "Read: org-scoped leads",
+          "RLS: organization membership",
+          "Risk: disconnected quote"
+        ]
+      },
+      {
+        "short": "Open Lead",
+        "title": "Open the customer command center",
+        "action": "Click <strong>Open</strong> on the correct lead row.",
+        "why": "The lead command center shows whether the buyer is qualified, product coverage is mapped, pricing is ready, and compliance is clear.",
+        "screen": "operator-03-lead-detail-create-quote.png",
+        "screenCaption": "Lead command center with qualification, coverage, commercial, and compliance cards.",
+        "success": [
+          "Customer name and badges are visible.",
+          "Quote prep checklist is green or clearly explains the blocker.",
+          "Continue quote or View quote action is visible."
+        ],
+        "warning": "Do not continue if the lead is disqualified or coverage/compliance is not ready unless an approved exception exists.",
+        "system": [
+          "Tables: leads, lead_product_interests",
+          "Checks: qualification, coverage, compliance",
+          "Write: follow-up if rescheduled",
+          "Risk: bypassed lead gates"
+        ]
+      },
+      {
+        "short": "Continue Quote",
+        "title": "Create or continue the quote",
+        "action": "Click <strong>Continue quote</strong>, <strong>View quote</strong>, or <strong>Create quote</strong> from the lead command center.",
+        "why": "This opens the quote workspace with lead context carried forward, instead of making a manual quote with missing lineage.",
+        "screen": "operator-03-lead-detail-create-quote.png",
+        "screenCaption": "Lead detail page where the commercial action is visible.",
+        "success": [
+          "The quote action is available.",
+          "Buyer and product context are already linked.",
+          "Compliance status is clear before entering quote workflow."
+        ],
+        "warning": "Do not start a new quote if an active quote already exists for the lead. Continue the active quote instead.",
+        "system": [
+          "Tables: quotes, quote_versions",
+          "Lineage: source lead",
+          "Gate: quote prep checklist",
+          "Risk: duplicate quote"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-build",
+    "icon": "🧾",
+    "title": "Build & Send Quote",
+    "question": "I need to finish pricing and send the quote.",
+    "role": "Sales",
+    "stageLabel": "Quote build and send",
+    "stageIndex": 2,
+    "cta": "Build quote",
+    "steps": [
+      {
+        "short": "Product",
+        "title": "Review products and quote lines",
+        "action": "Inside the quote workspace, confirm products, quantity, unit price, currency, and total.",
+        "why": "These values become the customer offer and later drive order handoff. Wrong lines here create wrong orders later.",
+        "screen": "operator-04-quote-builder-draft.png",
+        "screenCaption": "Quote workspace modal with accepted quote lines and total.",
+        "success": [
+          "Product rows are visible.",
+          "Quantity, unit price, and total are correct.",
+          "Quote total matches the intended offer."
+        ],
+        "warning": "Do not send if line items, quantities, pricing, or currency are incomplete.",
+        "system": [
+          "Tables: quote_version_line_items",
+          "Write: quote version lines",
+          "Status: draft or accepted",
+          "Risk: incorrect order source"
+        ]
+      },
+      {
+        "short": "Terms",
+        "title": "Set commercial terms",
+        "action": "Review <strong>currency</strong>, <strong>Incoterm</strong>, payment terms, validity, port of loading, and delivery notes.",
+        "why": "Commercial terms define the buyer commitment and the logistics basis. They must be locked before send.",
+        "screen": "operator-05-quote-approval-gate.png",
+        "screenCaption": "Quote preview terms step with currency, Incoterm, payment terms, validity, and delivery notes.",
+        "success": [
+          "Currency is correct.",
+          "Incoterm and payment terms are selected.",
+          "Validity and delivery notes are clear."
+        ],
+        "warning": "Do not rely on verbal terms if the quote terms fields are empty.",
+        "system": [
+          "Tables: quote_versions, pricing snapshots",
+          "Write: commercial terms",
+          "Gate: terms step",
+          "Risk: commercial mismatch"
+        ]
+      },
+      {
+        "short": "Send Gate",
+        "title": "Confirm the quote is safe to send",
+        "action": "On the send gate, check that blockers are clear, pricing is complete, approval is cleared, compliance is clear, and draft exists.",
+        "why": "This is the final safety gate before the customer-facing workflow opens.",
+        "screen": "operator-06-approved-quote-send.png",
+        "screenCaption": "Quote send gate showing all green safety checks.",
+        "success": [
+          "No active blockers.",
+          "Pricing complete.",
+          "Approval and compliance are clear.",
+          "Open send workflow button is available."
+        ],
+        "warning": "Do not send while approval is pending or while the quote is only a draft preview.",
+        "system": [
+          "Gate: send readiness",
+          "Status: approval cleared",
+          "Write: audit record on send",
+          "Risk: unapproved customer document"
+        ]
+      },
+      {
+        "short": "Send Workflow",
+        "title": "Send or hand off the quote",
+        "action": "Use <strong>Open send workflow</strong>, <strong>Send by email / WhatsApp</strong>, or <strong>Create order handoff</strong> only after the quote is accepted/safe.",
+        "why": "The send workflow creates traceable customer communication and prepares order handoff after buyer acceptance.",
+        "screen": "operator-07-quote-outcome-create-order.png",
+        "screenCaption": "Quote workspace send and handoff panel with Create order handoff.",
+        "success": [
+          "Quote status is accepted or send-ready.",
+          "Customer PDF can be opened for review.",
+          "Create order handoff is available when the buyer accepts."
+        ],
+        "warning": "Do not mark accepted until the buyer actually accepted. WhatsApp link activity is not the same as confirmed delivery.",
+        "system": [
+          "Tables: communications, quotes",
+          "Write: sent/outcome records",
+          "Lineage: accepted quote version",
+          "Risk: false acceptance"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "order-execution",
+    "icon": "📦",
+    "title": "Order Execution",
+    "question": "Quote is accepted. How do I run the order?",
+    "role": "Operations",
+    "stageLabel": "Order execution",
+    "stageIndex": 3,
+    "cta": "Run order",
+    "steps": [
+      {
+        "short": "Open Orders",
+        "title": "Open the Orders / Execution workspace",
+        "action": "Go to <strong>Orders</strong> and open the order created from the accepted quote.",
+        "why": "This is where the accepted quote becomes controlled execution: actual lines, buyer document, packing, freight, processing, delivery note, invoice, and paid/closed.",
+        "screen": "operator-08-order-execution-stage-panel.png",
+        "screenCaption": "Orders / Execution page with order queue, stage strip, and action stack.",
+        "success": [
+          "Order queue is visible on the left.",
+          "Selected order summary is visible.",
+          "Eight-stage execution strip is visible."
+        ],
+        "warning": "Do not manually recreate order work if an order already exists from the accepted quote.",
+        "system": [
+          "Tables: orders, order_lines",
+          "Route: /orders",
+          "Lineage: source_quote_id",
+          "Risk: duplicate execution"
+        ]
+      },
+      {
+        "short": "Stage Strip",
+        "title": "Read the order stage strip",
+        "action": "Use the stage strip to see what is done, active, blocked, or ready: Actual Lines → Buyer Doc → Packing → Freight Queue → Processing → Delivery Note → Final Invoice → Paid & Closed.",
+        "why": "The stage strip is the operator map for the order. It tells you exactly where work should continue.",
+        "screen": "operator-08-order-execution-stage-panel.png",
+        "screenCaption": "Eight-stage order execution strip with done, active, and blocked states.",
+        "success": [
+          "Green stages are done.",
+          "Blue/active stage is the current work area.",
+          "Orange/blocked stages explain what must happen first."
+        ],
+        "warning": "Do not skip ahead. Later stages are blocked until earlier gates are complete.",
+        "system": [
+          "Tables: order_stage_events",
+          "Gate: sequential workflow",
+          "Write: stage approvals",
+          "Risk: skipped gate"
+        ]
+      },
+      {
+        "short": "Next Action",
+        "title": "Use the Action Stack",
+        "action": "Read <strong>Next best action</strong> on the right and click the primary action button.",
+        "why": "This prevents guessing. The action stack explains what the action unlocks, what blocks it, truth labels, and latest activity.",
+        "screen": "operator-08-order-execution-stage-panel.png",
+        "screenCaption": "Right action stack explaining next best action, unlocks, blockers, truth labels, and activity.",
+        "success": [
+          "Next best action is visible.",
+          "The primary action button matches the current stage.",
+          "Blockers and truth labels are visible before action."
+        ],
+        "warning": "Do not act only from the middle panel if the right action stack says another gate is blocking the workflow.",
+        "system": [
+          "Source: computed action stack",
+          "Write: stage event/action specific",
+          "Audit: latest activity",
+          "Risk: wrong next action"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "packing-freight",
+    "icon": "🚚",
+    "title": "Packing & Freight",
+    "question": "Goods are ready. What should Ops do?",
+    "role": "Operations",
+    "stageLabel": "Packing and freight",
+    "stageIndex": 5,
+    "cta": "Approve packing",
+    "steps": [
+      {
+        "short": "Packing Plan",
+        "title": "Open and review the packing plan",
+        "action": "In the order workspace, open the <strong>Packing</strong> stage and review cartons, pallets, weights, CBM, pickup, and destination.",
+        "why": "Packing approval confirms the physical shipping payload before freight and dispatch actions proceed.",
+        "screen": "operator-10-packing-freight.png",
+        "screenCaption": "Packing plan with cartons, pallets, weight, CBM, pickup, and destination fields.",
+        "success": [
+          "Packing stage is visible.",
+          "Cartons, pallets, net/gross weight, CBM, pickup, and destination are filled.",
+          "Packing approved state is visible or ready to approve."
+        ],
+        "warning": "Do not approve packing if dimensions, weight, cartons, or destination are unknown.",
+        "system": [
+          "Tables: packing_plans, packing_plan_lines",
+          "Write: packing overrides",
+          "Gate: packing approval",
+          "Risk: bad freight request"
+        ]
+      },
+      {
+        "short": "Approve",
+        "title": "Approve packing",
+        "action": "Click <strong>Approve packing</strong> after reviewing the saved packing data.",
+        "why": "This unlocks freight queue and later processing steps while preserving an audit trail.",
+        "screen": "operator-10-packing-freight.png",
+        "screenCaption": "Packing approval controls at the bottom of the packing panel.",
+        "success": [
+          "Packing approved badge appears.",
+          "Freight queue can proceed.",
+          "Packing sheet preview is available."
+        ],
+        "warning": "Do not use approval as a note-taking shortcut. Approve only after human review.",
+        "system": [
+          "Gate: packing approved",
+          "Write: approval event",
+          "Unlocks: freight/processing",
+          "Risk: premature freight"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dispatch-closeout",
+    "icon": "✅",
+    "title": "Dispatch & Closeout",
+    "question": "Shipment is moving or finance needs closeout.",
+    "role": "Ops + Finance",
+    "stageLabel": "Dispatch and closeout",
+    "stageIndex": 7,
+    "cta": "Close order",
+    "steps": [
+      {
+        "short": "Freight Queue",
+        "title": "Queue the freight request",
+        "action": "At <strong>Freight Queue</strong>, click <strong>Queue freight request</strong> when carrier booking is not live-integrated.",
+        "why": "This records a pending freight event for manual/provider-later processing without pretending a carrier API booking happened.",
+        "screen": "operator-11-dispatch-tracking.png",
+        "screenCaption": "Freight queue panel with pending adapter label and queue freight request action.",
+        "success": [
+          "Freight Queue stage is selected.",
+          "Pending adapter label is visible.",
+          "Queue freight request action is available."
+        ],
+        "warning": "Do not claim live carrier booking when the adapter says pending. This is a manual/provider-later queue event.",
+        "system": [
+          "Table: freight_rate_requests",
+          "Adapter: pending",
+          "Write: freight_quote_requested",
+          "Risk: false carrier booking"
+        ]
+      },
+      {
+        "short": "Finance Sync",
+        "title": "Queue invoice sync after final invoice approval",
+        "action": "When the order is paid/closed or final invoice is approved, use <strong>Queue invoice sync</strong> if finance integration is pending.",
+        "why": "Finance queue visibility lets the team retry or manually reference the finance event later.",
+        "screen": "operator-11-dispatch-tracking.png",
+        "screenCaption": "Action stack showing Queue invoice sync and finance queue details.",
+        "success": [
+          "Next best action explains invoice sync.",
+          "Finance pending / Freight queued status is visible.",
+          "Latest activity/event list shows document links and previews."
+        ],
+        "warning": "Do not tell finance that Xero, QuickBooks, or Tally synced if the truth label says no live sync.",
+        "system": [
+          "Table: finance_sync_records",
+          "Adapter: pending",
+          "Write: pending finance event",
+          "Risk: false sync claim"
+        ]
+      },
+      {
+        "short": "Closeout",
+        "title": "Close only after evidence and finance are clear",
+        "action": "Close the order only when dispatch, final invoice, payment, reconciliation, and required evidence are complete.",
+        "why": "Closeout is the commercial end state. It should represent completed goods movement and finance status, not just internal readiness.",
+        "screen": "operator-11-dispatch-tracking.png",
+        "screenCaption": "Paid & Closed order with latest activity and finance action stack.",
+        "success": [
+          "Final invoice is approved.",
+          "Payment/finance reference is recorded or queued.",
+          "Latest activity supports the closeout state."
+        ],
+        "warning": "Do not close an order only because packing or document preview is done.",
+        "system": [
+          "Tables: orders, shipments, finance_sync_records",
+          "Status: completed/paid closed",
+          "Evidence: required",
+          "Risk: audit failure"
+        ]
+      }
+    ]
+  }
+];
+
+  function escHtml(v) {
+    return String(v || '').replace(/[&<>\"]/g, function(ch) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]);
+    });
+  }
+
+  function renderGuideJourney(activeIndex) {
+    return `<div class="og4-journey">${guideJourney.map((item, i) => `<div class="og4-journey-step ${i < activeIndex ? 'og4-done' : ''} ${i === activeIndex ? 'og4-current' : ''}">${item}</div>`).join('')}</div>`;
+  }
+
+  function renderSystemDetails(items) {
+    return (items || []).map((item) => {
+      const parts = String(item).split(': ');
+      return `<div class="og4-sys-chip"><b>${escHtml(parts[0])}</b><span>${escHtml(parts.slice(1).join(': '))}</span></div>`;
+    }).join('');
+  }
 
   function renderOperatorGuide(guide, guideIdx) {
-    const nav = guide.steps.map((st, i) => `<button class="og3-nav-item ${i === 0 ? 'og3-active' : ''}" onclick="Docs.selectStep(${guideIdx},${i})"><span class="og3-icon" data-t="${st[0]}">${i + 1}</span><span class="og3-nav-text"><span class="og3-nav-n">Step ${i + 1}</span><span class="og3-nav-label">${st[1]}</span></span><span class="og3-chevron">›</span></button>`).join('');
-    const dots = guide.steps.map((_, i) => `<button class="og3-prog-dot ${i === 0 ? 'og3-prog-active' : ''}" onclick="Docs.selectStep(${guideIdx},${i})" aria-label="Open step ${i + 1}"></button>`).join('');
-    const detail = guide.steps.map((st, i) => `<section class="og3-step-content ${i === 0 ? 'og3-step-active' : ''}"><div class="og3-dc-head"><div class="og3-badge">${i + 1}</div><div class="og3-icon-lg"><span class="og3-icon" data-t="${st[0]}">${i + 1}</span></div></div><h3 class="og3-dc-title">${st[1]}</h3><div class="og3-chips"><div class="og3-chip og3-chip-ui"><span class="og3-clabel">${st[2]}</span><p>${st[3]}</p></div><div class="og3-chip og3-chip-db"><span class="og3-clabel">${st[4]}</span><p>${st[5]}</p></div></div></section>`).join('');
-    const warning = guide.critical ? `<div class="og3-critical"><strong>&#9888; Critical:</strong> ${guide.critical}</div>` : `<div class="og3-donot"><strong>&otimes; Do NOT:</strong> ${guide.no}</div>`;
-    return `<div class="og3-wrap"><div class="og3-layout"><nav class="og3-nav">${nav}<div class="og3-progress-row">${dots}</div></nav><div class="og3-detail">${detail}</div></div>${warning}</div>`;
+    const nav = guide.steps.map((st, i) => `<button class="og4-step-nav ${i === 0 ? 'og4-active' : ''}" onclick="Docs.selectStep(${guideIdx},${i})"><span class="og4-step-num">${i + 1}</span><span><b>${escHtml(st.short)}</b><small>${escHtml(st.title)}</small></span><em>›</em></button>`).join('');
+    const details = guide.steps.map((st, i) => `<section class="og4-step-panel ${i === 0 ? 'og4-active' : ''}">
+      <div class="og4-panel-head"><span class="og4-pill">Step ${i + 1} of ${guide.steps.length}</span><span class="og4-pill og4-role">${escHtml(guide.role)}</span><span class="og4-pill og4-stage">${escHtml(guide.stageLabel)}</span></div>
+      <h3>${escHtml(st.title)}</h3>
+      <div class="og4-main-grid">
+        <div class="og4-instructions">
+          <div class="og4-action-card"><span class="og4-label">Do this now</span><p>${st.action}</p><small>${escHtml(st.why)}</small></div>
+          <div class="og4-success"><span class="og4-label">Success checkpoint</span>${(st.success || []).map(s => `<div class="og4-check"><strong>✓</strong><span>${escHtml(s)}</span></div>`).join('')}</div>
+          <div class="og4-warning"><b>Wrong path warning</b><span>${escHtml(st.warning)}</span></div>
+          <details class="og4-details"><summary>System details for audit</summary><div>${renderSystemDetails(st.system)}</div></details>
+        </div>
+        <figure class="og4-shot"><img src="docs-screenshots/${escHtml(st.screen)}" alt="${escHtml(st.title)} screenshot" loading="lazy" onclick="Docs.openLightbox('docs-screenshots/${escHtml(st.screen)}','${escHtml(st.title)}')"><figcaption>${escHtml(st.screenCaption)}</figcaption></figure>
+      </div>
+      <div class="og4-panel-foot"><button class="og4-btn" onclick="Docs.prevGuideStep(${guideIdx})">← Previous</button><div><b class="og4-step-count">${i + 1}/${guide.steps.length}</b><span class="og4-mini-bar"><i style="width:${Math.round(((i+1)/guide.steps.length)*100)}%"></i></span></div><button class="og4-btn og4-primary" onclick="Docs.nextGuideStep(${guideIdx})">Next step →</button></div>
+    </section>`).join('');
+    return `<div class="og4-playbook"><div class="og4-workflow-head"><div><span class="og4-kicker">${escHtml(guide.role)} workflow</span><h2>${escHtml(guide.title)}</h2><p>${escHtml(guide.question)}</p></div><div class="og4-workflow-icon">${guide.icon}</div></div>${renderGuideJourney(guide.stageIndex)}<div class="og4-guide-layout"><nav class="og4-stepper">${nav}</nav><div class="og4-detail">${details}</div></div></div>`;
   }
 
   function topicContentGuides(id) {
     if (id !== 'operator-guides') return null;
-    return `<div class="og-tabs-wrap"><div class="og-tabs" role="tablist">${guideSets.map((g, i) => `<button class="og-tab ${i === 0 ? 'og-active' : ''}" onclick="Docs.switchGuideTab(${i})"><span class="og-tab-n">${i + 1}</span>${g.title}</button>`).join('')}</div>${guideSets.map((g, i) => `<div class="og-panel ${i === 0 ? 'og-active' : ''}">${renderOperatorGuide(g, i)}</div>`).join('')}<div class="callout" style="margin-top:20px"><b>Gate rule:</b> All gate approvals are required and auditable. Do not bypass any stage gate. Do not create disconnected quotes, assume WhatsApp activity means delivery, or treat a draft PDF as a sent customer document.</div></div>`;
+    const cards = guideSets.map((g, i) => `<button class="og4-job-card ${i === 0 ? 'og-active' : ''}" onclick="Docs.switchGuideTab(${i})"><span>${g.icon}</span><b>${escHtml(g.title)}</b><small>${escHtml(g.question)}</small><em>${escHtml(g.cta)} →</em></button>`).join('');
+    const panels = guideSets.map((g, i) => `<div class="og-panel ${i === 0 ? 'og-active' : ''}">${renderOperatorGuide(g, i)}</div>`).join('');
+    return `<div class="og4-hero"><span class="og4-kicker">Field-ready walkthrough</span><h1>Operator Playbook</h1><p>Choose the job you are trying to complete. Each guide shows the exact click path, the live screen you should recognize, success checks, and the mistake to avoid.</p></div><div class="og4-job-grid">${cards}</div>${panels}<div class="callout og4-global-rule"><b>Gate rule:</b> Work should move Lead → Quote → Approval → Order → Documents → Packing → Dispatch → Closeout. Do not bypass approval gates, do not create disconnected quotes, and do not treat link_created or pending adapter events as confirmed delivery/sync.</div>`;
   }
 
   function switchGuideTab(n) {
-    document.querySelectorAll('.og-tab').forEach((b, i) => b.classList.toggle('og-active', i === n));
+    document.querySelectorAll('.og4-job-card').forEach((b, i) => b.classList.toggle('og-active', i === n));
     document.querySelectorAll('.og-panel').forEach((p, i) => p.classList.toggle('og-active', i === n));
-    const panels = document.querySelectorAll('.og-panel');
-    if (panels[n]) { selectStep(n, 0); }
+    if (document.querySelectorAll('.og-panel')[n]) selectStep(n, 0);
   }
 
   function selectStep(guideIdx, stepIdx) {
-    const panels = document.querySelectorAll('.og-panel');
-    const panel = panels[guideIdx];
+    const panel = document.querySelectorAll('.og-panel')[guideIdx];
     if (!panel) return;
-    panel.querySelectorAll('.og3-nav-item').forEach((el, i) => el.classList.toggle('og3-active', i === stepIdx));
-    panel.querySelectorAll('.og3-step-content').forEach((el, i) => el.classList.toggle('og3-step-active', i === stepIdx));
-    panel.querySelectorAll('.og3-prog-dot').forEach((el, i) => el.classList.toggle('og3-prog-active', i === stepIdx));
+    panel.dataset.step = String(stepIdx);
+    panel.querySelectorAll('.og4-step-nav').forEach((el, i) => el.classList.toggle('og4-active', i === stepIdx));
+    panel.querySelectorAll('.og4-step-panel').forEach((el, i) => el.classList.toggle('og4-active', i === stepIdx));
+  }
+
+  function nextGuideStep(guideIdx) {
+    const panel = document.querySelectorAll('.og-panel')[guideIdx];
+    const max = guideSets[guideIdx].steps.length - 1;
+    const cur = Number(panel?.dataset.step || 0);
+    selectStep(guideIdx, Math.min(max, cur + 1));
+  }
+
+  function prevGuideStep(guideIdx) {
+    const panel = document.querySelectorAll('.og-panel')[guideIdx];
+    const cur = Number(panel?.dataset.step || 0);
+    selectStep(guideIdx, Math.max(0, cur - 1));
   }
 
 
@@ -1051,6 +1459,6 @@ flowchart LR
   }
 
   init();
-  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
+  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, nextGuideStep, prevGuideStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
 })();
 
