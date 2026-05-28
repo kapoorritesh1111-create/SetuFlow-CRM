@@ -1,29 +1,650 @@
-const Docs=(()=>{const shared={active:false,token:null,recipient:null,expiry:null};let authUser=null;let screenshots=[];let metrics={open:9,resolved:199,criticalHigh:1,milestones:3};const topics=[{id:'overview',group:'Get Started',icon:'⌂',title:'Product Overview',tag:'Start Here',summary:'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',accent:'#2563eb',next:'architecture',sections:[]},{id:'architecture',group:'System Overview',icon:'⌬',title:'Architecture',tag:'System Overview',summary:'How the app, database, auth, RLS, integration boundaries, and documentation workspace fit together.',accent:'#0d9488'},{id:'modules',group:'System Overview',icon:'▦',title:'Module Reference',tag:'System Overview',summary:'Routes, workspaces, source tables, and ownership responsibilities for every major module.',accent:'#2563eb'},{id:'workflows',group:'Business Workflows',icon:'⇄',title:'Commercial Workflows',tag:'Workflows',summary:'The professional business view of how leads become quotes, quotes become orders, and orders close out.',accent:'#0d9488'},{id:'diagrams',group:'Business Workflows',icon:'◇',title:'Flow Diagrams',tag:'Workflows',summary:'Professional swimlane diagrams showing operator actions and system responses without broken raw text.',accent:'#7c3aed'},{id:'operator-guides',group:'Operations',icon:'☷',title:'Operator Guides',tag:'Operations',summary:'Click-by-click guidance for testers and operators with expected UI state, expected data, and do-not-break rules.',accent:'#f97316'},{id:'guru-ai',group:'Operations',icon:'✦',title:'Setu Guru AI',tag:'AI Assistant',summary:'How Guru helps users understand pages, draft next steps, and support mobile scan/vCard workflows without autonomous external sends.',accent:'#db2777'},{id:'data-security',group:'Security & Data',icon:'⬟',title:'Data & Security',tag:'Security',summary:'Organization-scoped data, RLS, membership, roles, audit trails, and safe integration boundaries.',accent:'#059669'},{id:'api-integrations',group:'Integrations & API',icon:'</>',title:'API & Integrations',tag:'Integrations',summary:'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',accent:'#2563eb'},{id:'mobile',group:'Operations',icon:'▯',title:'Mobile Workspace',tag:'Mobile',summary:'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',accent:'#14b8a6'},{id:'quick-reference',group:'Reference',icon:'☰',title:'Quick Reference',tag:'Reference',summary:'Fast rules, gates, routes, and checks for testers and technical leads.',accent:'#334155'},{id:'live-ui',group:'Reference',icon:'▣',title:'Live UI Snapshots',tag:'Screenshots',summary:'Clickable screen library for testers and tech leads. Internal users can upload screenshots directly from this workspace.',accent:'#db2777'}];
-function idx(){const h=(location.hash||'#overview').replace('#','').split('=');if(h[0]==='snapshot')return 'live-ui';return topics.some(t=>t.id===h[0])?h[0]:'overview'}function byId(id){return topics.find(t=>t.id===id)||topics[0]}function currentIndex(){return Math.max(0,topics.findIndex(t=>t.id===idx()))}function isInternal(){return !shared.active}function escapeHtml(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}function validToken(token){try{const d=JSON.parse(atob(token));if(!d.expiry||d.expiry<Date.now())return null;return d}catch{return null}}
-async function initAuth(){const p=new URLSearchParams(location.search);const token=p.get('share_token');if(token){const d=validToken(token);if(d){shared.active=true;shared.token=token;shared.recipient=d.recipient||'External reviewer';shared.expiry=d.expiry;document.body.classList.add('shared-mode');document.getElementById('sharedBanner').classList.remove('hidden');document.getElementById('sharedRecipient').textContent=shared.recipient;document.getElementById('sharedExpiry').textContent='Expires '+new Date(shared.expiry).toLocaleString();document.querySelectorAll('.internal-only').forEach(e=>e.classList.add('hidden'));document.getElementById('authGate').classList.add('hidden');return}document.getElementById('authGate').classList.remove('hidden');document.getElementById('authError').textContent='This shared review link is invalid or expired.';return}try{const r=await fetch('/api/internal/auth-check',{credentials:'include'});if(!r.ok)throw new Error('auth');const d=await r.json();authUser=d.user||null;document.getElementById('userName').textContent=authUser?.name||'Ritesh Kapoor';document.getElementById('userInitial').textContent=(authUser?.name||'R').charAt(0).toUpperCase();document.getElementById('authGate').classList.add('hidden')}catch(e){document.getElementById('authGate').classList.remove('hidden')}}
-function renderNav(){const nav=document.getElementById('topicNav');let html='';let g='';topics.forEach(t=>{if(t.group!==g){g=t.group;html+=`<div class="nav-group">${g}</div>`}html+=`<button class="nav-link" data-topic="${t.id}" onclick="Docs.openTopic('${t.id}')"><span class="dot">${t.icon}</span>${t.title}</button>`});nav.innerHTML=html;markActive()}
-function markActive(){const id=idx();document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.topic===id));document.querySelectorAll('[data-rail-topic]').forEach(b=>b.classList.toggle('active',b.dataset.railTopic===id));const i=currentIndex();document.getElementById('mobileProgress').textContent=(i+1)+' / '+topics.length;document.getElementById('mobilePrev').textContent=i===0?'Overview':'← '+topics[i-1].title;document.getElementById('mobileNext').textContent=i===topics.length-1?'Start over':topics[i+1].title+' →'}function openTopic(id){location.hash=id;document.getElementById('leftNav').classList.remove('open')}
-function renderOverview(){const ov=document.getElementById('overviewView');ov.innerHTML=`<section class="hero"><div><div class="eyebrow">Mission-critical docs workspace</div><h1>SETU Flow CRM — Technical Documentation</h1><p>Everything a tester, architect, developer, or new tech lead needs to understand the system, validate flows, and start working immediately.</p><div class="hero-search"><span>⌕</span><input placeholder="Search docs, APIs, workflows, tables..." oninput="Docs.search(this.value)"><kbd>⌘K</kbd></div><div class="hero-chips"><button onclick="Docs.openTopic('api-integrations')">API Reference</button><button onclick="Docs.openTopic('workflows')">Commercial Workflows</button><button onclick="Docs.openTopic('data-security')">Data Model</button><button onclick="Docs.openTopic('operator-guides')">Operator Guides</button><button onclick="Docs.openTopic('live-ui')">Live UI Snapshots</button></div></div><div class="readiness-card"><div class="ring"><span id="readyPct">66%</span></div><b>Documentation Readiness</b><p>Live issue counts and roadmap signals refresh from Supabase when available.</p></div></section><section class="quick-grid"><div class="quick-card internal-only"><div class="quick-icon" style="background:#0d9488">➤</div><h3>Share Doc</h3><p>Generate a time-limited onboarding link for a tester or tech lead.</p><button onclick="Docs.openShare()">Open modal →</button></div><div class="quick-card internal-only"><div class="quick-icon" style="background:#2563eb">◎</div><h3>Issue Tracker <span id="issueQuick">${metrics.open}</span></h3><p>Review current defects, validation gaps, and implementation tasks.</p><a href="setuflow-issue-tracker.html">Open tracker →</a></div><div class="quick-card internal-only"><div class="quick-icon" style="background:#7c3aed">⚑</div><h3>Roadmap <span id="roadQuick">${metrics.milestones}</span></h3><p>Understand product direction, milestones, and cleanup plan.</p><a href="setuflow-roadmap.html">Open roadmap →</a></div><div class="quick-card"><div class="quick-icon" style="background:#db2777">▣</div><h3>${isInternal()?'Add / Review':'View'} Screenshots</h3><p>Use the screenshot library to understand production UI states.</p><button onclick="Docs.openTopic('live-ui')">Open snapshots →</button></div></section><section class="metrics"><div class="metric"><small>Total Topics</small><strong>${topics.length}</strong><p>Workspace sections</p></div><div class="metric internal-only"><small>Open Issues</small><strong id="openMetric">${metrics.open}</strong><p id="riskMetric">${metrics.criticalHigh} critical/high open</p></div><div class="metric internal-only"><small>Roadmap Milestones</small><strong id="roadMetric">${metrics.milestones}</strong><p>Active sprint lanes</p></div><div class="metric"><small>Latest Release</small><strong>v2026.05</strong><p>Internal docs build</p></div></section><div class="overview-title"><div><h2>Product overview and guided topics</h2><p>Choose a topic. Each page is designed to explain what the system does, how to test it, and what can break.</p></div></div><section class="topic-grid">${topics.slice(0).map((t,i)=>`<article class="topic-card" onclick="Docs.openTopic('${t.id}')"><div class="topic-card-top"><div class="topic-icon">${t.icon}</div><div><h3>${t.title}</h3><p>${t.summary}</p></div></div><div class="topic-card-footer"><span>${t.group}</span><span>Open topic ${i+1} →</span></div></article>`).join('')}</section>`;if(shared.active)document.querySelectorAll('.internal-only').forEach(e=>e.classList.add('hidden'))}
-function renderTopic(){const id=idx(),t=byId(id),i=currentIndex();document.getElementById('crumbCurrent').textContent=t.title;document.documentElement.style.setProperty('--accent',t.accent);document.getElementById('overviewView').classList.toggle('hidden',id!=='overview');document.getElementById('topicView').classList.toggle('hidden',id==='overview');if(id==='overview'){renderOverview();renderRail();markActive();return}document.getElementById('topicView').innerHTML=`<div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${topicContent(id)}<div class="topic-footer"><div class="topic-stepper"><button onclick="Docs.goPrev()">← ${i>0?topics[i-1].title:'Overview'}</button><span>${i+1} / ${topics.length}</span><button onclick="Docs.goNext()">${i<topics.length-1?topics[i+1].title:'Start over'} →</button></div></div></div>`;renderRail();markActive();if(id==='live-ui')renderScreenshots()}
-function topicContent(id){const map={
-'architecture':`<div class="pro-grid"><div class="pro-card"><b>App shell</b><p>Next.js App Router, server-rendered workspaces, focused client components, and route contracts for CRM modules.</p></div><div class="pro-card"><b>Data boundary</b><p>Supabase Postgres with organization-scoped RLS. Server actions must filter by organization_id.</p></div><div class="pro-card"><b>Integration boundary</b><p>Email, WhatsApp, freight, finance, and AI integrations stay adapter-backed and auditable.</p></div></div><div class="section-block"><h2>Architecture narrative</h2><p>SETU Flow CRM is a controlled commercial operating system. The app is organized around authenticated workspaces: Dashboard, Leads, Pipeline, Quotes, Orders, Products, Trade Events, Admin, and Mobile. The database remains the source of truth, while UI screens represent workflow states and gates rather than isolated pages.</p></div><div class="table-wrap"><table><thead><tr><th>Layer</th><th>Responsibility</th><th>Tester focus</th></tr></thead><tbody><tr><td>Next.js App</td><td>Routes, UI state, server actions, PDF/document previews</td><td>Confirm every CTA writes expected rows and preserves org scope.</td></tr><tr><td>Supabase</td><td>Auth, RLS, workflow data, audit records, tracker</td><td>Validate org members see only their workspace data.</td></tr><tr><td>Vercel</td><td>Production deployment and build proof</td><td>Every fix must deploy green before the tracker closes.</td></tr></tbody></table></div>`,
-'modules':`<div class="table-wrap"><table><thead><tr><th>Module</th><th>Route</th><th>What it owns</th><th>Ready signal</th></tr></thead><tbody><tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Executive KPIs, activity, follow-up queue, workspace health.</td><td>KPIs load without cross-org leakage.</td></tr><tr><td>Leads</td><td><code>/leads</code></td><td>Buyer/supplier records, follow-ups, product/market coverage.</td><td>Lead Command Center opens with clear next actions.</td></tr><tr><td>Pipeline</td><td><code>/pipeline</code></td><td>Kanban, swimlane, forecast, density, and filters.</td><td>View controls do not break stage logic.</td></tr><tr><td>Quotes</td><td><code>/quotes</code></td><td>Versioned quotes, FX, pricing rules, approval gates.</td><td>Sent quote versions are immutable.</td></tr><tr><td>Orders</td><td><code>/orders</code></td><td>Actual lines, documents, packing, freight, processing, dispatch, finance.</td><td>No stage skips without gate approval.</td></tr><tr><td>Mobile</td><td><code>/mobile</code></td><td>Business card scan, smart vCard, field capture.</td><td>Mobile capture creates reviewable lead drafts.</td></tr></tbody></table></div>`,
-'workflows':`<div class="section-block"><h2>Commercial lifecycle</h2><p>The system is built around a six-stage commercial journey. Each stage has a business purpose, required data, and a gate that prevents disconnected records.</p></div><div class="timeline"><div class="timeline-row"><div class="timeline-num">01</div><div><h3>Capture</h3><p>Business cards, trade events, or manual entry create a lead draft. The user confirms identity, company, market, and relationship type.</p></div></div><div class="timeline-row"><div class="timeline-num">02</div><div><h3>Qualify</h3><p>Owner, product interests, market, country, follow-up, and compliance posture are completed before quote creation becomes dominant.</p></div></div><div class="timeline-row"><div class="timeline-num">03</div><div><h3>Quote</h3><p>Catalog products, FX snapshot, incoterms, freight profile, pricing basis, and override reason are captured in a versioned quote.</p></div></div><div class="timeline-row"><div class="timeline-num">04</div><div><h3>Approve & Send</h3><p>Approval and compliance blockers are resolved before a customer PDF is sent by tracked email or WhatsApp link. The quote locks on send.</p></div></div><div class="timeline-row"><div class="timeline-num">05</div><div><h3>Execute</h3><p>Accepted quotes seed order lines. Actual line approval, documents, packing, freight, processing, dispatch, and final invoice are gated.</p></div></div><div class="timeline-row"><div class="timeline-num">06</div><div><h3>Close</h3><p>Finance sync, final invoice approval, payment reference, reconciliation, and archive complete the lifecycle.</p></div></div></div>`,
-'diagrams':`<div class="section-block"><h2>Lead to Quote swimlane</h2><p>Operator and system responsibilities are shown side by side so testers can validate both UI behavior and data writes.</p><div class="swimlane"><div class="swimlane-row"><div class="swimlane-label"><small>Operator</small><b>Capture and qualify</b></div><div class="swimlane-steps"><div class="lane-step"><b>Scan or add lead</b><span>Review parsed card data.</span></div><div class="lane-step"><b>Open command center</b><span>Confirm buyer/supplier context.</span></div><div class="lane-step"><b>Link coverage</b><span>Add product and market interest.</span></div><div class="lane-step"><b>Create quote</b><span>CTA appears only after gates pass.</span></div></div></div><div class="swimlane-row"><div class="swimlane-label"><small>System</small><b>Data and gates</b></div><div class="swimlane-steps"><div class="lane-step system"><b>Create lead</b><span>Write lead and profile rows.</span></div><div class="lane-step system"><b>Check gate</b><span>Validate coverage, country, compliance.</span></div><div class="lane-step system"><b>Open quote</b><span>Seed quote workspace.</span></div></div></div></div></div><div class="section-block"><h2>Order execution swimlane</h2><div class="swimlane"><div class="swimlane-row"><div class="swimlane-label"><small>Operator</small><b>Execute order</b></div><div class="swimlane-steps"><div class="lane-step"><b>Approve actuals</b><span>Confirm quantities and price.</span></div><div class="lane-step"><b>Approve document</b><span>Preview before external use.</span></div><div class="lane-step"><b>Approve packing</b><span>Confirm packs and lines.</span></div><div class="lane-step"><b>Dispatch</b><span>Approve shipment event.</span></div></div></div><div class="swimlane-row"><div class="swimlane-label"><small>System</small><b>Persistence</b></div><div class="swimlane-steps"><div class="lane-step system"><b>Seed order</b><span>Accepted quote becomes order.</span></div><div class="lane-step system"><b>Write documents</b><span>Create document and send rows.</span></div><div class="lane-step system"><b>Gate final invoice</b><span>Finance closeout cannot skip.</span></div></div></div></div></div>`,
-'operator-guides':`<div class="operator-guide"><div class="guide-step"><div class="guide-step-num">1</div><div><h3>Start from the workspace queue</h3><p>Open the relevant queue or module. Confirm filters, ownership, and organization context before changing records.</p></div></div><div class="guide-step"><div class="guide-step-num">2</div><div><h3>Validate expected UI and expected data together</h3><p>Every click must produce both a visible UI state and a predictable database write. If one is missing, create or update an issue.</p></div></div><div class="guide-step"><div class="guide-step-num">3</div><div><h3>Use blockers as proof, not friction</h3><p>Compliance, approval, pricing, and order gates must explain why a user cannot advance and what they should do next.</p></div></div><div class="guide-step"><div class="guide-step-num">4</div><div><h3>Close with deployment proof</h3><p>A workflow is not complete until the tracker, GitHub commit, and Vercel deployment evidence all agree.</p></div></div></div><div class="callout"><b>Do not bypass gates.</b>Do not create disconnected quotes, assume WhatsApp activity means delivery, or treat a draft PDF preview as a sent customer document.</div>`,
-'guru-ai':`<div class="feature-strip"><div class="feature-card"><div class="big-icon" style="background:#db2777">✦</div><h3>Setu Guru AI</h3><p>Guru explains the current page, summarizes blockers, drafts next actions, and supports operators without autonomously sending external messages.</p></div><div class="feature-card"><div class="big-icon" style="background:#0d9488">▣</div><h3>Business Card Scan</h3><p>Mobile capture parses cards into reviewable lead drafts. Operators approve the parsed data before it becomes commercial truth.</p></div><div class="feature-card"><div class="big-icon" style="background:#2563eb">⌁</div><h3>Smart vCard</h3><p>Field teams can exchange contact information quickly, then link the resulting relationship to follow-up, product interest, and event context.</p></div></div><div class="section-block"><h2>AI guardrails</h2><p>AI helps users understand and draft. It does not bypass approval, compliance, order, or external-send gates. Every AI-assisted action remains reviewable and attributable.</p></div>`,
-'data-security':`<div class="pro-grid"><div class="pro-card"><b>Organization scope</b><p>Every server action and query must be filtered by organization_id through workspace access.</p></div><div class="pro-card"><b>RLS policies</b><p>Tables are protected by workspace membership and role-aware policies.</p></div><div class="pro-card"><b>Auditability</b><p>Stage moves, approval decisions, sends, and major workflow changes must be traceable.</p></div></div><div class="table-wrap"><table><thead><tr><th>Area</th><th>Tables / controls</th><th>Risk if broken</th></tr></thead><tbody><tr><td>Auth</td><td><code>profiles</code>, <code>organization_members</code></td><td>Wrong users see internal workspaces.</td></tr><tr><td>Commercial</td><td><code>leads</code>, <code>quotes</code>, <code>orders</code></td><td>Deals detach from customer or organization truth.</td></tr><tr><td>Documents</td><td><code>order_documents</code>, <code>order_document_sends</code></td><td>External send proof becomes unreliable.</td></tr><tr><td>Tracker</td><td><code>sprint_issues</code></td><td>Production work loses evidence and accountability.</td></tr></tbody></table></div>`,
-'api-integrations':`<div class="table-wrap"><table><thead><tr><th>Integration</th><th>Rule</th><th>Status</th></tr></thead><tbody><tr><td>WhatsApp</td><td>Manual tracked <code>wa.me</code> links only. No live WhatsApp Business API.</td><td>Manual tracked-link</td></tr><tr><td>Email</td><td>Provider events confirm delivery. UI activity is not delivery proof.</td><td>Webhook-backed</td></tr><tr><td>PDF</td><td>Use puppeteer-core and @sparticuz/chromium only. No paid PDF API.</td><td>Guarded</td></tr><tr><td>Finance/Freight</td><td>Adapter-backed, no uncontrolled live provider calls from UI.</td><td>Boundary-ready</td></tr></tbody></table></div>`,
-'mobile':`<div class="feature-strip"><div class="feature-card"><div class="big-icon" style="background:#0d9488">▣</div><h3>Business card scan</h3><p>Scan, parse, review, and save buyer/supplier leads from trade shows or field meetings.</p></div><div class="feature-card"><div class="big-icon" style="background:#2563eb">⌁</div><h3>Smart vCard</h3><p>Share a professional contact card and preserve event/source context for later follow-up.</p></div><div class="feature-card"><div class="big-icon" style="background:#7c3aed">⚡</div><h3>Mobile action footer</h3><p>Critical next actions remain accessible without forcing desktop-style navigation.</p></div></div><div class="section-block"><h2>Mobile testing focus</h2><p>Validate camera permission, upload limits, fallback manual entry, parsed-data review, lead save, product coverage, and role-aware access.</p></div>`,
-'quick-reference':`<div class="quick-ref-grid"><div class="ref-card"><h3>Never break</h3><ul><li>No service-role key in client code.</li><li>No external live provider calls outside approved adapters.</li><li>No sent quote mutation.</li><li>No order stage skip without explicit gate.</li></ul></div><div class="ref-card"><h3>Always verify</h3><ul><li>GitHub main contains the change.</li><li>Vercel deployment is green.</li><li>Tracker notes include proof.</li><li>RLS remains organization-scoped.</li></ul></div><div class="ref-card"><h3>Core routes</h3><ul><li><code>/leads</code> command center</li><li><code>/pipeline</code> kanban, swimlane, forecast</li><li><code>/quotes</code> versioned quote workspace</li><li><code>/orders</code> execution and closeout</li></ul></div><div class="ref-card"><h3>Signals of quality</h3><ul><li>Clear next action.</li><li>Visible blocker reason.</li><li>Data write matches UI state.</li><li>Audit record exists for sensitive moves.</li></ul></div></div>`,
-'live-ui':`<div class="screenshot-toolbar"><div><h2>Live UI screenshot library</h2><p>Upload screenshots directly from this workspace. Each screenshot gets a clickable preview/link for testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>`};return map[id]||''}
-function renderRail(){const id=idx(),i=currentIndex(),pct=Math.round((i/(topics.length-1))*100),next=topics[(i+1)%topics.length];document.getElementById('rightRail').innerHTML=`<div class="rail-block"><h4>On this workspace</h4><div class="rail-list">${topics.map(t=>`<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div></div><div class="rail-block"><h4>Progress</h4><div class="progress-line"><span>Current path</span><b>${pct}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><p style="color:#64748b;font-size:12px">${id==='overview'?'Start at Docs Overview':'Topic '+(i+1)+' of '+topics.length}</p><div class="next-card"><b>Next step</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} →</button></div></div>${isInternal()?`<div class="rail-block"><h4>Live tracker</h4><div class="progress-line"><span>Open</span><b>${metrics.open}</b></div><div class="progress-line"><span>Resolved</span><b>${metrics.resolved}</b></div><a href="setuflow-issue-tracker.html" style="color:#2563eb;font-weight:900;font-size:12px">Open issue tracker →</a></div><div class="rail-block"><h4>Roadmap highlights</h4><div style="border-left:3px solid #14b8a6;padding-left:10px"><b>Sprint 19</b><p style="margin:4px 0;color:#64748b;font-size:12px">UX enhancement and documentation workspace cleanup.</p></div></div>`:''}<div class="rail-block"><h4>Contributor</h4><div class="person"><div class="avatar">R</div><div><b>Ritesh Kapoor</b><p style="margin:2px 0 0;color:#64748b;font-size:12px">Product owner, architect, builder</p></div></div></div>`;markActive()}
-async function loadMetrics(){if(shared.active)return;try{const r=await fetch('/api/internal/docs-metrics',{credentials:'include'});if(!r.ok)return;const d=await r.json();metrics={...metrics,...d};const pill=document.getElementById('issuePill');if(pill)pill.textContent=metrics.open;render()}catch(e){}}
-async function loadScreenshots(){screenshots=[{id:'seed-test',title:'Test live UI screenshot',route:'/internal/setuflow-docs.html',description:'Initial screenshot uploaded for workspace validation. Replace or add more from the Add screenshot action.',image_url:'docs-screenshots/test-live-ui.png',created_at:'2026-05-27'}];try{const url='/api/internal/docs-screenshots'+(shared.active?`?share_token=${encodeURIComponent(shared.token)}`:'');const r=await fetch(url,{credentials:'include'});if(r.ok){const d=await r.json();if(Array.isArray(d.screenshots)&&d.screenshots.length)screenshots=d.screenshots.concat(screenshots)}}catch(e){}try{const local=JSON.parse(localStorage.getItem('setu_docs_screenshots')||'[]');screenshots=local.concat(screenshots)}catch{}renderScreenshots();openHashSnapshot()}
-function renderScreenshots(){const grid=document.getElementById('screenshotGrid');if(!grid)return;grid.innerHTML=screenshots.map(s=>`<article class="shot-card"><img src="${escapeHtml(s.image_data||s.image_url)}" alt="${escapeHtml(s.title)}"><div><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.description)}</p><code>${escapeHtml(s.route||'/')}</code><br><button onclick="Docs.openLightbox('${s.id}')">View screen</button><button onclick="Docs.copySnapshotLink('${s.id}')">Copy link</button></div></article>`).join('')||'<p>No screenshots yet.</p>'}
-function openLightbox(id){const s=screenshots.find(x=>String(x.id)===String(id));if(!s)return;document.getElementById('lightboxImage').src=s.image_data||s.image_url;document.getElementById('lightboxTitle').textContent=s.title;document.getElementById('lightboxDescription').textContent=s.description||'';document.getElementById('lightboxRoute').textContent=s.route||'';document.getElementById('imageLightbox').classList.remove('hidden')}function closeLightbox(e){if(e&&e.target!==document.getElementById('imageLightbox')&&!e.target.classList.contains('lightbox-close'))return;document.getElementById('imageLightbox').classList.add('hidden')}function copySnapshotLink(id){const url=location.origin+location.pathname+location.search+'#snapshot='+encodeURIComponent(id);navigator.clipboard?.writeText(url)}function openHashSnapshot(){const h=location.hash||'';if(h.startsWith('#snapshot=')){openTopic('live-ui');setTimeout(()=>openLightbox(decodeURIComponent(h.split('=')[1]||'')),250)}}
-function openScreenshotModal(){document.getElementById('screenshotModal').classList.remove('hidden')}function closeScreenshotModal(){document.getElementById('screenshotModal').classList.add('hidden')}function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}async function uploadScreenshot(){const f=document.getElementById('shotFile').files[0],status=document.getElementById('shotStatus');if(!f){status.textContent='Choose an image first.';return}status.textContent='Uploading screenshot...';const image_data=await fileToDataURL(f);const payload={title:document.getElementById('shotTitle').value||f.name,route:document.getElementById('shotRoute').value||'/',description:document.getElementById('shotDescription').value||'',image_name:f.name,image_data};try{const r=await fetch('/api/internal/docs-screenshots',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.ok){const d=await r.json();screenshots.unshift(d.screenshot);status.textContent='Uploaded. Screenshot link is now available.';renderScreenshots();return}}catch(e){}const local=JSON.parse(localStorage.getItem('setu_docs_screenshots')||'[]');const item={...payload,id:'local-'+Date.now(),created_at:new Date().toISOString()};local.unshift(item);localStorage.setItem('setu_docs_screenshots',JSON.stringify(local));screenshots.unshift(item);status.textContent='Saved in this browser. Apply Supabase migration/API for shared persistence.';renderScreenshots()}
-function render(){const id=idx();renderNav();if(id==='overview')renderOverview();renderTopic();renderRail();markActive()}function goPrev(){let i=currentIndex();openTopic(i===0?'overview':topics[i-1].id)}function goNext(){let i=currentIndex();openTopic(i===topics.length-1?'overview':topics[i+1].id)}function toggleNav(){document.getElementById('leftNav').classList.toggle('open')}function search(q){q=String(q||'').toLowerCase();document.querySelectorAll('.nav-link').forEach(b=>{const t=byId(b.dataset.topic);b.style.display=!q||t.title.toLowerCase().includes(q)||t.summary.toLowerCase().includes(q)?'flex':'none'});document.querySelectorAll('.topic-card').forEach(c=>{c.style.display=!q||c.innerText.toLowerCase().includes(q)?'flex':'none'})}
-function openShare(){document.getElementById('shareModal').classList.remove('hidden')}function closeShare(){document.getElementById('shareModal').classList.add('hidden')}function generateShareLink(){const rec=document.getElementById('shareRecipient').value||'External reviewer',hrs=Number(document.getElementById('shareDuration').value||72),data={recipient:rec,expiry:Date.now()+hrs*3600000,issued:Date.now()},tok=btoa(JSON.stringify(data)),url=location.origin+location.pathname+'?share_token='+encodeURIComponent(tok);document.getElementById('shareOutput').value=url;document.getElementById('shareMeta').textContent=`For ${rec}. Expires ${new Date(data.expiry).toLocaleString()}. Internal issue tracker and roadmap are hidden.`;document.getElementById('shareResult').classList.remove('hidden')}function copyShareLink(){navigator.clipboard?.writeText(document.getElementById('shareOutput').value)}function showFullDocument(){const w=window.open('','_blank');w.document.write('<html><head><title>SETU Flow Full Documentation</title><link rel="stylesheet" href="setuflow-docs-workspace.css"></head><body><main class="main" style="max-width:980px;margin:auto">'+topics.filter(t=>t.id!=='overview').map(t=>`<section class="topic-view" style="margin:18px 0"><div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${topicContent(t.id)}</div></section>`).join('')+'</main></body></html>')}
-window.addEventListener('hashchange',()=>{render();openHashSnapshot()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('leftNav').classList.remove('open');document.querySelectorAll('.modal,.lightbox').forEach(m=>m.classList.add('hidden'))}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.getElementById('globalSearch')?.focus()}});document.addEventListener('click',e=>{if(innerWidth<760&&!document.getElementById('leftNav').contains(e.target)&&!e.target.closest('.mobile-only'))document.getElementById('leftNav').classList.remove('open')});
-async function init(){await initAuth();render();await loadMetrics();await loadScreenshots();if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:'base'})}init();return{openTopic,goPrev,goNext,toggleNav,search,openShare,closeShare,generateShareLink,copyShareLink,showFullDocument,openScreenshotModal,closeScreenshotModal,uploadScreenshot,openLightbox,closeLightbox,copySnapshotLink};})();
+(function () {
+  const TOPBAR_HEIGHT = 68;
+  const SHARED_BANNER_HEIGHT = 42;
+  const topics = [
+    { id: 's-overview', title: 'Product Overview', desc: 'What SETU Flow CRM is and what the platform is built to solve.' },
+    { id: 's-architecture', title: 'Architecture', desc: 'Technical boundaries, route groups, deployment and services.' },
+    { id: 's-modules', title: 'System Modules', desc: 'Workspace inventory, functional scope and contributor context.' },
+    { id: 's-workflows', title: 'Commercial Workflows', desc: 'Lead-to-close operating model and execution gates.' },
+    { id: 's-diagrams', title: 'Diagrams', desc: 'Updated visual maps and swimlane views.' },
+    { id: 's-guides', title: 'Operator Guides', desc: 'How operators execute the core workflows correctly.' },
+    { id: 's-guru', title: 'Setu Guru & AI', desc: 'AI assistance, review controls, card scan and smart vCard flows.' },
+    { id: 's-data', title: 'Security & Data', desc: 'RLS, role scope, audit and schema boundaries.' },
+    { id: 's-api', title: 'API & Integrations', desc: 'REST APIs, webhooks and integration boundaries.' },
+    { id: 's-mobile', title: 'Mobile Workspace', desc: 'Trade-show and field-first additive mobile experiences.' },
+    { id: 's-reference', title: 'Quick Reference', desc: 'Short operational reminders for fast internal use.' },
+    { id: 's-snapshots', title: 'Live UI Snapshots', desc: 'Reference snapshots with direct workspace upload support.' },
+  ];
+
+  const topicMap = new Map(topics.map((topic, index) => [topic.id, { ...topic, index }]));
+  const defaultSnapshots = [
+    {
+      id: 'seed-docs-home',
+      title: 'Documentation workspace preview',
+      route: '/internal/setuflow-docs.html',
+      area: 'Documentation',
+      description: 'Seed test screenshot added to verify the snapshot gallery pipeline. Replace this with live CRM screens from the workspace uploader.',
+      image_url: 'docs-screenshots/test-live-ui.png',
+      created_at: new Date().toISOString(),
+      created_by_name: 'Ritesh Kapoor',
+      source: 'seed'
+    }
+  ];
+
+  const state = {
+    isShared: false,
+    isAuthenticated: false,
+    currentTopic: 's-overview',
+    metricsLoaded: false,
+    snapshots: []
+  };
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('open');
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('open');
+  }
+
+  function wireGlobalModals() {
+    $$('.modal-overlay').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          modal.classList.remove('open');
+        }
+      });
+    });
+  }
+
+  function setUserPill(name) {
+    const pill = $('#user-pill');
+    const avatar = $('#user-avatar');
+    const username = $('#user-name');
+    if (!pill || !avatar || !username) return;
+    username.textContent = name;
+    avatar.textContent = (name || 'R').trim().charAt(0).toUpperCase();
+    pill.classList.add('visible');
+  }
+
+  function applySharedMode(payload) {
+    state.isShared = true;
+    document.body.classList.add('shared-mode', 'with-shared-banner');
+    const banner = $('#shared-banner');
+    if (banner) banner.classList.add('visible');
+    const expiryEl = $('#shared-expiry');
+    const recipientEl = $('#shared-recipient');
+    if (recipientEl) recipientEl.textContent = payload?.recipient || 'External reviewer';
+    if (expiryEl && payload?.expiry) {
+      const hoursLeft = Math.max(1, Math.ceil((payload.expiry - Date.now()) / 36e5));
+      expiryEl.textContent = `${hoursLeft} hr${hoursLeft === 1 ? '' : 's'} left`;
+    }
+  }
+
+  async function runAuthGate() {
+    const gate = $('#auth-gate');
+    const errorEl = $('#auth-error');
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('share_token');
+
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token));
+        const revoked = JSON.parse(localStorage.getItem('sf_revoked_share_tokens') || '[]');
+        if (payload.expiry > Date.now() && !revoked.includes(token)) {
+          applySharedMode(payload);
+          if (gate) gate.classList.add('hidden');
+          state.isAuthenticated = false;
+          updateMetricFallbacks();
+          renderSnapshots(defaultSnapshots);
+          loadSnapshots();
+          return;
+        }
+      } catch (error) {
+        console.warn('[docs-share] invalid token', error);
+      }
+
+      if (errorEl) errorEl.textContent = 'This shared link is invalid or expired.';
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/internal/auth-check', { credentials: 'include' });
+      if (!response.ok) {
+        if (response.status === 403 && errorEl) {
+          errorEl.textContent = 'SETU Flow organisation membership required.';
+        }
+        return;
+      }
+
+      const auth = await response.json();
+      state.isAuthenticated = true;
+      setUserPill(auth?.user?.name || 'SETU Flow Member');
+      if (gate) gate.classList.add('hidden');
+      await Promise.allSettled([loadMetrics(), loadSnapshots()]);
+    } catch (error) {
+      console.warn('[docs-auth] auth check failed', error);
+    }
+  }
+
+  function jumpToTopic(topicId, options = {}) {
+    const topic = topicMap.get(topicId) || topicMap.get('s-overview');
+    state.currentTopic = topic.id;
+
+    $$('.topic-link').forEach((button) => {
+      button.classList.toggle('active', button.dataset.topic === topic.id);
+    });
+    $$('.doc-section').forEach((section) => {
+      section.classList.toggle('active', section.id === topic.id);
+    });
+
+    const indexLabel = $('#topic-index-label');
+    const titleLabel = $('#topic-current-title');
+    const descLabel = $('#topic-current-desc');
+    const progressFill = $('#topic-progress-fill');
+    const heroCurrentTitle = $('#hero-current-topic');
+    const heroCurrentDesc = $('#hero-current-desc');
+
+    if (indexLabel) indexLabel.textContent = `Topic ${topic.index + 1} of ${topics.length}`;
+    if (titleLabel) titleLabel.textContent = topic.title;
+    if (descLabel) descLabel.textContent = topic.desc;
+    if (heroCurrentTitle) heroCurrentTitle.textContent = topic.title;
+    if (heroCurrentDesc) heroCurrentDesc.textContent = topic.desc;
+    if (progressFill) progressFill.style.width = `${((topic.index + 1) / topics.length) * 100}%`;
+
+    const previous = topics[(topic.index - 1 + topics.length) % topics.length];
+    const next = topics[(topic.index + 1) % topics.length];
+    const prevButtons = ['topic-prev', 'topic-prev-mobile'];
+    const nextButtons = ['topic-next', 'topic-next-mobile'];
+
+    prevButtons.forEach((id) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.dataset.target = previous.id;
+      button.innerHTML = `← Previous · <span>${escapeHtml(previous.title)}</span>`;
+    });
+
+    nextButtons.forEach((id) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.dataset.target = next.id;
+      button.innerHTML = `<span>${escapeHtml(next.title)}</span> · Next →`;
+    });
+
+    if (!options.skipHash) {
+      history.replaceState(null, '', `#${topic.id}`);
+    }
+
+    if (!options.noScroll) {
+      const scrollTarget = document.getElementById(topic.id);
+      if (scrollTarget) {
+        const topOffset = (document.body.classList.contains('with-shared-banner') ? SHARED_BANNER_HEIGHT : 0) + TOPBAR_HEIGHT + 18;
+        const y = scrollTarget.getBoundingClientRect().top + window.scrollY - topOffset;
+        window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
+      }
+    }
+  }
+
+  function wireTopicNavigation() {
+    $$('.topic-link, [data-jump-topic]').forEach((element) => {
+      element.addEventListener('click', () => {
+        const target = element.dataset.topic || element.dataset.jumpTopic;
+        if (target) jumpToTopic(target);
+        document.body.classList.remove('sidebar-open');
+      });
+    });
+
+    ['topic-prev', 'topic-next', 'topic-prev-mobile', 'topic-next-mobile'].forEach((id) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.addEventListener('click', () => {
+        if (button.dataset.target) jumpToTopic(button.dataset.target);
+      });
+    });
+
+    const showAllToggle = $('#toggle-all-topics');
+    if (showAllToggle) {
+      showAllToggle.addEventListener('click', () => {
+        document.body.classList.toggle('show-all');
+        showAllToggle.textContent = document.body.classList.contains('show-all') ? 'Return to single-topic view' : 'Show full document';
+      });
+    }
+
+    const menuButton = $('#menu-button');
+    if (menuButton) {
+      menuButton.addEventListener('click', () => document.body.classList.toggle('sidebar-open'));
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        $('#docs-search')?.focus();
+      }
+    });
+
+    const searchInput = $('#docs-search');
+    if (searchInput) {
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') runSearch(searchInput.value);
+      });
+    }
+
+    const heroSearchButton = $('#hero-search-trigger');
+    if (heroSearchButton) heroSearchButton.addEventListener('click', () => $('#docs-search')?.focus());
+  }
+
+  function runSearch(query) {
+    const normalized = String(query || '').trim().toLowerCase();
+    $$('.search-hit').forEach((el) => el.classList.remove('search-hit'));
+    if (!normalized) return;
+
+    const foundSection = $$('.doc-section').find((section) => section.textContent.toLowerCase().includes(normalized));
+    if (!foundSection) return;
+
+    jumpToTopic(foundSection.id);
+    foundSection.classList.add('search-hit');
+    setTimeout(() => foundSection.classList.remove('search-hit'), 1800);
+  }
+
+  function updateMetricFallbacks() {
+    const defaults = {
+      modules: '28',
+      issues: '23',
+      roadmap: '6',
+      release: 'v2026.05',
+      sidebarIssues: '23',
+      sidebarRoadmap: '6',
+      sidebarSnapshots: String(state.snapshots.length || 1),
+      sidebarContributors: '1'
+    };
+
+    Object.entries(defaults).forEach(([key, value]) => {
+      const target = document.querySelector(`[data-metric="${key}"]`);
+      if (target && !target.textContent.trim()) target.textContent = value;
+    });
+  }
+
+  async function loadMetrics() {
+    if (state.metricsLoaded || state.isShared) return;
+
+    try {
+      const response = await fetch('/api/internal/docs-metrics', { credentials: 'include' });
+      if (!response.ok) {
+        updateMetricFallbacks();
+        return;
+      }
+
+      const data = await response.json();
+      const metricMap = {
+        modules: String(data.modules_total ?? 28),
+        issues: String(data.open_issues ?? 0),
+        roadmap: String(data.active_milestones ?? 0),
+        release: String(data.latest_release ?? 'v2026.05'),
+        sidebarIssues: `${data.open_issues ?? 0}`,
+        sidebarRoadmap: `${data.active_milestones ?? 0}`,
+        sidebarSnapshots: `${data.snapshots_total ?? 0}`,
+        sidebarContributors: `${data.contributors_total ?? 1}`,
+      };
+      Object.entries(metricMap).forEach(([key, value]) => {
+        const target = document.querySelector(`[data-metric="${key}"]`);
+        if (target) target.textContent = value;
+      });
+      state.metricsLoaded = true;
+    } catch (error) {
+      console.warn('[docs-metrics] failed', error);
+      updateMetricFallbacks();
+    }
+  }
+
+  function normalizeSnapshotUrl(url) {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url) || /^data:/i.test(url) || url.startsWith('/')) return url;
+    return `/internal/${url.replace(/^\.?\/?/, '')}`;
+  }
+
+  function getLocalSnapshots() {
+    try {
+      return JSON.parse(localStorage.getItem('sf_docs_workspace_snapshots') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function saveLocalSnapshots(snapshots) {
+    localStorage.setItem('sf_docs_workspace_snapshots', JSON.stringify(snapshots));
+  }
+
+  function renderSnapshots(items) {
+    const grid = $('#snapshot-grid');
+    const countEl = $('#snapshot-count');
+    if (!grid) return;
+
+    state.snapshots = Array.isArray(items) ? items : [];
+    if (countEl) countEl.textContent = String(state.snapshots.length);
+    const sidebarSnapshots = document.querySelector('[data-metric="sidebarSnapshots"]');
+    if (sidebarSnapshots) sidebarSnapshots.textContent = String(state.snapshots.length || 0);
+
+    if (!state.snapshots.length) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <strong>No workspace screenshots uploaded yet</strong>
+          <span>Add the first live screenshot directly from this docs workspace. Shared users will only see approved images.</span>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = state.snapshots.map((item) => {
+      const imageUrl = normalizeSnapshotUrl(item.image_url);
+      const routeLabel = item.route || 'Workspace';
+      const areaLabel = item.area || 'General';
+      const addedBy = item.created_by_name || 'SETU Flow';
+      const created = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent';
+      return `
+        <article class="snapshot-card" id="snapshot-${escapeHtml(item.id)}">
+          <img class="snapshot-thumb" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.title)}" data-open-snapshot="${escapeHtml(item.id)}">
+          <div class="snapshot-body">
+            <div class="snapshot-meta">
+              <span class="badge blue">${escapeHtml(routeLabel)}</span>
+              <span class="badge teal">${escapeHtml(areaLabel)}</span>
+            </div>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p>${escapeHtml(item.description || 'Workspace screenshot.')}</p>
+            <div class="snapshot-foot">
+              <small>Added by ${escapeHtml(addedBy)} · ${escapeHtml(created)}</small>
+              <div>
+                <button class="snapshot-copy" type="button" data-copy-snapshot="${escapeHtml(item.id)}">Copy deep link</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    $$('[data-open-snapshot]').forEach((element) => {
+      element.addEventListener('click', () => openSnapshotViewer(element.dataset.openSnapshot));
+    });
+
+    $$('[data-copy-snapshot]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const snapshotId = button.dataset.copySnapshot;
+        const url = `${window.location.origin}${window.location.pathname}#snapshot-${snapshotId}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          button.classList.add('copied');
+          button.textContent = 'Copied';
+          setTimeout(() => {
+            button.classList.remove('copied');
+            button.textContent = 'Copy deep link';
+          }, 1800);
+        } catch (error) {
+          console.warn('[docs-snapshots] copy failed', error);
+        }
+      });
+    });
+  }
+
+  async function loadSnapshots() {
+    try {
+      const response = await fetch('/api/internal/docs-screenshots', { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      renderSnapshots(items.length ? items : defaultSnapshots.concat(getLocalSnapshots()));
+      return;
+    } catch (error) {
+      console.warn('[docs-snapshots] API unavailable, using local fallback', error);
+      renderSnapshots(defaultSnapshots.concat(getLocalSnapshots()));
+    }
+  }
+
+  function openSnapshotViewer(snapshotId) {
+    const item = state.snapshots.find((entry) => String(entry.id) === String(snapshotId));
+    if (!item) return;
+
+    const image = $('#snapshot-viewer-image');
+    const title = $('#snapshot-viewer-title');
+    const meta = $('#snapshot-viewer-meta');
+    if (image) image.src = normalizeSnapshotUrl(item.image_url);
+    if (title) title.textContent = item.title || 'Workspace snapshot';
+    if (meta) {
+      const route = item.route ? `Route: ${item.route}` : 'Route: workspace';
+      const desc = item.description || 'Workspace screenshot';
+      const who = item.created_by_name || 'SETU Flow';
+      meta.textContent = `${desc} • ${route} • Added by ${who}`;
+    }
+
+    openModal('snapshot-viewer-modal');
+  }
+
+  function wireShareModal() {
+    const openButton = $('#open-share');
+    const openButtonHero = $('#open-share-hero');
+    const generateButton = $('#generate-share-link');
+    const copyButton = $('#copy-share-link');
+
+    const openHandler = () => openModal('share-modal');
+    if (openButton) openButton.addEventListener('click', openHandler);
+    if (openButtonHero) openButtonHero.addEventListener('click', openHandler);
+    if (generateButton) {
+      generateButton.addEventListener('click', () => {
+        const recipient = ($('#share-recipient-input')?.value || '').trim() || 'External reviewer';
+        const duration = Number($('#share-duration')?.value || 24);
+        const expiry = Date.now() + duration * 36e5;
+        const token = btoa(JSON.stringify({ recipient, expiry, issued: Date.now() }));
+        const url = `${window.location.origin}${window.location.pathname}?share_token=${encodeURIComponent(token)}`;
+        const list = JSON.parse(localStorage.getItem('sf_share_links') || '[]');
+        list.push({ token, recipient, expiry });
+        localStorage.setItem('sf_share_links', JSON.stringify(list));
+
+        const output = $('#share-link-output');
+        const result = $('#share-result');
+        const expiryText = $('#share-expiry-text');
+        const recipientText = $('#share-recipient-text');
+
+        if (output) output.value = url;
+        if (expiryText) expiryText.textContent = new Date(expiry).toLocaleString();
+        if (recipientText) recipientText.textContent = recipient;
+        if (result) result.classList.add('visible');
+        renderShareLinks();
+      });
+    }
+
+    if (copyButton) {
+      copyButton.addEventListener('click', async () => {
+        const output = $('#share-link-output');
+        if (!output) return;
+        try {
+          await navigator.clipboard.writeText(output.value);
+          copyButton.textContent = 'Copied';
+          setTimeout(() => { copyButton.textContent = 'Copy'; }, 1800);
+        } catch (error) {
+          console.warn('[docs-share] copy failed', error);
+        }
+      });
+    }
+
+    renderShareLinks();
+  }
+
+  function revokeShareLink(index) {
+    const links = JSON.parse(localStorage.getItem('sf_share_links') || '[]');
+    const revoked = JSON.parse(localStorage.getItem('sf_revoked_share_tokens') || '[]');
+    if (links[index]) revoked.push(links[index].token);
+    links.splice(index, 1);
+    localStorage.setItem('sf_share_links', JSON.stringify(links));
+    localStorage.setItem('sf_revoked_share_tokens', JSON.stringify(revoked));
+    renderShareLinks();
+  }
+
+  function renderShareLinks() {
+    const container = $('#share-links-list');
+    if (!container) return;
+
+    const links = JSON.parse(localStorage.getItem('sf_share_links') || '[]')
+      .filter((link) => link.expiry > Date.now());
+    if (!links.length) {
+      container.innerHTML = '<p style="margin:0;color:rgba(255,255,255,0.48);font-size:12px;">No active shared links yet.</p>';
+      return;
+    }
+
+    container.innerHTML = links.map((link, index) => `
+      <div class="token-row">
+        <div>
+          <strong>${escapeHtml(link.recipient)}</strong>
+          <div style="font-size:12px;color:rgba(255,255,255,0.48);margin-top:2px;">Expires ${escapeHtml(new Date(link.expiry).toLocaleString())}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="token-chip">Valid</span>
+          <button type="button" class="token-revoke" data-revoke-share="${index}">Revoke</button>
+        </div>
+      </div>
+    `).join('');
+
+    $$('[data-revoke-share]').forEach((button) => {
+      button.addEventListener('click', () => revokeShareLink(Number(button.dataset.revokeShare)));
+    });
+  }
+
+  function wireSnapshotUploader() {
+    const openButton = $('#open-snapshot-upload');
+    const submitButton = $('#submit-snapshot-upload');
+    const openHandler = () => openModal('snapshot-upload-modal');
+    if (openButton) openButton.addEventListener('click', openHandler);
+
+    if (submitButton) {
+      submitButton.addEventListener('click', async () => {
+        const title = ($('#snapshot-title')?.value || '').trim();
+        const route = ($('#snapshot-route')?.value || '').trim();
+        const area = ($('#snapshot-area')?.value || '').trim();
+        const description = ($('#snapshot-description')?.value || '').trim();
+        const fileInput = $('#snapshot-file');
+        const status = $('#snapshot-upload-status');
+        const file = fileInput?.files?.[0];
+
+        if (!title || !file) {
+          if (status) status.textContent = 'Title and image file are required.';
+          return;
+        }
+
+        if (status) status.textContent = 'Uploading screenshot…';
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        formData.append('route', route);
+        formData.append('area', area);
+        formData.append('description', description);
+
+        try {
+          const response = await fetch('/api/internal/docs-screenshots', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          await loadSnapshots();
+          if (status) status.textContent = 'Screenshot uploaded successfully.';
+          if (data?.item?.id) {
+            setTimeout(() => {
+              closeModal('snapshot-upload-modal');
+              status.textContent = '';
+              $('#snapshot-upload-form')?.reset();
+              jumpToTopic('s-snapshots', { noScroll: false });
+            }, 600);
+          }
+          return;
+        } catch (error) {
+          console.warn('[docs-snapshots] API upload failed, storing locally', error);
+        }
+
+        try {
+          const dataUrl = await fileToDataUrl(file);
+          const localItems = getLocalSnapshots();
+          const item = {
+            id: `local-${Date.now()}`,
+            title,
+            route,
+            area,
+            description,
+            image_url: dataUrl,
+            created_at: new Date().toISOString(),
+            created_by_name: $('#user-name')?.textContent || 'SETU Flow',
+            source: 'local'
+          };
+          localItems.unshift(item);
+          saveLocalSnapshots(localItems);
+          renderSnapshots(defaultSnapshots.concat(localItems));
+          if (status) status.textContent = 'Stored locally in this browser because the upload API is unavailable.';
+          setTimeout(() => {
+            closeModal('snapshot-upload-modal');
+            status.textContent = '';
+            $('#snapshot-upload-form')?.reset();
+          }, 700);
+        } catch (error) {
+          console.warn('[docs-snapshots] local fallback failed', error);
+          if (status) status.textContent = 'Upload failed. Try again.';
+        }
+      });
+    }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function wireHeroQuickActions() {
+    $('#jump-start-reading')?.addEventListener('click', () => jumpToTopic('s-overview'));
+    $('#jump-view-architecture')?.addEventListener('click', () => jumpToTopic('s-architecture'));
+  }
+
+  function handleDeepLinks() {
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) return;
+    if (topicMap.has(hash)) {
+      jumpToTopic(hash, { noScroll: true, skipHash: true });
+      return;
+    }
+    if (hash.startsWith('snapshot-')) {
+      jumpToTopic('s-snapshots', { noScroll: true });
+    }
+  }
+
+  function initialize() {
+    wireGlobalModals();
+    wireTopicNavigation();
+    wireShareModal();
+    wireSnapshotUploader();
+    wireHeroQuickActions();
+    updateMetricFallbacks();
+    jumpToTopic((window.location.hash || '#s-overview').replace('#', ''), { noScroll: true, skipHash: true });
+    handleDeepLinks();
+    runAuthGate();
+  }
+
+  window.openDocsShareModal = () => openModal('share-modal');
+  window.closeDocsModal = closeModal;
+
+  initialize();
+})();

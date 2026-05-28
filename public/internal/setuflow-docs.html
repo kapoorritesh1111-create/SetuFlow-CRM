@@ -1,80 +1,774 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SETU Flow CRM Documentation Workspace</title>
-<meta name="description" content="SETU Flow CRM technical documentation workspace for testers, architects, developers, and tech leads." />
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="setuflow-docs-workspace.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SETU Flow CRM — Documentation Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="setuflow-docs-workspace.css">
 </head>
 <body>
-<div id="authGate" class="auth-gate hidden">
-  <div class="auth-card">
-    <div class="auth-logo">⌁</div>
-    <h1>SETU Flow documentation is restricted</h1>
-    <p>Sign in with your SETU Flow workspace account, or use a valid shared review link.</p>
-    <button onclick="window.location.href='/client-login?next=/go-internal?f=setuflow-docs.html'">Sign in to continue</button>
-    <p id="authError" class="auth-error"></p>
+  <div id="auth-gate">
+    <div class="auth-card">
+      <div class="auth-mark">🔐</div>
+      <h1>SETU Flow Documentation Workspace</h1>
+      <p>This documentation contains internal product, workflow, architecture and operations information. Internal members can view it after authentication. External users can only access approved shared links with sensitive controls hidden.</p>
+      <button class="auth-btn" type="button" onclick="window.location.href='/login'">Go to SETU Flow login</button>
+      <div id="auth-error" class="auth-error"></div>
+    </div>
   </div>
-</div>
-<div id="sharedBanner" class="shared-banner hidden">
-  <span>Shared review workspace</span>
-  <strong id="sharedRecipient">External reviewer</strong>
-  <span id="sharedExpiry"></span>
-</div>
-<div id="shareModal" class="modal hidden" role="dialog" aria-modal="true">
-  <div class="modal-card">
-    <div class="modal-head"><div><h2>Share documentation</h2><p>Creates a time-limited reviewer link. Internal tools stay hidden for external users.</p></div><button onclick="Docs.closeShare()">×</button></div>
-    <label>Recipient name</label><input id="shareRecipient" placeholder="e.g. Mayank Kumar" />
-    <label>Valid for</label><select id="shareDuration"><option value="24">24 hours</option><option value="72" selected>3 days</option><option value="168">7 days</option></select>
-    <button class="primary wide" onclick="Docs.generateShareLink()">Generate secure link</button>
-    <div id="shareResult" class="share-result hidden"><div class="link-line"><input id="shareOutput" readonly /><button onclick="Docs.copyShareLink()">Copy</button></div><p id="shareMeta"></p></div>
+
+  <div id="shared-banner" class="shared-banner">
+    <strong><span class="shared-pill">Shared view</span> External access for <span id="shared-recipient">External reviewer</span></strong>
+    <span>Sensitive internal controls are hidden. Link expires in <strong id="shared-expiry">24 hrs left</strong>.</span>
   </div>
-</div>
-<div id="screenshotModal" class="modal hidden" role="dialog" aria-modal="true">
-  <div class="modal-card screenshot-modal-card">
-    <div class="modal-head"><div><h2>Add live UI screenshot</h2><p>Upload once from the workspace. The gallery creates a clickable screenshot link for reviewers.</p></div><button onclick="Docs.closeScreenshotModal()">×</button></div>
-    <label>Title</label><input id="shotTitle" placeholder="Pipeline workspace — density controls" />
-    <label>Route / screen</label><input id="shotRoute" placeholder="/pipeline" />
-    <label>Description</label><textarea id="shotDescription" placeholder="What should a tester or tech lead notice on this screen?"></textarea>
-    <label>Screenshot image</label><input id="shotFile" type="file" accept="image/png,image/jpeg,image/webp" />
-    <button class="primary wide" onclick="Docs.uploadScreenshot()">Upload screenshot</button>
-    <p id="shotStatus" class="status-line"></p>
+
+  <header class="topbar">
+    <div class="brand">
+      <button id="menu-button" class="menu-btn" type="button">☰</button>
+      <div class="brand-mark">SF</div>
+      <div class="brand-copy">
+        <div class="brand-title">SETU Flow CRM Documentation</div>
+        <div class="brand-sub">Premium workspace rebuild</div>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <label class="search-shell" aria-label="Search documentation">
+        <span>⌕</span>
+        <input id="docs-search" type="search" placeholder="Search modules, workflows, APIs, data model…">
+        <kbd>⌘K</kbd>
+      </label>
+    </div>
+    <div class="topbar-actions">
+      <a class="top-btn internal-only" href="setuflow-issue-tracker.html">Issue Tracker</a>
+      <a class="top-btn internal-only" href="setuflow-roadmap.html">Roadmap</a>
+      <button id="open-share" class="top-btn primary internal-only" type="button">Share docs</button>
+      <div id="user-pill" class="user-pill">
+        <div id="user-avatar" class="user-avatar">R</div>
+        <div class="user-meta">
+          <strong id="user-name">SETU Flow Member</strong>
+          <span>Internal access</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h3>Documentation strategy</h3>
+        <p>Keep the newer topic-by-topic workspace layout, restore stronger content and diagrams from the older documentation, and present the system in a more premium, executive-ready way.</p>
+        <div class="side-stat-grid">
+          <div class="side-stat">
+            <small>Modules</small>
+            <strong data-metric="modules"></strong>
+            <span>Workspace surfaces</span>
+          </div>
+          <div class="side-stat internal-only">
+            <small>Open issues</small>
+            <strong data-metric="sidebarIssues"></strong>
+            <span>Live tracker</span>
+          </div>
+          <div class="side-stat internal-only">
+            <small>Milestones</small>
+            <strong data-metric="sidebarRoadmap"></strong>
+            <span>Active roadmap</span>
+          </div>
+          <div class="side-stat">
+            <small>Snapshots</small>
+            <strong data-metric="sidebarSnapshots"></strong>
+            <span>Reference gallery</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Foundation</div>
+        <button class="topic-link active" data-topic="s-overview" type="button"><span class="topic-ico">⌘</span><span class="topic-copy"><strong>Product Overview</strong><span>What we are building and why it matters.</span></span></button>
+        <button class="topic-link" data-topic="s-architecture" type="button"><span class="topic-ico">⌬</span><span class="topic-copy"><strong>Architecture</strong><span>Application, APIs, Supabase and deployment layers.</span></span></button>
+        <button class="topic-link" data-topic="s-modules" type="button"><span class="topic-ico">◫</span><span class="topic-copy"><strong>System Modules</strong><span>Functional workspaces and operating surfaces.</span></span></button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Operations</div>
+        <button class="topic-link" data-topic="s-workflows" type="button"><span class="topic-ico">⇄</span><span class="topic-copy"><strong>Commercial Workflows</strong><span>Lead, quote, order, dispatch and closeout.</span></span></button>
+        <button class="topic-link" data-topic="s-diagrams" type="button"><span class="topic-ico">▱</span><span class="topic-copy"><strong>Diagrams</strong><span>Updated visual system maps and swimlanes.</span></span></button>
+        <button class="topic-link" data-topic="s-guides" type="button"><span class="topic-ico">☷</span><span class="topic-copy"><strong>Operator Guides</strong><span>How work gets executed inside the CRM.</span></span></button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Technical</div>
+        <button class="topic-link" data-topic="s-guru" type="button"><span class="topic-ico">✦</span><span class="topic-copy"><strong>Setu Guru & AI</strong><span>Reviewable AI, card scan and smart vCard.</span></span></button>
+        <button class="topic-link" data-topic="s-data" type="button"><span class="topic-ico">⬟</span><span class="topic-copy"><strong>Security & Data</strong><span>RLS, roles, audit and schema posture.</span></span></button>
+        <button class="topic-link" data-topic="s-api" type="button"><span class="topic-ico">&lt;/&gt;</span><span class="topic-copy"><strong>API & Integrations</strong><span>Routes, webhooks and adapters.</span></span></button>
+        <button class="topic-link" data-topic="s-mobile" type="button"><span class="topic-ico">▯</span><span class="topic-copy"><strong>Mobile Workspace</strong><span>Field-first capture and sharing.</span></span></button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Reference</div>
+        <button class="topic-link" data-topic="s-reference" type="button"><span class="topic-ico">☰</span><span class="topic-copy"><strong>Quick Reference</strong><span>Fast reminders for internal use.</span></span></button>
+        <button class="topic-link" data-topic="s-snapshots" type="button"><span class="topic-ico">▣</span><span class="topic-copy"><strong>Live UI Snapshots</strong><span>Gallery with direct workspace upload.</span></span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div class="breadcrumbs">Documentation <span>›</span> SETU Flow CRM <span>›</span> Technical Workspace <span>›</span> <strong id="hero-current-topic">Product Overview</strong></div>
+        <div class="hero-grid">
+          <div>
+            <h1>SETU Flow CRM is the commercial operating system for trade-led businesses — from first signal to final payment.</h1>
+            <p>This documentation rebuild keeps the new workspace layout, upgrades the visual system, restores stronger substance from the older documentation, and documents the product as a full commercial engine: lead capture, qualification, quoting, approval gates, order execution, compliance and closeout — with Setu Guru, smart business-card capture and mobile collaboration built in.</p>
+            <div class="hero-cta-row">
+              <button id="jump-start-reading" class="hero-btn primary" type="button">Start reading path</button>
+              <button id="jump-view-architecture" class="hero-btn secondary" type="button">View architecture</button>
+              <button id="open-share-hero" class="hero-btn secondary internal-only" type="button">Create share link</button>
+              <button id="hero-search-trigger" class="hero-btn secondary" type="button">Search docs</button>
+            </div>
+          </div>
+          <div class="hero-panel">
+            <h3>What the system is trying to build</h3>
+            <ul>
+              <li>A disciplined commercial workflow where every stage has gates, ownership and evidence.</li>
+              <li>A premium operator workspace that makes complex sales and trade operations feel structured, fast and trustworthy.</li>
+              <li>A shared source of truth for sales, operations, finance and leadership — not separate disconnected tools.</li>
+              <li>An AI-assisted system where Setu Guru drafts and recommends, but humans always review, approve and send.</li>
+              <li>A mobile-first field layer for capture, smart vCard sharing and trade-show operations without diluting the desktop power-user experience.</li>
+            </ul>
+            <div class="badge-row" style="margin-top:16px;">
+              <span class="badge teal">Premium docs workspace</span>
+              <span class="badge blue">Single-topic navigation</span>
+              <span class="badge violet">External-safe shared mode</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-kpis">
+          <div class="hero-kpi">
+            <small>Total modules</small>
+            <strong data-metric="modules"></strong>
+            <span>Core CRM + admin + mobile + AI surfaces</span>
+          </div>
+          <div class="hero-kpi internal-only">
+            <small>Open issues</small>
+            <strong data-metric="issues"></strong>
+            <span>Tracked through the internal issue board</span>
+          </div>
+          <div class="hero-kpi internal-only">
+            <small>Roadmap milestones</small>
+            <strong data-metric="roadmap"></strong>
+            <span>Live product delivery outlook</span>
+          </div>
+          <div class="hero-kpi">
+            <small>Latest release</small>
+            <strong data-metric="release"></strong>
+            <span>Documentation aligned with the current workspace baseline</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-switcher">
+        <div class="switcher-copy">
+          <small id="topic-index-label">Topic 1 of 12</small>
+          <strong id="topic-current-title">Product Overview</strong>
+          <span id="topic-current-desc">What SETU Flow CRM is and what the platform is built to solve.</span>
+          <div class="progress-track"><i id="topic-progress-fill"></i></div>
+        </div>
+        <div class="switcher-actions">
+          <button id="topic-prev" class="switcher-btn" type="button">← Previous</button>
+          <button id="toggle-all-topics" class="switcher-btn primary" type="button">Show full document</button>
+          <button id="topic-next" class="switcher-btn" type="button">Next →</button>
+        </div>
+      </section>
+
+      <section class="doc-section active" id="s-overview">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Product foundation</div>
+            <h2>Product Overview</h2>
+            <p>SETU Flow CRM is a multi-tenant commercial operating platform for businesses that sell, quote, negotiate, execute and close complex trade opportunities. The product is built to remove commercial ambiguity, enforce operating discipline and keep every participant aligned from capture to cash.</p>
+          </div>
+          <div class="section-chip">Why this exists</div>
+        </div>
+
+        <div class="panel-grid cols-4">
+          <article class="card">
+            <div class="eyebrow">Platform</div>
+            <h3>SaaS with organisation isolation</h3>
+            <p>Each organisation has its own users, roles, routes, records, pipeline settings, quotes, orders, document profiles and workspace controls.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Primary users</div>
+            <h3>Sales, Ops, Leadership and Admin</h3>
+            <p>Sales converts demand, operations executes commitments, leadership monitors performance, and admins govern settings, data quality and policy boundaries.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Commercial model</div>
+            <h3>Gate-enforced workflow</h3>
+            <p>Quote sending, acceptance, order activation, dispatch and closeout are all bound by checks, approvals, status transitions and audit events.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">AI posture</div>
+            <h3>Assistive, never autonomous</h3>
+            <p>Setu Guru drafts, explains and suggests. It does not silently act, auto-send or bypass human review.</p>
+          </article>
+        </div>
+
+        <div class="callout teal" style="margin-top:16px;">
+          <div>✦</div>
+          <div>
+            <strong>The design intent</strong>
+            <p>We are building a premium commercial system that feels as intentional as a modern B2B product, but is operationally deep enough for real export and trade workflows. Documentation should communicate both the product vision and the working mechanics.</p>
+          </div>
+        </div>
+
+        <div class="panel-grid cols-2" style="margin-top:16px;">
+          <article class="card">
+            <div class="eyebrow">Product pillars</div>
+            <h3>Core design principles</h3>
+            <div class="badge-row">
+              <span class="badge teal">Traceability</span>
+              <span class="badge blue">Workflow discipline</span>
+              <span class="badge violet">Commercial immutability</span>
+              <span class="badge amber">Operational clarity</span>
+              <span class="badge green">Mobile additive UX</span>
+            </div>
+            <p style="margin-top:12px;">Sent quote versions are locked. Orders trace back to accepted commercial intent. Every meaningful transition is recorded. Mobile helps field users capture and connect — it does not dilute the desktop workflow.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Business outcome</div>
+            <h3>What changes when SETU Flow is used well</h3>
+            <p>Leads become structured commercial objects. Quotes become governed versions rather than loose files. Order execution becomes stage-based. Leadership gets real pipeline and execution visibility. Teams stop guessing what happened and instead operate from shared evidence.</p>
+          </article>
+        </div>
+
+        <div class="table-wrap" style="margin-top:16px;">
+          <table>
+            <thead>
+              <tr><th>Principle</th><th>Operational meaning</th><th>How it appears in the product</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Single source of truth</strong></td><td>Commercial context should not be fragmented across email threads, spreadsheets and chat.</td><td>Leads, quotes, accepted versions, order stages and sends all live inside the platform.</td></tr>
+              <tr><td><strong>Approval before action</strong></td><td>High-impact commercial events should be gated.</td><td>Quotes, actual lines, documents and stage transitions use approval gates and status checks.</td></tr>
+              <tr><td><strong>Human-review AI</strong></td><td>AI helps the operator but does not replace responsibility.</td><td>Setu Guru suggestions are explicit, route-aware and reviewable.</td></tr>
+              <tr><td><strong>Field-to-core continuity</strong></td><td>Trade-show and mobile interactions must flow directly into the core CRM.</td><td>Business card scan, smart vCard and mobile lead capture create or enrich structured CRM records.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-architecture">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Technical structure</div>
+            <h2>Architecture Overview</h2>
+            <p>The platform combines a Next.js application shell, server-side APIs, Supabase-backed persistence, role-aware workspace logic and public/share surfaces. The system is designed to keep business workflows coherent while preserving clean boundaries between UI, server actions, security and integrations.</p>
+          </div>
+          <div class="section-chip">Application topology</div>
+        </div>
+
+        <div class="diagram-shell">
+          <div class="diagram-head"><strong>Architecture map</strong><span>Updated premium visual replacing older lower-fidelity diagram blocks</span></div>
+          <div class="diagram-body">
+            <div class="diagram-image"><img src="docs-assets/diagram-architecture.svg" alt="SETU Flow CRM architecture diagram"></div>
+          </div>
+        </div>
+
+        <div class="panel-grid cols-3" style="margin-top:16px;">
+          <article class="card">
+            <div class="eyebrow">Frontend layer</div>
+            <h3>Workspace surfaces</h3>
+            <p>Primary authenticated workspaces include dashboard, follow-up, pipeline, quotes, orders, admin, products, reports and mobile-specific capture surfaces.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Server layer</div>
+            <h3>API routes and server actions</h3>
+            <p>Domain-specific APIs cover public lead capture, mobile card scan, compliance gates, quote PDFs, order documents, Setu Guru utilities and internal documentation helpers.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Data layer</div>
+            <h3>Supabase + RLS</h3>
+            <p>Authentication, organisation membership, profiles, CRM records and audit artifacts live in Supabase, with row-level isolation enforcing organisation boundaries.</p>
+          </article>
+        </div>
+
+        <div class="table-wrap" style="margin-top:16px;">
+          <table>
+            <thead>
+              <tr><th>Layer</th><th>Role</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Next.js App Router</strong></td><td>Application shell, route grouping and server route hosting.</td><td>Supports internal workspaces, public endpoints and documentation pages.</td></tr>
+              <tr><td><strong>Supabase Auth</strong></td><td>Session management and user identification.</td><td>Internal static docs use a server auth-check bridge so they can remain secure.</td></tr>
+              <tr><td><strong>Workspace permission layer</strong></td><td>Normalises roles and organisation membership.</td><td>Determines who can access admin surfaces and internal operational features.</td></tr>
+              <tr><td><strong>Public/share surfaces</strong></td><td>Externally consumable routes and time-bound shared docs views.</td><td>External shared mode hides internal-only information and controls.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-modules">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">System inventory</div>
+            <h2>System Modules</h2>
+            <p>The CRM is not one screen — it is a coordinated system of workspaces. Documentation should explain each workspace in business language and technical scope, without repeating navigation clutter.</p>
+          </div>
+          <div class="section-chip">Functional map</div>
+        </div>
+
+        <div class="metric-strip">
+          <div class="metric-box"><small>Commercial core</small><strong>Leads → Quotes → Orders</strong><span>Primary commercial pipeline</span></div>
+          <div class="metric-box"><small>Support layers</small><strong>Products · Admin · Reports</strong><span>Configuration and control</span></div>
+          <div class="metric-box"><small>AI & capture</small><strong>Setu Guru · Scan · vCard</strong><span>Assistive features</span></div>
+          <div class="metric-box"><small>Docs workspace</small><strong>Internal + shared</strong><span>Secure external-safe presentation</span></div>
+        </div>
+
+        <div class="panel-grid cols-3" style="margin-top:16px;">
+          <article class="card"><h3>Dashboard</h3><p>Leadership and operator snapshot of leads, due follow-ups, pipeline value, quote activity and execution load.</p><div class="badge-row"><span class="badge blue">/dashboard</span></div></article>
+          <article class="card"><h3>Follow-up / Leads</h3><p>Lead queue, command center, qualification, next-action planning, coverage and communication context.</p><div class="badge-row"><span class="badge blue">/follow-up</span></div></article>
+          <article class="card"><h3>Pipeline</h3><p>Stage-based board for current demand motion and commercial progression.</p><div class="badge-row"><span class="badge blue">/pipeline</span></div></article>
+          <article class="card"><h3>Quotes</h3><p>Versioned pricing workspace with gate-aware send logic, accepted version control and PDF output.</p><div class="badge-row"><span class="badge blue">/quotes</span></div></article>
+          <article class="card"><h3>Orders</h3><p>Execution command center from accepted commercial intent through dispatch, finance and closeout.</p><div class="badge-row"><span class="badge blue">/orders</span></div></article>
+          <article class="card"><h3>Products</h3><p>Catalog, variants, readiness, pricing basis and quote readiness management.</p><div class="badge-row"><span class="badge blue">/products</span></div></article>
+          <article class="card"><h3>Admin</h3><p>Organisation settings, team, document profiles, governance, config and platform controls.</p><div class="badge-row"><span class="badge blue">/admin</span></div></article>
+          <article class="card"><h3>Mobile</h3><p>Field capture, business card scan, lead intake and smart vCard distribution surfaces.</p><div class="badge-row"><span class="badge teal">/mobile/*</span></div></article>
+          <article class="card"><h3>Internal docs tools</h3><p>Documentation, roadmap and issue tracker surfaces for product communication and project governance.</p><div class="badge-row"><span class="badge violet">/internal/*</span></div></article>
+        </div>
+
+        <div class="panel-grid cols-2" style="margin-top:16px;">
+          <article class="card">
+            <div class="eyebrow">Current contributor context</div>
+            <h3>Documentation ownership</h3>
+            <p>This workspace currently reflects a single active contributor context. The contributor panel and metric cards are prepared to scale when more teammates are added later.</p>
+          </article>
+          <article class="card">
+            <div class="contributor">
+              <div class="contributor-avatar">R</div>
+              <div>
+                <h3 style="margin:0 0 4px;">Ritesh Kapoor</h3>
+                <p>Current primary contributor / owner for the internal docs narrative, product updates and premium workspace rebuild.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-workflows">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Operations model</div>
+            <h2>Commercial Workflows</h2>
+            <p>The commercial workflow is the heart of the product. It must be explained as a disciplined lifecycle, not just a list of screens. Each stage changes both what the operator sees and what the system will allow next.</p>
+          </div>
+          <div class="section-chip">Lead to cash</div>
+        </div>
+
+        <div class="diagram-shell" style="margin-bottom:16px;">
+          <div class="diagram-head"><strong>Commercial lifecycle diagram</strong><span>Premium stage map for the end-to-end operating flow</span></div>
+          <div class="diagram-body">
+            <div class="diagram-image"><img src="docs-assets/diagram-commercial-lifecycle.svg" alt="Commercial lifecycle diagram"></div>
+          </div>
+        </div>
+
+        <div class="lifecycle">
+          <article class="stage-card"><div class="num">01</div><h3>Capture</h3><p>Leads enter from manual entry, public intake, business card scan, smart vCard or trade-show activity.</p><ul><li>Identity and account context</li><li>Source attribution</li><li>Initial qualification signal</li></ul></article>
+          <article class="stage-card"><div class="num">02</div><h3>Qualify</h3><p>Sales validates who the lead is, what they want, whether coverage exists and what the next move should be.</p><ul><li>Coverage mapping</li><li>Follow-up planning</li><li>Disqualification control</li></ul></article>
+          <article class="stage-card"><div class="num">03</div><h3>Quote</h3><p>Commercial intent becomes a versioned quote with pricing basis, line items, approvals and send readiness.</p><ul><li>Draft creation</li><li>Approval gating</li><li>Compliance posture</li></ul></article>
+          <article class="stage-card"><div class="num">04</div><h3>Accept</h3><p>Only accepted commercial terms can activate execution. Acceptance anchors the traceable order handoff.</p><ul><li>Accepted version lock</li><li>Quote lineage</li><li>Order creation trigger</li></ul></article>
+          <article class="stage-card"><div class="num">05</div><h3>Execute</h3><p>Orders move through actual lines, document approvals, processing, delivery and finance handoff.</p><ul><li>Stage events</li><li>Documents and sends</li><li>Operational blockers</li></ul></article>
+          <article class="stage-card"><div class="num">06</div><h3>Close</h3><p>Final invoice, payment and reconciliation confirm that the transaction is complete.</p><ul><li>Zero-balance closeout</li><li>Archive readiness</li><li>Operational audit trail</li></ul></article>
+        </div>
+
+        <div class="callout amber" style="margin-top:16px;">
+          <div>⚠</div>
+          <div>
+            <strong>Critical workflow rules</strong>
+            <p>No quote send without clearance. No order execution without accepted commercial intent. No hidden AI action. No stage-skipping around approvals or document readiness.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-diagrams">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Updated visuals</div>
+            <h2>Diagrams & Swimlanes</h2>
+            <p>The older documentation carried stronger structural information but less polished presentation. This rebuild keeps the depth and upgrades the visuals with cleaner premium diagrams and more readable swimlanes.</p>
+          </div>
+          <div class="section-chip">Visual reasoning</div>
+        </div>
+
+        <div class="panel-grid cols-2">
+          <div class="diagram-shell">
+            <div class="diagram-head"><strong>Setu Guru review loop</strong><span>AI suggestion → review → apply</span></div>
+            <div class="diagram-body"><div class="diagram-image"><img src="docs-assets/diagram-guru-loop.svg" alt="Setu Guru loop diagram"></div></div>
+          </div>
+          <div class="diagram-shell">
+            <div class="diagram-head"><strong>Mobile capture flow</strong><span>Card scan and vCard into CRM</span></div>
+            <div class="diagram-body"><div class="diagram-image"><img src="docs-assets/diagram-mobile-capture.svg" alt="Mobile capture diagram"></div></div>
+          </div>
+        </div>
+
+        <div class="swimlane" style="margin-top:16px;">
+          <div class="swimlane-title"><strong>Lead to quote swimlane</strong><span>Clearer operational representation than the prior broken workflow block.</span></div>
+          <div class="swim-row"><div class="swim-label">Sales</div><div class="swim-track"><span class="swim-node">Capture lead</span><span class="swim-arrow">→</span><span class="swim-node">Open command center</span><span class="swim-arrow">→</span><span class="swim-node">Confirm coverage</span><span class="swim-arrow">→</span><span class="swim-node">Start quote</span></div></div>
+          <div class="swim-row system"><div class="swim-label">System</div><div class="swim-track"><span class="swim-node">Attach source + account context</span><span class="swim-arrow">→</span><span class="swim-node gate">Run quote readiness checks</span><span class="swim-arrow">→</span><span class="swim-node">Create quote draft version</span></div></div>
+          <div class="swim-row"><div class="swim-label">Reviewer</div><div class="swim-track"><span class="swim-node gate">Approve pricing exceptions</span><span class="swim-arrow">→</span><span class="swim-node gate">Confirm compliance posture</span></div></div>
+          <div class="swim-row system"><div class="swim-label">System</div><div class="swim-track"><span class="swim-node lock">Send tracked quote</span><span class="swim-arrow">→</span><span class="swim-node lock">Lock sent version</span></div></div>
+        </div>
+
+        <div class="swimlane">
+          <div class="swimlane-title"><strong>Accepted quote to order execution swimlane</strong><span>More structured handoff from commercial intent to operations.</span></div>
+          <div class="swim-row"><div class="swim-label">Sales</div><div class="swim-track"><span class="swim-node">Record buyer acceptance</span><span class="swim-arrow">→</span><span class="swim-node">Handoff to execution</span></div></div>
+          <div class="swim-row system"><div class="swim-label">System</div><div class="swim-track"><span class="swim-node">Create order from accepted version</span><span class="swim-arrow">→</span><span class="swim-node">Seed actual lines</span><span class="swim-arrow">→</span><span class="swim-node gate">Open approval gates</span></div></div>
+          <div class="swim-row"><div class="swim-label">Ops</div><div class="swim-track"><span class="swim-node">Review actual lines</span><span class="swim-arrow">→</span><span class="swim-node">Prepare first document</span><span class="swim-arrow">→</span><span class="swim-node">Process & dispatch</span></div></div>
+          <div class="swim-row system"><div class="swim-label">System</div><div class="swim-track"><span class="swim-node gate">Track document sends</span><span class="swim-arrow">→</span><span class="swim-node">Write stage events</span><span class="swim-arrow">→</span><span class="swim-node lock">Close with invoice + payment</span></div></div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-guides">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Operator execution</div>
+            <h2>Operator Guides</h2>
+            <p>Instead of developer-heavy descriptions, these guides focus on how real operators work in the product. Each guide highlights what the user should do, what the system should show, and what must not be bypassed.</p>
+          </div>
+          <div class="section-chip">Human workflow</div>
+        </div>
+
+        <div class="playbook">
+          <div class="playbook-head"><div><h3>Guide 1 — Lead to quote readiness</h3><p>Move from captured lead to a quote-ready opportunity without losing quality or traceability.</p></div><span class="badge teal">Sales</span></div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-no">1</div><div class="step-copy"><strong>Open the lead command center</strong><span>Confirm buyer context, source, organisation/account linkage and whether the record is still active.</span></div></div>
+            <div class="step-item"><div class="step-no">2</div><div class="step-copy"><strong>Confirm product and coverage</strong><span>Use coverage or product-interest tools so the opportunity is structured, not a loose note.</span></div></div>
+            <div class="step-item"><div class="step-no">3</div><div class="step-copy"><strong>Plan the next action</strong><span>Add or update the follow-up if the record lacks a clear date or operational owner.</span></div></div>
+            <div class="step-item"><div class="step-no">4</div><div class="step-copy"><strong>Check quote blockers</strong><span>Review readiness, approvals or compliance gates before creating or continuing the quote.</span></div></div>
+            <div class="step-item"><div class="step-no">5</div><div class="step-copy"><strong>Launch the quote</strong><span>Create the draft only when the lead is qualified enough to become commercial intent.</span></div></div>
+          </div>
+          <div class="do-dont">
+            <div class="do-card good"><h4>Do</h4><ul><li>Keep the lead structurally complete before quoting.</li><li>Use the CRM to record coverage and follow-up state.</li><li>Escalate blockers instead of bypassing them.</li></ul></div>
+            <div class="do-card bad"><h4>Do not</h4><ul><li>Quote from free-text notes alone.</li><li>Assume communication activity equals readiness.</li><li>Create disconnected quote records outside the governed path.</li></ul></div>
+          </div>
+        </div>
+
+        <div class="playbook">
+          <div class="playbook-head"><div><h3>Guide 2 — Quote build, review and send</h3><p>Create a trustworthy commercial proposal with correct terms, version control and send discipline.</p></div><span class="badge blue">Sales + reviewer</span></div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-no">1</div><div class="step-copy"><strong>Add or verify products and quantities</strong><span>Ensure each line is explicit and commercially meaningful.</span></div></div>
+            <div class="step-item"><div class="step-no">2</div><div class="step-copy"><strong>Set pricing basis and currency</strong><span>Confirm incoterm, validity, basis, FX posture and supporting assumptions.</span></div></div>
+            <div class="step-item"><div class="step-no">3</div><div class="step-copy"><strong>Resolve approvals or compliance issues</strong><span>Pricing exceptions and blocked postures must be reviewed before sending.</span></div></div>
+            <div class="step-item"><div class="step-no">4</div><div class="step-copy"><strong>Send the quote from the system</strong><span>The send action should create the communication record and lock the version.</span></div></div>
+            <div class="step-item"><div class="step-no">5</div><div class="step-copy"><strong>Record the customer outcome</strong><span>Acceptance or rejection must be explicit so downstream actions remain accurate.</span></div></div>
+          </div>
+        </div>
+
+        <div class="playbook">
+          <div class="playbook-head"><div><h3>Guide 3 — Order execution and closeout</h3><p>Execution begins with accepted commercial intent and ends only after documentary and financial closure.</p></div><span class="badge amber">Operations</span></div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-no">1</div><div class="step-copy"><strong>Seed actual lines from the accepted version</strong><span>Keep a clean separation between commercial intent and actual execution detail.</span></div></div>
+            <div class="step-item"><div class="step-no">2</div><div class="step-copy"><strong>Approve document readiness before sends</strong><span>Drafts can be previewed, but external sends should only happen once approved.</span></div></div>
+            <div class="step-item"><div class="step-no">3</div><div class="step-copy"><strong>Track progress through stages</strong><span>Processing, delivery and finance should each write visible state changes and evidence.</span></div></div>
+            <div class="step-item"><div class="step-no">4</div><div class="step-copy"><strong>Close only after invoice and payment confirmation</strong><span>Operational closure is a formal state, not a guess.</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-guru">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">AI and smart capture</div>
+            <h2>Setu Guru, Business Card Scan & Smart vCard</h2>
+            <p>This area was underrepresented in the old docs and is now elevated as a first-class product capability. Setu Guru and the field-capture features are important differentiators and deserve clearer presentation.</p>
+          </div>
+          <div class="section-chip">Important differentiator</div>
+        </div>
+
+        <div class="guru-hero">
+          <h3>Setu Guru is a reviewable AI copilot for commercial work.</h3>
+          <p>It understands the route or work context, prepares suggestions, explains logic, helps with structured data tasks and supports users without bypassing the system's approval or communication controls.</p>
+          <div class="guru-flow">
+            <span class="guru-node">Context from route / record</span>
+            <span class="guru-node">Prompt and policy shaping</span>
+            <span class="guru-node">Draft / suggestion</span>
+            <span class="guru-node">Human review</span>
+            <span class="guru-node">Explicit apply</span>
+            <span class="guru-node">Audit feedback</span>
+          </div>
+        </div>
+
+        <div class="panel-grid cols-3" style="margin-top:16px;">
+          <article class="feature-card-dark"><h4>Setu Guru</h4><p>Route-aware help, draft suggestions, structured enrichment and explainability for CRM workspaces.</p><ul><li>No silent auto-send</li><li>Organisation-level settings</li><li>Feedback and audit support</li></ul></article>
+          <article class="feature-card-dark"><h4>Business card scan</h4><p>Point-of-capture extraction for trade shows and meetings, reducing manual entry and increasing follow-up speed.</p><ul><li>Vision-assisted extraction</li><li>Lead creation or enrichment</li><li>Field-first flow</li></ul></article>
+          <article class="feature-card-dark"><h4>Smart vCard</h4><p>Digital contact sharing that connects recipients back into the CRM ecosystem and can prefill structured intake surfaces.</p><ul><li>Controlled contact exchange</li><li>Lead or account linking</li><li>Mobile-ready journey</li></ul></article>
+        </div>
+
+        <div class="panel-grid cols-2" style="margin-top:16px;">
+          <article class="card">
+            <div class="eyebrow">Setu Guru operating rules</div>
+            <h3>Safe AI posture</h3>
+            <p>All outputs are suggestions. Operators decide whether to use them. The system preserves approval gates and business rules regardless of AI assistance.</p>
+            <div class="badge-row"><span class="badge teal">Draft only</span><span class="badge violet">Review required</span><span class="badge amber">Auditable</span></div>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Field capture impact</div>
+            <h3>Trade-show readiness</h3>
+            <p>Card scan and vCard capabilities are especially important for fast field capture. They shorten time-to-follow-up and pull external contact moments straight into the CRM workflow.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-data">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Security and persistence</div>
+            <h2>Security & Data Model</h2>
+            <p>The security model is based on organisation scope, authenticated membership and role-based permissions. The data model tracks the commercial lifecycle while keeping auditability and lineage intact.</p>
+          </div>
+          <div class="section-chip">RLS-first posture</div>
+        </div>
+
+        <div class="panel-grid cols-3">
+          <article class="card"><h3>Organisation scope</h3><p>Users operate within an active organisation. Internal docs also verify organisation membership before showing sensitive information.</p></article>
+          <article class="card"><h3>Role-aware access</h3><p>Admin-only surfaces, reviewer actions and internal tooling depend on workspace roles and canonical permission checks.</p></article>
+          <article class="card"><h3>Audit and lineage</h3><p>Quotes, versions, documents, sends, order stage events and AI feedback establish traceability.</p></article>
+        </div>
+
+        <div class="table-wrap" style="margin-top:16px;">
+          <table>
+            <thead>
+              <tr><th>Domain</th><th>Representative tables / records</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Identity & org</strong></td><td>profiles, organizations, organization_members, user_roles</td><td>User identity, active org membership and permission scope.</td></tr>
+              <tr><td><strong>Lead management</strong></td><td>leads, lead_follow_ups, lead_product_interests</td><td>Structured lead capture, qualification and next actions.</td></tr>
+              <tr><td><strong>Commercial quoting</strong></td><td>quotes, quote_versions, quote_version_line_items, pricing snapshots</td><td>Versioned commercial records and send-ready pricing context.</td></tr>
+              <tr><td><strong>Order execution</strong></td><td>orders, order_lines, order_documents, order_stage_events, order_document_sends</td><td>Execution state, documentary lifecycle and operational evidence.</td></tr>
+              <tr><td><strong>Internal governance</strong></td><td>roadmap_items, sprint_issues, docs workspace screenshots</td><td>Product planning, issue management and documentation support artifacts.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout violet" style="margin-top:16px;">
+          <div>🛡</div>
+          <div>
+            <strong>Shared documentation protection</strong>
+            <p>When a documentation page is opened with a shared token, internal controls, live issue counts, share management and internal-only calls-to-action are hidden. External viewers only see the approved narrative and approved screenshots.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-api">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Integration surface</div>
+            <h2>API & Integrations</h2>
+            <p>API routes support public intake, mobile capture, quote PDFs, order documents, compliance helpers, Setu Guru services and internal workspace utilities. Integration boundaries should remain explicit and queue-friendly wherever possible.</p>
+          </div>
+          <div class="section-chip">Services & adapters</div>
+        </div>
+
+        <div class="panel-grid cols-3">
+          <article class="card"><h3>Public routes</h3><p>Client onboarding, card intake, wallet passes and card analytics expose externally consumable entry points.</p></article>
+          <article class="card"><h3>Operational APIs</h3><p>Quotes, orders, product catalog and compliance endpoints support governed internal workflows.</p></article>
+          <article class="card"><h3>AI / capture APIs</h3><p>Setu Guru endpoints, business-card scan and vCard generation power the smart assistance and mobile experiences.</p></article>
+        </div>
+
+        <div class="table-wrap" style="margin-top:16px;">
+          <table>
+            <thead>
+              <tr><th>Endpoint family</th><th>Examples</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Internal auth bridge</strong></td><td>/api/internal/auth-check, /api/internal/docs-metrics, /api/internal/docs-screenshots</td><td>Secure static internal documentation and auxiliary workspace data.</td></tr>
+              <tr><td><strong>Commercial domain</strong></td><td>/api/quotes/*, /api/orders/*, /api/products/*</td><td>Govern quote, order and product workflows.</td></tr>
+              <tr><td><strong>Compliance & PDFs</strong></td><td>/api/compliance/*, /api/order-documents/pdf, /api/quotes/[quoteId]/pdf</td><td>Support gated business documents and compliance verification.</td></tr>
+              <tr><td><strong>AI / smart capture</strong></td><td>/api/setu-guru/*, /api/mobile/contact-scan, /api/contact-exchange/*</td><td>Assistive intelligence, OCR/vision capture and contact-sharing flows.</td></tr>
+              <tr><td><strong>Webhooks & integrations</strong></td><td>/api/integrations/webhooks/[provider], /api/webhooks/mailtrap</td><td>Inbound platform events and external service coordination.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-mobile">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Field-first experience</div>
+            <h2>Mobile Workspace</h2>
+            <p>Mobile is additive, not a shrunk desktop. It exists to support real field use cases: trade-show capture, quick lead intake, business-card scan and controlled contact exchange.</p>
+          </div>
+          <div class="section-chip">Additive UX</div>
+        </div>
+
+        <div class="diagram-shell">
+          <div class="diagram-head"><strong>Mobile capture system</strong><span>Field interaction into structured CRM data</span></div>
+          <div class="diagram-body"><div class="diagram-image"><img src="docs-assets/diagram-mobile-capture.svg" alt="Mobile capture diagram"></div></div>
+        </div>
+
+        <div class="panel-grid cols-3" style="margin-top:16px;">
+          <article class="card"><h3>Trade-show lead capture</h3><p>Fast structured intake with direct CRM continuity and quick next-step activation.</p></article>
+          <article class="card"><h3>Business card scan</h3><p>Image capture plus extraction to reduce friction between in-person interaction and CRM follow-up.</p></article>
+          <article class="card"><h3>Smart vCard and wallet</h3><p>Branded contact distribution with CRM-aware destination flows and public route support.</p></article>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-reference">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Fast operator memory</div>
+            <h2>Quick Reference</h2>
+            <p>This section condenses the system into operational reminders for quick reuse. It is not the full workflow explanation — it is the fast cheat sheet for internal operators and reviewers.</p>
+          </div>
+          <div class="section-chip">Cheat sheets</div>
+        </div>
+
+        <div class="reference-grid">
+          <article class="reference-card"><h3>Lead workflow reminders</h3><ul><li>Every meaningful lead needs product context and a next action.</li><li>Coverage should be structured, not hidden in notes.</li><li>Quote creation should follow readiness, not hope.</li></ul></article>
+          <article class="reference-card"><h3>Quote discipline</h3><ul><li>Sent versions lock.</li><li>Pricing exceptions require explanation and approval.</li><li>Acceptance must be explicit before execution.</li></ul></article>
+          <article class="reference-card"><h3>Order execution</h3><ul><li>Actual lines are execution records, not edits to the accepted quote.</li><li>Draft document previews are not external sends.</li><li>Closeout requires invoice, payment and reconciliation evidence.</li></ul></article>
+          <article class="reference-card"><h3>AI and mobile</h3><ul><li>Setu Guru suggests — users approve.</li><li>Card scan improves speed but still needs human verification.</li><li>Mobile capture should feed the main CRM, not sit in isolation.</li></ul></article>
+        </div>
+      </section>
+
+      <section class="doc-section" id="s-snapshots">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Reference gallery</div>
+            <h2>Live UI Snapshots</h2>
+            <p>Reference screenshots can now be added directly from this documentation workspace instead of being committed into the repo one by one. Internal users can upload approved images; shared viewers only see the approved gallery.</p>
+          </div>
+          <div class="section-chip"><span id="snapshot-count">0</span> snapshots</div>
+        </div>
+
+        <div class="gallery-head">
+          <div>
+            <h3 style="margin:0;">Snapshot library</h3>
+            <p>Use this gallery to support documentation, training and reviews with current workspace visuals.</p>
+          </div>
+          <div class="snapshot-actions">
+            <button id="open-snapshot-upload" class="switcher-btn primary internal-only" type="button">Add screenshot</button>
+            <button id="topic-prev-mobile" class="switcher-btn" type="button">← Previous</button>
+            <button id="topic-next-mobile" class="switcher-btn" type="button">Next →</button>
+          </div>
+        </div>
+
+        <div id="snapshot-grid" class="snapshot-grid"></div>
+      </section>
+    </main>
+
+    <aside class="rail">
+      <div class="rail-card">
+        <h3>Reading path</h3>
+        <ul class="rail-list">
+          <li><div class="rail-number">1</div><div><strong>Understand the product</strong><span>Overview, architecture and modules tell the story.</span></div></li>
+          <li><div class="rail-number">2</div><div><strong>Study the workflows</strong><span>Commercial lifecycle, diagrams and operator guides.</span></div></li>
+          <li><div class="rail-number">3</div><div><strong>Review differentiators</strong><span>Setu Guru, business-card scan and smart vCard.</span></div></li>
+          <li><div class="rail-number">4</div><div><strong>Check the reference layer</strong><span>Security, APIs, mobile and live UI snapshots.</span></div></li>
+        </ul>
+      </div>
+
+      <div class="rail-card internal-only">
+        <h3>Workspace status</h3>
+        <div class="rail-mini-metrics">
+          <div class="rail-mini"><small>Issues</small><strong data-metric="issues"></strong><span>Open tracker items</span></div>
+          <div class="rail-mini"><small>Milestones</small><strong data-metric="roadmap"></strong><span>Roadmap items</span></div>
+          <div class="rail-mini"><small>Release</small><strong data-metric="release"></strong><span>Baseline</span></div>
+          <div class="rail-mini"><small>Contributors</small><strong data-metric="sidebarContributors"></strong><span>Currently active</span></div>
+        </div>
+      </div>
+
+      <div class="rail-card">
+        <h3>Why this rebuild matters</h3>
+        <p>The page now leads with the product story instead of duplicating navigation cards, keeps external users away from internal details, adds an in-workspace snapshot flow, and upgrades the diagrams and workflow representation into a more premium, more useful form.</p>
+      </div>
+
+      <div class="rail-card">
+        <h3>Current contributor</h3>
+        <div class="contributor">
+          <div class="contributor-avatar">R</div>
+          <div>
+            <strong>Ritesh Kapoor</strong>
+            <p style="margin-top:4px;">Primary contributor for this documentation rebuild.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
-</div>
-<div id="imageLightbox" class="lightbox hidden" onclick="Docs.closeLightbox(event)"><div class="lightbox-card"><button class="lightbox-close" onclick="Docs.closeLightbox(event)">×</button><img id="lightboxImage" alt="Screenshot preview" /><div class="lightbox-caption"><h3 id="lightboxTitle"></h3><p id="lightboxDescription"></p><code id="lightboxRoute"></code></div></div></div>
-<header class="topbar">
-  <button class="icon-button mobile-only" onclick="Docs.toggleNav()" aria-label="Open navigation">☰</button>
-  <a class="brand" href="#overview"><span class="brand-mark">⌁</span><strong>SETU Flow</strong><em>CRM</em></a>
-  <div class="workspace-pill desktop-only"><span>Workspace</span><strong>SETU Development</strong></div>
-  <div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search docs, screens, workflows..." oninput="Docs.search(this.value)" /><kbd>⌘K</kbd></div>
-  <nav class="top-actions">
-    <a class="internal-only" href="setuflow-issue-tracker.html">Issue Tracker <span id="issuePill">—</span></a>
-    <a class="internal-only" href="setuflow-roadmap.html">Roadmap</a>
-    <button class="internal-only" onclick="Docs.openShare()">Share Doc</button>
-    <a class="internal-only" href="/dashboard">Live CRM</a>
-  </nav>
-  <div class="user-chip internal-only"><span id="userInitial">R</span><strong id="userName">Ritesh Kapoor</strong></div>
-</header>
-<div class="shell">
-  <aside id="leftNav" class="left-nav">
-    <div class="nav-title">Documentation</div>
-    <div class="nav-search"><input placeholder="Filter topics..." oninput="Docs.search(this.value)" /></div>
-    <div id="topicNav"></div>
-    <div class="nav-footer internal-only"><button onclick="Docs.showFullDocument()">Full document</button><a href="setuflow-issue-tracker.html">Issues</a><a href="setuflow-roadmap.html">Roadmap</a></div>
-  </aside>
-  <main class="main">
-    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
-    <section id="overviewView" class="overview-view"></section>
-    <section id="topicView" class="topic-view hidden"></section>
-  </main>
-  <aside id="rightRail" class="right-rail"></aside>
-</div>
-<div class="mobile-topic-bar"><button id="mobilePrev" onclick="Docs.goPrev()">← Previous</button><span id="mobileProgress">1 / 12</span><button id="mobileNext" onclick="Docs.goNext()">Next →</button></div>
-<script src="setuflow-docs-workspace.js"></script>
+
+  <div id="share-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h3>Share documentation</h3>
+          <p>Create a time-bound external link. Shared users will not see internal information, issue counts, roadmap links or admin controls.</p>
+        </div>
+        <button class="modal-close" type="button" onclick="closeDocsModal('share-modal')">✕</button>
+      </div>
+      <div class="form-grid cols-2">
+        <label class="form-field"><span>Recipient</span><input id="share-recipient-input" class="form-input" placeholder="External reviewer"></label>
+        <label class="form-field"><span>Duration</span><select id="share-duration" class="form-select"><option value="6">6 hours</option><option value="24" selected>24 hours</option><option value="72">72 hours</option><option value="168">7 days</option></select></label>
+      </div>
+      <div class="modal-actions"><button id="generate-share-link" class="modal-btn primary" type="button">Generate secure link</button></div>
+      <div id="share-result" class="share-result">
+        <div><strong>Share link ready</strong></div>
+        <div style="margin-top:6px;font-size:12px;color:rgba(255,255,255,0.6);">Recipient: <span id="share-recipient-text">External reviewer</span> · Expires: <span id="share-expiry-text"></span></div>
+        <div class="share-link-row">
+          <input id="share-link-output" class="form-input" readonly>
+          <button id="copy-share-link" class="modal-btn secondary" type="button">Copy</button>
+        </div>
+      </div>
+      <div class="token-list">
+        <h4 style="margin:18px 0 8px;font-size:14px;">Active share links</h4>
+        <div id="share-links-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="snapshot-upload-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h3>Add a live UI snapshot</h3>
+          <p>Upload a screenshot directly from the docs workspace. The page first tries the server upload API and falls back to browser-local storage if the API is unavailable.</p>
+        </div>
+        <button class="modal-close" type="button" onclick="closeDocsModal('snapshot-upload-modal')">✕</button>
+      </div>
+      <form id="snapshot-upload-form" onsubmit="return false;">
+        <div class="form-grid cols-2">
+          <label class="form-field"><span>Title</span><input id="snapshot-title" class="form-input" placeholder="Orders workspace — stage rail"></label>
+          <label class="form-field"><span>Route / area</span><input id="snapshot-route" class="form-input" placeholder="/orders"></label>
+          <label class="form-field"><span>Feature area</span><input id="snapshot-area" class="form-input" placeholder="Orders"></label>
+          <label class="form-field"><span>Image file</span><input id="snapshot-file" class="form-input" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        </div>
+        <label class="form-field" style="margin-top:14px;"><span>Description</span><textarea id="snapshot-description" class="form-textarea" placeholder="What this screenshot highlights and why it matters."></textarea></label>
+        <div class="file-note">Tip: keep screenshots focused on the relevant UI region. External shared users will only see the approved snapshot gallery, not the upload tools.</div>
+        <div id="snapshot-upload-status" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.62);"></div>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" type="button" onclick="closeDocsModal('snapshot-upload-modal')">Cancel</button>
+          <button id="submit-snapshot-upload" class="modal-btn primary" type="button">Upload screenshot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="snapshot-viewer-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box modal-wide">
+      <div class="modal-head">
+        <div>
+          <h3>Snapshot viewer</h3>
+          <p>Open a larger view of the reference screenshot.</p>
+        </div>
+        <button class="modal-close" type="button" onclick="closeDocsModal('snapshot-viewer-modal')">✕</button>
+      </div>
+      <div class="viewer-image"><img id="snapshot-viewer-image" src="" alt="Snapshot viewer"></div>
+      <div class="viewer-meta">
+        <h4 id="snapshot-viewer-title">Workspace snapshot</h4>
+        <p id="snapshot-viewer-meta">Snapshot description</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="setuflow-docs-workspace.js"></script>
 </body>
 </html>

@@ -39,3 +39,13 @@ The following were removed during cleanup and should stay absent unless a future
 ## Update rule
 
 Before updating the README with schema or readiness claims, review the live Supabase project and update `docs/CURRENT_SCHEMA.md` first.
+
+
+## Premium documentation workspace
+
+The internal documentation system has been rebuilt into a premium workspace that keeps the newer layout while restoring richer content and updated diagrams.
+
+- Internal documentation page: `/internal/setuflow-docs.html`
+- Workspace implementation notes: `docs/DOCUMENTATION_WORKSPACE.md`
+- Screenshot gallery: built into the documentation workspace with direct upload support
+- Shared mode: external-safe view with internal controls hidden
