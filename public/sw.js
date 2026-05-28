@@ -1,4 +1,4 @@
-const CACHE_NAME = 'setuflow-offline-v2';
+const CACHE_NAME = 'setuflow-offline-v3-docs-refresh-fix';
 const CAPTURE_URL = '/contact-exchange/scan';
 const DEFAULT_NOTIFICATION_URL = '/dashboard?panel=notifications';
 const STATIC_ASSETS = [
@@ -24,6 +24,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
+
+  // Internal documentation is actively patched and must be network-first.
+  // Do not serve stale cached CSS/HTML after a normal browser refresh.
+  if (request.method === 'GET' && url.origin === self.location.origin && url.pathname.startsWith('/internal/')) {
+    event.respondWith(fetch(request, { cache: 'no-store' }).catch(() => fetch(request)));
+    return;
+  }
 
   if (request.method === 'GET' && url.origin === self.location.origin && url.pathname === CAPTURE_URL) {
     event.respondWith(fetch(request).then((response) => {
