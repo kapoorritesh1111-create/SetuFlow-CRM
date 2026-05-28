@@ -6,229 +6,272 @@
 <title>SETU Flow CRM — Technical Documentation</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-:root {
-  --nav-w: 248px;
-  --toc-w: 220px;
-  --top-h: 52px;
-  --c-bg: #F9FAFB;
-  --c-surface: #FFFFFF;
-  --c-border: #E5E7EB;
-  --c-border-strong: #D1D5DB;
-  --c-nav-bg: #0F172A;
-  --c-nav-border: rgba(255,255,255,0.06);
-  --c-teal: #0D9488;
-  --c-teal-dim: #0F766E;
-  --c-teal-bg: #F0FDFA;
-  --c-teal-soft: #CCFBF1;
-  --c-navy: #1E3A5F;
-  --c-blue: #2563EB;
-  --c-blue-bg: #EFF6FF;
-  --c-blue-soft: #DBEAFE;
-  --c-amber: #D97706;
-  --c-amber-bg: #FFFBEB;
-  --c-red: #DC2626;
-  --c-red-bg: #FEF2F2;
-  --c-green: #059669;
-  --c-green-bg: #F0FDF4;
-  --c-text: #111827;
-  --c-text-2: #374151;
-  --c-text-3: #6B7280;
-  --c-text-4: #9CA3AF;
-  --c-mono: #1E40AF;
-  --c-mono-bg: #EFF6FF;
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
-  --mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --radius: 6px;
-  --radius-lg: 10px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --nav:#0B1629;--nav2:#0F1E35;--nav-b:rgba(255,255,255,.06);
+  --teal:#0D9488;--teal2:#0F766E;--teal-bg:#F0FDFA;--teal-s:#CCFBF1;
+  --blue:#2563EB;--blue-bg:#EFF6FF;--blue-s:#DBEAFE;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;--purple-s:#DDD6FE;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --red:#DC2626;--red-bg:#FEF2F2;
+  --green:#059669;--green-bg:#F0FDF4;--green-s:#A7F3D0;
+  --bg:#F5F7FA;--surf:#FFF;--brd:#E5E7EB;--brd2:#D1D5DB;
+  --tx:#111827;--tx2:#374151;--tx3:#6B7280;--tx4:#9CA3AF;
+  --mono:'JetBrains Mono',monospace;--f:'Inter',system-ui,sans-serif;
+  --r:8px;--r2:12px;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --sh2:0 4px 16px rgba(0,0,0,.1);
+  --nav-w:236px;--right-w:272px;--top-h:52px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;font-size:14px}
-body{font-family:var(--font);background:var(--c-bg);color:var(--c-text);line-height:1.6;-webkit-font-smoothing:antialiased}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
 
-/* ═══ TOPBAR ═══ */
+/* ── TOPBAR ── */
 .topbar{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  height:var(--top-h);background:var(--c-nav-bg);
-  display:flex;align-items:center;
-  border-bottom:1px solid var(--c-nav-border);
+  position:fixed;top:0;left:0;right:0;z-index:200;height:var(--top-h);
+  background:rgba(11,22,41,.97);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--nav-b);
+  display:flex;align-items:center;gap:0;
 }
-.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,#0D9488 30%,#2563EB 70%,transparent 100%);opacity:.5}
-.tb-left{display:flex;align-items:center;width:var(--nav-w);flex-basis:var(--nav-w);flex-shrink:0;padding:0 16px;gap:8px;min-width:0}
-.tb-logo-wrap{display:flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;overflow:hidden}
-.tb-logomark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#1E3A5F,#0D9488);display:grid;place-items:center;flex-shrink:0}
-.tb-wordmark{display:flex;flex-direction:column;line-height:1;min-width:0}
-.tb-name{font-size:13px;font-weight:700;color:#F9FAFB;letter-spacing:-.2px;white-space:nowrap}
-.tb-tag{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#0D9488;margin-top:1px}
-.tb-sep{width:1px;height:16px;background:rgba(255,255,255,.12);margin:0 4px}
-.tb-center{display:flex;align-items:center;gap:6px;padding-left:16px;flex:1}
-.tb-version{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:5px}
-.tb-pulse{width:5px;height:5px;border-radius:50%;background:#0D9488;box-shadow:0 0 5px #0D9488;animation:pulse 3s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--teal) 30%,var(--blue) 70%,transparent);opacity:.5}
+.tb-brand{display:flex;align-items:center;gap:9px;padding:0 16px;width:var(--nav-w);flex-shrink:0;text-decoration:none}
+.tb-logomark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#1E3A5F,#0D9488);display:grid;place-items:center;flex-shrink:0}
+.tb-brandname{font-size:13.5px;font-weight:700;color:#F0F4F8;letter-spacing:-.2px;white-space:nowrap}
+.tb-brandname span{color:var(--teal)}
+.tb-sep{width:1px;height:18px;background:var(--nav-b);margin:0 8px;flex-shrink:0}
+.tb-workspace{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--r);background:rgba(255,255,255,.06);border:1px solid var(--nav-b);cursor:pointer;color:rgba(255,255,255,.7);font-size:12px;font-weight:500;transition:.12s;flex-shrink:0;white-space:nowrap}
+.tb-workspace:hover{background:rgba(255,255,255,.1);color:#fff}
+.tb-workspace svg{opacity:.5}
+.tb-search{flex:1;max-width:480px;margin:0 16px;position:relative}
+.tb-search input{width:100%;padding:7px 12px 7px 34px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);color:#fff;font-size:12.5px;outline:none;font-family:var(--f);transition:.15s}
+.tb-search input::placeholder{color:rgba(255,255,255,.35)}
+.tb-search input:focus{background:rgba(255,255,255,.1);border-color:rgba(13,148,136,.5)}
+.tb-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.35);pointer-events:none}
+.tb-kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px}
 .tb-right{display:flex;align-items:center;gap:4px;padding:0 16px;margin-left:auto}
-.tb-link{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--radius);font-size:12px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;border:1px solid transparent;transition:all .12s;background:none;cursor:pointer;font-family:var(--font)}
-.tb-link:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.08)}
-.tb-link.cta{background:rgba(13,148,136,.15);border-color:rgba(13,148,136,.3);color:#5EEAD4;font-weight:600}
-.tb-link.cta:hover{background:rgba(13,148,136,.25)}
-.tb-user{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 4px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:none}
-.tb-avatar{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--c-navy),var(--c-teal));display:grid;place-items:center;font-size:9.5px;font-weight:700;color:#fff}
-.tb-uname{font-size:11.5px;font-weight:600;color:#F3F4F6}
-.tb-uorg{font-size:9.5px;color:var(--c-teal);font-weight:600}
-.tb-menu{display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--radius);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);cursor:pointer;color:rgba(255,255,255,.6);margin-right:8px}
-.tb-menu:hover{background:rgba(255,255,255,.1);color:#fff}
+.tb-icon-btn{width:32px;height:32px;border-radius:var(--r);background:none;border:none;cursor:pointer;display:grid;place-items:center;color:rgba(255,255,255,.5);transition:.12s;position:relative}
+.tb-icon-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.tb-notif-badge{position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#2563EB;color:#fff;font-size:8px;font-weight:700;display:grid;place-items:center}
+.tb-help{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--r);color:rgba(255,255,255,.55);font-size:12px;cursor:pointer;transition:.12s}
+.tb-help:hover{color:#fff;background:rgba(255,255,255,.06)}
+.tb-user{display:flex;align-items:center;gap:7px;padding:4px 8px 4px 4px;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid var(--nav-b);cursor:pointer;transition:.12s;margin-left:4px}
+.tb-user:hover{background:rgba(255,255,255,.12)}
+.tb-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#1E3A5F,#0D9488);display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.tb-username{font-size:12px;font-weight:600;color:#E5EAF0}
+.tb-role{font-size:9.5px;color:var(--teal);font-weight:600}
+.tb-user-caret{color:rgba(255,255,255,.3)}
+.tb-user-info{display:flex;flex-direction:column;line-height:1.2}
+.int-only{/* shown only to internal users */}
 
-/* ═══ SHARED BANNER ═══ */
-#shared-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:200;height:36px;background:linear-gradient(135deg,#0F766E,#0D9488);align-items:center;justify-content:space-between;padding:0 20px;font-size:11.5px;font-weight:500;color:#fff}
+/* ── SHARED BANNER ── */
+#shared-banner{display:none;background:linear-gradient(135deg,#0D9488,#0EA5E9);color:#fff;padding:8px 20px;font-size:12px;font-weight:500;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;z-index:300}
 #shared-banner.visible{display:flex}
-/* shared banner handled by JS */
-.sb-badge{background:rgba(255,255,255,.2);padding:2px 10px;border-radius:20px;font-weight:700;font-size:10.5px}
+#shared-banner.visible~.topbar{top:36px}
+#shared-banner.visible~.layout{margin-top:calc(36px + var(--top-h))}
+#shared-banner.visible~.layout .left-nav{top:calc(36px + var(--top-h));height:calc(100vh - 36px - var(--top-h))}
+#shared-banner.visible~.layout .right-rail{top:calc(36px + var(--top-h));height:calc(100vh - 36px - var(--top-h))}
+.sb-badge{background:rgba(255,255,255,.25);padding:2px 10px;border-radius:20px;font-weight:700;font-size:10.5px}
 
-/* ═══ THREE-COLUMN LAYOUT ═══ */
-.page-wrap{
-  margin-top:var(--top-h);
+/* ── MAIN LAYOUT ── */
+.layout{
   display:grid;
-  grid-template-columns:var(--nav-w) 1fr;
+  grid-template-columns:var(--nav-w) 1fr var(--right-w);
+  margin-top:var(--top-h);
   min-height:calc(100vh - var(--top-h));
+  max-width:1480px;
+  margin-left:auto;margin-right:auto;
 }
 
-/* ═══ LEFT NAV ═══ */
-.nav-sidebar{
+/* ── LEFT NAV ── */
+.left-nav{
   position:sticky;top:var(--top-h);height:calc(100vh - var(--top-h));
-  overflow-y:auto;background:var(--c-nav-bg);
-  border-right:1px solid var(--c-nav-border);
-  padding:8px 0 40px;
+  overflow-y:auto;background:var(--nav);border-right:1px solid var(--nav-b);
+  display:flex;flex-direction:column;
 }
-.nav-sidebar::-webkit-scrollbar{width:3px}
-.nav-sidebar::-webkit-scrollbar-track{background:transparent}
-.nav-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
-.nav-group{padding:16px 0 2px}
-.nav-label{padding:0 16px 5px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25)}
-.nav-item{display:flex;align-items:center;gap:9px;padding:6px 16px;font-size:12.5px;font-weight:400;color:rgba(255,255,255,.52);text-decoration:none;border-left:2px solid transparent;transition:all .1s}
-.nav-item:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.04);border-left-color:rgba(13,148,136,.4)}
-.nav-item.active{color:#fff;background:rgba(13,148,136,.1);border-left-color:#0D9488;font-weight:600}
-.nav-item svg{flex-shrink:0;opacity:.55}
-.nav-item.active svg,.nav-item:hover svg{opacity:1}
+.left-nav::-webkit-scrollbar{width:3px}
+.left-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+.nav-section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 16px 5px;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,.25)
+}
+.nav-item{display:flex;align-items:center;gap:9px;padding:6px 16px;color:rgba(255,255,255,.52);font-size:12.5px;font-weight:400;text-decoration:none;border-left:2px solid transparent;transition:all .1s;cursor:pointer}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.04);border-left-color:rgba(13,148,136,.5)}
+.nav-item.active{color:#fff;background:rgba(13,148,136,.12);border-left-color:var(--teal);font-weight:600}
+.nav-item.active .nav-icon{color:var(--teal)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.5;display:flex;align-items:center;justify-content:center}
+.nav-item:hover .nav-icon,.nav-item.active .nav-icon{opacity:1}
+.nav-badge{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:auto}
+.nb-new{background:rgba(16,185,129,.2);color:#10B981;border:1px solid rgba(16,185,129,.3)}
+.nb-beta{background:rgba(37,99,235,.2);color:#60A5FA;border:1px solid rgba(37,99,235,.3)}
 .nav-divider{height:1px;background:rgba(255,255,255,.05);margin:6px 12px}
+.nav-collapse{display:flex;align-items:center;gap:6px;padding:10px 16px;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;border-top:1px solid var(--nav-b);margin-top:auto;transition:.12s}
+.nav-collapse:hover{color:rgba(255,255,255,.6)}
 
-/* ═══ MAIN CONTENT ═══ */
-.doc-main{
-  min-width:0;
-  background:var(--c-surface);
-  display:flex;
-  flex-direction:row;
-  align-items:flex-start;
+/* ── MAIN ── */
+.main-content{min-width:0;background:var(--bg);overflow:hidden}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg, #071220 0%, #0B1E38 40%, #0A2240 70%, #061828 100%);
+  padding:40px 48px 36px;position:relative;overflow:hidden;
 }
-
-/* ═══ SECTION ANATOMY ═══ */
-.doc-sec{
-  padding:36px 48px 40px;
-  border-bottom:1px solid var(--c-border);
-  position:relative;
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 800px 400px at 70% -20%, rgba(37,99,235,.18) 0%,transparent 60%),
+             radial-gradient(ellipse 400px 300px at 20% 120%, rgba(13,148,136,.15) 0%,transparent 60%);
 }
-.doc-sec:last-child{border-bottom:none}
-/* Alternating bg */
-.doc-sec:nth-child(even){background:#FAFBFD}
+.hero-breadcrumb{display:flex;align-items:center;gap:6px;margin-bottom:16px;position:relative;z-index:1}
+.hero-breadcrumb a,.hero-breadcrumb span{font-size:12px;color:rgba(255,255,255,.4);text-decoration:none;transition:.1s}
+.hero-breadcrumb a:hover{color:rgba(255,255,255,.7)}
+.hero-breadcrumb .sep{color:rgba(255,255,255,.2)}
+.hero-breadcrumb .cur{color:rgba(255,255,255,.7)}
+.hero-title{font-size:28px;font-weight:800;color:#F0F6FF;letter-spacing:-.6px;line-height:1.2;margin-bottom:10px;position:relative;z-index:1;max-width:680px}
+.hero-sub{font-size:14px;color:rgba(255,255,255,.55);line-height:1.65;max-width:580px;margin-bottom:24px;position:relative;z-index:1}
+.hero-search{display:flex;align-items:center;gap:10px;position:relative;z-index:1;max-width:520px;margin-bottom:16px}
+.hero-search-box{flex:1;display:flex;align-items:center;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);padding:0 12px;gap:8px;transition:.15s}
+.hero-search-box:focus-within{background:rgba(255,255,255,.13);border-color:rgba(13,148,136,.5)}
+.hero-search-box input{flex:1;padding:10px 0;background:none;border:none;color:#fff;font-size:13.5px;outline:none;font-family:var(--f)}
+.hero-search-box input::placeholder{color:rgba(255,255,255,.35)}
+.hero-kbd{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:4px;white-space:nowrap}
+.hero-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative;z-index:1}
+.hero-tags-label{font-size:11px;color:rgba(255,255,255,.3);font-weight:500}
+.hero-tag{font-size:11.5px;font-weight:500;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:3px 10px;border-radius:20px;cursor:pointer;text-decoration:none;transition:.1s}
+.hero-tag:hover{color:#fff;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.2)}
 
-/* Section header bar — full bleed accent */
-.sec-stripe{
-  position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg, var(--stripe-a,#0D9488), var(--stripe-b,#2563EB));
-  opacity:.6;
-}
+/* ── QUICK ACCESS CARDS ── */
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:20px 48px;background:var(--surf);border-bottom:1px solid var(--brd)}
+.qa-card{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r2);padding:16px;cursor:pointer;transition:all .15s;text-decoration:none;display:flex;flex-direction:column;position:relative}
+.qa-card:hover{border-color:var(--teal);box-shadow:0 0 0 1px rgba(13,148,136,.2),var(--sh2);transform:translateY(-1px)}
+.qa-icon{width:38px;height:38px;border-radius:var(--r);display:grid;place-items:center;margin-bottom:12px;flex-shrink:0}
+.qa-icon.teal{background:linear-gradient(135deg,#0D9488,#0F766E)}
+.qa-icon.blue{background:linear-gradient(135deg,#2563EB,#1D4ED8)}
+.qa-icon.purple{background:linear-gradient(135deg,#7C3AED,#6D28D9)}
+.qa-icon.emerald{background:linear-gradient(135deg,#059669,#047857)}
+.qa-title{font-size:13.5px;font-weight:700;color:var(--tx);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.qa-badge{font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(239,68,68,.1);color:#DC2626;border:1px solid rgba(239,68,68,.2)}
+.qa-badge.blue{background:rgba(37,99,235,.1);color:#2563EB;border-color:rgba(37,99,235,.2)}
+.qa-badge.amber{background:var(--amber-bg);color:var(--amber);border-color:#FDE68A}
+.qa-desc{font-size:12px;color:var(--tx3);line-height:1.5;flex:1;margin-bottom:10px}
+.qa-arrow{margin-top:auto;font-size:12px;color:var(--teal);font-weight:600;display:flex;align-items:center;gap:3px}
 
-.sec-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.sec-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c-teal)}
-.sec-divider{height:1px;flex:1;background:var(--c-border);max-width:40px}
+/* ── STATS BAR ── */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--surf);border-bottom:1px solid var(--brd)}
+.stat-item{padding:16px 24px;border-right:1px solid var(--brd);display:flex;align-items:center;gap:14px}
+.stat-item:last-child{border-right:none}
+.stat-icon{width:40px;height:40px;border-radius:var(--r);background:var(--bg);border:1px solid var(--brd);display:grid;place-items:center;flex-shrink:0}
+.stat-info{flex:1;min-width:0}
+.stat-label{font-size:10.5px;color:var(--tx3);font-weight:500;margin-bottom:3px}
+.stat-value{font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;line-height:1;display:flex;align-items:center;gap:6px}
+.stat-tag{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:4px}
+.st-high{background:rgba(239,68,68,.1);color:#DC2626}
+.st-on-track{background:rgba(5,150,105,.1);color:#059669}
+.st-latest{background:rgba(37,99,235,.1);color:#2563EB}
 
-.sec-h1{font-size:24px;font-weight:700;color:var(--c-text);letter-spacing:-.5px;line-height:1.2;margin-bottom:8px}
-.sec-lead{font-size:13.5px;color:var(--c-text-3);line-height:1.65;margin-bottom:20px;max-width:640px}
-.sec-h2{font-size:15px;font-weight:600;color:var(--c-text);letter-spacing:-.2px;margin:32px 0 12px;display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--c-border)}
-.sec-h2::before{content:'';display:inline-block;width:3px;height:14px;background:var(--c-teal);border-radius:2px;flex-shrink:0}
-.sec-h3{font-size:13px;font-weight:600;color:var(--c-text-2);margin:18px 0 8px}
-p{color:var(--c-text-3);font-size:13.5px;line-height:1.65;margin-bottom:8px}
+/* ── SECTION CARDS GRID ── */
+.sections-header{display:flex;align-items:center;justify-content:space-between;padding:28px 48px 16px}
+.sections-title{font-size:15px;font-weight:700;color:var(--tx)}
+.sections-subtitle{font-size:12px;color:var(--tx3)}
+.sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 48px 32px}
+.sc-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r2);padding:20px;cursor:pointer;transition:all .15s;text-decoration:none;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sc-card:hover{border-color:var(--teal);box-shadow:var(--sh2);transform:translateY(-2px)}
+.sc-card-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.sc-icon{width:42px;height:42px;border-radius:var(--r);display:grid;place-items:center;flex-shrink:0}
+.sci-teal{background:linear-gradient(135deg,#F0FDFA,#CCFBF1);border:1px solid #A7F3D0}
+.sci-blue{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1px solid #BFDBFE}
+.sci-purple{background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border:1px solid #C4B5FD}
+.sci-amber{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1px solid #FDE68A}
+.sci-emerald{background:linear-gradient(135deg,#F0FDF4,#DCFCE7);border:1px solid #A7F3D0}
+.sci-red{background:linear-gradient(135deg,#FFF5F5,#FEE2E2);border:1px solid #FCA5A5}
+.sc-meta{flex:1;min-width:0}
+.sc-title{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:3px}
+.sc-desc{font-size:12px;color:var(--tx3);line-height:1.5}
+.sc-links{list-style:none;margin-bottom:14px;display:flex;flex-direction:column;gap:4px}
+.sc-links li a{font-size:12px;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:4px;padding:2px 0;transition:.1s}
+.sc-links li a:hover{color:var(--teal)}
+.sc-links li a::before{content:'•';color:var(--teal);font-size:10px}
+.sc-footer{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--brd);margin-top:auto}
+.sc-view-all{font-size:12px;font-weight:600;color:var(--teal);text-decoration:none;display:flex;align-items:center;gap:3px}
+.sc-view-all:hover{color:var(--teal2)}
+.sc-preview{width:120px;height:72px;background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
-/* ═══ RIGHT PAGE TOC ═══ */
-.doc-body{flex:1;min-width:0;max-width:900px;border-right:1px solid var(--c-border)}.page-toc{width:var(--toc-w);flex-shrink:0;position:sticky;top:var(--top-h);height:calc(100vh - var(--top-h));overflow-y:auto;padding:28px 16px;background:var(--c-bg)}
-.toc-title{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--c-text-4);margin-bottom:14px;padding-left:8px}
-.toc-link{display:block;padding:3.5px 8px;font-size:11.5px;color:var(--c-text-4);text-decoration:none;border-left:2px solid transparent;transition:all .1s;line-height:1.45}
-.toc-link:hover{color:var(--c-text-2);border-left-color:var(--c-border-strong)}
-.toc-link.active{color:var(--c-teal);border-left-color:var(--c-teal);font-weight:600}
-.toc-group{margin-bottom:16px}
-.toc-group-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-text-4);padding-left:6px;margin-bottom:4px}
+/* ── CONTENT SECTIONS ── */
+.content-divider{height:1px;background:var(--brd);margin:0;border-top:4px solid var(--nav)}
+.doc-section{padding:40px 48px;border-bottom:1px solid var(--brd);background:var(--surf);position:relative}
+.doc-section:nth-child(even){background:#FAFBFD}
+.section-stripe{position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(180deg,var(--sa,#0D9488),var(--sb,#2563EB))}
+.section-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.section-title{font-size:22px;font-weight:700;color:var(--tx);letter-spacing:-.4px;margin-bottom:6px}
+.section-lead{font-size:13.5px;color:var(--tx3);line-height:1.65;margin-bottom:24px;max-width:700px}
+.sh2{font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-.2px;margin:28px 0 12px;display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--brd)}
+.sh2::before{content:'';display:inline-block;width:3px;height:15px;background:var(--teal);border-radius:2px;flex-shrink:0}
+.sh3{font-size:13.5px;font-weight:600;color:var(--tx2);margin:18px 0 8px}
+p{color:var(--tx3);font-size:13.5px;line-height:1.65;margin-bottom:8px}
 
-/* ═══ TABLES ═══ */
-.tbl{overflow-x:auto;margin:10px 0 16px;border-radius:var(--radius-lg);border:1px solid var(--c-border)}
+/* ── TABLES ── */
+.tbl{overflow-x:auto;margin:10px 0 18px;border-radius:var(--r2);border:1px solid var(--brd);box-shadow:var(--sh)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
-thead tr{background:var(--c-nav-bg)}
+thead tr{background:var(--nav)}
 th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
-td{padding:8px 14px;border-bottom:1px solid var(--c-border);color:var(--c-text-2);vertical-align:top;line-height:1.5}
+td{padding:8px 14px;border-bottom:1px solid var(--brd);color:var(--tx2);vertical-align:top;line-height:1.5}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#F9FAFB}
+tbody tr:hover td{background:#F9FAFB}
 tbody tr:nth-child(even) td{background:#FAFBFC}
-tbody tr:nth-child(even):hover td{background:#F3F4F6}
-
-/* ═══ INLINE CODE ═══ */
 code{font-family:var(--mono);font-size:11px;background:#F0F4FF;color:#1E40AF;padding:2px 6px;border-radius:4px;border:1px solid #DBEAFE;font-weight:500}
-
-/* ═══ BADGES ═══ */
 .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600}
-.b-green{background:var(--c-green-bg);color:#065F46;border:1px solid #A7F3D0}
-.b-amber{background:var(--c-amber-bg);color:#92400E;border:1px solid #FDE68A}
-.b-red{background:var(--c-red-bg);color:#991B1B;border:1px solid #FCA5A5}
-.b-blue{background:var(--c-blue-bg);color:#1E40AF;border:1px solid var(--c-blue-soft)}
-.b-teal{background:var(--c-teal-bg);color:#134E4A;border:1px solid var(--c-teal-soft)}
+.b-green{background:var(--green-bg);color:#065F46;border:1px solid var(--green-s)}
+.b-amber{background:var(--amber-bg);color:#92400E;border:1px solid #FDE68A}
+.b-red{background:var(--red-bg);color:#991B1B;border:1px solid #FCA5A5}
+.b-blue{background:var(--blue-bg);color:#1E40AF;border:1px solid var(--blue-s)}
+.b-teal{background:var(--teal-bg);color:#134E4A;border:1px solid var(--teal-s)}
 .b-slate{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1}
 
-/* ═══ CALLOUTS ═══ */
-.callout{display:flex;gap:10px;align-items:flex-start;border-radius:var(--radius);padding:12px 16px;margin:12px 0;font-size:12.5px;line-height:1.6}
-.callout-icon{flex-shrink:0;font-size:13px;margin-top:1px}
-.callout-body{flex:1;color:inherit;line-height:1.55}
-.callout-body strong{font-weight:600;display:block;margin-bottom:1px}
-.c-info{background:var(--c-teal-bg);border-left:3px solid var(--c-teal);color:var(--c-teal-dim)}
-.c-warn{background:var(--c-amber-bg);border-left:3px solid var(--c-amber);color:#78350F}
-.c-danger{background:var(--c-red-bg);border-left:3px solid var(--c-red);color:#7F1D1D}
-.c-note{background:var(--c-blue-bg);border-left:3px solid var(--c-blue);color:#1E3A8A}
+/* ── CALLOUTS ── */
+.callout{display:flex;gap:10px;align-items:flex-start;border-radius:var(--r);padding:12px 16px;margin:12px 0;font-size:12.5px;line-height:1.6}
+.callout-icon{flex-shrink:0;font-size:14px;margin-top:1px}
+.callout-body{flex:1}
+.callout-body strong{font-weight:600;display:block;margin-bottom:2px}
+.c-info{background:var(--teal-bg);border-left:3px solid var(--teal);color:var(--teal2)}
+.c-warn{background:var(--amber-bg);border-left:3px solid var(--amber);color:#78350F}
+.c-danger{background:var(--red-bg);border-left:3px solid var(--red);color:#7F1D1D}
+.c-note{background:var(--blue-bg);border-left:3px solid var(--blue);color:#1E3A8A}
 
-/* ═══ CARD GRID ═══ */
-.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:12px 0 20px}
-.card{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:16px;transition:border-color .12s,box-shadow .12s}
-.card:hover{border-color:var(--c-teal);box-shadow:0 0 0 1px rgba(13,148,136,.15)}
-.card-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--c-text-4);margin-bottom:4px}
-.card-title{font-size:13px;font-weight:600;color:var(--c-text);margin-bottom:4px}
-.card-body{font-size:12px;color:var(--c-text-3);line-height:1.5}
+/* ── CARD GRIDS ── */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0 20px}
+.card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r2);padding:16px;transition:all .15s}
+.card:hover{border-color:var(--teal);box-shadow:0 0 0 1px rgba(13,148,136,.15)}
+.card-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tx4);margin-bottom:4px}
+.card-title{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px}
+.card-body{font-size:12px;color:var(--tx3);line-height:1.5}
 .card ul{padding-left:14px;margin-top:4px}
-.card li{font-size:12px;color:var(--c-text-3);margin-bottom:3px}
+.card li{font-size:12px;color:var(--tx3);margin-bottom:3px}
 
-/* ═══ FLOW STRIP ═══ */
-.flow-strip{display:grid;grid-template-columns:repeat(6,1fr);margin:14px 0 20px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--c-border)}
-.flow-stage{padding:14px 12px;background:var(--c-surface);border-right:1px solid var(--c-border);position:relative}
+/* ── FLOW STRIP ── */
+.flow-strip{display:grid;grid-template-columns:repeat(6,1fr);margin:14px 0 20px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--brd);box-shadow:var(--sh)}
+.flow-stage{padding:14px 10px;background:var(--surf);border-right:1px solid var(--brd);position:relative}
 .flow-stage:last-child{border-right:none}
 .flow-stage.done{background:#F0FDFA}
 .flow-stage.active{background:#EFF6FF}
-.fs-n{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--c-text-4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.fs-label{font-size:12px;font-weight:600;color:var(--c-text);line-height:1.3;margin-bottom:3px}
-.fs-route{font-size:10px;color:var(--c-text-4);font-family:var(--mono)}
-.fs-desc{font-size:11px;color:var(--c-text-3);margin-top:5px;line-height:1.4}
-.fs-arrow{position:absolute;right:-7px;top:50%;transform:translateY(-50%);background:var(--c-surface);z-index:1;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--c-teal);font-weight:700}
-.flow-stage.done .fs-arrow{background:#F0FDFA}
-.flow-stage.active .fs-arrow{background:#EFF6FF}
+.fs-n{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--tx4);text-transform:uppercase;margin-bottom:4px}
+.fs-label{font-size:12px;font-weight:600;color:var(--tx);line-height:1.3;margin-bottom:3px}
+.fs-route{font-size:10px;color:var(--tx4);font-family:var(--mono)}
+.fs-desc{font-size:11px;color:var(--tx3);margin-top:5px;line-height:1.4}
+.fs-arrow{position:absolute;right:-7px;top:50%;transform:translateY(-50%);background:inherit;z-index:1;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--teal);font-weight:700}
 
-/* ═══ DIAGRAM CARD ═══ */
-.diagram-card{border:1px solid var(--c-border);border-radius:var(--radius-lg);overflow:hidden;margin:12px 0 20px}
-.diagram-header{padding:10px 14px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between;background:#FAFBFC}
-.diagram-title-txt{font-size:12.5px;font-weight:600;color:var(--c-text-2)}
-.diagram-tag{font-family:var(--mono);font-size:9px;color:var(--c-teal);background:var(--c-teal-bg);padding:2px 7px;border-radius:4px;border:1px solid var(--c-teal-soft)}
-.diagram-body{padding:16px;overflow-x:auto;background:var(--c-surface)}
+/* ── DIAGRAMS ── */
+.diagram-card{border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;margin:12px 0 20px;box-shadow:var(--sh)}
+.diagram-head{padding:10px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;background:#FAFBFC}
+.diagram-ht{font-size:12.5px;font-weight:600;color:var(--tx2)}
+.diagram-tag{font-family:var(--mono);font-size:9px;color:var(--teal);background:var(--teal-bg);padding:2px 7px;border-radius:4px;border:1px solid var(--teal-s)}
+.diagram-body{padding:16px;overflow-x:auto;background:var(--surf)}
 pre.mermaid{background:transparent}
 
-/* ═══ SLIDE CARDS ═══ */
+/* ── SLIDE CARDS ── */
 .slides-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 20px}
-.slide-card{background:linear-gradient(135deg,#0F172A,#1E293B);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:18px 20px;color:#fff}
+.slide-card{background:linear-gradient(135deg,#0F172A,#1E293B);border:1px solid rgba(255,255,255,.07);border-radius:var(--r2);padding:18px 20px;color:#fff}
 .slide-name{font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:2px}
 .slide-sub{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:12px}
 .slide-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
@@ -237,162 +280,198 @@ pre.mermaid{background:transparent}
 .slide-rules{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .slide-rule{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:2px 8px;border-radius:20px;font-size:10px;color:rgba(255,255,255,.5)}
 
-/* ═══ SWIMLANES ═══ */
-.swim-diagram{border:1px solid var(--c-border);border-radius:var(--radius-lg);overflow:hidden;margin:12px 0 20px}
-.swim-header{padding:10px 14px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:8px;background:#FAFBFC}
-.swim-title{font-size:12.5px;font-weight:600;color:var(--c-text-2)}
-.swim-tag{font-family:var(--mono);font-size:9px;color:#7C3AED;background:#F5F3FF;padding:2px 7px;border-radius:4px;border:1px solid #DDD6FE}
+/* ── SWIMLANES ── */
+.swim-diagram{border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;margin:12px 0 20px;box-shadow:var(--sh)}
+.swim-head{padding:10px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;background:#FAFBFC}
+.swim-title{font-size:12.5px;font-weight:600;color:var(--tx2)}
+.swim-tag{font-family:var(--mono);font-size:9px;color:var(--purple);background:var(--purple-bg);padding:2px 7px;border-radius:4px;border:1px solid var(--purple-s)}
 .swim-body{display:flex;flex-direction:column}
-.swim-lane{display:flex;align-items:stretch;border-bottom:1px solid var(--c-border)}
+.swim-lane{display:flex;align-items:stretch;border-bottom:1px solid var(--brd)}
 .swim-lane:last-child{border-bottom:none}
-.swim-lane-label{width:88px;flex-shrink:0;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 6px;border-right:1px solid var(--c-border)}
-.swim-lane-label.op{background:#EFF6FF;color:#1E40AF}
-.swim-lane-label.sys{background:#F0FDFA;color:#065F46}
-.swim-lane-content{flex:1;display:flex;align-items:center;padding:10px 12px;gap:0;overflow-x:auto;flex-wrap:nowrap}
-.swim-node{background:#EFF6FF;border:1px solid var(--c-blue-soft);border-radius:4px;padding:5px 9px;font-size:11px;color:#1E40AF;white-space:nowrap;font-weight:500;flex-shrink:0}
-.swim-node.sys-node{background:var(--c-teal-bg);border-color:var(--c-teal-soft);color:#065F46}
-.swim-node.gate{background:var(--c-amber-bg);border-color:#FDE68A;color:#92400E;font-weight:700}
-.swim-node.locked{background:#F5F3FF;border-color:#C4B5FD;color:#5B21B6}
-.swim-arr{color:var(--c-text-4);font-size:12px;padding:0 4px;flex-shrink:0}
-.swim-arr.t{color:var(--c-teal);font-weight:700}
+.swim-lane-label{width:80px;flex-shrink:0;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 6px;border-right:1px solid var(--brd)}
+.swim-lane-label.op{background:var(--blue-bg);color:#1E40AF}
+.swim-lane-label.sys{background:var(--teal-bg);color:#065F46}
+.swim-lane-content{flex:1;display:flex;align-items:center;padding:10px 12px;gap:0;overflow-x:auto}
+.swim-node{background:var(--blue-bg);border:1px solid var(--blue-s);border-radius:4px;padding:5px 9px;font-size:11px;color:#1E40AF;white-space:nowrap;font-weight:500;flex-shrink:0}
+.swim-node.sys-node{background:var(--teal-bg);border-color:var(--teal-s);color:#065F46}
+.swim-node.gate{background:var(--amber-bg);border-color:#FDE68A;color:#92400E;font-weight:700}
+.swim-node.locked{background:var(--purple-bg);border-color:var(--purple-s);color:#5B21B6}
+.swim-arr{color:var(--tx4);font-size:12px;padding:0 4px;flex-shrink:0}
+.swim-arr.t{color:var(--teal);font-weight:700}
 
-/* ═══ STEPS ═══ */
+/* ── STEPS ── */
 .steps{display:flex;flex-direction:column;gap:10px;margin:10px 0 18px}
 .step{display:flex;gap:12px}
-.step-n{width:24px;height:24px;border-radius:50%;background:var(--c-nav-bg);color:#fff;display:grid;place-items:center;font-size:10.5px;font-weight:700;flex-shrink:0;margin-top:2px;font-family:var(--mono)}
-.step-content strong{font-size:13px;font-weight:600;color:var(--c-text);display:block;margin-bottom:2px}
-.step-content span{font-size:12px;color:var(--c-text-3)}
+.step-n{width:24px;height:24px;border-radius:50%;background:var(--nav);color:#fff;display:grid;place-items:center;font-size:10.5px;font-weight:700;flex-shrink:0;margin-top:2px;font-family:var(--mono)}
+.step-content strong{font-size:13px;font-weight:600;color:var(--tx);display:block;margin-bottom:2px}
+.step-content span{font-size:12px;color:var(--tx3)}
 
-/* ═══ CHEAT SHEETS ═══ */
-.cheat-card{border:1px solid var(--c-border);border-radius:var(--radius-lg);overflow:hidden;margin:10px 0}
-.cheat-head{background:var(--c-nav-bg);padding:10px 16px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+/* ── CHEAT SHEETS ── */
+.cheat-card{border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;margin:10px 0;box-shadow:var(--sh)}
+.cheat-head{background:var(--nav);padding:10px 16px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .cheat-name{font-size:13px;font-weight:700;color:#F9FAFB}
 .cheat-goal{font-size:10.5px;color:rgba(255,255,255,.4)}
 .cheat-cols{display:grid;grid-template-columns:repeat(3,1fr)}
-.cheat-col{padding:12px 16px;border-right:1px solid var(--c-border)}
+.cheat-col{padding:12px 16px;border-right:1px solid var(--brd)}
 .cheat-col:last-child{border-right:none}
-.cheat-col h4{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--c-text-4);margin-bottom:7px}
+.cheat-col h4{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tx4);margin-bottom:7px}
 .cheat-col ul{list-style:none}
-.cheat-col li{font-size:11.5px;color:var(--c-text-3);margin-bottom:3.5px;padding-left:9px;position:relative;line-height:1.4}
-.cheat-col li::before{content:'›';position:absolute;left:0;color:var(--c-teal);font-weight:700}
+.cheat-col li{font-size:11.5px;color:var(--tx3);margin-bottom:3.5px;padding-left:9px;position:relative;line-height:1.4}
+.cheat-col li::before{content:'›';position:absolute;left:0;color:var(--teal);font-weight:700}
 
-/* ═══ UI REFERENCE ═══ */
+/* ── UI REFERENCE ── */
 .ui-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 20px}
-.ui-card{border:1px solid var(--c-border);border-radius:var(--radius-lg);overflow:hidden;background:var(--c-surface)}
-.ui-head{background:var(--c-nav-bg);padding:9px 14px;font-size:12px;font-weight:600;color:#F9FAFB;display:flex;align-items:center;gap:8px}
+.ui-card{border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;background:var(--surf);box-shadow:var(--sh)}
+.ui-head{background:var(--nav);padding:9px 14px;font-size:12px;font-weight:600;color:#F9FAFB;display:flex;align-items:center;gap:8px}
 .ui-route{background:rgba(13,148,136,.2);border-radius:4px;padding:1px 7px;font-size:9.5px;font-family:var(--mono);color:#5EEAD4}
 .ui-body{padding:12px 14px}
 .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:9px}
-.kpi{background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:7px 9px;text-align:center}
-.kpi-val{font-size:16px;font-weight:700;color:var(--c-text);line-height:1;font-family:var(--mono)}
-.kv-teal{color:var(--c-teal)}.kv-amber{color:var(--c-amber)}.kv-navy{color:var(--c-navy)}
-.kpi-lbl{font-size:9.5px;color:var(--c-text-4);margin-top:2px;line-height:1.3}
-.ui-desc{font-size:11.5px;color:var(--c-text-3);line-height:1.55}
-.data-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--c-border);font-size:12px}
+.kpi{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);padding:7px 9px;text-align:center}
+.kpi-val{font-size:16px;font-weight:700;color:var(--tx);line-height:1;font-family:var(--mono)}
+.kv-teal{color:var(--teal)}.kv-amber{color:var(--amber)}.kv-navy{color:#1E3A5F}
+.kpi-lbl{font-size:9.5px;color:var(--tx4);margin-top:2px;line-height:1.3}
+.ui-desc{font-size:11.5px;color:var(--tx3);line-height:1.55}
+.data-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--brd);font-size:12px}
 .data-row:last-child{border-bottom:none}
-.dk{color:var(--c-text-3)}.dv{font-weight:600;color:var(--c-text-2)}
+.dk{color:var(--tx3)}.dv{font-weight:600;color:var(--tx2)}
 
-/* ═══ GURU SECTION ═══ */
-.guru-hero{background:linear-gradient(135deg,#0F172A 0%,#1E293B 60%,#0F2A24 100%);border-radius:var(--radius-lg);padding:24px 28px;margin:12px 0 20px;border:1px solid rgba(255,255,255,.06);color:#fff;position:relative;overflow:hidden}
+/* ── GURU ── */
+.guru-hero{background:linear-gradient(135deg,#0F172A 0%,#1E293B 60%,#0F2A24 100%);border-radius:var(--r2);padding:24px 28px;margin:12px 0 20px;border:1px solid rgba(255,255,255,.06);color:#fff;position:relative;overflow:hidden}
 .guru-hero::after{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(13,148,136,.15) 0%,transparent 65%);border-radius:50%}
 .guru-hero-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .guru-avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#1E3A5F,#0D9488);display:grid;place-items:center;font-size:20px;flex-shrink:0}
 .guru-hero-title{font-size:18px;font-weight:700;color:#F9FAFB}
 .guru-hero-sub{font-size:12px;color:rgba(255,255,255,.4)}
 .guru-hero-desc{font-size:13px;color:rgba(255,255,255,.6);line-height:1.65;max-width:600px;margin-bottom:16px}
-.guru-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:rgba(0,0,0,.2);padding:12px 14px;border-radius:var(--radius)}
+.guru-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:rgba(0,0,0,.2);padding:12px 14px;border-radius:var(--r)}
 .guru-step{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);padding:5px 12px;border-radius:4px;font-size:11.5px;font-weight:600;color:rgba(255,255,255,.8)}
 .guru-arr{color:#0D9488;font-size:13px;font-weight:700}
 .guru-feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 16px}
-.guru-feat{background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:14px}
+.guru-feat{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r2);padding:14px}
 .guru-feat-icon{font-size:18px;margin-bottom:6px}
-.guru-feat-title{font-size:12.5px;font-weight:600;color:var(--c-text);margin-bottom:3px}
-.guru-feat-desc{font-size:11.5px;color:var(--c-text-3);line-height:1.5}
-.guru-rules{display:flex;flex-direction:column;gap:0;border:1px solid var(--c-border);border-radius:var(--radius-lg);overflow:hidden;margin:12px 0}
-.guru-rule{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--c-border);font-size:12.5px;align-items:flex-start}
+.guru-feat-title{font-size:12.5px;font-weight:600;color:var(--tx);margin-bottom:3px}
+.guru-feat-desc{font-size:11.5px;color:var(--tx3);line-height:1.5}
+.guru-rules{display:flex;flex-direction:column;gap:0;border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden;margin:12px 0}
+.guru-rule{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--brd);font-size:12.5px;align-items:flex-start}
 .guru-rule:last-child{border-bottom:none}
 .guru-rule:nth-child(even){background:#FAFBFC}
 .guru-rule-icon{flex-shrink:0;margin-top:1px}
-.guru-rule-text{color:var(--c-text-3);line-height:1.5}
-.guru-rule-text strong{color:var(--c-text-2)}
+.guru-rule-text{color:var(--tx3);line-height:1.5}
+.guru-rule-text strong{color:var(--tx2)}
 
-/* ═══ AUTH GATE ═══ */
+/* ── RIGHT RAIL ── */
+.right-rail{position:sticky;top:var(--top-h);height:calc(100vh - var(--top-h));overflow-y:auto;background:var(--surf);border-left:1px solid var(--brd);padding:0}
+.right-rail::-webkit-scrollbar{width:3px}
+.right-rail::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+.rail-block{padding:20px 18px;border-bottom:1px solid var(--brd)}
+.rail-title{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx4);margin-bottom:12px}
+.toc-link{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12px;color:var(--tx4);text-decoration:none;border-left:2px solid transparent;padding-left:8px;transition:.1s;line-height:1.4;margin-bottom:1px}
+.toc-link:hover{color:var(--tx2);border-left-color:var(--brd2)}
+.toc-link.active{color:var(--teal);border-left-color:var(--teal);font-weight:600}
+.toc-link::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0}
+.progress-bar-wrap{margin-bottom:8px}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.progress-label-text{color:var(--tx3);font-weight:500}
+.progress-label-pct{color:var(--tx);font-weight:700}
+.progress-bar{height:6px;background:var(--brd);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),var(--blue));transition:.3s}
+.progress-sub{font-size:10.5px;color:var(--tx4);margin-top:4px}
+.view-all-link{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--teal);text-decoration:none;margin-top:8px}
+.view-all-link:hover{color:var(--teal2)}
+.change-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--brd)}
+.change-item:last-child{border-bottom:none}
+.change-icon-wrap{width:28px;height:28px;border-radius:var(--r);background:var(--blue-bg);border:1px solid var(--blue-s);display:grid;place-items:center;flex-shrink:0;font-size:9.5px;font-weight:700;color:var(--blue)}
+.change-meta{flex:1;min-width:0}
+.change-title{font-size:12px;font-weight:600;color:var(--tx2);line-height:1.3;margin-bottom:1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.change-date{font-size:10.5px;color:var(--tx4)}
+.roadmap-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0}
+.rm-dot-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.rm-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);margin-top:4px}
+.rm-dot.planned{background:var(--brd2)}
+.rm-line{width:1px;flex:1;background:var(--brd);min-height:16px}
+.rm-label{font-size:10.5px;font-weight:700;color:var(--tx4);white-space:nowrap}
+.rm-title{font-size:12px;color:var(--tx2);font-weight:500}
+.rm-status{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px}
+.rm-in-progress{background:rgba(13,148,136,.1);color:var(--teal)}
+.rm-planned{background:var(--bg);color:var(--tx4);border:1px solid var(--brd)}
+.contributors{display:flex;align-items:center;gap:8px}
+.contributor-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1E3A5F,#0D9488);display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;border:2px solid var(--surf);margin-left:-6px;flex-shrink:0}
+.contributor-avatar:first-child{margin-left:0}
+.contrib-more{width:28px;height:28px;border-radius:50%;background:var(--bg);border:2px solid var(--surf);display:grid;place-items:center;font-size:9.5px;font-weight:700;color:var(--tx3);margin-left:-6px}
+.contrib-link{font-size:11.5px;font-weight:600;color:var(--teal);text-decoration:none;margin-left:6px}
+
+/* ── AUTH GATE ── */
 #auth-gate{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:#07111E}
 #auth-gate.hidden{display:none}
 .ag-card{background:#0E1E30;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:36px 40px;max-width:400px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5)}
 .ag-icon{font-size:36px;margin-bottom:12px}
-.ag-title{font-size:18px;font-weight:700;color:#F3F4F6;margin-bottom:6px}
+.ag-title{font-size:18px;font-weight:700;color:#F3F4F6;margin-bottom:6px;font-family:var(--f)}
 .ag-sub{font-size:12.5px;color:#6B7280;margin-bottom:24px;line-height:1.6}
-.ag-btn{width:100%;padding:11px;border-radius:var(--radius);background:linear-gradient(135deg,#1E3A5F,#0D9488);color:#fff;font-weight:700;font-size:13.5px;border:none;cursor:pointer;transition:opacity .15s;font-family:var(--font)}
+.ag-btn{width:100%;padding:11px;border-radius:var(--r);background:linear-gradient(135deg,#1E3A5F,#0D9488);color:#fff;font-weight:700;font-size:13.5px;border:none;cursor:pointer;transition:opacity .15s;font-family:var(--f)}
 .ag-btn:hover{opacity:.9}
 .ag-err{color:#F87171;font-size:11.5px;margin-top:10px;min-height:16px}
 
-/* ═══ SHARE MODAL ═══ */
+/* ── SHARE MODAL ── */
 .modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(7,17,30,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
-.modal-box{background:#0E1E30;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px 32px;max-width:500px;width:90%;box-shadow:0 32px 80px rgba(0,0,0,.6);max-height:88vh;overflow-y:auto}
+.modal-box{background:#0E1E30;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px 32px;max-width:480px;width:90%;box-shadow:0 32px 80px rgba(0,0,0,.6);max-height:88vh;overflow-y:auto}
 .modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
 .modal-title{font-size:16px;font-weight:700;color:#F3F4F6}
-.modal-sub{font-size:12px;color:#6B7280;margin-top:3px;line-height:1.55}
+.modal-sub{font-size:12px;color:#6B7280;margin-top:3px}
 .modal-close{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:20px;line-height:1;padding:2px}
 .modal-close:hover{color:rgba(255,255,255,.7)}
 .modal-field{margin-bottom:14px}
 .modal-label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#4B5563;margin-bottom:5px}
-.modal-input,.modal-select{width:100%;padding:9px 12px;background:#0B1929;border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);color:#F3F4F6;font-size:12.5px;outline:none;font-family:var(--font);transition:border-color .12s}
-.modal-input:focus,.modal-select:focus{border-color:var(--c-teal)}
-.modal-btn{width:100%;padding:11px;border-radius:var(--radius);background:linear-gradient(135deg,#1E3A5F,#0D9488);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer;font-family:var(--font);transition:opacity .12s}
+.modal-input,.modal-select{width:100%;padding:9px 12px;background:#0B1929;border:1px solid rgba(255,255,255,.1);border-radius:var(--r);color:#F3F4F6;font-size:12.5px;outline:none;font-family:var(--f);transition:border-color .12s}
+.modal-input:focus,.modal-select:focus{border-color:var(--teal)}
+.modal-btn{width:100%;padding:11px;border-radius:var(--r);background:linear-gradient(135deg,#1E3A5F,#0D9488);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer;font-family:var(--f);transition:opacity .12s}
 .modal-btn:hover{opacity:.9}
-.modal-result{display:none;background:#0B1929;border:1px solid rgba(13,148,136,.3);border-radius:var(--radius);padding:14px;margin-top:14px}
+.modal-result{display:none;background:#0B1929;border:1px solid rgba(13,148,136,.3);border-radius:var(--r);padding:14px;margin-top:14px}
 .modal-result.visible{display:block}
 .modal-link-row{display:flex;gap:7px;align-items:center}
 .modal-link-in{flex:1;background:#071118;border:1px solid rgba(255,255,255,.07);border-radius:4px;padding:8px 10px;color:#5EEAD4;font-family:var(--mono);font-size:10.5px;outline:none}
-.modal-copy-btn{padding:7px 12px;background:var(--c-teal);color:#fff;border:none;border-radius:4px;font-size:11.5px;font-weight:700;cursor:pointer;transition:opacity .12s}
+.modal-copy-btn{padding:7px 12px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:11.5px;font-weight:700;cursor:pointer;transition:opacity .12s}
 .modal-copy-btn:hover{opacity:.85}
 .modal-meta{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
 .modal-meta-item{font-size:10.5px;color:#4B5563}
 .modal-meta-item strong{color:#6B7280}
 .token-list{margin-top:18px}
 .token-list-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#4B5563;margin-bottom:8px}
-.token-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#0B1929;border-radius:var(--radius);margin-bottom:5px;flex-wrap:wrap}
+.token-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#0B1929;border-radius:var(--r);margin-bottom:5px;flex-wrap:wrap}
 .token-name{flex:1;font-size:11.5px;color:#E2E8F0}
 .token-exp{font-size:10.5px;color:#4B5563}
 .token-status{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px}
 .ts-valid{background:rgba(16,185,129,.15);color:#10B981}
-.ts-exp{background:rgba(239,68,68,.12);color:#F87171}
 .token-revoke{padding:3px 9px;background:rgba(239,68,68,.1);color:#F87171;border:1px solid rgba(239,68,68,.2);border-radius:4px;font-size:10.5px;cursor:pointer}
 
-/* ═══ RESPONSIVE ═══ */
-@media(max-width:1200px){
-  .page-toc{display:none}
-  .doc-body{max-width:100%}
-}
-@media(max-width:960px){
-  :root{--nav-w:240px}
-  .doc-sec{padding:32px 32px}
+/* ── RESPONSIVE ── */
+@media(max-width:1200px){:root{--right-w:0px}.right-rail{display:none}.layout{grid-template-columns:var(--nav-w) 1fr}}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .left-nav{position:fixed;top:var(--top-h);bottom:0;left:0;z-index:100;transform:translateX(-100%);transition:.22s;width:var(--nav-w);box-shadow:4px 0 20px rgba(0,0,0,.3)}
+  .left-nav.open{transform:translateX(0)}
+  .sc-grid{grid-template-columns:1fr 1fr}
+  .qa-grid{grid-template-columns:1fr 1fr}
   .slides-grid{grid-template-columns:1fr}
   .ui-grid{grid-template-columns:1fr}
-  .guru-feat-grid{grid-template-columns:repeat(2,1fr)}
-  .flow-strip{grid-template-columns:repeat(3,1fr)}
-}
-@media(max-width:768px){
-  .nav-sidebar{position:fixed;top:var(--top-h);bottom:0;left:0;z-index:90;transform:translateX(-100%);transition:transform .22s;box-shadow:4px 0 20px rgba(0,0,0,.3)}
-  .nav-sidebar.open{transform:translateX(0)}
-  .page-wrap{grid-template-columns:1fr;margin-left:0}
-  .doc-sec{padding:24px 20px}
-  .tb-menu{display:flex}
-  .tb-link:not(.cta){display:none}
-  .flow-strip{grid-template-columns:1fr 1fr}
   .cheat-cols{grid-template-columns:1fr}
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
-  .guru-feat-grid{grid-template-columns:1fr}
+  .flow-strip{grid-template-columns:repeat(3,1fr)}
+  .hero{padding:28px 24px}
+  .doc-section{padding:28px 24px}
+  .sections-header{padding:20px 24px 12px}
+  .sc-grid{padding:0 24px 24px}
+  .qa-grid{padding:16px 24px}
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .guru-feat-grid{grid-template-columns:repeat(2,1fr)}
 }
-@media(max-width:500px){
-  .doc-sec{padding:20px 16px}
-  .slides-grid{grid-template-columns:1fr}
-  .card-grid{grid-template-columns:1fr}
-  .flow-strip{grid-template-columns:1fr}
+@media(max-width:600px){
+  .sc-grid{grid-template-columns:1fr}
+  .qa-grid{grid-template-columns:1fr 1fr}
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .doc-section{padding:20px 16px}
+  .hero{padding:20px 16px}
 }
-@media print{.topbar,.nav-sidebar,#auth-gate,#shared-banner,.modal-overlay{display:none!important}.page-wrap{margin:0;display:block}.doc-main{border:none}}
+@media print{.topbar,.left-nav,.right-rail,#auth-gate,#shared-banner,.modal-overlay{display:none!important}.layout{margin:0;display:block}.main-content{display:block}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -403,7 +482,7 @@ pre.mermaid{background:transparent}
   <div class="ag-card">
     <div class="ag-icon">🔒</div>
     <div class="ag-title">Restricted Access</div>
-    <div class="ag-sub">This documentation is restricted to authorised SETU Flow organisation members.</div>
+    <div class="ag-sub">The SETU Flow Technical Documentation is restricted to authorised organisation members.</div>
     <button class="ag-btn" onclick="window.location.href='/client-login?next=/go-internal?f=setuflow-docs.html'">Sign In with SETU Flow</button>
     <div class="ag-err" id="ag-err"></div>
   </div>
@@ -411,7 +490,10 @@ pre.mermaid{background:transparent}
 
 <!-- SHARED BANNER -->
 <div id="shared-banner">
-  <div style="display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Shared Review Copy — SETU Flow CRM Documentation (read-only)</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Shared Review Copy — SETU Flow CRM Documentation (read-only access)
+  </div>
   <span class="sb-badge" id="shared-expiry"></span>
 </div>
 
@@ -419,7 +501,7 @@ pre.mermaid{background:transparent}
 <div class="modal-overlay" id="share-modal">
   <div class="modal-box">
     <div class="modal-top">
-      <div><div class="modal-title">Share Documentation</div><div class="modal-sub">Generate a time-limited link for external review. No sign-in required.</div></div>
+      <div><div class="modal-title">Share Documentation</div><div class="modal-sub">Generate a time-limited link. No sign-in required for the recipient.</div></div>
       <button class="modal-close" onclick="closeShare()">×</button>
     </div>
     <div class="modal-field">
@@ -451,66 +533,272 @@ pre.mermaid{background:transparent}
   </div>
 </div>
 
-<!-- TOPBAR -->
+
 <header class="topbar">
-  <div class="tb-left">
-    <button class="tb-menu" id="tb-menu" onclick="document.getElementById('nav-sidebar').classList.toggle('open')" aria-label="Menu"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-    <a href="#s-overview" class="tb-logo-wrap">
-      <div class="tb-logomark"><svg viewBox="150 280 700 480" xmlns="http://www.w3.org/2000/svg" width="18" height="18"><defs><linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7eb3e0"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs><path fill="url(#lg1)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4C83.9,631.5,82.9,631.4,80.9,631.6z"/><path fill="url(#lg1)" d="M308.9,492.5c-0.1,39.6-31.6,70.2-72,70c-39.4-0.2-71.7-33.1-70.2-73.5c1.5-39,32.8-67.8,72.1-67.7C274.3,421.4,309.9,449.1,308.9,492.5z"/><path fill="url(#lg1)" d="M845.1,491.7c-0.1,40.9-30.3,70.7-71.6,70.6c-38.9-0.1-69.7-31.5-69.7-71c0-39.2,31.4-70.3,72.2-69.8C816.2,422.1,846.4,454.9,845.1,491.7z"/><path fill="url(#lg1)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8C582.5,380.6,531.6,347.4,506.1,330.1z"/></svg></div>
-      <div class="tb-wordmark">
-        <span class="tb-name">SETU Flow</span>
-        <span class="tb-tag">Technical Docs</span>
-      </div>
-    </a>
-    <div class="tb-sep"></div>
-    <div class="tb-version"><span class="tb-pulse"></span><span>v19 · May 2026</span></div>
+  <a href="#s-hero" class="tb-brand">
+    <div class="tb-logomark"><svg viewBox="150 280 700 480" xmlns="http://www.w3.org/2000/svg" width="20" height="20"><defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7eb3e0"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs><path fill="url(#lg)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-2.4,1.9-4,0.8-5.5,0.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4C83.9,631.5,82.9,631.4,80.9,631.6z"/><path fill="url(#lg)" d="M308.9,492.5c-0.1,39.6-31.6,70.2-72,70c-39.4-0.2-71.7-33.1-70.2-73.5c1.5-39,32.8-67.8,72.1-67.7C274.3,421.4,309.9,449.1,308.9,492.5z"/><path fill="url(#lg)" d="M845.1,491.7c-0.1,40.9-30.3,70.7-71.6,70.6c-38.9-0.1-69.7-31.5-69.7-71c0-39.2,31.4-70.3,72.2-69.8C816.2,422.1,846.4,454.9,845.1,491.7z"/><path fill="url(#lg)" d="M506.1,330.1c-25.7,17.5-77,51.1-77.5,50.7c25.5-59.8,50.9-119.5,76.4-179.3c0.8-0.1,52.8,119.1,78.1,178.8C582.5,380.6,531.6,347.4,506.1,330.1z"/></svg></div>
+    <span class="tb-brandname">SETU Flow <span>CRM</span></span>
+  </a>
+  <div class="tb-sep"></div>
+  <div class="tb-workspace">
+    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Workspace: SETU Development
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <div class="tb-search">
+    <span class="tb-search-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" placeholder="Search documentation..." />
+    <span class="tb-kbd">⌘K</span>
   </div>
   <div class="tb-right">
-    <a href="setuflow-issue-tracker.html" class="tb-link int-only"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Issue Tracker</a>
-    <a href="setuflow-roadmap.html" class="tb-link int-only"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Roadmap</a>
-    <a href="https://www.setuflowcrm.com" target="_blank" class="tb-link"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Live CRM</a>
-    <button class="tb-link cta int-only" onclick="openShare()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Share Docs</button>
-    <div class="tb-user" id="tb-user">
+    <div class="tb-help"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Help</div>
+    <div class="tb-icon-btn"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="tb-notif-badge">3</span></div>
+    <div class="tb-icon-btn int-only"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg></div>
+    <div class="tb-user" id="tb-user-el" style="display:none">
       <div class="tb-avatar" id="tb-avatar">R</div>
-      <div><div class="tb-uname" id="tb-uname">Member</div><div class="tb-uorg">SETU Flow</div></div>
+      <div class="tb-user-info">
+        <span class="tb-username" id="tb-uname">Ritesh Kapoor</span>
+        <span class="tb-role">Docs Admin</span>
+      </div>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
+    <button class="tb-icon-btn int-only" onclick="openShare()" title="Share Docs"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+    <button class="tb-icon-btn" style="display:none" id="tb-menu-btn" onclick="document.getElementById('left-nav').classList.toggle('open')"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
   </div>
 </header>
 
-<!-- THREE-COLUMN LAYOUT -->
-<div class="page-wrap">
-  <nav class="nav-sidebar" id="nav-sidebar"><div style="height:8px"></div>
-  <div class="nav-group"><div class="nav-label">Product</div>
-    <a href="#s-overview" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Product Overview</a>
-    <a href="#s-arch" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><line x1="12" y1="7.5" x2="5" y2="16.5"/><line x1="12" y1="7.5" x2="19" y2="16.5"/></svg>Architecture</a>
-    <a href="#s-modules" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Module Reference</a>
-  </div>
+<div class="layout">
+  
+<nav class="left-nav" id="left-nav">
+  <div style="height:4px"></div>
+  <div class="nav-section-header">Get Started</div>
+  <a href="#s-overview" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Docs Overview</a>
+  <a href="#s-overview" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Quick Start</a>
+  <a href="#s-arch" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>Release Notes<span class="nav-badge nb-new">New</span></a>
   <div class="nav-divider"></div>
-  <div class="nav-group"><div class="nav-label">Workflows</div>
-    <a href="#s-workflows" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Commercial Flows</a>
-    <a href="#s-diagrams" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><line x1="9" y1="11" x2="15" y2="6"/><line x1="9" y1="11" x2="15" y2="18"/></svg>Flow Diagrams</a>
-    <a href="#s-guides" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>Operator Guides</a>
-  </div>
+  <div class="nav-section-header">System Overview</div>
+  <a href="#s-arch" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg></span>Architecture Overview</a>
+  <a href="#s-modules" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>System Modules</a>
+  <a href="#s-data" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v4c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 9v4c0 1.66 4.03 3 9 3s9-1.34 9-3V9"/><path d="M3 13v4c0 1.66 4.03 3 9 3s9-1.34 9-3v-4"/></svg></span>Data Model</a>
+  <a href="#s-data" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Security Model</a>
   <div class="nav-divider"></div>
-  <div class="nav-group"><div class="nav-label">Technical</div>
-    <a href="#s-guru" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 0 1 7 7c0 2.6-1.4 4.8-3.5 6V17h-7v-2A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="10" y2="21"/><line x1="14" y1="17" x2="14" y2="21"/></svg>Setu Guru AI</a>
-    <a href="#s-data" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v4c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 9v4c0 1.66 4.03 3 9 3s9-1.34 9-3V9"/><path d="M3 13v4c0 1.66 4.03 3 9 3s9-1.34 9-3v-4"/></svg>Data & Security</a>
-    <a href="#s-api" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>API & Integrations</a>
-    <a href="#s-mobile" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Mobile</a>
-  </div>
+  <div class="nav-section-header">Business Workflows</div>
+  <a href="#s-workflows" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Commercial Workflows</a>
+  <a href="#s-diagrams" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><line x1="9" y1="11" x2="15" y2="6"/><line x1="9" y1="11" x2="15" y2="18"/></svg></span>Flow Diagrams</a>
+  <a href="#s-guru" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 0 1 7 7c0 2.6-1.4 4.8-3.5 6V17h-7v-2A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg></span>AI / Guru Integration<span class="nav-badge nb-beta">Beta</span></a>
   <div class="nav-divider"></div>
-  <div class="nav-group"><div class="nav-label">Reference</div>
-    <a href="#s-cheatsheets" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Quick Reference</a>
-    <a href="#s-ui" class="nav-item "><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Live UI Snapshots</a>
+  <div class="nav-section-header">Integrations & API</div>
+  <a href="#s-api" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>API Reference</a>
+  <a href="#s-api" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span>Integrations</a>
+  <a href="#s-api" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span>Webhooks</a>
+  <a href="#s-api" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>SDKs & Libraries</a>
+  <div class="nav-divider"></div>
+  <div class="nav-section-header">Operations</div>
+  <a href="#s-guides" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Operator Guides</a>
+  <a href="#s-mobile" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>Mobile</a>
+  <a href="#s-ui" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>Live UI Snapshots</a>
+  <div class="nav-divider"></div>
+  <div class="nav-section-header">Reference</div>
+  <a href="#s-cheatsheets" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg></span>Quick Reference</a>
+  <a href="#s-cheatsheets" class="nav-item"><span class="nav-icon"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Glossary</a>
+  <div class="nav-collapse" onclick="document.getElementById('left-nav').classList.toggle('collapsed')">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="9 18 15 12 9 6"/></svg> Collapse
   </div>
 </nav>
-  <main class="doc-main"><div class="doc-body">
+  <main class="main-content">
     
-<section class="doc-sec" id="s-overview">
-  <div class="sec-stripe" style="--stripe-a:#0D9488;--stripe-b:#2563EB"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Product</span></div>
-  <h1 class="sec-h1">SETU Flow CRM</h1>
-  <p class="sec-lead">A trade-focused commercial operating system for export-led businesses. Manages the full lifecycle from lead capture through versioned pricing, approval-gated quote delivery, order execution, and payment closeout.</p>
+<div class="hero" id="s-hero">
+  <div class="hero-breadcrumb">
+    <a href="#"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Home</a>
+    <span class="sep">›</span>
+    <a href="#">Documentation</a>
+    <span class="sep">›</span>
+    <a href="#">SETU Flow CRM</a>
+    <span class="sep">›</span>
+    <span class="cur">Technical Documentation</span>
+  </div>
+  <h1 class="hero-title">SETU Flow CRM — Technical Documentation</h1>
+  <p class="hero-sub">Comprehensive technical resources for architects, developers, and operators building and running mission-critical commercial workflows on SETU Flow CRM.</p>
+  <div class="hero-search">
+    <div class="hero-search-box">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search docs, modules, APIs, workflows..." />
+      <span class="hero-kbd">⌘K</span>
+    </div>
+  </div>
+  <div class="hero-tags">
+    <span class="hero-tags-label">Popular:</span>
+    <a href="#s-api" class="hero-tag">API Reference</a>
+    <a href="#s-workflows" class="hero-tag">Commercial Workflows</a>
+    <a href="#s-data" class="hero-tag">Data Model</a>
+    <a href="#s-data" class="hero-tag">Authentication</a>
+    <a href="#s-api" class="hero-tag">Webhooks</a>
+  </div>
+</div>
+    
+<div class="qa-grid">
+  <a href="#" onclick="openShare();return false;" class="qa-card int-only">
+    <div class="qa-icon teal"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+    <div class="qa-title">Share Doc</div>
+    <div class="qa-desc">Share this documentation with team members or external stakeholders securely.</div>
+    <div class="qa-arrow">Share → </div>
+  </a>
+  <a href="setuflow-issue-tracker.html" class="qa-card int-only">
+    <div class="qa-icon blue"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+    <div class="qa-title">Issue Tracker <span class="qa-badge">Live</span></div>
+    <div class="qa-desc">View open issues, report bugs, or track documentation tasks and improvements.</div>
+    <div class="qa-arrow">Open Tracker → </div>
+  </a>
+  <a href="setuflow-roadmap.html" class="qa-card int-only">
+    <div class="qa-icon purple"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div class="qa-title">Roadmap <span class="qa-badge blue">Q3 2026</span></div>
+    <div class="qa-desc">Explore upcoming features, milestones, and product delivery timelines.</div>
+    <div class="qa-arrow">View Roadmap → </div>
+  </a>
+  <a href="https://www.setuflowcrm.com" target="_blank" class="qa-card">
+    <div class="qa-icon emerald"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+    <div class="qa-title">Live CRM</div>
+    <div class="qa-desc">Access the live production environment. Real data, all workspaces active.</div>
+    <div class="qa-arrow">Open CRM → </div>
+  </a>
+</div>
+    
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0D9488" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <div class="stat-info">
+      <div class="stat-label">Total Modules</div>
+      <div class="stat-value">12 <span class="stat-tag" style="background:rgba(13,148,136,.1);color:#0D9488;font-size:10px">Active</span></div>
+    </div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#2563EB" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div class="stat-info">
+      <div class="stat-label">Database Tables</div>
+      <div class="stat-value">60+ <span class="stat-tag st-on-track">RLS Active</span></div>
+    </div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#7C3AED" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+    <div class="stat-info">
+      <div class="stat-label">API Endpoints</div>
+      <div class="stat-value">94 <span class="stat-tag" style="background:rgba(37,99,235,.1);color:#2563EB">Routes</span></div>
+    </div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+    <div class="stat-info">
+      <div class="stat-label">Latest Release</div>
+      <div class="stat-value" style="font-size:16px">v2026.05 <span class="stat-tag st-latest">Latest</span></div>
+    </div>
+  </div>
+</div>
+    
+<div class="sections-header">
+  <div>
+    <div class="sections-title">Documentation Sections</div>
+    <div class="sections-subtitle">All modules, workflows, and technical references</div>
+  </div>
+</div>
+<div class="sc-grid">
+  <a href="#s-arch" class="sc-card">
+    <div class="sc-card-top">
+      <div class="sc-icon sci-blue"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/></svg></div>
+      <div class="sc-meta">
+        <div class="sc-title">Architecture Overview</div>
+        <div class="sc-desc">System architecture, components, and deployment topology.</div>
+      </div>
+    </div>
+    <ul class="sc-links">
+      <li><a href="#s-arch">System Architecture SVG</a></li>
+      <li><a href="#s-arch">Route Groups</a></li>
+      <li><a href="#s-modules">Tech Stack</a></li>
+    </ul>
+    <div class="sc-footer"><span class="sc-view-all">View all →</span></div>
+  </a>
+  <a href="#s-workflows" class="sc-card">
+    <div class="sc-card-top">
+      <div class="sc-icon sci-teal"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="sc-meta">
+        <div class="sc-title">Commercial Workflows</div>
+        <div class="sc-desc">End-to-end commercial workflows and business process flows.</div>
+      </div>
+    </div>
+    <ul class="sc-links">
+      <li><a href="#s-workflows">Lead to Quote</a></li>
+      <li><a href="#s-workflows">Quote to Order</a></li>
+      <li><a href="#s-workflows">Order to Closeout</a></li>
+    </ul>
+    <div class="sc-footer"><span class="sc-view-all">View all →</span></div>
+  </a>
+  <a href="#s-api" class="sc-card">
+    <div class="sc-card-top">
+      <div class="sc-icon sci-purple"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+      <div class="sc-meta">
+        <div class="sc-title">API & Integrations</div>
+        <div class="sc-desc">REST APIs, webhooks, integration boundaries, and third-party adapters.</div>
+      </div>
+    </div>
+    <ul class="sc-links">
+      <li><a href="#s-api">Integration Status</a></li>
+      <li><a href="#s-api">Environment Variables</a></li>
+      <li><a href="#s-api">Webhook Endpoints</a></li>
+    </ul>
+    <div class="sc-footer"><span class="sc-view-all">View all →</span></div>
+  </a>
+  <a href="#s-data" class="sc-card">
+    <div class="sc-card-top">
+      <div class="sc-icon sci-red"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="sc-meta">
+        <div class="sc-title">Security & Data Model</div>
+        <div class="sc-desc">Data model, security architecture, RLS policies, and permissions.</div>
+      </div>
+    </div>
+    <ul class="sc-links">
+      <li><a href="#s-data">Source of Truth Tables</a></li>
+      <li><a href="#s-data">RLS Policies</a></li>
+      <li><a href="#s-data">Permission Groups</a></li>
+    </ul>
+    <div class="sc-footer"><span class="sc-view-all">View all →</span></div>
+  </a>
+  <a href="#s-guides" class="sc-card">
+    <div class="sc-card-top">
+      <div class="sc-icon sci-amber"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="sc-meta">
+        <div class="sc-title">Operator Guides</div>
+        <div class="sc-desc">Step-by-step guides for operators and administrators.</div>
+      </div>
+    </div>
+    <ul class="sc-links">
+      <li><a href="#s-guides">Lead to Quote</a></li>
+      <li><a href="#s-guides">Order Execution</a></li>
+      <li><a href="#s-guides">Finance & Closeout</a></li>
+    </ul>
+    <div class="sc-footer"><span class="sc-view-all">View all →</span></div>
+  </a>
+  <a href="#s-ui" class="sc-card">
+    <div class="sc-card-top">
+      <div class="sc-icon sci-emerald"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+      <div class="sc-meta">
+        <div class="sc-title">Live UI Snapshots</div>
+        <div class="sc-desc">Live screenshots of key modules and workflows in SETU Flow CRM.</div>
+      </div>
+    </div>
+    <ul class="sc-links">
+      <li><a href="#s-ui">Dashboard KPIs</a></li>
+      <li><a href="#s-ui">Leads Workspace</a></li>
+      <li><a href="#s-ui">Orders Execution</a></li>
+    </ul>
+    <div class="sc-footer"><span class="sc-view-all">View all →</span></div>
+  </a>
+</div>
+<div class="content-divider"></div>
+    
+<section class="doc-section" id="s-overview">
+  <div class="section-stripe" style="--sa:#0D9488;--sb:#2563EB"></div>
+  <div class="section-eyebrow">Product Overview</div>
+  <h1 class="section-title">SETU Flow CRM</h1>
+  <p class="section-lead">A trade-focused commercial operating system for export-led businesses. Full lifecycle from lead capture through versioned pricing, approval-gated delivery, order execution, and payment closeout.</p>
   <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
   <div class="card" style="border-top:3px solid var(--teal)">
     <div class="card-label">Platform</div>
@@ -534,7 +822,7 @@ pre.mermaid{background:transparent}
   </div>
 </div>
 
-<h2 class="sec-h2">Core Design Principles</h2>
+
 <div class="tbl">
 <table>
 <thead><tr><th>Principle</th><th>What it means in practice</th></tr></thead>
@@ -548,7 +836,7 @@ pre.mermaid{background:transparent}
 </table>
 </div>
 
-<h2 class="sec-h2">Tech Stack</h2>
+
 <div class="tbl">
 <table>
 <thead><tr><th>Layer</th><th>Technology</th><th>Notes</th></tr></thead>
@@ -564,12 +852,12 @@ pre.mermaid{background:transparent}
 </table>
 </div>
 </section>
-<section class="doc-sec" id="s-arch">
-  <div class="sec-stripe" style="--stripe-a:#1E3A5F;--stripe-b:#0D9488"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Architecture</span></div>
-  <h1 class="sec-h1">System Architecture</h1>
-  <p class="sec-lead">Next.js App Router frontend backed by Supabase Postgres. All data access goes through Row Level Security. External integrations are queue-backed — no direct coupling to third-party providers.</p>
-  <div class="diagram-card"><div class="diagram-header"><span class="diagram-title-txt">SETU Flow CRM — System Architecture</span><span class="diagram-tag">SVG</span></div><div class="diagram-body"><svg class="svg-arch" viewBox="0 0 940 600" role="img" xmlns="http://www.w3.org/2000/svg">
+<section class="doc-section" id="s-arch">
+  <div class="section-stripe" style="--sa:#1E3A5F;--sb:#0D9488"></div>
+  <div class="section-eyebrow">System Architecture</div>
+  <h1 class="section-title">Architecture</h1>
+  <p class="section-lead">Next.js App Router frontend backed by Supabase Postgres. All data access goes through Row Level Security. External integrations are queue-backed — no direct coupling.</p>
+  <div class="diagram-card"><div class="diagram-head"><span class="diagram-ht">SETU Flow CRM — System Architecture</span><span class="diagram-tag">SVG</span></div><div class="diagram-body"><svg class="svg-arch" viewBox="0 0 940 600" role="img" xmlns="http://www.w3.org/2000/svg">
   <title>SetuFlow CRM System Architecture</title>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -910,7 +1198,7 @@ pre.mermaid{background:transparent}
   </div>
 </div>
 
-<h2 class="sec-h2">Route Groups</h2>
+
 <div class="tbl">
 <table>
 <thead><tr><th>Area</th><th>Route Examples</th><th>Access</th></tr></thead>
@@ -925,11 +1213,11 @@ pre.mermaid{background:transparent}
 </table>
 </div>
 </section>
-<section class="doc-sec" id="s-modules">
-  <div class="sec-stripe" style="--stripe-a:#2563EB;--stripe-b:#7C3AED"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Product</span></div>
-  <h1 class="sec-h1">Module Reference</h1>
-  <p class="sec-lead">Eight core workspaces, each with a focused scope. Data flows in one direction: capture → qualify → price → approve → execute → close.</p>
+<section class="doc-section" id="s-modules">
+  <div class="section-stripe" style="--sa:#2563EB;--sb:#7C3AED"></div>
+  <div class="section-eyebrow">Module Reference</div>
+  <h1 class="section-title">Modules</h1>
+  <p class="section-lead">Eight core workspaces, each with a focused scope. Data flows in one direction: capture → qualify → price → approve → execute → close.</p>
   <div class="tbl">
 <table>
 <thead><tr><th>Module</th><th>Route</th><th>Purpose</th><th>Key Data Tables</th></tr></thead>
@@ -946,7 +1234,7 @@ pre.mermaid{background:transparent}
 </table>
 </div>
 
-<h2 class="sec-h2">Admin Sub-Pages</h2>
+
 <div class="tbl">
 <table>
 <thead><tr><th>Page</th><th>Route</th><th>Access Level</th><th>Function</th></tr></thead>
@@ -965,11 +1253,11 @@ pre.mermaid{background:transparent}
 </table>
 </div>
 </section>
-<section class="doc-sec" id="s-workflows">
-  <div class="sec-stripe" style="--stripe-a:#0D9488;--stripe-b:#059669"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Workflows</span></div>
-  <h1 class="sec-h1">Commercial Workflows</h1>
-  <p class="sec-lead">Every deal flows through six stages in sequence. No stage can be skipped without explicit gate approval. The system enforces these gates at the database level.</p>
+<section class="doc-section" id="s-workflows">
+  <div class="section-stripe" style="--sa:#0D9488;--sb:#059669"></div>
+  <div class="section-eyebrow">Business Workflows</div>
+  <h1 class="section-title">Commercial Workflows</h1>
+  <p class="section-lead">Every deal flows through six stages in sequence. No stage can be skipped without explicit gate approval.</p>
   <div class="flow-strip">
   <div class="flow-stage done">
     <div class="fs-num">01</div>
@@ -1009,7 +1297,7 @@ pre.mermaid{background:transparent}
   </div>
 </div>
 
-<h2 class="sec-h2">Lead Workflow Detail</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Stage</th><th>Action</th><th>Gate Condition</th><th>Data Written</th></tr></thead>
 <tbody>
@@ -1022,7 +1310,7 @@ pre.mermaid{background:transparent}
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Quote Workflow Detail</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Stage</th><th>Action</th><th>Gate Condition</th><th>State</th></tr></thead>
 <tbody>
@@ -1035,7 +1323,7 @@ pre.mermaid{background:transparent}
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Order Execution Stages</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>#</th><th>Stage</th><th>Actions</th><th>Gate Required Before Next</th></tr></thead>
 <tbody>
@@ -1056,13 +1344,12 @@ pre.mermaid{background:transparent}
   </div>
 </div>
 </section>
-<section class="doc-sec" id="s-diagrams">
-  <div class="sec-stripe" style="--stripe-a:#7C3AED;--stripe-b:#2563EB"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Diagrams</span></div>
-  <h1 class="sec-h1">Flow Diagrams</h1>
-  <p class="sec-lead">Formal flowcharts, swimlane diagrams, and slide-format visual summaries. Blue nodes are operator actions; teal nodes are system responses.</p>
-  <h2 class="sec-h2">Flowcharts</h2>
-<div class="diagram-card">
+<section class="doc-section" id="s-diagrams">
+  <div class="section-stripe" style="--sa:#7C3AED;--sb:#2563EB"></div>
+  <div class="section-eyebrow">Flow Diagrams</div>
+  <h1 class="section-title">Flow Diagrams</h1>
+  <p class="section-lead">Formal flowcharts, swimlane diagrams, and slide-format visual summaries for each major workflow.</p>
+  <div class="diagram-card">
   <div class="diagram-header">
     <div class="diagram-title-text">Lead Workflow</div>
     <span class="diagram-tag">Mermaid</span>
@@ -1233,7 +1520,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Swimlane Diagrams</h2>
+
 <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Operator actions (blue) and system responses (teal) shown side-by-side in sequence.</p>
 
 <!-- SWIMLANE 1: Lead to Quote -->
@@ -1446,7 +1733,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Summary Diagrams</h2>
+
 
 <div class="slide-card">
   <div class="slide-name">Lead Workflow</div>
@@ -1555,18 +1842,18 @@ flowchart LR
   </div>
 </div>
 </section>
-<section class="doc-sec" id="s-guides">
-  <div class="sec-stripe" style="--stripe-a:#059669;--stripe-b:#0D9488"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Workflows</span></div>
-  <h1 class="sec-h1">Operator Guides</h1>
-  <p class="sec-lead">Click-by-click procedures for each major workflow. Expected UI state and data outcome documented at every step.</p>
-  <h2 class="sec-h2">Guide 1: Lead to Quote</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Click <code>Follow-up</code> in main navigation</strong><span>Expected UI: Lead queue loads from <code>leads</code>. Expected data: All org leads visible per RLS policy.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Open</code> on the lead row</strong><span>Expected UI: Lead Command Center opens with workflow cards (qualification, coverage, follow-up, compliance). Verify lead has buyer/supplier context and is not disqualified.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Open coverage manager</code> if product coverage is missing</strong><span>Select product interest → Save. Expected data: <code>lead_product_interests</code> row created. Quote CTA becomes dominant when gate passes.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Click <code>Plan follow-up</code> if next action is missing</strong><span>Enter follow-up date and note. Expected data: <code>lead_follow_ups</code> row written.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Check compliance card for any quote-send blockers</strong><span>If red: click <code>Compliance check</code> or <code>Full screen</code>. Choose one: <code>Attach evidence</code>, <code>Waive for quote</code> (with reviewer reason), or <code>Defer to dispatch</code>.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Click <code>Create quote</code> or <code>Continue quote</code></strong><span>Verify: lead not disqualified, product interest exists, country/market set, compliance posture acceptable.</span></div></div></div><div class="callout c-warn"><div class="callout-icon">⚠</div><div class="callout-body"><strong>Do NOT:</strong> Treat a free-text product note as saved product coverage. Do NOT bypass compliance by creating a disconnected quote. Do NOT assume WhatsApp/email activity means delivery was confirmed.</div></div><h2 class="sec-h2">Guide 2: Quote Build and Send</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Click <code>Quote</code> in navigation or open from lead</strong><span>Select/create quote for the correct lead. Expected data: Draft <code>quote_versions</code> record exists or will be created.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Add product</code> and select catalog products</strong><span>System loads pack size, MOQ, pricing basis defaults from catalog. Verify each line has product, quantity, unit, price.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Confirm currency, pricing basis, validity, incoterm, freight profile</strong><span>For non-USD: verify FX snapshot exists or manual FX is enabled. Expected: FX context recorded in <code>quote_pricing_snapshots</code>.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Review pricing and enter override reasons for any manual changes</strong><span>Override &gt;15% triggers pending approval. Expected data: Approval flag set on <code>quote_versions</code>.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Click <code>Save draft</code> or <code>Create quote</code></strong><span>Expected data: <code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code> all written.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Resolve any approval/compliance blockers</strong><span>If approval pending: owner/admin approves from Quotes workspace approval queue. If compliance blocker: use Step 4 → Review card inside quote workspace.</span></div></div><div class="step"><div class="step-n">7</div><div class="step-content"><strong>Click <code>Send quote</code></strong><span>Expected data: <code>quotes.sent_at</code> set, <code>quote_versions.status = 'sent'</code>, <code>communications</code> row created. Quote is now LOCKED from direct editing.</span></div></div><div class="step"><div class="step-n">8</div><div class="step-content"><strong>Click <code>Open customer PDF</code> to review output</strong><span>Verify: org logo, correct currency, all line items, incoterm/payment terms, tax ID visible.</span></div></div><div class="step"><div class="step-n">9</div><div class="step-content"><strong>Record buyer outcome: <code>Mark accepted</code> or <code>Mark rejected</code></strong><span>Only after actual buyer response. Expected data: <code>quotes.accepted_version_id</code> set on acceptance.</span></div></div></div><h2 class="sec-h2">Guide 3: Accepted Quote to Order</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>In <code>/quotes</code>, open a sent quote → Click <code>Mark accepted</code></strong><span>Expected data: <code>quotes.accepted_version_id</code> set; contract/order handoff RPCs called; <code>orders</code> record created.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Navigate to <code>/orders</code> → Click <code>Open</code> on the new order</strong><span>Expected UI: Order workspace shows stage strip. Stage 1 = "Quote Approved". Verify <code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Prepare actual lines</code></strong><span>Expected: System seeds <code>order_lines</code> from accepted quote/contract. Gate status set to "prepared". Quote version lines remain UNCHANGED.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Review quote vs actual lines. Save quantity/price/reason for any differences</strong><span>Expected data: <code>order_lines</code> rows reflect actual order. Changes stored with reason fields. <code>quote_version_line_items</code> remain unchanged.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Click <code>Approve actual lines</code></strong><span>Expected data: <code>order_approval_gates</code> entry approved; <code>order_stage_events</code> written; order moves to Internal Approval stage.</span></div></div></div><h2 class="sec-h2">Guide 4: First Document and Send Tracking</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open the order → Stage: "Internal Approval" → Click <code>Prepare document</code></strong><span>System creates order document draft. Type: <code>proforma_invoice</code> (export) or <code>order_confirmation</code> (regional).</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Preview</code> → Review the rendered document</strong><span>Check: product, quantity, price, parties, incoterm, terms, org logo, tax IDs, bank details. Expected: Preview route opens, open count tracked.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Approve</code></strong><span>Expected data: <code>order_documents.status = 'approved'</code>. Gate approved. Non-preview sends now permitted.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Click <code>Send tracked</code> → Select channel (Email/WhatsApp) → Verify recipient</strong><span>Expected data: <code>order_document_sends</code> row created with <code>status = 'link_created'</code>. Recipient defaults from lead contact info.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Use <code>Download / Print PDF</code> if a file is needed</strong><span>Opens browser print dialog. Expected: toolbar hidden from PDF output. Note: This is browser-print, not server-generated PDF binary.</span></div></div></div><div class="callout c-danger"><div class="callout-icon">✕</div><div class="callout-body"><strong>Critical:</strong> <code>link_created</code> ≠ delivered. Do NOT treat a tracked link as confirmed email/WhatsApp delivery. Do NOT send unapproved documents to buyers.</div></div><h2 class="sec-h2">Guide 5: Packing, Freight & Trade Requirements</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open order after first document approval → Click <code>Prepare packing sheet</code></strong><span>Expected data: <code>packing_plans</code> and <code>packing_plan_lines</code> created. Based on actual order lines.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Preview packing sheet</code> → Click <code>Approve packing sheet</code></strong><span>Expected: Packing stage complete. Processing and freight request actions now unlocked.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Prepare freight request</code></strong><span>Confirm: origin, destination, incoterm, packing basis. Expected data: <code>freight_rate_requests</code> created.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Search and attach trade requirements → Click <code>Confirm source</code></strong><span>Expected data: <code>trade_requirements</code> and <code>trade_requirement_sources</code> rows created. No rule match = human review, NOT automatic clearance.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Resolve all blocking trade requirements before dispatch</strong><span>Blocking severity requirements must be reviewed by a human. Dispatch blocked until clear.</span></div></div></div><h2 class="sec-h2">Guide 6: Processing, Dispatch & Closeout</h2><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open <code>Processing</code> stage → Save picked/packed/QC checks</strong><span>Mark: Picked ✓, Packed ✓, QC Passed ✓. Add notes for exceptions. Expected data: <code>order_processing_checks</code> metadata written.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Complete processing only when all three checks pass</strong><span>Expected: Delivery note and logistics unlocked. Processing gate approved.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Approve logistics documents → Click <code>Create shipment draft</code></strong><span>Enter: shipment mode, carrier, forwarder, booking/tracking reference. Expected data: <code>shipments</code> draft record created.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Resolve all blocking trade requirements → Click <code>Approve dispatch</code></strong><span>Expected data: <code>shipments.status = 'dispatched'</code>. Order stage moves to Dispatch/Invoice.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Prepare/Preview/Approve final invoice → Click <code>Approve invoice</code></strong><span>Expected: Final invoice document approved. <strong>Note:</strong> Final invoice must reflect actual dispatched quantities, NOT quoted quantities.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Enter payment reference, reconciliation confirmation, outstanding amount = 0, archive confirmation → Click <code>Generate receipt + close</code></strong><span>Expected data: <code>orders.status = 'completed'</code>. <code>finance_sync_records</code> written. Closeout gate approved.</span></div></div></div>
+<section class="doc-section" id="s-guides">
+  <div class="section-stripe" style="--sa:#059669;--sb:#0D9488"></div>
+  <div class="section-eyebrow">Operator Guides</div>
+  <h1 class="section-title">Operator Guides</h1>
+  <p class="section-lead">Click-by-click procedures for each major workflow. Expected UI state and data outcome at every step.</p>
+  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Click <code>Follow-up</code> in main navigation</strong><span>Expected UI: Lead queue loads from <code>leads</code>. Expected data: All org leads visible per RLS policy.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Open</code> on the lead row</strong><span>Expected UI: Lead Command Center opens with workflow cards (qualification, coverage, follow-up, compliance). Verify lead has buyer/supplier context and is not disqualified.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Open coverage manager</code> if product coverage is missing</strong><span>Select product interest → Save. Expected data: <code>lead_product_interests</code> row created. Quote CTA becomes dominant when gate passes.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Click <code>Plan follow-up</code> if next action is missing</strong><span>Enter follow-up date and note. Expected data: <code>lead_follow_ups</code> row written.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Check compliance card for any quote-send blockers</strong><span>If red: click <code>Compliance check</code> or <code>Full screen</code>. Choose one: <code>Attach evidence</code>, <code>Waive for quote</code> (with reviewer reason), or <code>Defer to dispatch</code>.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Click <code>Create quote</code> or <code>Continue quote</code></strong><span>Verify: lead not disqualified, product interest exists, country/market set, compliance posture acceptable.</span></div></div></div><div class="callout c-warn"><div class="callout-icon">⚠</div><div class="callout-body"><strong>Do NOT:</strong> Treat a free-text product note as saved product coverage. Do NOT bypass compliance by creating a disconnected quote. Do NOT assume WhatsApp/email activity means delivery was confirmed.</div></div><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Click <code>Quote</code> in navigation or open from lead</strong><span>Select/create quote for the correct lead. Expected data: Draft <code>quote_versions</code> record exists or will be created.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Add product</code> and select catalog products</strong><span>System loads pack size, MOQ, pricing basis defaults from catalog. Verify each line has product, quantity, unit, price.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Confirm currency, pricing basis, validity, incoterm, freight profile</strong><span>For non-USD: verify FX snapshot exists or manual FX is enabled. Expected: FX context recorded in <code>quote_pricing_snapshots</code>.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Review pricing and enter override reasons for any manual changes</strong><span>Override &gt;15% triggers pending approval. Expected data: Approval flag set on <code>quote_versions</code>.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Click <code>Save draft</code> or <code>Create quote</code></strong><span>Expected data: <code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code> all written.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Resolve any approval/compliance blockers</strong><span>If approval pending: owner/admin approves from Quotes workspace approval queue. If compliance blocker: use Step 4 → Review card inside quote workspace.</span></div></div><div class="step"><div class="step-n">7</div><div class="step-content"><strong>Click <code>Send quote</code></strong><span>Expected data: <code>quotes.sent_at</code> set, <code>quote_versions.status = 'sent'</code>, <code>communications</code> row created. Quote is now LOCKED from direct editing.</span></div></div><div class="step"><div class="step-n">8</div><div class="step-content"><strong>Click <code>Open customer PDF</code> to review output</strong><span>Verify: org logo, correct currency, all line items, incoterm/payment terms, tax ID visible.</span></div></div><div class="step"><div class="step-n">9</div><div class="step-content"><strong>Record buyer outcome: <code>Mark accepted</code> or <code>Mark rejected</code></strong><span>Only after actual buyer response. Expected data: <code>quotes.accepted_version_id</code> set on acceptance.</span></div></div></div><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>In <code>/quotes</code>, open a sent quote → Click <code>Mark accepted</code></strong><span>Expected data: <code>quotes.accepted_version_id</code> set; contract/order handoff RPCs called; <code>orders</code> record created.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Navigate to <code>/orders</code> → Click <code>Open</code> on the new order</strong><span>Expected UI: Order workspace shows stage strip. Stage 1 = "Quote Approved". Verify <code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Prepare actual lines</code></strong><span>Expected: System seeds <code>order_lines</code> from accepted quote/contract. Gate status set to "prepared". Quote version lines remain UNCHANGED.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Review quote vs actual lines. Save quantity/price/reason for any differences</strong><span>Expected data: <code>order_lines</code> rows reflect actual order. Changes stored with reason fields. <code>quote_version_line_items</code> remain unchanged.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Click <code>Approve actual lines</code></strong><span>Expected data: <code>order_approval_gates</code> entry approved; <code>order_stage_events</code> written; order moves to Internal Approval stage.</span></div></div></div><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open the order → Stage: "Internal Approval" → Click <code>Prepare document</code></strong><span>System creates order document draft. Type: <code>proforma_invoice</code> (export) or <code>order_confirmation</code> (regional).</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Preview</code> → Review the rendered document</strong><span>Check: product, quantity, price, parties, incoterm, terms, org logo, tax IDs, bank details. Expected: Preview route opens, open count tracked.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Approve</code></strong><span>Expected data: <code>order_documents.status = 'approved'</code>. Gate approved. Non-preview sends now permitted.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Click <code>Send tracked</code> → Select channel (Email/WhatsApp) → Verify recipient</strong><span>Expected data: <code>order_document_sends</code> row created with <code>status = 'link_created'</code>. Recipient defaults from lead contact info.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Use <code>Download / Print PDF</code> if a file is needed</strong><span>Opens browser print dialog. Expected: toolbar hidden from PDF output. Note: This is browser-print, not server-generated PDF binary.</span></div></div></div><div class="callout c-danger"><div class="callout-icon">✕</div><div class="callout-body"><strong>Critical:</strong> <code>link_created</code> ≠ delivered. Do NOT treat a tracked link as confirmed email/WhatsApp delivery. Do NOT send unapproved documents to buyers.</div></div><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open order after first document approval → Click <code>Prepare packing sheet</code></strong><span>Expected data: <code>packing_plans</code> and <code>packing_plan_lines</code> created. Based on actual order lines.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Click <code>Preview packing sheet</code> → Click <code>Approve packing sheet</code></strong><span>Expected: Packing stage complete. Processing and freight request actions now unlocked.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Click <code>Prepare freight request</code></strong><span>Confirm: origin, destination, incoterm, packing basis. Expected data: <code>freight_rate_requests</code> created.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Search and attach trade requirements → Click <code>Confirm source</code></strong><span>Expected data: <code>trade_requirements</code> and <code>trade_requirement_sources</code> rows created. No rule match = human review, NOT automatic clearance.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Resolve all blocking trade requirements before dispatch</strong><span>Blocking severity requirements must be reviewed by a human. Dispatch blocked until clear.</span></div></div></div><div class="steps"><div class="step"><div class="step-n">1</div><div class="step-content"><strong>Open <code>Processing</code> stage → Save picked/packed/QC checks</strong><span>Mark: Picked ✓, Packed ✓, QC Passed ✓. Add notes for exceptions. Expected data: <code>order_processing_checks</code> metadata written.</span></div></div><div class="step"><div class="step-n">2</div><div class="step-content"><strong>Complete processing only when all three checks pass</strong><span>Expected: Delivery note and logistics unlocked. Processing gate approved.</span></div></div><div class="step"><div class="step-n">3</div><div class="step-content"><strong>Approve logistics documents → Click <code>Create shipment draft</code></strong><span>Enter: shipment mode, carrier, forwarder, booking/tracking reference. Expected data: <code>shipments</code> draft record created.</span></div></div><div class="step"><div class="step-n">4</div><div class="step-content"><strong>Resolve all blocking trade requirements → Click <code>Approve dispatch</code></strong><span>Expected data: <code>shipments.status = 'dispatched'</code>. Order stage moves to Dispatch/Invoice.</span></div></div><div class="step"><div class="step-n">5</div><div class="step-content"><strong>Prepare/Preview/Approve final invoice → Click <code>Approve invoice</code></strong><span>Expected: Final invoice document approved. <strong>Note:</strong> Final invoice must reflect actual dispatched quantities, NOT quoted quantities.</span></div></div><div class="step"><div class="step-n">6</div><div class="step-content"><strong>Enter payment reference, reconciliation confirmation, outstanding amount = 0, archive confirmation → Click <code>Generate receipt + close</code></strong><span>Expected data: <code>orders.status = 'completed'</code>. <code>finance_sync_records</code> written. Closeout gate approved.</span></div></div></div>
 </section>
-<section class="doc-sec" id="s-guru">
-  <div class="sec-stripe" style="--stripe-a:#0D9488;--stripe-b:#7C3AED"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">AI</span></div>
-  <h1 class="sec-h1">Setu Guru — AI Integration</h1>
-  <p class="sec-lead">Context-aware AI copilot embedded in every authenticated page. Generates reviewable drafts and suggestions. Explicitly prevented from taking autonomous actions.</p>
+<section class="doc-section" id="s-guru">
+  <div class="section-stripe" style="--sa:#0D9488;--sb:#7C3AED"></div>
+  <div class="section-eyebrow">AI Integration</div>
+  <h1 class="section-title">Setu Guru AI</h1>
+  <p class="section-lead">Context-aware AI copilot in every authenticated page. Generates reviewable drafts and suggestions. Explicitly prevented from taking autonomous actions.</p>
   <div class="guru-card">
   <div class="guru-icon">🤖</div>
   <div class="guru-title">What is Setu Guru?</div>
@@ -1584,7 +1871,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">What Guru Can Do</h2>
+
 <div class="guru-grid">
   <div class="guru-feature">
     <div class="guru-feature-icon">📋</div>
@@ -1618,7 +1905,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Where Guru Appears</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Location</th><th>Form</th><th>How to Access</th></tr></thead>
 <tbody>
@@ -1630,7 +1917,7 @@ flowchart LR
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">AI Guardrails — What Guru Cannot Do</h2>
+
 <div class="guru-card" style="padding:20px 24px">
   <div style="display:flex;flex-direction:column;gap:0">
     <div class="guru-rule">
@@ -1656,7 +1943,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Technical Configuration</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Setting</th><th>Default</th><th>Configured Via</th></tr></thead>
 <tbody>
@@ -1670,7 +1957,7 @@ flowchart LR
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Mobile Scan — AI Vision</h2>
+
 <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Separate from Setu Guru, the mobile business card scan uses OpenAI Vision directly at the point of capture.</p>
 <div class="tbl"><table>
 <thead><tr><th>Step</th><th>AI Involvement</th><th>Operator Role</th></tr></thead>
@@ -1690,13 +1977,12 @@ flowchart LR
   </div>
 </div>
 </section>
-<section class="doc-sec" id="s-data">
-  <div class="sec-stripe" style="--stripe-a:#DC2626;--stripe-b:#D97706"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Technical</span></div>
-  <h1 class="sec-h1">Data Model & Security</h1>
-  <p class="sec-lead">Row Level Security enforced at the database layer on all active tables. Multi-tenant isolation is handled by RLS policies, not application-layer filtering.</p>
-  <h2 class="sec-h2">Source of Truth — Key Tables</h2>
-<div class="tbl"><table>
+<section class="doc-section" id="s-data">
+  <div class="section-stripe" style="--sa:#DC2626;--sb:#D97706"></div>
+  <div class="section-eyebrow">Data & Security</div>
+  <h1 class="section-title">Data Model & Security</h1>
+  <p class="section-lead">Row Level Security enforced at the database layer. Multi-tenant isolation handled by RLS policies, not application-layer filtering.</p>
+  <div class="tbl"><table>
 <thead><tr><th>Domain</th><th>Authoritative Table(s)</th><th>Notes</th></tr></thead>
 <tbody>
 <tr><td>Catalog pricing</td><td><code>pricing_rule_sets</code> + <code>product_pricing_rules</code></td><td>Runtime pricing SSOT. <code>product_prices</code> is compatibility-only.</td></tr>
@@ -1709,7 +1995,7 @@ flowchart LR
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Security Architecture</h2>
+
 <div class="card-grid">
   <div class="card">
     <div class="card-title">Row Level Security</div>
@@ -1737,7 +2023,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Permission Groups</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Module</th><th>Permissions</th></tr></thead>
 <tbody>
@@ -1748,13 +2034,12 @@ flowchart LR
 </tbody>
 </table></div>
 </section>
-<section class="doc-sec" id="s-api">
-  <div class="sec-stripe" style="--stripe-a:#1E3A5F;--stripe-b:#2563EB"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Technical</span></div>
-  <h1 class="sec-h1">API & Integrations</h1>
-  <p class="sec-lead">Integrations are queue-backed adapter boundaries. External providers connect to events already recorded in the database.</p>
-  <h2 class="sec-h2">Current Integration Status</h2>
-<div class="tbl"><table>
+<section class="doc-section" id="s-api">
+  <div class="section-stripe" style="--sa:#1E3A5F;--sb:#2563EB"></div>
+  <div class="section-eyebrow">API & Integrations</div>
+  <h1 class="section-title">API & Integrations</h1>
+  <p class="section-lead">Integrations are queue-backed adapter boundaries. External providers connect to events already recorded in the database.</p>
+  <div class="tbl"><table>
 <thead><tr><th>Integration</th><th>Status</th><th>Connection Point</th><th>Notes</th></tr></thead>
 <tbody>
 <tr><td>Email (Mailtrap)</td><td><span class="badge b-green">Live</span></td><td><code>/api/webhooks/mailtrap</code></td><td>Transactional email and webhook delivery status loop. HMAC-SHA256 verification active.</td></tr>
@@ -1766,7 +2051,7 @@ flowchart LR
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Environment Variables — Key Config</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Variable</th><th>Purpose</th><th>Required</th></tr></thead>
 <tbody>
@@ -1782,13 +2067,12 @@ flowchart LR
 </tbody>
 </table></div>
 </section>
-<section class="doc-sec" id="s-mobile">
-  <div class="sec-stripe" style="--stripe-a:#059669;--stripe-b:#0D9488"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Technical</span></div>
-  <h1 class="sec-h1">Mobile</h1>
-  <p class="sec-lead">Additive and isolated from desktop behaviour. Purpose-built for field actions: lead capture, business card scanning, vCard sharing, and trade event intake.</p>
-  <h2 class="sec-h2">Mobile Routes</h2>
-<div class="tbl"><table>
+<section class="doc-section" id="s-mobile">
+  <div class="section-stripe" style="--sa:#059669;--sb:#0D9488"></div>
+  <div class="section-eyebrow">Mobile</div>
+  <h1 class="section-title">Mobile</h1>
+  <p class="section-lead">Additive and isolated from desktop behaviour. Purpose-built for field actions: lead capture, business card scanning, vCard sharing.</p>
+  <div class="tbl"><table>
 <thead><tr><th>Route</th><th>Purpose</th><th>Auth</th></tr></thead>
 <tbody>
 <tr><td><code>/mobile/dashboard</code></td><td>Mobile KPI summary with quick-action buttons</td><td>Required</td></tr>
@@ -1800,7 +2084,7 @@ flowchart LR
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Business Card Scan</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Step</th><th>Detail</th></tr></thead>
 <tbody>
@@ -1811,7 +2095,7 @@ flowchart LR
 </tbody>
 </table></div>
 
-<h2 class="sec-h2">Smart vCard Sharing</h2>
+
 <div class="card-grid">
   <div class="card">
     <div class="card-title">Smart QR (default)</div>
@@ -1831,13 +2115,13 @@ flowchart LR
   </div>
 </div>
 </section>
-<section class="doc-sec" id="s-cheatsheets">
-  <div class="sec-stripe" style="--stripe-a:#374151;--stripe-b:#1E3A5F"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Reference</span></div>
-  <h1 class="sec-h1">Quick Reference</h1>
-  <p class="sec-lead">Condensed workflow rules, CTAs, blockers, and system constraints for each major module.</p>
+<section class="doc-section" id="s-cheatsheets">
+  <div class="section-stripe" style="--sa:#374151;--sb:#1E3A5F"></div>
+  <div class="section-eyebrow">Quick Reference</div>
+  <h1 class="section-title">Quick Reference</h1>
+  <p class="section-lead">Condensed workflow rules, CTAs, blockers, and system constraints for each major module.</p>
   <div class="cheat-card"><div class="cheat-head"><span class="cheat-name">Lead Workflow</span><span class="cheat-goal">Goal: Move captured contact into quote-ready state</span></div><div class="cheat-cols"><div class="cheat-col"><h4>Key CTAs</h4><ul><li>Open</li><li>More → Continue quote</li><li>Open coverage manager</li><li>Compliance check</li><li>Attach evidence</li><li>Waive for quote</li><li>Defer to dispatch</li><li>Create quote</li></ul></div><div class="cheat-col"><h4>Key Blockers</h4><ul><li>No product coverage saved</li><li>Lead is disqualified</li><li>Missing country/market</li><li>Missing follow-up date</li><li>Compliance evidence missing</li><li>Advisory dispatch doc mistaken for quote blocker</li></ul></div></div></div><div class="cheat-card"><div class="cheat-head"><span class="cheat-name">Quote Build & Send</span><span class="cheat-goal">Goal: Create and send a clean commercial offer</span></div><div class="cheat-cols"><div class="cheat-col"><h4>Key CTAs</h4><ul><li>Create quote</li><li>Add product</li><li>Save draft</li><li>Send quote</li><li>Open customer PDF</li><li>Mark accepted</li><li>Mark rejected</li><li>Approve &amp; allow send</li></ul></div><div class="cheat-col"><h4>Key Blockers</h4><ul><li>Missing products/currency</li><li>Approval pending</li><li>Compliance evidence missing</li><li>No FX snapshot</li><li>No current version or line items</li><li>Send blocker flag active</li></ul></div></div></div><div class="cheat-card"><div class="cheat-head"><span class="cheat-name">Quote Versioning</span><span class="cheat-goal">Goal: Keep quote history clean and auditable</span></div><div class="cheat-cols"><div class="cheat-col"><h4>Version States</h4><ul><li>Draft — editable</li><li>Needs approval — blocked</li><li>Sent — LOCKED</li><li>Accepted — LOCKED → order source</li><li>Rejected — LOCKED</li><li>Superseded by vN</li></ul></div><div class="cheat-col"><h4>Key Rules</h4><ul><li>Revise instead of editing locked versions</li><li>current_version_id ≠ accepted_version_id</li><li>Orders start from accepted_version_id only</li><li>Earlier versions stay readable</li></ul></div></div></div><div class="cheat-card"><div class="cheat-head"><span class="cheat-name">Order Execution</span><span class="cheat-goal">Goal: Turn accepted quote into controlled execution</span></div><div class="cheat-cols"><div class="cheat-col"><h4>Key CTAs</h4><ul><li>Open, Prepare actual lines</li><li>Save, Add line, Remove</li><li>Approve actual lines</li><li>Prepare / Preview / Approve document</li><li>Send tracked</li><li>Download / Print PDF</li></ul></div><div class="cheat-col"><h4>Key Blockers</h4><ul><li>No accepted quote lineage</li><li>Actual lines not approved</li><li>Document not approved before external send</li><li>Packing not approved before freight</li><li>Processing incomplete before dispatch</li><li>Blocking trade requirements open</li></ul></div></div></div><div class="cheat-card"><div class="cheat-head"><span class="cheat-name">Document Send Tracking</span><span class="cheat-goal">Goal: Track every document send per recipient with open analytics</span></div><div class="cheat-cols"><div class="cheat-col"><h4>Key CTAs</h4><ul><li>Send tracked (email / WhatsApp)</li><li>Preview</li><li>Download / Print PDF</li><li>Copy link</li><li>View history</li><li>Send again</li></ul></div><div class="cheat-col"><h4>Status Meanings</h4><ul><li>link_created — tracked link generated</li><li>previewed — preview-only link opened</li><li>link_opened — recipient accessed link</li><li>NOT ≡ provider-confirmed delivery</li></ul></div></div></div><div class="cheat-card"><div class="cheat-head"><span class="cheat-name">Finance & Closeout</span><span class="cheat-goal">Goal: Close the order after invoice, payment, reconciliation, and archive</span></div><div class="cheat-cols"><div class="cheat-col"><h4>Key CTAs</h4><ul><li>Prepare final invoice</li><li>Approve invoice</li><li>Send final invoice again</li><li>Generate receipt + close</li><li>Download archive</li></ul></div><div class="cheat-col"><h4>Key Blockers</h4><ul><li>Final invoice not approved</li><li>Payment not received</li><li>Reconciliation incomplete</li><li>Outstanding amount above zero</li><li>Archive not confirmed</li></ul></div></div></div>
-<h2 class="sec-h2">Route Map</h2>
+
 <div class="tbl"><table>
 <thead><tr><th>Route</th><th>Module</th><th>Description</th></tr></thead>
 <tbody>
@@ -1861,17 +2145,17 @@ flowchart LR
 </tbody>
 </table></div>
 </section>
-<section class="doc-sec" id="s-ui">
-  <div class="sec-stripe" style="--stripe-a:#0D9488;--stripe-b:#2563EB"></div>
-  <div class="sec-eyebrow"><span class="sec-tag">Reference</span></div>
-  <h1 class="sec-h1">Live UI Snapshots</h1>
-  <p class="sec-lead">Current state of production screens. All data shown is real production data from www.setuflowcrm.com.</p>
+<section class="doc-section" id="s-ui">
+  <div class="section-stripe" style="--sa:#0D9488;--sb:#2563EB"></div>
+  <div class="section-eyebrow">Live UI Snapshots</div>
+  <h1 class="section-title">Live UI Snapshots</h1>
+  <p class="section-lead">Current state of production screens captured from www.setuflowcrm.com. All data is real production data.</p>
   <div class="callout c-note">
   <div class="callout-icon">📸</div>
   <div class="callout-body">Screenshots should be refreshed periodically using the Claude in Chrome extension. See the screenshot guide in internal documentation for the step-by-step capture procedure and page-by-page checklist.</div>
 </div>
 
-<h2 class="sec-h2">Dashboard</h2>
+
 <div class="ui-grid">
   <div class="ui-card">
     <div class="ui-head">Dashboard <span class="ui-route">/dashboard</span></div>
@@ -1903,7 +2187,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Core Workspaces</h2>
+
 <div class="ui-grid">
   <div class="ui-card">
     <div class="ui-head">Leads <span class="ui-route">/leads</span></div>
@@ -1963,7 +2247,7 @@ flowchart LR
   </div>
 </div>
 
-<h2 class="sec-h2">Products & Admin</h2>
+
 <div class="ui-grid">
   <div class="ui-card">
     <div class="ui-head">Products <span class="ui-route">/products</span></div>
@@ -1994,38 +2278,123 @@ flowchart LR
   </div>
 </div>
 </section>
-  </div>
-<aside class="page-toc">
-  <div class="toc-title">On this page</div>
-  <div class="toc-group">
-    <div class="toc-group-label">Product</div>
-    <a href="#s-overview" class="toc-link">Overview</a>
+  </main>
+  
+<aside class="right-rail">
+  <div class="rail-block">
+    <div class="rail-title">On This Page</div>
+    <a href="#s-overview" class="toc-link">Product Overview</a>
     <a href="#s-arch" class="toc-link">Architecture</a>
-    <a href="#s-modules" class="toc-link">Modules</a>
-  </div>
-  <div class="toc-group">
-    <div class="toc-group-label">Workflows</div>
-    <a href="#s-workflows" class="toc-link">Commercial Flows</a>
+    <a href="#s-modules" class="toc-link">Module Reference</a>
+    <a href="#s-workflows" class="toc-link">Commercial Workflows</a>
     <a href="#s-diagrams" class="toc-link">Flow Diagrams</a>
     <a href="#s-guides" class="toc-link">Operator Guides</a>
-  </div>
-  <div class="toc-group">
-    <div class="toc-group-label">Technical</div>
     <a href="#s-guru" class="toc-link">Setu Guru AI</a>
     <a href="#s-data" class="toc-link">Data & Security</a>
     <a href="#s-api" class="toc-link">API & Integrations</a>
     <a href="#s-mobile" class="toc-link">Mobile</a>
-  </div>
-  <div class="toc-group">
-    <div class="toc-group-label">Reference</div>
     <a href="#s-cheatsheets" class="toc-link">Quick Reference</a>
     <a href="#s-ui" class="toc-link">Live UI Snapshots</a>
   </div>
+  <div class="rail-block">
+    <div class="rail-title">Doc Progress</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-label"><span class="progress-label-text">Overall Progress</span><span class="progress-label-pct">78%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:78%"></div></div>
+    </div>
+    <div class="progress-sub">12 of 12 sections documented · v19</div>
+    <a href="#s-overview" class="view-all-link">View all sections →</a>
+  </div>
+  <div class="rail-block">
+    <div class="rail-title">Recent Changes</div>
+    <div class="change-item">
+      <div class="change-icon-wrap">DOC</div>
+      <div class="change-meta">
+        <div class="change-title">Admin UX Overhaul — Pipelines, Roles, API Keys</div>
+        <div class="change-date">May 24, 2026 · SF-18-078</div>
+      </div>
+    </div>
+    <div class="change-item">
+      <div class="change-icon-wrap">DOC</div>
+      <div class="change-meta">
+        <div class="change-title">Client Management Console added</div>
+        <div class="change-date">May 27, 2026 · SF-19-016</div>
+      </div>
+    </div>
+    <div class="change-item">
+      <div class="change-icon-wrap">DOC</div>
+      <div class="change-meta">
+        <div class="change-title">Quote PDF + Approval Workflow updated</div>
+        <div class="change-date">May 5, 2026 · V17.6</div>
+      </div>
+    </div>
+    <div class="change-item">
+      <div class="change-icon-wrap">DOC</div>
+      <div class="change-meta">
+        <div class="change-title">Catalog pricing engine — EXW→FOB→CIF→DDP</div>
+        <div class="change-date">May 5, 2026 · V17</div>
+      </div>
+    </div>
+    <a href="#s-overview" class="view-all-link">View all changes →</a>
+  </div>
+  <div class="rail-block">
+    <div class="rail-title">Roadmap Highlights</div>
+    <div class="roadmap-item">
+      <div class="rm-dot-wrap"><div class="rm-dot"></div><div class="rm-line"></div></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+          <span class="rm-label">Q2 2026</span>
+          <span class="rm-status rm-in-progress">In Progress</span>
+        </div>
+        <div class="rm-title">AI/Guru Enhancements + Client Entitlements</div>
+      </div>
+    </div>
+    <div class="roadmap-item">
+      <div class="rm-dot-wrap"><div class="rm-dot planned"></div><div class="rm-line"></div></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+          <span class="rm-label">Q3 2026</span>
+          <span class="rm-status rm-planned">Planned</span>
+        </div>
+        <div class="rm-title">Server-side PDF + Finance Adapter</div>
+      </div>
+    </div>
+    <div class="roadmap-item">
+      <div class="rm-dot-wrap"><div class="rm-dot planned"></div></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+          <span class="rm-label">Q3 2026</span>
+          <span class="rm-status rm-planned">Planned</span>
+        </div>
+        <div class="rm-title">Advanced Reporting + Open API</div>
+      </div>
+    </div>
+    <a href="setuflow-roadmap.html" class="view-all-link int-only">View full roadmap →</a>
+  </div>
+  <div class="rail-block">
+    <div class="rail-title">Top Contributors</div>
+    <div class="contributors">
+      <div class="tb-avatar" style="width:28px;height:28px;font-size:11px;border:2px solid #fff">R</div>
+      <div class="tb-avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#7C3AED,#4F46E5);border:2px solid #fff;margin-left:-6px">A</div>
+      <div class="tb-avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#D97706,#B45309);border:2px solid #fff;margin-left:-6px">S</div>
+      <div class="contrib-more">+4</div>
+      <a href="#" class="contrib-link">View all</a>
+    </div>
+  </div>
 </aside>
-</main>
-  
 </div>
 
+<script>
+// Show menu button on mobile
+if(window.innerWidth<900){
+  const btn=document.getElementById('tb-menu-btn');
+  if(btn)btn.style.display='grid';
+}
+window.addEventListener('resize',()=>{
+  const btn=document.getElementById('tb-menu-btn');
+  if(btn)btn.style.display=window.innerWidth<900?'grid':'none';
+});
+</script>
 <script>
 // ── AUTH + SHARE TOKEN ──
 (async()=>{
@@ -2040,32 +2409,37 @@ flowchart LR
       if(!rev.includes(token)&&d.expiry>Date.now()){
         gate.classList.add('hidden');
         const b=document.getElementById('shared-banner');
-        if(b){b.classList.add('visible');const adj=36;document.querySelector('.topbar').style.top=adj+'px';document.querySelector('.nav-sidebar').style.top=(adj+52)+'px';document.querySelector('.page-wrap').style.marginTop=(adj+52)+'px';}
+        if(b){b.classList.add('visible');}
         const se=document.getElementById('shared-expiry');
         if(se){const h=Math.ceil((d.expiry-Date.now())/3600000);se.textContent=h+(h===1?' hr left':' hrs left');}
         document.querySelectorAll('.int-only').forEach(el=>el.style.display='none');
         return;
       }
     }catch(e){}
-    if(err)err.textContent='This link is invalid or expired.';
+    gate.classList.remove('hidden');
+    if(err)err.textContent='This share link is invalid or expired.';
     return;
   }
   try{
     const res=await fetch('/api/internal/auth-check',{credentials:'include'});
-    if(res.status===401||res.status===403||!res.ok){gate.classList.remove('hidden');if(res.status===403&&err)err.textContent='Organisation membership required.';return;}
+    if(res.status===401||res.status===403||!res.ok){
+      gate.classList.remove('hidden');
+      if(res.status===403&&err)err.textContent='Organisation membership required.';
+      return;
+    }
     const auth=await res.json();
     const name=auth.user?.name||'Member';
-    const pill=document.getElementById('tb-user');
-    const nm=document.getElementById('tb-uname');
+    const un=document.getElementById('tb-uname');
     const av=document.getElementById('tb-avatar');
-    if(pill)pill.style.display='flex';
-    if(nm)nm.textContent=name;
+    const up=document.getElementById('tb-user-el');
+    if(un)un.textContent=name;
     if(av)av.textContent=(name.charAt(0)||'R').toUpperCase();
+    if(up)up.style.display='flex';
     gate.classList.add('hidden');
   }catch{gate.classList.remove('hidden');}
 })();
 
-// ── SHARE ──
+// ── SHARE MODAL ──
 function openShare(){document.getElementById('share-modal').classList.add('open');renderToks();}
 function closeShare(){document.getElementById('share-modal').classList.remove('open');}
 document.getElementById('share-modal').addEventListener('click',function(e){if(e.target===this)closeShare();});
@@ -2091,39 +2465,37 @@ function copyLink(){
 }
 function renderToks(){
   const c=document.getElementById('sm-tok-list');if(!c)return;
-  const s=JSON.parse(localStorage.getItem('sf_toks')||'[]');
-  const now=Date.now();
+  const s=JSON.parse(localStorage.getItem('sf_toks')||'[]');const now=Date.now();
   const act=s.filter(t=>t.expiry>now);
   if(!act.length){c.innerHTML='';return;}
-  c.innerHTML='<div class="token-list-title">Active Links</div>'+
-    act.map((t,i)=>`<div class="token-item">
-      <span class="token-name">${t.recipient}</span>
-      <span class="token-exp">Expires ${new Date(t.expiry).toLocaleDateString()}</span>
-      <span class="token-status ts-valid">VALID</span>
-      <button class="token-revoke" onclick="revTok(${s.indexOf(t)})">Revoke</button>
-    </div>`).join('');
+  c.innerHTML='<div class="token-list-title">Active Links</div>'+act.map((t,i)=>
+    `<div class="token-item"><span class="token-name">${t.recipient}</span>
+    <span class="token-exp">Expires ${new Date(t.expiry).toLocaleDateString()}</span>
+    <span class="token-status ts-valid">VALID</span>
+    <button class="token-revoke" onclick="revTok(${s.indexOf(t)})">Revoke</button></div>`
+  ).join('');
 }
 function revTok(i){
   const s=JSON.parse(localStorage.getItem('sf_toks')||'[]');
   const r=JSON.parse(localStorage.getItem('sf_rev')||'[]');
-  if(s[i])r.push(s[i].token);
-  s.splice(i,1);
+  if(s[i])r.push(s[i].token);s.splice(i,1);
   localStorage.setItem('sf_toks',JSON.stringify(s));
-  localStorage.setItem('sf_rev',JSON.stringify(r));
-  renderToks();
+  localStorage.setItem('sf_rev',JSON.stringify(r));renderToks();
 }
-
 // ── MERMAID ──
-mermaid.initialize({startOnLoad:true,theme:'base',themeVariables:{primaryColor:'#EFF6FF',primaryTextColor:'#1E40AF',primaryBorderColor:'#BFDBFE',lineColor:'#3B82F6',secondaryColor:'#F0FDF4',tertiaryColor:'#FFFBEB',fontFamily:'"Inter",system-ui,sans-serif',fontSize:'12px'},flowchart:{htmlLabels:true,curve:'basis'}});
-
-// ── NAV ACTIVE STATE ──
-document.querySelectorAll('.nav-item[href]').forEach(l=>l.addEventListener('click',()=>{if(window.innerWidth<768)document.querySelector('.nav-sidebar').classList.remove('open');}));
-const allSecs=document.querySelectorAll('section[id]');
+mermaid.initialize({startOnLoad:true,theme:'base',themeVariables:{
+  primaryColor:'#EFF6FF',primaryTextColor:'#1E40AF',primaryBorderColor:'#BFDBFE',
+  lineColor:'#3B82F6',secondaryColor:'#F0FDF4',tertiaryColor:'#FFFBEB',
+  fontFamily:'"Inter",system-ui,sans-serif',fontSize:'12px'
+},flowchart:{htmlLabels:true,curve:'basis'}});
+// ── NAV & TOC ──
+document.querySelectorAll('.nav-item[href]').forEach(l=>l.addEventListener('click',()=>{if(window.innerWidth<900)document.querySelector('.left-nav').classList.remove('open');}));
+const allSecs=document.querySelectorAll('section[id],div[id^="s-"]');
 const navLinks=document.querySelectorAll('.nav-item[href]');
 const tocLinks=document.querySelectorAll('.toc-link[href]');
 window.addEventListener('scroll',()=>{
   let cur='';
-  allSecs.forEach(s=>{if(window.scrollY>=s.offsetTop-80)cur=s.id;});
+  allSecs.forEach(s=>{if(window.scrollY>=s.offsetTop-100)cur=s.id;});
   navLinks.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+cur));
   tocLinks.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+cur));
 },{passive:true});
