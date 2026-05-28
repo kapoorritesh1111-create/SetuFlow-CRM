@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
+import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -238,6 +239,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <ServiceWorkerRegistration />
         <LeadsFilterStability />
+        <OfflineStatusBanner />
         {children}
       </body>
     </html>
