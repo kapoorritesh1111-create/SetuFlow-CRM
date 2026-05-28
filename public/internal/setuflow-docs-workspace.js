@@ -10,15 +10,15 @@ const Docs = (() => {
     { id: 'modules',          group: 'System Overview',    icon: '\u25a6',   title: 'Module Reference',     tag: 'System',        summary: 'Routes, workspaces, source tables, and ownership responsibilities for every major module.',                               accent: '#2563eb' },
     { id: 'workflows',        group: 'Business Workflows', icon: '\u21c4',   title: 'Commercial Workflows', tag: 'Workflows',     summary: 'Full commercial lifecycle: Lead \u2192 Follow-up \u2192 Quote \u2192 Approval &amp; Send \u2192 Order Execution \u2192 Closeout.',                     accent: '#0d9488' },
     { id: 'diagrams',         group: 'Business Workflows', icon: '\u25c7',   title: 'Flow Diagrams',        tag: 'Diagrams',      summary: 'Mermaid flowcharts, swimlane diagrams, and slide-ready simplified flow diagrams.',                                        accent: '#7c3aed' },
-    { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Operations',    summary: 'Six click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
-    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, business card scan, smart vCard, live org search \u2014 all with human approval guardrails.',          accent: '#db2777' },
-    { id: 'data-security',    group: 'Security & Data',    icon: '\u2bcf',   title: 'Data & Security',      tag: 'Security',      summary: 'Organization-scoped data, RLS policies, membership, roles, audit trails, and safe integration boundaries.',               accent: '#059669' },
-    { id: 'api-integrations', group: 'Integrations & API', icon: '</>',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
-    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',                              accent: '#14b8a6' },
-    { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
     { id: 'documents',        group: 'Business Workflows', icon: '\u25a4',   title: 'Documents',            tag: 'Documents',     summary: 'Document control desk: file review, expiry posture, version visibility, compliance evidence, and document gate management.', accent: '#7c3aed' },
     { id: 'trade-events',      group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
+    { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Operations',    summary: 'Six click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
+    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, business card scan, smart vCard, live org search \u2014 all with human approval guardrails.',          accent: '#db2777' },
+    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',                              accent: '#14b8a6' },
+    { id: 'data-security',    group: 'Security & Data',    icon: '\u2bcf',   title: 'Data & Security',      tag: 'Security',      summary: 'Organization-scoped data, RLS policies, membership, roles, audit trails, and safe integration boundaries.',               accent: '#059669' },
+    { id: 'api-integrations', group: 'Integrations & API', icon: '&#x27E8;/&#x27E9;',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
     { id: 'integrations',      group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.', accent: '#0d9488' },
+    { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
   ];
 
@@ -63,15 +63,38 @@ const Docs = (() => {
 
   function renderNav() {
     const nav = document.getElementById('topicNav');
-    let html = '', g = '';
+    const PINNED = new Set(['Get Started', 'System Overview']);
+    function collapsed(g) {
+      const s = sessionStorage.getItem('ng_' + g);
+      return s !== null ? s === '1' : !PINNED.has(g);
+    }
+    let html = '', g = '', gid = 0;
     topics.forEach(t => {
-      if (t.group !== g) { g = t.group; html += `<div class="nav-group">${g}</div>`; }
+      if (t.group !== g) {
+        if (g) html += '</div>';
+        g = t.group; gid++;
+        const id = 'ng' + gid, col = collapsed(g);
+        if (PINNED.has(g)) {
+          html += `<div class="nav-group-static">${g}</div><div class="nav-group-items" id="${id}">`;
+        } else {
+          html += `<button class="nav-group-btn" onclick="Docs.toggleNavGroup('${id}','${g}')" aria-expanded="${col ? 'false' : 'true'}"><span>${g}</span><span class="nav-group-chevron">\u203a</span></button><div class="nav-group-items${col ? ' nav-collapsed' : ''}" id="${id}">`;
+        }
+      }
       html += `<button class="nav-link" data-topic="${t.id}" onclick="Docs.openTopic('${t.id}')"><span class="dot">${t.icon}</span>${t.title}</button>`;
     });
+    if (g) html += '</div>';
     nav.innerHTML = html;
     markActive();
   }
 
+  function toggleNavGroup(id, groupName) {
+    const el = document.getElementById(id);
+    const btn = el ? el.previousElementSibling : null;
+    if (!el) return;
+    const col = el.classList.toggle('nav-collapsed');
+    if (btn) btn.setAttribute('aria-expanded', col ? 'false' : 'true');
+    try { sessionStorage.setItem('ng_' + groupName, col ? '1' : '0'); } catch(e){}
+  }
   function markActive() {
     const id = idx();
     document.querySelectorAll('.nav-link').forEach(b => b.classList.toggle('active', b.dataset.topic === id));
@@ -80,6 +103,19 @@ const Docs = (() => {
     document.getElementById('mobileProgress').textContent = (i + 1) + ' / ' + topics.length;
     document.getElementById('mobilePrev').textContent = i === 0 ? 'Overview' : '\u2190 ' + topics[i - 1].title;
     document.getElementById('mobileNext').textContent = i === topics.length - 1 ? 'Start over' : topics[i + 1].title + ' \u2192';
+    // Auto-expand the nav group containing the active topic
+    const activeLink = document.querySelector('.nav-link.active');
+    if (activeLink) {
+      const groupItems = activeLink.closest('.nav-group-items');
+      if (groupItems && groupItems.classList.contains('nav-collapsed')) {
+        groupItems.classList.remove('nav-collapsed');
+        const groupBtn = groupItems.previousElementSibling;
+        if (groupBtn && groupBtn.classList.contains('nav-group-btn')) {
+          groupBtn.setAttribute('aria-expanded', 'true');
+        }
+        try { sessionStorage.setItem('ng_' + (groupBtn?.querySelector('span')?.textContent || ''), '0'); } catch(e){}
+      }
+    }
   }
 
   function openTopic(id) { location.hash = id; document.getElementById('leftNav').classList.remove('open'); }
@@ -249,30 +285,30 @@ const Docs = (() => {
 <tr><td><code>/order-documents/preview/[token]</code></td><td>Document Preview</td><td>Tokenized buyer-facing document preview — tracks open count</td></tr>
 
 
-<tr><td><code>/admin/pipelines</code></td><td>Pipeline Board (SF-18-078E)</td><td>Visual stage pill board per pipeline; CSS :target edit drawers; add/edit stages and pipelines without client components</td></tr>
-<tr><td><code>/admin/security</code></td><td>Permission Matrix (SF-18-078F)</td><td>Role-based permission matrix across 10 permission groups; grouped checkbox drawers; <code>role_permissions</code> table</td></tr>
-<tr><td><code>/admin/integrations</code></td><td>Integration Status (SF-18-078G)</td><td>Live 3-column status grid for Email (Mailtrap), Finance, and Freight adapters; amber warning when email misconfigured</td></tr>
-<tr><td><code>/admin/rate-limits</code></td><td>Rate Limits (SF-18-078H)</td><td>SETU-internal only; 5 monitored endpoints; per-org override drawers; <code>rate_limit_overrides</code> + audit table</td></tr>
-<tr><td><code>/admin/guru-config</code></td><td>Guru Config (SF-18-078I)</td><td>Per-org Guru settings; model selector; 4 toggle checkboxes; daily budget; <code>workspace_guru_settings</code> table</td></tr>
-<tr><td><code>/admin/client-onboarding</code></td><td>Client Onboarding Inbox (SF-18-078J)</td><td>Redesigned: stat bar (Needs Action/Reviewing/Live/Total); StatusPipeline component; plan change detection; sorted server-side</td></tr>
-<tr><td><code>/admin/client-management</code></td><td>Client Management (SF-19-016)</td><td>SETU HQ only; unified client provisioning, plan controls, seats, module access, Guru usage; <code>client_entitlements</code> + <code>client_usage_rollups</code></td></tr>
-<tr><td><code>/admin/api-keys</code></td><td>API Keys & Webhooks (SF-18-078K)</td><td>SETU-internal only; <code>sf_live_</code> prefix keys; SHA-256 hash stored only; raw shown once; revoke/audit trail; webhook stub</td></tr>
+<tr><td><code>/admin/pipelines</code></td><td>Pipeline Board (Visual Pipeline Board)</td><td>Visual stage pill board per pipeline; CSS :target edit drawers; add/edit stages and pipelines without client components</td></tr>
+<tr><td><code>/admin/security</code></td><td>Permission Matrix (Security &amp; Roles)</td><td>Role-based permission matrix across 10 permission groups; grouped checkbox drawers; <code>role_permissions</code> table</td></tr>
+<tr><td><code>/admin/integrations</code></td><td>Integration Status (Integrations Status)</td><td>Live 3-column status grid for Email (Mailtrap), Finance, and Freight adapters; amber warning when email misconfigured</td></tr>
+<tr><td><code>/admin/rate-limits</code></td><td>Rate Limits (Rate Limits)</td><td>SETU-internal only; 5 monitored endpoints; per-org override drawers; <code>rate_limit_overrides</code> + audit table</td></tr>
+<tr><td><code>/admin/guru-config</code></td><td>Guru Config (Guru Config)</td><td>Per-org Guru settings; model selector; 4 toggle checkboxes; daily budget; <code>workspace_guru_settings</code> table</td></tr>
+<tr><td><code>/admin/client-onboarding</code></td><td>Client Onboarding Inbox (Client Onboarding)</td><td>Redesigned: stat bar (Needs Action/Reviewing/Live/Total); StatusPipeline component; plan change detection; sorted server-side</td></tr>
+<tr><td><code>/admin/client-management</code></td><td>Client Management (Client Management)</td><td>SETU HQ only; unified client provisioning, plan controls, seats, module access, Guru usage; <code>client_entitlements</code> + <code>client_usage_rollups</code></td></tr>
+<tr><td><code>/admin/api-keys</code></td><td>API Keys & Webhooks (API Keys &amp; Webhooks)</td><td>SETU-internal only; <code>sf_live_</code> prefix keys; SHA-256 hash stored only; raw shown once; revoke/audit trail; webhook stub</td></tr>
 <tr><td><code>/compliance</code></td><td>Compliance Module</td><td>Evidence attachment, waiver with reason, defer to dispatch; every resolution requires written record; blocks quote send</td></tr>
 <tr><td><code>/approval-send</code></td><td>Approval & Send Gateway</td><td>Quote approval/rejection with required reason; send by Email or WhatsApp handoff; gate must clear before send</td></tr>
 <tr><td><code>/contracts</code></td><td>Contracts</td><td>Contract lineage from accepted quote; binds quote version to order; immutable after acceptance</td></tr>
 <tr><td><code>/reports</code></td><td>Reports</td><td>Lead-to-order funnel, quote performance, document send effectiveness, top markets; filters shared across panels</td></tr>
 <tr><td><code>/tasks</code></td><td>Tasks Module</td><td>Cross-module task queue; linked to leads, quotes, and orders; overdue visibility</td></tr>
 <tr><td><code>/ai-suggestions</code></td><td>AI Suggestions</td><td>Anthropic-powered draft and review suggestions; human approval required; no autonomous external actions</td></tr>
-<tr><td><code>/onboarding</code></td><td>Client Onboarding Wizard (SF-19)</td><td>Extended onboarding wizard; public form + admin provisioning; <code>onboarding_wizard_extended</code> migration</td></tr>
+<tr><td><code>/onboarding</code></td><td>Client Onboarding Wizard </td><td>Extended onboarding wizard; public form + admin provisioning; <code>onboarding_wizard_extended</code> migration</td></tr>
 
 </tbody></table></div>
 <div class="section-block"><h2>SF-19: Module Grants & Client Entitlements</h2>
 <p>Sprint 19 introduced a two-layer client access control system that allows SETU to manage which modules each client org can access, and to enforce seat and usage limits without hardcoded config.</p>
 </div>
 <div class="doc-card-grid">
-  <div class="doc-card border-blue"><div class="doc-card-title">org_module_grants (SF-19)</div><ul><li>Maps each organization to the modules it has access to</li><li>Checked at server action level — no module data leaks to unauthorized orgs</li><li>Admin: <code>/admin/client-management</code> manages grants per client</li><li>Migration: <code>20260527000100_sf19_org_module_grants.sql</code></li></ul></div>
-  <div class="doc-card border-blue"><div class="doc-card-title">client_entitlements (SF-19-016)</div><ul><li>Stores seat limits, feature flags, and plan tier per client org</li><li>Used by DB capability helper (Pass-9-004) for enforcement at DB layer</li><li>SETU admin writes; org member reads own row only</li><li>Migration: <code>20260527020000_sf19_client_entitlements.sql</code></li></ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">Notification Foundation (SF-18)</div><ul><li><code>notifications</code> table added in Sprint 18</li><li>Supports in-app and email notification targets</li><li>RLS: users own their own notifications; INSERT policy for auth members</li><li>Migration: <code>20260523072000_sprint18_notifications_foundation.sql</code></li></ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">org_module_grants </div><ul><li>Maps each organization to the modules it has access to</li><li>Checked at server action level — no module data leaks to unauthorized orgs</li><li>Admin: <code>/admin/client-management</code> manages grants per client</li><li>Migration: <code>20260527000100_sf19_org_module_grants.sql</code></li></ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">client_entitlements (Client Management)</div><ul><li>Stores seat limits, feature flags, and plan tier per client org</li><li>Used by DB capability helper (Pass-9-004) for enforcement at DB layer</li><li>SETU admin writes; org member reads own row only</li><li>Migration: <code>20260527020000_sf19_client_entitlements.sql</code></li></ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">Notification Foundation </div><ul><li><code>notifications</code> table added in Sprint 18</li><li>Supports in-app and email notification targets</li><li>RLS: users own their own notifications; INSERT policy for auth members</li><li>Migration: <code>20260523072000_sprint18_notifications_foundation.sql</code></li></ul></div>
 </div></div><div class="arch-panel"><div class="section-block arch-map-intro"><h2>System Architecture — Visual Overview</h2><p>Five-column product map showing operators, frontend route groups, server actions, Supabase, document engine, and integration boundaries. The layout mirrors the deployed product architecture and keeps known gaps visible.</p></div><div class="arch-svg-card"><img src="docs-assets/diagram-architecture.svg" alt="SETU Flow CRM architecture visual overview"></div><div class="arch-legend"><div><span class="arch-legend-line solid"></span>User action / data flow</div><div><span class="arch-legend-line dashed"></span>Integration boundary / adapter needed</div><div><span class="arch-risk">&#9888;</span> Known risk / gap</div></div></div>`;
     map['modules'] = `<div class="tbl-wrap"><table>
 <thead><tr><th>Module</th><th>Route</th><th>What It Owns</th><th>Ready Signal</th></tr></thead>
@@ -287,57 +323,57 @@ const Docs = (() => {
 <tr><td><b>Mobile</b></td><td><code>/mobile/*</code></td><td>Business card scan, smart vCard, field capture, mobile leads, mobile order view</td><td>Scan creates reviewable lead drafts — operators approve before commercial record created.</td></tr>
 <tr><td><b>Analytics</b></td><td><code>/dashboard/analytics</code></td><td>Lead to Order funnel, quote performance, order execution stats, document send effectiveness, top markets</td><td>Charts render without crashing. Filters shared across panels.</td></tr>
 </tbody></table></div>
-<div class="section-block"><h2>Admin Workspace — SF-18-078 Overhaul</h2>
-<p>All 11 Admin subtasks (SF-18-078A through K) were completed in May 2026. The admin experience is now fully CSS :target pattern — zero new client components, zero useState, pure server render with animated drawers.</p>
+<div class="section-block"><h2>Admin Workspace —  Overhaul</h2>
+<p>All 11 Admin subtasks (A through K) were completed in May 2026. The admin experience is now fully CSS :target pattern — zero new client components, zero useState, pure server render with animated drawers.</p>
 </div>
 <div class="admin-module-grid">
   <div class="admin-module-card" style="--am-color:#2563eb">
     <span class="admin-module-route">/admin/pipelines</span>
-    <h3>Pipelines & Stages (078E)</h3>
+    <h3>Pipelines & Stages</h3>
     <p>Horizontal colored stage pill board per pipeline. Each stage shows color bar, name, sort order, and Won/Lost/Closed chips. CSS :target right-drawer for edit. Add pipeline, Add stage, Edit next step all via drawers.</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">No useState</span><span class="admin-module-tag">Server render</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#059669">
     <span class="admin-module-route">/admin/security</span>
-    <h3>Security & Roles (078F)</h3>
+    <h3>Security & Roles</h3>
     <p>Visual permission matrix: 10 permissions across Leads, Quotes, Orders, Admin modules. Read-only roles table; Edit opens 500px CSS :target drawer with grouped permission checkboxes. <code>updateRolePermissions</code> uses <code>formData.getAll</code>.</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">10 permissions</span><span class="admin-module-tag">Role-gated</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#0d9488">
     <span class="admin-module-route">/admin/integrations</span>
-    <h3>Integrations Live Status (078G)</h3>
+    <h3>Integrations Live Status</h3>
     <p>3-column live status grid. Email status from <code>MAILTRAP_API_KEY</code> env; Finance/Freight from <code>integrations</code> table <code>is_active</code>. Amber warning banner when email misconfigured. SETU-internal admin only.</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">Live status</span><span class="admin-module-tag">Amber warnings</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#7c3aed">
     <span class="admin-module-route">/admin/rate-limits</span>
-    <h3>Rate Limits (078H)</h3>
+    <h3>Rate Limits</h3>
     <p>SETU-internal only. 5 monitored endpoints merged with per-org overrides. Violet highlight for active overrides. CSS :target edit drawer per endpoint. DB: <code>rate_limit_overrides</code> + <code>rate_limit_override_audit</code>.</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">SETU only</span><span class="admin-module-tag">Audit trail</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#db2777">
     <span class="admin-module-route">/admin/guru-config</span>
-    <h3>Setu Guru Config (078I)</h3>
+    <h3>Setu Guru Config</h3>
     <p>All org admins. Monthly usage bar from <code>rate_limit_hits</code>. Model selector, 4 toggle checkboxes, daily budget input. <code>saveGuruConfig</code> upserts <code>workspace_guru_settings</code>. Falls back to env vars if no row.</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">Per-org config</span><span class="admin-module-tag">Usage tracking</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#f97316">
     <span class="admin-module-route">/admin/client-onboarding</span>
-    <h3>Client Onboarding Inbox (078J)</h3>
+    <h3>Client Onboarding Inbox</h3>
     <p>Redesigned: AdminPageHero → Dashboard stat bar (Needs Action, Reviewing, Live, Total) → Request inbox → Collapsible docs. <code>StatusPipeline</code> component shows 4-step flow per request card. Plan change request detection from <code>pricing_rules_notes</code>.</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">Stat pipeline</span><span class="admin-module-tag">Plan change detection</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#0f172a">
     <span class="admin-module-route">/admin/api-keys</span>
-    <h3>API Keys & Webhooks (078K)</h3>
+    <h3>API Keys & Webhooks</h3>
     <p>SETU-internal only. Generates <code>sf_live_</code> prefixed keys with SHA-256 hash storage. Raw key shown once in a green one-time reveal banner. Revoke sets <code>is_active=false</code> and stamps <code>revoked_at</code>. Webhook stub with "Coming soon".</p>
     <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">SHA-256 only</span><span class="admin-module-tag">SETU only</span></div>
   </div>
   <div class="admin-module-card" style="--am-color:#1d4ed8">
     <span class="admin-module-route">/admin/client-management</span>
-    <h3>Client Management Console (SF-19-016)</h3>
+    <h3>Client Management Console (Client Management)</h3>
     <p>SETU HQ only. Unified: client provisioning, plan controls, seat limits, module access, and Guru usage in one internal screen. Source tables: <code>client_entitlements</code>, <code>client_usage_rollups</code>. Replaces scattered admin/modules and admin/client-onboarding redirects.</p>
-    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">HQ only</span><span class="admin-module-tag">SF-19-016</span></div>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">HQ only</span><span class="admin-module-tag">Client Management</span></div>
   </div>
 </div>
 <div class="section-block"><h2>Reports Workspace (/reports)</h2>
@@ -1576,7 +1612,7 @@ flowchart LR
 <tr><td><code>rate_limit_override_audit</code></td><td>Audit log for rate limit changes</td><td>SETU admin read; INSERT all SETU</td></tr>
 <tr><td><code>workspace_guru_settings</code></td><td>Per-org Guru AI configuration and usage</td><td>Org members read/write own row</td></tr>
 <tr><td><code>api_keys</code></td><td>SHA-256 hashed API keys (raw never stored)</td><td>SETU internal only</td></tr>
-<tr><td><code>client_entitlements</code></td><td>Module access and seat limits per client org (SF-19)</td><td>SETU admin write; org member read own</td></tr>
+<tr><td><code>client_entitlements</code></td><td>Module access and seat limits per client org </td><td>SETU admin write; org member read own</td></tr>
 <tr><td><code>client_usage_rollups</code></td><td>Aggregated usage by client for billing/limits</td><td>SETU admin only</td></tr>
 <tr><td><code>docs_workspace_screenshots</code></td><td>Live UI screenshot gallery for docs workspace</td><td>Org members read; auth write</td></tr>
 <tr><td><code>notifications</code></td><td>SF-18 notifications foundation — in-app and email targets</td><td>User owns their notifications</td></tr>
@@ -1653,7 +1689,7 @@ flowchart LR
 <tr><td><b>AI (Guru)</b></td><td>Anthropic API via Setu Guru widget. Used for page help, drafting, org search, HSN research. No autonomous external actions.</td><td><span class="badge badge-purple">Live &mdash; Anthropic</span></td></tr>
 <tr><td><b>Open API / Webhooks</b></td><td>Planned for partner integrations. Public API not yet available.</td><td><span class="badge badge-slate">Planned</span></td></tr>
 </tbody></table></div>
-<div class="section-block"><h2>API Keys & Webhooks (SF-18-078K)</h2>
+<div class="section-block"><h2>API Keys & Webhooks (API Keys &amp; Webhooks)</h2>
 <p>SETU Flow supports programmatic access via API keys for partner integrations. The system is SETU-internal for now — external partner access is controlled by key generation and scoped permissions.</p>
 </div>
 <div class="doc-card-grid">
@@ -1688,7 +1724,7 @@ flowchart LR
     <li>Source table: <code>ai_suggestions</code></li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Notifications System (SF-18)</h2>
+<div class="section-block"><h2>Notifications System </h2>
 <p>The notifications foundation was added in Sprint 18 to support in-app and email notification delivery. The system is additive — existing workflows are not changed. Notifications are user-owned and org-scoped.</p>
 </div>
 <div class="doc-card-grid">
@@ -1902,7 +1938,7 @@ flowchart LR
   </ul></div>
 </div>
 <div class="section-block"><h2>Client Onboarding Wizard (/onboarding)</h2>
-<p>The extended onboarding wizard (SF-19) guides new clients from form submission through workspace provisioning. The flow is: Public form → SETU admin review → Workspace creation → First admin invitation.</p>
+<p>The extended onboarding wizard  guides new clients from form submission through workspace provisioning. The flow is: Public form → SETU admin review → Workspace creation → First admin invitation.</p>
 </div>
 <div class="swimlane" style="margin:16px 0">
   <div class="swimlane-row"><div class="swimlane-label"><small>Step 1</small><b>Public form</b></div><div class="swimlane-steps"><div class="lane-step"><b>/onboarding</b><span>Company details, markets, first admin info</span></div><div class="lane-step system"><b>POST /api/public/client-onboarding</b><span>No login required</span></div><div class="lane-step"><b>/onboarding/received</b><span>Confirmation page</span></div></div></div>
@@ -2098,23 +2134,27 @@ flowchart LR
   <a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a>
 </div>
 <div class="rail-block">
-  <h4>Recent Updates</h4>
+  <button class="rail-toggle-btn" onclick="Docs.toggleRailSection('rail-recent')" aria-expanded="false"><h4>Recent Updates</h4><span class="rail-toggle-chevron">›</span></button>
+  <div class="rail-collapsible-body" id="rail-recent">
   <div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Documentation: 40 areas complete</div><span class="rail-change-meta">May 28, 2026 &middot; v2026.05.28</span></div></div>
-  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">SF-18-078 Admin overhaul — all 8 modules</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
-  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">SF-19 Client Entitlements &amp; Module Grants</div><span class="rail-change-meta">May 27, 2026 &middot; v2026.05.27</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Admin UX overhaul — all modules shipped</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Client Entitlements &amp; Module Grants</div><span class="rail-change-meta">May 27, 2026 &middot; v2026.05.27</span></div></div>
   <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Pass-9 RLS Hardening — all 4 passes</div><span class="rail-change-meta">May 23, 2026 &middot; v2026.05.23</span></div></div>
   <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">API Keys, Rate Limits, Guru Config</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
   <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
 </div>
+</div>
 <div class="rail-block">
-  <h4>Shipped</h4>
-  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">SF-18 Admin UX Overhaul (078A&ndash;K)</div></div></div>
+  <button class="rail-toggle-btn" onclick="Docs.toggleRailSection('rail-shipped')" aria-expanded="false"><h4>Shipped</h4><span class="rail-toggle-chevron">›</span></button>
+  <div class="rail-collapsible-body" id="rail-shipped">
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Admin UX Overhaul — All Modules</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">SF-19 Client Mgmt &amp; Module Grants</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Pass-9 Security Hardening</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Setu Guru In-App Widget</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Finance Integration (Xero / QuickBooks)</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Server-side PDF Generation</div></div></div>
   <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
+</div>
 </div>` : '';
 
     // ── Topic-only: current page sections ──────────────────────
@@ -2438,6 +2478,14 @@ flowchart LR
     return pct;
   }
 
+
+  function toggleRailSection(id) {
+    const body = document.getElementById(id);
+    if (!body) return;
+    const open = body.classList.toggle('open');
+    const btn = body.previousElementSibling;
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
     function render() { const id = idx(); document.body.style.overflow = ''; document.getElementById('leftNav')?.classList.remove('open'); document.getElementById('diagModal')?.classList.remove('dm-open'); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
   function goPrev() { let i = currentIndex(); openTopic(i === 0 ? 'overview' : topics[i - 1].id); }
   function goNext() { let i = currentIndex(); openTopic(i === topics.length - 1 ? 'overview' : topics[i + 1].id); }
@@ -2468,6 +2516,6 @@ flowchart LR
   }
 
   init();
-  return { openTopic, goPrev, goNext, calcDocReadiness, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, nextGuideStep, prevGuideStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
+  return { openTopic, goPrev, goNext, calcDocReadiness, toggleNavGroup, toggleRailSection, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, nextGuideStep, prevGuideStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
 })();
 

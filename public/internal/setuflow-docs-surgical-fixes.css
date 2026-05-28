@@ -389,7 +389,6 @@ h1, h2 { font-family: var(--font-display); font-optical-sizing: auto; }
 /* ══════════════════════════════════════════════════════════════════
    TOPBAR — gradient accent line (matches issue tracker quality)
    ══════════════════════════════════════════════════════════════════ */
-.topbar { position: relative; }
 .topbar::after {
   content: '';
   position: absolute;
@@ -657,3 +656,196 @@ h1, h2 { font-family: var(--font-display); font-optical-sizing: auto; }
   transition: color .12s;
 }
 .rail-section-link:hover { color: #2563eb; }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   RIGHT RAIL — collapsible toggle sections
+   ══════════════════════════════════════════════════════════════════ */
+.rail-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.rail-toggle-btn h4 { margin: 0; pointer-events: none; }
+.rail-toggle-chevron {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.rail-toggle-btn[aria-expanded="true"] .rail-toggle-chevron { transform: rotate(90deg); }
+.rail-collapsible-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .28s ease, opacity .2s;
+  opacity: 0;
+  padding-top: 0;
+}
+.rail-collapsible-body.open { max-height: 700px; opacity: 1; padding-top: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   LEFT NAV — collapsible groups
+   ══════════════════════════════════════════════════════════════════ */
+.nav-group-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin: 20px 2px 8px;
+  color: #52677f;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .11em;
+  font-family: inherit;
+  transition: color .15s;
+}
+.nav-group-btn:hover { color: #8da0b6; }
+.nav-group-btn span:first-child { flex: 1; text-align: left; }
+.nav-group-chevron {
+  font-size: 12px;
+  color: #52677f;
+  transition: transform .2s;
+  margin-left: 4px;
+}
+.nav-group-btn[aria-expanded="false"] .nav-group-chevron { transform: rotate(-90deg); }
+.nav-group-items {
+  overflow: hidden;
+  max-height: 500px;
+  transition: max-height .22s ease, opacity .18s;
+  opacity: 1;
+}
+.nav-group-items.nav-collapsed { max-height: 0; opacity: 0; pointer-events: none; }
+/* Static (always-open) groups use the original nav-group style */
+.nav-group-static {
+  margin: 20px 2px 8px;
+  color: #52677f;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .11em;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TYPOGRAPHY — clean weight scale, reduce heaviness
+   950 → 700, 850 → 600, heavy nav → lighter, body more readable
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Body & global ─────────────────────────────────────────────── */
+body { font-weight: 400; -webkit-font-smoothing: antialiased; }
+
+/* ── Topbar ─────────────────────────────────────────────────────── */
+.top-actions a, .top-actions button { font-weight: 500 !important; font-size: 12.5px; }
+.user-chip { font-weight: 500 !important; }
+.workspace-pill strong { font-weight: 500 !important; }
+.workspace-pill span { font-weight: 600 !important; }
+.brand strong { font-weight: 700 !important; letter-spacing: -.3px; }
+
+/* ── Left nav ───────────────────────────────────────────────────── */
+.nav-group, .nav-group-static, .nav-group-btn span:first-child {
+  font-weight: 600 !important;
+  letter-spacing: .08em;
+  font-size: 10px;
+}
+.nav-link { font-weight: 500 !important; font-size: 13px; letter-spacing: 0; }
+.nav-link.active { font-weight: 600 !important; }
+.nav-title { font-weight: 700 !important; font-size: 13px; }
+
+/* ── Hero heading ───────────────────────────────────────────────── */
+.hero h1 {
+  font-weight: 700 !important;
+  letter-spacing: -1.2px !important;
+  font-size: 36px !important;
+  line-height: 1.08 !important;
+}
+.eyebrow { font-weight: 600 !important; letter-spacing: .1em; }
+.hero p { font-weight: 400; line-height: 1.65; }
+.hero-chips button { font-weight: 500 !important; }
+
+/* ── Section headings ───────────────────────────────────────────── */
+.topic-head h1 { font-weight: 700 !important; letter-spacing: -.8px !important; font-size: 30px !important; }
+.topic-head .tag { font-weight: 600 !important; letter-spacing: .06em; }
+.section-block h2 { font-weight: 700 !important; letter-spacing: -.4px !important; font-size: 20px !important; }
+h3 { font-weight: 600 !important; }
+
+/* ── Overview / metrics ─────────────────────────────────────────── */
+.metric small { font-weight: 600 !important; letter-spacing: .06em; }
+.metric strong { font-weight: 700 !important; font-size: 28px !important; letter-spacing: -.8px; }
+.metric p { font-weight: 500 !important; }
+.overview-title h2 { font-weight: 700 !important; }
+.readiness-card b { font-weight: 700 !important; font-size: 13px !important; }
+.ring span { font-weight: 700 !important; font-size: 22px !important; }
+
+/* ── Quick cards ────────────────────────────────────────────────── */
+.quick-card h3 { font-weight: 600 !important; font-size: 14px !important; }
+.quick-card p { font-weight: 400; }
+.quick-icon { font-weight: 600 !important; }
+
+/* ── Topic cards ────────────────────────────────────────────────── */
+.topic-card h3 { font-weight: 600 !important; font-size: 13.5px !important; }
+.topic-card p { font-weight: 400; line-height: 1.55; }
+.topic-card-footer { font-weight: 600 !important; }
+
+/* ── Tables ─────────────────────────────────────────────────────── */
+th { font-weight: 600 !important; letter-spacing: .04em; }
+td { font-weight: 400; }
+
+/* ── Right rail ─────────────────────────────────────────────────── */
+.rail-block h4 { font-weight: 600 !important; letter-spacing: .09em; }
+.rail-change-text { font-weight: 600 !important; font-size: 12px; }
+.rail-change-meta { font-weight: 400 !important; }
+.rail-section-link { font-weight: 500 !important; }
+.roadmap-item-title { font-weight: 600 !important; font-size: 12px; }
+.roadmap-label { font-weight: 500 !important; font-size: 10px; }
+.next-card b { font-weight: 700 !important; }
+.progress-line span { font-weight: 500 !important; }
+.progress-line b { font-weight: 700 !important; }
+
+/* ── Crumbs, tags ───────────────────────────────────────────────── */
+.crumbs { font-weight: 500 !important; }
+.topic-head .tag { font-size: 10px; }
+
+/* ── Callout, alerts ────────────────────────────────────────────── */
+.callout b, .doc-alert strong { font-weight: 700 !important; }
+.callout, .doc-alert { font-weight: 400; }
+
+/* ── Pro cards, feature cards ───────────────────────────────────── */
+.pro-card b { font-weight: 600 !important; }
+.pro-card p { font-weight: 400; }
+.feature-card h3 { font-weight: 600 !important; }
+
+/* ── Code ───────────────────────────────────────────────────────── */
+code { font-weight: 500 !important; }
+
+/* ── Swimlane / timeline ────────────────────────────────────────── */
+.swimlane-label small { font-weight: 600 !important; }
+.swimlane-label b { font-weight: 600 !important; }
+.timeline-row h3 { font-weight: 600 !important; }
+.lane-step b { font-weight: 600 !important; font-size: 12px; }
+.lane-step span { font-weight: 400; }
+
+/* ── Contributor ────────────────────────────────────────────────── */
+.contrib-solo-info b { font-weight: 600 !important; }
+.contrib-solo-info p { font-weight: 400 !important; }
+.contrib-stat { font-weight: 600 !important; }
+
+/* ── Operator guide ─────────────────────────────────────────────── */
+.og3-step-title-lg { font-weight: 700 !important; font-size: 16px !important; }
+.og3-nav-label { font-weight: 500 !important; font-size: 12px !important; }
+.og3-step-of { font-weight: 600 !important; }
+.og3-card p { font-weight: 400 !important; }
+.og3-card-label { font-weight: 700 !important; font-size: 9px !important; }
+
+/* ── Topbar gradient line (preserved, no position:relative needed) */
+.topbar { position: fixed !important; } /* ensure not overridden */
