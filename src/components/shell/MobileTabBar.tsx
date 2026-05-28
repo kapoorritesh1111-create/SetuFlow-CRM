@@ -3,13 +3,39 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
 import { canonicalMobileNavItems } from '@/lib/navigation/nav-items';
 import { cn } from '@/lib/utils';
 
+const GLOBAL_SCOPE_KEY = 'setuflow-global-workspace-scope';
+const MODE_AWARE_PREFIXES = ['/dashboard', '/leads', '/pipeline', '/quotes', '/orders', '/compliance'];
+
+function normalizeScope(value?: string | null) {
+  if (value === 'buyer' || value === 'buyers') return 'buyers';
+  if (value === 'supplier' || value === 'suppliers') return 'suppliers';
+  return 'all';
+}
+
+function isModeAwarePath(pathname: string) {
+  return MODE_AWARE_PREFIXES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function scopedHref(href: string, currentMode: string | null) {
+  const [path, query = ''] = href.split('?');
+  if (!isModeAwarePath(path)) return href;
+  const urlScope = normalizeScope(currentMode);
+  const savedScope = typeof window === 'undefined' ? 'all' : normalizeScope(window.localStorage.getItem(GLOBAL_SCOPE_KEY));
+  const scope = urlScope !== 'all' ? urlScope : savedScope;
+  if (scope === 'all') return href;
+  const params = new URLSearchParams(query);
+  params.set('mode', scope);
+  return `${path}?${params.toString()}`;
+}
+
 export function MobileTabBar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return (
     <nav
@@ -25,7 +51,7 @@ export function MobileTabBar() {
           return (
             <Link
               key={tab.href}
-              href={tab.href}
+              href={scopedHref(tab.href, searchParams.get('mode'))}
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative flex flex-1 flex-col items-center justify-center gap-[3px] border-none bg-transparent text-[10px] font-bold tracking-[0.02em] transition-colors',
