@@ -1,7 +1,7 @@
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { buildPublicCardSearchParams } from '@/lib/contact-exchange/public-card';
-import type { MobileLead, MobileUserContext } from './role-aware-leads';
+import type { MobileLead, MobileLeadType, MobileUserContext } from './role-aware-leads';
 import { workspaceRolesToMobileRole } from './role-aware-leads';
 
 type LookupRow = Record<string, unknown>;
@@ -13,6 +13,10 @@ function asString(value: unknown, fallback = '') {
 function asNumber(value: unknown, fallback = 0) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function asLeadType(value: unknown): MobileLeadType {
+  return value === 'buyer' || value === 'supplier' ? value : '';
 }
 
 function formatDate(value: unknown) {
@@ -82,6 +86,7 @@ export function buildMobileLeadCardsFromAppData(data: {
       market: marketNames[0] ?? countryName ?? 'Market pending',
       productInterest: productNames[0] ?? 'Product interest pending',
       lastActivity: formatDate(lead.updated_at ?? lead.created_at),
+      leadType: asLeadType(lead.lead_type),
     } satisfies MobileLead;
   });
 }
