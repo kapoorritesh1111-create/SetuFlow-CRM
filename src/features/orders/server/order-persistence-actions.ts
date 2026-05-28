@@ -53,7 +53,7 @@ export async function saveOrderDiscountAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-discount-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);
@@ -76,7 +76,7 @@ export async function saveProcessingCheckAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   const orderLineId = String(formData.get('order_line_id') ?? '').trim();
   if (!quoteId || !orderLineId) redirect(buildRedirect('processing-check-invalid', quoteId));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);
@@ -99,7 +99,7 @@ export async function savePackingOverridesAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('packing-overrides-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);

@@ -226,7 +226,7 @@ export async function searchAndAttachTradeRequirementsAction(formData: FormData)
   const sourceTitle = cleanText(formData.get('source_title')) ?? sourceName;
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -358,7 +358,7 @@ export async function confirmTradeRequirementSourceAction(formData: FormData) {
   const requirementId = String(formData.get('requirement_id') ?? '').trim();
   if (!quoteId || !requirementId) redirect(buildRedirect('order-action-invalid', quoteId));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);

@@ -137,7 +137,7 @@ export function LeadContextRail({
         </summary>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {fullDetails.map((item) => <DetailTile key={item.label} label={item.label} value={item.value} href={(item as any).href} />)}
+          {fullDetails.map((item) => <DetailTile key={item.label} label={item.label} value={item.value} href={item.href} />)}
         </div>
       </details>
     </section>

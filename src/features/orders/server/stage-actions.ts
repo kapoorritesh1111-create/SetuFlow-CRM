@@ -149,7 +149,7 @@ export async function advanceOrderStageAction(formData: FormData): Promise<void>
     const targetStage = clean(formData.get('target_stage')).toLowerCase();
     if (!ORDER_TARGET_STAGES.has(targetStage)) throw new Error('Select a valid order stage action.');
 
-    const db = (await createClient()) as any;
+    const db = await createClient();
     const order = await resolveOrderForStageAction(db, workspace.organization.id, {
       orderId: clean(formData.get('order_id')) || undefined,
       sourceQuoteId: sourceQuoteId ?? undefined,

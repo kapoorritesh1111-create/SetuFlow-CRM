@@ -1725,7 +1725,7 @@ export function QuoteWorkspace({
         return getQuoteTrustContract({
           status: quoteApprovalState.status,
           approvalRequired: quoteApprovalState.approvalRequired,
-          approvalState: quoteApprovalState.approvalState as any,
+          approvalState: quoteApprovalState.approvalState as never,
         });
       })()
     : null;
@@ -1941,7 +1941,7 @@ export function QuoteWorkspace({
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${focusSendDecisionView.badgeClasses}`}>
                           {focusSendDecisionView.label}
                         </span>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteApprovalState) as any)}`}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((focusQuoteApprovalState) as never)}`}>
                           approval {String(focusQuoteApprovalState).replaceAll("_", " ")}
                         </span>
                       </div>
@@ -2848,9 +2848,9 @@ export function QuoteWorkspace({
         {activeQuote && canManageQuotes ? (
           <QuoteEditWizardForm
             key={`${activeQuote!.id}-${activeQuoteStep ?? "product"}`}
-            quote={activeQuote as any}
+            quote={activeQuote as never}
             products={products}
-            quoteVersions={quoteVersions as any}
+            quoteVersions={quoteVersions as never}
             quoteSendGuard={quoteSendGuard}
             approvalThresholdPct={pricingEngineThresholdPercent}
             initialStepId={activeQuoteStep ?? undefined}
@@ -2858,7 +2858,7 @@ export function QuoteWorkspace({
               setActiveQuote(null);
               setActiveQuoteStep(null);
             }}
-            onSaved={upsertQuoteRecord as any}
+            onSaved={upsertQuoteRecord as never}
           />
         ) : activeQuote ? (
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">

@@ -22,16 +22,16 @@ export function buildLeadsPageViewModel({
   searchParams?: { mode?: string | string[] };
 }) {
   const workspaceMode = parseWorkspaceMode(searchParams?.mode);
-  const normalizedQuotes = normalizeQuoteRecords(data.quotes as any);
+  const normalizedQuotes = normalizeQuoteRecords(data.quotes);
   const canManageLeads = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
   const readOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage');
   const isWorkspaceEmpty = (data.leads as Array<unknown>).length === 0;
   const todayState = buildTodayLayerState({
     mode: workspaceMode,
     nowIso: new Date().toISOString(),
-    leads: data.leads as any,
-    activities: data.activities as any,
-    complianceItems: data.complianceItems as any,
+    leads: data.leads as Parameters<typeof buildTodayLayerState>[0]["leads"],
+    activities: data.activities as Parameters<typeof buildTodayLayerState>[0]["activities"],
+    complianceItems: data.complianceItems as Parameters<typeof buildTodayLayerState>[0]["complianceItems"],
   });
 
   return {

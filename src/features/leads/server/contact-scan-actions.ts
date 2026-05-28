@@ -22,7 +22,7 @@ function normalizeSearchValue(value: string) {
 async function fetchLeadCandidates(organizationId: string, draft: ContactPostApplyAssistDraft) {
   if (!hasSupabaseEnv) return [] as ContactAssistLeadCandidate[];
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const selectColumns = 'id, company_name, contact_name, email, phone, phone_secondary, website, next_follow_up_at';
   const candidates = new Map<string, ContactAssistLeadCandidate>();
 

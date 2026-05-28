@@ -45,7 +45,7 @@ export class SupabasePricingRuleRepository implements PricingRuleRepository {
     selectedProductIds?: string[];
     selectedProductVariantIds?: string[];
   }): Promise<PricingRuleRecord[]> {
-    let query = (this.db as any)
+    let query = (this.db)
       .from('product_pricing_rules')
       .select([
         'id',

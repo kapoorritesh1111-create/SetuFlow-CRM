@@ -165,11 +165,11 @@ export function LeadDrawer({
   const [email, setEmail] = useState<string>(lead?.email ?? "");
   const [phone, setPhone] = useState<string>(lead?.phone ?? "");
   const [whatsappNumber, setWhatsappNumber] = useState<string>(
-    (lead as any)?.whatsapp_number ?? "",
+    lead?.whatsapp_number ?? "",
   );
   const phoneManuallyEditedRef = useRef(Boolean(lead?.phone));
   const whatsappManuallyEditedRef = useRef(
-    Boolean((lead as any)?.whatsapp_number),
+    Boolean(lead?.whatsapp_number),
   );
   const [phoneSecondary, setPhoneSecondary] = useState<string>(
     lead?.phone_secondary ?? "",
@@ -352,9 +352,9 @@ export function LeadDrawer({
     setContactName(lead?.contact_name ?? "");
     setEmail(lead?.email ?? "");
     setPhone(lead?.phone ?? "");
-    setWhatsappNumber((lead as any)?.whatsapp_number ?? "");
+    setWhatsappNumber(lead?.whatsapp_number ?? "");
     phoneManuallyEditedRef.current = Boolean(lead?.phone);
-    whatsappManuallyEditedRef.current = Boolean((lead as any)?.whatsapp_number);
+    whatsappManuallyEditedRef.current = Boolean(lead?.whatsapp_number);
     setTradeEventId(lead?.trade_event_id ?? "");
     setPipelineId(lead?.pipeline_id ?? "");
     setStageId(lead?.stage_id ?? "");
@@ -1613,12 +1613,12 @@ export function LeadDrawer({
     >
       <QuoteEditWizardForm
         key={selectedQuoteRow.quote.id}
-        quote={selectedQuoteRow.quote as any}
-        products={catalogProductOptions as any}
+        quote={selectedQuoteRow.quote as never}
+        products={catalogProductOptions as never}
         quoteVersions={
           quoteVersionRowsState.filter(
             (version) => version.quote_id === selectedQuoteRow.quote.id,
-          ) as any
+          ) as never
         }
         onClose={() => setQuoteEditorOpen(false)}
         onSaved={(record) => handleQuoteSaved(record as Quote)}

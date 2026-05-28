@@ -143,7 +143,7 @@ Operator note: ${operatorNote}` : ''}` }; });
       <LeadProfileControls
         leadId={String(lead?.id ?? "")}
         pendingFollowUpId={followUps.find((item: any) => item.status !== 'completed')?.id ?? null}
-        qualificationStatus={qualificationStatus as any}
+        qualificationStatus={qualificationStatus as never}
         qualificationNotes={qualificationNotes}
         linkedProductCount={productInterests.length}
         linkedMarketCount={linkedMarkets.length}

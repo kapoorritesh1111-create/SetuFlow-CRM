@@ -110,9 +110,9 @@ function buildPipelineStageItems(data: LeadProfileData, pricingReadiness: LeadPr
         currentStageOrder: currentStage?.sort_order ?? null,
         targetStageName: stage.name ?? `Stage ${index + 1}`,
         targetStageOrder: stage.sort_order ?? null,
-        targetStageIsClosed: (stage as any).is_closed,
-        targetStageIsWon: (stage as any).is_won,
-        targetStageIsLost: (stage as any).is_lost,
+        targetStageIsClosed: stage.is_closed,
+        targetStageIsWon: stage.is_won,
+        targetStageIsLost: stage.is_lost,
         qualificationStatus: qualification.status,
         hasConfirmedProductInterest: mapping.hasConfirmedProductInterest,
         hasMarketCoverage: mapping.hasMarketCoverage,
@@ -126,9 +126,9 @@ function buildPipelineStageItems(data: LeadProfileData, pricingReadiness: LeadPr
       })
       const hints = getPipelineStageHints(stage.name ?? `Stage ${index + 1}`)
       const currentIndex = currentStage ? stages.findIndex((item) => item.id === currentStage.id) : -1
-      const stageState: PipelineStageItem['state'] = (stage as any).is_won
+      const stageState: PipelineStageItem['state'] = stage.is_won
         ? 'won'
-        : (stage as any).is_lost
+        : stage.is_lost
           ? 'lost'
           : stage.id === data.lead?.stage_id
             ? 'current'
@@ -364,10 +364,10 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
       currentStage: getCurrentStageName(data) ?? undefined,
       sourceLabel: data.lead?.source_label ?? undefined,
       contactName: data.lead?.contact_name ?? null,
-      jobTitle: (data.lead as any)?.job_title ?? null,
+      jobTitle: data.lead?.job_title ?? null,
       email: data.lead?.email ?? null,
       phone: data.lead?.phone ?? null,
-      whatsappNumber: (data.lead as any)?.whatsapp_number ?? null,
+      whatsappNumber: data.lead?.whatsapp_number ?? null,
       country: data.lead?.country ?? null,
     },
     pricingReadiness,

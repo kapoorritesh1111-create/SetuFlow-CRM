@@ -170,7 +170,7 @@ export async function queueFinanceIntegrationEventAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -250,7 +250,7 @@ export async function queueFreightBookingEventAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -368,7 +368,7 @@ export async function retryPendingQueueEventAction(formData: FormData) {
   const queueType = normalizeQueueType(formData.get('queue_type'));
   if (!quoteId || !eventId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -413,7 +413,7 @@ export async function markQueueEventManuallyCompletedAction(formData: FormData) 
   const queueType = normalizeQueueType(formData.get('queue_type'));
   if (!quoteId || !eventId || !manualReference) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);

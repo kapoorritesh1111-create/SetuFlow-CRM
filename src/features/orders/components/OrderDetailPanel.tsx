@@ -116,7 +116,7 @@ export async function OrderDetailPanel({
     try {
       const workspace = await getWorkspaceAccess();
       if (workspace.organization) {
-        const db = (await createClient()) as any;
+        const db = await createClient();
         const { data: byQuote } = await db
           .from('orders')
           .select('id, source_quote_id, legacy_contract_id, order_lifecycle_status, payment_status, fulfillment_status, dispatch_status')

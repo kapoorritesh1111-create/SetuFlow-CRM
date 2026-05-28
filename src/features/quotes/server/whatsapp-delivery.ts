@@ -65,7 +65,7 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
   }
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const [{ data: lead }, { data: quote }, { data: organization }] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, whatsapp_number, phone').eq('organization_id', input.organizationId).eq('id', input.leadId).maybeSingle(),
     db.from('quotes').select('id, quote_number, currency, display_currency, current_version_id, accepted_version_id').eq('organization_id', input.organizationId).eq('id', input.quoteId).maybeSingle(),

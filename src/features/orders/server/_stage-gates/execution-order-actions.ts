@@ -148,7 +148,7 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
   const contractIdFromForm = String(formData.get('contract_id') ?? '').trim() || null;
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
 
@@ -315,7 +315,7 @@ export async function approveActualOrderLinesGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -337,7 +337,7 @@ export async function prepareFirstDocumentGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -356,7 +356,7 @@ export async function previewFirstDocumentGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -374,7 +374,7 @@ export async function approveFirstDocumentGateAction(formData: FormData) {
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);

@@ -2171,12 +2171,12 @@ function QuoteReviewPanel({
       <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${getQuoteStatusBadgeClasses(status as any)}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${getQuoteStatusBadgeClasses(status as never)}`}
           >
             {status.replaceAll("_", " ")}
           </span>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((approvalRequired ? approvalState : "not_required") as any)}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((approvalRequired ? approvalState : "not_required") as never)}`}
           >
             approval{" "}
             {(approvalRequired ? approvalState : "not_required").replaceAll(
@@ -3284,12 +3284,12 @@ function QuoteSummaryCards({
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${getQuoteStatusBadgeClasses(status as any)}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${getQuoteStatusBadgeClasses(status as never)}`}
           >
             {status.replaceAll("_", " ")}
           </span>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((approvalRequired ? approvalState : "not_required") as any)}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalBadgeClasses((approvalRequired ? approvalState : "not_required") as never)}`}
           >
             {(approvalRequired ? approvalState : "not_required").replaceAll(
               "_",

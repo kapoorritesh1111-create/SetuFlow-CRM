@@ -766,7 +766,7 @@ async function ensureDraftQuoteVersion(db: any, quote: { id: string; current_ver
       .select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id')
       .eq('id', quote.current_version_id)
       .maybeSingle();
-    if (error) return { version: null as any, error: error.message };
+    if (error) return { version: null, error: error.message };
     return { version: data ?? null, error: null as string | null };
   }
 
@@ -784,14 +784,14 @@ async function ensureDraftQuoteVersion(db: any, quote: { id: string; current_ver
     .select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id')
     .single();
 
-  if (versionInsertError) return { version: null as any, error: versionInsertError.message };
+  if (versionInsertError) return { version: null, error: versionInsertError.message };
 
   const { error: quoteUpdateError } = await db
     .from('quotes')
     .update({ current_version_id: versionRows.id, updated_at: new Date().toISOString() })
     .eq('id', quote.id);
 
-  if (quoteUpdateError) return { version: null as any, error: quoteUpdateError.message };
+  if (quoteUpdateError) return { version: null, error: quoteUpdateError.message };
 
   return { version: versionRows ?? null, error: null as string | null };
 }
@@ -812,18 +812,18 @@ async function ensureQuoteLineItemsFromLeadCoverage(
     db.from('lead_markets').select('market_id').eq('lead_id', leadId),
   ]);
 
-  if (interestError) return { lineItems: [] as any[], error: interestError.message };
-  if (leadMarketError) return { lineItems: [] as any[], error: leadMarketError.message };
+  if (interestError) return { lineItems: [], error: interestError.message };
+  if (leadMarketError) return { lineItems: [], error: leadMarketError.message };
 
   const productIds = Array.from(new Set((interestRows ?? []).map((row: { product_id?: string | null }) => row.product_id).filter(Boolean))) as string[];
-  if (!productIds.length) return { lineItems: [] as any[], error: null as string | null };
+  if (!productIds.length) return { lineItems: [], error: null as string | null };
 
   const { data: existingRows, error: existingError } = await db
     .from('quote_line_items')
     .select('id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes')
     .eq('quote_id', quote.id);
 
-  if (existingError) return { lineItems: [] as any[], error: existingError.message };
+  if (existingError) return { lineItems: [], error: existingError.message };
 
   const { data: variantRows, error: variantError } = await db
     .from('product_variants')
@@ -834,9 +834,9 @@ async function ensureQuoteLineItemsFromLeadCoverage(
     .order('sort_order', { ascending: true })
     .order('pack_size_value', { ascending: true });
 
-  if (variantError) return { lineItems: [] as any[], error: variantError.message };
+  if (variantError) return { lineItems: [], error: variantError.message };
 
-  const { data: pricingRuleRows, error: pricingRuleError } = await (db as any)
+  const { data: pricingRuleRows, error: pricingRuleError } = await (db)
     .from('product_pricing_rules')
     .select('id, product_id, product_variant_id, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, ex_factory_inr, fob_inr, pricing_type, is_active, is_quoteable, effective_from, effective_to')
     .eq('organization_id', organizationId)
@@ -844,7 +844,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
     .eq('is_quoteable', true)
     .in('product_id', productIds);
 
-  if (pricingRuleError) return { lineItems: [] as any[], error: pricingRuleError.message };
+  if (pricingRuleError) return { lineItems: [], error: pricingRuleError.message };
 
   const workflowBasisRaw = String(quote?.notes ?? '').toLowerCase();
   const preferredBasis = workflowBasisRaw.includes('ex_factory') ? 'ex_factory' : workflowBasisRaw.includes('cif') || workflowBasisRaw.includes('cif') ? 'cif' : 'fob';
@@ -930,7 +930,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
   if (sourceCurrenciesNeedingFx.length) {
     const sourceCurrency = sourceCurrenciesNeedingFx.includes('USD') ? 'USD' : sourceCurrenciesNeedingFx[0];
     const fxResult = await resolveWeeklyQuoteFxLock(db, { sourceCurrency, quoteCurrency, existingNotes: quote.notes ?? null });
-    if (fxResult.error) return { lineItems: [] as any[], error: fxResult.error };
+    if (fxResult.error) return { lineItems: [], error: fxResult.error };
     fxLock = fxResult.fxLock;
   }
   const convertedUnitPrice = (baseline: any) => convertQuoteLinePrice({
@@ -1019,7 +1019,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
     });
 
     const { error: insertError } = await db.from('quote_line_items').insert(inserts);
-    if (insertError) return { lineItems: [] as any[], error: insertError.message };
+    if (insertError) return { lineItems: [], error: insertError.message };
   }
 
   if (currentVersionId) {
@@ -1101,7 +1101,7 @@ async function ensureQuoteLineItemsFromLeadCoverage(
     .select('id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes')
     .eq('quote_id', quote.id);
 
-  if (finalError) return { lineItems: [] as any[], error: finalError.message };
+  if (finalError) return { lineItems: [], error: finalError.message };
 
   return { lineItems: finalRows ?? [], error: null as string | null };
 }
@@ -1117,7 +1117,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
   if (!leadId) return { error: 'Lead ID is required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: leadRecord, error: leadError } = await db
     .from('leads')
@@ -1275,7 +1275,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
   if (!currentUser || !organization) return { error: 'Not authenticated.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const nowIso = new Date().toISOString();
   const currency = normalizeQuoteDisplayCurrency(input.currency ?? opened.quote?.currency ?? 'USD');
   const previewLines = (input.lines ?? [])
@@ -1306,7 +1306,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
       };
     });
 
-  const quoteAdjustmentApprovalRequired = previewLines.some((line) => Boolean((line as any).approvalRequired));
+  const quoteAdjustmentApprovalRequired = previewLines.some((line) => Boolean((line as { approvalRequired?: boolean }).approvalRequired));
   const previewOverrideCount = previewLines.filter((line) => Boolean(line.is_price_overridden)).length;
   const approvalNote = quoteAdjustmentApprovalRequired
     ? `Approval pending: ${previewOverrideCount || 1} quote-only pricing adjustment${previewOverrideCount === 1 ? '' : 's'} exceeded the 15% threshold.`
@@ -1378,7 +1378,7 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
       overridden_at: line.overridden_at,
       line_notes: line.notes ?? 'Saved from Leads quote preview',
       sort_order: index,
-      calculation_meta: { source: 'leads_quote_preview', quote_only_adjustment: Boolean((line as any).is_price_overridden), approval_required: Boolean((line as any).approvalRequired) },
+      calculation_meta: { source: 'leads_quote_preview', quote_only_adjustment: Boolean((line as { is_price_overridden?: boolean }).is_price_overridden), approval_required: Boolean((line as { approvalRequired?: boolean }).approvalRequired) },
       catalog_price_snapshot: {},
     }));
     if (versionLines.length) {
@@ -1472,7 +1472,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
   }
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const requestedMarketIds = uniqueTrimmed(formData.getAll('market_ids').map(String));
   const requestedProductIds = uniqueTrimmed(formData.getAll('product_ids').map(String));
@@ -1960,7 +1960,7 @@ export async function saveLeadDetails(_: ActionState | undefined, formData: Form
   const country = normalizeLeadOptionalText(formData.get('country'));
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: existingLead, error: existingLeadError } = await db
     .from('leads')
@@ -2070,7 +2070,7 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
   const requestedCategoryIds = uniqueTrimmed(formData.getAll('category_ids').map(String));
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const [{ data: leadRow, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
     db
@@ -2311,7 +2311,7 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
   if (!leadId) return { error: 'Select a lead to delete.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const organizationId = organization.id;
   const actorUserId = currentUser.id;
 
@@ -2372,7 +2372,7 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
   if (!leadIds.length) return { error: 'Select at least one lead to delete.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const organizationId = organization.id;
   const actorUserId = currentUser.id;
 
@@ -2435,7 +2435,7 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
   if (!leadId || !scheduledAt) return { error: 'Lead and follow-up date are required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -2529,7 +2529,7 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
   if (!leadIds.length || !scheduledAt) return { error: 'Select at least one lead and a follow-up date.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { nextStepId, error: nextStepError } = await resolveDefaultNextStepId(db, organization.id, String(formData.get('next_step_id') ?? '').trim() || null);
   if (nextStepError) return { error: nextStepError };
@@ -2643,7 +2643,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
   if (!leadIds.length || !stageId) return { error: 'Select at least one lead and a stage.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: stageRow, error: stageError } = await db
     .from('pipeline_stages')
@@ -2746,7 +2746,7 @@ export async function completeLeadFollowUp(_: ActionState | undefined, formData:
   if (!leadId || !followUpId) return { error: 'Lead and follow-up are required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -2818,7 +2818,7 @@ export async function updateLeadQualification(_: ActionState | undefined, formDa
   }
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const [{ data: lead, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
     db.from('leads').select('id, company_name, notes').eq('organization_id', organization.id).eq('id', leadId).maybeSingle(),
@@ -2905,7 +2905,7 @@ export async function addLeadNote(_: ActionState | undefined, formData: FormData
   if (!leadId || !note) return { error: 'Lead and note are required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -3000,7 +3000,7 @@ export async function recordLeadCommunicationSent(input: {
   if (!leadId || !subject || !body) return { error: 'Lead, subject, and message are required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const { data: lead, error: leadError } = await db
     .from('leads')
     .select('id, company_name, email, phone')
@@ -3110,7 +3110,7 @@ export async function recordLeadQuoteApprovalRequest(input: {
   if (!leadId || !note) return { error: 'Lead and approval note are required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const { data: lead, error: leadError } = await db
     .from('leads')
     .select('id, company_name')
@@ -3177,7 +3177,7 @@ export async function approveLeadQuoteAdjustment(input: { leadId: string; quoteI
   if (!leadId || !quoteId) return { error: 'Lead and quote are required for approval.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const nowIso = new Date().toISOString();
 
   const { data: quote, error: quoteError } = await db
@@ -3244,7 +3244,7 @@ export async function rejectLeadQuoteAdjustment(input: { leadId: string; quoteId
   if (!leadId || !quoteId) return { error: 'Lead and quote are required for rejection.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const nowIso = new Date().toISOString();
 
   const { data: quote, error: quoteError } = await db
@@ -3317,7 +3317,7 @@ export async function saveLeadCommunicationDraft(_: ActionState | undefined, for
   if (!leadId || !subject || !body) return { error: 'Lead, subject, and message are required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -3335,14 +3335,14 @@ export async function saveLeadCommunicationDraft(_: ActionState | undefined, for
       lead_id: leadId,
       related_entity: 'lead',
       related_id: leadId,
-      communication_type: communicationType as any,
-      direction: direction as any,
-      channel: channel as any,
+      communication_type: communicationType as never,
+      direction: direction as never,
+      channel: channel as never,
       subject,
       body,
       summary: subject,
       draft_source: 'manual',
-      status: status as any,
+      status: status as never,
       scheduled_at: scheduledAt,
       approved_at: scheduledAt ? new Date().toISOString() : null,
       approved_by: scheduledAt ? currentUser.id : null,

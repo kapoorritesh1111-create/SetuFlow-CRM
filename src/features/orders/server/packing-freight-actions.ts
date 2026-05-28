@@ -128,7 +128,7 @@ export async function preparePackingSheetAction(formData: FormData) {
   const templateKey = String(formData.get('template_key') ?? 'regional_truck').trim() || 'regional_truck';
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -243,7 +243,7 @@ async function updatePackingGate(formData: FormData, status: 'previewed' | 'appr
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -268,7 +268,7 @@ export async function prepareFreightRateRequestAction(formData: FormData) {
   const shipmentMode = String(formData.get('shipment_mode') ?? 'road').trim() || 'road';
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -320,7 +320,7 @@ async function updateFreightGate(formData: FormData, status: 'previewed' | 'appr
   const workspace = await requireOrderWriteAccess();
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
-  const db = (await createClient()) as any;
+  const db = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);

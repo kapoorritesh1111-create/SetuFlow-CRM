@@ -122,10 +122,10 @@ export function LeadCommandHeader({
             </div>
             <div>
               <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', letterSpacing: '-.5px' }}>{lead.companyName}</div>
-              {(lead.contactName || (lead as any).jobTitle) ? (
+              {(lead.contactName || lead.jobTitle) ? (
                 <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '2px' }}>
                   {lead.contactName ?? ''}
-                  {(lead as any).jobTitle ? <span style={{ fontWeight: 400, color: '#64748b' }}>{lead.contactName ? ' · ' : ''}{(lead as any).jobTitle}</span> : null}
+                  {lead.jobTitle ? <span style={{ fontWeight: 400, color: '#64748b' }}>{lead.contactName ? ' · ' : ''}{lead.jobTitle}</span> : null}
                 </div>
               ) : null}
               <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>

@@ -609,7 +609,7 @@ async function fetchQuoteRecord(db: any, organizationId: string, quoteId: string
   if (error) return { error: error.message, record: null };
 
   const record = data ? { ...data, lineItems: Array.isArray(data.quote_line_items) ? data.quote_line_items : [] } : null;
-  if (record && 'quote_line_items' in record) delete (record as any).quote_line_items;
+  if (record && 'quote_line_items' in record) delete (record as { quote_line_items?: unknown }).quote_line_items;
 
   return { error: null, record };
 }
@@ -775,7 +775,7 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   if (validationError) return { error: validationError };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const normalizedResult = await normalizeLineItemsForSave(db, organization.id, lineItems);
   if (normalizedResult.error) return { error: normalizedResult.error };
@@ -949,7 +949,7 @@ export async function logQuoteNegotiationResponse(_: QuoteActionState | undefine
   }
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: existing, error: existingError } = await db
     .from('quotes')
@@ -1029,7 +1029,7 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
   if (outcome !== 'accepted' && outcome !== 'rejected') return { error: 'Quote outcome must be accepted or rejected.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const { data: existing, error: existingError } = await db
     .from('quotes')
     .select('id, lead_id, organization_id, status, notes, current_version_id, sent_version_id, accepted_version_id')
@@ -1170,7 +1170,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   if (!quoteId) return { error: 'Quote ID is required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
 
   const { data: existing, error: existingError } = await db
     .from('quotes')
@@ -1405,7 +1405,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     ? (() => {
         try {
           const p = JSON.parse(existing.notes);
-          return (p as any)?.meta?.approval ?? null;
+          return (p as { meta?: { approval?: unknown } })?.meta?.approval ?? null;
         } catch {
           return null;
         }
@@ -1601,7 +1601,7 @@ export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, fo
   if (!quoteId) return { error: 'Quote ID is required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const db = supabase;
   const { data: existing, error: existingError } = await db
     .from('quotes')
     .select('id, lead_id, organization_id, status, current_version_id, sent_version_id, accepted_version_id')
