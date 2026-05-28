@@ -374,3 +374,240 @@ pre.mermaid > svg { display: block; margin: 0 auto; max-width: 100%; height: aut
 .og4-global-rule { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
 @media (max-width:1100px){ .og4-job-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .og4-guide-layout{grid-template-columns:1fr;} .og4-stepper{border-right:0;border-bottom:1px solid #e2e8f0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));} .og4-main-grid{grid-template-columns:1fr;} }
 @media (max-width:760px){ .og4-job-grid{grid-template-columns:1fr;} .og4-journey{grid-template-columns:repeat(2,1fr);} .og4-stepper{grid-template-columns:1fr;} .og4-step-panel{padding:16px;} .og4-details > div{grid-template-columns:1fr;} .og4-panel-foot{position:sticky;bottom:8px;z-index:2;box-shadow:0 12px 30px rgba(15,23,42,.12);} }
+
+/* ══════════════════════════════════════════════════════════════════
+   PREMIUM TYPOGRAPHY — Plus Jakarta Sans for headings
+   ══════════════════════════════════════════════════════════════════ */
+:root { --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+.hero h1, .topic-head h1, .section-block h2, .overview-title h2,
+h1, h2 { font-family: var(--font-display); font-optical-sizing: auto; }
+.hero h1 { font-size: 40px; letter-spacing: -1.8px; font-weight: 900; line-height: 1.03; }
+.topic-head h1 { font-size: 32px; letter-spacing: -1.2px; font-weight: 900; }
+.section-block h2 { font-size: 22px; letter-spacing: -.6px; font-weight: 800; }
+.metric strong { font-family: var(--font-display); font-feature-settings: 'tnum'; }
+
+/* ══════════════════════════════════════════════════════════════════
+   TOPBAR — gradient accent line (matches issue tracker quality)
+   ══════════════════════════════════════════════════════════════════ */
+.topbar { position: relative; }
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #0d9488, #2563eb, #7c3aed);
+  opacity: .85;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TOPIC CARDS — premium lift + accent stripe
+   ══════════════════════════════════════════════════════════════════ */
+.topic-card {
+  transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s, border-color .18s;
+}
+.topic-card:hover {
+  transform: translateY(-4px) scale(1.008);
+  box-shadow: 0 20px 48px rgba(15,23,42,.13);
+  border-color: #bfdbfe;
+}
+.topic-card::before {
+  transition: opacity .18s;
+  opacity: .9;
+}
+.topic-card:hover::before { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════════
+   QUICK CARDS — refined hover state
+   ══════════════════════════════════════════════════════════════════ */
+.quick-card {
+  transition: transform .16s cubic-bezier(.22,1,.36,1), box-shadow .16s;
+}
+.quick-card:hover { transform: translateY(-3px); }
+
+/* ══════════════════════════════════════════════════════════════════
+   RIGHT RAIL — premium section styling
+   ══════════════════════════════════════════════════════════════════ */
+.rail-block h4 {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: #94a3b8;
+}
+.rail-block { background: #fff; }
+.rail-block:nth-child(odd) { background: #fafbfc; }
+
+/* Live tracker numbers */
+.rail-live-val {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  display: block;
+}
+.rail-live-label {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 700;
+  display: block;
+  margin-top: 2px;
+}
+.rail-live-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 4px 0 10px;
+}
+.rail-live-open .rail-live-val { color: #dc2626; }
+.rail-live-resolved .rail-live-val { color: #059669; }
+.rail-live-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: liveGlow 2s infinite;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+@keyframes liveGlow {
+  0%,100% { opacity:1; box-shadow: 0 0 4px #22c55e; }
+  50%      { opacity:.7; box-shadow: 0 0 10px #22c55e; }
+}
+
+/* Contributor card — solo */
+.contrib-solo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.contrib-solo-av {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d9488, #2563eb);
+  display: grid; place-items: center;
+  color: #fff; font-weight: 950; font-size: 15px;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(13,148,136,.35);
+}
+.contrib-solo-info b { font-size: 13px; color: #0f172a; }
+.contrib-solo-info p { margin: 2px 0 0; color: #64748b; font-size: 11px; }
+.contrib-solo-stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.contrib-stat {
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #334155;
+}
+.contrib-stat span { color: #0d9488; }
+
+/* ══════════════════════════════════════════════════════════════════
+   READINESS RING — improved
+   ══════════════════════════════════════════════════════════════════ */
+.readiness-card b {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: -.2px;
+  display: block;
+  margin-bottom: 6px;
+}
+.ring span {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 950;
+  letter-spacing: -1px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   OVERVIEW METRICS — premium numbers
+   ══════════════════════════════════════════════════════════════════ */
+.metric strong { font-size: 32px; font-weight: 950; letter-spacing: -1.2px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN OVERHAUL DOCS — SF-18-078 components
+   ══════════════════════════════════════════════════════════════════ */
+.admin-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+.admin-module-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  border-top: 3px solid var(--am-color, #2563eb);
+  box-shadow: 0 1px 3px rgba(15,23,42,.04);
+}
+.admin-module-card h3 { font-size: 14px; font-weight: 800; margin: 0 0 6px; color: #0f172a; }
+.admin-module-card p { font-size: 12px; color: #475569; line-height: 1.6; margin: 0 0 10px; }
+.admin-module-route {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 3px 8px;
+  border-radius: 5px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.admin-module-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.admin-module-tag {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.admin-module-tag.done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Permission matrix table */
+.perm-matrix { margin: 16px 0; }
+.perm-matrix-header { display: grid; gap: 1px; background: #e2e8f0; border-radius: 10px 10px 0 0; overflow: hidden; }
+.perm-row { display: flex; }
+.perm-cell { flex: 1; padding: 8px 10px; font-size: 11px; font-weight: 700; border-right: 1px solid #f1f5f9; background: #fff; }
+.perm-cell:first-child { flex: 2; background: #f8fafc; font-weight: 800; color: #334155; }
+.perm-cell.check { color: #059669; text-align: center; }
+.perm-cell.no { color: #dc2626; text-align: center; }
+
+/* ══════════════════════════════════════════════════════════════════
+   DOC PROGRESS INDICATOR — live calculation
+   ══════════════════════════════════════════════════════════════════ */
+.doc-coverage-bar { margin: 8px 0; }
+.doc-coverage-seg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+}
+.doc-coverage-seg-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.doc-coverage-seg-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d9488, #14b8a6);
+  border-radius: 999px;
+}
+.doc-coverage-seg-fill.partial { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.doc-coverage-seg-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }

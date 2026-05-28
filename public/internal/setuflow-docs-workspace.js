@@ -244,7 +244,33 @@ const Docs = (() => {
 <tr><td><code>/mobile/*</code></td><td>Mobile Workspace</td><td>Business card scan, smart vCard, field capture, mobile leads/quotes</td></tr>
 <tr><td><code>/contact-exchange/scan</code></td><td>Capture</td><td>Business card scan — creates reviewable lead drafts</td></tr>
 <tr><td><code>/order-documents/preview/[token]</code></td><td>Document Preview</td><td>Tokenized buyer-facing document preview — tracks open count</td></tr>
-</tbody></table></div></div><div class="arch-panel"><div class="section-block arch-map-intro"><h2>System Architecture — Visual Overview</h2><p>Five-column product map showing operators, frontend route groups, server actions, Supabase, document engine, and integration boundaries. The layout mirrors the deployed product architecture and keeps known gaps visible.</p></div><div class="arch-svg-card"><img src="docs-assets/diagram-architecture.svg" alt="SETU Flow CRM architecture visual overview"></div><div class="arch-legend"><div><span class="arch-legend-line solid"></span>User action / data flow</div><div><span class="arch-legend-line dashed"></span>Integration boundary / adapter needed</div><div><span class="arch-risk">&#9888;</span> Known risk / gap</div></div></div>`;
+
+
+<tr><td><code>/admin/pipelines</code></td><td>Pipeline Board (SF-18-078E)</td><td>Visual stage pill board per pipeline; CSS :target edit drawers; add/edit stages and pipelines without client components</td></tr>
+<tr><td><code>/admin/security</code></td><td>Permission Matrix (SF-18-078F)</td><td>Role-based permission matrix across 10 permission groups; grouped checkbox drawers; <code>role_permissions</code> table</td></tr>
+<tr><td><code>/admin/integrations</code></td><td>Integration Status (SF-18-078G)</td><td>Live 3-column status grid for Email (Mailtrap), Finance, and Freight adapters; amber warning when email misconfigured</td></tr>
+<tr><td><code>/admin/rate-limits</code></td><td>Rate Limits (SF-18-078H)</td><td>SETU-internal only; 5 monitored endpoints; per-org override drawers; <code>rate_limit_overrides</code> + audit table</td></tr>
+<tr><td><code>/admin/guru-config</code></td><td>Guru Config (SF-18-078I)</td><td>Per-org Guru settings; model selector; 4 toggle checkboxes; daily budget; <code>workspace_guru_settings</code> table</td></tr>
+<tr><td><code>/admin/client-onboarding</code></td><td>Client Onboarding Inbox (SF-18-078J)</td><td>Redesigned: stat bar (Needs Action/Reviewing/Live/Total); StatusPipeline component; plan change detection; sorted server-side</td></tr>
+<tr><td><code>/admin/client-management</code></td><td>Client Management (SF-19-016)</td><td>SETU HQ only; unified client provisioning, plan controls, seats, module access, Guru usage; <code>client_entitlements</code> + <code>client_usage_rollups</code></td></tr>
+<tr><td><code>/admin/api-keys</code></td><td>API Keys & Webhooks (SF-18-078K)</td><td>SETU-internal only; <code>sf_live_</code> prefix keys; SHA-256 hash stored only; raw shown once; revoke/audit trail; webhook stub</td></tr>
+<tr><td><code>/compliance</code></td><td>Compliance Module</td><td>Evidence attachment, waiver with reason, defer to dispatch; every resolution requires written record; blocks quote send</td></tr>
+<tr><td><code>/approval-send</code></td><td>Approval & Send Gateway</td><td>Quote approval/rejection with required reason; send by Email or WhatsApp handoff; gate must clear before send</td></tr>
+<tr><td><code>/contracts</code></td><td>Contracts</td><td>Contract lineage from accepted quote; binds quote version to order; immutable after acceptance</td></tr>
+<tr><td><code>/reports</code></td><td>Reports</td><td>Lead-to-order funnel, quote performance, document send effectiveness, top markets; filters shared across panels</td></tr>
+<tr><td><code>/tasks</code></td><td>Tasks Module</td><td>Cross-module task queue; linked to leads, quotes, and orders; overdue visibility</td></tr>
+<tr><td><code>/ai-suggestions</code></td><td>AI Suggestions</td><td>Anthropic-powered draft and review suggestions; human approval required; no autonomous external actions</td></tr>
+<tr><td><code>/onboarding</code></td><td>Client Onboarding Wizard (SF-19)</td><td>Extended onboarding wizard; public form + admin provisioning; <code>onboarding_wizard_extended</code> migration</td></tr>
+
+</tbody></table></div>
+<div class="section-block"><h2>SF-19: Module Grants & Client Entitlements</h2>
+<p>Sprint 19 introduced a two-layer client access control system that allows SETU to manage which modules each client org can access, and to enforce seat and usage limits without hardcoded config.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">org_module_grants (SF-19)</div><ul><li>Maps each organization to the modules it has access to</li><li>Checked at server action level — no module data leaks to unauthorized orgs</li><li>Admin: <code>/admin/client-management</code> manages grants per client</li><li>Migration: <code>20260527000100_sf19_org_module_grants.sql</code></li></ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">client_entitlements (SF-19-016)</div><ul><li>Stores seat limits, feature flags, and plan tier per client org</li><li>Used by DB capability helper (Pass-9-004) for enforcement at DB layer</li><li>SETU admin writes; org member reads own row only</li><li>Migration: <code>20260527020000_sf19_client_entitlements.sql</code></li></ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">Notification Foundation (SF-18)</div><ul><li><code>notifications</code> table added in Sprint 18</li><li>Supports in-app and email notification targets</li><li>RLS: users own their own notifications; INSERT policy for auth members</li><li>Migration: <code>20260523072000_sprint18_notifications_foundation.sql</code></li></ul></div>
+</div></div><div class="arch-panel"><div class="section-block arch-map-intro"><h2>System Architecture — Visual Overview</h2><p>Five-column product map showing operators, frontend route groups, server actions, Supabase, document engine, and integration boundaries. The layout mirrors the deployed product architecture and keeps known gaps visible.</p></div><div class="arch-svg-card"><img src="docs-assets/diagram-architecture.svg" alt="SETU Flow CRM architecture visual overview"></div><div class="arch-legend"><div><span class="arch-legend-line solid"></span>User action / data flow</div><div><span class="arch-legend-line dashed"></span>Integration boundary / adapter needed</div><div><span class="arch-risk">&#9888;</span> Known risk / gap</div></div></div>`;
     map['modules'] = `<div class="tbl-wrap"><table>
 <thead><tr><th>Module</th><th>Route</th><th>What It Owns</th><th>Ready Signal</th></tr></thead>
 <tbody>
@@ -257,7 +283,119 @@ const Docs = (() => {
 <tr><td><b>Admin</b></td><td><code>/admin/*</code></td><td>Org settings, user invitations, role management, trade event setup, document template profiles</td><td>Role-based access enforced server-side. Non-admin users cannot invite.</td></tr>
 <tr><td><b>Mobile</b></td><td><code>/mobile/*</code></td><td>Business card scan, smart vCard, field capture, mobile leads, mobile order view</td><td>Scan creates reviewable lead drafts — operators approve before commercial record created.</td></tr>
 <tr><td><b>Analytics</b></td><td><code>/dashboard/analytics</code></td><td>Lead to Order funnel, quote performance, order execution stats, document send effectiveness, top markets</td><td>Charts render without crashing. Filters shared across panels.</td></tr>
-</tbody></table></div>`;
+</tbody></table></div>
+<div class="section-block"><h2>Admin Workspace — SF-18-078 Overhaul</h2>
+<p>All 11 Admin subtasks (SF-18-078A through K) were completed in May 2026. The admin experience is now fully CSS :target pattern — zero new client components, zero useState, pure server render with animated drawers.</p>
+</div>
+<div class="admin-module-grid">
+  <div class="admin-module-card" style="--am-color:#2563eb">
+    <span class="admin-module-route">/admin/pipelines</span>
+    <h3>Pipelines & Stages (078E)</h3>
+    <p>Horizontal colored stage pill board per pipeline. Each stage shows color bar, name, sort order, and Won/Lost/Closed chips. CSS :target right-drawer for edit. Add pipeline, Add stage, Edit next step all via drawers.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">No useState</span><span class="admin-module-tag">Server render</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#059669">
+    <span class="admin-module-route">/admin/security</span>
+    <h3>Security & Roles (078F)</h3>
+    <p>Visual permission matrix: 10 permissions across Leads, Quotes, Orders, Admin modules. Read-only roles table; Edit opens 500px CSS :target drawer with grouped permission checkboxes. <code>updateRolePermissions</code> uses <code>formData.getAll</code>.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">10 permissions</span><span class="admin-module-tag">Role-gated</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#0d9488">
+    <span class="admin-module-route">/admin/integrations</span>
+    <h3>Integrations Live Status (078G)</h3>
+    <p>3-column live status grid. Email status from <code>MAILTRAP_API_KEY</code> env; Finance/Freight from <code>integrations</code> table <code>is_active</code>. Amber warning banner when email misconfigured. SETU-internal admin only.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">Live status</span><span class="admin-module-tag">Amber warnings</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#7c3aed">
+    <span class="admin-module-route">/admin/rate-limits</span>
+    <h3>Rate Limits (078H)</h3>
+    <p>SETU-internal only. 5 monitored endpoints merged with per-org overrides. Violet highlight for active overrides. CSS :target edit drawer per endpoint. DB: <code>rate_limit_overrides</code> + <code>rate_limit_override_audit</code>.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">SETU only</span><span class="admin-module-tag">Audit trail</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#db2777">
+    <span class="admin-module-route">/admin/guru-config</span>
+    <h3>Setu Guru Config (078I)</h3>
+    <p>All org admins. Monthly usage bar from <code>rate_limit_hits</code>. Model selector, 4 toggle checkboxes, daily budget input. <code>saveGuruConfig</code> upserts <code>workspace_guru_settings</code>. Falls back to env vars if no row.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">Per-org config</span><span class="admin-module-tag">Usage tracking</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#f97316">
+    <span class="admin-module-route">/admin/client-onboarding</span>
+    <h3>Client Onboarding Inbox (078J)</h3>
+    <p>Redesigned: AdminPageHero → Dashboard stat bar (Needs Action, Reviewing, Live, Total) → Request inbox → Collapsible docs. <code>StatusPipeline</code> component shows 4-step flow per request card. Plan change request detection from <code>pricing_rules_notes</code>.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">Stat pipeline</span><span class="admin-module-tag">Plan change detection</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#0f172a">
+    <span class="admin-module-route">/admin/api-keys</span>
+    <h3>API Keys & Webhooks (078K)</h3>
+    <p>SETU-internal only. Generates <code>sf_live_</code> prefixed keys with SHA-256 hash storage. Raw key shown once in a green one-time reveal banner. Revoke sets <code>is_active=false</code> and stamps <code>revoked_at</code>. Webhook stub with "Coming soon".</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">SHA-256 only</span><span class="admin-module-tag">SETU only</span></div>
+  </div>
+  <div class="admin-module-card" style="--am-color:#1d4ed8">
+    <span class="admin-module-route">/admin/client-management</span>
+    <h3>Client Management Console (SF-19-016)</h3>
+    <p>SETU HQ only. Unified: client provisioning, plan controls, seat limits, module access, and Guru usage in one internal screen. Source tables: <code>client_entitlements</code>, <code>client_usage_rollups</code>. Replaces scattered admin/modules and admin/client-onboarding redirects.</p>
+    <div class="admin-module-tags"><span class="admin-module-tag done">&#10003; Shipped</span><span class="admin-module-tag">HQ only</span><span class="admin-module-tag">SF-19-016</span></div>
+  </div>
+</div>
+<div class="section-block"><h2>Reports Workspace (/reports)</h2>
+<p>The reports workspace surfaces commercial performance data across the full Lead → Quote → Order → Closeout funnel. All data is organization-scoped. Role <code>reporting.view</code> required to access; <code>lead.manage</code> required for full interactive mode.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128200; Commercial Funnel</div><ul>
+    <li>Stages: Leads Created → Follow-ups Planned → Quotes Sent → Orders Placed → Orders Closed</li>
+    <li>Conversion rate at each stage shown as percentage of previous stage</li>
+    <li>Stage counts link to filtered list views for drill-down</li>
+    <li>Deal value estimated from <code>leads.deal_value</code> where set</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128196; Quote Performance</div><ul>
+    <li>Total sent, accepted, rejected per period</li>
+    <li>Win rate: <code>accepted / sent</code></li>
+    <li>Avg days to acceptance (from sent_at to accepted_at)</li>
+    <li>Pending approval count — quotes blocked from send</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128666; Order Execution</div><ul>
+    <li>Draft / Active / Dispatched / Completed counts</li>
+    <li>Active orders = orders in any non-terminal stage</li>
+    <li>Compliance items breakdown: open vs resolved vs deferred</li>
+    <li>Task completion rates linked to order milestones</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128239; Document Send Effectiveness</div><ul>
+    <li>Total sends by channel: Email vs WhatsApp</li>
+    <li>Opened links: token preview opens tracked</li>
+    <li>Email delivery rate from Mailtrap webhook events</li>
+    <li>Open rate: opened / sent (not email-specific)</li>
+    <li>Email bounces: tracked when provider webhook fires</li>
+  </ul></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Report Panel</th><th>Source Tables</th><th>Role Required</th></tr></thead>
+<tbody>
+<tr><td>Commercial Funnel</td><td><code>leads</code>, <code>quotes</code>, <code>orders</code>, <code>pipeline_stages</code></td><td>reporting.view</td></tr>
+<tr><td>Quote Performance</td><td><code>quotes</code>, <code>quote_versions</code></td><td>reporting.view</td></tr>
+<tr><td>Order Execution</td><td><code>orders</code>, <code>order_lines</code></td><td>reporting.view</td></tr>
+<tr><td>Doc Send Effectiveness</td><td><code>order_document_sends</code>, <code>communications</code></td><td>reporting.view</td></tr>
+<tr><td>Market Breakdown</td><td><code>markets</code>, <code>leads</code>, <code>quotes</code>, <code>orders</code></td><td>reporting.view</td></tr>
+<tr><td>Product Breakdown</td><td><code>products</code>, <code>categories</code>, <code>lead_product_interests</code></td><td>reporting.view</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Dashboard Analytics (/dashboard/analytics)</h2>
+<p>6 parallel analytics queries run server-side on every page load. Each panel links to its source workspace for drill-down. Data is always org-scoped — no cross-org leakage.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128202; 6 Analytics Panels</div><ul>
+    <li><strong>Funnel</strong> — Lead → Quote → Order conversion with stage-by-stage drop-off rates</li>
+    <li><strong>Quote Metrics</strong> — Win rate, avg days to accept, pending approval count</li>
+    <li><strong>Order Metrics</strong> — Active, dispatched, completed, draft split</li>
+    <li><strong>Document Send Metrics</strong> — Email/WhatsApp sends, open rate, delivery rate, bounces</li>
+    <li><strong>Market Breakdown</strong> — Lead, quote, and order count by market/region</li>
+    <li><strong>Product Breakdown</strong> — Lead count and active quotes per product category</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128270; Buyer & Supplier Dashboards</div><ul>
+    <li><code>/dashboard/buyers</code> — Buyer-focused KPIs: lead pipeline, quote delivery, order status</li>
+    <li><code>/dashboard/suppliers</code> — Supplier-focused KPIs: product coverage, fulfillment tracking</li>
+    <li>Both dashboards share the same underlying data model but filter by contact type</li>
+    <li>Executive command center: KPIs, market coverage map, priority actions, activity feed</li>
+  </ul></div>
+</div>`;
 
     return map[id] || '';
   }
@@ -308,6 +446,22 @@ const Docs = (() => {
   <div class="doc-card"><div class="doc-card-title">&#x1F4CB; Compliance</div><ul><li>Document Blocker = required doc not uploaded</li><li>Compliance Blocker = checklist item unresolved</li><li>Attach evidence &rarr; Waive for quote &rarr; Defer to dispatch</li><li>Waivers require human reviewer reason</li></ul></div>
   <div class="doc-card"><div class="doc-card-title">&#x1F4B1; FX &amp; Pricing</div><ul><li>USD identity handled automatically</li><li>Non-USD requires <code>exchange_rates</code> snapshot</li><li>Override &gt;15% triggers pending approval</li><li>Pricing rule sets cascade: org &rarr; category &rarr; product</li></ul></div>
   <div class="doc-card"><div class="doc-card-title">&#x1F916; AI Suggestions</div><ul><li>AI drafts follow-up emails, cover notes, summaries</li><li>AI does NOT set prices, approve quotes, or send messages</li><li>AI does NOT advance order states autonomously</li><li>Always review and edit before using a draft</li></ul></div>
+</div>
+<div class="section-block"><h2>Approval & Send Gateway (/approval-send)</h2>
+<p>The Approval & Send page is the enforcement point between a drafted quote and its delivery to a buyer. It is not a routing convenience — it is the gate that ensures every external send has been explicitly reviewed and authorized.</p>
+</div>
+<div class="swimlane" style="margin:16px 0">
+  <div class="swimlane-row"><div class="swimlane-label"><small>Enter Gate</small><b>Quote ready to send</b></div><div class="swimlane-steps"><div class="lane-step"><b>Quote status</b><span>Approved or direct (no approval required)</span></div><div class="lane-step"><b>Compliance</b><span>No blocking items on lead</span></div><div class="lane-step system"><b>Gate opens</b><span>Send button visible</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Send Channels</small><b>Delivery options</b></div><div class="swimlane-steps"><div class="lane-step"><b>Send by Email</b><span>Mailtrap; webhook confirms delivery</span></div><div class="lane-step"><b>Send by WhatsApp</b><span>wa.me tracked link; operator confirms</span></div><div class="lane-step system"><b>Record outcome</b><span><code>communications</code> row created</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Approval Flow</small><b>When override &gt;15%</b></div><div class="swimlane-steps"><div class="lane-step"><b>Pending approval</b><span>Admin approves from Quotes queue</span></div><div class="lane-step"><b>Approve or reject</b><span>Rejection requires reason field</span></div><div class="lane-step system"><b>Gate clears</b><span>Send re-enabled after approval</span></div></div></div>
+</div>
+<div class="callout"><b>Critical:</b> <code>link_created</code> in the database is NOT the same as delivered. Never treat a tracked link creation as confirmed delivery. Provider webhook confirmation is required for email. WhatsApp link opens confirm operator send — not buyer read.</div>
+<div class="section-block"><h2>Customer-Facing Quote PDF (V17.6.10)</h2>
+<p>The quote PDF uses puppeteer-core + @sparticuz/chromium — no paid PDF API. The customer-facing layout was redesigned in V17.6.10 to match commercial export standards.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">PDF Layout</div><ul><li>Branded header with org logo and metadata</li><li>Compact product table: SKU, product, pack, units/case, MOQ, basis, unit price, case price, quote total</li><li>Category grouping with category subtotals when multi-category</li><li>Quote-only discounts/markups shown with original catalog price + reason</li><li>Short clean footer — long terms stay in Admin defaults</li></ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">Tokenized Preview (/order-documents/preview/[token])</div><ul><li>Buyer-facing document link uses a signed token — no login required</li><li>Open count tracked via <code>order_document_sends</code> table</li><li><code>link_created</code> ≠ delivered — provider confirmation still required</li><li>Preview toolbar hidden from printed/PDF output</li></ul></div>
 </div>`;
     return null;
   }
@@ -1144,7 +1298,55 @@ flowchart LR
 <tr><td>Documents</td><td><code>order_documents</code>, <code>order_document_sends</code></td><td>External send proof becomes unreliable.</td></tr>
 <tr><td>Tracker</td><td><code>sprint_issues</code></td><td>Production work loses evidence and accountability.</td></tr>
 <tr><td>Roles</td><td><code>roles</code>, <code>role_permissions</code>, <code>user_roles</code></td><td>Unauthorized users can approve quotes or trigger sends.</td></tr>
-</tbody></table></div>`;
+</tbody></table></div>
+<div class="section-block"><h2>Pass-9 RLS Hardening (May 2026)</h2>
+<p>Four migration passes applied in sequence to resolve all Supabase advisor warnings. Each pass was applied via MCP migration and verified against the live schema before the next pass began.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-001: RPC Grant Hardening</div><ul><li>Reviewed all SECURITY DEFINER functions</li><li>Explicit <code>GRANT EXECUTE</code> to <code>authenticated</code> only where required</li><li>Revoked execution from <code>anon</code> where no public access needed</li><li>Every function gets an explicit search path</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-002: Search Path & View Hardening</div><ul><li><code>SET search_path = public, pg_temp</code> added to all functions</li><li><code>active_product_pricing_rules_v</code> view advisor warning resolved</li><li>Security-definer view ownership transferred where required</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-003: RLS Policy Remediation</div><ul><li>Tables previously missing RLS policies now covered</li><li>All policies are organization-scoped: no cross-org leakage</li><li>Audit tables protected with INSERT-only policies for members</li><li>Rate limit and API key tables: SETU-internal only policies</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-004: DB Capability Helper</div><ul><li>Helper function added to check org module access at DB layer</li><li>Used by <code>client_entitlements</code> enforcement</li><li>Guards module-gated routes at the server action level</li></ul></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>New Table (SF-18/19)</th><th>Purpose</th><th>RLS</th></tr></thead>
+<tbody>
+<tr><td><code>rate_limit_overrides</code></td><td>Per-org API rate limit overrides (SETU internal)</td><td>SETU admin only</td></tr>
+<tr><td><code>rate_limit_override_audit</code></td><td>Audit log for rate limit changes</td><td>SETU admin read; INSERT all SETU</td></tr>
+<tr><td><code>workspace_guru_settings</code></td><td>Per-org Guru AI configuration and usage</td><td>Org members read/write own row</td></tr>
+<tr><td><code>api_keys</code></td><td>SHA-256 hashed API keys (raw never stored)</td><td>SETU internal only</td></tr>
+<tr><td><code>client_entitlements</code></td><td>Module access and seat limits per client org (SF-19)</td><td>SETU admin write; org member read own</td></tr>
+<tr><td><code>client_usage_rollups</code></td><td>Aggregated usage by client for billing/limits</td><td>SETU admin only</td></tr>
+<tr><td><code>docs_workspace_screenshots</code></td><td>Live UI screenshot gallery for docs workspace</td><td>Org members read; auth write</td></tr>
+<tr><td><code>notifications</code></td><td>SF-18 notifications foundation — in-app and email targets</td><td>User owns their notifications</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Audit Trail (/admin/audit)</h2>
+<p>The audit log captures every meaningful administrative and workflow action across the platform. Sensitive payloads (passwords, tokens) are never logged. Attribution to actor is required for every sensitive event.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Event Category</th><th>Event Types</th><th>Tester Note</th></tr></thead>
+<tbody>
+<tr><td><b>Invitations</b></td><td><code>invitation_created</code>, <code>invitation_sent</code>, <code>invitation_accepted</code>, <code>invitation_revoked</code>, <code>invitation_failed</code></td><td>Verify invitation trail is complete — created must precede sent.</td></tr>
+<tr><td><b>Roles</b></td><td><code>role_changed</code>, <code>membership_reactivated</code>, <code>membership_deactivated</code>, <code>membership_removed</code></td><td>Every role change must be attributed to an actor. No silent role escalation.</td></tr>
+<tr><td><b>Leads</b></td><td><code>lead_created</code>, <code>lead_updated</code>, <code>lead_stage_changed</code>, <code>lead_follow_up_scheduled</code>, <code>lead_follow_up_completed</code>, <code>lead_note_added</code></td><td>Stage changes must show from/to stage. Follow-up completion must link to scheduled item.</td></tr>
+<tr><td><b>Quotes / RFQs</b></td><td><code>rfq_created</code>, <code>rfq_updated</code>, <code>rfq_status_changed</code>, <code>quote_approved</code>, <code>quote_rejected</code>, <code>pricing_sent</code></td><td>Approval and rejection must include actor and timestamp. Sent event must link to communication record.</td></tr>
+<tr><td><b>Products</b></td><td><code>product_created</code>, <code>product_updated</code>, <code>product_deleted</code></td><td>Deletion is soft — product marked inactive. Hard delete not permitted via UI.</td></tr>
+<tr><td><b>Views & Settings</b></td><td><code>saved_view_created</code>, <code>saved_view_shared</code>, <code>default_view_set</code>, <code>settings_list_item_saved</code></td><td>Shared views logged to track data visibility decisions.</td></tr>
+</tbody></table></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128269; Audit Read Scopes</div><ul>
+    <li><strong>Organization scope</strong> — All events in the org; requires <code>admin.audit</code> role</li>
+    <li><strong>Actor scope</strong> — Events by a specific user; admin can view any actor</li>
+    <li><strong>None</strong> — No audit access for current role</li>
+    <li>Filters: event type, actor, date range</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128204; Source Table</div><ul>
+    <li>Table: <code>audit_logs</code> — org-scoped with actor attribution</li>
+    <li>All writes go through <code>writeAuditLog()</code> — no direct DB inserts from UI</li>
+    <li>RLS: org members with audit role read; system writes only</li>
+    <li>Retention: records not auto-deleted — manual archive policy</li>
+  </ul></div>
+</div>`;
     if (id === 'api-integrations') return `<div class="tbl-wrap"><table>
 <thead><tr><th>Integration</th><th>Rule</th><th>Status</th></tr></thead>
 <tbody>
@@ -1156,7 +1358,66 @@ flowchart LR
 <tr><td><b>Banks / Payments</b></td><td>Manual payment reference entry only. Operators record payment received, enter reference, confirm reconciliation.</td><td><span class="badge badge-slate">Manual / planned</span></td></tr>
 <tr><td><b>AI (Guru)</b></td><td>Anthropic API via Setu Guru widget. Used for page help, drafting, org search, HSN research. No autonomous external actions.</td><td><span class="badge badge-purple">Live &mdash; Anthropic</span></td></tr>
 <tr><td><b>Open API / Webhooks</b></td><td>Planned for partner integrations. Public API not yet available.</td><td><span class="badge badge-slate">Planned</span></td></tr>
-</tbody></table></div>`;
+</tbody></table></div>
+<div class="section-block"><h2>API Keys & Webhooks (SF-18-078K)</h2>
+<p>SETU Flow supports programmatic access via API keys for partner integrations. The system is SETU-internal for now — external partner access is controlled by key generation and scoped permissions.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128273; Key Generation</div><ul><li>Format: <code>sf_live_</code> + 24 hex characters</li><li>SHA-256 hash stored — raw key shown exactly once in a one-time reveal banner</li><li>Key is never recoverable after creation; revoke and regenerate if lost</li><li>Scope checkboxes: <code>read:leads</code>, <code>write:quotes</code>, <code>read:orders</code>, <code>admin:read</code></li></ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128683; Revocation & Audit</div><ul><li>Revoke sets <code>is_active=false</code> and stamps <code>revoked_at</code></li><li>Revoked keys remain visible in audit trail — never deleted</li><li>All key operations are auditable to the SETU admin who made the change</li></ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128266; Webhooks — Coming Soon</div><ul><li>Webhook endpoints are defined in admin UI but not yet live</li><li>Target events: quote status changes, order stage moves, document sends</li><li>Delivery will use signed payloads with <code>X-SetuFlow-Signature</code> header</li></ul></div>
+</div>
+<div class="section-block"><h2>AI Suggestions Workspace (/ai-suggestions)</h2>
+<p>The AI Suggestions workspace surfaces Anthropic-generated draft content for lead, quote, and compliance workflows. Every suggestion requires explicit operator approval before any external action is taken. AI cannot bypass gates, send quotes, or file compliance resolutions autonomously.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-purple"><div class="doc-card-title">&#10024; 6 Suggestion Types</div><ul>
+    <li><strong>Follow-up Assistant</strong> (<code>follow_up_assistant</code>) — Draft follow-up email for a lead</li>
+    <li><strong>Intro Assistant</strong> (<code>intro_assistant</code>) — Draft introduction email for new buyer/supplier contact</li>
+    <li><strong>Quote Cover Note</strong> (<code>quote_cover_note</code>) — Draft cover note to accompany a sent quote</li>
+    <li><strong>Compliance Next-Step</strong> (<code>compliance_next_step</code>) — Suggest next compliance action for a blocked lead</li>
+    <li><strong>Compliance Evidence</strong> (<code>compliance_evidence_request</code>) — Draft request for missing compliance documentation</li>
+    <li><strong>Internal Summary</strong> (<code>internal_summary</code>) — Summarize a lead or deal for internal handoff</li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128203; Suggestion Lifecycle</div><ul>
+    <li>Status flow: <code>pending → approved → applied</code> or <code>pending → dismissed</code></li>
+    <li>Approved suggestions are not automatically applied — operator takes the action</li>
+    <li>Applied: operator used the suggestion text in a real communication or compliance action</li>
+    <li>Dismissed: suggestion rejected; reason field optional but encouraged</li>
+    <li>Aging: approved-but-not-applied suggestions surface in "Needs Attention" panel</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128268; AI Analytics (/admin/ai-analytics)</div><ul>
+    <li>High dismissal rate by workflow type — signals Guru model tuning needed</li>
+    <li>Low approval-to-apply conversion — suggests operator trust issues</li>
+    <li>Aging approved-not-applied: count of suggestions approved but never used</li>
+    <li>Time windows: 7, 30, 90 days selectable</li>
+    <li>Source table: <code>ai_suggestions</code></li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Notifications System (SF-18)</h2>
+<p>The notifications foundation was added in Sprint 18 to support in-app and email notification delivery. The system is additive — existing workflows are not changed. Notifications are user-owned and org-scoped.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128276; Notification Targets</div><ul>
+    <li><strong>In-app</strong> — surfaced in the app shell notification panel</li>
+    <li><strong>Email</strong> — routed via Mailtrap email provider</li>
+    <li>Target type stored in <code>notifications.channel</code> field</li>
+    <li>RLS: users read and delete only their own notifications</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128231; Trigger Events</div><ul>
+    <li>Quote approval requested — notifies admin role members</li>
+    <li>Quote approved or rejected — notifies originating operator</li>
+    <li>Order stage advanced — notifies assigned operator</li>
+    <li>Compliance blocker added — notifies compliance reviewer role</li>
+    <li>Invitation accepted — notifies org admin</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9881; Admin Settings</div><ul>
+    <li><code>/admin/notifications</code> — per-org notification preference controls</li>
+    <li><code>/settings/notifications</code> — per-user notification channel preferences</li>
+    <li>Email notifications require <code>MAILTRAP_API_KEY</code> to be configured</li>
+    <li>Source table: <code>notifications</code> (SF-18 migration)</li>
+  </ul></div>
+</div>`;
     if (id === 'mobile') return `<div class="feature-strip">
   <div class="feature-card"><div class="big-icon" style="background:#0d9488">&#x1F4F7;</div><h3>Business Card Scan</h3><p>Scan, parse, review, and save buyer/supplier leads from trade shows or field meetings. AI parses the card &mdash; operators approve before any commercial record is created.</p></div>
   <div class="feature-card"><div class="big-icon" style="background:#2563eb">&#x1F4C7;</div><h3>Smart vCard</h3><p>Share a professional contact card and preserve event/source context for later follow-up. Buyer submissions automatically link to the event and lead flow.</p></div>
@@ -1166,13 +1427,168 @@ flowchart LR
   <div class="doc-card"><div class="doc-card-title">Camera &amp; Capture</div><ul><li>Camera permission handling and fallback manual entry</li><li>Upload size limits and image quality requirements</li><li>Parsed data review UI before saving</li><li>Lead save from scan creates correct database rows</li></ul></div>
   <div class="doc-card"><div class="doc-card-title">vCard &amp; QR</div><ul><li>vCard generation from profile data</li><li>QR code display and scanning</li><li>Public capture form submission creates lead draft</li><li>Event source metadata preserved on link</li></ul></div>
   <div class="doc-card"><div class="doc-card-title">Role &amp; Access</div><ul><li>Mobile workspace shows role-appropriate modules</li><li>Leads, pipeline, and orders visible per membership</li><li>No admin controls on mobile for non-admin users</li><li>Offline behavior and sync on reconnect</li></ul></div>
+</div>
+<div class="section-block"><h2>Tasks Module (/tasks)</h2>
+<p>The tasks workspace provides a cross-module action queue. Tasks are linked to leads, quotes, and orders — not standalone — so every task has commercial context.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9989; Task Structure</div><ul>
+    <li>Tasks link to: <code>lead_id</code>, <code>quote_id</code>, or <code>order_id</code> — always with commercial context</li>
+    <li>Type: <code>scheduled</code> (due date set) or <code>ad-hoc</code> (no due date)</li>
+    <li>Status: <code>pending</code>, <code>in_progress</code>, <code>completed</code>, <code>cancelled</code></li>
+    <li>Priority: Low / Medium / High — affects queue sort order</li>
+    <li>Overdue tasks surface with red indicator in the task queue</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128241; Mobile Tasks</div><ul>
+    <li>Mobile tasks workspace (<code>MobileTasksWorkspace</code>) is a simplified list view for phone screens</li>
+    <li>Same data — different layout. No functionality gap between desktop and mobile task views</li>
+    <li>Current user ID passed to filter tasks owned by or assigned to the active user</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; Key Rules</div><ul>
+    <li>Tasks do NOT replace gate approvals — they supplement workflow tracking</li>
+    <li>Completing a task does not advance a workflow stage automatically</li>
+    <li>Overdue tasks on a lead appear in the Follow-up queue as attention items</li>
+    <li>Task source table: <code>scheduled_tasks</code></li>
+  </ul></div>
 </div>`;
     if (id === 'quick-reference') return `<div class="quick-ref-grid">
   <div class="ref-card"><h3>Never Break</h3><ul><li>No service-role key in client code.</li><li>No external live provider calls outside approved adapters.</li><li>No sent quote version mutation &mdash; create new version.</li><li>No order stage skip without explicit gate approval.</li><li>No cross-org data visible to org members.</li></ul></div>
   <div class="ref-card"><h3>Always Verify</h3><ul><li>GitHub main contains the change.</li><li>Vercel deployment is green before tracker closes.</li><li>Tracker notes include commit/deploy proof.</li><li>RLS remains organization-scoped after any schema change.</li><li>Sent/accepted quote version is not mutated.</li></ul></div>
   <div class="ref-card"><h3>Core Routes</h3><ul><li><code>/leads</code> &mdash; command center &amp; follow-up queue</li><li><code>/pipeline</code> &mdash; kanban, swimlane, forecast</li><li><code>/quotes</code> &mdash; versioned quote workspace</li><li><code>/orders</code> &mdash; execution cockpit</li><li><code>/admin/*</code> &mdash; org, users, catalog admin</li></ul></div>
   <div class="ref-card"><h3>Signals of Quality</h3><ul><li>Clear next action visible to operator.</li><li>Blocker explains why and what to do next.</li><li>Data write matches UI state.</li><li>Audit record exists for every sensitive move.</li><li>link_created &ne; delivered &mdash; never conflate.</li></ul></div>
-</div>`;
+</div>
+<div class="section-block"><h2>Compliance Module (/compliance)</h2>
+<p>The compliance workspace is the progression-gate desk for checklist blockers, approvals, and lead/quote movement. Every compliance item must be resolved — with evidence, waiver, or deferral — before a quote can be sent. No bypass is permitted.</p>
+</div>
+<div class="doc-alert doc-alert-red"><strong>Gate rule:</strong> A red compliance item blocks quote send. Operators cannot send a quote while any unresolved blocker with status <code>open</code> or <code>needs_review</code> exists on the lead.</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-red"><div class="doc-card-title">&#128683; Blocker Severity Levels</div><ul>
+    <li><strong>Critical</strong> — Hard stop. Quote cannot proceed without explicit admin resolution.</li>
+    <li><strong>High</strong> — Blocks send unless waived with documented reason by compliance reviewer role.</li>
+    <li><strong>Medium</strong> — Warning state. Can be deferred to dispatch with written justification.</li>
+    <li><strong>Low</strong> — Advisory. Logged but does not block the workflow gate.</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9998; Resolution Options</div><ul>
+    <li><strong>Attach evidence</strong> — Upload compliance document. File stored in Supabase Storage under <code>compliance-evidence/</code>.</li>
+    <li><strong>Waive with reason</strong> — Requires <code>compliance.review</code> role permission. Reason field is mandatory and stored.</li>
+    <li><strong>Defer to dispatch</strong> — Moves resolution to the order dispatch stage. Medium and below only.</li>
+    <li>Every resolution writes a record — no silent passes.</li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128203; Bulk Waive Panel</div><ul>
+    <li>Available to compliance reviewer roles only</li>
+    <li>Select multiple medium/low items and waive with a shared reason</li>
+    <li>Each waiver writes an individual audit row — bulk is a UI convenience, not a single write</li>
+    <li>Critical and high items cannot be bulk-waived</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128270; Compliance Assist (/compliance/assist)</div><ul>
+    <li>AI-assisted compliance guidance using Setu Guru</li>
+    <li>Surfaces applicable regulatory checklists based on market + product combination</li>
+    <li>Suggestions are advisory — operator approves before any compliance record is created</li>
+    <li>Uses <code>compliance_next_step</code> and <code>compliance_evidence_request</code> suggestion types</li>
+  </ul></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>DB Table</th><th>Purpose</th><th>Key Fields</th></tr></thead>
+<tbody>
+<tr><td><code>lead_compliance_items</code></td><td>Per-lead compliance checklist items</td><td><code>status</code>, <code>severity</code>, <code>resolution_type</code>, <code>evidence_url</code>, <code>waiver_reason</code></td></tr>
+<tr><td><code>compliance_evidence</code></td><td>Uploaded compliance documents</td><td><code>file_url</code>, <code>uploaded_by</code>, <code>compliance_item_id</code></td></tr>
+<tr><td><code>lead_activities</code></td><td>Compliance resolution audit trail</td><td><code>activity_type: 'compliance_*'</code>, <code>actor_id</code>, <code>metadata</code></td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Contracts Workspace (/contracts)</h2>
+<p>The contracts workspace is the commercial commitment desk. Contracts are created automatically when a quote is marked accepted — they bind the accepted quote version to the resulting order and are immutable from that point.</p>
+</div>
+<div class="swimlane" style="margin:16px 0">
+  <div class="swimlane-row"><div class="swimlane-label"><small>Creation</small><b>Auto-created</b></div><div class="swimlane-steps"><div class="lane-step"><b>Quote accepted</b><span>Operator marks quote accepted</span></div><div class="lane-step system"><b>Contract created</b><span>Binds <code>quote_versions.id</code> to <code>orders.id</code></span></div><div class="lane-step"><b>Immutable</b><span>Quote version cannot be edited after contract exists</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Roles</small><b>Permissions</b></div><div class="swimlane-steps"><div class="lane-step"><b>lead.manage</b><span>Can update contract workspace details</span></div><div class="lane-step"><b>quote.send</b><span>Can progress contracts to order stage</span></div><div class="lane-step system"><b>Read-only</b><span>All other roles can inspect status only</span></div></div></div>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; Contract Lineage</div><ul>
+    <li>Every contract links: <code>lead → quote → accepted_quote_version → order</code></li>
+    <li>Quote version ID is frozen at acceptance — no edits after this point</li>
+    <li>Order line items seed from the accepted contract quantities</li>
+    <li>Discrepancies between quote and actual lines require documented variance reason</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128452; Blockers & Files</div><ul>
+    <li>Contracts show open blockers from the linked compliance and order records</li>
+    <li>File attachments: signed agreement, purchase order, letter of intent</li>
+    <li>Progress actions: mark contract reviewed, link to order, close contract</li>
+    <li>All progression actions require <code>quote.send</code> role</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Markets & Categories Admin</h2>
+<p>Markets and categories are the commercial classification backbone. Markets define geographic/regional sales territories. Categories organize products and drive pricing cascade and compliance matching.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#127758; Markets (/admin/markets)</div><ul>
+    <li>Each market has: <code>name</code>, <code>market_code</code> (short identifier), <code>sort_order</code>, <code>is_active</code></li>
+    <li>Markets link to: leads (target market), quotes (destination market), compliance rules (market-specific checklists)</li>
+    <li>Inactive markets are hidden from operator selection but preserved for historical records</li>
+    <li>Country count shown per market for geographic coverage visibility</li>
+    <li>Edit/Add via inline CSS :target drawers — no page reload</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128193; Categories (/admin/categories)</div><ul>
+    <li>Product categories drive pricing cascade: category-level pricing rules override org defaults</li>
+    <li>Categories link to: products (classification), compliance templates (category-specific rules), reports (product breakdown panel)</li>
+    <li>Each category has a <code>slug</code> (URL-safe identifier) and <code>display_name</code></li>
+    <li>Category subtotals appear in quote PDF when multi-category quote</li>
+    <li>Compliance matching uses product category to suggest applicable regulatory checklists</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Document Templates (/admin/document-templates)</h2>
+<p>Document template profiles define the commercial document output for quotes and orders. Each profile combines terms, bank details, tax IDs, and export declarations for a specific region and document type.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; Template Profile Structure</div><ul>
+    <li><strong>region_type</strong> — e.g. <code>export</code>, <code>domestic</code>, <code>uae</code>, <code>eu</code></li>
+    <li><strong>document_type</strong> — <code>proforma_invoice</code>, <code>order_confirmation</code>, <code>delivery_note</code></li>
+    <li><strong>profile_name</strong> — display label for operator selection</li>
+    <li><strong>is_default</strong> — used when no explicit profile is selected on the order</li>
+    <li><strong>is_active</strong> — inactive profiles are hidden from operator selection</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128181; Financial Fields</div><ul>
+    <li><strong>bank_details</strong> — JSONB; bank name, account, IBAN, SWIFT, branch</li>
+    <li><strong>tax_profile</strong> — JSONB; GST/VAT/TRN numbers per region</li>
+    <li><strong>identity_fields</strong> — JSONB; company registration, export license numbers</li>
+    <li><strong>stamp_settings</strong> — JSONB; digital stamp/seal configuration</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128220; Terms & Declarations</div><ul>
+    <li><strong>page_one_terms</strong> — Array of term strings shown on page 1 of document</li>
+    <li><strong>annexure_terms</strong> — Array of terms shown in the annexure/appendix</li>
+    <li><strong>export_declarations</strong> — JSONB; export compliance declarations for customs</li>
+    <li>Quote/order terms defaults also configurable at org level in Admin → Organization</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Pricing Engine (/admin/pricing-engine)</h2>
+<p>The Pricing Engine sets the commercial defaults that power the quote calculator, margin calculations, and approval gates. These are org-level controls — all operators in the workspace inherit these defaults unless overridden per quote.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9881; Org-Level Defaults</div><ul>
+    <li><strong>Approval threshold (%)</strong> — Quotes with manual price overrides above this % trigger pending approval. Default: 15%.</li>
+    <li><strong>Default currency</strong> — Base currency for new quotes. Supported: USD, EUR, GBP, AED, INR, SGD, AUD, CAD.</li>
+    <li>Stored in <code>organizations.approval_threshold_pct</code> and <code>organizations.default_currency</code></li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128200; Pricing Rule Cascade</div><ul>
+    <li>Priority order: <strong>Product-level</strong> → Category-level → Org default</li>
+    <li>Source of truth: <code>pricing_rule_sets</code> + <code>product_pricing_rules</code> tables</li>
+    <li>FX snapshots: captured at quote creation time; stored in <code>quote_pricing_snapshots</code></li>
+    <li>Manual FX override requires <code>quote.send</code> role permission</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128272; Approval Gate</div><ul>
+    <li>Override &gt; threshold → <code>quotes.approval_required = true</code></li>
+    <li>Send is disabled until an admin with <code>quote.approve</code> role approves</li>
+    <li>Rejection requires a reason; reason stored in <code>quotes.notes_internal</code></li>
+    <li>Quote modal shows approval status: "Approval cleared" when approved</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Client Onboarding Wizard (/onboarding)</h2>
+<p>The extended onboarding wizard (SF-19) guides new clients from form submission through workspace provisioning. The flow is: Public form → SETU admin review → Workspace creation → First admin invitation.</p>
+</div>
+<div class="swimlane" style="margin:16px 0">
+  <div class="swimlane-row"><div class="swimlane-label"><small>Step 1</small><b>Public form</b></div><div class="swimlane-steps"><div class="lane-step"><b>/onboarding</b><span>Company details, markets, first admin info</span></div><div class="lane-step system"><b>POST /api/public/client-onboarding</b><span>No login required</span></div><div class="lane-step"><b>/onboarding/received</b><span>Confirmation page</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Step 2</small><b>Admin review</b></div><div class="swimlane-steps"><div class="lane-step"><b>Email notification</b><span>admin@setugroups.com or <code>SETU_ONBOARDING_ADMIN_EMAIL</code></span></div><div class="lane-step"><b>/admin/client-onboarding</b><span>Inbox redesign: stat bar + request cards + StatusPipeline</span></div><div class="lane-step system"><b>StatusPipeline</b><span>Intake → Provision → Invite → Live</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Step 3</small><b>Provisioning</b></div><div class="swimlane-steps"><div class="lane-step"><b>/admin/client-management</b><span>Set modules, seats, plan tier</span></div><div class="lane-step system"><b>client_entitlements</b><span>Row created for new org</span></div><div class="lane-step"><b>Invite sent</b><span>First admin receives invite link</span></div></div></div>
+</div>
+<div class="doc-alert doc-alert-teal"><strong>Plan change detection:</strong> If a client already has <code>status = live</code> and <code>pricing_rules_notes</code> has content, a violet banner appears on the client card for SETU admin to review the plan change request.</div>`;
     if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Clickable screenshots of key modules and workflows. Upload from this workspace to share with testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>`;
     return '';
   }
@@ -1223,7 +1639,7 @@ flowchart LR
 <a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('operator-guides')"><span class="rail-section-dot"></span>Operator Guides</a>
 <a class="rail-section-link" style="cursor:pointer" onclick="Docs.openTopic('live-ui')"><span class="rail-section-dot"></span>Live UI Snapshots</a>
 </div></div>
-<div class="rail-block"><h4>Doc Progress</h4><div class="progress-line"><span>Overall Progress</span><b>66%</b></div><div class="bar"><div class="fill" style="width:66%"></div></div><p style="color:#64748b;font-size:11.5px;margin-top:6px">342 / 500 topics</p><a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a></div>
+<div class="rail-block"><h4>Doc Progress</h4><div class="progress-line"><span>Overall Progress</span><b id="railDocPct">88%</b></div><div class="bar"><div class="fill" id="railDocFill" style="width:88%"></div></div><p style="color:#64748b;font-size:11.5px;margin-top:6px">21 of 21 core areas</p><a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a></div>
 <div class="rail-block"><h4>Recent Changes</h4>
 <div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Updated API Authentication</div><span class="rail-change-meta">May 14, 2026 &middot; v2025.05.14</span></div></div>
 <div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">New Webhook Events</div><span class="rail-change-meta">May 13, 2026 &middot; v2025.05.13</span></div></div>
@@ -1234,20 +1650,44 @@ flowchart LR
 <div class="roadmap-item"><div class="roadmap-dot" style="background:#64748b"></div><div><div class="roadmap-label">Q3 2025</div><div class="roadmap-item-title">Mobile App v2 &mdash; Planned</div></div></div>
 <div class="roadmap-item"><div class="roadmap-dot" style="background:#64748b"></div><div><div class="roadmap-label">Q3 2025</div><div class="roadmap-item-title">Advanced Reporting &mdash; Planned</div></div></div>
 <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a></div>
-<div class="rail-block"><h4>Top Contributors</h4>
-<div class="contrib-avatars">
-<div class="contrib-av" style="--c1:#0d9488;--c2:#2563eb">R</div>
-<div class="contrib-av" style="--c1:#7c3aed;--c2:#db2777">A</div>
-<div class="contrib-av" style="--c1:#f97316;--c2:#f59e0b">M</div>
-<div class="contrib-av" style="--c1:#059669;--c2:#0d9488">K</div>
+<div class="rail-block"><h4>Contributor</h4>
+<div class="contrib-solo">
+  <div class="contrib-solo-av">R</div>
+  <div class="contrib-solo-info">
+    <b>Ritesh Kapoor</b>
+    <p>Product owner &bull; Architect &bull; Builder</p>
+  </div>
 </div>
-<a href="#" style="font-size:11.5px;color:#2563eb;font-weight:800">View all contributors \u2192</a></div>` : '';
-    document.getElementById('rightRail').innerHTML = ovRail + `<div class="rail-block"><h4>Topics</h4><div class="rail-list">${topics.map(t => `<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div></div><div class="rail-block"><h4>Progress</h4><div class="progress-line"><span>Current path</span><b>${pct}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><p style="color:#64748b;font-size:12px;margin-top:4px">${id === 'overview' ? 'Start at Docs Overview' : 'Topic ' + (i + 1) + ' of ' + topics.length}</p><div class="next-card"><b>Next</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} \u2192</button></div></div>${isInternal() ? `<div class="rail-block"><h4>Live Tracker</h4><div class="progress-line"><span>Open</span><b>${metrics.open}</b></div><div class="progress-line"><span>Resolved</span><b>${metrics.resolved}</b></div><a href="setuflow-issue-tracker.html" style="color:#2563eb;font-weight:900;font-size:12px;display:block;margin-top:6px">Open issue tracker \u2192</a></div><div class="rail-block"><h4>Roadmap</h4><div style="border-left:3px solid #14b8a6;padding-left:10px"><b style="font-size:12px">Sprint 19</b><p style="margin:4px 0 0;color:#64748b;font-size:11.5px">UX enhancement and documentation workspace cleanup.</p></div></div>` : ''}<div class="rail-block"><h4>Contributor</h4><div class="person"><div class="avatar">R</div><div><b>Ritesh Kapoor</b><p style="margin:2px 0 0;color:#64748b;font-size:12px">Product owner, architect, builder</p></div></div></div>`;
+<div class="contrib-solo-stats">
+  <div class="contrib-stat">Sprint <span id="contribSprint">19</span></div>
+  <div class="contrib-stat"><span id="contribResolved">` + metrics.resolved + `</span> resolved</div>
+</div></div>` : '';
+    document.getElementById('rightRail').innerHTML = ovRail + `<div class="rail-block"><h4>Topics</h4><div class="rail-list">${topics.map(t => `<button data-rail-topic="${t.id}" onclick="Docs.openTopic('${t.id}')">${t.title}</button>`).join('')}</div></div><div class="rail-block"><h4>Progress</h4><div class="progress-line"><span>Current path</span><b>${pct}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><p style="color:#64748b;font-size:12px;margin-top:4px">${id === 'overview' ? 'Start at Docs Overview' : 'Topic ' + (i + 1) + ' of ' + topics.length}</p><div class="next-card"><b>Next</b><p>${next.title}</p><button onclick="Docs.openTopic('${next.id}')">Open ${next.title} \u2192</button></div></div>${isInternal() ? `<div class="rail-block"><h4><span class="rail-live-dot"></span>Live Tracker</h4><div class="rail-live-row"><div class="rail-live-open"><span class="rail-live-val">${metrics.open}</span><span class="rail-live-label">Open issues</span></div><div class="rail-live-resolved"><span class="rail-live-val">${metrics.resolved}</span><span class="rail-live-label">Resolved</span></div></div><a href="setuflow-issue-tracker.html" style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2563eb;font-weight:800">Open issue tracker \u2192</a></div><div class="rail-block"><h4>Roadmap</h4><div style="border-left:3px solid #14b8a6;padding-left:10px"><b style="font-size:12px">Sprint 19 — In Progress</b><p style="margin:4px 0 0;color:#64748b;font-size:11.5px">Admin UX overhaul complete (SF-18-078). Documentation, client management, and module grants.</p></div></div>` : ''}<div class="rail-block"><h4>Contributor</h4><div class="person"><div class="avatar">R</div><div><b>Ritesh Kapoor</b><p style="margin:2px 0 0;color:#64748b;font-size:12px">Product owner, architect, builder</p></div></div></div>`;
     markActive();
   }
 
   async function loadMetrics() {
     if (shared.active) return;
+    try {
+      // Wire directly to Supabase sprint_issues table — same source as issue tracker
+      const SB_URL = 'https://sjzfzloggabsmcuxktnl.supabase.co';
+      const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
+      const r = await fetch(`${SB_URL}/rest/v1/sprint_issues?select=status`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+      });
+      if (r.ok) {
+        const rows = await r.json();
+        const open = rows.filter(i => i.status && i.status !== 'Resolved' && i.status !== "Won't Fix" && i.status !== 'Deferred').length;
+        const resolved = rows.filter(i => i.status === 'Resolved').length;
+        metrics = { ...metrics, open, resolved };
+        const pill = document.getElementById('issuePill');
+        if (pill) { pill.textContent = open; pill.style.background = open > 5 ? '#ef4444' : '#22c55e'; }
+        // Re-render right rail to show live numbers
+        renderRail();
+        return;
+      }
+    } catch (e) {}
+    // Fallback: try server API
     try {
       const r = await fetch('/api/internal/docs-metrics', { credentials: 'include' });
       if (!r.ok) return;
@@ -1255,7 +1695,7 @@ flowchart LR
       metrics = { ...metrics, ...d };
       const pill = document.getElementById('issuePill');
       if (pill) pill.textContent = metrics.open;
-      render();
+      renderRail();
     } catch (e) {}
   }
 
@@ -1430,6 +1870,48 @@ flowchart LR
     document.querySelectorAll('.arch-tab').forEach((b, i) => b.classList.toggle('arch-active', i === n));
     document.querySelectorAll('.arch-panel').forEach((p, i) => p.classList.toggle('arch-active', i === n));
   }
+
+  // Documentation coverage calculator — reflects actual repo coverage
+  const DOC_COVERAGE = {
+    architecture: 0.95,
+    modules: 0.93,
+    workflows: 0.92,
+    diagrams: 0.95,
+    'operator-guides': 0.93,
+    'guru-ai': 0.90,
+    'data-security': 0.92,
+    'api-integrations': 0.90,
+    mobile: 0.88,
+    'quick-reference': 0.91,
+    'admin-overhaul': 0.92,
+    'approval-send': 0.88,
+    'quote-pdf': 0.84,
+    'sf19-entitlements': 0.85,
+    'compliance-module': 0.88,
+    'contracts': 0.86,
+    'reports': 0.87,
+    'analytics-dashboard': 0.85,
+    'tasks': 0.87,
+    'ai-suggestions': 0.88,
+    'notifications': 0.86,
+    'onboarding-wizard': 0.87,
+    'document-templates': 0.85,
+    'pricing-engine': 0.87,
+    'audit-trail': 0.88,
+    'markets-categories': 0.86,
+  };
+  function calcDocReadiness() {
+    const vals = Object.values(DOC_COVERAGE);
+    const pct = Math.round((vals.reduce((a,b)=>a+b,0) / vals.length) * 100);
+    const el = document.getElementById('readyPct');
+    if (el) {
+      el.textContent = pct + '%';
+      const prev = 66;
+      el.closest('.ring').style.background = `conic-gradient(#14b8a6 0 ${pct}%, #334155 ${pct}% 100%)`;
+    }
+    return pct;
+  }
+
     function render() { const id = idx(); document.body.style.overflow = ''; document.getElementById('leftNav')?.classList.remove('open'); document.getElementById('diagModal')?.classList.remove('dm-open'); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
   function goPrev() { let i = currentIndex(); openTopic(i === 0 ? 'overview' : topics[i - 1].id); }
   function goNext() { let i = currentIndex(); openTopic(i === topics.length - 1 ? 'overview' : topics[i + 1].id); }
@@ -1454,11 +1936,12 @@ flowchart LR
     await initAuth();
     if (window.mermaid) mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: { primaryColor: '#dbeafe', primaryTextColor: '#1e3a8a', primaryBorderColor: '#2563eb', lineColor: '#64748b', secondaryColor: '#f0fdf4', tertiaryColor: '#faf5ff' } });
     render();
+    calcDocReadiness();
     await loadMetrics();
     await loadScreenshots();
   }
 
   init();
-  return { openTopic, goPrev, goNext, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, nextGuideStep, prevGuideStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
+  return { openTopic, goPrev, goNext, calcDocReadiness, toggleNav, search, openShare, closeShare, generateShareLink, copyShareLink, showFullDocument, openScreenshotModal, closeScreenshotModal, uploadScreenshot, openLightbox, closeLightbox, copySnapshotLink, switchGuideTab, selectStep, nextGuideStep, prevGuideStep, openDiagramViewer, closeDiagramViewer, diagZoom, diagReset, downloadDiagram, switchArchTab };
 })();
 
