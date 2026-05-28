@@ -5,7 +5,7 @@ function SettingsIcon({ open }: { open: boolean }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className={open ? 'h-5 w-5 rotate-45 transition-transform' : 'h-5 w-5 transition-transform'}
+      className={open ? 'h-4 w-4 rotate-45 transition-transform' : 'h-4 w-4 transition-transform'}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -26,18 +26,17 @@ export function DashboardHeaderControls({
   onToggleCustomize: () => void;
 }) {
   return (
-    <div className="contents">
-      <button
-        type="button"
-        onClick={onToggleCustomize}
-        aria-label="Customize Dashboard"
-        title="Customize Dashboard"
-        aria-pressed={customizeOpen}
-        aria-expanded={customizeOpen}
-        className="fixed right-7 top-[5.4rem] z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-[0_12px_32px_rgba(15,23,42,0.14)] transition hover:bg-slate-50 hover:text-slate-900 md:right-8"
-      >
-        <SettingsIcon open={customizeOpen} />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={onToggleCustomize}
+      aria-label="Customize Dashboard"
+      title="Customize Dashboard"
+      aria-pressed={customizeOpen}
+      aria-expanded={customizeOpen}
+      className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black uppercase tracking-[0.1em] text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+    >
+      <SettingsIcon open={customizeOpen} />
+      Settings
+    </button>
   );
 }
