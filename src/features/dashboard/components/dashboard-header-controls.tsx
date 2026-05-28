@@ -26,7 +26,7 @@ export function DashboardHeaderControls({
   onToggleCustomize: () => void;
 }) {
   return (
-    <div className="flex items-center justify-end">
+    <div className="contents">
       <button
         type="button"
         onClick={onToggleCustomize}
@@ -34,7 +34,7 @@ export function DashboardHeaderControls({
         title="Customize Dashboard"
         aria-pressed={customizeOpen}
         aria-expanded={customizeOpen}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+        className="fixed right-7 top-[5.4rem] z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-[0_12px_32px_rgba(15,23,42,0.14)] transition hover:bg-slate-50 hover:text-slate-900 md:right-8"
       >
         <SettingsIcon open={customizeOpen} />
       </button>
