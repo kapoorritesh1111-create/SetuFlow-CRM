@@ -3,7 +3,7 @@
     "title": "Dashboard Command Center",
     "route": "/dashboard",
     "description": "KPI cards, world market map, follow-up queue, and commercial activity feed.",
-    "image": "",
+    "image": "dashboard.png",
     "updated": "2026-05-27"
   },
   {
