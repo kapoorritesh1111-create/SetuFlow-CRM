@@ -209,7 +209,7 @@ const Docs = (() => {
   function topicContent(id) {
     const map = {};
 
-    map['architecture'] =     map['architecture'] = `<div class="arch-tabs"><button class="arch-tab arch-active" onclick="Docs.switchArchTab(0)">Stack Overview</button><button class="arch-tab" onclick="Docs.switchArchTab(1)">Detailed Architecture</button></div><div class="arch-panel arch-active"><div class="arch-tabs"><button class="arch-tab arch-active" onclick="Docs.switchArchTab(0)">Stack Overview</button><button class="arch-tab" onclick="Docs.switchArchTab(1)">&#128443; Detailed Architecture</button></div><div class="arch-panel arch-active"><div class="pro-grid">
+    map['architecture'] = `<div class="arch-tabs"><button class="arch-tab arch-active" onclick="Docs.switchArchTab(0)">Stack Overview</button><button class="arch-tab" onclick="Docs.switchArchTab(1)">&#128443; Visual Overview</button></div><div class="arch-panel arch-active"><div class="pro-grid">
   <div class="pro-card"><b>App Shell</b><p>Next.js App Router with server-rendered workspaces, focused client components, and route contracts for every CRM module. All screens represent workflow states and gates.</p></div>
   <div class="pro-card"><b>Data Boundary</b><p>Supabase Postgres with organization-scoped RLS. Every server action must filter by <code>organization_id</code>. No cross-org leakage permitted. RLS is the final enforcement layer.</p></div>
   <div class="pro-card"><b>Integration Boundary</b><p>Email, WhatsApp, freight, finance, and AI integrations stay adapter-backed and auditable. No live external provider call from UI code without an approved adapter.</p></div>
@@ -227,7 +227,7 @@ const Docs = (() => {
 <tr><td><b>Auth</b></td><td>Supabase Auth + JWT</td><td>Session management, workspace membership, role-based permission helpers</td><td>Confirm sign-in and session expiry. Role boundaries enforced server-side.</td></tr>
 <tr><td><b>Deployment</b></td><td>Vercel</td><td>Production deployment, build proof, environment variables</td><td>Every fix must deploy green before the tracker closes. Preview URLs are never buyer links.</td></tr>
 <tr><td><b>AI</b></td><td>Anthropic API via Setu Guru</td><td>Page context help, org search, HSN research, pricing defaults — human-approved only</td><td>AI cannot bypass approval, compliance, or send gates. All Guru actions are reviewable.</td></tr>
-<tr><td><b>Email</b></td><td>Mailtrap (production-ready)</td><td>Order document sends, invitation emails, webhook delivery confirmation</td><td>link_created is not delivered. Delivery confirmation requires MAILTRAP_WEBHOOK_SECRET in Vercel.</td></tr>
+<tr><td><b>Email</b></td><td>Mailtrap / Resend-ready boundary</td><td>Order document sends, invitation emails, webhook delivery confirmation</td><td><code>link_created</code> is not delivered. Provider confirmation is required before treating a send as delivered.</td></tr>
 <tr><td><b>PDF</b></td><td>puppeteer-core + @sparticuz/chromium</td><td>Document generation via free OSS path — no paid PDF API</td><td>Browser-print available as fallback. Server-side via approved OSS path only.</td></tr>
 </tbody></table></div>
 <div class="section-block"><h2>Route Groups</h2></div>
@@ -236,7 +236,7 @@ const Docs = (() => {
 <tbody>
 <tr><td><code>/dashboard</code></td><td>Dashboard</td><td>Executive KPIs, market command map, activity feed, follow-up queue</td></tr>
 <tr><td><code>/leads</code></td><td>Follow-up / Lead Command Center</td><td>Buyer/supplier records, qualification, product coverage, compliance</td></tr>
-<tr><td><code>/pipeline</code></td><td>Pipeline</td><td>Kanban (11 stages), swimlane, forecast, density controls</td></tr>
+<tr><td><code>/pipeline</code></td><td>Pipeline</td><td>Kanban, swimlane, forecast, density controls</td></tr>
 <tr><td><code>/quotes</code></td><td>Quote Builder</td><td>Versioned quotes, FX, pricing, approval gates, send tracking</td></tr>
 <tr><td><code>/orders</code></td><td>Order Execution Cockpit</td><td>Actual lines, documents, packing, freight, processing, dispatch, finance</td></tr>
 <tr><td><code>/products</code></td><td>Catalog</td><td>Categories, products, variants, pricing rule sets, bulk CSV import</td></tr>
@@ -244,133 +244,7 @@ const Docs = (() => {
 <tr><td><code>/mobile/*</code></td><td>Mobile Workspace</td><td>Business card scan, smart vCard, field capture, mobile leads/quotes</td></tr>
 <tr><td><code>/contact-exchange/scan</code></td><td>Capture</td><td>Business card scan — creates reviewable lead drafts</td></tr>
 <tr><td><code>/order-documents/preview/[token]</code></td><td>Document Preview</td><td>Tokenized buyer-facing document preview — tracks open count</td></tr>
-</tbody></table></div></div><div class="arch-panel"><div class="section-block"><h2>System Architecture — Detailed View</h2><p>Five-column view showing how operators, frontend routes, server actions, Supabase, and document/integration layers connect. Risks and known gaps are flagged inline.</p></div><div class="arch-swim">
-  <!-- Col 1: Operators -->
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#0f172a;color:white"><h4>Operators</h4><p>Who acts</p></div>
-    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Sales</b><small>Quote &bull; Lead</small></div>
-    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Operations</b><small>Orders &bull; Docs</small></div>
-    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Admin</b><small>Org &bull; Roles</small></div>
-    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Mobile</b><small>Capture &bull; vCard</small></div>
-  </div>
-  <!-- Col 2: Next.js Frontend -->
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#1d4ed8;color:white"><h4>Next.js Frontend</h4><p>Vercel App Router</p></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/leads</b><small>Lead Command Center</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/quotes</b><small>Versioning &bull; PDF &bull; Share</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/orders</b><small>Stage Panel &bull; Doc Tray</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/approval-send</b><small>Approval &bull; Send Gate</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/pipeline &bull; /products</b><small>Pipeline &bull; Catalog</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/admin/* routes</b><small>Org &bull; Users &bull; Catalog Admin</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/mobile/capture</b><small>Mobile &bull; vCard &bull; Scan</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/order-documents/preview</b><small>Tokenized Doc Preview</small></div>
-  </div>
-  <!-- Col 3: Server Actions / API -->
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#15803d;color:white"><h4>Server Actions / API</h4><p>Validated mutations</p></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Lead / Coverage / Compliance</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>createQuote &bull; updateQuoteWorkflow</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendQuote &bull; recordOutcome &bull; RPC fanout</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>ensureActualOrderLines</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Document Gate Actions</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Packing &bull; Freight &bull; Processing</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Shipment &bull; Dispatch &bull; Trade Req</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Finance &bull; Closeout</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendOrderDocumentLink</b></div>
-    <div class="arch-node arch-warn" style="background:#dcfce7;color:#14532d"><b>RLS Permission Checks</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Middleware &bull; Auth Guard</b></div>
-    <div class="arch-node" style="background:#bbf7d0;color:#14532d;border:1px dashed #4ade80"><b>Public API: /api/public/*</b></div>
-  </div>
-  <!-- Col 4: Supabase -->
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#b45309;color:white"><h4>Supabase</h4><p>Database &amp; Auth</p></div>
-    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Auth</b><small>JWT &bull; Sessions &bull; Org membership</small></div>
-    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>Postgres Database</b><small>leads &bull; quotes &bull; orders &bull; quote_versions &bull; order_lines &bull; order_documents &bull; shipments &bull; packing_plans &bull; trade_requirements &bull; finance_sync_records + 60+ tables</small></div>
-    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RLS Policies</b><small>Row-level workspace isolation &bull; ⚠ Many tables missing policies</small></div>
-    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RPCs / Functions</b><small>create_rfq_fanout &bull; send_quote_fanout &bull; ⚠ SECURITY DEFINER issues</small></div>
-    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Storage</b><small>Documents &bull; Logos &bull; Uploads &bull; Compliance evidence files</small></div>
-  </div>
-  <!-- Col 5: Document Engine + Integrations -->
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#c2410c;color:white"><h4>Document Engine</h4><p>Render &amp; track</p></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>v3 Doc Renderer</b></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Terms Profiles</b></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Send Tracking</b></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Open Tracking</b><small>Browser print &bull; No server PDF yet</small></div>
-    <div class="arch-col-head" style="background:#7c3aed;color:white;margin-top:10px;border-radius:10px 10px 0 0"><h4>Integrations</h4><p>Adapter boundaries</p></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#9993; Email</b><small>Mailtrap / Resend</small></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#128241; WhatsApp</b><small>Manual tracked links only</small></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#128666; Freight</b><small>Not auto-connected</small></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>&#128200; Finance</b><small>Not auto-connected</small></div>
-    <div class="arch-node" style="background:#fce7f3;color:#831843;font-size:11px;border:1px solid #fbcfe8"><small>⚠ <code>link_created</code> &ne; provider delivered. Adapter boundaries not auto-connected.</small></div>
-  </div>
-</div>
-<div class="arch-legend">
-  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#1d4ed8"></div>User action / data flow</div>
-  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#dc2626"></div>⚠ Known risk / gap</div>
-  <div class="arch-legend-item"><div class="arch-legend-dash" style="border-color:#7c3aed"></div>Integration boundary (adapter needed)</div>
-</div></div></div><div class="arch-panel"><div class="section-block"><h2>System Architecture — Detailed View</h2><p>Five-column view: Operators to frontend routes to server actions to Supabase to document engine and integrations. Risks and known gaps flagged inline.</p></div><div class="arch-swim">
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#0f172a;color:white"><h4>Operators</h4><p>Who acts</p></div>
-    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Sales</b><small>Quote &bull; Lead</small></div>
-    <div class="arch-node" style="background:#1e293b;color:white;border-radius:10px"><b>Operations</b><small>Orders &bull; Docs</small></div>
-    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Admin</b><small>Org &bull; Roles</small></div>
-    <div class="arch-node" style="background:#334155;color:white;border-radius:10px"><b>Mobile</b><small>Capture &bull; vCard</small></div>
-  </div>
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#1d4ed8;color:white"><h4>Next.js Frontend</h4><p>Vercel App Router</p></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/leads</b><small>Lead Command Center</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/quotes</b><small>Versioning &bull; PDF &bull; Share</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/orders</b><small>Stage Panel &bull; Doc Tray</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/approval-send</b><small>Approval &bull; Send Gate</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/pipeline &bull; /products</b><small>Pipeline &bull; Catalog</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/admin/* routes</b><small>Org &bull; Users &bull; Catalog Admin</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/mobile/capture</b><small>Mobile &bull; vCard &bull; Scan</small></div>
-    <div class="arch-node" style="background:#dbeafe;color:#1e3a8a"><b>/order-documents/preview</b><small>Tokenized Doc Preview</small></div>
-  </div>
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#15803d;color:white"><h4>Server Actions / API</h4><p>Validated mutations</p></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Lead / Coverage / Compliance</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>createQuote &bull; updateQuoteWorkflow</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendQuote &bull; recordOutcome &bull; RPC fanout</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>ensureActualOrderLines</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Document Gate Actions</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Packing &bull; Freight &bull; Processing</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Shipment &bull; Dispatch &bull; Trade Req</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Finance &bull; Closeout</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>sendOrderDocumentLink</b></div>
-    <div class="arch-node arch-warn" style="background:#dcfce7;color:#14532d"><b>RLS Permission Checks</b></div>
-    <div class="arch-node" style="background:#dcfce7;color:#14532d"><b>Middleware &bull; Auth Guard</b></div>
-    <div class="arch-node" style="background:#bbf7d0;color:#14532d;border:1px dashed #4ade80"><b>Public API: /api/public/*</b></div>
-  </div>
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#b45309;color:white"><h4>Supabase</h4><p>Database &amp; Auth</p></div>
-    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Auth</b><small>JWT &bull; Sessions &bull; Org membership</small></div>
-    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>Postgres Database</b><small>leads &bull; quotes &bull; orders &bull; quote_versions &bull; order_lines &bull; order_documents &bull; shipments &bull; packing_plans &bull; trade_requirements &bull; finance_sync_records + 60+ tables</small></div>
-    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RLS Policies</b><small>Row-level workspace isolation &bull; Many tables missing policies</small></div>
-    <div class="arch-node arch-warn" style="background:#fef3c7;color:#78350f"><b>RPCs / Functions</b><small>create_rfq_fanout &bull; send_quote_fanout &bull; SECURITY DEFINER issues</small></div>
-    <div class="arch-node" style="background:#fef3c7;color:#78350f"><b>Storage</b><small>Documents &bull; Logos &bull; Uploads &bull; Compliance evidence</small></div>
-  </div>
-  <div class="arch-col">
-    <div class="arch-col-head" style="background:#c2410c;color:white"><h4>Document Engine</h4><p>Render &amp; track</p></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>v3 Doc Renderer</b></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Terms Profiles</b></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Send Tracking</b></div>
-    <div class="arch-node" style="background:#ffedd5;color:#7c2d12"><b>Open Tracking</b><small>Browser print &bull; No server PDF yet</small></div>
-    <div class="arch-col-head" style="background:#7c3aed;color:white;margin-top:10px;border-radius:10px 10px 0 0"><h4>Integrations</h4><p>Adapter boundaries</p></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>Email</b><small>Mailtrap / Resend</small></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>WhatsApp</b><small>Manual tracked links only</small></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>Freight</b><small>Not auto-connected</small></div>
-    <div class="arch-node" style="background:#f3e8ff;color:#4c1d95"><b>Finance</b><small>Not auto-connected</small></div>
-    <div class="arch-node" style="background:#fce7f3;color:#831843;font-size:11px;border:1px solid #fbcfe8"><small>link_created is NOT provider-delivered. Adapter boundaries require manual confirmation.</small></div>
-  </div>
-</div>
-<div class="arch-legend">
-  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#1d4ed8"></div>User action / data flow</div>
-  <div class="arch-legend-item"><div class="arch-legend-line" style="background:#dc2626"></div>Known risk / gap</div>
-  <div class="arch-legend-item"><div class="arch-legend-dash" style="border-color:#7c3aed"></div>Integration boundary (adapter needed)</div>
-</div></div>`;
-
+</tbody></table></div></div><div class="arch-panel"><div class="section-block arch-map-intro"><h2>System Architecture — Visual Overview</h2><p>Five-column product map showing operators, frontend route groups, server actions, Supabase, document engine, and integration boundaries. The layout mirrors the deployed product architecture and keeps known gaps visible.</p></div><div class="arch-svg-card"><img src="docs-assets/diagram-architecture.svg" alt="SETU Flow CRM architecture visual overview"></div><div class="arch-legend"><div><span class="arch-legend-line solid"></span>User action / data flow</div><div><span class="arch-legend-line dashed"></span>Integration boundary / adapter needed</div><div><span class="arch-risk">&#9888;</span> Known risk / gap</div></div></div>`;
     map['modules'] = `<div class="tbl-wrap"><table>
 <thead><tr><th>Module</th><th>Route</th><th>What It Owns</th><th>Ready Signal</th></tr></thead>
 <tbody>
@@ -682,91 +556,68 @@ flowchart LR
 <div class="slide"><div class="slide-title">Finance &amp; Closeout</div><div class="slide-sub">Close only when all financial evidence is confirmed</div><div class="slide-flow"><div class="slide-node">Final Invoice &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Payment &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Reconciliation &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Archive &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Closed</div></div><div class="slide-rules"><div class="slide-rule">Final invoice &ne; proforma invoice</div><div class="slide-rule">Outstanding amount must be zero</div><div class="slide-rule">Finance sync is not automatic</div><div class="slide-rule">All 5 closeout checks must pass</div></div></div>`;
   }
 
+  const guideSets = [
+    { title:'Lead → Quote', steps:[
+      ['click','Click Follow-up in main navigation','Expected UI','Lead queue loads. All organization leads are visible per RLS.','DB','<code>leads</code> table is read through org-scoped policies.'],
+      ['click','Click Open on the lead row','Expected UI','Lead Command Center opens with qualification, coverage, follow-up, and compliance cards.','Verify','Buyer/supplier context exists and lead is not disqualified.'],
+      ['review','Open coverage manager if product coverage is missing','Expected UI','Select product interest and save. Quote CTA becomes dominant when the gate passes.','DB Write','<code>lead_product_interests</code> row is created.'],
+      ['save','Plan follow-up if next action is missing','Expected UI','Enter date and note. Overdue item clears from queue when complete.','DB Write','<code>lead_follow_ups</code> row is written.'],
+      ['review','Check compliance card for quote-send blockers','Expected UI','If red, click Compliance check or Full screen and choose attach evidence, waive with reason, or defer.','Requirement','Each resolution requires a written record.'],
+      ['click','Click Create quote or Continue quote','Expected UI','Quote workspace opens with lead context pre-seeded.','Gate','Not disqualified, product interest exists, country/market set, and compliance acceptable.']
+    ], no:'Treat free-text product notes as saved coverage. Bypass compliance by creating a disconnected quote. Assume WhatsApp or email activity means delivery was confirmed.' },
+    { title:'Build & Send', steps:[
+      ['click','Open Quote from navigation or from lead','Expected UI','Select or create the quote for the correct lead.','DB State','Draft <code>quote_versions</code> record exists or will be created.'],
+      ['click','Click Add product and select catalog products','Expected UI','Pack size, MOQ, and pricing defaults load from catalog.','Verify','Each line has product, quantity, unit, and price.'],
+      ['review','Confirm currency, pricing basis, validity, incoterm, and freight profile','Expected UI','For non-USD, verify FX snapshot exists or manual FX is enabled.','DB Write','FX context is written in <code>quote_pricing_snapshots</code>.'],
+      ['review','Review pricing and enter override reasons for manual changes','Expected UI','Override greater than 15% triggers pending approval. Send disabled until approved.','DB Write','Approval flag is set on <code>quote_versions</code>.'],
+      ['save','Click Save draft or Create quote','Expected UI','Draft saved and line items preserved.','DB Write','<code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, and snapshots written.'],
+      ['resolve','Resolve approval or compliance blockers','Expected UI','Admin approves quote; compliance is reviewed inside quote workspace.','Gate','Both gates must clear before Send is enabled.'],
+      ['send','Click Send quote','Expected UI','Quote becomes locked from direct editing.','DB Write','<code>quotes.sent_at</code>, <code>quote_versions.status = sent</code>, and <code>communications</code> are written.'],
+      ['review','Open customer PDF and review output','Verify','Logo, currency, line items, Incoterm, Tax ID, and totals are correct.','Status','Sent version is immutable from this point.'],
+      ['record','Record buyer outcome: accepted or rejected','Timing','Only after actual buyer response, not immediately after send.','DB Write','<code>quotes.accepted_version_id</code> set and contract/order lineage created.']
+    ], no:'Send while approval is pending. Treat a draft PDF as sent customer document. Mark accepted before receiving actual buyer confirmation.' },
+    { title:'Quote → Order', steps:[
+      ['click','In /quotes, open a sent quote and click Mark accepted','Expected UI','Status changes to Accepted. Order is created in background.','DB Write','<code>quotes.accepted_version_id</code> is set and <code>orders</code> record is created.'],
+      ['nav','Navigate to /orders and click Open on the new order','Expected UI','Order workspace shows stage strip. Stage 1 = Quote Approved.','Verify','<code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.'],
+      ['prepare','Click Prepare actual lines','Expected UI','System seeds order lines from accepted contract. Gate status is prepared.','Critical','Quote version lines remain unchanged after this point.'],
+      ['review','Review quote vs actual lines and save changes with reason','Expected UI','Differences shown side by side. Reason is required for every variance.','DB Write','<code>order_lines</code> reflect actuals; quote lines stay immutable.'],
+      ['approve','Click Approve actual lines','Expected UI','Order moves to Internal Approval stage.','DB Write','<code>order_approval_gates</code> and <code>order_stage_events</code> are written.']
+    ], no:'Modify quote version line items after send. Approve actual lines without reviewing every variance against the quote.' },
+    { title:'Documents', steps:[
+      ['prepare','Open the order and click Prepare document','Expected UI','Order document draft is created.','Type','<code>proforma_invoice</code> for export or <code>order_confirmation</code> for regional.'],
+      ['review','Click Preview and review the rendered document','Verify','Product, quantity, price, parties, Incoterm, terms, logo, Tax IDs, and bank details.','Tracking','Preview open count is tracked.'],
+      ['approve','Click Approve','Expected UI','Send button unlocked. Non-preview sends now permitted.','DB Write','<code>order_documents.status = approved</code>; gate approved.'],
+      ['send','Click Send tracked, select channel, verify recipient','Expected UI','Recipient defaults from lead contact info. Confirm before sending.','DB Write','<code>order_document_sends</code> row with <code>status = link_created</code>.'],
+      ['click','Use Download / Print PDF if a physical file is needed','Expected UI','Browser print dialog opens and toolbar is hidden from PDF output.','Note','Browser-print only; not a server-generated PDF binary.']
+    ], critical:'<code>link_created</code> is NOT delivered. Do not treat a tracked link as confirmed email/WhatsApp delivery. Do not send unapproved documents to buyers.' },
+    { title:'Packing & Freight', steps:[
+      ['prepare','After first document approval, click Prepare packing sheet','Expected UI','Packing sheet is created from actual order lines.','DB Write','<code>packing_plans</code> and <code>packing_plan_lines</code> created.'],
+      ['approve','Click Preview packing sheet, then Approve packing sheet','Expected UI','Packing stage complete; processing and freight actions unlock.','Gate','Packing approval gate written.'],
+      ['prepare','Click Prepare freight request','Confirm','Origin, destination, Incoterm, packing basis, and freight profile.','DB Write','<code>freight_rate_requests</code> created.'],
+      ['review','Search and attach trade requirements, then confirm source','Expected UI','No rule match means human review required, not automatic clearance.','DB Write','<code>trade_requirements</code> and sources created.'],
+      ['resolve','Resolve all blocking trade requirements before dispatch','Required','Blocking severity requires human review.','Gate','Dispatch blocked until all blocking items are resolved.']
+    ], no:'Treat no rule-match as automatic clearance. Move to dispatch while any blocking trade requirement is unresolved.' },
+    { title:'Dispatch & Closeout', steps:[
+      ['save','Open Processing stage and save picked/packed/QC checks','Expected UI','Mark picked, packed, QC passed; add notes for exceptions.','DB Write','<code>order_processing_checks</code> metadata written.'],
+      ['complete','Complete processing only when all three checks pass','Expected UI','Delivery note and logistics actions unlock.','Gate','Processing gate approved.'],
+      ['prepare','Approve logistics documents, then click Create shipment draft','Required','Mode, carrier, forwarder, and booking/tracking reference.','DB Write','<code>shipments</code> draft record created.'],
+      ['resolve','Resolve all blocking trade requirements, then approve dispatch','Expected UI','Order stage moves to Dispatch/Invoice.','DB Write','<code>shipments.status = dispatched</code>.'],
+      ['approve','Prepare, preview, and approve final invoice','Critical','Final invoice must reflect actual dispatched quantities, not quoted quantities.','Gate','Invoice approval gate required before closeout.'],
+      ['complete','Enter payment reference, reconcile, confirm outstanding = 0, then close','Expected UI','Order status changes to Completed and all gates close.','DB Write','<code>orders.status = completed</code> and <code>finance_sync_records</code> written.']
+    ], no:'Invoice for quoted quantities if actual dispatch differed. Close the order before payment reconciliation is complete and outstanding equals zero.' }
+  ];
+
+  function renderOperatorGuide(guide, guideIdx) {
+    const nav = guide.steps.map((st, i) => `<button class="og3-nav-item ${i === 0 ? 'og3-active' : ''}" onclick="Docs.selectStep(${guideIdx},${i})"><span class="og3-icon" data-t="${st[0]}">${i + 1}</span><span class="og3-nav-text"><span class="og3-nav-n">Step ${i + 1}</span><span class="og3-nav-label">${st[1]}</span></span><span class="og3-chevron">›</span></button>`).join('');
+    const dots = guide.steps.map((_, i) => `<button class="og3-prog-dot ${i === 0 ? 'og3-prog-active' : ''}" onclick="Docs.selectStep(${guideIdx},${i})" aria-label="Open step ${i + 1}"></button>`).join('');
+    const detail = guide.steps.map((st, i) => `<section class="og3-step-content ${i === 0 ? 'og3-step-active' : ''}"><div class="og3-dc-head"><div class="og3-badge">${i + 1}</div><div class="og3-icon-lg"><span class="og3-icon" data-t="${st[0]}">${i + 1}</span></div></div><h3 class="og3-dc-title">${st[1]}</h3><div class="og3-chips"><div class="og3-chip og3-chip-ui"><span class="og3-clabel">${st[2]}</span><p>${st[3]}</p></div><div class="og3-chip og3-chip-db"><span class="og3-clabel">${st[4]}</span><p>${st[5]}</p></div></div></section>`).join('');
+    const warning = guide.critical ? `<div class="og3-critical"><strong>&#9888; Critical:</strong> ${guide.critical}</div>` : `<div class="og3-donot"><strong>&otimes; Do NOT:</strong> ${guide.no}</div>`;
+    return `<div class="og3-wrap"><div class="og3-layout"><nav class="og3-nav">${nav}<div class="og3-progress-row">${dots}</div></nav><div class="og3-detail">${detail}</div></div>${warning}</div>`;
+  }
+
   function topicContentGuides(id) {
     if (id !== 'operator-guides') return null;
-    return `<div class="og-tabs-wrap">
-<div class="og-tabs" role="tablist">
-  <button class="og-tab og-active" onclick="Docs.switchGuideTab(0)"><span class="og-tab-n">1</span>Lead &rarr; Quote</button>
-  <button class="og-tab" onclick="Docs.switchGuideTab(1)"><span class="og-tab-n">2</span>Build &amp; Send</button>
-  <button class="og-tab" onclick="Docs.switchGuideTab(2)"><span class="og-tab-n">3</span>Quote &rarr; Order</button>
-  <button class="og-tab" onclick="Docs.switchGuideTab(3)"><span class="og-tab-n">4</span>Documents</button>
-  <button class="og-tab" onclick="Docs.switchGuideTab(4)"><span class="og-tab-n">5</span>Packing &amp; Freight</button>
-  <button class="og-tab" onclick="Docs.switchGuideTab(5)"><span class="og-tab-n">6</span>Dispatch &amp; Closeout</button>
-</div>
-<div class="og-panel og-active">
-  <div class="og-panel-meta"><span class="og-meta-lbl">6 steps</span><div class="og-pbar"><div class="og-pbar-fill" style="width:100%"></div></div><span class="og-meta-lbl">Lead &rarr; Quote</span></div>
-  <div class="og-steps">
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">1</div><div><strong>Click Follow-up in main navigation</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Lead queue loads. All org leads visible per RLS.</p></div><div><span class="og-chip og-chip-db">DB</span><p><code>leads</code> table via RLS policy.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">2</div><div><strong>Click Open on the lead row</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Lead Command Center opens &mdash; four cards: qualification, coverage, follow-up, compliance.</p></div><div><span class="og-chip og-chip-db">Verify</span><p>Buyer/supplier context present. Lead not disqualified.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">3</div><div><strong>Click Open coverage manager if product coverage is missing</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Select product interest &rarr; Save. Quote CTA becomes dominant when gate passes.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>lead_product_interests</code> row created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">4</div><div><strong>Click Plan follow-up if next action is missing</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Enter date and note. Overdue item clears from queue when complete.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>lead_follow_ups</code> row written.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">5</div><div><strong>Check compliance card for any quote-send blockers</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>If red &mdash; click Compliance check or Full screen. Choose: Attach evidence, Waive (with reason), or Defer to dispatch.</p></div><div><span class="og-chip og-chip-db">Requirement</span><p>Each resolution requires a written record.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">6</div><div><strong>Click Create quote or Continue quote</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Quote workspace opens with lead context pre-seeded.</p></div><div><span class="og-chip og-chip-db">Gate</span><p>Not disqualified &bull; Product interest exists &bull; Country/market set &bull; Compliance acceptable.</p></div></div></div>
-  </div>
-  <div class="og-donot"><strong>&otimes; Do NOT:</strong> Treat free-text product notes as saved coverage. Do not bypass compliance by creating a disconnected quote. Do not assume WhatsApp/email activity means delivery was confirmed.</div>
-</div>
-<div class="og-panel">
-  <div class="og-panel-meta"><span class="og-meta-lbl">9 steps</span><div class="og-pbar"><div class="og-pbar-fill" style="width:100%"></div></div><span class="og-meta-lbl">Quote Build &amp; Send</span></div>
-  <div class="og-steps">
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">1</div><div><strong>Click Quote in navigation or open from lead</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Select or create quote for the correct lead.</p></div><div><span class="og-chip og-chip-db">DB State</span><p>Draft <code>quote_versions</code> record exists or will be created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">2</div><div><strong>Click Add product and select catalog products</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Pack size, MOQ, pricing defaults load from catalog.</p></div><div><span class="og-chip og-chip-db">Verify</span><p>Each line has product, quantity, unit, and price.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">3</div><div><strong>Confirm currency, pricing basis, validity, incoterm, freight profile</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>For non-USD: verify FX snapshot exists or manual FX enabled.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p>FX context in <code>quote_pricing_snapshots</code>.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">4</div><div><strong>Review pricing &mdash; enter override reasons for manual changes</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Override &gt;15% triggers pending approval. Send disabled until approved.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p>Approval flag set on <code>quote_versions</code>.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">5</div><div><strong>Click Save draft or Create quote</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Draft saved. All line items preserved.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>quotes</code>, <code>quote_versions</code>, <code>quote_version_line_items</code>, <code>quote_pricing_snapshots</code> all written.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">6</div><div><strong>Resolve any approval or compliance blockers</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Approval: admin approves from Quotes queue. Compliance: use Review card inside quote workspace.</p></div><div><span class="og-chip og-chip-db">Gate</span><p>Both gates must clear before Send is enabled.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">7</div><div><strong>Click Send quote</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Quote LOCKED from direct editing.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>quotes.sent_at</code> set &bull; <code>quote_versions.status = 'sent'</code> &bull; <code>communications</code> row created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">8</div><div><strong>Click Open customer PDF to review output</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Verify</span><p>Logo &bull; Correct currency (not hardcoded USD if AUD/EUR/GBP/INR) &bull; All line items &bull; Incoterm &bull; Tax ID.</p></div><div><span class="og-chip og-chip-db">Status</span><p>Sent version is immutable from this point.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">9</div><div><strong>Record buyer outcome: Mark accepted or Mark rejected</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Timing</span><p>Only after actual buyer response &mdash; not immediately after send.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>quotes.accepted_version_id</code> set. Contract and order lineage created.</p></div></div></div>
-  </div>
-  <div class="og-donot"><strong>&otimes; Do NOT:</strong> Send while approval is pending. Do not treat a draft PDF as a sent customer document. Do not mark accepted before receiving actual buyer confirmation.</div>
-</div>
-<div class="og-panel">
-  <div class="og-panel-meta"><span class="og-meta-lbl">5 steps</span><div class="og-pbar"><div class="og-pbar-fill" style="width:100%"></div></div><span class="og-meta-lbl">Accepted Quote &rarr; Order</span></div>
-  <div class="og-steps">
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">1</div><div><strong>In /quotes, open a sent quote and click Mark accepted</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Status changes to Accepted. Order created in background.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>quotes.accepted_version_id</code> set &bull; contract/order RPCs called &bull; <code>orders</code> record created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">2</div><div><strong>Navigate to /orders and click Open on the new order</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Order workspace shows stage strip. Stage 1 = Quote Approved.</p></div><div><span class="og-chip og-chip-db">Verify</span><p><code>orders.source_quote_id</code> and <code>source_quote_version_id</code> are set.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">3</div><div><strong>Click Prepare actual lines</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>System seeds order lines from accepted contract. Gate status set to prepared.</p></div><div><span class="og-chip og-chip-db">Critical</span><p>Quote version lines remain UNCHANGED after this point.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">4</div><div><strong>Review quote vs actual lines &mdash; save changes with reason</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Differences shown side by side. Reason field required for each variance.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>order_lines</code> reflect actual. <code>quote_version_line_items</code> unchanged.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">5</div><div><strong>Click Approve actual lines</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Order moves to Internal Approval stage.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>order_approval_gates</code> approved &bull; <code>order_stage_events</code> written.</p></div></div></div>
-  </div>
-  <div class="og-donot"><strong>&otimes; Do NOT:</strong> Modify quote version line items after send. Do not approve actual lines without reviewing every variance against the quote.</div>
-</div>
-<div class="og-panel">
-  <div class="og-panel-meta"><span class="og-meta-lbl">5 steps</span><div class="og-pbar"><div class="og-pbar-fill" style="width:100%"></div></div><span class="og-meta-lbl">First Document &amp; Send Tracking</span></div>
-  <div class="og-steps">
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">1</div><div><strong>Open the order and click Prepare document</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Order document draft created.</p></div><div><span class="og-chip og-chip-db">Type</span><p><code>proforma_invoice</code> (export) or <code>order_confirmation</code> (regional).</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">2</div><div><strong>Click Preview and review the rendered document</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Verify</span><p>Product &bull; Quantity &bull; Price &bull; Parties &bull; Incoterm &bull; Terms &bull; Logo &bull; Tax IDs &bull; Bank details.</p></div><div><span class="og-chip og-chip-db">Tracking</span><p>Preview open count tracked.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">3</div><div><strong>Click Approve</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Send button unlocked. Non-preview sends now permitted.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>order_documents.status = 'approved'</code>. Gate approved.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">4</div><div><strong>Click Send tracked, select channel, verify recipient</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Recipient defaults from lead contact info. Confirm before sending.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>order_document_sends</code> row with <code>status = 'link_created'</code>.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">5</div><div><strong>Use Download / Print PDF if a physical file is needed</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Browser print dialog opens. Toolbar hidden from PDF output.</p></div><div><span class="og-chip og-chip-db">Note</span><p>Browser-print only &mdash; not a server-generated PDF binary.</p></div></div></div>
-  </div>
-  <div class="og-critical"><strong>&#x26A0; Critical:</strong> <code>link_created</code> is NOT delivered. Do not treat a tracked link as confirmed email/WhatsApp delivery. Do not send unapproved documents to buyers.</div>
-</div>
-<div class="og-panel">
-  <div class="og-panel-meta"><span class="og-meta-lbl">5 steps</span><div class="og-pbar"><div class="og-pbar-fill" style="width:100%"></div></div><span class="og-meta-lbl">Packing, Freight &amp; Trade</span></div>
-  <div class="og-steps">
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">1</div><div><strong>After first document approval &mdash; click Prepare packing sheet</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Packing sheet created from actual order lines.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>packing_plans</code> and <code>packing_plan_lines</code> created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">2</div><div><strong>Click Preview packing sheet then Approve packing sheet</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Packing stage complete. Processing and freight actions unlocked.</p></div><div><span class="og-chip og-chip-db">Gate</span><p>Packing approval gate written.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">3</div><div><strong>Click Prepare freight request</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Confirm</span><p>Origin &bull; Destination &bull; Incoterm &bull; Packing basis.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>freight_rate_requests</code> created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">4</div><div><strong>Search and attach trade requirements &mdash; click Confirm source</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>No rule match = human review required. NOT automatic clearance.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>trade_requirements</code> and <code>trade_requirement_sources</code> created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">5</div><div><strong>Resolve all blocking trade requirements before dispatch</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Required</span><p>Blocking severity = human review required.</p></div><div><span class="og-chip og-chip-db">Gate</span><p>Dispatch blocked until all blocking items resolved.</p></div></div></div>
-  </div>
-  <div class="og-donot"><strong>&otimes; Do NOT:</strong> Treat no rule-match as automatic clearance. Do not move to dispatch while any blocking trade requirement is unresolved.</div>
-</div>
-<div class="og-panel">
-  <div class="og-panel-meta"><span class="og-meta-lbl">6 steps</span><div class="og-pbar"><div class="og-pbar-fill" style="width:100%"></div></div><span class="og-meta-lbl">Processing, Dispatch &amp; Closeout</span></div>
-  <div class="og-steps">
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">1</div><div><strong>Open Processing stage &mdash; save picked/packed/QC checks</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Mark: Picked &bull; Packed &bull; QC Passed. Add notes for exceptions.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>order_processing_checks</code> metadata written.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">2</div><div><strong>Complete processing only when all three checks pass</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Delivery note and logistics actions unlocked.</p></div><div><span class="og-chip og-chip-db">Gate</span><p>Processing gate approved.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">3</div><div><strong>Approve logistics documents then click Create shipment draft</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Required</span><p>Mode &bull; Carrier &bull; Forwarder &bull; Booking/tracking reference.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>shipments</code> draft record created.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">4</div><div><strong>Resolve all blocking trade requirements then click Approve dispatch</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Order stage moves to Dispatch/Invoice.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>shipments.status = 'dispatched'</code>.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">5</div><div><strong>Prepare / Preview / Approve final invoice &mdash; click Approve invoice</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Critical</span><p>Final invoice must reflect actual dispatched quantities &mdash; NOT quoted quantities.</p></div><div><span class="og-chip og-chip-db">Gate</span><p>Invoice approval gate required before closeout.</p></div></div></div>
-    <div class="og-sc"><div class="og-sc-l"><div class="og-sc-n">6</div><div><strong>Enter payment reference, reconcile, confirm outstanding = 0 &mdash; Generate receipt + close</strong></div></div><div class="og-sc-r"><div><span class="og-chip og-chip-ui">Expected UI</span><p>Order status changes to Completed. All gates closed.</p></div><div><span class="og-chip og-chip-db">DB Write</span><p><code>orders.status = 'completed'</code> &bull; <code>finance_sync_records</code> written &bull; Closeout gate approved.</p></div></div></div>
-  </div>
-  <div class="og-donot"><strong>&otimes; Do NOT:</strong> Invoice for quoted quantities if actual dispatch differed. Do not close the order before payment reconciliation is complete and outstanding = 0.</div>
-</div>
-</div>
-<div class="callout" style="margin-top:20px"><b>Gate rule:</b> All gate approvals are required and auditable. Do not bypass any stage gate. Do not create disconnected quotes, assume WhatsApp activity means delivery, or treat a draft PDF as a sent customer document.</div>`;
+    return `<div class="og-tabs-wrap"><div class="og-tabs" role="tablist">${guideSets.map((g, i) => `<button class="og-tab ${i === 0 ? 'og-active' : ''}" onclick="Docs.switchGuideTab(${i})"><span class="og-tab-n">${i + 1}</span>${g.title}</button>`).join('')}</div>${guideSets.map((g, i) => `<div class="og-panel ${i === 0 ? 'og-active' : ''}">${renderOperatorGuide(g, i)}</div>`).join('')}<div class="callout" style="margin-top:20px"><b>Gate rule:</b> All gate approvals are required and auditable. Do not bypass any stage gate. Do not create disconnected quotes, assume WhatsApp activity means delivery, or treat a draft PDF as a sent customer document.</div></div>`;
   }
 
   function switchGuideTab(n) {
@@ -944,7 +795,7 @@ flowchart LR
     document.getElementById('topicView').innerHTML = `<div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${getTopicContent(id)}<div class="topic-footer"><div class="topic-stepper"><button onclick="Docs.goPrev()">\u2190 ${i > 0 ? topics[i - 1].title : 'Overview'}</button><span>${i + 1} / ${topics.length}</span><button onclick="Docs.goNext()">${i < topics.length - 1 ? topics[i + 1].title : 'Start over'} \u2192</button></div></div></div>`;
     renderRail(); markActive();
     if (id === 'live-ui') renderScreenshots();
-    if (id === 'diagrams' && window.mermaid) {
+    if (window.mermaid && document.querySelector('.mermaid')) {
       _initDiagViewer();
       setTimeout(() => { try { mermaid.run({ nodes: Array.from(document.querySelectorAll('.mermaid')) }); } catch (e) {} setTimeout(_injectExpandButtons, 900); }, 80);
     }
@@ -1068,11 +919,30 @@ flowchart LR
     const canvas = document.getElementById('diagCanvas');
     canvas.innerHTML = ''; canvas.appendChild(clone);
     document.getElementById('diagModalTitle').textContent = title;
-    dv.scale = 1; dv.tx = 0; dv.ty = 0;
-    _diagApply();
-    document.getElementById('diagZoomPct').textContent = '100%';
     document.getElementById('diagModal').classList.add('dm-open');
     document.body.style.overflow = 'hidden';
+    _diagFitToViewport();
+    _diagApply();
+  }
+
+
+  function _diagFitToViewport() {
+    const vp = document.getElementById('diagViewport');
+    const svg = document.getElementById('diagCanvas')?.querySelector('svg');
+    if (!vp || !svg) return;
+    const vb = svg.getAttribute('viewBox');
+    let sw = svg.getAttribute('width'), sh = svg.getAttribute('height');
+    if (vb) {
+      const parts = vb.trim().split(/[\s,]+/).map(Number);
+      if (parts.length >= 4) { sw = parts[2]; sh = parts[3]; }
+    }
+    sw = parseFloat(sw) || svg.getBoundingClientRect().width || 1200;
+    sh = parseFloat(sh) || svg.getBoundingClientRect().height || 760;
+    const fit = Math.min((vp.clientWidth - 48) / sw, (vp.clientHeight - 48) / sh, 1.15);
+    dv.scale = Math.max(0.2, Math.min(5, fit || 1));
+    dv.tx = 0; dv.ty = 0;
+    const pct = document.getElementById('diagZoomPct');
+    if (pct) pct.textContent = Math.round(dv.scale * 100) + '%';
   }
 
   function closeDiagramViewer() {
@@ -1152,7 +1022,7 @@ flowchart LR
     document.querySelectorAll('.arch-tab').forEach((b, i) => b.classList.toggle('arch-active', i === n));
     document.querySelectorAll('.arch-panel').forEach((p, i) => p.classList.toggle('arch-active', i === n));
   }
-    function render() { const id = idx(); document.body.style.overflow = ''; document.getElementById('diagModal')?.classList.remove('dm-open'); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
+    function render() { const id = idx(); document.body.style.overflow = ''; document.getElementById('leftNav')?.classList.remove('open'); document.getElementById('diagModal')?.classList.remove('dm-open'); renderNav(); if (id === 'overview') renderOverview(); renderTopic(); renderRail(); markActive(); }
   function goPrev() { let i = currentIndex(); openTopic(i === 0 ? 'overview' : topics[i - 1].id); }
   function goNext() { let i = currentIndex(); openTopic(i === topics.length - 1 ? 'overview' : topics[i + 1].id); }
   function toggleNav() { document.getElementById('leftNav').classList.toggle('open'); }
@@ -1164,6 +1034,8 @@ flowchart LR
   function showFullDocument() { const w = window.open('', '_blank'); w.document.write('<html><head><title>SETU Flow Full Documentation</title><link rel="stylesheet" href="setuflow-docs-workspace.css"></head><body><main class="main" style="max-width:980px;margin:auto">' + topics.filter(t => t.id !== 'overview').map(t => `<section class="topic-view" style="margin:18px 0"><div class="topic-head" style="--accent:${t.accent}"><span class="tag">${t.tag}</span><h1>${t.title}</h1><p>${t.summary}</p></div><div class="topic-body">${getTopicContent(t.id)}</div></section>`).join('') + '</main></body></html>'); }
 
   window.addEventListener('hashchange', () => { render(); openHashSnapshot(); });
+  window.addEventListener('popstate', () => { render(); openHashSnapshot(); });
+  window.addEventListener('pageshow', () => { document.body.style.overflow = ''; document.getElementById('leftNav')?.classList.remove('open'); document.getElementById('diagModal')?.classList.remove('dm-open'); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { document.getElementById('leftNav').classList.remove('open'); document.querySelectorAll('.modal,.lightbox').forEach(m => m.classList.add('hidden')); closeDiagramViewer(); }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); document.getElementById('globalSearch')?.focus(); }

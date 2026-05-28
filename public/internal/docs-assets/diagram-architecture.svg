@@ -1,64 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-label="SETU Flow architecture diagram">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 930" role="img" aria-label="SETU Flow CRM architecture map">
   <defs>
-    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f9fcff"/><stop offset="1" stop-color="#f2f7fd"/></linearGradient>
-    <linearGradient id="blue" x1="0" x2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#14b8a6"/></linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#0f2746" flood-opacity="0.12"/></filter>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/></marker>
+    <marker id="arrowTeal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14b8a6"/></marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cf6"/></marker>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      .t{font-family:Inter,Arial,sans-serif}.head{font-weight:900;letter-spacing:.12em;font-size:18px}.label{font-size:16px;font-weight:900}.sub{font-size:13px;fill:#64748b}.mini{font-size:12px}.box{filter:url(#softShadow)}
+    </style>
   </defs>
-  <rect width="1200" height="760" fill="url(#bg)"/>
-  <rect x="36" y="30" width="1128" height="700" rx="34" fill="#ffffff" stroke="#d8e5f3" filter="url(#shadow)"/>
-  <text x="74" y="92" font-family="Inter, sans-serif" font-size="28" font-weight="800" fill="#10233a">SETU Flow CRM architecture</text>
-  <text x="74" y="122" font-family="Inter, sans-serif" font-size="16" fill="#5b738f">Premium documentation diagram — application, services and data boundaries</text>
+  <rect width="1500" height="930" rx="18" fill="#f8fafc" stroke="#dbe3ee"/>
 
-  <rect x="74" y="166" width="1052" height="118" rx="28" fill="#0b1a2e"/>
-  <text x="104" y="204" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#77a8ff">USER SURFACES</text>
-  <rect x="104" y="220" width="210" height="40" rx="14" fill="#132944" stroke="#27496f"/>
-  <text x="124" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Internal workspace</text>
-  <rect x="328" y="220" width="210" height="40" rx="14" fill="#132944" stroke="#27496f"/>
-  <text x="350" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Mobile capture routes</text>
-  <rect x="552" y="220" width="210" height="40" rx="14" fill="#132944" stroke="#27496f"/>
-  <text x="575" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Public / shared surfaces</text>
-  <rect x="776" y="220" width="320" height="40" rx="14" fill="#132944" stroke="#27496f"/>
-  <text x="798" y="245" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="#f8fbff">Internal docs, roadmap and issue tracker</text>
+  <g transform="translate(34,30)">
+    <rect x="0" y="0" width="195" height="820" rx="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="6 5"/>
+    <text class="t head" x="98" y="42" text-anchor="middle" fill="#334155">OPERATORS</text>
+    <rect class="box" x="27" y="70" width="142" height="66" rx="10" fill="#0f2746"/><text class="t label" x="98" y="101" text-anchor="middle" fill="#fff">Sales</text><text class="t sub" x="98" y="123" text-anchor="middle" fill="#cbd5e1">Quote / Lead</text>
+    <rect class="box" x="27" y="156" width="142" height="66" rx="10" fill="#12386f"/><text class="t label" x="98" y="187" text-anchor="middle" fill="#fff">Operations</text><text class="t sub" x="98" y="209" text-anchor="middle" fill="#cbd5e1">Orders / Docs</text>
+    <rect class="box" x="27" y="242" width="142" height="66" rx="10" fill="#2563eb"/><text class="t label" x="98" y="273" text-anchor="middle" fill="#fff">Admin</text><text class="t sub" x="98" y="295" text-anchor="middle" fill="#dbeafe">Org / Roles</text>
+    <rect class="box" x="27" y="328" width="142" height="66" rx="10" fill="#475569"/><text class="t label" x="98" y="359" text-anchor="middle" fill="#fff">Mobile</text><text class="t sub" x="98" y="381" text-anchor="middle" fill="#e2e8f0">Capture / vCard</text>
+  </g>
 
-  <rect x="74" y="322" width="338" height="140" rx="26" fill="#f7fbff" stroke="#d8e5f3"/>
-  <text x="98" y="356" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#156a8f">NEXT.JS APPLICATION</text>
-  <text x="98" y="388" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#10233a">UI, route groups & page composition</text>
-  <text x="98" y="420" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Dashboard, leads, pipeline, quotes, orders, admin, mobile, docs workspace</text>
-  <rect x="98" y="436" width="286" height="10" rx="5" fill="#e1ebf7"/>
-  <rect x="98" y="436" width="192" height="10" rx="5" fill="url(#blue)"/>
+  <g transform="translate(260,30)">
+    <rect x="0" y="0" width="325" height="820" rx="16" fill="#eff6ff" stroke="#bae6fd" stroke-dasharray="6 5"/>
+    <text class="t head" x="162" y="42" text-anchor="middle" fill="#1d4ed8">NEXT.JS FRONTEND</text>
+    <g class="t" font-size="16" font-weight="900" fill="#1e3a8a">
+      <rect x="24" y="70" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="93" text-anchor="middle">/leads — Follow-up</text><text class="sub" x="162" y="112" text-anchor="middle">Lead Command Center</text>
+      <rect x="24" y="138" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="161" text-anchor="middle">/quotes — Quote Builder</text><text class="sub" x="162" y="180" text-anchor="middle">Versioning · PDF · Share</text>
+      <rect x="24" y="206" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="229" text-anchor="middle">/orders — Execution</text><text class="sub" x="162" y="248" text-anchor="middle">Stage Panel · Doc Tray</text>
+      <rect x="24" y="274" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="297" text-anchor="middle">/approval-send</text><text class="sub" x="162" y="316" text-anchor="middle">Approval · Send Gate</text>
+      <rect x="24" y="342" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="365" text-anchor="middle">/pipeline · /products</text><text class="sub" x="162" y="384" text-anchor="middle">Pipeline · Catalog</text>
+      <rect x="24" y="410" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="433" text-anchor="middle">/admin/* routes</text><text class="sub" x="162" y="452" text-anchor="middle">Org · Users · Catalog Admin</text>
+      <rect x="24" y="478" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="501" text-anchor="middle">/mobile/capture</text><text class="sub" x="162" y="520" text-anchor="middle">Mobile · vCard · Scan</text>
+      <rect x="24" y="546" width="277" height="52" rx="9" fill="#dbeafe" stroke="#bfdbfe"/><text x="162" y="569" text-anchor="middle">/order-documents/preview</text><text class="sub" x="162" y="588" text-anchor="middle">Tokenized Doc Preview</text>
+    </g>
+  </g>
 
-  <rect x="430" y="322" width="338" height="140" rx="26" fill="#f7fbff" stroke="#d8e5f3"/>
-  <text x="454" y="356" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#156a8f">SERVER ACTIONS & APIS</text>
-  <text x="454" y="388" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#10233a">Workflow logic, PDFs, AI & integrations</text>
-  <text x="454" y="420" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Quotes, orders, compliance, card scan, Setu Guru, webhooks, internal docs helpers</text>
-  <rect x="454" y="436" width="286" height="10" rx="5" fill="#e1ebf7"/>
-  <rect x="454" y="436" width="236" height="10" rx="5" fill="url(#blue)"/>
+  <g transform="translate(615,30)">
+    <rect x="0" y="0" width="300" height="820" rx="16" fill="#ecfdf5" stroke="#bbf7d0" stroke-dasharray="6 5"/>
+    <text class="t head" x="150" y="42" text-anchor="middle" fill="#166534">SERVER ACTIONS / API</text>
+    <g class="t" font-size="15" font-weight="800" fill="#14532d">
+      <rect x="24" y="70" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="100" text-anchor="middle">Lead / Coverage / Compliance</text>
+      <rect x="24" y="134" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="164" text-anchor="middle">createQuote · updateQuoteWorkflow</text>
+      <rect x="24" y="198" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="228" text-anchor="middle">sendQuote · recordOutcome · RPC fanout</text>
+      <rect x="24" y="262" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="292" text-anchor="middle">ensureActualOrderLines</text>
+      <rect x="24" y="326" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="356" text-anchor="middle">Document Gate Actions</text>
+      <rect x="24" y="390" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="420" text-anchor="middle">Packing · Freight · Processing</text>
+      <rect x="24" y="454" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="484" text-anchor="middle">Shipment · Dispatch · Trade Req</text>
+      <rect x="24" y="518" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="548" text-anchor="middle">Finance · Closeout</text>
+      <rect x="24" y="582" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="612" text-anchor="middle">sendOrderDocumentLink</text>
+      <rect x="24" y="646" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="676" text-anchor="middle">RLS Permission Checks</text>
+      <rect x="24" y="710" width="252" height="48" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="740" text-anchor="middle">Middleware · Auth Guard</text>
+      <rect x="24" y="774" width="252" height="36" rx="9" fill="#dcfce7" stroke="#86efac"/><text x="150" y="797" text-anchor="middle">Public API: /api/public/*</text>
+    </g>
+  </g>
 
-  <rect x="786" y="322" width="340" height="140" rx="26" fill="#f7fbff" stroke="#d8e5f3"/>
-  <text x="810" y="356" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#156a8f">SECURITY & STATE</text>
-  <text x="810" y="388" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#10233a">Auth, org scope & permission normalization</text>
-  <text x="810" y="420" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Organisation context, roles, route guards, internal shared-doc protection</text>
-  <rect x="810" y="436" width="286" height="10" rx="5" fill="#e1ebf7"/>
-  <rect x="810" y="436" width="220" height="10" rx="5" fill="url(#blue)"/>
+  <g transform="translate(945,30)">
+    <rect x="0" y="0" width="295" height="610" rx="16" fill="#fffbeb" stroke="#fde68a" stroke-dasharray="6 5"/>
+    <text class="t head" x="148" y="42" text-anchor="middle" fill="#92400e">SUPABASE</text>
+    <g class="t" fill="#78350f">
+      <rect x="24" y="70" width="247" height="80" rx="10" fill="#fef3c7" stroke="#fde68a"/><text class="label" x="148" y="101" text-anchor="middle">Auth</text><text class="mini" x="148" y="127" text-anchor="middle">JWT · Sessions · Org membership</text>
+      <rect x="24" y="166" width="247" height="145" rx="10" fill="#fef3c7" stroke="#fde68a"/><text class="label" x="148" y="197" text-anchor="middle">Postgres Database</text><text class="mini" x="148" y="223" text-anchor="middle">leads · quotes · orders</text><text class="mini" x="148" y="246" text-anchor="middle">quote_versions · order_lines</text><text class="mini" x="148" y="269" text-anchor="middle">order_documents · shipments</text><text class="mini" x="148" y="292" text-anchor="middle">finance_sync_records + 60+ tables</text>
+      <rect x="24" y="327" width="247" height="80" rx="10" fill="#fef3c7" stroke="#fde68a"/><text class="label" x="148" y="358" text-anchor="middle">RLS Policies</text><text class="mini" x="148" y="384" text-anchor="middle">Row-level workspace isolation</text><text class="mini" x="148" y="402" text-anchor="middle">⚠ Many tables missing policies</text>
+      <rect x="24" y="423" width="247" height="80" rx="10" fill="#fef3c7" stroke="#fde68a"/><text class="label" x="148" y="454" text-anchor="middle">RPCs / Functions</text><text class="mini" x="148" y="480" text-anchor="middle">create_rfq_fanout · send_quote_fanout</text><text class="mini" x="148" y="498" text-anchor="middle">⚠ SECURITY DEFINER issues</text>
+      <rect x="24" y="519" width="247" height="70" rx="10" fill="#fef3c7" stroke="#fde68a"/><text class="label" x="148" y="548" text-anchor="middle">Storage</text><text class="mini" x="148" y="574" text-anchor="middle">Documents · Logos · Uploads</text><text class="mini" x="148" y="592" text-anchor="middle">Compliance evidence files</text>
+    </g>
+  </g>
 
-  <rect x="74" y="520" width="480" height="158" rx="26" fill="#0d1f37"/>
-  <text x="102" y="556" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#79fff4">SUPABASE PLATFORM</text>
-  <text x="102" y="588" font-family="Inter, sans-serif" font-size="24" font-weight="800" fill="#ffffff">Persistence, auth and storage</text>
-  <text x="102" y="620" font-family="Inter, sans-serif" font-size="15" fill="#b7c8da">profiles · organizations · leads · quotes · orders · audit artifacts · docs screenshots</text>
-  <rect x="102" y="640" width="420" height="10" rx="5" fill="#27496f"/>
-  <rect x="102" y="640" width="320" height="10" rx="5" fill="#22d3ee"/>
+  <g transform="translate(1290,30)">
+    <rect x="0" y="0" width="175" height="330" rx="16" fill="#fff7ed" stroke="#fdba74" stroke-dasharray="6 5"/>
+    <text class="t head" x="88" y="42" text-anchor="middle" fill="#9a3412">DOCUMENT ENGINE</text>
+    <g class="t" fill="#7c2d12" font-size="14" font-weight="800">
+      <rect x="16" y="70" width="143" height="50" rx="9" fill="#ffedd5" stroke="#fed7aa"/><text x="88" y="101" text-anchor="middle">v3 Doc Renderer</text>
+      <rect x="16" y="136" width="143" height="50" rx="9" fill="#ffedd5" stroke="#fed7aa"/><text x="88" y="167" text-anchor="middle">Terms Profiles</text>
+      <rect x="16" y="202" width="143" height="50" rx="9" fill="#ffedd5" stroke="#fed7aa"/><text x="88" y="233" text-anchor="middle">Send Tracking</text>
+      <rect x="16" y="268" width="143" height="50" rx="9" fill="#ffedd5" stroke="#fed7aa"/><text x="88" y="299" text-anchor="middle">Open Tracking</text>
+    </g>
+    <text class="t mini" x="88" y="343" text-anchor="middle" fill="#9a3412">Browser print · No server PDF yet</text>
+  </g>
 
-  <rect x="584" y="520" width="542" height="158" rx="26" fill="#ffffff" stroke="#d8e5f3"/>
-  <text x="612" y="556" font-family="Inter, sans-serif" font-size="15" letter-spacing="1.5" font-weight="700" fill="#7c5cff">EXTERNAL SERVICES</text>
-  <text x="612" y="588" font-family="Inter, sans-serif" font-size="24" font-weight="800" fill="#10233a">OpenAI, mail, files and partner systems</text>
-  <text x="612" y="622" font-family="Inter, sans-serif" font-size="15" fill="#5b738f">Setu Guru model calls, business card OCR / vision, mail and PDF delivery, webhook targets</text>
-  <rect x="612" y="640" width="470" height="10" rx="5" fill="#e1ebf7"/>
-  <rect x="612" y="640" width="250" height="10" rx="5" fill="#8b5cf6"/>
+  <g transform="translate(945,665)">
+    <rect x="0" y="0" width="295" height="185" rx="16" fill="#fdf4ff" stroke="#f0abfc" stroke-dasharray="6 5"/>
+    <text class="t head" x="148" y="36" text-anchor="middle" fill="#86198f">INTEGRATIONS</text>
+    <rect x="24" y="62" width="108" height="48" rx="8" fill="#f5d0fe" stroke="#e879f9"/><text class="t label" x="78" y="93" text-anchor="middle" fill="#701a75">Email</text>
+    <rect x="163" y="62" width="108" height="48" rx="8" fill="#f5d0fe" stroke="#e879f9"/><text class="t label" x="217" y="93" text-anchor="middle" fill="#701a75">WhatsApp</text>
+    <rect x="24" y="126" width="108" height="48" rx="8" fill="#f5d0fe" stroke="#e879f9"/><text class="t label" x="78" y="157" text-anchor="middle" fill="#701a75">Freight</text>
+    <rect x="163" y="126" width="108" height="48" rx="8" fill="#f5d0fe" stroke="#e879f9"/><text class="t label" x="217" y="157" text-anchor="middle" fill="#701a75">Finance</text>
+    <text class="t mini" x="148" y="202" text-anchor="middle" fill="#86198f">Adapter boundaries — not auto-connected</text>
+  </g>
 
-  <path d="M243 260 C243 295,243 295,243 322" fill="none" stroke="#7aa5ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M599 260 C599 295,599 295,599 322" fill="none" stroke="#7aa5ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M942 260 C942 295,942 295,942 322" fill="none" stroke="#7aa5ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M244 462 C244 494,244 494,244 520" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
-  <path d="M598 462 C598 494,598 494,598 520" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
-  <path d="M956 462 C956 494,956 494,956 520" fill="none" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/>
+  <g stroke-width="2.5" fill="none">
+    <path d="M203 123 L260 123" stroke="#3b82f6" marker-end="url(#arrowBlue)"/><path d="M203 209 L260 209" stroke="#3b82f6" marker-end="url(#arrowBlue)"/><path d="M203 295 L260 295" stroke="#3b82f6" marker-end="url(#arrowBlue)"/><path d="M203 381 L260 381" stroke="#3b82f6" marker-end="url(#arrowBlue)"/>
+    <path d="M585 303 L615 303" stroke="#14b8a6" marker-end="url(#arrowTeal)"/><path d="M585 439 L615 439" stroke="#14b8a6" marker-end="url(#arrowTeal)"/>
+    <path d="M915 235 L945 235" stroke="#3b82f6" marker-end="url(#arrowBlue)"/><path d="M915 400 L945 400" stroke="#3b82f6" marker-end="url(#arrowBlue)"/><path d="M915 595 L945 595" stroke="#3b82f6" marker-end="url(#arrowBlue)"/>
+    <path d="M1240 112 L1290 112" stroke="#d97706" stroke-dasharray="6 5" marker-end="url(#arrowBlue)"/><path d="M915 792 L945 792" stroke="#8b5cf6" stroke-dasharray="6 5" marker-end="url(#arrowPurple)"/>
+  </g>
+
+  <g transform="translate(34,815)" class="t">
+    <rect x="0" y="0" width="485" height="70" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+    <text x="20" y="24" font-size="13" font-weight="900" fill="#334155">LEGEND</text>
+    <line x1="20" y1="45" x2="70" y2="45" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrowBlue)"/><text x="78" y="50" font-size="13" fill="#64748b">User action / data flow</text>
+    <line x1="230" y1="45" x2="280" y2="45" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="6 5" marker-end="url(#arrowPurple)"/><text x="288" y="50" font-size="13" fill="#64748b">Adapter boundary / risk</text>
+  </g>
 </svg>
