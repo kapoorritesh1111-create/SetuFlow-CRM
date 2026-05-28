@@ -11,9 +11,17 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
+import type { MobileLeadType } from '@/features/mobile/lib/role-aware-leads';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+function readModeLeadType(value?: string | string[]): MobileLeadType {
+  const mode = readParam(value);
+  if (mode === 'buyers' || mode === 'buyer') return 'buyer';
+  if (mode === 'suppliers' || mode === 'supplier') return 'supplier';
+  return '';
 }
 
 export default async function LeadsPage({
@@ -64,6 +72,7 @@ export default async function LeadsPage({
   const quickLeadProductId = readParam(searchParams?.productId).trim();
   const eventId = readParam(searchParams?.eventId).trim();
   const initialFastField = quickLeadEnabled && Boolean(eventId);
+  const modeLeadType = readModeLeadType(searchParams?.mode);
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -86,7 +95,7 @@ export default async function LeadsPage({
       <div className="md:hidden">
         <LeadsMobileSurface
           quickLeadEnabled={quickLeadEnabled}
-          initialLeadType={readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer'}
+          initialLeadType={modeLeadType || (readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer')}
           eventId={eventId || null}
           leads={mobileLeadCards}
           user={mobileUser}
