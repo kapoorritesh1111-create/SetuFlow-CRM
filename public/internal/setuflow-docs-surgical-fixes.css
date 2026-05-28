@@ -1,0 +1,108 @@
+/* Surgical docs workspace fixes: keep this file small and loaded after setuflow-docs-workspace.css. */
+
+/* Refresh hardening: never allow logo assets to render at their intrinsic SVG size during CSS/JS load. */
+.auth-logo,
+.brand-mark-img,
+.nav-title-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.auth-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.brand-mark-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.nav-title-icon {
+  width: 22px;
+  height: 22px;
+  margin-right: 8px;
+}
+
+.auth-logo img,
+.auth-logo svg,
+.brand-mark-img img,
+.brand-mark-img svg,
+.nav-title-icon img,
+.nav-title-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  display: block;
+}
+
+.auth-gate.hidden,
+.shared-banner.hidden,
+.modal.hidden,
+.lightbox.hidden,
+.topic-view.hidden,
+.overview-view.hidden {
+  display: none !important;
+}
+
+/* Quick-action CTA cleanup: icon-only arrow affordance, no cramped text + arrow overlap. */
+.quick-card > a,
+.quick-card > button {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 !important;
+  border-radius: 999px;
+  border: 1px solid #dbe3ee;
+  background: #f8fbff;
+  color: #0f3d75 !important;
+  display: inline-grid !important;
+  place-items: center;
+  font-size: 0 !important;
+  line-height: 1;
+  text-indent: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.quick-card > a::after,
+.quick-card > button::after {
+  content: '→';
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.quick-card > a:hover,
+.quick-card > button:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  transform: translateX(1px);
+}
+
+/* Make sure action text never bleeds under the icon button. */
+.quick-card p {
+  padding-right: 38px;
+}
+
+@media (max-width: 760px) {
+  .brand-mark-img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .quick-card > a,
+  .quick-card > button {
+    right: 14px;
+    bottom: 14px;
+  }
+}
