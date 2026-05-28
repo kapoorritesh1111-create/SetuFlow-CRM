@@ -149,3 +149,37 @@
   .og-sc-r { border-left: 0; border-top: 1px solid #e2e8f0; }
   .og-tab { min-width: 90px; font-size: 10px; height: 34px; padding: 0 7px; }
 }
+
+/* ============================================================
+   DIAGRAM VIEWER — Fullscreen zoom/pan modal
+   ============================================================ */
+.mermaid-wrap { position: relative; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background: #fff; padding: 18px 18px 14px; margin: 12px 0; }
+.diagram-title { font-size: 11px; font-weight: 950; text-transform: uppercase; letter-spacing: .09em; color: #94a3b8; margin-bottom: 12px; }
+.diagram-expand-btn { position: absolute; top: 10px; right: 10px; height: 28px; border: 1px solid #dbe3ee; background: #f8fafc; border-radius: 8px; padding: 0 10px; font-size: 11px; font-weight: 900; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 5px; z-index: 5; transition: .13s; }
+.diagram-expand-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.diagram-expand-btn svg { width: 13px; height: 13px; }
+pre.mermaid { overflow-x: auto; }
+pre.mermaid > svg { display: block; margin: 0 auto; max-width: 100%; height: auto !important; }
+
+/* Modal shell */
+.diag-modal { position: fixed; inset: 0; z-index: 300; background: #07111e; display: none; flex-direction: column; }
+.diag-modal.dm-open { display: flex; }
+.diag-topbar { height: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: rgba(6,16,30,.98); border-bottom: 1px solid rgba(255,255,255,.07); gap: 12px; }
+.diag-modal-title { color: #e2e8f0; font-size: 13px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.diag-controls { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.dc { height: 34px; min-width: 34px; border: 1px solid rgba(255,255,255,.13); background: rgba(255,255,255,.07); color: #e2e8f0; border-radius: 9px; font-size: 16px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 10px; transition: .12s; white-space: nowrap; font-family: inherit; }
+.dc:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.25); }
+.dc.dc-sm { font-size: 12px; padding: 0 12px; }
+.diag-zoom-pct { color: #64748b; font-size: 11px; font-weight: 950; min-width: 42px; text-align: center; }
+.diag-sep { width: 1px; height: 22px; background: rgba(255,255,255,.08); margin: 0 2px; }
+.diag-viewport { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: grab; position: relative; }
+.diag-viewport.dm-drag { cursor: grabbing; }
+.diag-canvas { transform-origin: center center; will-change: transform; }
+.diag-canvas svg { display: block; }
+.diag-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,.7); color: #94a3b8; font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 4px 14px; pointer-events: none; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .diag-topbar { height: 48px; padding: 0 10px; }
+  .dc.dc-sm { display: none; }
+  .diag-hint { display: none; }
+}
