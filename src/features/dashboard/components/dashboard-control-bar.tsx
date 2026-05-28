@@ -76,7 +76,7 @@ export function DashboardControlBar({
   const hasActive = Boolean(filters.marketCode || filters.productName || filters.stageFilter || filters.statusFilter || filters.timeRange !== 'this-month');
 
   return (
-    <section className="setu-dashboard-controls flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2">
+    <section className="setu-dashboard-controls -mt-5 flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2 md:-mt-7">
       <div className="contents">
         <span className="hidden shrink-0 pr-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:inline md:min-w-[72px]">Viewing:</span>
 
