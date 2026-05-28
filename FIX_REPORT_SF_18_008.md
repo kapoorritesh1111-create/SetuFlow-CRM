@@ -21,3 +21,18 @@ This repo patch treats the dependent `as any` cleanup issues as one bundled fix 
 ## Notes
 - This patch intentionally focuses on the dependent `as any` cleanup bundle for SF-18-008/008A/008B/008C.
 - Some broader `any` type annotations still exist in older server helper signatures, but the exact forbidden `as any` casts have been removed from the targeted Orders/Leads/Quotes feature paths.
+
+## Build Error Follow-up Patch
+
+Patched the Vercel build error reported on `src/features/leads/command-center/adapters.ts` where `data.lead?.whatsapp_number` was read but the `LeadProfileData['lead']` Pick type did not include `whatsapp_number`.
+
+Files updated:
+- `src/lib/queries/query-core.ts`
+- `src/lib/queries/data.ts`
+
+Change:
+- Added `'whatsapp_number'` to the `LeadProfileData.lead` Pick type so it matches the existing Supabase select and adapter usage.
+
+Validation:
+- Confirmed the select already includes `whatsapp_number`.
+- Could not run `npm run build` locally because this uploaded zip does not include `node_modules` and `npm ci` was not run.
