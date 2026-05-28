@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
 import { MobileBusinessCardScanner } from '@/features/mobile/components/mobile-business-card-scanner';
+import type { MobileLeadType } from '@/features/mobile/lib/role-aware-leads';
 
 type LeadsMobileSurfaceProps = {
   quickLeadEnabled: boolean;
-  initialLeadType: 'buyer' | 'supplier';
+  initialLeadType: MobileLeadType;
   eventId: string | null;
   leads: any[];
   user: any;
@@ -32,12 +33,12 @@ export function LeadsMobileSurface({
   }, []);
 
   if (quickLeadEnabled && isMobileViewport) {
-    return <MobileBusinessCardScanner initialLeadType={initialLeadType} eventId={eventId} />;
+    return <MobileBusinessCardScanner initialLeadType={initialLeadType || 'buyer'} eventId={eventId} />;
   }
 
   if (quickLeadEnabled && !isMobileViewport) {
     return null;
   }
 
-  return <RoleAwareLeadList leads={leads} user={user} signedIn={signedIn} allowRolePreview={false} />;
+  return <RoleAwareLeadList leads={leads} user={user} signedIn={signedIn} allowRolePreview={false} initialLeadType={initialLeadType} />;
 }
