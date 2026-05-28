@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 
 type NotificationPriority = 'normal' | 'high' | 'critical';
 type PushStatus = 'idle' | 'saving' | 'enabled' | 'unsupported' | 'denied' | 'missing-key' | 'error';
+type NotificationSource = 'stored' | 'derived';
 
 type NotificationRow = {
   id: string;
@@ -19,8 +20,11 @@ type NotificationRow = {
   action_url: string | null;
   read: boolean;
   created_at: string;
+  source?: NotificationSource;
 };
 
+type FollowUpRow = { id: string; lead_id: string | null; scheduled_at: string; status: string; notes: string | null };
+type ScheduledTaskRow = { id: string; lead_id: string | null; task_type: string; scheduled_for: string; status: string; payload: Record<string, unknown> | null };
 type PushSubscriptionRow = { id: string; endpoint: string };
 
 type PushSubscriptionInsert = {
@@ -34,13 +38,13 @@ type PushSubscriptionInsert = {
 
 type SupabaseError = { message: string };
 
-type NotificationQuery = {
-  select(columns: string): NotificationQuery;
-  eq(column: string, value: string | boolean): NotificationQuery;
-  is(column: string, value: null): NotificationQuery;
-  order(column: string, options?: { ascending?: boolean }): NotificationQuery;
-  limit(count: number): Promise<{ data: NotificationRow[] | null; error: SupabaseError | null }>;
-  update(values: Partial<Pick<NotificationRow, 'read'>> & { read_at?: string }): { eq(column: string, value: string): Promise<{ error: SupabaseError | null }> };
+type SelectQuery<T> = {
+  select(columns: string): SelectQuery<T>;
+  eq(column: string, value: string | boolean): SelectQuery<T>;
+  is(column: string, value: null): SelectQuery<T>;
+  order(column: string, options?: { ascending?: boolean }): SelectQuery<T>;
+  limit(count: number): Promise<{ data: T[] | null; error: SupabaseError | null }>;
+  update?(values: Partial<Pick<NotificationRow, 'read'>> & { read_at?: string }): { eq(column: string, value: string): Promise<{ error: SupabaseError | null }> };
 };
 
 type PushSubscriptionQuery = {
@@ -52,7 +56,9 @@ type PushSubscriptionQuery = {
 };
 
 type NotificationClient = {
-  from(table: 'notifications'): NotificationQuery;
+  from(table: 'notifications'): SelectQuery<NotificationRow>;
+  from(table: 'lead_follow_ups'): SelectQuery<FollowUpRow>;
+  from(table: 'scheduled_tasks'): SelectQuery<ScheduledTaskRow>;
   from(table: 'push_subscriptions'): PushSubscriptionQuery;
 };
 
@@ -99,6 +105,45 @@ function isStandalonePwa() {
   return window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 }
 
+function isOpenStatus(status: string | null | undefined) {
+  return !['completed', 'complete', 'done', 'cancelled', 'canceled'].includes(String(status ?? '').toLowerCase());
+}
+
+function derivedFollowUpAlert(row: FollowUpRow): NotificationRow | null {
+  if (!row.scheduled_at || !isOpenStatus(row.status) || new Date(row.scheduled_at).getTime() > Date.now()) return null;
+  return {
+    id: `derived:follow-up:${row.id}`,
+    type: 'overdue_follow_up',
+    title: 'Overdue follow-up',
+    body: row.notes || 'A lead follow-up is past due and needs attention.',
+    icon: 'clock-o',
+    priority: 'high',
+    entity_ref: 'Follow-up',
+    action_url: row.lead_id ? `/leads?focus=${encodeURIComponent(row.lead_id)}` : '/leads?view=overdue',
+    read: false,
+    created_at: row.scheduled_at,
+    source: 'derived',
+  };
+}
+
+function derivedTaskAlert(row: ScheduledTaskRow): NotificationRow | null {
+  if (!row.scheduled_for || !isOpenStatus(row.status) || new Date(row.scheduled_for).getTime() > Date.now()) return null;
+  const taskLabel = row.task_type ? row.task_type.replace(/_/g, ' ') : 'scheduled task';
+  return {
+    id: `derived:task:${row.id}`,
+    type: 'overdue_task',
+    title: 'Overdue task',
+    body: `${taskLabel} is past due and needs attention.`,
+    icon: 'exclamation-circle',
+    priority: 'high',
+    entity_ref: 'Task',
+    action_url: row.lead_id ? `/leads?focus=${encodeURIComponent(row.lead_id)}` : '/tasks',
+    read: false,
+    created_at: row.scheduled_for,
+    source: 'derived',
+  };
+}
+
 export function InAppNotificationCenter({ organizationId, userId }: { organizationId: string; userId: string }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -124,14 +169,18 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
     async function loadNotifications() {
       try {
         const supabase = createClient() as unknown as NotificationClient;
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('id,type,title,body,icon,priority,entity_ref,action_url,read,created_at')
-          .eq('organization_id', organizationId)
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
-          .limit(12);
-        if (!cancelled && !error) setNotifications(data ?? []);
+        const [storedResult, followUpResult, taskResult] = await Promise.all([
+          supabase.from('notifications').select('id,type,title,body,icon,priority,entity_ref,action_url,read,created_at').eq('organization_id', organizationId).is('archived_at', null).order('created_at', { ascending: false }).limit(12),
+          supabase.from('lead_follow_ups').select('id,lead_id,scheduled_at,status,notes').eq('organization_id', organizationId).order('scheduled_at', { ascending: true }).limit(24),
+          supabase.from('scheduled_tasks').select('id,lead_id,task_type,payload,scheduled_for,status').eq('organization_id', organizationId).order('scheduled_for', { ascending: true }).limit(24),
+        ]);
+        if (cancelled) return;
+        const stored = (storedResult.error ? [] : storedResult.data ?? []).map((row) => ({ ...row, source: 'stored' as const }));
+        const derived = [
+          ...((followUpResult.error ? [] : followUpResult.data ?? []).map(derivedFollowUpAlert).filter((row): row is NotificationRow => row !== null)),
+          ...((taskResult.error ? [] : taskResult.data ?? []).map(derivedTaskAlert).filter((row): row is NotificationRow => row !== null)),
+        ];
+        setNotifications([...derived, ...stored].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 20));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -143,8 +192,9 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
 
   const markRead = async (notificationId: string) => {
     setNotifications((current) => current.map((item) => (item.id === notificationId ? { ...item, read: true } : item)));
+    if (notificationId.startsWith('derived:')) return;
     const supabase = createClient() as unknown as NotificationClient;
-    await supabase.from('notifications').update({ read: true, read_at: new Date().toISOString() }).eq('id', notificationId);
+    await supabase.from('notifications').update?.({ read: true, read_at: new Date().toISOString() }).eq('id', notificationId);
   };
 
   const enablePush = async () => {
@@ -172,15 +222,16 @@ export function InAppNotificationCenter({ organizationId, userId }: { organizati
     } catch { setPushStatus('error'); }
   };
 
-  const pushLabel = pushStatus === 'enabled' ? 'Push on' : pushStatus === 'saving' ? 'Saving...' : pushStatus === 'denied' ? 'Push blocked' : pushStatus === 'missing-key' ? 'Push setup pending' : pushStatus === 'unsupported' ? 'Push unavailable' : pushStatus === 'error' ? 'Retry push' : 'Enable push';
-  const mobilePushHint = iosDevice && !standalonePwa ? 'On iPhone/iPad, add SETU Flow to your Home Screen first, then open the app icon to enable push alerts.' : pushStatus === 'missing-key' ? 'Push subscription is ready in the app, but VAPID public key configuration is still pending.' : pushStatus === 'denied' ? 'Push is blocked in this browser. Re-enable notifications from browser or OS settings.' : 'Mobile push uses the installed PWA service worker and your notification preferences.';
+  const pushLabel = pushStatus === 'enabled' ? 'Push on' : pushStatus === 'saving' ? 'Saving...' : pushStatus === 'error' ? 'Retry push' : 'Enable push';
+  const mobilePushHint = iosDevice && !standalonePwa ? 'On iPhone/iPad, add SETU Flow to your Home Screen first, then open the app icon to enable push alerts.' : pushStatus === 'missing-key' ? 'Browser push setup is pending, but in-app alerts are active.' : pushStatus === 'denied' ? 'Push is blocked in this browser. In-app alerts still appear here.' : 'Mobile push uses the installed PWA service worker and your notification preferences.';
+  const showPushButton = pushStatus === 'idle' || pushStatus === 'saving' || pushStatus === 'enabled' || pushStatus === 'error';
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[320] flex flex-col items-end gap-3 md:inset-x-auto md:bottom-auto md:right-[5.75rem] md:top-4 md:w-auto">
+    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[320] flex flex-col items-end gap-3 md:inset-x-auto md:bottom-auto md:right-8 md:top-[5.25rem] md:w-auto">
       {alertBanner ? <div className="pointer-events-auto hidden w-full overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-950/5 md:block md:w-[min(360px,calc(100vw-2rem))]"><div className="flex items-start gap-3 p-4"><div className={cn('mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border', getPriorityClasses(alertBanner.priority))}><FaIcon icon={alertBanner.priority === 'critical' ? 'exclamation-triangle' : 'bell'} fixedWidth /></div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">{priorityCopy[alertBanner.priority]}</span><span className="text-[11px] font-semibold text-slate-400">{formatWhen(alertBanner.created_at)}</span></div><p className="mt-1 truncate text-sm font-bold text-slate-950">{alertBanner.title}</p>{alertBanner.body ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{alertBanner.body}</p> : null}</div><button type="button" onClick={() => markRead(alertBanner.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Dismiss alert banner">x</button></div></div> : null}
       <div className="pointer-events-auto relative flex w-full justify-end md:block md:w-auto">
         <button type="button" onClick={() => setOpen((value) => !value)} className="relative grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-[#0b2e4a] md:h-11 md:w-11" aria-label="Open notifications" aria-expanded={open}><FaIcon icon="bell-o" fixedWidth />{unreadCount > 0 ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#0c7fff] px-1 text-[10px] font-black text-white ring-2 ring-white">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}</button>
-        {open ? <section className="fixed inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-28px_70px_rgba(15,23,42,0.24)] ring-1 ring-slate-950/5 md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:mt-2 md:w-[min(360px,calc(100vw-2rem))] md:rounded-[1.35rem] md:pb-0 md:shadow-[0_28px_70px_rgba(15,23,42,0.22)]"><div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-slate-200 md:hidden" aria-hidden="true" /><div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p><h2 className="text-sm font-bold text-slate-950">{unreadCount ? `${unreadCount} unread alert${unreadCount === 1 ? '' : 's'}` : 'All caught up'}</h2><p className="mt-1 max-w-[16rem] text-[11px] leading-5 text-slate-500 md:hidden">{mobilePushHint}</p></div><div className="flex shrink-0 items-center gap-2"><button type="button" onClick={enablePush} disabled={pushStatus === 'saving' || pushStatus === 'enabled' || pushStatus === 'unsupported' || pushStatus === 'denied' || pushStatus === 'missing-key'} className={cn('rounded-xl border px-3 py-2 text-[11px] font-bold transition', pushStatus === 'enabled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50', (pushStatus === 'unsupported' || pushStatus === 'denied' || pushStatus === 'missing-key') && 'cursor-not-allowed opacity-60')} title="Enable browser push notifications">{pushLabel}</button><button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">x</button></div></div><div className="max-h-[58vh] overflow-y-auto p-2 md:max-h-[420px]">{loading ? <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading alerts...</div> : notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center"><p className="text-sm font-bold text-slate-900">No live alert records found</p><p className="mt-1 text-xs leading-5 text-slate-500">The live notifications table currently has no active alert rows for this workspace. New in-app alerts will appear here when workflows create notification records.</p></div> : <div className="space-y-2">{notifications.map((notification) => <div key={notification.id} className={cn('rounded-2xl border p-3 transition', notification.read ? 'border-slate-100 bg-white' : 'border-[#0c7fff]/20 bg-[#f4f9ff]')}><div className="flex items-start gap-3"><div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl border', getPriorityClasses(notification.priority))}><FaIcon icon={notification.icon || 'bell-o'} fixedWidth /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-bold text-slate-950">{notification.title}</p><span className="shrink-0 text-[11px] font-semibold text-slate-400">{formatWhen(notification.created_at)}</span></div>{notification.body ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{notification.body}</p> : null}<div className="mt-2 flex flex-wrap items-center gap-2"><span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]', getPriorityClasses(notification.priority))}>{priorityCopy[notification.priority]}</span>{notification.entity_ref ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{notification.entity_ref}</span> : null}{notification.action_url ? <a href={notification.action_url} onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-[#0c7fff] hover:underline">Open</a> : null}{!notification.read ? <button type="button" onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-slate-500 hover:text-slate-900">Mark read</button> : null}</div></div></div></div>)}</div>}</div></section> : null}
+        {open ? <section className="fixed inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-28px_70px_rgba(15,23,42,0.24)] ring-1 ring-slate-950/5 md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:mt-2 md:w-[min(360px,calc(100vw-2rem))] md:rounded-[1.35rem] md:pb-0 md:shadow-[0_28px_70px_rgba(15,23,42,0.22)]"><div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-slate-200 md:hidden" aria-hidden="true" /><div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p><h2 className="text-sm font-bold text-slate-950">{unreadCount ? `${unreadCount} unread alert${unreadCount === 1 ? '' : 's'}` : 'All caught up'}</h2><p className="mt-1 max-w-[16rem] text-[11px] leading-5 text-slate-500 md:hidden">{mobilePushHint}</p></div><div className="flex shrink-0 items-center gap-2">{showPushButton ? <button type="button" onClick={enablePush} disabled={pushStatus === 'saving' || pushStatus === 'enabled'} className={cn('rounded-xl border px-3 py-2 text-[11px] font-bold transition', pushStatus === 'enabled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')} title="Enable browser push notifications">{pushLabel}</button> : null}<button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">x</button></div></div><div className="max-h-[58vh] overflow-y-auto p-2 md:max-h-[420px]">{loading ? <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading alerts...</div> : notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center"><p className="text-sm font-bold text-slate-900">No active alerts found</p><p className="mt-1 text-xs leading-5 text-slate-500">No generated notifications, overdue follow-ups, or overdue tasks are visible for this workspace right now.</p></div> : <div className="space-y-2">{notifications.map((notification) => <div key={notification.id} className={cn('rounded-2xl border p-3 transition', notification.read ? 'border-slate-100 bg-white' : 'border-[#0c7fff]/20 bg-[#f4f9ff]')}><div className="flex items-start gap-3"><div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl border', getPriorityClasses(notification.priority))}><FaIcon icon={notification.icon || 'bell-o'} fixedWidth /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-bold text-slate-950">{notification.title}</p><span className="shrink-0 text-[11px] font-semibold text-slate-400">{formatWhen(notification.created_at)}</span></div>{notification.body ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{notification.body}</p> : null}<div className="mt-2 flex flex-wrap items-center gap-2"><span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]', getPriorityClasses(notification.priority))}>{priorityCopy[notification.priority]}</span>{notification.source === 'derived' ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Live signal</span> : null}{notification.entity_ref ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{notification.entity_ref}</span> : null}{notification.action_url ? <a href={notification.action_url} onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-[#0c7fff] hover:underline">Open</a> : null}{!notification.read ? <button type="button" onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-slate-500 hover:text-slate-900">Mark read</button> : null}</div></div></div></div>)}</div>}</div></section> : null}
       </div>
     </div>
   );
