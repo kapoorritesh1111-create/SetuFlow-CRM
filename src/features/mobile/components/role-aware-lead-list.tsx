@@ -1,4 +1,3 @@
-import { GuruAvatar } from '@/components/ui/guru-avatar';
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -7,6 +6,7 @@ import {
   mobileLeadDemoData,
   mobileLeadDemoUsers,
   type MobileLead,
+  type MobileLeadType,
   type MobileUserContext,
   type MobileUserRole,
 } from '../lib/role-aware-leads';
@@ -43,11 +43,7 @@ function SignedInCard({ signedIn }: { signedIn?: SignedInSummary }) {
           </p>
           {signedIn.email ? <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">{signedIn.email}</p> : null}
         </div>
-        <a
-          href={signedIn.shareHref ?? '/card'}
-          className="rounded-2xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-lg shadow-blue-600/20"
-          aria-label="Share my vCard"
-        >
+        <a href={signedIn.shareHref ?? '/card'} className="rounded-2xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-lg shadow-blue-600/20" aria-label="Share my vCard">
           Share vCard
         </a>
       </div>
@@ -74,17 +70,24 @@ function followUpState(lead: MobileLead): 'overdue' | 'today' | 'upcoming' | 'no
   return 'upcoming';
 }
 
+function leadTypeLabel(leadType: MobileLeadType) {
+  if (leadType === 'buyer') return 'Buyer';
+  if (leadType === 'supplier') return 'Supplier';
+  return 'All';
+}
 
 export function RoleAwareLeadList({
   leads: providedLeads,
   user: providedUser,
   signedIn,
   allowRolePreview = true,
+  initialLeadType = '',
 }: {
   leads?: MobileLead[];
   user?: MobileUserContext;
   signedIn?: SignedInSummary;
   allowRolePreview?: boolean;
+  initialLeadType?: MobileLeadType;
 }) {
   const demoMode = !providedLeads || !providedUser;
   const [role, setRole] = useState<MobileUserRole>(providedUser?.role ?? 'owner');
@@ -98,15 +101,16 @@ export function RoleAwareLeadList({
 
   const sourceLeads = providedLeads ?? mobileLeadDemoData;
   const statuses = useMemo(() => ['All', ...Array.from(new Set(sourceLeads.map((lead) => lead.status)))], [sourceLeads]);
-  const leads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status }), [activeUser, query, sourceLeads, status]);
+  const leads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status, leadType: initialLeadType }), [activeUser, initialLeadType, query, sourceLeads, status]);
 
   return (
     <section className="space-y-4">
+      <SignedInCard signedIn={signedIn} />
       <div className="rounded-[1.75rem] bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">Lead queue</h1>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{leadTypeLabel(initialLeadType)} lead queue</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-          {activeUser.role === 'owner' || activeUser.role === 'admin'
+          {initialLeadType ? `Filtered to ${leadTypeLabel(initialLeadType).toLowerCase()} leads from the global workspace filter.` : activeUser.role === 'owner' || activeUser.role === 'admin'
             ? 'Owner and admin can see every lead in the workspace.'
             : activeUser.role === 'manager'
               ? 'Managers see assigned, direct-report, and managed-team leads.'
@@ -115,11 +119,7 @@ export function RoleAwareLeadList({
         {demoMode && allowRolePreview ? (
           <div className="mt-4 grid grid-cols-4 gap-2">
             {(['owner', 'admin', 'manager', 'member'] as MobileUserRole[]).map((item) => (
-              <button
-                key={item}
-                onClick={() => setRole(item)}
-                className={`min-h-11 rounded-2xl text-xs font-black capitalize ${role === item ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
-              >
+              <button key={item} onClick={() => setRole(item)} className={`min-h-11 rounded-2xl text-xs font-black capitalize ${role === item ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                 {item}
               </button>
             ))}
