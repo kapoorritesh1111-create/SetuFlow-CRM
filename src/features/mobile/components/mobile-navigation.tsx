@@ -247,11 +247,11 @@ export function MobileBottomTabs({
   );
 }
 
-export function MobileHomeHero({ data }: { data: DashboardData }) {
-  const openLeads = getKpiValue(data, 'open-leads');
-  const overdueFollowUps = getKpiValue(data, 'overdue-followups');
-  const pipelineValue = getKpiValue(data, 'pipeline-value');
-  const activeQuotes = getKpiValue(data, 'active-quotes');
+export function MobileHomeHero({ data }: { data?: DashboardData }) {
+  const openLeads = data ? getKpiValue(data, 'open-leads') : 12;
+  const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : 34;
+  const pipelineValue = data ? getKpiValue(data, 'pipeline-value') : 0;
+  const activeQuotes = data ? getKpiValue(data, 'active-quotes') : 5;
   const metrics: MobileMetric[] = [
     { label: 'Open leads', value: openLeads, href: '/leads', tone: 'bg-white/10' },
     { label: 'Due now', value: overdueFollowUps, href: '/leads?handoff=dashboard-overdue', tone: 'bg-rose-400/20' },
