@@ -11,7 +11,6 @@ import {
   type MobileUserRole,
 } from '../lib/role-aware-leads';
 import { LeadStatusCard } from './lead-status-card';
-import { UserAvatar } from '@/components/ui/user-avatar';
 
 type SignedInSummary = {
   name: string;
@@ -21,35 +20,6 @@ type SignedInSummary = {
   shareHref?: string;
   avatarUrl?: string | null;
 };
-
-function SignedInCard({ signedIn }: { signedIn?: SignedInSummary }) {
-  if (!signedIn) return null;
-  const initials = signedIn.name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('') || 'SF';
-
-  return (
-    <section className="rounded-[1.75rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-      <div className="flex items-center gap-3">
-        <UserAvatar name={signedIn.name} email={signedIn.email} avatarUrl={signedIn.avatarUrl} initials={initials} size="md" className="h-12 w-12 shadow-lg ring-1 ring-white/20" />
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Signed in</p>
-          <h2 className="truncate text-base font-black text-slate-950 dark:text-white">{signedIn.name}</h2>
-          <p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-300">
-            {signedIn.roleLabel}{signedIn.organizationName ? ` · ${signedIn.organizationName}` : ''}
-          </p>
-          {signedIn.email ? <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">{signedIn.email}</p> : null}
-        </div>
-        <a href={signedIn.shareHref ?? '/card'} className="rounded-2xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-lg shadow-blue-600/20" aria-label="Share my vCard">
-          Share vCard
-        </a>
-      </div>
-    </section>
-  );
-}
 
 // SF-18-118: Priority score for mobile lead cards
 function mobilePriorityScore(lead: MobileLead): number {
@@ -79,7 +49,7 @@ function leadTypeLabel(leadType: MobileLeadType) {
 export function RoleAwareLeadList({
   leads: providedLeads,
   user: providedUser,
-  signedIn,
+  signedIn: _signedIn,
   allowRolePreview = true,
   initialLeadType = '',
 }: {
@@ -105,7 +75,6 @@ export function RoleAwareLeadList({
 
   return (
     <section className="space-y-4">
-      <SignedInCard signedIn={signedIn} />
       <div className="rounded-[1.75rem] bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{leadTypeLabel(initialLeadType)} lead queue</h1>
