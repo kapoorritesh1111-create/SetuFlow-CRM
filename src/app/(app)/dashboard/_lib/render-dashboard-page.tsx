@@ -158,7 +158,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
   return (
     <>
       <div className="md:hidden">
-        <MobileDashboardHome />
+        <MobileDashboardHome data={data} />
       </div>
       <div className="hidden md:block">
       {isFirstLogin && (
