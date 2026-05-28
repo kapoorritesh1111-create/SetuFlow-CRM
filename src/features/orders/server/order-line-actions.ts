@@ -79,7 +79,7 @@ export async function updateActualOrderLineAction(formData: FormData) {
   if (!quoteId || !orderLineId) redirect(buildRedirect('order-line-action-invalid', quoteId));
   if (isPreviewLineId(orderLineId)) redirect(buildRedirect('prepare-actual-lines-first', quoteId));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);
@@ -130,7 +130,7 @@ export async function removeActualOrderLineAction(formData: FormData) {
   if (!quoteId || !orderLineId) redirect(buildRedirect('order-line-action-invalid', quoteId));
   if (isPreviewLineId(orderLineId)) redirect(buildRedirect('prepare-actual-lines-first', quoteId));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);
@@ -181,7 +181,7 @@ export async function addManualActualOrderLineAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-line-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);
@@ -208,7 +208,7 @@ export async function addManualActualOrderLineAction(formData: FormData) {
     let ruleError = userRuleResult.error;
 
     if (ruleError || !rule?.id) {
-      const adminDb = createAdminSupabaseClient();
+      const adminDb: any = createAdminSupabaseClient();
       if (adminDb) {
         const adminRuleResult = await findCatalogPricingRule(adminDb, organizationId, pricingRuleId);
         rule = adminRuleResult.data;
@@ -301,7 +301,7 @@ export async function saveOrderDiscountAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-discount-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findOrder(db, organizationId, quoteId);

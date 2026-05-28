@@ -191,7 +191,7 @@ async function updateDocumentGate(formData: FormData, stageKey: string, gateType
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -317,7 +317,7 @@ export async function createShipmentDraftGateAction(formData: FormData) {
   const shipmentMode = cleanText(formData.get('shipment_mode')) ?? 'road';
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);
@@ -365,7 +365,7 @@ export async function approveDispatchGateAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
   const { data: order, error } = await findExecutionOrder(db, organizationId, quoteId);

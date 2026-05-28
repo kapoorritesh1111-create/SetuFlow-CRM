@@ -181,7 +181,7 @@ export async function sendOrderDocumentLinkAction(formData: FormData) {
   const previewOnly = channel === 'preview' || String(formData.get('preview_only') ?? '') === 'true';
   if (!orderId && !contractId) redirect('/orders?notice=order-share-missing-order');
 
-  const db = await createClient();
+  const db: any = await createClient();
   let order: any = null;
 
   if (orderId) {

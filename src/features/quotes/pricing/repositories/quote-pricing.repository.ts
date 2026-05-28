@@ -476,7 +476,7 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
 
     const { data, error } = await this.db.rpc('app_create_draft_quote_version_from_compile_tx', {
       p_payload: payload,
-    } as never);
+    });
 
     if (!error) {
       const row = Array.isArray(data) ? data[0] : data;
@@ -870,7 +870,7 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
     const { error } = await this.db.rpc('app_send_quote_version_tx', {
       p_quote_version_id: args.quoteVersionId,
       p_actor_user_id: args.actorUserId,
-    } as never);
+    });
 
     if (!error) return;
 
@@ -939,7 +939,7 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
         total_line_count: aggregate.lines.length,
         created_by: args.actorUserId,
       })
-      .select('id, quote_id, version_no, status') as never;
+      .select('id, quote_id, version_no, status');
 
     if (createError) {
       throw new Error(`Failed to create revision from quote version ${args.quoteVersionId}: ${createError.message}`);

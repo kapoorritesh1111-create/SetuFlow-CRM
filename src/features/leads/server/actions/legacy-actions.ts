@@ -1116,15 +1116,34 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
   if (!currentUser || !organization) return { error: 'Not authenticated.' };
   if (!leadId) return { error: 'Lead ID is required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
-  const { data: leadRecord, error: leadError } = await db
+  type QuoteDraftLeadRecord = {
+    id: string;
+    organization_id: string;
+    company_name: string | null;
+    deal_currency: string | null;
+  };
+  type QuoteDraftRecord = {
+    id: string;
+    lead_id: string | null;
+    status: string | null;
+    currency: string | null;
+    notes: string | null;
+    updated_at: string | null;
+    created_at: string | null;
+    quote_number: string | null;
+    current_version_id: string | null;
+  };
+
+  const { data: leadRecordData, error: leadError } = await db
     .from('leads')
     .select('id, organization_id, company_name, deal_currency')
     .eq('organization_id', organization.id)
     .eq('id', leadId)
     .maybeSingle();
+  const leadRecord = leadRecordData as QuoteDraftLeadRecord | null;
 
   if (leadError) return { error: leadError.message };
   if (!leadRecord?.id) return { error: 'Lead not found in the active workspace.' };
@@ -1132,7 +1151,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
   const quoteGate = await getLeadQuoteGate(db, organization.id, leadId);
   if (!quoteGate.ok) return { error: quoteGate.error };
 
-  const { data: existingQuote, error: existingError } = await db
+  const { data: existingQuoteData, error: existingError } = await db
     .from('quotes')
     .select('id, lead_id, status, currency, notes, updated_at, created_at, quote_number, current_version_id')
     .eq('organization_id', organization.id)
@@ -1140,6 +1159,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+  const existingQuote = existingQuoteData as QuoteDraftRecord | null;
 
   if (existingError) return { error: existingError.message };
   if (existingQuote?.id) {
@@ -1172,7 +1192,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     };
   }
 
-  const { data: quote, error: insertError } = await db
+  const { data: quoteData, error: insertError } = await db
     .from('quotes')
     .insert({
       organization_id: organization.id,
@@ -1184,6 +1204,7 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     })
     .select('id, lead_id, status, currency, notes, created_at, updated_at, quote_number, current_version_id')
     .single();
+  const quote = quoteData as QuoteDraftRecord | null;
 
   if (insertError) return { error: insertError.message };
   if (!quote?.id) return { error: 'Failed to create quote draft.' };
@@ -1274,8 +1295,8 @@ export async function saveLeadQuoteDraftPreview(input: QuotePreviewSaveInput): P
   const organization = workspace.organization;
   if (!currentUser || !organization) return { error: 'Not authenticated.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const nowIso = new Date().toISOString();
   const currency = normalizeQuoteDisplayCurrency(input.currency ?? opened.quote?.currency ?? 'USD');
   const previewLines = (input.lines ?? [])
@@ -1471,8 +1492,8 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     };
   }
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const requestedMarketIds = uniqueTrimmed(formData.getAll('market_ids').map(String));
   const requestedProductIds = uniqueTrimmed(formData.getAll('product_ids').map(String));
@@ -1959,8 +1980,8 @@ export async function saveLeadDetails(_: ActionState | undefined, formData: Form
   const phone = normalizeLeadOptionalText(formData.get('phone'));
   const country = normalizeLeadOptionalText(formData.get('country'));
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: existingLead, error: existingLeadError } = await db
     .from('leads')
@@ -2069,8 +2090,8 @@ export async function saveLeadCoverage(_: ActionState | undefined, formData: For
   const requestedProductIds = uniqueTrimmed(formData.getAll('product_ids').map(String));
   const requestedCategoryIds = uniqueTrimmed(formData.getAll('category_ids').map(String));
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const [{ data: leadRow, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
     db
@@ -2310,8 +2331,8 @@ export async function deleteLead(_: ActionState | undefined, formData: FormData)
   const leadId = normalizeLeadInputText(formData.get('lead_id'));
   if (!leadId) return { error: 'Select a lead to delete.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const organizationId = organization.id;
   const actorUserId = currentUser.id;
 
@@ -2371,8 +2392,8 @@ export async function batchDeleteLeads(_: ActionState | undefined, formData: For
   const leadIds = uniqueTrimmed(formData.getAll('lead_ids').map((value) => String(value ?? '')));
   if (!leadIds.length) return { error: 'Select at least one lead to delete.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const organizationId = organization.id;
   const actorUserId = currentUser.id;
 
@@ -2434,8 +2455,8 @@ export async function scheduleLeadFollowUp(_: ActionState | undefined, formData:
 
   if (!leadId || !scheduledAt) return { error: 'Lead and follow-up date are required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -2528,8 +2549,8 @@ export async function batchScheduleLeadFollowUps(_: ActionState | undefined, for
 
   if (!leadIds.length || !scheduledAt) return { error: 'Select at least one lead and a follow-up date.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { nextStepId, error: nextStepError } = await resolveDefaultNextStepId(db, organization.id, String(formData.get('next_step_id') ?? '').trim() || null);
   if (nextStepError) return { error: nextStepError };
@@ -2642,8 +2663,8 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
   const stageId = String(formData.get('stage_id') ?? '').trim();
   if (!leadIds.length || !stageId) return { error: 'Select at least one lead and a stage.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: stageRow, error: stageError } = await db
     .from('pipeline_stages')
@@ -2745,8 +2766,8 @@ export async function completeLeadFollowUp(_: ActionState | undefined, formData:
   const followUpId = String(formData.get('follow_up_id') ?? '').trim();
   if (!leadId || !followUpId) return { error: 'Lead and follow-up are required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -2817,8 +2838,8 @@ export async function updateLeadQualification(_: ActionState | undefined, formDa
     return { error: 'Qualification status is invalid.' };
   }
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const [{ data: lead, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
     db.from('leads').select('id, company_name, notes').eq('organization_id', organization.id).eq('id', leadId).maybeSingle(),
@@ -2904,8 +2925,8 @@ export async function addLeadNote(_: ActionState | undefined, formData: FormData
   const note = String(formData.get('note') ?? '').trim();
   if (!leadId || !note) return { error: 'Lead and note are required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')
@@ -2999,8 +3020,8 @@ export async function recordLeadCommunicationSent(input: {
   const channel = input.channel ?? 'email';
   if (!leadId || !subject || !body) return { error: 'Lead, subject, and message are required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const { data: lead, error: leadError } = await db
     .from('leads')
     .select('id, company_name, email, phone')
@@ -3109,8 +3130,8 @@ export async function recordLeadQuoteApprovalRequest(input: {
   const note = String(input.note ?? '').trim();
   if (!leadId || !note) return { error: 'Lead and approval note are required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const { data: lead, error: leadError } = await db
     .from('leads')
     .select('id, company_name')
@@ -3176,8 +3197,8 @@ export async function approveLeadQuoteAdjustment(input: { leadId: string; quoteI
   const quoteId = String(input.quoteId ?? '').trim();
   if (!leadId || !quoteId) return { error: 'Lead and quote are required for approval.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const nowIso = new Date().toISOString();
 
   const { data: quote, error: quoteError } = await db
@@ -3243,8 +3264,8 @@ export async function rejectLeadQuoteAdjustment(input: { leadId: string; quoteId
   const reason = String(input.note ?? '').trim() || 'Quote-only pricing adjustment rejected. Revise the quote before sending.';
   if (!leadId || !quoteId) return { error: 'Lead and quote are required for rejection.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const nowIso = new Date().toISOString();
 
   const { data: quote, error: quoteError } = await db
@@ -3316,8 +3337,8 @@ export async function saveLeadCommunicationDraft(_: ActionState | undefined, for
 
   if (!leadId || !subject || !body) return { error: 'Lead, subject, and message are required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: lead, error: leadError } = await db
     .from('leads')

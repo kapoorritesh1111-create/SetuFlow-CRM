@@ -106,7 +106,7 @@ export async function sendOrderDocumentViaWhatsApp(input: {
   const workspace = await requireWorkspace();
   if (!workspace.organization || !workspace.user) throw new Error('Workspace required.');
 
-  const db = await createClient();
+  const db: any = await createClient();
   const orgId = workspace.organization.id;
   const orderQuery = db
     .from('orders')

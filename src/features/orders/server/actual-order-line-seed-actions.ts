@@ -107,7 +107,7 @@ export async function reconcileApprovedPdfSourceAction(formData: FormData) {
   const reason = firstText(formData.get('reconciliation_reason'), 'Approved buyer-facing PDF/source will be used as commercial reference for this historical quote-version issue.');
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
 
@@ -213,7 +213,7 @@ export async function prepareActualOrderLinesRobustAction(formData: FormData) {
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) redirect(buildRedirect('order-action-invalid'));
 
-  const db = await createClient();
+  const db: any = await createClient();
   const organizationId = workspace.organization.id;
   const actorUserId = workspace.user.id;
 

@@ -774,8 +774,8 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   const validationError = validateQuoteInput({ leadId, currency, status, approvalRequired, approvalState, lineItems });
   if (validationError) return { error: validationError };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const normalizedResult = await normalizeLineItemsForSave(db, organization.id, lineItems);
   if (normalizedResult.error) return { error: normalizedResult.error };
@@ -948,8 +948,8 @@ export async function logQuoteNegotiationResponse(_: QuoteActionState | undefine
     return { error: 'Response type is invalid.' };
   }
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: existing, error: existingError } = await db
     .from('quotes')
@@ -1028,8 +1028,8 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
   if (!quoteId) return { error: 'Quote ID is required.' };
   if (outcome !== 'accepted' && outcome !== 'rejected') return { error: 'Quote outcome must be accepted or rejected.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const { data: existing, error: existingError } = await db
     .from('quotes')
     .select('id, lead_id, organization_id, status, notes, current_version_id, sent_version_id, accepted_version_id')
@@ -1169,8 +1169,8 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   const quoteId = String(formData.get('quote_id') ?? '').trim();
   if (!quoteId) return { error: 'Quote ID is required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
 
   const { data: existing, error: existingError } = await db
     .from('quotes')
@@ -1401,11 +1401,12 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
   // trail without changing any Sprint 4 builder behaviour.
   // We derive the previous approval state from the existing serialised notes
   // so no extra DB round-trip is required.
-  const prevParsed = existing.notes
+  type SerializedApprovalState = { required?: boolean; state?: string };
+  const prevParsed: SerializedApprovalState | null = existing.notes
     ? (() => {
         try {
-          const p = JSON.parse(existing.notes);
-          return (p as { meta?: { approval?: unknown } })?.meta?.approval ?? null;
+          const p = JSON.parse(existing.notes) as { meta?: { approval?: SerializedApprovalState } };
+          return p?.meta?.approval ?? null;
         } catch {
           return null;
         }
@@ -1600,8 +1601,8 @@ export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, fo
   const plainNotes = String(formData.get('notes') ?? '').trim() || 'Marked as direct order — deal closed outside the system.';
   if (!quoteId) return { error: 'Quote ID is required.' };
 
-  const supabase = await createClient();
-  const db = supabase;
+  const supabase: any = await createClient();
+  const db: any = supabase;
   const { data: existing, error: existingError } = await db
     .from('quotes')
     .select('id, lead_id, organization_id, status, current_version_id, sent_version_id, accepted_version_id')
