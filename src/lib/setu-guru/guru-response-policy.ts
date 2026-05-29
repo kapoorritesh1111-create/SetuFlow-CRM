@@ -36,11 +36,16 @@ function includesAny(value: string, phrases: readonly string[]) {
   return phrases.some((phrase) => normalized.includes(phrase.toLowerCase()));
 }
 
+function looksLikeOrderQuestion(question: string) {
+  const q = question.toLowerCase();
+  return q.includes('order') && (q.includes('status') || q.includes('block') || q.includes('next') || q.includes('dispatch') || q.includes('payment') || q.includes('freight') || q.includes('finance') || q.includes('stage'));
+}
+
 export function getSetuGuruIntents(question: string): SetuGuruIntent[] {
   const intents = new Set<SetuGuruIntent>();
   if (includesAny(question, QUOTE_BLOCKER_WORDS)) intents.add('quote_blockers');
   if (includesAny(question, QUOTE_LIFECYCLE_WORDS)) intents.add('quote_lifecycle');
-  if (includesAny(question, ORDER_LIFECYCLE_WORDS)) intents.add('order_lifecycle');
+  if (includesAny(question, ORDER_LIFECYCLE_WORDS) || looksLikeOrderQuestion(question)) intents.add('order_lifecycle');
   if (includesAny(question, DISPATCH_DOC_WORDS)) intents.add('dispatch_docs');
   if (includesAny(question, HS_CODE_WORDS)) intents.add('hs_code');
   if (isSetuGuruComplianceQuestion(question)) intents.add('compliance');
@@ -54,11 +59,12 @@ export function isSetuGuruComplianceQuestion(question: string) {
 }
 
 export function isSetuGuruPageHelpQuestion(question: string) {
+  if (looksLikeOrderQuestion(question)) return false;
   return includesAny(question, PAGE_HELP_WORDS);
 }
 
 export function shouldUseLiveOrganizationData(question: string) {
-  return includesAny(question, SETU_GURU_RESPONSE_POLICY.useLiveOrgDataFor) || getSetuGuruIntents(question).some((intent) => intent !== 'general');
+  return looksLikeOrderQuestion(question) || includesAny(question, SETU_GURU_RESPONSE_POLICY.useLiveOrgDataFor) || getSetuGuruIntents(question).some((intent) => intent !== 'general');
 }
 
 export function shouldUseLiveResearch(question: string) {
@@ -66,6 +72,7 @@ export function shouldUseLiveResearch(question: string) {
 }
 
 export function isSetuGuruOrgSearchQuestion(question: string) {
+  if (looksLikeOrderQuestion(question)) return true;
   if (isSetuGuruPageHelpQuestion(question)) return false;
   return isSetuGuruComplianceQuestion(question) || includesAny(question, ORG_SEARCH_PHRASES) || shouldUseLiveResearch(question);
 }
