@@ -772,6 +772,8 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
   const [copied, setCopied] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState<string | null>(null);
   const requestedOpenOrderId = searchParams.get('openOrderId');
+  // SF-18-044: slide-in detail panel state
+  const [panelOrderKey, setPanelOrderKey] = useState<string | null>(null);
   const requestedSourceQuoteId = searchParams.get('sourceQuoteId') ?? searchParams.get('quoteId');
   const notice = searchParams.get('notice');
 
@@ -812,6 +814,7 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
       return true;
     });
   }, [orders, search, typeFilter, stageFilter, readinessFilter, marketFilter, kpiFilter]);
+  const panelOrder = panelOrderKey ? filteredOrders.find((o) => orderKey(o) === panelOrderKey) ?? null : null;
 
   const requested = useMemo(() => {
     return filteredOrders.find((candidate) => (requestedOpenOrderId && candidate.orderId === requestedOpenOrderId) || (requestedSourceQuoteId && candidate.quoteId === requestedSourceQuoteId));
@@ -956,6 +959,12 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
                     <span className="row-side">
                       <strong>{money(order.actualTotal ?? order.quotedTotal, order.currency)}</strong>
                       <small>{STAGES[stageIndex(inferredStageKey(order))]?.label}</small>
+                      <button
+                        type="button"
+                        className="row-detail-btn"
+                        aria-label="View order details"
+                        onClick={(e) => { e.stopPropagation(); setPanelOrderKey(orderKey(order)); }}
+                      >&#x276F;</button>
                       <StatusPill tone={isBlocked(order) ? 'bad' : state.financeQueued || state.freightQueued ? 'warn' : 'good'}>{isBlocked(order) ? 'Blocked' : nextBestAction(order).blocks.length ? 'Needs input' : 'Ready'}</StatusPill>
                     </span>
                   </button>
@@ -1011,6 +1020,12 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
       </section>
 
       {drawer ? <QueueDrawer drawer={drawer} onClose={() => setDrawer(null)} onCopy={copyPayload} /> : null}
+
+      {/* SF-18-044: Slide-in order detail panel */}
+      {panelOrder ? (
+        <OrderDetailSlidePanelInline order={panelOrder} onClose={() => setPanelOrderKey(null)} />
+      ) : null}
+
       <style jsx global>{css}</style>
     </main>
   );
@@ -1520,6 +1535,180 @@ function QueueDrawer({ drawer, onClose, onCopy }: { drawer: { type: 'finance' | 
   );
 }
 
+
+/* ─── SF-18-044: Order Detail Slide Panel ─────────────────────── */
+function OrderDetailSlidePanelInline({
+  order,
+  onClose,
+}: {
+  order: ProductionOrder8S;
+  onClose: () => void;
+}) {
+  const stage = STAGES[stageIndex(inferredStageKey(order))];
+  const docs = order.documents ?? [];
+  const missingDocs = order.gates?.filter((g) => g.status !== 'approved') ?? [];
+  const blocked = isBlocked(order);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close order detail panel"
+        className="odp-backdrop"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <aside className="odp-panel" role="complementary" aria-label="Order detail">
+        {/* Header / breadcrumb */}
+        <div className="odp-header">
+          <div className="odp-breadcrumb">
+            <span>Orders</span>
+            <span className="odp-sep">›</span>
+            <span>{order.orderNumber ?? 'Pending'}</span>
+            <span className="odp-sep">›</span>
+            <span className="odp-bc-company">{order.companyName}</span>
+            <span className="odp-sep">›</span>
+            <span className="odp-bc-stage">{stage?.label ?? 'Actual Lines'}</span>
+          </div>
+          <button type="button" className="odp-close" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="odp-body">
+          {/* Summary row */}
+          <div className="odp-summary-row">
+            <div className="odp-summary-tile">
+              <span>Order value</span>
+              <strong>{money(order.actualTotal ?? order.quotedTotal, order.currency)}</strong>
+            </div>
+            <div className="odp-summary-tile">
+              <span>Stage</span>
+              <strong>{stage?.label ?? 'Actual Lines'}</strong>
+            </div>
+            <div className="odp-summary-tile">
+              <span>Readiness</span>
+              <strong style={{ color: blocked ? '#dc2626' : '#059669' }}>
+                {blocked ? 'Blocked' : 'Ready'}
+              </strong>
+            </div>
+            <div className="odp-summary-tile">
+              <span>Type</span>
+              <strong>{titleCase(order.orderType)}</strong>
+            </div>
+          </div>
+
+          {/* Identity */}
+          <div className="odp-section">
+            <h4 className="odp-section-title">Order identity</h4>
+            <div className="odp-field-grid">
+              <div className="odp-field">
+                <span>Order number</span>
+                <b>{order.orderNumber ?? 'Pending assignment'}</b>
+              </div>
+              <div className="odp-field">
+                <span>Company</span>
+                <b>{order.companyName}</b>
+              </div>
+              <div className="odp-field">
+                <span>Destination</span>
+                <b>{order.destinationPlace ?? order.country ?? 'Not set'}</b>
+              </div>
+              <div className="odp-field">
+                <span>Incoterm</span>
+                <b>{order.incoterm ?? 'Not set'}</b>
+              </div>
+              <div className="odp-field">
+                <span>Payment status</span>
+                <b>{titleCase(order.paymentStatus ?? 'pending')}</b>
+              </div>
+              <div className="odp-field">
+                <span>Fulfillment</span>
+                <b>{titleCase(order.fulfillmentStatus ?? 'pending')}</b>
+              </div>
+            </div>
+          </div>
+
+          {/* Execution blockers */}
+          {order.blockerReasons.length > 0 && (
+            <div className="odp-section">
+              <h4 className="odp-section-title odp-section-title--red">
+                {order.blockerReasons.length} execution blocker{order.blockerReasons.length !== 1 ? 's' : ''}
+              </h4>
+              <ul className="odp-blocker-list">
+                {order.blockerReasons.map((reason, i) => (
+                  <li key={i} className="odp-blocker-item">
+                    <span className="odp-blocker-icon">✕</span>
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Stage progress */}
+          <div className="odp-section">
+            <h4 className="odp-section-title">Stage progress</h4>
+            <div className="odp-stage-list">
+              {STAGES.map((s, idx) => {
+                const done = stageDone(order, s.key);
+                const unlocked = stageUnlocked(order, s.key);
+                const active = inferredStageKey(order) === s.key;
+                return (
+                  <div key={s.key} className={`odp-stage-row ${done ? 'odp-stage-done' : active ? 'odp-stage-active' : !unlocked ? 'odp-stage-locked' : ''}`}>
+                    <span className="odp-stage-num">{idx + 1}</span>
+                    <span className="odp-stage-label">{s.label}</span>
+                    <span className="odp-stage-status">
+                      {done ? '✓ Done' : active ? '● Active' : !unlocked ? '— Locked' : '○ Open'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Documents */}
+          {docs.length > 0 && (
+            <div className="odp-section">
+              <h4 className="odp-section-title">Documents ({docs.length})</h4>
+              <div className="odp-doc-list">
+                {docs.map((doc) => (
+                  <div key={doc.id} className={`odp-doc-row ${doc.status === 'approved' ? 'odp-doc-approved' : ''}`}>
+                    <span className="odp-doc-icon">📄</span>
+                    <span className="odp-doc-type">{documentLabel(doc.documentType ?? '')}</span>
+                    <span className={`odp-doc-status ${doc.status === 'approved' ? 'odp-badge-green' : 'odp-badge-amber'}`}>
+                      {titleCase(doc.status ?? 'draft')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Gate summary */}
+          {missingDocs.length > 0 && (
+            <div className="odp-section">
+              <h4 className="odp-section-title">Pending gates ({missingDocs.length})</h4>
+              <div className="odp-gate-list">
+                {missingDocs.slice(0, 6).map((gate) => (
+                  <div key={gate.id} className="odp-gate-row">
+                    <span className="odp-gate-stage">{titleCase(gate.stageKey ?? '')}</span>
+                    <span className="odp-gate-type">{titleCase(gate.gateType ?? '')}</span>
+                    <span className="odp-badge-amber">{titleCase(gate.status ?? 'pending')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
 const css = `
 .oc-page{min-height:100vh;background:#f4f8fb;color:#102033;padding:22px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .filter-bar,.queue-panel,.workspace-panel,.action-stack,.stage-card,.cockpit-title,.empty-shell,.oc-feedback{background:#fff;border:1px solid #dbe6ef;border-radius:22px;box-shadow:0 18px 42px rgba(15,23,42,.08)}
@@ -1536,4 +1725,57 @@ const css = `
 .drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;justify-content:flex-end;z-index:50}.queue-drawer{width:min(760px,100%);height:100%;overflow:auto;background:#fff;padding:20px;box-shadow:-24px 0 60px rgba(15,23,42,.2)}.drawer-head{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e2eae7;padding-bottom:14px}.drawer-head h3{margin:3px 0}.drawer-head p{color:#64748b;margin:0}.drawer-truth{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.event-card{border:1px solid #e2eae7;border-radius:18px;padding:14px;margin-bottom:12px}.event-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.event-card pre{max-height:340px;overflow:auto;background:#0f172a;color:#d1fae5;border-radius:14px;padding:12px;font-size:12px;line-height:1.45}
 @media(max-width:1500px){.cockpit-grid{grid-template-columns:320px minmax(0,1fr)}.action-stack{grid-column:1/-1;position:static}.stage-rail{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi-row{grid-template-columns:repeat(3,minmax(0,1fr))}.filter-bar{grid-template-columns:repeat(3,minmax(0,1fr))}.line-form{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.email-send-form{grid-template-columns:1fr}.cockpit-title{grid-template-columns:1fr}.send-stack{grid-template-columns:1fr}}
 @media(max-width:900px){.oc-page{padding:14px}.stage-head{display:grid}.cockpit-grid,.filter-bar,.kpi-row,.stage-rail,.split-panel,.control-grid,.control-grid.wide,.send-stack,.check-form,.closeout-form,.metric-grid,.header-metrics,.event-meta{grid-template-columns:1fr}.queue-list{max-height:none}.line-head{display:none}.line-row{grid-template-columns:1fr}.line-form{grid-template-columns:1fr}.document-row{grid-template-columns:1fr}.send-form,.inline-form,.cta-row,.queue-actions{display:grid;grid-template-columns:1fr}.span-2{grid-column:auto}}
+
+.odp-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:55;cursor:pointer;border:none;padding:0}
+.odp-panel{position:fixed;right:0;top:0;bottom:0;width:520px;max-width:100vw;background:#fff;border-left:1px solid #dbe7f3;z-index:56;display:flex;flex-direction:column;animation:odpSlideIn .22s cubic-bezier(.22,1,.36,1);overflow:hidden}
+@keyframes odpSlideIn{from{transform:translateX(520px)}to{transform:translateX(0)}}
+.odp-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid #e8f0fa;background:#f8fafc;flex-shrink:0}
+.odp-breadcrumb{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11.5px;font-weight:700;color:#64748b;min-width:0;flex:1}
+.odp-sep{color:#cbd5e1}
+.odp-bc-company{color:#0b2e4a;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.odp-bc-stage{background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900}
+.odp-close{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#64748b;transition:.15s;flex-shrink:0}
+.odp-close:hover{background:#f1f5f9;color:#0b2e4a;border-color:#c8d5e8}
+.odp-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.odp-summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.odp-summary-tile{background:#f8fafc;border:1px solid #e8f0fa;border-radius:12px;padding:10px 12px}
+.odp-summary-tile span{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:3px}
+.odp-summary-tile strong{display:block;font-size:14px;font-weight:900;color:#0b2e4a;line-height:1.2}
+.odp-section{display:flex;flex-direction:column;gap:8px}
+.odp-section-title{font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin:0}
+.odp-section-title--red{color:#dc2626}
+.odp-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.odp-field{background:#f8fafc;border:1px solid #e8f0fa;border-radius:10px;padding:8px 10px}
+.odp-field span{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:2px}
+.odp-field b{display:block;font-size:12.5px;font-weight:800;color:#0b2e4a}
+.odp-blocker-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.odp-blocker-item{display:flex;align-items:flex-start;gap:8px;background:#fff1f2;border:1px solid #fecaca;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;color:#9f1239}
+.odp-blocker-icon{color:#dc2626;flex-shrink:0;font-weight:900}
+.odp-stage-list{display:flex;flex-direction:column;gap:4px}
+.odp-stage-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;border:1px solid #f1f5f9;font-size:12px}
+.odp-stage-done{background:#f0fdf4;border-color:#bbf7d0}
+.odp-stage-active{background:#eff6ff;border-color:#bfdbfe;font-weight:900}
+.odp-stage-locked{opacity:.5}
+.odp-stage-num{width:18px;height:18px;border-radius:50%;background:#e2e8f0;display:grid;place-items:center;font-size:9px;font-weight:900;color:#64748b;flex-shrink:0}
+.odp-stage-done .odp-stage-num{background:#bbf7d0;color:#059669}
+.odp-stage-active .odp-stage-num{background:#bfdbfe;color:#1d4ed8}
+.odp-stage-label{flex:1;font-weight:700;color:#334155}
+.odp-stage-status{font-size:10.5px;font-weight:800;color:#94a3b8}
+.odp-stage-done .odp-stage-status{color:#059669}
+.odp-stage-active .odp-stage-status{color:#1d4ed8}
+.odp-doc-list{display:flex;flex-direction:column;gap:5px}
+.odp-doc-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f8fafc;border:1px solid #e8f0fa;border-radius:10px}
+.odp-doc-approved{background:#f0fdf4;border-color:#bbf7d0}
+.odp-doc-icon{flex-shrink:0}
+.odp-doc-type{flex:1;font-size:12px;font-weight:700;color:#334155}
+.odp-doc-status{font-size:10px;font-weight:900;padding:2px 8px;border-radius:999px}
+.odp-gate-list{display:flex;flex-direction:column;gap:5px}
+.odp-gate-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f8fafc;border:1px solid #e8f0fa;border-radius:9px;font-size:11.5px}
+.odp-gate-stage{font-weight:800;color:#334155;flex:1}
+.odp-gate-type{color:#64748b;font-weight:700}
+.odp-badge-green{background:#dcfce7;color:#059669;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900}
+.odp-badge-amber{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900}
+.row-detail-btn{border:none;background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:3px 6px;cursor:pointer;font-weight:900;font-size:12px;line-height:1;transition:.12s;flex-shrink:0}
+.row-detail-btn:hover{background:#dbeafe}
+@media(max-width:640px){.odp-panel{width:100vw}.odp-summary-row{grid-template-columns:1fr 1fr}.odp-field-grid{grid-template-columns:1fr}}
 `;
