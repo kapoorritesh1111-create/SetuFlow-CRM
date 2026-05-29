@@ -10,12 +10,14 @@ const nextConfig = {
     }
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/setu-guru/org-search',
-        destination: '/api/setu-guru/org-search-v2',
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: '/api/setu-guru/org-search',
+          destination: '/api/setu-guru/org-search-v2',
+        },
+      ],
+    };
   },
 };
 
