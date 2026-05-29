@@ -2,7 +2,7 @@ import { getRouteHelpSummary, getBestSetuGuruHelpTopic } from './help-registry';
 import { getSetuGuruPageContext } from './page-context';
 import { classifySetuGuruResponse, type SetuGuruAnswerSource } from './guru-response-policy';
 
-type SetuGuruBrainSourceType = SetuGuruAnswerSource | 'repo_doc' | 'database_schema';
+type SetuGuruBrainSourceType = SetuGuruAnswerSource | 'response_policy' | 'repo_doc' | 'database_schema';
 
 export type SetuGuruBrainAnswerInput = {
   question: string;
