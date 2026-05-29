@@ -1,5 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 
+// Use loose typing for DB queries — avoids generated-type count inference issues
+type CountQuery = PromiseLike<{ count: number | null; error?: unknown }> & {
+  select: (cols: string, opts: { count: 'exact'; head: boolean }) => CountQuery;
+  eq: (col: string, val: unknown) => CountQuery;
+};
+type AnyDB = { from: (table: string) => CountQuery };
+
 export type PlaybookIntent = 'onboarding_setup' | 'lead_to_quote' | 'quote_to_order' | 'order_to_dispatch' | 'general';
 
 export type PlaybookStep = {
@@ -87,23 +94,33 @@ function detectIntent(question: string): PlaybookIntent {
   return 'general';
 }
 
-export async function buildPlaybookGuidance(organizationId: string, question: string): Promise<{ answer: string; playbook: PlaybookGuidance; rows: Array<Record<string, unknown>> }> {
+export async function buildPlaybookGuidance(
+  organizationId: string,
+  question: string,
+): Promise<{ answer: string; playbook: PlaybookGuidance; rows: Array<Record<string, unknown>> }> {
   const intent = detectIntent(question);
   const playbook = PLAYBOOKS[intent];
 
   // Check for live org setup gaps to personalize the guidance
   let setupGapNote = '';
   try {
-    const db = await createClient();
-    const { count: productCount } = await db.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId);
-    const { count: leadCount } = await db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId);
-    if ((productCount ?? 0) === 0) setupGapNote = '\n\nInternal check: No products found in your catalog. Add at least one product before creating quotes.';
-    else if ((leadCount ?? 0) === 0 && intent === 'lead_to_quote') setupGapNote = '\n\nInternal check: No leads found. Import or add a lead before building a quote.';
+    const db = (await createClient()) as unknown as AnyDB;
+    const [{ count: productCount }, { count: leadCount }] = await Promise.all([
+      db.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+    ]);
+    if ((productCount ?? 0) === 0) {
+      setupGapNote = '\n\nInternal check: No products found in your catalog. Add at least one product before creating quotes.';
+    } else if ((leadCount ?? 0) === 0 && intent === 'lead_to_quote') {
+      setupGapNote = '\n\nInternal check: No leads found. Import or add a lead before building a quote.';
+    }
   } catch {
     // Non-blocking — continue without personalization
   }
 
-  const stepLines = playbook.steps.map((s) => `${s.step}. ${s.title} — ${s.action}${s.requiresApproval ? ' [Human approval required]' : ''}`);
+  const stepLines = playbook.steps.map(
+    (s) => `${s.step}. ${s.title} — ${s.action}${s.requiresApproval ? ' [Human approval required]' : ''}`,
+  );
 
   const answer = [
     playbook.headline,
@@ -112,7 +129,9 @@ export async function buildPlaybookGuidance(organizationId: string, question: st
     '',
     `Approval reminder: ${playbook.approvalReminder}`,
     setupGapNote,
-  ].join('\n').trim();
+  ]
+    .join('\n')
+    .trim();
 
   const rows = playbook.steps.map((s) => ({
     id: String(s.step),

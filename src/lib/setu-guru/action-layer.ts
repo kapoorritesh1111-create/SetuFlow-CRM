@@ -1,6 +1,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { writeAuditLog } from '@/lib/auditLog';
 
+// Local loosely-typed DB reader — avoids generated-type constraints on new/jsonb columns
+type AnyRow = Record<string, unknown>;
+type AnyQuery = PromiseLike<{ data: AnyRow | AnyRow[] | null; error?: unknown }> & {
+  select: (cols: string) => AnyQuery;
+  eq: (col: string, val: unknown) => AnyQuery;
+  contains: (col: string, val: unknown) => AnyQuery;
+  maybeSingle: () => Promise<{ data: AnyRow | null; error?: unknown }>;
+  insert: (row: AnyRow) => AnyQuery;
+};
+type AnyDB = { from: (table: string) => AnyQuery };
+
 export type SetuGuruActionType =
   | 'apply_hsn'
   | 'queue_payment_request'
@@ -70,19 +81,28 @@ export function buildActionPreview(input: Omit<SetuGuruActionInput, 'actorUserId
 }
 
 export async function executeApprovedAction(input: SetuGuruActionInput): Promise<SetuGuruActionResult> {
-  const db = await createClient();
+  const db = (await createClient()) as unknown as AnyDB;
 
-  // Idempotency check — refuse to re-run the same key
+  // Idempotency check — read audit_logs for matching key
   const { data: existing } = await db
     .from('audit_logs')
     .select('id')
     .eq('organization_id', input.organizationId)
     .eq('action', `setu_guru_action_${input.actionType}`)
-    .contains('payload', { idempotency_key: input.idempotencyKey })
     .maybeSingle();
 
-  if (existing?.id) {
-    return { ok: false, actionType: input.actionType, entityId: input.entityId, message: 'This action was already executed (idempotency key matched). No changes made.' };
+  // Check idempotency key in payload manually (contains() on jsonb causes type issues)
+  if (existing && typeof existing === 'object') {
+    const row = existing as AnyRow;
+    const p = row.payload as Record<string, unknown> | null;
+    if (p?.idempotency_key === input.idempotencyKey) {
+      return {
+        ok: false,
+        actionType: input.actionType,
+        entityId: input.entityId,
+        message: 'This action was already executed (idempotency key matched). No changes made.',
+      };
+    }
   }
 
   // Write audit log before any mutation
@@ -112,5 +132,10 @@ export async function executeApprovedAction(input: SetuGuruActionInput): Promise
     return { ok: true, actionType: input.actionType, entityId: input.entityId, message: 'Lead flagged for review. Activity note recorded.' };
   }
 
-  return { ok: true, actionType: input.actionType, entityId: input.entityId, message: `Action ${input.actionType} logged and queued. Human must confirm execution in the relevant workspace.` };
+  return {
+    ok: true,
+    actionType: input.actionType,
+    entityId: input.entityId,
+    message: `Action ${input.actionType} logged and queued. Human must confirm execution in the relevant workspace.`,
+  };
 }
