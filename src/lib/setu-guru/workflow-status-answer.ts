@@ -107,19 +107,18 @@ export function buildConversationalWorkflowStatusAnswer(input: {
   const remaining = Math.max(steps.length - topSteps.length, 0);
   const blockers = [...explicitBlockers, ...steps];
   const nextLine = topSteps.length ? topSteps.map((step, index) => `${index + 1}. ${step}`).join('\n\n') : 'No open blocker found in the checked workflow records.';
-  const evidenceLine = `${input.orderDocuments.length} doc(s) · ${input.freightRequests.length} freight request(s) · ${input.financeSync.length} finance record(s) · ${input.stageEvents.length} stage event(s) · ${input.gates.length} gate(s)`;
-  const moreLine = remaining ? `\n\nAlso pending: ${remaining} more item(s). Open the order workspace for full detail.` : '';
+  const evidenceLine = `${input.orderDocuments.length} docs · ${input.freightRequests.length} freight requests · ${input.financeSync.length} finance records · ${input.stageEvents.length} stage events · ${input.gates.length} gates`;
+  const moreLine = remaining ? `\n\nAlso pending: ${remaining} more. Open order workspace for full detail.` : '';
 
   const answer = [
-    `Quick view: ${customer} — ${orderNumber}`,
-    shortStage(input),
+    `Quick view: ${customer} — ${orderNumber} | ${shortStage(input)}`,
     '',
     'Do next:',
     nextLine + moreLine,
     '',
     `Checked: ${evidenceLine}.`,
     '',
-    'Read-only: Setu Guru will not approve, send, sync, book freight, or advance the order without a human click.',
+    'Read-only: human click required for approve, send, sync, freight booking, or stage advance.',
   ].join('\n');
 
   return { answer, blockers };
