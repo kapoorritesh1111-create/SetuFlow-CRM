@@ -47,15 +47,15 @@ function blockedStatus(value: unknown) {
   return ['blocked', 'rejected', 'failed', 'missing', 'pending', 'open', 'draft'].includes(text(value).toLowerCase());
 }
 
-function nextAction(blocker: string, detail: string): string {
+function actionFor(blocker: string, detail: string): string {
   switch (blocker) {
-    case 'payment': return `Payment: ${detail}. Confirm terms or issue proforma invoice.`;
-    case 'fulfillment': return `Fulfillment: ${detail}. Add packing/processing evidence.`;
-    case 'dispatch': return `Dispatch: ${detail}. Complete fulfillment and documents first.`;
-    case 'documents': return 'Documents: create proforma, packing list, or delivery note.';
-    case 'packing': return 'Packing: add or approve the packing plan.';
-    case 'freight': return 'Freight: raise a freight rate request.';
-    case 'finance': return 'Finance: queue invoice/accounting handoff.';
+    case 'payment': return `Confirm payment terms or issue proforma. Payment is ${detail}.`;
+    case 'fulfillment': return `Add packing or processing evidence. Fulfillment is ${detail}.`;
+    case 'dispatch': return `Complete fulfillment and documents before dispatch. Dispatch is ${detail}.`;
+    case 'documents': return 'Create required order document.';
+    case 'packing': return 'Add or approve packing plan.';
+    case 'freight': return 'Raise freight request.';
+    case 'finance': return 'Queue invoice handoff.';
     default: return detail;
   }
 }
@@ -92,34 +92,26 @@ export function buildConversationalWorkflowStatusAnswer(input: {
   ];
 
   const steps: string[] = [];
-  if (incomplete(input.order.payment_status)) steps.push(nextAction('payment', humanStatus(input.order.payment_status)));
-  if (incomplete(input.order.fulfillment_status)) steps.push(nextAction('fulfillment', humanStatus(input.order.fulfillment_status)));
-  if (incomplete(input.order.dispatch_status)) steps.push(nextAction('dispatch', humanStatus(input.order.dispatch_status)));
-  if (!input.orderDocuments.length) steps.push(nextAction('documents', ''));
-  if (!input.packingPlans.length && label(input.order.current_stage).includes('packing')) steps.push(nextAction('packing', ''));
-  if (!input.freightRequests.length) steps.push(nextAction('freight', ''));
-  if (!input.financeSync.length) steps.push(nextAction('finance', ''));
+  if (incomplete(input.order.payment_status)) steps.push(actionFor('payment', humanStatus(input.order.payment_status)));
+  if (incomplete(input.order.fulfillment_status)) steps.push(actionFor('fulfillment', humanStatus(input.order.fulfillment_status)));
+  if (incomplete(input.order.dispatch_status)) steps.push(actionFor('dispatch', humanStatus(input.order.dispatch_status)));
+  if (!input.orderDocuments.length) steps.push(actionFor('documents', ''));
+  if (!input.packingPlans.length && label(input.order.current_stage).includes('packing')) steps.push(actionFor('packing', ''));
+  if (!input.freightRequests.length) steps.push(actionFor('freight', ''));
+  if (!input.financeSync.length) steps.push(actionFor('finance', ''));
   for (const blocker of explicitBlockers) steps.push(blocker);
 
   const customer = text(input.customerName) || 'this customer';
   const orderNumber = text(input.order.order_number) || 'this order';
-  const topSteps = steps.slice(0, 3);
-  const remaining = Math.max(steps.length - topSteps.length, 0);
+  const nextAction = steps[0] || 'No blocker found. Review order workspace.';
+  const remaining = Math.max(steps.length - 1, 0);
   const blockers = [...explicitBlockers, ...steps];
-  const nextLine = topSteps.length ? topSteps.map((step, index) => `${index + 1}. ${step}`).join('\n\n') : 'No open blocker found in the checked workflow records.';
-  const evidenceLine = `${input.orderDocuments.length} docs · ${input.freightRequests.length} freight requests · ${input.financeSync.length} finance records · ${input.stageEvents.length} stage events · ${input.gates.length} gates`;
-  const moreLine = remaining ? `\n\nAlso pending: ${remaining} more. Open order workspace for full detail.` : '';
+  const pendingText = remaining ? ` +${remaining} more` : '';
 
   const answer = [
     `Quick view: ${customer} — ${orderNumber} | ${shortStage(input)}`,
-    '',
-    'Do next:',
-    nextLine + moreLine,
-    '',
-    `Checked: ${evidenceLine}.`,
-    '',
-    'Read-only: human click required for approve, send, sync, freight booking, or stage advance.',
-  ].join('\n');
+    `Next: ${nextAction}${pendingText}.`,
+  ].join('\n\n');
 
   return { answer, blockers };
 }
