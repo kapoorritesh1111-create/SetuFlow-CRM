@@ -20,6 +20,8 @@ export const SETU_GURU_RESPONSE_POLICY = {
     'orders',
     'canonical order',
     'order lifecycle',
+    'order status',
+    'order state',
     'payment status',
     'fulfillment status',
     'dispatch status',
@@ -80,7 +82,7 @@ export const SETU_GURU_RESPONSE_POLICY = {
 const COMPLIANCE_WORDS = ['compliance', 'blocker', 'document', 'evidence', 'certificate', 'coa', 'packing list', 'dispatch', 'ignore', 'waive', 'fix this', 'fix compliance', 'required document'];
 const QUOTE_BLOCKER_WORDS = ['quote blocker', 'quote blockers', 'quote send', 'send blocker', 'send blockers', 'review blocker', 'quote review', 'why is quote blocked', 'cannot send quote'];
 const QUOTE_LIFECYCLE_WORDS = ['quote lifecycle', 'quote version', 'sent version', 'accepted version', 'sent_version_id', 'accepted_version_id', 'direct order', 'quote accepted', 'quote rejected', 'quote acceptance'];
-const ORDER_LIFECYCLE_WORDS = ['canonical order', 'order lifecycle', 'order stage', 'payment requested', 'partial payment', 'deferred payment', 'post delivery', 'production ready', 'dispatch ready', 'mark dispatched', 'order dispatch'];
+const ORDER_LIFECYCLE_WORDS = ['check this order status', 'check order status', 'order status', 'order state', 'order readiness', 'canonical order', 'order lifecycle', 'order stage', 'payment requested', 'partial payment', 'deferred payment', 'post delivery', 'production ready', 'dispatch ready', 'mark dispatched', 'order dispatch'];
 const DISPATCH_DOC_WORDS = ['dispatch doc', 'dispatch docs', 'dispatch document', 'dispatch documents', 'packing list', 'coa', 'certificate of analysis', 'before dispatch', 'order dispatch', 'shipment document'];
 const HS_CODE_WORDS = ['hs code', 'hs-code', 'hsn', 'hsn code', 'tariff code', 'customs code'];
 const ORG_SEARCH_PHRASES = [
@@ -111,6 +113,11 @@ const ORG_SEARCH_PHRASES = [
   'quote lifecycle',
   'order lifecycle',
   'canonical order',
+  'check this order status',
+  'check order status',
+  'order status',
+  'order state',
+  'order readiness',
   'payment status',
   'fulfillment status',
   'dispatch status',
