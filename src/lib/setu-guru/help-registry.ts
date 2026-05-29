@@ -42,7 +42,32 @@ function normalize(value: string) { return value.toLowerCase().replace(/[^a-z0-9
 export function getHelpTopicById(id: string) { return SETU_GURU_HELP_TOPICS.find((topic) => topic.id === id || topic.slug === id) ?? null; }
 export function getSetuGuruRouteTopics(pathname: string) { const pageContext = getSetuGuruPageContext(pathname); const matches = SETU_GURU_HELP_TOPICS.filter((topic) => topic.routeKeys.includes(pageContext.routeKey) || topic.routes.some((route) => routeMatchesSetuGuruPath(pathname, route))); return matches.length ? matches : SETU_GURU_HELP_TOPICS; }
 export const getHelpTopicsForPath = getSetuGuruRouteTopics;
-export function getBestSetuGuruHelpTopic(question: string, pathname: string) { const routeTopics = getSetuGuruRouteTopics(pathname); const q = normalize(question); if (!q) return routeTopics[0] ?? SETU_GURU_HELP_TOPICS[0]; const ranked = SETU_GURU_HELP_TOPICS.map((topic) => { const routeScore = routeTopics.some((routeTopic) => routeTopic.id === topic.id) ? 4 : 0; const haystack = normalize([topic.title, topic.summary, ...topic.tags, ...topic.answer, ...topic.commonBlockers, ...topic.dataSources, ...topic.allowedActions].join(' ')); const wordScore = q.split(/\s+/).filter(Boolean).reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0); return { topic, score: routeScore + wordScore }; }).sort((a, b) => b.score - a.score); return ranked[0]?.topic ?? routeTopics[0] ?? SETU_GURU_HELP_TOPICS[0]; }
+export function getBestSetuGuruHelpTopic(question: string, pathname: string) {
+  const routeTopics = getSetuGuruRouteTopics(pathname);
+  const q = normalize(question);
+  if (!q) return routeTopics[0] ?? SETU_GURU_HELP_TOPICS[0];
+  const WORKFLOW_KEYWORDS: Record<string, string[]> = {
+    quotes: ['quote', 'quotation', 'quote approval', 'send quote', 'quote builder', 'quote lifecycle'],
+    orders: ['order', 'dispatch', 'fulfillment', 'freight', 'packing', 'shipment', 'invoice', 'finance queue'],
+    leads: ['lead', 'follow up', 'pipeline stage'],
+    compliance: ['compliance', 'certificate', 'coa', 'waiver'],
+    products: ['hsn', 'hs code', 'sku', 'variant', 'pricing rule'],
+  };
+  const currentRouteKey = getSetuGuruPageContext(pathname).routeKey;
+  const questionMentionsOtherWorkflow = Object.entries(WORKFLOW_KEYWORDS).some(([key, words]) => {
+    if (currentRouteKey === key) return false;
+    return words.some((word) => q.includes(normalize(word)));
+  });
+  const ranked = SETU_GURU_HELP_TOPICS.map((topic) => {
+    const isCurrentRouteMatch = routeTopics.some((routeTopic) => routeTopic.id === topic.id);
+    const routeScore = isCurrentRouteMatch && !questionMentionsOtherWorkflow ? 4 : 0;
+    const haystack = normalize([topic.title, topic.summary, ...topic.tags, ...topic.answer, ...topic.commonBlockers, ...topic.dataSources, ...topic.allowedActions].join(' '));
+    const wordScore = q.split(/\s+/).filter(Boolean).reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+    return { topic, score: routeScore + wordScore };
+  }).sort((a, b) => b.score - a.score);
+  return ranked[0]?.topic ?? routeTopics[0] ?? SETU_GURU_HELP_TOPICS[0];
+}
+
 export const getBestHelpTopic = getBestSetuGuruHelpTopic;
 export function getSetuGuruActionHref(action: string) { const normalized = normalize(action); if (normalized.includes('catalog readiness')) return '/products?gap=has_gap'; if (normalized.includes('dispatch evidence')) return '/documents'; if (normalized.includes('lead document')) return '/documents'; if (normalized.includes('compliance')) return '/compliance'; if (normalized.includes('product management')) return '/admin/product-management'; if (normalized.includes('open products')) return '/products'; if (normalized.includes('organization')) return '/admin/organization#company-profile'; if (normalized.includes('open leads')) return '/leads'; if (normalized.includes('order')) return '/orders'; if (normalized.includes('quote')) return '/quotes'; if (normalized.includes('approval') || normalized.includes('release')) return '/approval-send'; if (normalized.includes('product')) return '/products'; return null; }
 export function getRouteHelpSummary(pathname: string) { const context: SetuGuruPageContext = getSetuGuruPageContext(pathname); const topic = getHelpTopicById(context.helpTopicId) ?? getSetuGuruRouteTopics(pathname)[0]; return { routeKey: context.routeKey, routeTitle: context.title, helpFile: topic.helpFile, summary: topic.summary, suggestedPrompts: context.suggestedPrompts, liveSearchModes: context.liveSearchModes, approvalRequiredActions: context.approvalRequiredActions }; }
