@@ -84,6 +84,10 @@ button {
   }
 }
 
+.mt-3.space-y-2.border-t.border-slate-100.pt-3:has(> div:not(.setu-guru-source-row)) {
+  display: none;
+}
+
 @media (max-width: 640px) {
   html {
     -webkit-text-size-adjust: 100%;
