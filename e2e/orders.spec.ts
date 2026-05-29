@@ -10,6 +10,6 @@ test.describe('order progression workspace', () => {
 
     await expect(page).toHaveURL(/orders/);
     await expect(page.getByText(/trade command center/i).first()).toBeVisible();
-    await expect(page.getByText(/orders|execution/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /orders \/ execution/i })).toBeVisible();
   });
 });
