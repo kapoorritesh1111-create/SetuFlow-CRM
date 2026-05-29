@@ -74,7 +74,7 @@ export const SETU_GURU_PAGE_CONTEXTS: SetuGuruPageContext[] = [
     dataSources: ['leads', 'quotes', 'orders', 'documents', 'compliance_items', 'products', 'organization_defaults', 'countries', 'markets'],
     allowedActions: ['Summarize queue health', 'Route to the right workspace', 'Explain missing data', 'Draft next actions', 'Explain map country focus and reset behavior'],
     approvalRequiredActions: ['approve quote', 'send quote', 'waive compliance', 'change pricing defaults', 'advance order execution'],
-    suggestedPrompts: ['What should I do next today?', 'Which records are blocked?', 'Why is the map focused on this country?', 'How do I reset the map?'],
+    suggestedPrompts: ['What should I action today?', 'Which leads are overdue for follow-up?', 'What is the status of Atlas Natural Grocers order?', 'Which quotes need compliance review?'],
     liveSearchModes: ['page_help', 'lead_search', 'quote_compliance', 'catalog_search', 'document_requirements'],
   },
   {
@@ -149,7 +149,7 @@ export const SETU_GURU_PAGE_CONTEXTS: SetuGuruPageContext[] = [
     dataSources: ['orders', 'order_lines', 'accepted_quote_versions', 'order_documents', 'order_document_sends', 'order_approval_gates', 'order_stage_events', 'packing_plans', 'freight_rate_requests', 'freight_booking_events', 'finance_integration_events', 'trade_requirements'],
     allowedActions: ['Explain next best action', 'Explain blockers', 'Draft dispatch evidence checklist', 'Explain Finance/Freight pending-adapter queues', 'Explain manual WhatsApp tracked links and PDF fallback'],
     approvalRequiredActions: ['approve actual lines', 'approve order documents', 'send documents', 'confirm or waive trade requirements', 'approve packing', 'queue or retry integration events', 'change shipment or dispatch status', 'record payment/reconcile/close order'],
-    suggestedPrompts: ['What is blocking this order?', 'What should I approve before sending the first order document?', 'Can I queue finance now?', 'Can I book freight from this screen?', 'Draft a dispatch evidence checklist without advancing state.'],
+    suggestedPrompts: ['What is the status of this order?', 'What is blocking Atlas Natural Grocers order?', 'Which orders need attention now?', 'What do I need to do to dispatch this order?'],
     liveSearchModes: ['page_help', 'quote_compliance', 'document_requirements'],
   },
   {

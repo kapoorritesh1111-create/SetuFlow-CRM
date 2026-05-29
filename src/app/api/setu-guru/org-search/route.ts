@@ -92,7 +92,237 @@ async function resolveActiveWorkflowOrder(db: SupabaseReader, organizationId: st
 function parseOrderNumberFromQuestion(question: string): string | null { const match = question.match(/SF-O-\d{6}-\d{3}/i); return match ? match[0].toUpperCase() : null; }
 function workflowRows(rowsByType: Record<string, TableRow[]>) { return Object.entries(rowsByType).flatMap(([type, values]) => values.slice(0, 4).map((row) => ({ id: asText(row.id) || `${type}-${asText(row.status)}`, name: asText(row.title) || asText(row.summary) || asText(row.document_type) || asText(row.gate_type) || asText(row.provider_name) || asText(row.finance_document_type) || asText(row.status) || type, type, status: asText(row.status) || asText(row.sync_status) || asText(row.event_type), next: isBlockedStatus(row.status ?? row.sync_status) ? 'Review this workflow blocker before advancing state' : 'Evidence checked from live workflow state' }))); }
 function buildWorkflowStatusAnswer(input: { organizationName: string; order: TableRow; quote: TableRow | null; quoteVersions: TableRow[]; gates: TableRow[]; stageEvents: TableRow[]; orderDocuments: TableRow[]; tradeRequirements: TableRow[]; packingPlans: TableRow[]; freightRequests: TableRow[]; freightQuotes: TableRow[]; shipments: TableRow[]; financeSync: TableRow[]; processingChecks: TableRow[]; }) { const openGates = input.gates.filter((row) => isBlockedStatus(row.status)); const openRequirements = input.tradeRequirements.filter((row) => isOpenStatus(row.status)); const unsentDocs = input.orderDocuments.filter((row) => ['draft', 'generated', 'approved'].includes(asText(row.status).toLowerCase()) && !row.sent_at); const freightBlocked = input.freightRequests.filter((row) => isBlockedStatus(row.status)); const financeBlocked = input.financeSync.filter((row) => isBlockedStatus(row.sync_status)); const blockers = [...openGates.map((row) => `${asText(row.stage_key) || 'approval'} gate ${asText(row.gate_type) || ''}: ${asText(row.status)}`), ...openRequirements.map((row) => `${asText(row.stage_key) || 'trade'} requirement: ${asText(row.title) || asText(row.requirement_code)}`), ...freightBlocked.map((row) => `freight request ${asText(row.id).slice(0, 8)}: ${asText(row.status)}`), ...financeBlocked.map((row) => `finance ${asText(row.finance_document_type) || 'sync'}: ${asText(row.sync_status)}`)]; const answer = [`I checked live workflow state for ${asText(input.order.order_number) || 'the latest active order'} in ${input.organizationName}.`, `Order state: lifecycle ${asText(input.order.order_lifecycle_status) || asText(input.order.status) || 'not set'} · stage ${asText(input.order.current_stage) || 'not set'} · approval ${asText(input.order.approval_state) || 'not set'} · payment ${asText(input.order.payment_status) || 'not set'} · fulfillment ${asText(input.order.fulfillment_status) || 'not set'} · dispatch ${asText(input.order.dispatch_status) || 'not set'}.`, `Quote handoff: ${input.quote ? `${asText(input.quote.quote_number) || 'quote'} status ${asText(input.quote.status) || 'not set'} with ${input.quoteVersions.length} version record(s).` : 'No linked quote was found for this order.'}`, `Evidence checked: order stages ${input.stageEvents.length}, gates ${input.gates.length}, order documents ${input.orderDocuments.length}, trade requirements ${input.tradeRequirements.length}, packing plans ${input.packingPlans.length}, freight requests ${input.freightRequests.length}, freight quotes ${input.freightQuotes.length}, shipments ${input.shipments.length}, finance sync records ${input.financeSync.length}, processing checks ${input.processingChecks.length}.`, blockers.length ? `Current blockers: ${blockers.slice(0, 5).join('; ')}.` : unsentDocs.length ? `Dispatch caution: ${unsentDocs.length} approved/generated order document(s) still need send/open evidence before closing dispatch.` : 'No live blocker was found in the checked workflow records.', 'Read-only analysis only. Setu Guru must not advance order state, send documents, clear gates, sync finance, book freight, or waive compliance without human approval and the existing safe workflow actions.'].join('\n\n'); return { answer, blockers, rows: workflowRows({ approval_gate: input.gates, stage_event: input.stageEvents, order_document: input.orderDocuments, trade_requirement: input.tradeRequirements, freight_request: input.freightRequests, freight_quote: input.freightQuotes, shipment: input.shipments, finance_sync: input.financeSync }) }; }
-async function buildWorkflowStatusResponse(db: SupabaseReader, organizationId: string, organizationName: string, route: string, pageText: string, mode: SetuGuruOrgSearchMode, question = '') { const orderNumberInQuestion = parseOrderNumberFromQuestion(question); let order = orderNumberInQuestion ? await (async () => { const columns = 'id, order_number, status, current_stage, order_lifecycle_status, approval_state, payment_status, fulfillment_status, dispatch_status, source_quote_id, source_quote_version_id, lead_id, total_order_value, currency, updated_at'; const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('order_number', orderNumberInQuestion).maybeSingle(); return data?.id ? data : null; })() : null; if (!order) order = await resolveActiveWorkflowOrder(db, organizationId, route, pageText); if (!order?.id) return NextResponse.json({ answer: 'I can check order workflow state, but I could not identify an order from the route or visible page. Open an order workspace and ask again.', confidence: 'medium', mode, rows: [], actions: ['Open Orders'], actionHref: '/orders' }); const orderId = asText(order.id); const quoteId = asText(order.source_quote_id); const [quoteResult, versionsResult, gatesResult, stagesResult, docsResult, requirementsResult, packingResult, freightRequestsResult, freightQuotesResult, shipmentsResult, financeResult, checksResult] = await Promise.all([quoteId ? db.from('quotes').select('id, quote_number, status, accepted_version_id, current_version_id, sent_version_id').eq('organization_id', organizationId).eq('id', quoteId).maybeSingle() : Promise.resolve({ data: null }), quoteId ? db.from('quote_versions').select('id, quote_id, version_no, status, sent_at, approved_at, parent_version_id').eq('quote_id', quoteId).order('version_no', { ascending: false }).limit(8) : Promise.resolve({ data: [] }), db.from('order_approval_gates').select('id, stage_key, gate_type, status, previewed_at, approved_at, sent_at, completed_at, reason, notes').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(12), db.from('order_stage_events').select('id, stage_key, event_type, summary, event_at').eq('organization_id', organizationId).eq('order_id', orderId).order('event_at', { ascending: false }).limit(12), db.from('order_documents').select('id, document_type, stage_key, status, version_no, approved_at, sent_at, opened_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(12), db.from('trade_requirements').select('id, title, requirement_code, stage_key, status, severity, due_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(12), db.from('packing_plans').select('id, plan_type, status, total_units, total_gross_weight_kg, total_cbm, approved_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(4), db.from('freight_rate_requests').select('id, status, shipment_mode, incoterm, sent_at, selected_quote_id').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(6), db.from('freight_rate_quotes').select('id, request_id, provider_name, provider_type, quoted_amount, currency, status, selected_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(10), db.from('shipments').select('id, status, shipment_mode, carrier_name, forwarder_name, tracking_number, booking_reference, dispatched_at, delivered_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(6), db.from('finance_sync_records').select('id, finance_document_type, external_system, sync_status, synced_at, error_message').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(6), db.from('order_processing_checks').select('id, order_line_id, picked, packed, qc_checked, processing_note, checked_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(8)]); const leadResult = order.lead_id ? await db.from('leads').select('company_name, contact_name').eq('organization_id', organizationId).eq('id', asText(order.lead_id)).maybeSingle() : { data: null }; const customerName = asText(leadResult.data?.company_name ?? leadResult.data?.contact_name ?? ''); const built = buildConversationalWorkflowStatusAnswer({ organizationName, order, customerName, quote: quoteResult.data, quoteVersions: rowList(versionsResult.data), gates: rowList(gatesResult.data), stageEvents: rowList(stagesResult.data), orderDocuments: rowList(docsResult.data), tradeRequirements: rowList(requirementsResult.data), packingPlans: rowList(packingResult.data), freightRequests: rowList(freightRequestsResult.data), freightQuotes: rowList(freightQuotesResult.data), shipments: rowList(shipmentsResult.data), financeSync: rowList(financeResult.data), processingChecks: rowList(checksResult.data) }); return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows: built.rows.slice(0, 12), metrics: { blockers: built.blockers.length, orderStages: rowList(stagesResult.data).length, orderDocuments: rowList(docsResult.data).length, freightRequests: rowList(freightRequestsResult.data).length, financeSyncRecords: rowList(financeResult.data).length }, actions: ['Open order workspace', 'Review order approval boundary', 'Draft dispatch evidence checklist'], actionHref: `/orders/${orderId}`, actionHrefs: { 'Open order workspace': `/orders/${orderId}`, 'Review order approval boundary': `/orders/${orderId}?tab=approvals`, 'Draft dispatch evidence checklist': `/orders/${orderId}?tab=documents` } }); }
+
+// ── Disambiguation helpers ────────────────────────────────────────────────────
+
+type DisambiguationResult =
+  | { kind: 'found'; order: TableRow; customerName: string }
+  | { kind: 'ask_client'; message: string; rows: TableRow[] }
+  | { kind: 'pick_order'; customerName: string; message: string; rows: TableRow[] }
+  | { kind: 'not_found'; message: string };
+
+function fuzzyMatchClient(name: string, query: string): boolean {
+  if (!query || !name) return false;
+  const n = name.toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
+  const q = query.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').trim();
+  if (!q) return false;
+  // Match any token of the query against the name
+  return q.split(/\s+/).filter(t => t.length > 1).some(token => n.includes(token));
+}
+
+function extractClientNameFromQuestion(question: string): string {
+  const q = question.toLowerCase();
+  // Remove intent phrases to isolate the client name
+  const stripped = q
+    .replace(/\b(what is the status|status of|order status|quote status|check|show me|for|of|the|order|quote|sf-o-\d{6}-\d{3}|sf-q-\d{6}-\d{3})\b/g, ' ')
+    .replace(/\s{2,}/g, ' ').trim();
+  return stripped.length >= 2 ? stripped : '';
+}
+
+async function resolveOrderWithDisambiguation(
+  db: SupabaseReader,
+  organizationId: string,
+  route: string,
+  pageText: string,
+  question: string,
+): Promise<DisambiguationResult> {
+  const columns = 'id, order_number, status, current_stage, order_lifecycle_status, approval_state, payment_status, fulfillment_status, dispatch_status, source_quote_id, source_quote_version_id, lead_id, total_order_value, currency, updated_at';
+
+  // 1. Exact order number in question → direct lookup
+  const orderNumber = parseOrderNumberFromQuestion(question);
+  if (orderNumber) {
+    const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('order_number', orderNumber).maybeSingle();
+    if (data?.id) {
+      const leadRes = data.lead_id ? await db.from('leads').select('company_name, contact_name').eq('organization_id', organizationId).eq('id', asText(data.lead_id)).maybeSingle() : { data: null };
+      const customerName = asText(leadRes.data?.company_name ?? leadRes.data?.contact_name ?? '');
+      return { kind: 'found', order: data, customerName };
+    }
+  }
+
+  // 2. Order ID in route → direct lookup
+  const orderId = parseOrderIdFromRoute(route);
+  if (orderId) {
+    const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('id', orderId).maybeSingle();
+    if (data?.id) {
+      const leadRes = data.lead_id ? await db.from('leads').select('company_name, contact_name').eq('organization_id', organizationId).eq('id', asText(data.lead_id)).maybeSingle() : { data: null };
+      const customerName = asText(leadRes.data?.company_name ?? leadRes.data?.contact_name ?? '');
+      return { kind: 'found', order: data, customerName };
+    }
+  }
+
+  // 3. Order number visible in page text
+  const pageOrderNumber = (/SF-O-\d{6}-\d{3}/i.exec(pageText) ?? [])[0]?.toUpperCase() ?? null;
+  if (pageOrderNumber) {
+    const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('order_number', pageOrderNumber).maybeSingle();
+    if (data?.id) {
+      const leadRes = data.lead_id ? await db.from('leads').select('company_name, contact_name').eq('organization_id', organizationId).eq('id', asText(data.lead_id)).maybeSingle() : { data: null };
+      const customerName = asText(leadRes.data?.company_name ?? leadRes.data?.contact_name ?? '');
+      return { kind: 'found', order: data, customerName };
+    }
+  }
+
+  // 4. Try to extract client name from question for fuzzy match
+  const clientQuery = extractClientNameFromQuestion(question);
+
+  // Load recent orders with lead names for matching
+  const { data: recent } = await db.from('orders')
+    .select('id, order_number, status, current_stage, order_lifecycle_status, approval_state, payment_status, fulfillment_status, dispatch_status, source_quote_id, source_quote_version_id, lead_id, total_order_value, currency, updated_at')
+    .eq('organization_id', organizationId)
+    .order('updated_at', { ascending: false })
+    .limit(50);
+
+  const orders = rowList(recent);
+  if (!orders.length) return { kind: 'not_found', message: 'No orders found in this organization yet.' };
+
+  // Load lead names for all orders
+  const leadIds = [...new Set(orders.map(o => asText(o.lead_id)).filter(Boolean))];
+  const { data: leadsData } = leadIds.length
+    ? await db.from('leads').select('id, company_name, contact_name').eq('organization_id', organizationId).in('id', leadIds)
+    : { data: [] };
+  const leadMap = new Map(rowList(leadsData).map(l => [asText(l.id), asText(l.company_name || l.contact_name)]));
+
+  // Annotate orders with customer names
+  const annotated = orders.map(o => ({
+    order: o,
+    customerName: leadMap.get(asText(o.lead_id)) ?? '',
+  }));
+
+  // 5. Client name match
+  if (clientQuery) {
+    const matched = annotated.filter(a => fuzzyMatchClient(a.customerName, clientQuery));
+    if (matched.length === 1) {
+      return { kind: 'found', order: matched[0].order, customerName: matched[0].customerName };
+    }
+    if (matched.length > 1) {
+      // Multiple orders for matched clients — ask which one
+      const uniqueClients = [...new Set(matched.map(m => m.customerName))];
+      if (uniqueClients.length === 1) {
+        // Same client, multiple orders — ask which order
+        const rows = matched.slice(0, 5).map(m => ({
+          id: asText(m.order.id),
+          name: asText(m.order.order_number),
+          type: 'order',
+          next: `Stage: ${asText(m.order.current_stage) || 'unknown'} · Value: ${asText(m.order.currency)} ${asText(m.order.total_order_value)}`,
+          url: `/orders/${asText(m.order.id)}`,
+          citation: asText(m.order.order_number),
+        }));
+        return {
+          kind: 'pick_order',
+          customerName: uniqueClients[0],
+          message: `I found ${matched.length} orders for ${uniqueClients[0]}. Which order do you need? Reply with the order number or stage.`,
+          rows,
+        };
+      }
+      // Multiple clients partially matched — ask to clarify
+      const rows = matched.slice(0, 5).map(m => ({
+        id: asText(m.order.id),
+        name: m.customerName,
+        type: 'client',
+        next: `Order: ${asText(m.order.order_number)} · Stage: ${asText(m.order.current_stage) || 'unknown'}`,
+        citation: asText(m.order.order_number),
+      }));
+      return {
+        kind: 'ask_client',
+        message: `I found ${matched.length} matching records. Which client did you mean? Reply with their name or order number.`,
+        rows,
+      };
+    }
+  }
+
+  // 6. No match at all — ask for client name
+  return {
+    kind: 'ask_client',
+    message: "Which client or order number are you asking about? Give me a client name or order number (like SF-O-202605-004) and I'll pull the live status.",
+    rows: [],
+  };
+}
+
+async function resolveQuoteWithDisambiguation(
+  db: SupabaseReader,
+  organizationId: string,
+  question: string,
+  pageText: string,
+): Promise<{ kind: 'found'; lead: TableRow; quote: TableRow } | { kind: 'ask' | 'pick'; message: string; rows: TableRow[] }> {
+  const clientQuery = extractClientNameFromQuestion(question);
+  const { data: leads } = await db.from('leads').select('id, company_name, contact_name').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(50);
+  const leadRows = rowList(leads);
+
+  const matched = clientQuery
+    ? leadRows.filter(l => fuzzyMatchClient(asText(l.company_name ?? l.contact_name), clientQuery))
+    : [];
+
+  if (matched.length === 0 && !clientQuery) {
+    return { kind: 'ask', message: "Which client's quote do you want to check? Give me a name and I'll pull the compliance status.", rows: [] };
+  }
+
+  const targetLeads = matched.length > 0 ? matched : leadRows.slice(0, 3);
+
+  // Load quotes for matched leads
+  const leadIds = targetLeads.map(l => asText(l.id));
+  const { data: quotes } = await db.from('quotes').select('id, quote_number, status, lead_id').eq('organization_id', organizationId).in('lead_id', leadIds).order('updated_at', { ascending: false }).limit(20);
+  const quoteRows = rowList(quotes);
+
+  if (matched.length === 1 && quoteRows.filter(q => asText(q.lead_id) === asText(matched[0].id)).length === 1) {
+    const lead = matched[0];
+    const quote = quoteRows.find(q => asText(q.lead_id) === asText(lead.id))!;
+    return { kind: 'found', lead, quote };
+  }
+
+  const rows = quoteRows.slice(0, 5).map(q => {
+    const lead = leadRows.find(l => asText(l.id) === asText(q.lead_id));
+    return { id: asText(q.id), name: asText(lead?.company_name ?? lead?.contact_name ?? 'Unknown'), type: 'quote', next: `${asText(q.quote_number)} · ${asText(q.status)}`, citation: asText(q.quote_number) };
+  });
+
+  return {
+    kind: 'pick',
+    message: matched.length === 0
+      ? "Which client's quote do you want to check? Give me a name and I'll pull the compliance status."
+      : `I found ${rows.length} quotes for matching clients. Which one do you need?`,
+    rows,
+  };
+}
+
+async function buildWorkflowStatusResponse(db: SupabaseReader, organizationId: string, organizationName: string, route: string, pageText: string, mode: SetuGuruOrgSearchMode, question = '') {
+  const result = await resolveOrderWithDisambiguation(db, organizationId, route, pageText, question);
+
+  // Need more info — return disambiguation prompt with suggestion rows
+  if (result.kind === 'ask_client' || result.kind === 'pick_order') {
+    return NextResponse.json({
+      answer: result.kind === 'ask_client' ? result.message : result.message,
+      confidence: 'low',
+      mode,
+      rows: result.rows,
+      actions: ['Open Orders'],
+      actionHref: '/orders',
+      disambiguation: true,
+    });
+  }
+  if (result.kind === 'not_found') {
+    return NextResponse.json({ answer: result.message, confidence: 'low', mode, rows: [], actions: ['Open Orders'], actionHref: '/orders' });
+  }
+
+  const { order, customerName } = result;
+  const orderId = asText(order.id);
+  const quoteId = asText(order.source_quote_id);
+  const [quoteResult, versionsResult, gatesResult, stagesResult, docsResult, requirementsResult, packingResult, freightRequestsResult, freightQuotesResult, shipmentsResult, financeResult, checksResult] = await Promise.all([
+    quoteId ? db.from('quotes').select('id, quote_number, status, accepted_version_id, current_version_id, sent_version_id').eq('organization_id', organizationId).eq('id', quoteId).maybeSingle() : Promise.resolve({ data: null }),
+    quoteId ? db.from('quote_versions').select('id, quote_id, version_no, status, sent_at, approved_at, parent_version_id').eq('quote_id', quoteId).order('version_no', { ascending: false }).limit(8) : Promise.resolve({ data: [] }),
+    db.from('order_approval_gates').select('id, stage_key, gate_type, status, previewed_at, approved_at, sent_at, completed_at, reason, notes').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(12),
+    db.from('order_stage_events').select('id, stage_key, event_type, summary, event_at').eq('organization_id', organizationId).eq('order_id', orderId).order('event_at', { ascending: false }).limit(12),
+    db.from('order_documents').select('id, document_type, stage_key, status, version_no, approved_at, sent_at, opened_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(12),
+    db.from('trade_requirements').select('id, title, requirement_code, stage_key, status, severity, due_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(12),
+    db.from('packing_plans').select('id, plan_type, status, total_units, total_gross_weight_kg, total_cbm, approved_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(4),
+    db.from('freight_rate_requests').select('id, status, shipment_mode, incoterm, sent_at, selected_quote_id').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(6),
+    db.from('freight_rate_quotes').select('id, request_id, provider_name, provider_type, quoted_amount, currency, status, selected_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(10),
+    db.from('shipments').select('id, status, shipment_mode, carrier_name, forwarder_name, tracking_number, booking_reference, dispatched_at, delivered_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(6),
+    db.from('finance_sync_records').select('id, finance_document_type, external_system, sync_status, synced_at, error_message').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(6),
+    db.from('order_processing_checks').select('id, order_line_id, picked, packed, qc_checked, processing_note, checked_at').eq('organization_id', organizationId).eq('order_id', orderId).order('updated_at', { ascending: false }).limit(8),
+  ]);
+  const built = buildConversationalWorkflowStatusAnswer({ organizationName, order, customerName, quote: quoteResult.data, quoteVersions: rowList(versionsResult.data), gates: rowList(gatesResult.data), stageEvents: rowList(stagesResult.data), orderDocuments: rowList(docsResult.data), tradeRequirements: rowList(requirementsResult.data), packingPlans: rowList(packingResult.data), freightRequests: rowList(freightRequestsResult.data), freightQuotes: rowList(freightQuotesResult.data), shipments: rowList(shipmentsResult.data), financeSync: rowList(financeResult.data), processingChecks: rowList(checksResult.data) });
+  const rows = workflowRows({ approval_gate: rowList(gatesResult.data), stage_event: rowList(stagesResult.data), order_document: rowList(docsResult.data), trade_requirement: rowList(requirementsResult.data), freight_request: rowList(freightRequestsResult.data), freight_quote: rowList(freightQuotesResult.data), shipment: rowList(shipmentsResult.data), finance_sync: rowList(financeResult.data) }).slice(0, 12);
+  return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows, metrics: { blockers: built.blockers.length, orderStages: rowList(stagesResult.data).length, orderDocuments: rowList(docsResult.data).length, freightRequests: rowList(freightRequestsResult.data).length, financeSyncRecords: rowList(financeResult.data).length }, actions: ['Open order workspace', 'Review order approval boundary', 'Draft dispatch evidence checklist'], actionHref: `/orders/${orderId}`, actionHrefs: { 'Open order workspace': `/orders/${orderId}`, 'Review order approval boundary': `/orders/${orderId}?tab=approvals`, 'Draft dispatch evidence checklist': `/orders/${orderId}?tab=documents` } });
+}
+
 
 export async function POST(request: Request) {
   try {
