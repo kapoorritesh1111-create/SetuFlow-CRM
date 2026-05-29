@@ -8,6 +8,32 @@ function label(value: unknown) {
   return text(value).replaceAll('_', ' ') || 'not set';
 }
 
+function humanStatus(raw: unknown): string {
+  const s = text(raw).toLowerCase();
+  const map: Record<string, string> = {
+    not_requested: 'not requested yet',
+    not_started: 'not started yet',
+    not_ready: 'not ready yet',
+    pending: 'pending',
+    draft: 'draft',
+    blocked: 'blocked',
+    failed: 'failed',
+    rejected: 'rejected',
+    missing: 'missing',
+    open: 'open',
+    approved: 'approved',
+    waived: 'waived',
+    complete: 'complete',
+    completed: 'complete',
+    ready: 'ready',
+    accepted: 'accepted',
+    sent: 'sent',
+    dispatched: 'dispatched',
+    delivered: 'delivered',
+  };
+  return map[s] ?? label(raw);
+}
+
 function incomplete(value: unknown) {
   const status = text(value).toLowerCase();
   return !status || ['not_requested', 'not_started', 'not_ready', 'pending', 'draft', 'blocked', 'failed', 'rejected', 'missing', 'open'].includes(status);
@@ -19,6 +45,19 @@ function openStatus(value: unknown) {
 
 function blockedStatus(value: unknown) {
   return ['blocked', 'rejected', 'failed', 'missing', 'pending', 'open', 'draft'].includes(text(value).toLowerCase());
+}
+
+function nextAction(blocker: string, detail: string): string {
+  switch (blocker) {
+    case 'payment': return `Payment — ${detail}. Confirm payment terms or issue a proforma invoice.`;
+    case 'fulfillment': return `Fulfillment — ${detail}. Packing plan and processing evidence needed before dispatch.`;
+    case 'dispatch': return `Dispatch — ${detail}. Cannot dispatch until fulfillment and documents are confirmed.`;
+    case 'documents': return `Order documents — none generated yet. Create a proforma, packing list, or delivery note to proceed.`;
+    case 'packing': return `Packing plan — active stage but no plan recorded. Add a packing plan to continue.`;
+    case 'freight': return `Freight — no rate request raised yet. Start the freight queue to get quotes.`;
+    case 'finance': return `Finance handoff — no invoice sync record. Queue the invoice for accounting review.`;
+    default: return detail;
+  }
 }
 
 export function buildConversationalWorkflowStatusAnswer(input: {
@@ -38,41 +77,85 @@ export function buildConversationalWorkflowStatusAnswer(input: {
   financeSync: WorkflowStatusRow[];
   processingChecks: WorkflowStatusRow[];
 }) {
-  const explicitBlockers = [
-    ...input.gates.filter((row) => blockedStatus(row.status)).map((row) => `${label(row.stage_key) || 'approval'} gate ${label(row.gate_type)} is ${label(row.status)}`),
-    ...input.tradeRequirements.filter((row) => openStatus(row.status)).map((row) => `${label(row.stage_key) || 'trade'} requirement is open: ${text(row.title) || text(row.requirement_code)}`),
-    ...input.freightRequests.filter((row) => blockedStatus(row.status)).map((row) => `freight request ${text(row.id).slice(0, 8)} is ${label(row.status)}`),
-    ...input.financeSync.filter((row) => blockedStatus(row.sync_status)).map((row) => `finance ${label(row.finance_document_type) || 'sync'} is ${label(row.sync_status)}`),
+  const explicitBlockers: string[] = [
+    ...input.gates.filter((row) => blockedStatus(row.status)).map((row) => `${label(row.stage_key) || 'approval'} gate ${label(row.gate_type)} is ${humanStatus(row.status)}`),
+    ...input.tradeRequirements.filter((row) => openStatus(row.status)).map((row) => `trade requirement open: ${text(row.title) || text(row.requirement_code)}`),
+    ...input.freightRequests.filter((row) => blockedStatus(row.status)).map((row) => `freight request ${text(row.id).slice(0, 8)} is ${humanStatus(row.status)}`),
+    ...input.financeSync.filter((row) => blockedStatus(row.sync_status)).map((row) => `finance ${label(row.finance_document_type) || 'sync'} is ${humanStatus(row.sync_status)}`),
   ];
 
-  const readinessBlockers: string[] = [];
-  if (incomplete(input.order.payment_status)) readinessBlockers.push(`payment is ${label(input.order.payment_status)}; request payment or record approved payment terms`);
-  if (incomplete(input.order.fulfillment_status)) readinessBlockers.push(`fulfillment is ${label(input.order.fulfillment_status)}; packing or processing evidence is still needed`);
-  if (incomplete(input.order.dispatch_status)) readinessBlockers.push(`dispatch is ${label(input.order.dispatch_status)}; the order is not dispatch-ready yet`);
-  if (!input.orderDocuments.length) readinessBlockers.push('no order documents are generated or attached yet');
-  if (!input.packingPlans.length && label(input.order.current_stage).includes('packing')) readinessBlockers.push('packing is active but no packing plan is recorded yet');
-  if (!input.freightRequests.length) readinessBlockers.push('no freight request is created yet');
-  if (!input.financeSync.length) readinessBlockers.push('no finance or invoice handoff record exists yet');
+  const steps: string[] = [];
+  let stepNum = 1;
 
-  const blockers = [...explicitBlockers, ...readinessBlockers];
+  if (incomplete(input.order.payment_status)) {
+    steps.push(`${stepNum++}. ${nextAction('payment', humanStatus(input.order.payment_status))}`);
+  }
+  if (incomplete(input.order.fulfillment_status)) {
+    steps.push(`${stepNum++}. ${nextAction('fulfillment', humanStatus(input.order.fulfillment_status))}`);
+  }
+  if (incomplete(input.order.dispatch_status)) {
+    steps.push(`${stepNum++}. ${nextAction('dispatch', humanStatus(input.order.dispatch_status))}`);
+  }
+  if (!input.orderDocuments.length) {
+    steps.push(`${stepNum++}. ${nextAction('documents', '')}`);
+  }
+  if (!input.packingPlans.length && label(input.order.current_stage).includes('packing')) {
+    steps.push(`${stepNum++}. ${nextAction('packing', '')}`);
+  }
+  if (!input.freightRequests.length) {
+    steps.push(`${stepNum++}. ${nextAction('freight', '')}`);
+  }
+  if (!input.financeSync.length) {
+    steps.push(`${stepNum++}. ${nextAction('finance', '')}`);
+  }
+  for (const b of explicitBlockers) {
+    steps.push(`${stepNum++}. ${b}`);
+  }
+
   const customer = text(input.customerName) || 'this customer';
   const orderNumber = text(input.order.order_number) || 'this order';
-  const headline = blockers.length
-    ? `${customer}'s order ${orderNumber} is open and not ready to dispatch or close yet.`
-    : `${customer}'s order ${orderNumber} looks clear across the workflow checks I inspected.`;
+  const quoteStatus = input.quote ? `${text(input.quote.quote_number) || 'quote'} ${humanStatus(input.quote.status)}` : 'no linked quote';
+  const stage = humanStatus(input.order.current_stage);
+  const approval = humanStatus(input.order.approval_state);
 
-  const nextStep = blockers.length
-    ? `Next work: ${blockers.slice(0, 4).join('; ')}.`
-    : 'I did not find an active blocker in the checked workflow records.';
+  const headerLine = `${customer} — ${orderNumber}`;
+  const statusLine = `Stage: ${stage}  |  Approval: ${approval}  |  Quote: ${quoteStatus}`;
 
-  const answer = [
-    headline,
-    `Current state: lifecycle ${label(input.order.order_lifecycle_status || input.order.status)}, stage ${label(input.order.current_stage)}, approval ${label(input.order.approval_state)}, payment ${label(input.order.payment_status)}, fulfillment ${label(input.order.fulfillment_status)}, dispatch ${label(input.order.dispatch_status)}.`,
-    `Quote handoff: ${input.quote ? `${text(input.quote.quote_number) || 'quote'} is ${label(input.quote.status)} with ${input.quoteVersions.length} version record(s).` : 'I did not find a linked quote for this order.'}`,
-    `Evidence checked: ${input.stageEvents.length} stage event(s), ${input.gates.length} gate(s), ${input.orderDocuments.length} order document(s), ${input.tradeRequirements.length} trade requirement(s), ${input.packingPlans.length} packing plan(s), ${input.freightRequests.length} freight request(s), ${input.freightQuotes.length} freight quote(s), ${input.shipments.length} shipment(s), ${input.financeSync.length} finance sync record(s), and ${input.processingChecks.length} processing check(s).`,
-    nextStep,
-    'Read-only analysis only. Setu Guru can explain the blockers and draft a checklist, but a human must approve documents, payment and finance steps, freight requests, dispatch changes, and order closeout.',
-  ].join('\n\n');
+  const evidenceLine = [
+    `${input.orderDocuments.length} doc(s)`,
+    `${input.freightRequests.length} freight request(s)`,
+    `${input.financeSync.length} finance record(s)`,
+    `${input.stageEvents.length} stage event(s)`,
+    `${input.gates.length} gate(s)`,
+  ].join(' · ');
+
+  const blockers = [...explicitBlockers, ...steps];
+
+  let answer: string;
+  if (steps.length) {
+    answer = [
+      headerLine,
+      statusLine,
+      '',
+      'What needs to happen next:',
+      ...steps,
+      '',
+      `Evidence checked: ${evidenceLine}.`,
+      '',
+      'Setu Guru is read-only here. Open the order workspace to take action.',
+    ].join('\n');
+  } else {
+    answer = [
+      headerLine,
+      statusLine,
+      '',
+      'No open blockers found across the workflow checks I reviewed.',
+      '',
+      `Evidence checked: ${evidenceLine}.`,
+      '',
+      'Setu Guru is read-only here. Open the order workspace to take action.',
+    ].join('\n');
+  }
 
   return { answer, blockers };
 }
