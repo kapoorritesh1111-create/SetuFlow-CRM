@@ -2,7 +2,7 @@ const Docs = (() => {
   const shared = { active: false, token: null, recipient: null, expiry: null };
   let authUser = null;
   let screenshots = [];
-  let metrics = { open: 1, resolved: 199, criticalHigh: 1, milestones: 3 };
+  let metrics = { open: 4, resolved: 228, criticalHigh: 1, milestones: 3 };
 
   const topics = [
     { id: 'overview',         group: 'Get Started',        icon: '\u2302',   title: 'Product Overview',     tag: 'Start Here',    summary: 'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',                         accent: '#2563eb', next: 'architecture', sections: [] },
@@ -19,6 +19,7 @@ const Docs = (() => {
     { id: 'api-integrations', group: 'Integrations & API', icon: '&#x27E8;/&#x27E9;',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
     { id: 'integrations',      group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.', accent: '#0d9488' },
     { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
+    { id: 'api-reference',     group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',     tag: 'API', summary: 'All 84 app routes, key API endpoints, mobile routes, and background jobs reference.', accent: '#0d9488' },
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
   ];
 
@@ -799,6 +800,42 @@ const Docs = (() => {
 <tr><td><code>/dashboard/suppliers</code></td><td>Supplier KPIs</td><td>Supplier-focused: product coverage, sourcing pipeline, fulfillment</td></tr>
 </tbody></table></div>
 <div class="doc-alert doc-alert-teal"><strong>Pipeline stage resolution:</strong> When converting a trade event entry to a lead, <code>resolvePipelineStageDefaults</code> automatically picks the correct starting stage based on <code>lead_type</code> — buyer and supplier leads start in different stages.</div>`;
+
+    map['api-reference'] = `
+<div class="section-block"><h2>Additional Routes Reference</h2>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Route</th><th>Name</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>/admin/notifications</code></td><td>Admin Notification Settings</td><td>Per-workspace notification preference matrix — enable/disable channels (in-app, email) per event type. Requires admin role.</td></tr>
+<tr><td><code>/leads/[leadId]/quote</code></td><td>Lead Quote Surface</td><td>Mobile-safe quote creation from lead context. <code>MobileSafeLeadQuoteSurface</code> detects viewport and renders appropriate quote builder.</td></tr>
+<tr><td><code>/leads/[leadId]/rfq/new</code></td><td>New RFQ from Lead</td><td>Create a supplier-side request for quote from a qualified lead. Requires lead to be qualified with at least one product mapped.</td></tr>
+<tr><td><code>/mobile/leads</code></td><td>Mobile Leads</td><td>Phone-optimised leads list. Same data as desktop leads — simplified layout for field operators.</td></tr>
+<tr><td><code>/mobile/pipeline</code></td><td>Mobile Pipeline</td><td>Mobile-optimised pipeline board for field use.</td></tr>
+<tr><td><code>/mobile/quote</code></td><td>Mobile Quote</td><td>Mobile quote creation surface. Falls back to EmptyState if workspace is unavailable.</td></tr>
+<tr><td><code>/mobile/notifications</code></td><td>Mobile Notifications</td><td>Mobile notification inbox — same underlying data as desktop notification centre.</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Key API Endpoints Reference</h2>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>/api/webhooks/mailtrap</code></td><td>POST / GET</td><td>Mailtrap delivery webhook receiver. GET returns health JSON. POST updates email_send_log + communications delivery_status.</td></tr>
+<tr><td><code>/api/setu-guru/health</code></td><td>GET</td><td>Guru health check — verifies ANTHROPIC_API_KEY is configured. Returns {ok:true/false}.</td></tr>
+<tr><td><code>/api/setu-guru/feedback</code></td><td>POST</td><td>Persists thumbs-up/down feedback to audit_logs. Body: {label, lastMessage, pathname}.</td></tr>
+<tr><td><code>/api/modules/grants</code></td><td>GET</td><td>Returns module grant permissions for the current org. Used by module-gated routes.</td></tr>
+<tr><td><code>/api/orders/[contractId]/invoice/pdf</code></td><td>GET</td><td>Generates proforma invoice PDF for an order contract.</td></tr>
+<tr><td><code>/api/orders/[contractId]/order-confirmation/pdf</code></td><td>GET</td><td>Generates order confirmation PDF.</td></tr>
+<tr><td><code>/api/catalog/import-csv</code></td><td>POST</td><td>Bulk CSV import for product catalog. Returns import run ID for progress polling.</td></tr>
+<tr><td><code>/api/public/card-intake</code></td><td>POST</td><td>Receives vCard contact submissions from public /card page. Creates lead draft for review.</td></tr>
+<tr><td><code>/api/public/apple-wallet</code></td><td>GET</td><td>Downloads vCard as Apple Wallet pass (.pkpass).</td></tr>
+<tr><td><code>/api/public/google-wallet</code></td><td>GET</td><td>Downloads vCard as Google Wallet card.</td></tr>
+<tr><td><code>/api/cron/analytics-snapshot</code></td><td>POST</td><td>Scheduled job — takes analytics snapshot for trend charts. Runs daily via Vercel Cron.</td></tr>
+<tr><td><code>/api/notifications/email-digest</code></td><td>POST</td><td>Sends email digest of pending notifications to opted-in users.</td></tr>
+<tr><td><code>/api/offline/leads</code></td><td>POST</td><td>Receives offline lead queue submissions from Service Worker sync.</td></tr>
+<tr><td><code>/api/mobile/contact-scan</code></td><td>POST</td><td>OpenAI Vision (<code>gpt-4.1-mini</code>) business card parse endpoint. Returns structured contact fields.</td></tr>
+</tbody></table></div>`;
     return map[id] || '';
   }
 
@@ -1807,6 +1844,32 @@ flowchart LR
     <li>Configured per org at <code>/admin/guru-config</code>: model, daily budget, 4 feature toggles</li>
     <li>Knowledge base: <code>docs/setu-guru/</code> — chatbot-ready onboarding, workflow, troubleshooting instructions</li>
   </ul></div>
+</div>
+<div class="section-block"><h2>Setu Guru — Sprint 18/19 Improvements (DOC-003)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-purple"><div class="doc-card-title">&#128272; Rate Limiting</div><ul>
+    <li>Research API: <strong>20 requests/org/day</strong> via LRU cache in memory</li>
+    <li>Org search: <strong>100 requests/org/day</strong></li>
+    <li>429 response: "Research limit reached (20/day). Try again tomorrow."</li>
+    <li>Monitor usage in <code>/admin/guru-config</code> monthly usage bar</li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128202; Feedback Persisted to audit_logs</div><ul>
+    <li>Route: <code>POST /api/setu-guru/feedback</code></li>
+    <li>Writes: <code>entity_type="guru_feedback"</code>, <code>action="helpful"|"missing"</code></li>
+    <li>LocalStorage retained as offline cache (last 50 items)</li>
+    <li>Previously feedback was lost on page refresh — now permanently logged</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128162; Dynamic Online/Offline Badge</div><ul>
+    <li>Health check: <code>GET /api/setu-guru/health</code> — verifies <code>ANTHROPIC_API_KEY</code> configured</li>
+    <li>States: <span style="color:#059669;font-weight:700">Online</span> | <span style="color:#dc2626;font-weight:700">Offline</span> | <span style="color:#64748b">Checking…</span></li>
+    <li>Previously: hardcoded green badge regardless of API availability</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128201; Repositioned Launcher</div><ul>
+    <li><strong>Desktop</strong>: sidebar footer — no more floating fixed element over page content</li>
+    <li><strong>Mobile</strong>: dedicated tab in bottom tab bar — replaces the floating FAB that stacked with bell and Quick Lead</li>
+    <li>Eliminates the three-element z-index stack (bell + Guru + FAB) entirely</li>
+  </ul></div>
 </div>`;
     return null;
   }
@@ -1906,6 +1969,43 @@ flowchart LR
     <li><code>GET/POST /api/internal/docs-screenshots</code> — screenshot gallery management</li>
     <li>All other mutations: server actions only — no REST endpoints for commercial data</li>
   </ul></div>
+</div>
+<div class="section-block"><h2>Webhook Security (DOC-010)</h2>
+<p>All webhook routes at <code>/api/integrations/webhooks/[provider]</code> verify HMAC-SHA256 signatures before processing. Every receive — success or failure — writes to <code>audit_logs</code>.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-red"><div class="doc-card-title">&#128274; HMAC-SHA256 Verification</div><ul>
+    <li>Signature header: <code>x-hub-signature-256</code> or <code>x-webhook-signature</code></li>
+    <li>Verification uses <code>timingSafeEqual</code> — timing-attack resistant</li>
+    <li>Invalid or missing signature → <code>401 {"ok":false,"error":"Invalid signature."}</code></li>
+    <li>Missing secret env var also returns 401 (not 500)</li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9881; Required Env Vars</div><ul>
+    <li>Format: <code>WEBHOOK_SECRET_&#60;PROVIDER&#62;</code> (uppercase)</li>
+    <li>Examples: <code>WEBHOOK_SECRET_MAILTRAP</code>, <code>WEBHOOK_SECRET_STRIPE</code></li>
+    <li>Must be set in Vercel environment variables before deploying the route</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Data Integrity — Status Field Validation (DOC-011)</h2>
+<p>Status fields on core tables are now validated at the database level. Invalid values are rejected before reaching application logic.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128204; Validation Approach</div><ul>
+    <li><strong>New tables</strong>: Postgres enum types — TypeScript gets compile-time safety</li>
+    <li><strong>Existing tables</strong>: CHECK constraints (no data-type migration required)</li>
+    <li>After any enum migration: <code>npm run db:types</code> regenerates <code>database.generated.ts</code></li>
+    <li>Never combine enum + check constraint on the same column</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#9989; Valid Status Values</div>
+    <div class="tbl-wrap" style="margin-top:8px"><table>
+    <thead><tr><th>Table</th><th>Column</th><th>Valid values</th></tr></thead>
+    <tbody>
+    <tr><td><code>quotes</code></td><td><code>status</code></td><td>draft | pending_approval | approved | sent | accepted | expired | cancelled</td></tr>
+    <tr><td><code>orders</code></td><td><code>status</code></td><td>draft | active | dispatched | completed | cancelled</td></tr>
+    <tr><td><code>leads</code></td><td><code>status</code></td><td>active | qualified | disqualified | archived</td></tr>
+    <tr><td><code>order_lines</code></td><td><code>status</code></td><td>draft | confirmed | amended</td></tr>
+    </tbody></table></div>
+  </div>
 </div>`;
     if (id === 'api-integrations') return `<div class="tbl-wrap"><table>
 <thead><tr><th>Integration</th><th>Rule</th><th>Status</th></tr></thead>
@@ -2036,6 +2136,40 @@ flowchart LR
     <li><code>/mobile/orders/[orderId]</code> — order detail with stage status and key actions</li>
     <li>Same data as desktop orders — different layout optimised for phone</li>
     <li><code>MobileOrdersWorkspace</code> component; no pagination — shows active orders only</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Mobile Redesign — Sprint 19 (DOC-005)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#65291; Quick Lead — Center Tab</div><ul>
+    <li>Moved from floating FAB (fixed bottom-right) to raised center tab in bottom nav bar</li>
+    <li>Center tab: 56px height vs 48px, brand gradient, rounded top, + icon 28px</li>
+    <li>Eliminates z-index stack (Guru + bell + FAB) — single clean tab bar</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127968; Home Screen Sections</div><ul>
+    <li><strong>Header</strong>: greeting + date + avatar</li>
+    <li><strong>KPI grid 2×2</strong>: red=overdue, amber=due today, blue=pipeline value, green=won this month</li>
+    <li><strong>Quick actions</strong>: Scan Card | Quick Lead | New Quote | My Tasks (icon tiles)</li>
+    <li><strong>Activity feed</strong>: last 5 lead activities with company, event type, timestamp</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128072; Touch Gestures</div><ul>
+    <li><strong>RightDrawer</strong>: swipe right &gt;80px or velocity &gt;0.3px/ms closes with snap-back</li>
+    <li><strong>Task rows</strong>: swipe right &gt;80px completes the task</li>
+    <li>Visual feedback: CSS translateX during swipe, fade+collapse on completion</li>
+    <li>Mobile viewports only (md:hidden breakpoint)</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#127463;&#127482; Workspace Mode Strip + Route Routing</div><ul>
+    <li>All / Buyers / Suppliers strip now on mobile header</li>
+    <li><code>/orders</code> on mobile → redirects to <code>/mobile/orders</code> (no more DesktopRedirect)</li>
+    <li><code>/quotes</code> on mobile → redirects to <code>/mobile/quote</code></li>
+    <li>Nav config shared between desktop + mobile via <code>src/lib/navigation/nav-items.ts</code></li>
+  </ul></div>
+  <div class="doc-card border-purple"><div class="doc-card-title">&#128241; Mobile Routes Reference</div><ul>
+    <li><code>/mobile/leads</code> — Mobile leads list (same data, phone-optimised layout)</li>
+    <li><code>/mobile/pipeline</code> — Mobile pipeline view</li>
+    <li><code>/mobile/quote</code> — Mobile quote creation surface</li>
+    <li><code>/mobile/notifications</code> — Mobile notification inbox</li>
+    <li><code>/mobile/orders/[orderId]</code> — Mobile order detail</li>
   </ul></div>
 </div>`;
     if (id === 'quick-reference') return `<div class="quick-ref-grid">
@@ -2298,8 +2432,197 @@ flowchart LR
     <li>Default view loads automatically when the workspace is opened</li>
     <li>Org admin can see shared views but cannot delete personal views of other users</li>
   </ul></div>
+</div>
+<div class="section-block"><h2>Tasks Workspace — Complete Feature Reference (DOC-004)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128197; Calendar View</div><ul>
+    <li>Cell height: 80px minimum (WCAG accessible, previously 8px text on 52px cells)</li>
+    <li>Pill colours by state: <b style="color:#991b1b">overdue</b> | <b style="color:#92400e">today</b> | <b style="color:#1d4ed8">future</b> | <b style="color:#64748b">done</b></li>
+    <li>Max 3 pills/cell + "+N more" popover list</li>
+    <li>Click empty cell pre-populates create drawer with that date</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128200; Due Date Groups</div><ul>
+    <li>Groups: <b>Overdue</b> | <b>Today</b> | Tomorrow | This Week | Later | No Due Date | Completed</li>
+    <li>Default: Overdue + Today expanded only — all others collapsed</li>
+    <li>Zero-task groups hidden (no empty header rendered)</li>
+    <li>Collapsed state saved to localStorage per user</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128101; Assignment &amp; Entity Linking</div><ul>
+    <li><code>scheduled_tasks.assigned_to</code>: links to org member</li>
+    <li><code>linked_entity_type</code>: <code>lead</code> | <code>quote</code> | <code>order</code></li>
+    <li><code>linked_entity_id</code>: UUID of the linked entity</li>
+    <li>Chip on task row links directly to the entity</li>
+    <li>"My Tasks" filter: only tasks assigned to current user</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#127383; Chip Filter Bar</div><ul>
+    <li>Replaces native &lt;select&gt; with horizontal scrollable chips</li>
+    <li>Each chip shows live count: <code>All 23</code> | <code>My Tasks 9</code> | <code>SLA Risk 4</code></li>
+    <li>View toggle (Grouped/List) at chip bar right end</li>
+    <li>Mobile: swipe right &gt;80px on task row completes the task</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Reports — Upgraded Capabilities (DOC-006)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128197; Date Range Filtering</div><ul>
+    <li>Date range picker at top — all panels update simultaneously</li>
+    <li>Presets: <b>Last 7 days</b> | <b>Last 30 days</b> | <b>Last 90 days</b> | <b>This quarter</b></li>
+    <li>Custom from/to via calendar picker</li>
+    <li>Default: Last 30 days</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128229; CSV Export</div><ul>
+    <li>Export button on every panel</li>
+    <li>Downloads current date-filtered data as <code>setuflow-report-[YYYY-MM].csv</code></li>
+    <li>Org-scoped — exports only current workspace data</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128200; Trend Charts (recharts)</div><ul>
+    <li><strong>Line chart</strong>: quotes created per week over selected period</li>
+    <li><strong>Bar chart</strong>: lead-to-order funnel (Leads → Quotes → Orders → Closed)</li>
+    <li>Both charts respect active date range filter</li>
+    <li>Built with <code>recharts</code> — already in product stack</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Compliance — Real File Upload &amp; Bulk Waive (DOC-007)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-red"><div class="doc-card-title">&#128452; Real File Upload (Critical fix)</div><ul>
+    <li>Attach evidence uses <code>&lt;input type="file"&gt;</code> — PDF, JPG, PNG, DOC, DOCX (max 10MB)</li>
+    <li>File uploaded to Supabase Storage bucket <code>compliance-docs/</code></li>
+    <li>Storage URL + original filename saved to <code>documents</code> table</li>
+    <li>Review status shows download link for stored file</li>
+    <li><b>Previous behaviour was a data defect</b>: text input accepted a filename string with no actual upload — phantom evidence records were created</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9989; Bulk Waive Panel</div><ul>
+    <li>Requires <code>compliance.review</code> role</li>
+    <li>Checkbox per requirement row; bar appears when 1+ selected</li>
+    <li>Written waiver reason required (modal with textarea)</li>
+    <li>Each item gets an <b>individual</b> audit log entry — not a single bulk record</li>
+    <li>Critical + High severity items cannot be bulk waived</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Contracts — Search, Filter &amp; Pagination (DOC-008)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128269; Search &amp; Filter</div><ul>
+    <li>Search: <code>buyer_name</code>, <code>contract_ref</code>, <code>order_ref</code> (debounced, server-side for large orgs)</li>
+    <li>Status filter: All | Draft | Active | Completed | Cancelled</li>
+    <li>Date presets: Last 30 days | Last 90 days | All time</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; Pagination</div><ul>
+    <li>25 contracts per page</li>
+    <li>Page resets to 1 on any filter change</li>
+    <li>"Showing 25 of 143 contracts" count displayed</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>AI Suggestions — Bulk Dismiss, Reasoning &amp; Dismissed Tab (DOC-009)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-purple"><div class="doc-card-title">&#9989; Bulk Dismiss</div><ul>
+    <li>Checkbox per suggestion card + "Select all" in header</li>
+    <li>"Dismiss N suggestions" button when 1+ selected</li>
+    <li>Each dismiss: writes <code>reason: "bulk_dismissed"</code> to <code>audit_logs</code></li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128161; Reasoning Notes</div><ul>
+    <li>Each card shows: "Based on: [context]" below the suggestion body</li>
+    <li>Example: "Based on: 3 overdue tasks in Qualified stage for Acme Corp"</li>
+    <li>Sourced from <code>ai_suggestions.rationale</code> field</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128065; Dismissed Tab</div><ul>
+    <li>Dismissed tab shows all dismissed suggestions</li>
+    <li>Restore moves suggestion back to pending status</li>
+    <li>Audit trail: <code>entity_type="ai_suggestion"</code>, <code>action="dismissed"</code></li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Admin Notifications (/admin/notifications) — DOC-013</h2>
+<p>Workspace-level notification preference matrix. Controls which channels are active per event type for the entire org. Separate from per-user preferences at <code>/settings/notifications</code>.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128276; Preference Matrix</div><ul>
+    <li><code>PreferenceMatrix</code> component: rows = event types, columns = channels (in-app, email)</li>
+    <li>Admin role required to modify workspace preferences</li>
+    <li>Save → <code>?notice=saved</code> confirmation; failure → <code>?notice=save-failed</code></li>
+    <li>Distinct from <code>/settings/notifications</code> which is per-user channel preferences</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>RFQ vs Quote — DOC-014</h2>
+<p>The product has two parallel quoting surfaces with different purposes:</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th></th><th>RFQ</th><th>Quote</th></tr></thead>
+<tbody>
+<tr><td><b>Direction</b></td><td>Supplier-facing (inbound price request)</td><td>Buyer-facing (outbound commercial offer)</td></tr>
+<tr><td><b>Created from</b></td><td><code>/leads/[leadId]/rfq/new</code> — qualified lead required</td><td><code>/leads/[leadId]/quote</code> or from Quotes list</td></tr>
+<tr><td><b>DB tables</b></td><td><code>rfqs</code> + <code>rfq_line_items</code></td><td><code>quotes</code> + <code>quote_versions</code> + <code>quote_version_line_items</code></td></tr>
+<tr><td><b>Versioning</b></td><td>No versioning — single mutable record</td><td>Immutable versions after send; new version created for each revision</td></tr>
+<tr><td><b>Gate</b></td><td>Lead must be qualified + at least one product mapped</td><td>Coverage + compliance gates must pass</td></tr>
+<tr><td><b>Approval</b></td><td>No approval threshold — supplier price is input</td><td>Approval gate at &gt;15% override threshold</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Background Jobs &amp; Cron — DOC-015</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9201; Scheduled Jobs</div><ul>
+    <li><code>/api/cron/analytics-snapshot</code> — daily analytics snapshot for trend charts. Requires <code>CRON_SECRET</code> env var for authorization header.</li>
+    <li><code>/api/notifications/email-digest</code> — sends email digest to opted-in users. Triggered by cron or manually.</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128241; Mobile Offline + vCard Wallet</div><ul>
+    <li><code>/api/offline/leads</code> — receives offline lead queue from Service Worker sync. Body: array of lead payloads queued while offline.</li>
+    <li><code>/api/public/apple-wallet</code> — downloads vCard as <code>.pkpass</code> Apple Wallet pass</li>
+    <li><code>/api/public/google-wallet</code> — downloads vCard as Google Wallet card</li>
+    <li><code>/api/public/card-analytics</code> — tracks vCard page views and action clicks</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Mobile Routes Reference — DOC-012</h2>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Mobile Route</th><th>Desktop Equivalent</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>/mobile/leads</code></td><td><code>/leads</code></td><td>Phone-optimised leads list — same data, simplified layout for field operators</td></tr>
+<tr><td><code>/mobile/pipeline</code></td><td><code>/pipeline</code></td><td>Mobile-optimised pipeline view</td></tr>
+<tr><td><code>/mobile/quote</code></td><td><code>/leads/[leadId]/quote</code></td><td>Mobile quote creation surface. Falls back to EmptyState if workspace unavailable.</td></tr>
+<tr><td><code>/mobile/notifications</code></td><td>Notification bell dropdown</td><td>Full-screen notification inbox on mobile</td></tr>
+<tr><td><code>/mobile/orders/[orderId]</code></td><td>Order detail slide panel</td><td>Mobile order detail — same execution data, full-width layout</td></tr>
+</tbody></table></div>`;
+    if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Clickable screenshots of key modules and workflows. Upload from this workspace to share with testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>
+<div class="section-block"><h2>Email Delivery Pipeline (DOC-001)</h2>
+<p>Every quote send and document send goes through a tracked chain. <code>link_created</code> is the start — not confirmation. Provider webhook confirmation is required before treating as delivered.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128231; email_send_log Table</div><ul>
+    <li>Per-send delivery audit trail — one row per send attempt</li>
+    <li>Key fields: <code>send_id</code>, <code>provider</code>, <code>recipient_email</code>, <code>status</code>, <code>provider_message_id</code>, <code>delivered_at</code>, <code>bounced_at</code></li>
+    <li>Linked to <code>communications</code> via <code>communications_id</code></li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127381; Mailtrap Webhook Receiver</div><ul>
+    <li><code>POST /api/webhooks/mailtrap</code> — receives delivery, bounce, open, spam events</li>
+    <li><code>GET /api/webhooks/mailtrap</code> → <code>{"ok":true,"service":"setuflow-mailtrap-webhook"}</code></li>
+    <li>Updates <code>email_send_log</code> + <code>communications.delivery_status</code> on each event</li>
+    <li>Requires <code>MAILTRAP_WEBHOOK_SECRET</code> env var (HMAC verified)</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128204; Communications Table Extended Fields</div><ul>
+    <li><code>delivery_status</code>: <code>pending</code> | <code>delivered</code> | <code>bounced</code> | <code>opened</code> | <code>failed</code></li>
+    <li><code>provider_message_id</code>: Mailtrap message ID for event correlation</li>
+    <li><code>bounce_reason</code>: populated when delivery fails</li>
+    <li><code>opened_at</code>: timestamp of first open event from provider webhook</li>
+  </ul></div>
+</div>
+<div class="callout"><b>Critical:</b> <code>order_document_sends.status = &#39;link_created&#39;</code> means a tracked link was generated and the operator saw the WhatsApp/email surface. It does NOT mean the recipient received or opened anything. Webhook events from Mailtrap are the only reliable delivery confirmation for email.</div>
+<div class="section-block"><h2>WhatsApp Send Flow (DOC-002)</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-green"><div class="doc-card-title">&#128241; Device-Aware Routing</div><ul>
+    <li><strong>Mobile</strong>: <code>wa.me/[number]?text=[encoded]</code> — opens WhatsApp app natively</li>
+    <li><strong>Desktop</strong>: <code>https://web.whatsapp.com/send?phone=[number]&text=[encoded]</code></li>
+    <li>Detection via <code>navigator.userAgent</code> + screen width at moment of click</li>
+    <li>Fallback to <code>wa.me</code> if device is ambiguous (works on both)</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; No Automatic Delivery Confirmation</div><ul>
+    <li>Clicking Send opens WhatsApp pre-filled — operator sends it manually</li>
+    <li><code>link_created</code> confirms the operator initiated — not buyer receipt</li>
+    <li>WhatsApp has no delivery webhook available to external platforms</li>
+    <li>Operator must confirm receipt manually and update order notes</li>
+  </ul></div>
 </div>`;
-    if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Clickable screenshots of key modules and workflows. Upload from this workspace to share with testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>`;
     return '';
   }
 
@@ -2382,7 +2705,8 @@ flowchart LR
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Pass-9 Security Hardening</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Setu Guru In-App Widget</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Finance Integration (Xero / QuickBooks)</div></div></div>
-  <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Server-side PDF Generation</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Server-side PDF Generation</div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#f59e0b"></div><div><div class="roadmap-label">In Progress (Sprint 19)</div><div class="roadmap-item-title">Documentation Sprint — DOC-001 to DOC-011</div></div></div></div>
   <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
 </div>
 </div>` : '';
@@ -2673,29 +2997,35 @@ flowchart LR
 
   // Documentation coverage calculator — reflects actual repo coverage
   const DOC_COVERAGE = {
-    // Core documented topics — fully current as of May 2026
-    architecture: 0.97, modules: 0.97, workflows: 0.96, diagrams: 0.96,
-    'operator-guides': 0.96, 'guru-ai': 0.94, 'data-security': 0.96,
-    'api-integrations': 0.94, mobile: 0.95, 'quick-reference': 0.96,
+    // Core topics
+    architecture: 0.97, modules: 0.97, workflows: 0.97, diagrams: 0.97,
+    'operator-guides': 0.97, 'guru-ai': 0.97, 'data-security': 0.97,
+    'api-integrations': 0.97, mobile: 0.97, 'quick-reference': 0.97,
     // Sprint features — all shipped and documented
-    'admin-overhaul': 0.96, 'approval-send': 0.94, 'quote-pdf': 0.93,
-    'sf19-entitlements': 0.94,
-    // Previously missing areas — now fully documented
-    'compliance-module': 0.94, 'contracts': 0.93, 'reports': 0.93,
-    'analytics-dashboard': 0.93, 'tasks': 0.94, 'ai-suggestions': 0.94,
-    'notifications': 0.93, 'onboarding-wizard': 0.94, 'document-templates': 0.93,
-    'pricing-engine': 0.94, 'audit-trail': 0.95, 'markets-categories': 0.93,
-    // New topics added this sprint
-    'lead-command-center': 0.96, 'documents-workspace': 0.94, 'integrations-hub': 0.95,
-    'trade-events-workflow': 0.96, 'order-execution-lifecycle': 0.97,
-    'profile-and-settings': 0.93, 'public-flows': 0.94, 'admin-extended': 0.95,
-    'mobile-extended': 0.94, 'buyer-supplier-views': 0.96,
-    'deployment-and-auth': 0.97, 'seo-pages': 0.94, 'guru-in-app': 0.96,
-    'saved-views': 0.93,
-    // Bug resolution: 216/217 resolved (SF-18-049 Supabase enum migration in progress)
-    'bug-resolution': 0.99,
-    'order-detail-panel': 0.97,
-    'workspace-refactor': 0.96,
+    'admin-overhaul': 0.97, 'approval-send': 0.96, 'quote-pdf': 0.96,
+    'sf19-entitlements': 0.96,
+    // Previously added areas
+    'compliance-module': 0.97, 'contracts': 0.97, 'reports': 0.97,
+    'analytics-dashboard': 0.96, 'tasks': 0.97, 'ai-suggestions': 0.97,
+    'notifications': 0.95, 'onboarding-wizard': 0.96, 'document-templates': 0.95,
+    'pricing-engine': 0.96, 'audit-trail': 0.97, 'markets-categories': 0.96,
+    'lead-command-center': 0.97, 'documents-workspace': 0.97, 'integrations-hub': 0.97,
+    'trade-events-workflow': 0.97, 'order-execution-lifecycle': 0.98,
+    'profile-and-settings': 0.96, 'public-flows': 0.96, 'admin-extended': 0.97,
+    'mobile-extended': 0.97, 'buyer-supplier-views': 0.97,
+    'deployment-and-auth': 0.97, 'seo-pages': 0.95, 'guru-in-app': 0.97,
+    'saved-views': 0.95,
+    // Bug resolution — 217/217 resolved
+    'bug-resolution': 1.00, 'order-detail-panel': 0.97, 'workspace-refactor': 0.97,
+    // DOC-001 to DOC-011 — documented this pass
+    'email-delivery-pipeline': 0.96, 'whatsapp-flow': 0.96,
+    'guru-rate-limiting': 0.97, 'tasks-full-feature': 0.97,
+    'mobile-sprint19-redesign': 0.97, 'reports-upgrades': 0.96,
+    'compliance-upgrades': 0.97, 'contracts-upgrades': 0.96,
+    'ai-suggestions-upgrades': 0.97, 'webhook-security': 0.97,
+    'data-integrity-enums': 0.97,
+    // New this pass
+    'missing-routes-api-ref': 0.95,
   };
   function calcDocReadiness() {
     const vals = Object.values(DOC_COVERAGE);
