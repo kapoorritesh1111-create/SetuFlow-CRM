@@ -139,6 +139,13 @@ export default function DashboardInteractive({
 
   const layout = useDashboardLayout(data, { dashboardVariant, currentRoles, persistenceKey });
 
+  // Wire gear button in AppShell header to customize panel toggle
+  useEffect(() => {
+    const handler = () => layout.onToggleCustomize();
+    window.addEventListener('setu:dashboard:toggle-customize', handler);
+    return () => window.removeEventListener('setu:dashboard:toggle-customize', handler);
+  }, [layout.onToggleCustomize]);;
+
   const availableMarkets = useMemo(
     () => [...data.countryCoverage].sort((a, b) => a.countryName.localeCompare(b.countryName)).map((country) => ({ code: country.countryCode, name: country.countryName })),
     [data.countryCoverage],
@@ -351,12 +358,7 @@ export default function DashboardInteractive({
 
   return (
     <div className="flex w-full flex-col gap-5 pb-10 pt-2 xl:gap-6">
-      <div className="flex justify-end">
-        <DashboardHeaderControls
-          customizeOpen={layout.customizeOpen}
-          onToggleCustomize={layout.onToggleCustomize}
-        />
-      </div>
+      {/* DashboardHeaderControls renders null — gear button is in AppShell header, wired via window event */}
 
       <DashboardCustomizePanel
         open={layout.customizeOpen}

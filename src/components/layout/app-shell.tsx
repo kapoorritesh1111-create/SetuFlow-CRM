@@ -11,6 +11,7 @@ import { getRouteMeta } from '@/components/shell/route-meta';
 import { cn, getInitials } from '@/lib/utils';
 import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { SetuGuruWidget } from '@/features/setu-guru/setu-guru-widget';
+import { InAppNotificationCenter } from '@/components/notifications/in-app-notification-center';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
@@ -30,6 +31,8 @@ type AppShellProps = {
   currentRoles?: string[];
   cardSettings?: MyCardSettingsInput | null;
   cardShareSlug?: string | null;
+  organizationId?: string;
+  userId?: string;
 };
 
 const GLOBAL_SCOPE_KEY = 'setuflow-global-workspace-scope';
@@ -140,7 +143,7 @@ function DesktopNav({ pathname, canAccessAdmin, scope }: { pathname: string; can
   );
 }
 
-export function AppShell({ children, profile, organization, membership, currentRoles = [], cardSettings, cardShareSlug }: AppShellProps) {
+export function AppShell({ children, profile, organization, membership, currentRoles = [], cardSettings, cardShareSlug, organizationId, userId }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -221,7 +224,34 @@ export function AppShell({ children, profile, organization, membership, currentR
             <header className="sticky top-0 z-30 hidden border-b border-slate-200/70 bg-white/85 px-6 py-4 backdrop-blur-xl md:block">
               <div className="flex items-center justify-between gap-4">
                 <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0c7fff]">Trade command center</p><h1 className="mt-1 text-2xl font-black text-slate-950">{routeMeta.title}</h1></div>
-                <div className="flex items-center gap-2"><GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} /><OfflineIndicator /><a href={shareHref} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)]"><FaIcon icon="address-card-o" fixedWidth />Share vCard</a><Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">＋ Quick Lead</Link><UserAvatar name={profileName} email={profileEmail} avatarUrl={profile?.avatar_url} initials={getInitials(profileName)} size="md" /></div>
+                {/* Header right cluster — order: filter | offline | vCard | quickLead | [gear:dashboard-only] | bell | avatar */}
+                <div className="flex items-center gap-2">
+                  <GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} />
+                  <OfflineIndicator />
+                  <a href={shareHref} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)]">
+                    <FaIcon icon="address-card-o" fixedWidth />Share vCard
+                  </a>
+                  <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
+                    ＋ Quick Lead
+                  </Link>
+                  {/* Gear — only on /dashboard, fires window event to toggle customize panel */}
+                  {pathname.startsWith('/dashboard') ? (
+                    <button
+                      type="button"
+                      aria-label="Customize Dashboard"
+                      title="Customize Dashboard"
+                      onClick={() => window.dispatchEvent(new CustomEvent('setu:dashboard:toggle-customize'))}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.25" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.21 7.2a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
+                    </button>
+                  ) : null}
+                  {/* Bell — always visible in header, inline (no fixed floating) */}
+                  {organizationId && userId ? (
+                    <InAppNotificationCenter organizationId={organizationId} userId={userId} variant="inline" />
+                  ) : null}
+                  <UserAvatar name={profileName} email={profileEmail} avatarUrl={profile?.avatar_url} initials={getInitials(profileName)} size="md" />
+                </div>
               </div>
             </header>
             <div className="px-4 py-5 pb-[calc(80px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">

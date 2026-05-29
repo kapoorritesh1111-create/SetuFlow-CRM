@@ -25,19 +25,7 @@ export function DashboardHeaderControls({
   customizeOpen: boolean;
   onToggleCustomize: () => void;
 }) {
-  return (
-    <div className="pointer-events-none fixed right-[7.55rem] top-4 z-[330] hidden md:block">
-      <button
-        type="button"
-        onClick={onToggleCustomize}
-        aria-label="Customize Dashboard"
-        title="Customize Dashboard"
-        aria-pressed={customizeOpen}
-        aria-expanded={customizeOpen}
-        className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-      >
-        <SettingsIcon open={customizeOpen} />
-      </button>
-    </div>
-  );
+  // Renders nothing — AppShell handles the gear button in the header via window events
+  // DashboardInteractive registers the listener; AppShell button dispatches the event
+  return null;
 }

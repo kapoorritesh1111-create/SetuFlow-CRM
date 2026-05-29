@@ -1,5 +1,4 @@
 import { AppShell } from '@/components/layout/app-shell';
-import { InAppNotificationCenter } from '@/components/notifications/in-app-notification-center';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { StateMessage } from '@/components/ui/state-message';
@@ -59,8 +58,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       currentRoles={workspace.currentRoles}
       cardSettings={myCardSettings}
       cardShareSlug={myCardSettingsRow?.share_slug ?? null}
+      organizationId={workspace.organization.id}
+      userId={workspace.user.id}
     >
-      <InAppNotificationCenter organizationId={workspace.organization.id} userId={workspace.user.id} />
+      {/* InAppNotificationCenter is now rendered inline in the AppShell header — no floating duplicate */}
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
