@@ -11,9 +11,9 @@ function label(value: unknown) {
 function humanStatus(raw: unknown): string {
   const s = text(raw).toLowerCase();
   const map: Record<string, string> = {
-    not_requested: 'not requested yet',
-    not_started: 'not started yet',
-    not_ready: 'not ready yet',
+    not_requested: 'not requested',
+    not_started: 'not started',
+    not_ready: 'not ready',
     pending: 'pending',
     draft: 'draft',
     blocked: 'blocked',
@@ -49,15 +49,22 @@ function blockedStatus(value: unknown) {
 
 function nextAction(blocker: string, detail: string): string {
   switch (blocker) {
-    case 'payment': return `Payment — ${detail}. Confirm payment terms or issue a proforma invoice.`;
-    case 'fulfillment': return `Fulfillment — ${detail}. Packing plan and processing evidence needed before dispatch.`;
-    case 'dispatch': return `Dispatch — ${detail}. Cannot dispatch until fulfillment and documents are confirmed.`;
-    case 'documents': return `Order documents — none generated yet. Create a proforma, packing list, or delivery note to proceed.`;
-    case 'packing': return `Packing plan — active stage but no plan recorded. Add a packing plan to continue.`;
-    case 'freight': return `Freight — no rate request raised yet. Start the freight queue to get quotes.`;
-    case 'finance': return `Finance handoff — no invoice sync record. Queue the invoice for accounting review.`;
+    case 'payment': return `Payment: ${detail}. Confirm terms or issue proforma invoice.`;
+    case 'fulfillment': return `Fulfillment: ${detail}. Add packing/processing evidence.`;
+    case 'dispatch': return `Dispatch: ${detail}. Complete fulfillment and documents first.`;
+    case 'documents': return 'Documents: create proforma, packing list, or delivery note.';
+    case 'packing': return 'Packing: add or approve the packing plan.';
+    case 'freight': return 'Freight: raise a freight rate request.';
+    case 'finance': return 'Finance: queue invoice/accounting handoff.';
     default: return detail;
   }
+}
+
+function shortStage(input: { order: WorkflowStatusRow; quote: WorkflowStatusRow | null }) {
+  const stage = humanStatus(input.order.current_stage);
+  const approval = humanStatus(input.order.approval_state);
+  const quote = input.quote ? `${text(input.quote.quote_number) || 'quote'} ${humanStatus(input.quote.status)}` : 'no linked quote';
+  return `${stage} | ${approval} | ${quote}`;
 }
 
 export function buildConversationalWorkflowStatusAnswer(input: {
@@ -78,84 +85,42 @@ export function buildConversationalWorkflowStatusAnswer(input: {
   processingChecks: WorkflowStatusRow[];
 }) {
   const explicitBlockers: string[] = [
-    ...input.gates.filter((row) => blockedStatus(row.status)).map((row) => `${label(row.stage_key) || 'approval'} gate ${label(row.gate_type)} is ${humanStatus(row.status)}`),
-    ...input.tradeRequirements.filter((row) => openStatus(row.status)).map((row) => `trade requirement open: ${text(row.title) || text(row.requirement_code)}`),
-    ...input.freightRequests.filter((row) => blockedStatus(row.status)).map((row) => `freight request ${text(row.id).slice(0, 8)} is ${humanStatus(row.status)}`),
-    ...input.financeSync.filter((row) => blockedStatus(row.sync_status)).map((row) => `finance ${label(row.finance_document_type) || 'sync'} is ${humanStatus(row.sync_status)}`),
+    ...input.gates.filter((row) => blockedStatus(row.status)).map((row) => `${label(row.stage_key)} gate ${label(row.gate_type)} is ${humanStatus(row.status)}`),
+    ...input.tradeRequirements.filter((row) => openStatus(row.status)).map((row) => `Trade requirement: ${text(row.title) || text(row.requirement_code)}`),
+    ...input.freightRequests.filter((row) => blockedStatus(row.status)).map((row) => `Freight request is ${humanStatus(row.status)}`),
+    ...input.financeSync.filter((row) => blockedStatus(row.sync_status)).map((row) => `Finance ${label(row.finance_document_type)} is ${humanStatus(row.sync_status)}`),
   ];
 
   const steps: string[] = [];
-  let stepNum = 1;
-
-  if (incomplete(input.order.payment_status)) {
-    steps.push(`${stepNum++}. ${nextAction('payment', humanStatus(input.order.payment_status))}`);
-  }
-  if (incomplete(input.order.fulfillment_status)) {
-    steps.push(`${stepNum++}. ${nextAction('fulfillment', humanStatus(input.order.fulfillment_status))}`);
-  }
-  if (incomplete(input.order.dispatch_status)) {
-    steps.push(`${stepNum++}. ${nextAction('dispatch', humanStatus(input.order.dispatch_status))}`);
-  }
-  if (!input.orderDocuments.length) {
-    steps.push(`${stepNum++}. ${nextAction('documents', '')}`);
-  }
-  if (!input.packingPlans.length && label(input.order.current_stage).includes('packing')) {
-    steps.push(`${stepNum++}. ${nextAction('packing', '')}`);
-  }
-  if (!input.freightRequests.length) {
-    steps.push(`${stepNum++}. ${nextAction('freight', '')}`);
-  }
-  if (!input.financeSync.length) {
-    steps.push(`${stepNum++}. ${nextAction('finance', '')}`);
-  }
-  for (const b of explicitBlockers) {
-    steps.push(`${stepNum++}. ${b}`);
-  }
+  if (incomplete(input.order.payment_status)) steps.push(nextAction('payment', humanStatus(input.order.payment_status)));
+  if (incomplete(input.order.fulfillment_status)) steps.push(nextAction('fulfillment', humanStatus(input.order.fulfillment_status)));
+  if (incomplete(input.order.dispatch_status)) steps.push(nextAction('dispatch', humanStatus(input.order.dispatch_status)));
+  if (!input.orderDocuments.length) steps.push(nextAction('documents', ''));
+  if (!input.packingPlans.length && label(input.order.current_stage).includes('packing')) steps.push(nextAction('packing', ''));
+  if (!input.freightRequests.length) steps.push(nextAction('freight', ''));
+  if (!input.financeSync.length) steps.push(nextAction('finance', ''));
+  for (const blocker of explicitBlockers) steps.push(blocker);
 
   const customer = text(input.customerName) || 'this customer';
   const orderNumber = text(input.order.order_number) || 'this order';
-  const quoteStatus = input.quote ? `${text(input.quote.quote_number) || 'quote'} ${humanStatus(input.quote.status)}` : 'no linked quote';
-  const stage = humanStatus(input.order.current_stage);
-  const approval = humanStatus(input.order.approval_state);
-
-  const headerLine = `${customer} — ${orderNumber}`;
-  const statusLine = `Stage: ${stage}  |  Approval: ${approval}  |  Quote: ${quoteStatus}`;
-
-  const evidenceLine = [
-    `${input.orderDocuments.length} doc(s)`,
-    `${input.freightRequests.length} freight request(s)`,
-    `${input.financeSync.length} finance record(s)`,
-    `${input.stageEvents.length} stage event(s)`,
-    `${input.gates.length} gate(s)`,
-  ].join(' · ');
-
+  const topSteps = steps.slice(0, 3);
+  const remaining = Math.max(steps.length - topSteps.length, 0);
   const blockers = [...explicitBlockers, ...steps];
+  const nextLine = topSteps.length ? topSteps.map((step, index) => `${index + 1}. ${step}`).join('\n\n') : 'No open blocker found in the checked workflow records.';
+  const evidenceLine = `${input.orderDocuments.length} doc(s) · ${input.freightRequests.length} freight request(s) · ${input.financeSync.length} finance record(s) · ${input.stageEvents.length} stage event(s) · ${input.gates.length} gate(s)`;
+  const moreLine = remaining ? `\n\nAlso pending: ${remaining} more item(s). Open the order workspace for full detail.` : '';
 
-  let answer: string;
-  if (steps.length) {
-    answer = [
-      headerLine,
-      statusLine,
-      '',
-      'What needs to happen next:',
-      ...steps,
-      '',
-      `Evidence checked: ${evidenceLine}.`,
-      '',
-      'Setu Guru is read-only here. Open the order workspace to take action.',
-    ].join('\n');
-  } else {
-    answer = [
-      headerLine,
-      statusLine,
-      '',
-      'No open blockers found across the workflow checks I reviewed.',
-      '',
-      `Evidence checked: ${evidenceLine}.`,
-      '',
-      'Setu Guru is read-only here. Open the order workspace to take action.',
-    ].join('\n');
-  }
+  const answer = [
+    `Quick view: ${customer} — ${orderNumber}`,
+    shortStage(input),
+    '',
+    'Do next:',
+    nextLine + moreLine,
+    '',
+    `Checked: ${evidenceLine}.`,
+    '',
+    'Read-only: Setu Guru will not approve, send, sync, book freight, or advance the order without a human click.',
+  ].join('\n');
 
   return { answer, blockers };
 }
