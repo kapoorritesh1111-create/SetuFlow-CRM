@@ -72,8 +72,9 @@ export function setSetuGuruWorkspaceContext(state: SetuGuruPageContext['liveWork
 }
 export function getLiveWorkspaceState() { return _liveWorkspaceState; }
 
-function readablePageText() {
+function readablePageText(route: string) {
   if (typeof document === 'undefined') return '';
+  if (normalizeSetuGuruPath(route).startsWith('/orders')) return '';
   const root = document.getElementById('app-content') ?? document.querySelector('main') ?? document.body;
   return root.textContent?.replace(/Setu Guru[\s\S]*$/i, ' ').replace(/\s+/g, ' ').slice(0, 6000) ?? '';
 }
@@ -85,5 +86,5 @@ export function collectSetuGuruPageContext() {
   }
   const route = `${window.location.pathname}${window.location.search}`;
   const pageContext = getSetuGuruPageContext(route);
-  return { ...pageContext, route, pageText: readablePageText(), liveWorkspaceState: getLiveWorkspaceState() };
+  return { ...pageContext, route, pageText: readablePageText(route), liveWorkspaceState: getLiveWorkspaceState() };
 }
