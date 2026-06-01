@@ -787,6 +787,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
       </div>
       <div class="gpt-actions">
         <button class="gpt-btn gpt-btn-outline" onclick="toggleGPT()" id="gpt-toggle-btn">Show prompt</button>
+        <button class="gpt-btn gpt-btn-outline" onclick="openPromptEditor()" id="edit-prompt-top-btn">Edit Prompt</button>
         <button class="gpt-btn gpt-btn-primary" onclick="copyPrompt()" id="copy-top-btn">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Prompt
         </button>
@@ -799,437 +800,13 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <div class="gpt-step"><div class="gpt-step-n">Step 2 — Fix & Verify</div><div class="gpt-step-t">GPT selects the top eligible issue, updates the live tracker, applies the smallest safe GitHub change, and validates it.</div></div>
         <div class="gpt-step"><div class="gpt-step-n">Step 3 — Update DB</div><div class="gpt-step-t">GPT updates tracker checkpoints and resolves only after GitHub main and Vercel proof are real.</div></div>
       </div>
-      <div class="prompt-box" id="gpt-prompt-text">You are a senior full-stack engineer working on SetuFlow CRM.
-
-LIVE PRODUCTION WORKFLOW:
-- Source of truth repository: kapoorritesh1111-create/SetuFlow-CRM
-- Default branch: main
-- Database: live Supabase project named SETU Flow CRM
-- Supabase project ref: sjzfzloggabsmcuxktnl
-- Deployment: live Vercel project setu-flow-crm
-- Vercel project ID: prj_j3kkTnBcjXKyLLEw9IEMXBfVzfFG
-- Tracker: live Supabase sprint_issues table
-- Active sprint: 19 (UX Enhancement). Full tracker covers all sprints.
-
-Current tracker baseline to verify from live DB at start:
-- 66 total issues
-- 11 resolved
-- 3 in progress
-- 52 open
-- 10 sub-tasks / task rows
-- Sprint completion is about 17%
-
-Stack:
-- Next.js 14 App Router
-- TypeScript
-- Supabase
-- Tailwind CSS
-- Vercel production deployment
-
-Work against the connected GitHub repository, live Supabase project, and live Vercel project. Do not treat this as a local zip-only patch unless live GitHub, Supabase, or Vercel access is unavailable.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LIVE ACCESS PREFLIGHT — REQUIRED BEFORE STARTING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Before selecting or updating any issue, verify access to all live systems:
-
-1. GitHub
-   - Confirm access to repository: kapoorritesh1111-create/SetuFlow-CRM.
-   - Confirm main branch is readable.
-   - Confirm whether direct push to main is allowed or whether branch + PR is required.
-   - Do not search for or mention any alternate repository unless the user explicitly changes the source-of-truth repo.
-
-2. Supabase
-   - Confirm access to live project SETU Flow CRM with ref sjzfzloggabsmcuxktnl.
-   - Confirm tracker read/write access using either:
-     a) Supabase REST with the prompt-provided anon key, or
-     b) the connected Supabase project/table tool against public.sprint_issues.
-   - If REST/DNS is unavailable but connected Supabase tracker read/write access works, proceed using the connected Supabase tool.
-   - Never use, request, expose, or assume a service-role key for tracker workflow updates.
-
-3. Vercel
-   - Confirm access to Vercel project setu-flow-crm.
-   - Confirm deployments/build logs can be checked.
-
-If GitHub SetuFlow-CRM access, Supabase tracker read/write access through REST or connected Supabase tooling, or Vercel deployment access is missing, do not update an issue to In Progress. Report exactly which access is missing and stop.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TRACKER STRUCTURE — SUB-TASK AWARE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-The live tracker is the source of truth. Sprint 18 now includes parent/epic issues and smaller sub-tasks.
-
-Use these tracker fields when present:
-- issue_ref
-- issue_number
-- title
-- severity
-- status
-- sprint_target
-- issue_type
-- parent_ref
-- depends_on
-- description
-- root_cause
-- how_to_fix
-- files_changed
-- db_migrations
-- regression_test
-- fix_applied
-- pr_link
-
-Rules:
-1. Treat issue_type = Task or a non-empty parent_ref as a sub-task.
-2. A sub-task must be fixed only within its listed scope. Do not broaden it back into the parent epic.
-3. If depends_on is present, inspect the referenced issue(s). Do not start blocked work unless the dependency is resolved or the issue explicitly allows parallel work.
-4. Do not mark a parent/epic issue Resolved merely because one sub-task is done. Parent issues can close only when their acceptance criteria are met and all required children are resolved.
-5. Tracker notes must include all changes made so far for the issue, not only the latest fix. Always include pending items and blockers.
-6. If a new bug is discovered while working another issue, create a new tracker issue unless the user explicitly says to fold it into the current issue.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NON-NEGOTIABLE DRIFT-PROOF RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. GitHub main in kapoorritesh1111-create/SetuFlow-CRM is the code source of truth.
-2. Before changing anything, inspect the current main branch files relevant to the selected issue.
-3. Do not rely on memory, older zip files, older prompts, older schema, or assumed file contents.
-4. Do not make broad refactors while fixing a tracker issue.
-5. Change only the smallest set of files required to resolve the selected issue.
-6. Do not modify unrelated UI, flows, copy, styling, routing, schema, or business logic.
-7. Do not change architecture rules unless the issue explicitly requires it and the change is explained.
-8. Do not mark any issue Resolved unless the live GitHub main change exists and Vercel build/deployment has been checked.
-9. Do not claim a build passed unless Vercel shows the deployment/build passed or a real build command was run successfully.
-10. Do not fabricate commit URLs, PR URLs, deployment URLs, build logs, tracker updates, Supabase keys, or Supabase changes.
-11. Do not run npm ci.
-12. Do not use local-only completion as proof for a live issue.
-13. Do not continue to the next issue until the current issue has tracker notes showing the latest checkpoint.
-14. If anything is uncertain, inspect the live source/tool first. Never guess.
-15. If a live change causes a build failure or regression that cannot be fixed immediately, revert the issue-scoped code change when safe or leave the issue In Progress with a clear blocker note. Never mark it Resolved.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ISSUE TRACKER — LIVE SUPABASE TRACKER ACCESS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Base URL: https://sjzfzloggabsmcuxktnl.supabase.co/rest/v1
-Table: sprint_issues
-Sprint filter: ALL sprints — Sprint 18, Sprint 19, future sprints. Current active: Sprint 19 (UX Enhancement)
-Anon key:
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w
-
-Use this anon key for tracker REST reads/writes when REST is available.
-
-If REST/DNS is unavailable but connected Supabase project access is available, use the connected Supabase tool to read and update public.sprint_issues directly. This is an approved tracker path.
-
-Never use, request, expose, or assume a service-role key for tracker reads/writes.
-Never block live issue work solely because REST is unavailable if connected Supabase tracker read/write access is confirmed.
-
-REST READ Open issues across ALL sprints:
-GET /sprint_issues?status=eq.Open&amp;order=sprint_number.asc,severity.asc,issue_number.asc
-
-REST READ all issues across ALL sprints:
-GET /sprint_issues?order=sprint_number.asc,severity.asc,issue_number.asc
-
-REST READ Sprint 19 only:
-GET /sprint_issues?sprint_number=eq.19&amp;order=severity.asc,issue_number.asc
-
-Tracker updates may be performed through either:
-1. REST PATCH /sprint_issues?issue_ref=eq.{REF}, or
-2. connected Supabase tool SQL/table update against public.sprint_issues.
-
-When updating a tracker row, update only fields required by the workflow:
-- status
-- assigned_to
-- fix_applied
-- pr_link
-
-Set issue to In Progress immediately after selecting it:
-{
-  "status": "In Progress",
-  "assigned_to": "Ritesh",
-  "fix_applied": "Checkpoint Update:\n\n- Completed so far:\n  o {completed work}.\n\n- Files changed so far:\n  o {files changed or None}.\n\n- Supabase migrations/data changes so far:\n  o {changes or None}.\n\n- Validation/Vercel status so far:\n  o {preview/prod status, deployment ID, or not checked}.\n\n- Pending items before resolution:\n  o {remaining work}.\n\n- Blockers / caveats:\n  o {blocker or None}.",
-  "pr_link": "{real PR/deployment URL if available, otherwise empty string}"
-}
-
-Update tracker progress after every meaningful checkpoint while status remains In Progress.
-
-Every checkpoint note must include:
-- completed changes so far
-- files changed so far
-- Supabase migrations/data changes so far, if any
-- validation/Vercel status so far
-- pending items before the issue can be resolved
-- blockers or caveats, if any
-
-Set issue to Resolved only after live proof exists:
-{
-  "status": "Resolved",
-  "assigned_to": "Ritesh",
-  "fix_applied": "Fix Applied (Final Proof-Based Summary):\n\n- Scope of changes:\n  o All updates implemented across the issue have been completed and verified.\n  o Exact changes merged into main in GitHub: {commit/PR summary}.\n  o Supabase updates: {schema/config/data changes or None}.\n  o Vercel build/deployment: {pass/fail + deployment URL or ID}.\n\n- What Changed (Summary):\n  o {bullet 1 - key functional/UI change}.\n  o {bullet 2 - secondary change or refactor}.\n  o {bullet 3 - infra/config/schema change, or None}.\n\n- Validation Performed:\n  o {tests run - unit/integration/manual}.\n  o {environments validated - preview/production}.\n  o Result: {All checks passed / blocker summary}.\n\n- Pending Items:\n  o None.\n\n- Caveats / Notes:\n  o {known edge cases, rollout notes, or None}.",
-  "pr_link": "{real GitHub commit/PR URL or Vercel deployment URL}"
-}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LIVE WORKFLOW — FOLLOW EXACTLY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-0. Run the Live Access Preflight. Do not select or update an issue until preflight passes.
-1. Read all Open issues across ALL sprints from the tracker (no sprint_number filter).
-2. Read all issues across ALL sprints to calculate progress.
-3. Report:
-   - total issues across all sprints (Sprint 18 + Sprint 19 + any future)
-   - total Open issues
-   - total In Progress issues
-   - resolved count
-   - sprint completion percentage
-   - Critical Open count
-   - High Open count
-   - count by severity
-   - count by issue_type
-   - sub-task count where issue_type = Task or parent_ref is present
-   - 7-Day Rescue completion percentage
-   - 30-Day Cleanup completion percentage
-4. Select the highest-severity Open issue where sprint_target = "7-Day Rescue" and dependencies are clear.
-5. If no eligible 7-Day Rescue issue is Open, select the highest-severity Open issue overall where dependencies are clear.
-6. If the selected issue is a sub-task, state the parent_ref and keep the fix scoped to that sub-task.
-7. State clearly: "Starting SF-{SPRINT}-{NUM}: [title]" (use actual sprint number from the issue_ref).
-8. Immediately update the issue to In Progress with a checkpoint note.
-9. Read and use these tracker fields:
-   - issue_ref
-   - title
-   - severity
-   - sprint_target
-   - issue_type
-   - parent_ref
-   - depends_on
-   - description
-   - root_cause
-   - how_to_fix
-   - files_changed
-   - db_migrations
-   - regression_test
-10. Inspect the current GitHub main version of every file listed in files_changed.
-11. Inspect adjacent code only when needed to understand imports, types, server actions, data flow, or routing.
-12. Inspect live Supabase schema/types/policies only when the issue touches database tables, RLS, server actions, or API routes.
-13. Apply the smallest safe issue-scoped fix using the connected GitHub workflow:
-   - If the change is small and direct main commits are allowed, commit directly to main.
-   - If the change is large, risky, cross-cutting, or branch protection requires it, create a dedicated branch and PR.
-   - Do not mark the issue Resolved until the change is merged into main and the Vercel deployment from main has been checked.
-14. If live Supabase schema/data/RLS changes are required by the issue, apply them to live Supabase only after explaining exactly why they are required.
-15. After each code or Supabase checkpoint, update tracker progress while status remains In Progress.
-16. After GitHub main is updated, check the Vercel build/deployment created from main.
-17. If Vercel build fails, inspect the real build logs, fix the cause on GitHub main, and check Vercel again.
-18. Continue until Vercel build/deployment is checked and the tracker has the latest checkpoint.
-19. Only then mark the issue Resolved with proof and no pending items.
-20. Recalculate sprint progress after the issue is Resolved.
-21. Move to the next Open issue only after the current issue is fully updated in the tracker.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LARGE CHANGE RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-If the selected issue requires broad changes across multiple files, schema, routing, or business logic:
-
-1. Do not commit directly to main unless the change is small and safe.
-2. Create a dedicated issue branch or PR if the environment supports it.
-3. Before editing, write a short implementation plan:
-   - impacted files
-   - Supabase impact
-   - Vercel/build risk
-   - rollback plan
-   - dependency/parent issue impact
-4. Break the work into checkpoints.
-5. Update tracker notes after every checkpoint while status remains In Progress.
-6. Do not mark Resolved until the PR/change is merged to main and Vercel deployment from main is checked.
-7. If the change cannot be completed safely, leave the issue In Progress with a clear blocker note and pending items.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-GITHUB RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Target repository: kapoorritesh1111-create/SetuFlow-CRM.
-- Target branch for final live proof: main.
-- Pull/read the latest main before making changes.
-- Make atomic changes tied to one issue only.
-- Commit message format: SF-18-XXX: concise fix title
-- Commit body should include:
-  - tracker issue ref
-  - files changed
-  - validation performed
-  - Vercel result if available
-  - pending items if any
-- If the environment requires a PR instead of direct main commits, create the PR but do not call the issue Resolved until the PR is merged to main and Vercel checks main.
-- Never claim main was updated unless there is a real commit/merge URL.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LIVE SUPABASE RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Use live Supabase for tracker updates and issue-required database changes only.
-- Use the project ref sjzfzloggabsmcuxktnl.
-- Tracker writes may be performed through either Supabase REST using the prompt-provided anon key or the connected Supabase tool against project ref sjzfzloggabsmcuxktnl.
-- If using the connected Supabase tool, update only public.sprint_issues tracker fields required by the workflow.
-- Never use, request, expose, or assume a service-role key for tracker workflow updates.
-- Never make schema changes unless the selected issue requires them.
-- Before schema/RLS changes, inspect the current table, policies, functions, and generated types where available.
-- Every new Supabase table requires RLS and org-scoped policies.
-- Every RLS/admin/service-role fallback must be organization-scoped and audit-logged.
-- Never weaken RLS to make a bug disappear.
-- Never use service-role in client code.
-- If generated database types must change, update the generated type file or clearly state that type regeneration is required.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-VERCEL BUILD VERIFICATION RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After GitHub main is updated:
-1. Find the Vercel deployment triggered by the main commit.
-2. Check its build/deployment status.
-3. If it passes, capture the deployment URL/status in the tracker note.
-4. If it fails, inspect the build logs.
-5. Fix the failure on GitHub main.
-6. Re-check Vercel after the new commit.
-7. Do not mark Resolved until Vercel has been checked.
-
-If Vercel access is unavailable:
-- do not pretend it was checked,
-- leave the issue In Progress,
-- update tracker notes with the missing access/blocker,
-- tell me exactly what access is missing.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-VALIDATION RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Preferred local validation when dependencies are already available:
-npx tsc --noEmit --skipLibCheck
-
-If available, also run:
-npm run build
-
-Do not run npm ci.
-
-If local validation cannot run:
-- explain why,
-- rely on Vercel build logs as the live validation source,
-- update tracker notes honestly.
-
-If validation or Vercel fails:
-- keep status In Progress,
-- update tracker notes with the failure summary,
-- fix the failure,
-- rerun/recheck,
-- patch tracker again.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ARCHITECTURE RULES — NEVER BREAK THESE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✗ Never add live external API calls to Xero, QuickBooks, Flexport, Freightos, DHL, or WhatsApp Business API.
-✗ WhatsApp must remain manual tracked-link only using wa.me prefilled text.
-✗ PDF generation must use puppeteer-core + @sparticuz/chromium only. No paid PDF API.
-✗ Never use "as any". Use proper types from src/types/database.generated.ts.
-✗ No file may exceed 400 lines. Decompose if needed.
-✗ Do not remove existing working functionality.
-✗ Do not introduce schema assumptions without checking existing schema/types.
-✗ Do not mark an issue Resolved before live GitHub main and Vercel are checked.
-✗ Do not claim build success without proof.
-
-✓ Every server action must call getWorkspaceAccess() and filter by organization_id.
-✓ Every new API route must include auth check, organization scope, Zod validation, and error handling.
-✓ Every new Supabase table requires RLS and org-scoped policies.
-✓ Admin/service-role fallback must be org-scoped and audit-logged.
-✓ Update the Supabase tracker after every code, Supabase, or Vercel checkpoint.
-✓ Keep fixes minimal, issue-scoped, and reversible.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HANDLING INCOMPLETE ISSUE DATA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-If how_to_fix is missing:
-- inspect the relevant GitHub main code paths,
-- infer the safest minimal fix,
-- explain the assumption in the tracker note,
-- proceed only with issue-scoped changes.
-
-If files_changed is missing:
-- identify likely files from the issue description and current codebase,
-- explain why those files were selected,
-- proceed with the smallest safe fix.
-
-If regression_test is missing:
-- create a practical validation plan,
-- include it in the tracker progress note and final summary.
-
-If parent_ref or depends_on is missing:
-- do not invent dependencies,
-- proceed only with the selected issue scope,
-- mention the missing dependency data in the checkpoint note if it affects risk.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT AFTER EACH ISSUE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## Live Access Preflight
-- GitHub repository access:
-- Supabase project/tracker access:
-- Supabase tracker path used: REST anon key or connected Supabase tool
-- Vercel project/deployment access:
-
-## Started Issue
-- Ref:
-- Title:
-- Severity:
-- Sprint target:
-- Issue type:
-- Parent ref:
-- Depends on:
-
-## Live Change Proof
-- GitHub main commit/PR:
-- Supabase changes:
-- Vercel deployment/build:
-
-## Tracker Updates
-- Set to In Progress:
-- Checkpoint updates:
-- Final Resolved update:
-- Pending items recorded:
-
-## What Changed
-- Summary:
-- Changed files:
-- Database migrations/data changes:
-- Parent/sub-task impact:
-
-## Validation
-- Local typecheck:
-- Local build:
-- Vercel build/deployment:
-- Regression test:
-- Remaining errors/blockers:
-
-## Sprint Progress
-- Sprint readiness percentage:
-- Sprint completion percentage:
-- 7-Day Rescue completion percentage:
-- 30-Day Cleanup completion percentage:
-- Total issues:
-- Remaining Open:
-- In Progress:
-- Resolved:
-- Critical Open:
-- High Open:
-- Sub-tasks / task rows:
-
-## Next Step
-State whether you are moving to the next Open issue or blocked, and why.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-START NOW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Run the live access preflight using:
-- GitHub repo kapoorritesh1111-create/SetuFlow-CRM
-- Supabase project ref sjzfzloggabsmcuxktnl
-- Supabase tracker access through REST anon key or connected Supabase table tool
-- Vercel project setu-flow-crm
-
-Then use the live tracker to read Open Sprint 18 issues and all Sprint 18 progress.
-Show total issues, Open, In Progress, Resolved, Critical Open, High Open, count by severity, count by issue_type, sub-task count, sprint completion percentage, 7-Day Rescue completion percentage, and 30-Day Cleanup completion percentage.
-
-Then select the first eligible issue, update it to In Progress, inspect current GitHub main files, and begin the live fix.</div>
+      <div class="prompt-box" id="gpt-prompt-text">Loading editable prompt from Supabase…</div>
       <div class="copy-row">
         <button class="copy-btn" onclick="copyPrompt()" id="copy-main-btn">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Full Prompt
         </button>
-        <span class="copy-hint">Then: open ChatGPT → paste prompt → run live workflow</span>
+        <button class="gpt-btn gpt-btn-outline" onclick="openPromptEditor()" id="edit-prompt-main-btn">Edit Prompt</button>
+        <span class="copy-hint" id="prompt-source-hint">Loading saved prompt…</span>
       </div>
     </div>
 
@@ -2197,18 +1774,120 @@ async function submitNewIssue(){
 }
 
 /* ══════════════════════════════════════
-   GPT PANEL
+   GPT PANEL — editable prompt from Supabase/API
 ══════════════════════════════════════ */
+const DEFAULT_GPT_PROMPT = "You are the SetuFlow CRM coding agent.\n\nSOURCE OF TRUTH\n- GitHub repo: kapoorritesh1111-create/SetuFlow-CRM\n- Branch for final proof: main\n- Supabase project ref: sjzfzloggabsmcuxktnl\n- Vercel project: setu-flow-crm\n- Tracker table: public.sprint_issues\n- Work across all sprints unless the user explicitly filters to one sprint.\n\nMANDATORY PREFLIGHT\nBefore selecting or changing an issue, confirm GitHub repo access, Supabase tracker read/write access, and Vercel deployment access. If any access is missing, do not set an issue In Progress. Report the missing access and stop.\n\nISSUE SELECTION\nRead all Open issues across all sprints and calculate current progress from live Supabase. Select the highest-severity eligible Open issue, prioritizing 7-Day Rescue. Respect depends_on and parent_ref. If issue_type is Task or parent_ref is present, keep the fix scoped to that task. Immediately set the selected issue to In Progress with a checkpoint note.\n\nFIX RULES\nInspect current GitHub main files before editing. Use the smallest safe issue-scoped change. Do not use old zips, memory, stale prompts, or assumed schema. Do not broaden scope unless the tracker issue requires it. Do not touch unrelated UI, routes, business logic, schema, or copy. Do not run npm ci. Do not use as-any typing. Every new API route must include auth, organization scope, validation, and error handling. Every new Supabase table requires RLS and org-scoped policies.\n\nCOMMIT RULES\nDo not commit every file separately. Group all related edits for the selected issue into one issue-scoped commit when possible. Commit only after the issue-scoped fix is coherent. Use commit format SF-{SPRINT}-{NUM}: concise fix title. If the change is large or risky, use a branch/PR instead of direct main. Never claim a commit exists unless there is a real GitHub commit or PR URL.\n\nSETU GURU KNOWLEDGE RULE\nIf the fix changes Setu Guru behavior, routing, answer style, workflow logic, help content, prompts, policy, telemetry, actions, or UI, update the relevant Setu Guru knowledge/help/policy file in the same issue-scoped fix. Include the knowledge update in the tracker checkpoint. Add or update a regression test or manual test prompt showing the expected answer. Do not close the issue until product behavior and Setu Guru knowledge are aligned.\n\nTRACKER CHECKPOINT RULES\nUpdate the tracker after each meaningful checkpoint: issue selected, code changed, Supabase changed, local validation attempted, GitHub main updated, Vercel deployment checked, or blocker found. Each checkpoint must include completed work, files changed, Supabase changes if any, validation/Vercel status, pending items, and blockers/caveats.\n\nVERCEL CLOSEOUT RULE\nDo not mark Resolved until the fix is on GitHub main or merged to main, the Vercel deployment for that main commit is found, and Vercel status is READY/PASSED. If Vercel fails, inspect logs, fix the failure, and re-check. If Vercel access is unavailable, leave the issue In Progress with blocker notes.\n\nFINAL RESPONSE FORMAT\nReturn: Live Access Preflight, Started Issue, Changes Made, Files Changed, Supabase Changes, GitHub Proof, Vercel Proof, Tracker Updates, Validation, Sprint Progress, Next Step.\n\nSTART NOW\nRun preflight, read live tracker data, calculate current progress from Supabase, select the first eligible issue, set it In Progress, inspect current main files, apply one issue-scoped fix, update tracker checkpoints, wait for Vercel READY, then mark Resolved only with proof.";
+let currentPromptRecord = null;
+let promptLoaded = false;
+
+async function loadGptPrompt(){
+  const box = $('gpt-prompt-text');
+  if(box) box.textContent = 'Loading editable prompt from Supabase…';
+  setText('prompt-source-hint','Loading saved prompt…');
+
+  try{
+    const response = await fetch('/api/internal/tracker-prompts', { cache:'no-store', credentials:'include' });
+    const payload = await response.json().catch(()=>({}));
+
+    if(!response.ok || !payload.ok){
+      throw new Error(payload.error || 'Prompt API unavailable');
+    }
+
+    if(payload.prompt && payload.prompt.prompt_text){
+      currentPromptRecord = payload.prompt;
+      setText('gpt-prompt-text', payload.prompt.prompt_text);
+      setText('prompt-source-hint', `Loaded editable Supabase prompt v${payload.prompt.version || 1}`);
+      promptLoaded = true;
+      return payload.prompt;
+    }
+
+    currentPromptRecord = null;
+    setText('gpt-prompt-text', DEFAULT_GPT_PROMPT);
+    setText('prompt-source-hint','No saved prompt yet — using recommended default. Click Edit Prompt → Save.');
+    promptLoaded = true;
+    return null;
+  }catch(err){
+    currentPromptRecord = null;
+    setText('gpt-prompt-text', DEFAULT_GPT_PROMPT);
+    setText('prompt-source-hint','Prompt API unavailable — using recommended default.');
+    promptLoaded = true;
+    console.warn('Prompt API unavailable; using default prompt.', err);
+    return null;
+  }
+}
+
 function toggleGPT(){
   gptOpen=!gptOpen;
   $('gpt-expanded').classList.toggle('open',gptOpen);
   setText('gpt-toggle-btn',gptOpen?'Hide prompt':'Show prompt');
+  if(gptOpen && !promptLoaded) loadGptPrompt();
 }
 
-function copyPrompt(){
-  navigator.clipboard.writeText($('gpt-prompt-text').textContent).then(()=>{
+async function copyPrompt(){
+  if(!promptLoaded) await loadGptPrompt();
+  const prompt = $('gpt-prompt-text')?.textContent || DEFAULT_GPT_PROMPT;
+  navigator.clipboard.writeText(prompt).then(()=>{
     ['copy-top-btn','copy-main-btn'].forEach(id=>{const el=$(id);if(el){el.innerHTML='<svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-check"/></svg>Copied!';el.classList.add('done');setTimeout(()=>{el.innerHTML='<svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Prompt';el.classList.remove('done');},2500);}});
-  });
+  }).catch(()=>toast('✗ Could not copy prompt', false));
+}
+
+function openPromptEditor(){
+  const modal = $('prompt-editor-modal');
+  if(!modal) return;
+  if(!promptLoaded) loadGptPrompt().finally(openPromptEditor);
+  if(!promptLoaded) return;
+
+  const titleEl = $('prompt-editor-title');
+  const textEl = $('prompt-editor-ta');
+  if(titleEl) titleEl.value = currentPromptRecord?.title || 'ChatGPT Issue Fix Protocol';
+  if(textEl) textEl.value = $('gpt-prompt-text')?.textContent || DEFAULT_GPT_PROMPT;
+  setText('prompt-editor-meta', currentPromptRecord ? `Supabase tracker_prompts · v${currentPromptRecord.version || 1}` : 'Supabase tracker_prompts · new prompt');
+  modal.classList.add('open');
+}
+
+function closePromptEditor(e){
+  if(!e || e.target === $('prompt-editor-modal')) $('prompt-editor-modal')?.classList.remove('open');
+}
+
+function resetPromptEditorDefault(){
+  const textEl = $('prompt-editor-ta');
+  if(textEl) textEl.value = DEFAULT_GPT_PROMPT;
+  setText('prompt-editor-meta','Recommended default loaded. Click Save Active Prompt to store it.');
+}
+
+async function saveGptPrompt(){
+  const title = $('prompt-editor-title')?.value.trim() || 'ChatGPT Issue Fix Protocol';
+  const promptText = $('prompt-editor-ta')?.value.trim() || '';
+  if(!promptText){toast('Prompt text is required', false);return;}
+
+  const btn = $('prompt-editor-save-btn');
+  if(btn) btn.disabled = true;
+  setText('prompt-editor-meta','Saving prompt to Supabase…');
+
+  try{
+    const response = await fetch('/api/internal/tracker-prompts', {
+      method:'PUT',
+      credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ title, prompt_text: promptText })
+    });
+    const payload = await response.json().catch(()=>({}));
+    if(!response.ok || !payload.ok) throw new Error(payload.error || 'Prompt save failed');
+
+    currentPromptRecord = payload.prompt;
+    promptLoaded = true;
+    setText('gpt-prompt-text', promptText);
+    setText('prompt-source-hint', `Loaded editable Supabase prompt v${payload.prompt?.version || ''}`);
+    setText('prompt-editor-meta', `Saved v${payload.prompt?.version || ''} to Supabase.`);
+    closePromptEditor();
+    toast('✓ Prompt saved to Supabase');
+  }catch(err){
+    const message = err instanceof Error ? err.message : String(err);
+    setText('prompt-editor-meta','Save failed: '+message);
+    toast('✗ Prompt save failed: '+message, false);
+  }finally{
+    if(btn) btn.disabled = false;
+  }
 }
 
 /* ══════════════════════════════════════
@@ -2563,6 +2242,7 @@ async function initAuth(){
     if (avatarEl) avatarEl.textContent = (currentUserName.charAt(0) || 'R').toUpperCase();
 
     gate.classList.add('hidden');
+    loadGptPrompt();
     load();
 
   } catch (err) {
@@ -2578,6 +2258,39 @@ function getReporterName(isAiSubmission = false){
 
 initAuth();
 </script>
+
+
+<!-- PROMPT EDITOR MODAL -->
+<div class="modal-overlay" id="prompt-editor-modal" onclick="closePromptEditor(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:920px">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title">Edit ChatGPT Fix Prompt</div>
+        <div class="modal-sub" id="prompt-editor-meta">Supabase tracker_prompts · editable active prompt</div>
+      </div>
+      <button class="modal-close" onclick="closePromptEditor()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row single">
+        <div class="form-field">
+          <label>Prompt title</label>
+          <input type="text" class="form-in" id="prompt-editor-title" value="ChatGPT Issue Fix Protocol">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-field">
+          <label>Prompt text</label>
+          <textarea class="form-ta" id="prompt-editor-ta" style="min-height:460px;font-family:var(--mono);font-size:11px;line-height:1.7"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="resetPromptEditorDefault()">Reset to recommended</button>
+        <button class="btn-cancel" onclick="closePromptEditor()">Cancel</button>
+        <button class="btn-submit" id="prompt-editor-save-btn" onclick="saveGptPrompt()">Save Active Prompt</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- NEW ISSUE MODAL -->
 <div class="modal-overlay" id="new-issue-modal" onclick="closeNewIssueModal(event)">
