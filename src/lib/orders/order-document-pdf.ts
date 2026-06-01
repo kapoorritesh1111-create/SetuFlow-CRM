@@ -65,7 +65,17 @@ function short(v: unknown, max = 34, fallback = '-') {
 }
 
 function esc(v: string) {
-  return String(v).replace(/\/g, '\\').replace(/\(/g, '\(').replace(/\)/g, '\)').replace(/[\r\n]+/g, ' ');
+  const slash = String.fromCharCode(92);
+  return String(v)
+    .replace(/[\r\n]+/g, ' ')
+    .split('')
+    .map((ch) => {
+      if (ch === slash) return slash + slash;
+      if (ch === '(') return slash + '(';
+      if (ch === ')') return slash + ')';
+      return ch;
+    })
+    .join('');
 }
 
 function rgb(hex: string) {
