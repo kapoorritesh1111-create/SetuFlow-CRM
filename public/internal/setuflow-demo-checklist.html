@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SetuFlow · Pre-Demo Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --brand-navy:#1F487C;--brand-teal:#359F91;--grad:linear-gradient(135deg,#1F487C,#359F91);
+  --bg:#0d1724;--bg2:#121f33;--bg3:#192840;--bg4:#1f314e;--bg5:#263c5e;
+  --border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.16);--border3:rgba(255,255,255,.26);
+  --text:#ecf2fa;--text2:#b0c8e0;--text3:#6e90ae;
+  --green:#22c55e;--green-d:rgba(34,197,94,.14);--green-hi:#4ade80;
+  --amber:#f59e0b;--amber-d:rgba(245,158,11,.14);--amber-hi:#fbbf24;
+  --red:#ef4444;--red-d:rgba(239,68,68,.14);--red-hi:#f87171;
+  --blue:#3b82f6;--blue-d:rgba(59,130,246,.14);--blue-hi:#60a5fa;
+  --purple:#a78bfa;--purple-d:rgba(167,139,250,.14);--purple-hi:#c4b5fd;
+  --teal:#14b8a6;--teal-d:rgba(20,184,166,.14);--teal-hi:#5eead4;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:8px;--rl:14px;--rxl:20px;
+}
+[data-theme="light"]{
+  --bg:#edf2f8;--bg2:#fff;--bg3:#f4f7fb;--bg4:#e5ecf5;
+  --border:rgba(30,60,100,.1);--border2:rgba(30,60,100,.2);--border3:rgba(30,60,100,.35);
+  --text:#0d1a2e;--text2:#2e4a6a;--text3:#7090b0;
+  --green:#15803d;--green-d:rgba(21,128,61,.12);--green-hi:#166534;
+  --amber:#b45309;--amber-d:rgba(180,83,9,.1);--amber-hi:#92400e;
+  --red:#b91c1c;--red-d:rgba(185,28,28,.1);--red-hi:#991b1b;
+  --blue:#1d4ed8;--blue-d:rgba(29,78,216,.1);--blue-hi:#1e40af;
+  --teal:#0f766e;--teal-d:rgba(15,118,110,.1);--teal-hi:#115e59;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:10px;padding:0 18px;height:52px;background:var(--bg2);border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:200}
+.logo-wrap{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);font-weight:800;font-size:15px}
+.topbar-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--teal-d);color:var(--teal-hi);border:1px solid rgba(20,184,166,.2);margin-left:4px}
+.topbar-nav{display:flex;gap:4px;margin-left:auto;align-items:center}
+.nav-link{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--r);font-size:12px;font-weight:500;color:var(--text2);text-decoration:none;transition:all .15s;border:1px solid transparent}
+.nav-link:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.nav-link.primary{background:var(--grad);color:#fff;border:none;font-weight:700}
+.nav-link.active{background:var(--bg4);color:var(--text);border-color:var(--border2)}
+.theme-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);padding:5px 9px;font-size:12px;cursor:pointer}
+.shell{display:flex;min-height:calc(100vh - 52px)}
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
+.sb-section{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:10px 8px 5px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;transition:all .12s;border:1px solid transparent}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:linear-gradient(135deg,rgba(31,72,124,.35),rgba(53,159,145,.2));color:var(--text);border-color:var(--border2)}
+.sb-badge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;background:var(--bg4);color:var(--text3)}
+.sb-badge.g{background:var(--green-d);color:var(--green-hi)}
+.sb-badge.r{background:var(--red-d);color:var(--red-hi)}
+.sb-badge.a{background:var(--amber-d);color:var(--amber-hi)}
+.sb-prog{padding:12px 8px;margin-top:auto;border-top:1px solid var(--border)}
+.sb-prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px}
+.sb-prog-val{font-weight:700;color:var(--teal-hi)}
+.sb-prog-bar{height:5px;background:var(--bg4);border-radius:10px;overflow:hidden}
+.sb-prog-fill{height:100%;background:var(--grad);border-radius:10px;transition:width .4s}
+.main{flex:1;padding:0;overflow-x:hidden;min-width:0}
+
+/* ── TESTER SETUP PANEL ── */
+.setup-panel{background:linear-gradient(135deg,rgba(31,72,124,.2),rgba(53,159,145,.1));border-bottom:1px solid var(--border2);padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.setup-field{display:flex;flex-direction:column;gap:3px}
+.setup-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.setup-in,.setup-sel{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-size:12.5px;color:var(--text);font-family:var(--font);outline:none}
+.setup-in:focus,.setup-sel:focus{border-color:var(--teal-hi)}
+.setup-run-info{margin-left:auto;text-align:right}
+.setup-run-ref{font-size:11px;font-family:var(--mono);color:var(--teal-hi);font-weight:700}
+.setup-run-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s}
+.btn:hover{border-color:var(--border3);color:var(--text)}
+.btn.primary{background:var(--grad);border:none;color:#fff}
+.btn.primary:hover{opacity:.9}
+.btn.sm{padding:4px 9px;font-size:11px}
+
+/* ── WORKFLOW GUIDE BANNER ── */
+.guide-banner{background:var(--bg2);border-bottom:1px solid var(--border);padding:0}
+.guide-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);overflow-x:auto}
+.guide-tab{padding:9px 16px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.guide-tab:hover{color:var(--text);background:var(--bg3)}
+.guide-tab.active{color:var(--teal-hi);border-bottom-color:var(--teal-hi);background:var(--bg3)}
+.guide-panel{display:none;padding:14px 22px}
+.guide-panel.active{display:block}
+.guide-steps-row{display:flex;gap:0;align-items:stretch;flex-wrap:wrap}
+.guide-step{flex:1;min-width:200px;padding:10px 14px;border-right:1px solid var(--border);position:relative}
+.guide-step:last-child{border-right:none}
+.guide-step-num{font-size:10px;font-weight:700;color:var(--teal-hi);font-family:var(--mono);margin-bottom:4px}
+.guide-step-title{font-size:12px;font-weight:700;margin-bottom:3px}
+.guide-step-desc{font-size:11px;color:var(--text3);line-height:1.5}
+.guide-step-route{font-size:10px;font-family:var(--mono);color:var(--blue-hi);background:var(--blue-d);padding:1px 5px;border-radius:3px;margin-top:5px;display:inline-block}
+.guide-rule{background:linear-gradient(135deg,rgba(20,184,166,.1),rgba(31,72,124,.1));border:1px solid rgba(20,184,166,.25);border-radius:var(--r);padding:8px 14px;font-size:11.5px;color:var(--text2);margin-top:10px}
+.guide-rule strong{color:var(--teal-hi)}
+.guide-never{background:var(--red-d);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:8px 14px;font-size:11px;color:var(--text2);margin-top:6px}
+.guide-never strong{color:var(--red-hi)}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:0;background:var(--bg2);border-bottom:1px solid var(--border)}
+.kpi-cell{padding:12px 16px;border-right:1px solid var(--border);text-align:center}
+.kpi-cell:last-child{border-right:none}
+.kv{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.kl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-top:3px}
+.v-g{color:var(--green-hi)}.v-r{color:var(--red-hi)}.v-a{color:var(--amber-hi)}.v-b{color:var(--blue-hi)}.v-t{color:var(--teal-hi)}.v-m{color:var(--text3)}
+
+/* ── BLOCKER BANNER ── */
+.blocker-banner{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(245,158,11,.06));border-bottom:2px solid rgba(239,68,68,.4);padding:10px 22px;display:none}
+.blocker-banner.show{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.blocker-title{font-size:12px;font-weight:800;color:var(--red-hi);white-space:nowrap}
+.blocker-items{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.blocker-chip{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--red-d);color:var(--red-hi);border:1px solid rgba(239,68,68,.3)}
+
+/* ── PROGRESS BAR ── */
+.prog-wrap{padding:12px 22px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px}
+.prog-bar{flex:1;height:7px;background:var(--bg4);border-radius:10px;overflow:hidden}
+.prog-fill{height:100%;background:var(--grad);border-radius:10px;transition:width .4s}
+.prog-label{font-size:12px;font-weight:700;color:var(--text2);white-space:nowrap}
+.prog-segs{display:flex;gap:12px}
+.prog-seg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.prog-dot{width:7px;height:7px;border-radius:50%}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;align-items:center;gap:8px;padding:10px 22px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.search-in{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-size:12px;color:var(--text);outline:none;width:240px;font-family:var(--font)}
+.search-in:focus{border-color:var(--teal-hi)}
+.fchip{padding:4px 11px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);background:var(--bg2);transition:all .12s}
+.fchip:hover{border-color:var(--border3);color:var(--text)}
+.fchip.active{background:var(--grad);border-color:transparent;color:#fff}
+
+/* ── CONTENT ── */
+.content{padding:14px 22px}
+
+/* ── SECTION ── */
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:12px;overflow:hidden}
+.sec-head{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:background .12s}
+.sec-head:hover{background:var(--bg3)}
+.sec-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sec-title{font-size:13px;font-weight:700}
+.sec-prog{margin-left:auto;display:flex;align-items:center;gap:8px}
+.sec-prog-bar{width:60px;height:4px;background:var(--bg4);border-radius:10px;overflow:hidden}
+.sec-prog-fill{height:100%;background:var(--grad);transition:width .3s}
+.sec-pct{font-size:10.5px;font-weight:700;color:var(--text3)}
+.sec-toggle{font-size:11px;color:var(--text3);transition:transform .2s;margin-left:4px}
+.sec-toggle.open{transform:rotate(180deg)}
+
+/* ── CHECK ITEM ── */
+.ci{border-bottom:1px solid var(--border);transition:background .12s}
+.ci:last-child{border-bottom:none}
+.ci:hover{background:rgba(31,72,124,.05)}
+.ci.pass{background:rgba(34,197,94,.04)}
+.ci.fail{background:rgba(239,68,68,.05)}
+.ci.blocked{background:rgba(245,158,11,.04)}
+.ci-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px}
+.ci-num{font-size:10px;font-family:var(--mono);color:var(--text3);min-width:26px;padding-top:2px}
+.ci-body{flex:1;min-width:0}
+.ci-title{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:2px}
+.ci-desc{font-size:11.5px;color:var(--text3);line-height:1.5}
+.ci-verify{font-size:11px;color:var(--blue-hi);margin-top:3px;background:var(--blue-d);padding:3px 8px;border-radius:4px;display:inline-block}
+.ci-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.tag-crit{background:var(--red-d);color:var(--red-hi)}
+.tag-high{background:var(--amber-d);color:var(--amber-hi)}
+.tag-med{background:var(--blue-d);color:var(--blue-hi)}
+.tag-low{background:var(--teal-d);color:var(--teal-hi)}
+.tag-blocker{background:rgba(239,68,68,.2);color:var(--red-hi);border:1px solid rgba(239,68,68,.3)}
+.tag-area{background:var(--bg4);color:var(--text2)}
+.tag-issue{font-family:var(--mono);background:var(--teal-d);color:var(--teal-hi);border:1px solid rgba(20,184,166,.2)}
+.ci-actions{display:flex;gap:5px;flex-shrink:0;align-items:flex-start;padding-top:1px}
+.sbtn{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:6px;border:1px solid;cursor:pointer;transition:all .12s;background:transparent}
+.sbtn.pass{color:var(--green-hi);border-color:rgba(34,197,94,.3)}
+.sbtn.pass:hover,.sbtn.pass.on{background:var(--green-d);border-color:var(--green)}
+.sbtn.fail{color:var(--red-hi);border-color:rgba(239,68,68,.3)}
+.sbtn.fail:hover,.sbtn.fail.on{background:var(--red-d);border-color:var(--red)}
+.sbtn.block{color:var(--amber-hi);border-color:rgba(245,158,11,.3)}
+.sbtn.block:hover,.sbtn.block.on{background:var(--amber-d);border-color:var(--amber)}
+
+/* ── NOTE + EVIDENCE ROW ── */
+.ci-detail{padding:0 14px 10px 50px;display:none}
+.ci-detail.open{display:block}
+.ci-detail-inner{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.detail-row{display:flex;gap:8px;align-items:flex-start}
+.detail-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;min-width:70px;padding-top:8px}
+.note-in{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:6px 9px;font-size:12px;color:var(--text);font-family:var(--font);resize:none;outline:none;min-height:48px}
+.note-in:focus{border-color:var(--teal-hi)}
+.evidence-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.evidence-add-btn{font-size:11px;font-weight:600;padding:5px 10px;border-radius:var(--r);border:1px dashed var(--border2);color:var(--text3);cursor:pointer;background:transparent;transition:all .12s}
+.evidence-add-btn:hover{border-color:var(--teal-hi);color:var(--teal-hi)}
+.evidence-file-in{display:none}
+.evidence-thumb{display:flex;align-items:center;gap:5px;background:var(--bg4);border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:10.5px;color:var(--text2)}
+.evidence-thumb img{width:22px;height:22px;object-fit:cover;border-radius:3px}
+.evidence-remove{background:none;border:none;color:var(--red-hi);cursor:pointer;font-size:12px;padding:0 2px;line-height:1}
+.detail-save-row{display:flex;gap:6px;justify-content:flex-end;margin-top:4px}
+.save-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r);border:none;background:var(--grad);color:#fff;cursor:pointer}
+.saved-indicator{font-size:10.5px;color:var(--green-hi);display:none}
+.saved-indicator.show{display:inline}
+
+/* ── SIGN-OFF ── */
+.signoff-wrap{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:18px 22px;margin-bottom:14px}
+.so-title{font-size:14px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.so-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.so-field{display:flex;flex-direction:column;gap:4px}
+.so-field label{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase}
+.so-field input,.so-field select,.so-field textarea{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:7px 10px;font-size:12.5px;color:var(--text);font-family:var(--font);outline:none}
+.so-field textarea{resize:vertical;min-height:60px}
+.so-field input:focus,.so-field select:focus,.so-field textarea:focus{border-color:var(--teal-hi)}
+.so-actions{display:flex;gap:10px;align-items:center}
+.verdict-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:none}
+.verdict-badge.ready{background:var(--green-d);color:var(--green-hi);border:1px solid var(--green);display:inline-flex}
+.verdict-badge.noready{background:var(--red-d);color:var(--red-hi);border:1px solid var(--red);display:inline-flex}
+.so-status{font-size:11px;color:var(--text3)}
+
+/* ── LIVE STATUS ── */
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;margin-right:4px;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:var(--rl);font-size:13px;font-weight:600;z-index:9999;display:none;animation:slideUp .2s}
+.toast.ok{background:linear-gradient(135deg,#14b8a6,#059669);color:#fff}
+.toast.err{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.db-sync-badge{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--border2);color:var(--text3);background:var(--bg3);margin-left:6px}
+.db-sync-badge.synced{border-color:rgba(34,197,94,.4);color:var(--green-hi);background:var(--green-d)}
+@media(max-width:768px){.sidebar{display:none}.so-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="#" class="logo-wrap">
+    <svg viewBox="200 280 620 500" xmlns="http://www.w3.org/2000/svg" width="26" height="26"><defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7eb3e0"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs><path fill="url(#lg)" d="M80.9,631.6c0.3-2.5,0.4-4.2,0.8-5.8c3-12.4,6.1-24.8,9.1-36.5c4.6-3,82.2-31.6,90.3-33.4c35.3,27,72.7,28.9,107.9,1.5c34.2-26.6,41.2-62.6,24.2-103.7c53.3-17.5,107.4-26.8,163.4-29.9c2-18.6,3.9-36.2,5.8-54.2c7.4-6.3,14.9-12.6,23.4-18.1c9.3,4.2,15.6,12.2,23.7,16.9c3.6,18.3,3.4,36.5,6.8,55.4c55.5,2.8,109.8,12.8,163.3,29.9c-16.7,42.3-9.4,78.8,26.7,106c26,19.6,64.7,27.7,106.1-3.4c5,0.6,82.2,28.5,90,32.7c3.2,13.5,6.6,27.6,10,41.4c-51.2-14.1-103.4-23.7-155.9-31.5c-31.7-4.7-63.6-8.3-95.5-10.8c-46.2-3.7-92.4-5.5-138.8-6.6c-35.3-0.8-70.5-0.2-105.6,1c-54.2,1.9-108.4,5.7-162.3,12.9c-62,8.3-123.5,18.9-183.9,35.4Z"/><circle fill="url(#lg)" cx="237" cy="490" r="71"/><circle fill="url(#lg)" cx="783" cy="490" r="71"/></svg>
+    SetuFlow
+  </a>
+  <span class="topbar-badge">Pre-Demo Readiness</span>
+  <nav class="topbar-nav">
+    <span style="font-size:10.5px;color:var(--text3);display:flex;align-items:center"><span class="live-dot"></span>Live DB</span>
+    <span class="db-sync-badge" id="db-badge">Connecting…</span>
+    <a href="setuflow-e2e-testing.html" class="nav-link">QA Test Suite</a>
+    <a href="setuflow-issue-tracker.html" class="nav-link">Issues <span id="open-ct" style="background:var(--red-d);color:var(--red-hi);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px">—</span></a>
+    <a href="setuflow-docs.html" class="nav-link">Docs</a>
+    <a href="https://www.setuflowcrm.com/dashboard" target="_blank" class="nav-link primary">CRM Live ↗</a>
+    <button class="theme-btn" onclick="toggleTheme()">☀/☾</button>
+  </nav>
+</div>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="sb-section">Run Info</div>
+  <div style="padding:8px 10px;background:var(--bg3);border-radius:var(--r);margin-bottom:8px;font-size:11px">
+    <div style="color:var(--text3);margin-bottom:3px">Current Run</div>
+    <div id="sb-run-ref" style="font-family:var(--mono);font-weight:700;color:var(--teal-hi);font-size:12px">—</div>
+    <div id="sb-tester" style="color:var(--text2);margin-top:2px">Not started</div>
+  </div>
+
+  <div class="sb-section">Sections</div>
+  <div class="sb-item active" onclick="filterSection('all',this)">
+    <span>⬛</span> All Sections <span class="sb-badge" id="sball">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('prereq',this)">
+    <span>📋</span> Pre-flight Setup <span class="sb-badge" id="sbprereq">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('auth',this)">
+    <span>🔐</span> Auth &amp; Login <span class="sb-badge" id="sbauth">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('nav',this)">
+    <span>🧭</span> Navigation <span class="sb-badge" id="sbnav">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('leads',this)">
+    <span>👥</span> Leads &amp; Pipeline <span class="sb-badge" id="sbleads">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('quotes',this)">
+    <span>💬</span> Quote Lifecycle <span class="sb-badge" id="sbquotes">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('orders',this)">
+    <span>📦</span> Order Execution <span class="sb-badge" id="sborders">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('pdf',this)">
+    <span>🖨️</span> PDF Documents <span class="sb-badge r" id="sbpdf">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('admin',this)">
+    <span>⚙️</span> Admin &amp; Setup <span class="sb-badge" id="sbadmin">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('mobile',this)">
+    <span>📱</span> Mobile &amp; vCard <span class="sb-badge" id="sbmobile">—</span>
+  </div>
+  <div class="sb-item" onclick="filterSection('guru',this)">
+    <span>🤖</span> Setu Guru AI <span class="sb-badge" id="sbguru">—</span>
+  </div>
+
+  <div class="sb-section" style="margin-top:8px">Past Runs</div>
+  <div id="sb-past-runs" style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text3)">
+    <div style="padding:6px 8px;color:var(--text3)">Loading…</div>
+  </div>
+
+  <div class="sb-prog">
+    <div class="sb-prog-row"><span>Readiness</span><span class="sb-prog-val" id="sb-pct">0%</span></div>
+    <div class="sb-prog-bar"><div class="sb-prog-fill" id="sb-fill"></div></div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- TESTER SETUP -->
+  <div class="setup-panel" id="setup-panel">
+    <div style="flex:0 0 auto">
+      <div style="font-size:14px;font-weight:800;letter-spacing:-.2px">Pre-Demo Readiness</div>
+      <div style="font-size:11.5px;color:var(--text3);margin-top:2px">Run before every prospect demo, investor meeting, or customer onboarding</div>
+    </div>
+    <div class="setup-field">
+      <div class="setup-label">Your Name *</div>
+      <input class="setup-in" id="tester-name" placeholder="Enter your name" style="width:160px" oninput="updateRunMeta()">
+    </div>
+    <div class="setup-field">
+      <div class="setup-label">Demo Type</div>
+      <select class="setup-sel" id="demo-type" onchange="updateRunMeta()">
+        <option>Prospect demo</option>
+        <option>Investor demo</option>
+        <option>Customer onboarding</option>
+        <option>Internal review</option>
+        <option>Partner walkthrough</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <div class="setup-label">Environment</div>
+      <select class="setup-sel" id="demo-env" onchange="updateRunMeta()">
+        <option>Production</option>
+        <option>Staging</option>
+        <option>Local dev</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn primary" id="start-btn" onclick="startRun()">▶ Start Checklist</button>
+      <button class="btn" onclick="resetAll()">↺ Reset</button>
+      <button class="btn" onclick="exportReport()">↓ Export</button>
+    </div>
+    <div class="setup-run-info">
+      <div class="setup-run-ref" id="run-ref-display">—</div>
+      <div class="setup-run-sub" id="run-status-display">Not started</div>
+    </div>
+  </div>
+
+  <!-- WORKFLOW GUIDE -->
+  <div class="guide-banner">
+    <div class="guide-tabs">
+      <div class="guide-tab active" onclick="switchGuide(0,this)">📖 How to Use This Checklist</div>
+      <div class="guide-tab" onclick="switchGuide(1,this)">🔄 Commercial Flow</div>
+      <div class="guide-tab" onclick="switchGuide(2,this)">🖨️ PDF What to Check</div>
+      <div class="guide-tab" onclick="switchGuide(3,this)">⛔ Never Do These</div>
+      <div class="guide-tab" onclick="switchGuide(4,this)">✅ Quality Signals</div>
+    </div>
+
+    <div class="guide-panel active" id="guide-0">
+      <div class="guide-steps-row">
+        <div class="guide-step">
+          <div class="guide-step-num">STEP 1</div>
+          <div class="guide-step-title">Enter your name &amp; start</div>
+          <div class="guide-step-desc">Enter your name above and click "▶ Start Checklist". This creates a live run record in the database that tracks every item you check.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">STEP 2</div>
+          <div class="guide-step-title">Work top to bottom</div>
+          <div class="guide-step-desc">Work through each section in order — Pre-flight first, then Auth, Navigation, Leads, Quotes, Orders, PDFs, Admin, Mobile, Guru. Don't skip sections.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">STEP 3</div>
+          <div class="guide-step-title">Pass / Fail / Block every item</div>
+          <div class="guide-step-desc">For every item: open the CRM at the given route, perform the check, mark Pass, Fail, or Blocked. Add a note and upload a screenshot if it fails.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">STEP 4</div>
+          <div class="guide-step-title">Add evidence on failures</div>
+          <div class="guide-step-desc">When marking Fail or Blocked: click the item to expand it, add a note describing what you saw, and upload a screenshot. This auto-files a bug in the issue tracker.</div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">STEP 5</div>
+          <div class="guide-step-title">Sign off at the bottom</div>
+          <div class="guide-step-desc">When all items are checked, complete the sign-off form. A DEMO_READY or NOT_READY verdict is written to the database and linked to this run.</div>
+        </div>
+      </div>
+      <div class="guide-rule"><strong>Rule:</strong> Every critical item (marked "Demo Blocker") must be <strong>Pass</strong> to proceed to a demo. A single blocker marked Fail means the demo should be postponed until the issue is resolved.</div>
+    </div>
+
+    <div class="guide-panel" id="guide-1">
+      <div class="guide-steps-row">
+        <div class="guide-step"><div class="guide-step-num">STAGE 1</div><div class="guide-step-title">Capture</div><div class="guide-step-desc">Business card scan or vCard form submission creates a lead draft for review.</div><span class="guide-step-route">/contact-exchange/scan</span></div>
+        <div class="guide-step"><div class="guide-step-num">STAGE 2</div><div class="guide-step-title">Follow-up</div><div class="guide-step-desc">Qualify the lead, map product interests, confirm market and compliance posture.</div><span class="guide-step-route">/leads</span></div>
+        <div class="guide-step"><div class="guide-step-num">STAGE 3</div><div class="guide-step-title">Quote</div><div class="guide-step-desc">Build a versioned quote with line items, FX, Incoterms, payment terms, and validity date.</div><span class="guide-step-route">/quotes</span></div>
+        <div class="guide-step"><div class="guide-step-num">STAGE 4</div><div class="guide-step-title">Approval &amp; Send</div><div class="guide-step-desc">Compliance gate clears → approval if required → send via email or WhatsApp with tracking.</div><span class="guide-step-route">/approval-send</span></div>
+        <div class="guide-step"><div class="guide-step-num">STAGE 5</div><div class="guide-step-title">Order Execution</div><div class="guide-step-desc">Actual lines → Buyer document → Packing → Freight → Processing → Dispatch → Invoice → Paid &amp; Closed.</div><span class="guide-step-route">/orders</span></div>
+      </div>
+      <div class="guide-rule"><strong>Immutability rule:</strong> Sent/accepted quote versions <strong>cannot be mutated</strong>. Order changes go in order_lines, never by editing an accepted quote version. Always create a new quote version if terms change.</div>
+    </div>
+
+    <div class="guide-panel" id="guide-2">
+      <div class="guide-steps-row">
+        <div class="guide-step"><div class="guide-step-num">QUOTE PDF ✅</div><div class="guide-step-title">Working correctly</div><div class="guide-step-desc">Must show: SETU Flow logo, org legal name, registered address, Tax ID, contact email. SELLER/EXPORTER box. BUYER/IMPORTER box. Line items table with HS codes, pricing basis, unit price, case price, totals. TERMS &amp; CONDITIONS section with 5+ clauses.</div></div>
+        <div class="guide-step"><div class="guide-step-num">ORDER PDF ⚠️</div><div class="guide-step-title">Confirm fixed status</div><div class="guide-step-desc">SF-23-003/004 are open: Order Confirmation and Invoice PDFs do NOT include seller identity or T&amp;C until fixed. Check: is SELLER/EXPORTER box populated? Are T&amp;C present? If no → still broken → mark FAIL.</div></div>
+        <div class="guide-step"><div class="guide-step-num">EMPTY ORDER</div><div class="guide-step-title">Guard check</div><div class="guide-step-desc">SF-23-010: Order with no line items should return an error, not a blank PDF with "Order line pending" placeholder. Test this: create order, don't add lines, try to generate PDF. Should fail gracefully.</div></div>
+        <div class="guide-step"><div class="guide-step-num">EVIDENCE</div><div class="guide-step-title">Always screenshot PDFs</div><div class="guide-step-desc">For every PDF check — pass or fail — take a screenshot of the opened PDF and upload it as evidence. PDFs are the commercial face of the system and every test run should have proof of what was generated.</div></div>
+      </div>
+    </div>
+
+    <div class="guide-panel" id="guide-3">
+      <div class="guide-steps-row">
+        <div class="guide-step" style="border-left:3px solid var(--red)"><div class="guide-step-num" style="color:var(--red-hi)">❌ NEVER</div><div class="guide-step-title">Skip the Pre-flight section</div><div class="guide-step-desc">Pre-flight checks confirm the environment is clean and the test account is correctly set up. Skipping it means downstream failures may be environment issues, not product bugs.</div></div>
+        <div class="guide-step" style="border-left:3px solid var(--red)"><div class="guide-step-num" style="color:var(--red-hi)">❌ NEVER</div><div class="guide-step-title">Mark Pass without verifying</div><div class="guide-step-desc">Do not mark Pass based on memory or assumption. Every item must be physically checked in the live system during the current run. Open the route, perform the action, confirm the result.</div></div>
+        <div class="guide-step" style="border-left:3px solid var(--red)"><div class="guide-step-num" style="color:var(--red-hi)">❌ NEVER</div><div class="guide-step-title">Demo with Critical blockers marked Fail</div><div class="guide-step-desc">If any item marked "Demo Blocker" is Fail, the red banner at the top of this page shows the specific items. Proceeding with a demo while blockers are open risks destroying trust with the prospect.</div></div>
+        <div class="guide-step" style="border-left:3px solid var(--red)"><div class="guide-step-num" style="color:var(--red-hi)">❌ NEVER</div><div class="guide-step-title">Mark "sign out works" without testing it</div><div class="guide-step-desc">SF-23-002 is open: sign out on desktop does not work. Do not mark this Pass until the fix is deployed and verified. Check: click header avatar → does a dropdown with "Sign out" appear?</div></div>
+      </div>
+    </div>
+
+    <div class="guide-panel" id="guide-4">
+      <div class="guide-steps-row">
+        <div class="guide-step"><div class="guide-step-num">SIGNAL 1</div><div class="guide-step-title">Clear next action visible</div><div class="guide-step-desc">Every page in the CRM should tell the operator what to do next. Dashboard: follow-up queue. Lead detail: "Create quote" or blocker explanation. Order: stage strip shows active step.</div></div>
+        <div class="guide-step"><div class="guide-step-num">SIGNAL 2</div><div class="guide-step-title">Blockers explain why</div><div class="guide-step-desc">When a gate blocks progress, the message explains exactly what is missing and what action is needed. "Cannot proceed" without explanation is a failure state.</div></div>
+        <div class="guide-step"><div class="guide-step-num">SIGNAL 3</div><div class="guide-step-title">Data write matches UI state</div><div class="guide-step-desc">After every write (create lead, create quote, advance stage), the UI should update without a full page reload. If the action says "saved" but the UI doesn't reflect it → bug.</div></div>
+        <div class="guide-step"><div class="guide-step-num">SIGNAL 4</div><div class="guide-step-title">link_created ≠ delivered</div><div class="guide-step-desc">A WhatsApp link being created or a document link being generated is NOT confirmation of delivery. The system tracks link opens separately. Never conflate these two states.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-cell"><div class="kv v-m" id="k-total">0</div><div class="kl">Total Items</div></div>
+    <div class="kpi-cell"><div class="kv v-g" id="k-pass">0</div><div class="kl">Passed</div></div>
+    <div class="kpi-cell"><div class="kv v-r" id="k-fail">0</div><div class="kl">Failed</div></div>
+    <div class="kpi-cell"><div class="kv v-a" id="k-block">0</div><div class="kl">Blocked</div></div>
+    <div class="kpi-cell"><div class="kv v-t" id="k-rate">—</div><div class="kl">Pass Rate</div></div>
+    <div class="kpi-cell"><div class="kv v-b" id="k-todo">0</div><div class="kl">Remaining</div></div>
+  </div>
+
+  <!-- BLOCKER BANNER -->
+  <div class="blocker-banner" id="blocker-banner">
+    <div class="blocker-title">⛔ Demo Blockers Open — Do Not Proceed to Demo</div>
+    <div class="blocker-items" id="blocker-items"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-label" id="prog-label">0 / 0 complete</div>
+    <div class="prog-segs">
+      <div class="prog-seg"><div class="prog-dot" style="background:var(--green)"></div><span id="seg-pass">0</span></div>
+      <div class="prog-seg"><div class="prog-dot" style="background:var(--red)"></div><span id="seg-fail">0</span></div>
+      <div class="prog-seg"><div class="prog-dot" style="background:var(--amber)"></div><span id="seg-block">0</span></div>
+      <div class="prog-seg"><div class="prog-dot" style="background:var(--border3)"></div><span id="seg-todo">0 remaining</span></div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <input class="search-in" id="search-in" placeholder="Search checklist items…" oninput="renderList()">
+    <div class="fchip active" onclick="setFlt('all',this)">All</div>
+    <div class="fchip" onclick="setFlt('Critical',this)">Critical</div>
+    <div class="fchip" onclick="setFlt('blockers',this)">Blockers Only</div>
+    <div class="fchip" onclick="setFlt('todo',this)">Not Checked</div>
+    <div class="fchip" onclick="setFlt('fail',this)">Failed</div>
+    <div class="fchip" onclick="setFlt('blocked',this)">Blocked</div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="content" id="cl-container"></div>
+
+  <!-- SIGN-OFF -->
+  <div class="content" id="signoff-section">
+    <div class="signoff-wrap">
+      <div class="so-title">📋 Demo Sign-off &amp; Submission</div>
+      <div class="so-grid">
+        <div class="so-field"><label>Reviewer Name</label><input type="text" id="so-name" placeholder="Your name"></div>
+        <div class="so-field"><label>Demo Type</label><select id="so-dtype"><option>Prospect demo</option><option>Investor demo</option><option>Customer onboarding</option><option>Internal review</option></select></div>
+        <div class="so-field"><label>Environment Tested</label><select id="so-env"><option>Production (setuflowcrm.com)</option><option>Staging</option><option>Local dev</option></select></div>
+        <div class="so-field" style="grid-column:1/-1"><label>Overall Notes (optional)</label><textarea id="so-notes" placeholder="Any context about this run, known workarounds used, environment issues noticed…"></textarea></div>
+      </div>
+      <div class="so-actions">
+        <button class="btn primary" onclick="submitSignoff()">Submit Sign-off to Database</button>
+        <span class="verdict-badge" id="verdict-badge"></span>
+        <span class="so-status" id="so-status"></span>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB='https://sjzfzloggabsmcuxktnl.supabase.co';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
+const QA_BUCKET='qa-evidence';
+const db=supabase.createClient(SB,KEY);
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function $(id){return document.getElementById(id)}
+function txt(id,v){const e=$(id);if(e)e.textContent=v}
+function toast(m,ok=true){const e=$('toast');e.textContent=m;e.className='toast '+(ok?'ok':'err');e.style.display='block';setTimeout(()=>e.style.display='none',3200)}
+function genRef(prefix){return prefix+'-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+Math.random().toString(36).slice(2,6).toUpperCase()}
+
+// ── CHECKLIST DATA ────────────────────────────────────────────────────────────
+const SECS={
+  prereq:{label:'Pre-flight Setup',icon:'📋',color:'#6366f1'},
+  auth:{label:'Auth & Login',icon:'🔐',color:'#3b82f6'},
+  nav:{label:'Navigation & Shell',icon:'🧭',color:'#8b5cf6'},
+  leads:{label:'Leads & Pipeline',icon:'👥',color:'#059669'},
+  quotes:{label:'Quote Lifecycle',icon:'💬',color:'#0891b2'},
+  orders:{label:'Order Execution',icon:'📦',color:'#d97706'},
+  pdf:{label:'PDF Documents',icon:'🖨️',color:'#dc2626'},
+  admin:{label:'Admin & Setup',icon:'⚙️',color:'#7c3aed'},
+  mobile:{label:'Mobile & vCard',icon:'📱',color:'#0d9488'},
+  guru:{label:'Setu Guru AI',icon:'🤖',color:'#1d4ed8'},
+};
+
+const CL=[
+  // PRE-FLIGHT
+  {id:'pre-1',sec:'prereq',sev:'Critical',blocker:true,title:'Confirm you are testing on the correct environment',desc:'Check the URL bar: production = setuflowcrm.com, staging = staging.setuflowcrm.com. Do not run demo prep on local dev if the demo is production.',verify:'URL matches the environment selected above.'},
+  {id:'pre-2',sec:'prereq',sev:'Critical',blocker:true,title:'Sign in with the correct demo account',desc:'Use the designated demo account credentials, not a personal account. The demo account should have Admin role and have sample data already loaded.',verify:'User badge in header shows "Admin" role and the org name matches the demo org.'},
+  {id:'pre-3',sec:'prereq',sev:'High',blocker:false,title:'Confirm at least 1 lead, 1 quote, and 1 order exist',desc:'A demo with no data is useless. Verify there is existing pipeline data to show. If empty, run the seed data script before proceeding.',verify:'Dashboard shows non-zero counts for leads, quotes, and orders.'},
+  {id:'pre-4',sec:'prereq',sev:'High',blocker:false,title:'Confirm at least 2 products exist in the catalog with pricing',desc:'Quote builder requires products with active pricing rules. No products = cannot demo the quote flow.',verify:'/products shows at least 2 active products with pricing rules configured.'},
+  {id:'pre-5',sec:'prereq',sev:'Medium',blocker:false,title:'Org settings are complete (legal name, address, Tax ID)',desc:'This data populates the PDF seller identity box. If org settings are blank, the Quote PDF will show empty seller info even though the PDF generator works correctly.',verify:'/admin/organization shows: legal name, registered address, city, postal code, country, tax ID, contact email — all filled.'},
+  {id:'pre-6',sec:'prereq',sev:'Medium',blocker:false,title:'Check open issues in issue tracker — know what to avoid',desc:'Before the demo, review the live issue tracker for any Critical/High open bugs. Know which features to avoid or work around. Check: SF-23-001 (analytics nav), SF-23-002 (sign-out), SF-23-003/004 (order PDFs).',verify:'You have reviewed the open issues at setuflow-issue-tracker.html and know the current workarounds.'},
+
+  // AUTH
+  {id:'auth-1',sec:'auth',sev:'Critical',blocker:true,title:'Login page loads at /client-login',desc:'Navigate to https://www.setuflowcrm.com/client-login. Page should render with: SetuFlow logo, email/password fields, "Forgot password?" link, Sign in button, feature points on the right column.',verify:'Page loads in under 3 seconds. No console errors. Fonts and images load correctly.'},
+  {id:'auth-2',sec:'auth',sev:'Critical',blocker:true,title:'Sign in with valid credentials succeeds',desc:'Enter valid email + password → click Sign in. Should redirect to /dashboard. Session should be established.',verify:'Redirected to /dashboard. User name and role show in header. No 401/403 errors in Network tab.'},
+  {id:'auth-3',sec:'auth',sev:'High',blocker:false,title:'Invalid credentials shows a clear error',desc:'Enter a wrong password. Should show a user-friendly error message inline without a page crash.',verify:'Error message visible. Form stays usable. No blank screen or unhandled error.'},
+  {id:'auth-4',sec:'auth',sev:'Critical',blocker:true,title:'Sign out works on desktop (SF-23-002)',desc:'Click the avatar in the header → a dropdown should appear with "Sign out" button → click Sign out → session cleared → redirected to /client-login.',verify:'Dropdown appears on avatar click. Sign out redirects to /client-login. Navigating to /dashboard after sign-out requires re-login.',issue:'SF-23-002'},
+  {id:'auth-5',sec:'auth',sev:'High',blocker:false,title:'Password reset flow sends email',desc:'On login page → click "Forgot password?" → enter email → confirm success message. Check inbox for reset link within 2 minutes.',verify:'Success message shown. Reset email arrives. Reset link sets new password successfully.'},
+
+  // NAVIGATION
+  {id:'nav-1',sec:'nav',sev:'Critical',blocker:true,title:'Desktop sidebar shows all required nav items (SF-23-001)',desc:'Log in on desktop. Check the left sidebar. Must show: Dashboard, Analytics, Leads, Quotes, Orders, Tasks, Pipeline, Catalog, Events, Capture, Approvals, Admin.',verify:'All items visible. Analytics MUST be present. If missing → SF-23-001 still open → mark FAIL.',issue:'SF-23-001'},
+  {id:'nav-2',sec:'nav',sev:'Critical',blocker:true,title:'Analytics opens at /dashboard/analytics from sidebar',desc:'Click Analytics in sidebar. Page should load with 6 data panels: Lead funnel, Quote win rate, Order stats, Doc sends, Market breakdown, Product breakdown.',verify:'All 6 panels render. Data shows real org figures or a proper empty state. No blank panels.'},
+  {id:'nav-3',sec:'nav',sev:'High',blocker:false,title:'/reports page is accessible from navigation (SF-23-006)',desc:'Reports link should be visible in the sidebar and navigate to /reports with funnel, quote metrics, document send stats, and market breakdown.',verify:'Reports link in sidebar. Page loads with real data panels.',issue:'SF-23-006'},
+  {id:'nav-4',sec:'nav',sev:'High',blocker:false,title:'Profile accessible from header dropdown',desc:'Click avatar in header → dropdown shows Profile link → /profile loads with avatar, name, and username editor.',verify:'Profile link in dropdown. /profile page loads. Can edit full name.',issue:'SF-23-009'},
+  {id:'nav-5',sec:'nav',sev:'High',blocker:false,title:'Active navigation item highlights correctly',desc:'Navigate between Dashboard, Leads, Quotes, Orders. The active route should be visually highlighted in the sidebar.',verify:'Active item has distinct background. Changes correctly as route changes.'},
+  {id:'nav-6',sec:'nav',sev:'High',blocker:false,title:'Global workspace scope filter works (Buyers / Suppliers)',desc:'Set scope to "Buyers" in the header filter. Leads, pipeline, and dashboard should filter to buyers only. URL should have mode=buyers.',verify:'Data changes when scope changes. Scope persists when navigating between pages. Returns to All correctly.'},
+  {id:'nav-7',sec:'nav',sev:'High',blocker:false,title:'Mobile tab bar shows 5 tabs and navigates correctly',desc:'On mobile view: Home, Leads, Quotes, Orders, More tabs. Each navigates to correct page. Active tab highlighted.',verify:'No broken routes. More tab opens additional navigation including sign-out.'},
+  {id:'nav-8',sec:'nav',sev:'Medium',blocker:false,title:'Notification bell shows in header (no floating overlay)',desc:'Header should show bell icon inline in the right cluster. No floating fixed bell element overlapping page content.',verify:'Bell is in header only. Click opens notification drawer. No z-index issues with other UI.'},
+
+  // LEADS
+  {id:'leads-1',sec:'leads',sev:'Critical',blocker:true,title:'Leads page loads with lead list',desc:'/leads renders with lead cards, filter tabs with counts, search, and scope filter. No blank screen.',verify:'At least the headers and empty state render. Search works. Filter tabs show numbers.'},
+  {id:'leads-2',sec:'leads',sev:'Critical',blocker:true,title:'Create a lead via Quick Lead modal',desc:'Click "+ Quick Lead" button. Fill: Company name (required), Contact name, Email, Market. Submit. Lead appears in list.',verify:'Success toast shown. Lead appears at top of list. Check DB: lead exists with correct org_id.'},
+  {id:'leads-3',sec:'leads',sev:'Critical',blocker:true,title:'Lead detail page shows all sections',desc:'Click Open on a lead. Lead command center shows: company/contact overview, product interests, compliance items, follow-up queue, "Create Quote" or "Continue Quote" action.',verify:'All sections visible. Quote prep checklist shows status. No blank sections.'},
+  {id:'leads-4',sec:'leads',sev:'High',blocker:false,title:'Pipeline Kanban view shows lead stages',desc:'/pipeline loads Kanban board with stage columns and lead cards. Each column shows a count.',verify:'Cards show company name, value, and stage. Column totals are accurate.'},
+  {id:'leads-5',sec:'leads',sev:'High',blocker:false,title:'Tasks page loads with task queue',desc:'/tasks shows task list with due dates and priority levels. Can mark a task complete.',verify:'Tasks show linked lead name. Completing a task removes it from active queue.'},
+
+  // QUOTES
+  {id:'q-1',sec:'quotes',sev:'Critical',blocker:true,title:'Quote wizard opens from lead detail',desc:'Lead detail → "Create Quote" → 5-step quote wizard opens with lead context pre-populated.',verify:'Step 1 shows correct buyer. Step 2 allows adding catalog products. Step count is 5.'},
+  {id:'q-2',sec:'quotes',sev:'Critical',blocker:true,title:'Add line items from catalog with correct pricing',desc:'Step 2 → search for a product → select variant → price populates from pricing rules. Total updates.',verify:'Price matches the product pricing rule. is_price_overridden = false for catalog items.'},
+  {id:'q-3',sec:'quotes',sev:'High',blocker:false,title:'Compliance gate blocks send if items are unresolved',desc:'A lead with an open compliance item → Step 4 compliance review → "Send" is disabled or blocked.',verify:'Gate is enforced. Cannot reach Step 5 send workflow while red compliance items exist.'},
+  {id:'q-4',sec:'quotes',sev:'High',blocker:false,title:'Quote approval gate works',desc:'Submit a quote requiring approval. Status shows "Pending Approval". Admin can approve and unblock send.',verify:'Status changes to approved. Send workflow becomes available after approval.'},
+  {id:'q-5',sec:'quotes',sev:'Critical',blocker:true,title:'Quote PDF contains complete seller identity and T&C',desc:'Download Quote PDF. Must include: org legal name, registered address, Tax ID, contact email, SELLER/EXPORTER box, BUYER/IMPORTER box, line items, T&C section with 5+ numbered terms.',verify:'Open the PDF and verify every field. T&C must have actual text, not placeholders.'},
+  {id:'q-6',sec:'quotes',sev:'High',blocker:false,title:'Quote share link generates and opens for buyer',desc:'Approved quote → Share → copy link → open in incognito browser.',verify:'Buyer-facing preview renders without authentication. Accept/Reject buttons visible.'},
+  {id:'q-7',sec:'quotes',sev:'Medium',blocker:false,title:'WhatsApp send button opens correct pre-filled message',desc:'Approved quote → WhatsApp button → opens wa.me with pre-filled message containing quote link and summary.',verify:'Number is the lead\'s WhatsApp number. Message includes quote value and link.'},
+
+  // ORDERS
+  {id:'ord-1',sec:'orders',sev:'Critical',blocker:true,title:'Orders cockpit loads with order list',desc:'/orders renders order list with stage, buyer name, value, and action buttons.',verify:'Orders visible. Stage filter tabs work. No blank screen.'},
+  {id:'ord-2',sec:'orders',sev:'Critical',blocker:true,title:'Create order from accepted quote',desc:'From an accepted quote → "Create Order" → order appears in cockpit at Draft stage with line items from the quote.',verify:'Order exists in DB. Line items match the accepted quote version. Source quote ID linked.'},
+  {id:'ord-3',sec:'orders',sev:'High',blocker:false,title:'Order stage advance enforces gate checks',desc:'Try to advance order from Draft to Approved without completing required fields. Gate should block with explanation.',verify:'Error message explains exactly what is missing. Cannot skip stages silently.'},
+  {id:'ord-4',sec:'orders',sev:'High',blocker:false,title:'Compliance document checklist shows on order',desc:'Order detail → Compliance/Documents tab shows required documents based on destination country and product type.',verify:'Required docs listed. Upload works. Status updates when doc uploaded.'},
+  {id:'ord-5',sec:'orders',sev:'Medium',blocker:false,title:'Packing details save and persist',desc:'Order → Packing section → enter cartons, net weight, gross weight → Save.',verify:'Data persists after page refresh. Values match what was entered.'},
+
+  // PDF
+  {id:'pdf-1',sec:'pdf',sev:'Critical',blocker:true,title:'Quote PDF — seller identity complete',desc:'Download Quote PDF. SELLER/EXPORTER box must show: org legal name, registered address, city/postal code, contact email, Tax ID.',verify:'All 5 fields populated with real org data. No "—" or empty fields in seller box.'},
+  {id:'pdf-2',sec:'pdf',sev:'Critical',blocker:true,title:'Quote PDF — T&C section with full terms',desc:'Download Quote PDF → scroll to bottom. TERMS & CONDITIONS section must be present with 5+ numbered clauses covering validity, pricing basis, duties, MOQ policy, and price change conditions.',verify:'T&C section present. Clauses are meaningful, not placeholder text.'},
+  {id:'pdf-3',sec:'pdf',sev:'Critical',blocker:true,title:'Quote PDF — line items table correct',desc:'Quote PDF line items must show: SKU, product name, pack size (g), units per case, MOQ, pricing basis (FOB/EXW), unit price, case price, row total. Grand total at bottom.',verify:'Every column has data. Grand total matches sum of rows. Currency consistent throughout.'},
+  {id:'pdf-4',sec:'pdf',sev:'Critical',blocker:true,title:'Order Confirmation PDF — seller identity present (SF-23-003)',desc:'Generate Order Confirmation PDF. SELLER/EXPORTER box must show org legal name, address, Tax ID, email — same fields as Quote PDF.',verify:'If SELLER box is blank → SF-23-003 still open → mark FAIL. Screenshot required.',issue:'SF-23-003'},
+  {id:'pdf-5',sec:'pdf',sev:'Critical',blocker:true,title:'Order Confirmation PDF — T&C section present (SF-23-003)',desc:'Order Confirmation PDF must have a TERMS & CONDITIONS section at the bottom, not just hardcoded "Execution copy" text.',verify:'T&C section present with actual payment and order terms.',issue:'SF-23-003'},
+  {id:'pdf-6',sec:'pdf',sev:'Critical',blocker:true,title:'Invoice PDF — seller identity and real payment terms (SF-23-004)',desc:'Generate Invoice PDF. SELLER/EXPORTER box must be populated. Payment terms must show actual org value, not "Payment per terms" hardcoded placeholder.',verify:'If payment terms say "Payment per terms" → SF-23-004 still open → mark FAIL.',issue:'SF-23-004'},
+  {id:'pdf-7',sec:'pdf',sev:'High',blocker:false,title:'PDF generation returns error when order has no line items (SF-23-010)',desc:'Create an order with no line items. Try to generate the Order Confirmation PDF. Should return a clear error: "No line items found." Should NOT generate a PDF with placeholder "Order line pending" row.',verify:'Error is shown. No fake PDF generated.',issue:'SF-23-010'},
+
+  // ADMIN
+  {id:'adm-1',sec:'admin',sev:'High',blocker:false,title:'Admin overview shows org health and setup gaps',desc:'/admin/overview shows org name, setup completion percentage, missing items flagged.',verify:'Missing setup items (if any) show with CTA links to fix them.'},
+  {id:'adm-2',sec:'admin',sev:'High',blocker:false,title:'User invitations work end-to-end',desc:'/admin/invitations → Invite user → fill email + role → Send. User receives email. User can accept and log in with correct role.',verify:'Invited user shows in /admin/users with correct role and Active status.'},
+  {id:'adm-3',sec:'admin',sev:'High',blocker:false,title:'Markets admin shows and allows editing',desc:'/admin/markets shows market list. Can add a new market. Can edit a market name.',verify:'Save works. Market appears in lead/quote market dropdowns after adding.'},
+  {id:'adm-4',sec:'admin',sev:'High',blocker:false,title:'Product catalog loads with variants and pricing',desc:'/products shows product list. Clicking a product shows variants. Variant has pricing rule.',verify:'At least 1 product with 1 variant and 1 active pricing rule.'},
+  {id:'adm-5',sec:'admin',sev:'Medium',blocker:false,title:'Organization settings can be saved',desc:'/admin/organization → edit legal name or contact email → save.',verify:'Saved. Refresh page — updated values persist. PDF seller box reflects updated values on next PDF.'},
+
+  // MOBILE
+  {id:'mob-1',sec:'mobile',sev:'High',blocker:false,title:'Public vCard page renders at /card',desc:'Open /card on mobile. Shows: name, role, org name, QR code, Share button, WhatsApp contact button, vCard download link.',verify:'All elements visible. QR code is scannable. Contact button opens WhatsApp.'},
+  {id:'mob-2',sec:'mobile',sev:'High',blocker:false,title:'Mobile dashboard loads KPI cards',desc:'Open /dashboard on mobile screen width. Mobile shell renders: KPI tiles, market map, follow-up items, tab bar.',verify:'Tab bar shows 5 tabs. No horizontal scroll on KPI tiles. Tap each tab — all navigate correctly.'},
+  {id:'mob-3',sec:'mobile',sev:'Medium',blocker:false,title:'Business card scan creates a lead draft',desc:'/contact-exchange/scan → upload or capture a business card photo → AI extracts contact info → lead draft created for review.',verify:'Lead draft appears in /leads with source = card_scan. Name and company extracted.'},
+  {id:'mob-4',sec:'mobile',sev:'Low',blocker:false,title:'Apple Wallet download works',desc:'vCard page → "Add to Apple Wallet" → .pkpass file downloads.',verify:'File is non-empty. On iOS, file opens in Wallet app.'},
+
+  // GURU
+  {id:'guru-1',sec:'guru',sev:'High',blocker:false,title:'Setu Guru widget opens on main pages',desc:'Click the Guru button on /dashboard, /leads, /quotes, /orders. Panel opens each time with chat interface.',verify:'Widget opens on all 4 core pages. No errors opening Guru on any page.'},
+  {id:'guru-2',sec:'guru',sev:'High',blocker:false,title:'Guru answers a product/catalog question',desc:'Ask: "What products do we have in the catalog?" or "Show me our pricing for [product name]". Guru should respond with org-specific catalog data.',verify:'Response includes actual product names from the org catalog. Not generic placeholders.'},
+  {id:'guru-3',sec:'guru',sev:'High',blocker:false,title:'Guru governance blocks send/approve request',desc:'Ask: "Approve this quote" or "Send this invoice to the buyer". Guru must refuse and explain that external sends and approvals require human action.',verify:'Guru refuses. No write action taken. No quote status changed. requiresApproval behavior confirmed.'},
+  {id:'guru-4',sec:'guru',sev:'Medium',blocker:false,title:'Guru playbook gives setup guidance for new org',desc:'Ask: "What should I set up first?" or "I\'m new, how do I get started?". Guru should return numbered setup steps referencing actual org gaps.',verify:'Response includes at least 3 setup steps with route references. Steps are specific to org state.'},
+  {id:'guru-5',sec:'guru',sev:'Medium',blocker:false,title:'Guru source search returns HS code research',desc:'Ask: "What is the HS code for freeze-dried mango powder?" Guru should return research with source labels and a disclaimer about validation.',verify:'Response includes HS code suggestion with source. Includes disclaimer that validation is required.'},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const ST={};
+let runId=null;
+let runRef=null;
+let activeSecFlt='all';
+let activeFlt='all';
+let pendingEvidence={};  // {itemId: [{file, previewUrl, isImg}]}
+const LS_KEY='setu-demo-cl-v4';
+function loadState(){try{const s=localStorage.getItem(LS_KEY);if(s){const d=JSON.parse(s);Object.assign(ST,d.state||{});runId=d.runId||null;runRef=d.runRef||null;}}catch(e){}}
+function saveState(){try{localStorage.setItem(LS_KEY,JSON.stringify({state:ST,runId,runRef}));}catch(e){}}
+
+// ── RUN MANAGEMENT ─────────────────────────────────────────────────────────────
+async function startRun(){
+  const name=($('tester-name')?.value||'').trim();
+  if(!name){toast('Enter your name first',false);$('tester-name')?.focus();return;}
+  if(runId){toast('Run already started — '+runRef);return;}
+  runRef=genRef('DEMO');
+  const payload={
+    run_ref:runRef,run_type:'demo_checklist',
+    tester_name:name,environment:$('demo-env')?.value||'Production',
+    demo_type:$('demo-type')?.value||'Prospect demo',
+    status:'in_progress',total_steps:CL.length,
+    steps_passed:0,steps_failed:0,steps_blocked:0,bugs_filed:0,critical_failures:0,
+    started_at:new Date().toISOString(),
+  };
+  try{
+    const{data,error}=await db.from('qa_test_runs').insert(payload).select().single();
+    if(error)throw error;
+    runId=data.id;
+    saveState();
+    updateRunHeader();
+    setBadge('synced','✓ Live');
+    toast('✓ Run started — '+runRef);
+  }catch(e){toast('DB error: '+e.message,false);console.warn(e);}
+}
+
+function updateRunMeta(){
+  if(!runId)return;
+  updateRunHeader();
+}
+
+function updateRunHeader(){
+  txt('run-ref-display',runRef||'—');
+  const name=$('tester-name')?.value||'Not started';
+  txt('sb-run-ref',runRef||'—');
+  txt('sb-tester',name+' · '+($('demo-env')?.value||''));
+  txt('run-status-display',runId?'In progress — '+($('demo-type')?.value||''):'Click ▶ Start to begin');
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+function renderList(){
+  const container=$('cl-container');
+  const q=($('search-in')?.value||'').toLowerCase();
+  container.innerHTML='';
+
+  const bySection={};
+  CL.forEach(item=>{
+    if(!bySection[item.sec])bySection[item.sec]=[];
+    bySection[item.sec].push(item);
+  });
+
+  Object.entries(bySection).forEach(([sec,items])=>{
+    if(activeSecFlt!=='all'&&sec!==activeSecFlt)return;
+    const filt=items.filter(item=>{
+      const st=ST[item.id]?.status||'todo';
+      if(activeFlt==='Critical'&&item.sev!=='Critical')return false;
+      if(activeFlt==='blockers'&&!item.blocker)return false;
+      if(activeFlt==='todo'&&st!=='todo')return false;
+      if(activeFlt==='fail'&&st!=='fail')return false;
+      if(activeFlt==='blocked'&&st!=='block')return false;
+      if(q&&!item.title.toLowerCase().includes(q)&&!item.desc.toLowerCase().includes(q))return false;
+      return true;
+    });
+    if(!filt.length)return;
+
+    const pass=items.filter(i=>(ST[i.id]?.status||'todo')==='pass').length;
+    const total=items.length;
+    const pct=total?Math.round(pass/total*100):0;
+    const sd=SECS[sec]||{label:sec,icon:'📋',color:'var(--teal)'};
+
+    const wrap=document.createElement('div');
+    wrap.className='section';
+    wrap.innerHTML=`
+      <div class="sec-head" onclick="toggleSec('sc-${sec}','st-${sec}')">
+        <div class="sec-icon" style="background:${sd.color}20;color:${sd.color}">${sd.icon}</div>
+        <div class="sec-title">${sd.label}</div>
+        <div class="sec-prog">
+          <div class="sec-prog-bar"><div class="sec-prog-fill" style="width:${pct}%"></div></div>
+          <span class="sec-pct">${pass}/${total} · ${pct}%</span>
+        </div>
+        <div class="sec-toggle open" id="st-${sec}">▾</div>
+      </div>
+      <div id="sc-${sec}">${filt.map((item,i)=>renderItem(item,i+1)).join('')}</div>`;
+    container.appendChild(wrap);
+  });
+
+  updateCounters();
+}
+
+function renderItem(item,num){
+  const s=ST[item.id]||{status:'todo',note:''};
+  const st=s.status||'todo';
+  const rowCls=st==='pass'?'pass':st==='fail'?'fail':st==='block'?'blocked':'';
+  return `
+  <div class="ci ${rowCls}" id="ci-${item.id}">
+    <div class="ci-row" onclick="toggleDetail('cd-${item.id}')">
+      <div class="ci-num">${String(num).padStart(2,'0')}</div>
+      <div class="ci-body">
+        <div class="ci-title">${item.title}</div>
+        <div class="ci-desc">${item.desc}</div>
+        <div class="ci-verify">✓ Verify: ${item.verify}</div>
+        <div class="ci-meta">
+          <span class="tag tag-${item.sev.toLowerCase()}">${item.sev}</span>
+          ${item.blocker?'<span class="tag tag-blocker">🚫 Demo Blocker</span>':''}
+          <span class="tag tag-area">${SECS[item.sec]?.label||item.sec}</span>
+          ${item.issue?`<span class="tag tag-issue">${item.issue}</span>`:''}
+          ${s.note?'<span style="font-size:10px;color:var(--text3)">📝 Note saved</span>':''}
+          ${(s.evidence||[]).length?`<span style="font-size:10px;color:var(--teal-hi)">📎 ${s.evidence.length} file(s)</span>`:''}
+          ${st==='pass'?'<span style="font-size:10px;color:var(--green-hi)">✓ Passed</span>':st==='fail'?'<span style="font-size:10px;color:var(--red-hi)">✗ Failed</span>':st==='block'?'<span style="font-size:10px;color:var(--amber-hi)">! Blocked</span>':''}
+        </div>
+      </div>
+      <div class="ci-actions" onclick="event.stopPropagation()">
+        <button class="sbtn pass ${st==='pass'?'on':''}" onclick="setStatus('${item.id}','pass')">✓ Pass</button>
+        <button class="sbtn fail ${st==='fail'?'on':''}" onclick="setStatus('${item.id}','fail')">✗ Fail</button>
+        <button class="sbtn block ${st==='block'?'on':''}" onclick="setStatus('${item.id}','block')">! Block</button>
+      </div>
+    </div>
+    <div class="ci-detail" id="cd-${item.id}">
+      <div class="ci-detail-inner">
+        <div class="detail-row">
+          <span class="detail-label">Note</span>
+          <textarea class="note-in" id="note-${item.id}" placeholder="Describe what you saw, what was different from expected, or any workaround used…" rows="2">${s.note||''}</textarea>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Evidence</span>
+          <div class="evidence-row" id="ev-row-${item.id}">
+            <button class="evidence-add-btn" onclick="triggerFileUpload('${item.id}')">📎 Add screenshot or file</button>
+            <input type="file" class="evidence-file-in" id="ef-${item.id}" multiple accept="image/*,application/pdf,.txt,.log" onchange="handleEvidence('${item.id}',this.files)">
+            ${(s.evidence||[]).map(e=>`<div class="evidence-thumb"><span>${e.isImg?'🖼️':'📎'}</span><span>${e.name}</span><button class="evidence-remove" onclick="removeEvidence('${item.id}','${e.path||e.name}')">✕</button></div>`).join('')}
+          </div>
+        </div>
+        <div class="detail-save-row">
+          <span class="saved-indicator" id="si-${item.id}">✓ Saved to DB</span>
+          <button class="save-btn" onclick="saveDetail('${item.id}')">Save Note &amp; Evidence</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleSec(bodyId,toggleId){
+  const b=$(bodyId);const t=$(toggleId);
+  if(!b)return;
+  const coll=b.style.display==='none';
+  b.style.display=coll?'block':'none';
+  if(t)t.classList.toggle('open',coll);
+}
+
+function toggleDetail(id){const e=$(id);if(e){const open=e.classList.toggle('open');if(open){const ni=e.querySelector('.note-in');if(ni)ni.focus();}}}
+
+async function setStatus(id,status){
+  if(!runId){toast('Start the checklist first (enter your name and click ▶ Start)',false);return;}
+  if(!ST[id])ST[id]={status:'todo',note:'',evidence:[]};
+  ST[id].status=status;
+  saveState();
+
+  // Auto-open detail on fail/block
+  if(status==='fail'||status==='block'){
+    const el=$(`cd-${id}`);if(el&&!el.classList.contains('open'))el.classList.add('open');
+  }
+
+  // Auto-report blocker failures to issue tracker
+  const item=CL.find(i=>i.id===id);
+  if(item?.blocker&&status==='fail')autoReport(item);
+
+  // Persist to DB
+  await persistStep(id,status);
+  renderList();
+}
+
+async function persistStep(id,status){
+  if(!runId)return;
+  const s=ST[id]||{};
+  const item=CL.find(i=>i.id===id)||{};
+  const row={
+    run_id:runId,step_id:id,suite_id:item.sec,suite_title:SECS[item.sec]?.label,
+    step_title:item.title,step_type:'checklist',
+    status,is_critical:item.sev==='Critical',is_blocker:item.blocker||false,
+    tester_note:s.note||null,issue_ref:item.issue||null,
+    evidence_urls:s.evidence||[],tested_at:new Date().toISOString(),
+  };
+  try{await db.from('qa_step_results').upsert(row,{onConflict:'run_id,step_id'});}
+  catch(e){console.warn('Step persist failed',e);}
+  await updateRunTotals();
+}
+
+async function updateRunTotals(){
+  if(!runId)return;
+  const pass=CL.filter(i=>(ST[i.id]?.status||'todo')==='pass').length;
+  const fail=CL.filter(i=>(ST[i.id]?.status||'todo')==='fail').length;
+  const block=CL.filter(i=>(ST[i.id]?.status||'todo')==='block').length;
+  const crit=CL.filter(i=>i.blocker&&(ST[i.id]?.status||'todo')==='fail').length;
+  const total=CL.length;
+  const rate=total?Math.round((pass/total)*100):0;
+  try{
+    await db.from('qa_test_runs').update({
+      steps_passed:pass,steps_failed:fail,steps_blocked:block,
+      critical_failures:crit,pass_rate_pct:rate,
+      total_steps:total,updated_at:new Date().toISOString(),
+    }).eq('id',runId);
+  }catch(e){}
+}
+
+function triggerFileUpload(id){const el=$(`ef-${id}`);if(el)el.click();}
+
+async function handleEvidence(id,files){
+  if(!ST[id])ST[id]={status:'todo',note:'',evidence:[]};
+  if(!ST[id].evidence)ST[id].evidence=[];
+  if(!pendingEvidence[id])pendingEvidence[id]=[];
+
+  for(const f of Array.from(files)){
+    const isImg=f.type.startsWith('image/');
+    pendingEvidence[id].push({file:f,isImg,name:f.name,size:f.size});
+  }
+  toast(`${files.length} file(s) ready — click Save to upload`);
+  renderList();
+}
+
+async function saveDetail(id){
+  if(!runId){toast('Start the checklist first',false);return;}
+  const noteEl=$(`note-${id}`);
+  const note=noteEl?.value||'';
+  if(!ST[id])ST[id]={status:'todo',note:'',evidence:[]};
+  ST[id].note=note;
+
+  // Upload pending evidence files
+  const pending=pendingEvidence[id]||[];
+  for(const pf of pending){
+    const path=`demo-runs/${runId}/${id}-${Date.now()}-${pf.name.replace(/[^a-z0-9._-]/gi,'_')}`;
+    try{
+      const{error}=await db.storage.from(QA_BUCKET).upload(path,pf.file,{upsert:true});
+      if(!error){
+        const url=`${SB}/storage/v1/object/public/${QA_BUCKET}/${path}`;
+        if(!ST[id].evidence)ST[id].evidence=[];
+        ST[id].evidence.push({name:pf.name,path,url,isImg:pf.isImg,size:pf.size});
+        // Also write to qa_evidence table
+        await db.from('qa_evidence').insert({
+          run_id:runId,file_name:pf.name,file_type:pf.isImg?'screenshot':'other',
+          file_size_bytes:pf.size,storage_path:path,public_url:url,
+          tester_name:$('tester-name')?.value||'',step_id:id,
+          caption:note||null,
+        }).then(()=>{});
+      }
+    }catch(e){console.warn('Upload failed',e);}
+  }
+  pendingEvidence[id]=[];
+
+  saveState();
+  await persistStep(id,ST[id].status||'todo');
+
+  const si=$(`si-${id}`);
+  if(si){si.classList.add('show');setTimeout(()=>si.classList.remove('show'),2500);}
+  toast('✓ Note and evidence saved');
+  renderList();
+}
+
+function removeEvidence(id,pathOrName){
+  if(ST[id]?.evidence)ST[id].evidence=ST[id].evidence.filter(e=>e.path!==pathOrName&&e.name!==pathOrName);
+  saveState();renderList();
+}
+
+// ── AUTO-REPORT BLOCKER ───────────────────────────────────────────────────────
+async function autoReport(item){
+  const note=ST[item.id]?.note||'';
+  const ref='DEMO-BLOCK-'+item.id.toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();
+  const payload={
+    sprint_number:23,sprint_name:'Sprint 23 - Demo Readiness',sprint_label:'Sprint 23',
+    issue_ref:ref,title:'DEMO BLOCKER FAIL: '+item.title,
+    description:'Demo checklist run '+runRef+' failed this blocker item.\n\nItem: '+item.desc+'\n\nVerify check: '+item.verify+(note?'\n\nTester note: '+note:''),
+    severity:item.sev,area:SECS[item.sec]?.label||item.sec,
+    workflow_area:SECS[item.sec]?.label||item.sec,
+    status:'Open',issue_category:'Testing Find',
+    organization_id:null,submitted_via:'demo-checklist',
+    reporter_name:$('tester-name')?.value||'Demo Checklist',
+  };
+  try{
+    await db.from('sprint_issues').insert(payload);
+    toast('⚠ Blocker auto-reported: '+ref);
+  }catch(e){console.warn('Auto-report failed',e);}
+}
+
+// ── SIGN-OFF ──────────────────────────────────────────────────────────────────
+async function submitSignoff(){
+  if(!runId){toast('Start and complete the checklist first',false);return;}
+  const name=($('so-name')?.value||$('tester-name')?.value||'').trim();
+  if(!name){toast('Enter reviewer name',false);return;}
+
+  const pass=CL.filter(i=>(ST[i.id]?.status||'todo')==='pass').length;
+  const fail=CL.filter(i=>(ST[i.id]?.status||'todo')==='fail').length;
+  const block=CL.filter(i=>(ST[i.id]?.status||'todo')==='block').length;
+  const crit=CL.filter(i=>i.blocker&&(ST[i.id]?.status||'todo')==='fail').length;
+  const blockerItems=CL.filter(i=>i.blocker&&(ST[i.id]?.status||'todo')==='fail').map(i=>i.id);
+  const verdict=crit===0&&fail===0&&block===0?'DEMO_READY':'NOT_READY';
+
+  const vb=$('verdict-badge');
+  if(vb){vb.className='verdict-badge '+(verdict==='DEMO_READY'?'ready':'noready');vb.textContent=verdict==='DEMO_READY'?'✓ DEMO READY':'⛔ NOT READY';}
+
+  const soRef=genRef('SIGNOFF');
+  try{
+    // Update run
+    await db.from('qa_test_runs').update({
+      status:'complete',verdict:verdict==='DEMO_READY'?'PASS':'FAIL',
+      demo_verdict:verdict,demo_type:$('so-dtype')?.value,
+      steps_passed:pass,steps_failed:fail,steps_blocked:block,critical_failures:crit,
+      pass_rate_pct:CL.length?Math.round((pass/CL.length)*100):0,
+      completed_at:new Date().toISOString(),signoff_submitted:true,
+    }).eq('id',runId);
+
+    // Insert signoff record
+    await db.from('qa_demo_signoffs').insert({
+      run_id:runId,signoff_ref:soRef,reviewer_name:name,
+      demo_type:$('so-dtype')?.value||'Prospect demo',
+      environment:$('so-env')?.value||'Production',
+      verdict,total_items:CL.length,items_passed:pass,items_failed:fail,
+      items_blocked:block,critical_failures:crit,
+      blocker_items:blockerItems,overall_notes:$('so-notes')?.value||null,
+      open_issues_count:fail+block,
+    });
+
+    setBadge('synced','✓ Signed off');
+    txt('so-status','Sign-off '+soRef+' submitted · '+new Date().toLocaleTimeString());
+    toast(verdict==='DEMO_READY'?'✓ DEMO READY — sign-off submitted':'Sign-off submitted — issues outstanding');
+  }catch(e){toast('Sign-off failed: '+e.message,false);}
+}
+
+// ── COUNTERS ──────────────────────────────────────────────────────────────────
+function updateCounters(){
+  const pass=CL.filter(i=>(ST[i.id]?.status||'todo')==='pass').length;
+  const fail=CL.filter(i=>(ST[i.id]?.status||'todo')==='fail').length;
+  const block=CL.filter(i=>(ST[i.id]?.status||'todo')==='block').length;
+  const todo=CL.filter(i=>(ST[i.id]?.status||'todo')==='todo').length;
+  const total=CL.length;
+  const pct=total?Math.round(pass/total*100):0;
+
+  txt('k-total',total);txt('k-pass',pass);txt('k-fail',fail);txt('k-block',block);
+  txt('k-rate',total?pct+'%':'—');txt('k-todo',todo);
+  const pf=$('prog-fill');if(pf)pf.style.width=pct+'%';
+  const sf=$('sb-fill');if(sf)sf.style.width=pct+'%';
+  txt('prog-label',pass+' / '+total+' complete');
+  txt('sb-pct',pct+'%');
+  txt('seg-pass',pass+' passed');txt('seg-fail',fail+' failed');
+  txt('seg-block',block+' blocked');txt('seg-todo',todo+' remaining');
+
+  // Section badges
+  const byS={};
+  CL.forEach(i=>{
+    if(!byS[i.sec])byS[i.sec]={p:0,f:0,t:0};
+    byS[i.sec].t++;
+    const st=ST[i.id]?.status||'todo';
+    if(st==='pass')byS[i.sec].p++;
+    if(st==='fail'||st==='block')byS[i.sec].f++;
+  });
+  Object.entries(byS).forEach(([s,c])=>{
+    const el=$('sb'+s);
+    if(el){el.textContent=c.p+'/'+c.t;el.className='sb-badge'+(c.f>0?' r':c.p===c.t?' g':'');}
+  });
+  const allEl=$('sball');
+  if(allEl){allEl.textContent=pass+'/'+total;allEl.className='sb-badge'+(fail>0?' r':pass===total?' g':'');}
+
+  // Blocker banner
+  const blockers=CL.filter(i=>i.blocker&&(ST[i.id]?.status||'todo')==='fail');
+  const bb=$('blocker-banner');const bi=$('blocker-items');
+  if(blockers.length){
+    if(bb)bb.classList.add('show');
+    if(bi)bi.innerHTML=blockers.map(b=>`<div class="blocker-chip">⛔ ${b.title.substring(0,50)}${b.title.length>50?'…':''}</div>`).join('');
+  }else{if(bb)bb.classList.remove('show');}
+}
+
+// ── SIDEBAR / FILTER ──────────────────────────────────────────────────────────
+function filterSection(sec,el){
+  activeSecFlt=sec;
+  document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderList();
+}
+function setFlt(f,el){
+  activeFlt=f;
+  document.querySelectorAll('.fchip').forEach(e=>e.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderList();
+}
+function switchGuide(n,el){
+  document.querySelectorAll('.guide-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.guide-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+}
+
+// ── PAST RUNS ─────────────────────────────────────────────────────────────────
+async function loadPastRuns(){
+  try{
+    const{data}=await db.from('qa_test_runs')
+      .select('run_ref,tester_name,verdict,demo_verdict,started_at,status')
+      .eq('run_type','demo_checklist')
+      .order('started_at',{ascending:false}).limit(5);
+    const el=$('sb-past-runs');
+    if(!el)return;
+    if(!data||!data.length){el.innerHTML='<div style="padding:6px 8px;color:var(--text3)">No past runs</div>';return;}
+    el.innerHTML=data.map(r=>`
+      <div style="padding:6px 10px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <div style="font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--teal-hi)">${r.run_ref}</div>
+        <div style="font-size:10px;color:var(--text3)">${r.tester_name} · ${new Date(r.started_at).toLocaleDateString()}</div>
+        <div style="font-size:10px;font-weight:700;margin-top:2px;color:${r.demo_verdict==='DEMO_READY'?'var(--green-hi)':r.demo_verdict==='NOT_READY'?'var(--red-hi)':'var(--amber-hi)'}">${r.demo_verdict||r.status||'—'}</div>
+      </div>`).join('');
+  }catch(e){console.warn('Past runs load failed',e);}
+}
+
+async function loadOpenCount(){
+  try{
+    const{data}=await db.from('sprint_issues').select('status');
+    const open=(data||[]).filter(i=>i.status!=='Resolved'&&i.status!=="Won't Fix"&&i.status!=='Deferred').length;
+    const el=$('open-ct');if(el){el.textContent=open;el.style.background=open>5?'var(--red-d)':'var(--green-d)';el.style.color=open>5?'var(--red-hi)':'var(--green-hi)';}
+    setBadge('synced','✓ Connected');
+  }catch(e){setBadge('','✗ Offline');}
+}
+
+function setBadge(cls,txt_){const el=$('db-badge');if(el){el.className='db-sync-badge'+(cls?' '+cls:'');el.textContent=txt_;}}
+
+// ── UTIL ──────────────────────────────────────────────────────────────────────
+function exportReport(){
+  const lines=['SetuFlow Demo Readiness Report — '+new Date().toLocaleString(),'Tester: '+($('tester-name')?.value||'Unknown'),'Run: '+(runRef||'—'),'='.repeat(60),''];
+  const pass=CL.filter(i=>(ST[i.id]?.status||'todo')==='pass').length;
+  const fail=CL.filter(i=>(ST[i.id]?.status||'todo')==='fail').length;
+  lines.push('RESULT: '+pass+' passed / '+fail+' failed / '+CL.length+' total','');
+  Object.keys(SECS).forEach(sec=>{
+    const items=CL.filter(i=>i.sec===sec);if(!items.length)return;
+    lines.push('── '+SECS[sec].label+' ──');
+    items.forEach((item,i)=>{
+      const st=ST[item.id]?.status||'todo';
+      const icon=st==='pass'?'[PASS]':st==='fail'?'[FAIL]':st==='block'?'[BLOCK]':'[----]';
+      lines.push(icon+' '+String(i+1).padStart(2,'0')+' '+item.title);
+      if(ST[item.id]?.note)lines.push('     Note: '+ST[item.id].note);
+    });
+    lines.push('');
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='demo-checklist-'+new Date().toISOString().slice(0,10)+'.txt';a.click();
+}
+
+function resetAll(){
+  if(!confirm('Reset all statuses and start a new run?'))return;
+  Object.keys(ST).forEach(k=>delete ST[k]);
+  runId=null;runRef=null;pendingEvidence={};
+  saveState();renderList();updateRunHeader();
+  setBadge('','Ready');
+  toast('Checklist reset — enter name and click ▶ Start');
+}
+
+function toggleTheme(){document.documentElement.setAttribute('data-theme',document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadState();
+renderList();
+updateRunHeader();
+loadOpenCount();
+loadPastRuns();
+</script>
+</body>
+</html>

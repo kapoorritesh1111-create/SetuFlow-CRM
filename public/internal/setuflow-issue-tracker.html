@@ -722,16 +722,6 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Roadmap
     </a>
-    <div class="topbar-divider"></div>
-    <a href="setuflow-demo-checklist.html" class="nav-link" title="Demo Readiness Checklist">
-      <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Demo Check
-    </a>
-    <a href="setuflow-e2e-testing.html" class="nav-link" title="E2E Test Suite">
-      <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      E2E Tests
-    </a>
-    <div class="topbar-divider"></div>
     <a href="https://www.setuflowcrm.com" target="_blank" class="nav-link">
       <svg class="ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       CRM Live
@@ -861,17 +851,17 @@ input.p-in:focus{border-color:var(--brand-teal)}
     <div class="sb-divider"></div>
     <div class="sb-section"><div class="sb-section-label">QA Workspace</div></div>
     <div class="sb-item" onclick="switchTab('qa')">
-      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
       <span class="sb-item-text">QA Overview</span>
       <span class="sb-count" id="sb-qa-runs" style="background:var(--teal-d);color:var(--teal-hi)">–</span>
     </div>
-    <a href="setuflow-demo-checklist.html" class="sb-item" style="text-decoration:none;color:inherit">
-      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
-      <span class="sb-item-text">Demo Checklist ↗</span>
+    <a href="setuflow-demo-checklist.html" class="sb-item" style="text-decoration:none;color:inherit" title="Run before every demo — 57 items, live sign-off">
+      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span class="sb-item-text">Pre-Demo Readiness ↗</span>
     </a>
-    <a href="setuflow-e2e-testing.html" class="sb-item" style="text-decoration:none;color:inherit">
-      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span class="sb-item-text">E2E Test Suite ↗</span>
+    <a href="setuflow-e2e-testing.html" class="sb-item" style="text-decoration:none;color:inherit" title="Full system test suite — run after fixes are deployed">
+      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="sb-item-text">QA Test Suite ↗</span>
     </a>
 
     <div class="sb-cta-wrap">
@@ -1297,23 +1287,25 @@ input.p-in:focus{border-color:var(--brand-teal)}
           <div class="qa-strip-card"><div class="qa-strip-val" style="color:var(--green-hi)" id="qa-kpi-signoffs">–</div><div class="qa-strip-label">Sign-offs</div></div>
         </div>
 
-        <!-- QA Links -->
+        <!-- QA Tools -->
         <div class="qa-links-grid">
           <a href="setuflow-demo-checklist.html" class="qa-link-card" style="border-left:3px solid var(--teal)">
             <div class="qa-link-card-icon">📋</div>
-            <div class="qa-link-card-title">Demo Readiness Checklist</div>
-            <div class="qa-link-card-desc">57-item checklist covering Pre-flight, Auth, Navigation, Leads, Quotes, Orders, PDFs, Admin, Mobile, and Guru. Run before every prospect demo. Sign-off with DEMO_READY verdict writes to live DB.</div>
+            <div class="qa-link-card-title">Pre-Demo Readiness</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--teal-hi);margin-bottom:6px">Run before every prospect demo</div>
+            <div class="qa-link-card-desc">57-item walkthrough covering Pre-flight setup, Auth, Navigation, Leads, Quotes, Orders, PDFs, Admin, Mobile, and Setu Guru. Each item has a Pass / Fail / Block result. Critical blockers auto-report to this tracker. Sign-off writes a DEMO_READY or NOT_READY verdict to the database.</div>
             <div class="qa-link-card-badge">
               <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
               <span id="qa-card-demo-badge">– runs completed</span>
             </div>
           </a>
           <a href="setuflow-e2e-testing.html" class="qa-link-card" style="border-left:3px solid var(--blue)">
-            <div class="qa-link-card-icon">⚡</div>
-            <div class="qa-link-card-title">E2E Test Suite</div>
-            <div class="qa-link-card-desc">9 suites, 49 steps covering Auth, Navigation, Lead Lifecycle, Quote Flow, Order Execution, PDF Generation, Mobile, Setu Guru, and Regression. Bug filing with screenshot upload goes straight to this tracker.</div>
+            <div class="qa-link-card-icon">🧪</div>
+            <div class="qa-link-card-title">QA Test Suite</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue-hi);margin-bottom:6px">Run after all open issues are resolved</div>
+            <div class="qa-link-card-desc">9 test suites, 49 steps covering the full commercial journey: Auth, Navigation, Lead Lifecycle, Quote Builder, Order Execution, PDF Generation, Mobile &amp; vCard, Setu Guru governance, and Regression checks. Failed steps open a bug report that goes straight to this tracker with screenshots attached.</div>
             <div class="qa-link-card-badge" style="background:var(--blue-d);color:var(--blue-hi);border-color:rgba(59,130,246,.2)">
-              <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <span id="qa-card-e2e-badge">– runs completed</span>
             </div>
           </a>
@@ -1979,7 +1971,7 @@ async function loadQaData(force=false){
 
     const runsList=$('qa-runs-list');
     if(runsList){
-      if(!allRuns.length){runsList.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">No QA runs yet — start from Demo Checklist or E2E Test Suite</div>';
+      if(!allRuns.length){runsList.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">No QA runs yet — open Pre-Demo Readiness or QA Test Suite to start your first run.</div>';
       } else {
         runsList.innerHTML=allRuns.map(r=>{
           const verd=r.demo_verdict||r.verdict||r.status||'—';
