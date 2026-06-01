@@ -15,6 +15,7 @@ const workspaceRedirects: Record<string, string> = {
 type RateLimitBucket = { count: number; resetAt: number };
 
 const SETU_GURU_RESEARCH_PATH = '/api/setu-guru/research';
+const PASSWORD_RESET_PENDING_COOKIE = 'setuflow-password-reset-pending';
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_RESEARCH_LIMIT = 10;
 const researchBuckets = new Map<string, RateLimitBucket>();
@@ -126,6 +127,14 @@ function loginRedirect(request: NextRequest) {
   return redirectUrl;
 }
 
+function resetPasswordRedirect(request: NextRequest) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = '/reset-password';
+  redirectUrl.search = '';
+  redirectUrl.searchParams.set('next', '/login');
+  return redirectUrl;
+}
+
 function createNonce() {
   return crypto.randomUUID().replace(/-/g, '');
 }
@@ -181,13 +190,22 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)), nonce);
   }
 
-  if (isPublicPath(pathname) || !hasSupabaseMiddlewareEnv()) {
+  if (!hasSupabaseMiddlewareEnv()) {
     return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }), nonce);
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   const supabase = createMiddlewareClient(request, response);
   const { data, error } = await supabase.auth.getUser();
+  const isPendingPasswordReset = request.cookies.get(PASSWORD_RESET_PENDING_COOKIE)?.value === '1';
+
+  if (isPendingPasswordReset && data.user && pathname !== '/reset-password' && !pathname.startsWith('/auth/') && pathname !== '/api/auth/reset-password/complete') {
+    return applySecurityHeaders(NextResponse.redirect(resetPasswordRedirect(request)), nonce);
+  }
+
+  if (isPublicPath(pathname)) {
+    return applySecurityHeaders(response, nonce);
+  }
 
   if (error || !data.user) {
     if (isProtectedApiPath(pathname)) {
