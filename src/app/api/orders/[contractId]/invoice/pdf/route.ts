@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: { contractId:
 
   const { data: contract, error: contractError } = await db
     .from('contracts')
-    .select('id, quote_id, signed_at, commercial_lock_state, pricing_basis, quote_currency, execution_state, status')
+    .select('id, quote_id, signed_at, commercial_lock_state, pricing_basis, quote_currency, execution_state, status, created_at')
     .eq('organization_id', organizationId)
     .eq('id', contractId)
     .maybeSingle();
@@ -28,12 +28,19 @@ export async function GET(_request: Request, { params }: { params: { contractId:
   if (contractError) return NextResponse.json({ error: contractError.message }, { status: 500 });
   if (!contract?.id) return NextResponse.json({ error: 'Contract not found.' }, { status: 404 });
 
-  const { data: quote } = await db
-    .from('quotes')
-    .select('id, lead_id, currency, display_currency, pricing_basis, updated_at, created_at')
-    .eq('organization_id', organizationId)
-    .eq('id', contract.quote_id)
-    .maybeSingle();
+  const [{ data: quote }, { data: org }] = await Promise.all([
+    db
+      .from('quotes')
+      .select('id, lead_id, currency, display_currency, pricing_basis, updated_at, created_at')
+      .eq('organization_id', organizationId)
+      .eq('id', contract.quote_id)
+      .maybeSingle(),
+    db
+      .from('organizations')
+      .select('id, name, legal_name, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, order_terms_conditions')
+      .eq('id', organizationId)
+      .maybeSingle(),
+  ]);
 
   const { data: lead } = quote?.lead_id
     ? await db
@@ -91,9 +98,10 @@ export async function GET(_request: Request, { params }: { params: { contractId:
     quoteCurrency: contract.quote_currency ?? quote?.display_currency ?? quote?.currency,
     pricingBasis: contract.pricing_basis ?? quote?.pricing_basis,
     signedAt: contract.signed_at,
-    createdAt: new Date().toISOString(),
+    createdAt: contract.created_at ?? quote?.created_at ?? new Date().toISOString(),
     dueLabel: 'Payment per agreed terms',
     paymentStatus: 'Tracking pending',
+    organization: org ?? null,
     lines,
   });
 
