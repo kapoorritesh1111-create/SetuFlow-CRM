@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type {
   DashboardSavedView,
   DashboardSectionId,
@@ -50,6 +50,23 @@ export function DashboardCustomizePanel({
 }) {
   const [viewName, setViewName] = useState('');
 
+  const handleClose = useCallback(() => {
+    if (onClose) {
+      onClose();
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('setu:dashboard:toggle-customize'));
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose, open]);
+
   if (!open) return null;
 
   const visibleWidgetSet = new Set(activeWidgetIds);
@@ -63,9 +80,27 @@ export function DashboardCustomizePanel({
   };
 
   return (
-    <div className="fixed inset-0 z-[360] flex items-start justify-center overflow-y-auto bg-slate-950/35 px-4 py-16 backdrop-blur-sm md:py-20" role="dialog" aria-modal="true" aria-label="Dashboard customization">
-      <section className="w-full max-w-5xl rounded-[2rem] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_28px_90px_rgba(15,23,42,0.26)] md:px-6 md:py-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div
+      className="fixed inset-0 z-[360] flex items-start justify-center overflow-y-auto bg-slate-950/35 px-4 py-16 backdrop-blur-sm md:py-20"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Dashboard customization"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) handleClose();
+      }}
+    >
+      <section className="relative w-full max-w-5xl rounded-[2rem] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_28px_90px_rgba(15,23,42,0.26)] md:px-6 md:py-6">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-black leading-none text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-300"
+          aria-label="Close dashboard customization"
+          title="Close"
+        >
+          ×
+        </button>
+
+        <div className="flex flex-col gap-4 pr-12 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">Dashboard customization</p>
             <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">Show only the surfaces you need</h2>
@@ -81,15 +116,13 @@ export function DashboardCustomizePanel({
             >
               Reset layout
             </button>
-            {onClose ? (
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-full border border-slate-200 bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                Done
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-full border border-slate-200 bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Done
+            </button>
           </div>
         </div>
 
