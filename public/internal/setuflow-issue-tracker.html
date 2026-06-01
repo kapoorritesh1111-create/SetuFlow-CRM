@@ -715,6 +715,20 @@ input.p-in:focus{border-color:var(--brand-teal)}
 /* ══ ANALYTICS — remove duplicate kpi-section section ══ */
 [data-theme="light"] .hs-cell:hover{background:rgba(0,0,0,.03)}
 
+/* ══ RELATED ISSUES ══ */
+.related-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:20px}
+.related-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px 3px 10px;border-radius:12px;background:var(--bg3);border:1px solid var(--border2);font-size:11.5px;cursor:pointer;transition:all .12s;max-width:100%}
+.related-chip:hover{border-color:var(--brand-teal);background:rgba(20,184,166,.08)}
+.related-chip-ref{font-family:var(--mono);font-size:10.5px;color:var(--teal-hi);flex-shrink:0}
+.related-chip-title{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+.related-chip-remove{color:var(--text3);font-size:14px;line-height:1;margin-left:3px;flex-shrink:0;opacity:.5;font-weight:700}
+.related-chip-remove:hover{color:var(--red-hi);opacity:1}
+.related-add-row{display:flex;gap:6px;margin-top:6px}
+.related-add-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:5px 10px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none}
+.related-add-input:focus{border-color:var(--brand-teal)}
+.related-add-input::placeholder{color:var(--text3);font-family:var(--font);font-size:11.5px}
+.related-add-btn{padding:5px 13px;border-radius:var(--r);background:var(--grad);border:none;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.related-empty{font-size:11.5px;color:var(--text3);font-style:italic}
 </style>
 </head>
 <body>
@@ -1154,6 +1168,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
             <th>Area</th>
             <th onclick="sortBy('status')">Status <span id="sort-status" style="opacity:.4">↕</span></th>
             <th>Target</th>
+            <th onclick="sortBy('reporter_name')" title="Sort by reporter">Reporter <span id="sort-reporter_name" style="opacity:.4">↕</span></th>
             <th onclick="sortBy('created_at')" title="Sort by date added">Added <span id="sort-created_at" style="opacity:.4">↕</span></th>
             <th onclick="sortBy('resolved_at')" title="Sort by date fixed">Fixed <span id="sort-resolved_at" style="opacity:.4">↕</span></th>
             <th></th>
@@ -1471,6 +1486,17 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <div class="section-header">Assignee</div>
       <input type="text" class="p-in" id="p-assignee" placeholder="Name or @handle">
 
+      <!-- RELATED ISSUES -->
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Related Issues</span>
+        <span style="font-size:9.5px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">Link issues that depend on or relate to this one</span>
+      </div>
+      <div class="related-chips" id="p-related-chips"></div>
+      <div class="related-add-row">
+        <input type="text" class="related-add-input" id="p-related-input" placeholder="Type ref e.g. SF-23-003 and press Add" onkeydown="if(event.key==='Enter')addRelatedIssue()">
+        <button class="related-add-btn" onclick="addRelatedIssue()">+ Link</button>
+      </div>
+
       <div class="save-row">
         <button class="save-btn" onclick="savePanel()">
           <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-check"/></svg>
@@ -1628,20 +1654,47 @@ function subscribeRealtime(){
     });
 }
 
-function handleRealtimeChange(payload){
+async function handleRealtimeChange(payload){
   const{eventType,new:newRow,old:oldRow}=payload;
+
   if(eventType==='INSERT'){
-    ALL.push(newRow);
-    toast('✓ New issue added: '+(newRow.issue_ref||'#'+newRow.issue_number));
+    // Fetch the full row from DB so trigger-applied defaults (reporter, org) are included
+    try{
+      const{data}=await db.from('sprint_issues').select('*').eq('id',newRow.id).single();
+      const fullRow=data||newRow;
+      ALL.push(fullRow);
+      const ref=fullRow.issue_ref||('#'+(fullRow.issue_number||'?'));
+      const reporter=fullRow.reporter_name?(' by '+fullRow.reporter_name.split(' ')[0]):'';
+      toast('✓ New issue'+reporter+': '+ref);
+    } catch(e){
+      ALL.push(newRow);
+      toast('✓ New issue added: '+(newRow.issue_ref||'#'+newRow.issue_number));
+    }
   } else if(eventType==='UPDATE'){
-    const idx=ALL.findIndex(i=>i.id===newRow.id);
-    if(idx>=0) ALL[idx]=newRow;
-    else ALL.push(newRow);
-    if(openIssue&&openIssue.id===newRow.id){openIssue=newRow;fillPanel(newRow);}
+    // Fetch full updated row to ensure all fields are current
+    try{
+      const{data}=await db.from('sprint_issues').select('*').eq('id',newRow.id).single();
+      const fullRow=data||newRow;
+      const idx=ALL.findIndex(i=>i.id===fullRow.id);
+      if(idx>=0) ALL[idx]=fullRow;
+      else ALL.push(fullRow);
+      if(openIssue&&openIssue.id===fullRow.id){openIssue=fullRow;fillPanel(fullRow);}
+    } catch(e){
+      const idx=ALL.findIndex(i=>i.id===newRow.id);
+      if(idx>=0) ALL[idx]=newRow; else ALL.push(newRow);
+      if(openIssue&&openIssue.id===newRow.id){openIssue=newRow;fillPanel(newRow);}
+    }
   } else if(eventType==='DELETE'){
     ALL=ALL.filter(i=>i.id!==oldRow.id);
+    toast('Issue removed from tracker');
   }
+
   buildAreaFilter();buildSidebar();render();animateKPIs();updateLastRefresh();
+  // Also update live counters in both panels
+  const cnt=document.getElementById('realtime-event-count');
+  if(cnt) cnt.textContent=realtimeEventCount;
+  const cntOv=document.getElementById('realtime-event-count-ov');
+  if(cntOv) cntOv.textContent=realtimeEventCount;
 }
 
 function setLiveStatus(state,label){
@@ -2377,6 +2430,7 @@ function render(){
       <td class="col-area"><span class="area-cell"><svg class="ico area-icon"><use href="#${iconId}"/></svg>${esc(area)}</span></td>
       <td class="col-status"><span class="status-chip ${sc}" onclick="cycleStatus(event,'${i.id}')"><span class="sc-dot"></span>${normStat}</span></td>
       <td class="col-target">${tc}</td>
+      <td class="col-reporter" style="font-size:11px;color:var(--text3);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${esc(i.reporter_name||'–')}">${esc((i.reporter_name||'–').split(' ')[0])}</td>
       <td class="col-date">${fmtDateCell(i.created_at,false)}</td>
       <td class="col-date">${fmtDateCell(i.resolved_at,true)}</td>
       <td class="col-arr">›</td>
@@ -2424,6 +2478,11 @@ function fillPanel(i){
   const normSev=i.severity?(i.severity.charAt(0).toUpperCase()+i.severity.slice(1)):'Medium';
   const normStat=i.status?(i.status.charAt(0).toUpperCase()+i.status.slice(1)):'Open';
   setText('p-ref',i.issue_ref||'SF-'+i.sprint_number+'-'+String(i.issue_number).padStart(3,'0'));
+  // Reporter
+  const reporterEl=document.getElementById('p-reporter');
+  if(reporterEl) reporterEl.textContent=i.reporter_name||'Ritesh Kapoor';
+  // Related issues
+  renderRelatedChips(i.related_refs||[]);
   $('p-sev').textContent=normSev;$('p-sev').className='p-sev-tag';
   const sevBg={'Critical':'rgba(239,68,68,.35)','High':'rgba(245,158,11,.3)','Medium':'rgba(100,116,139,.25)','Low':'rgba(77,98,128,.2)'};
   $('p-sev').style.background=sevBg[normSev]||'rgba(77,98,128,.2)';
@@ -2467,12 +2526,69 @@ function fillPanel(i){
 async function savePanel(){
   if(!openIssue)return;
   setText('p-save-msg','Saving…');
-  const ok=await patchIssue(openIssue.id,{fix_applied:$('p-notes').value,pr_link:$('p-pr').value,assigned_to:$('p-assignee').value});
+  const ok=await patchIssue(openIssue.id,{fix_applied:$('p-notes').value,pr_link:$('p-pr').value,assigned_to:$('p-assignee').value,related_refs:openIssue._pendingRelated||openIssue.related_refs||[]});
   setText('p-save-msg',ok?'✓ Saved':'✗ Error');
   setTimeout(()=>setText('p-save-msg',''),3000);
 }
 
 function closePanel(e){if(!e||e.target===$('overlay')){$('overlay').classList.remove('open');openIssue=null;}}
+
+/* ══════════════════════════════════════
+   RELATED ISSUES
+══════════════════════════════════════ */
+function renderRelatedChips(refs){
+  const container=$('p-related-chips');
+  if(!container) return;
+  // Ensure openIssue has _pendingRelated in sync
+  if(openIssue) openIssue._pendingRelated=[...(refs||[])];
+  if(!refs||!refs.length){
+    container.innerHTML='<span class="related-empty">No related issues linked yet</span>';
+    return;
+  }
+  container.innerHTML=refs.map(ref=>{
+    // Look up the title from ALL if available
+    const linked=ALL.find(i=>i.issue_ref===ref||(i.issue_ref||'').toLowerCase()===ref.toLowerCase());
+    const title=linked?linked.title:'–';
+    const shortTitle=title.length>45?title.slice(0,45)+'…':title;
+    return`<div class="related-chip" onclick="openPanel('${linked?linked.id:''}');event.stopPropagation()" title="${esc(title)}">
+      <span class="related-chip-ref">${esc(ref)}</span>
+      <span class="related-chip-title">${esc(shortTitle)}</span>
+      <span class="related-chip-remove" onclick="removeRelatedIssue('${esc(ref)}',event)" title="Unlink">×</span>
+    </div>`;
+  }).join('');
+}
+
+function addRelatedIssue(){
+  const input=$('p-related-input');
+  if(!input||!openIssue) return;
+  const ref=input.value.trim().toUpperCase();
+  if(!ref){toast('Enter an issue ref first',false);return;}
+  // Validate format loosely: SF-xx-xxx
+  if(!ref.match(/^SF-/i)){toast('Use the issue ref format e.g. SF-23-003',false);return;}
+  // Check it exists in ALL
+  const exists=ALL.find(i=>(i.issue_ref||'').toUpperCase()===ref);
+  if(!exists){toast('Issue '+ref+' not found in tracker',false);return;}
+  // Don't duplicate
+  const current=openIssue._pendingRelated||openIssue.related_refs||[];
+  if(current.includes(ref)||current.map(r=>r.toUpperCase()).includes(ref)){
+    toast(ref+' already linked',false);return;
+  }
+  const updated=[...current,ref];
+  openIssue._pendingRelated=updated;
+  input.value='';
+  renderRelatedChips(updated);
+  toast('Linked '+ref+' — save to persist',true);
+}
+
+function removeRelatedIssue(ref,evt){
+  if(evt) evt.stopPropagation();
+  if(!openIssue) return;
+  const current=openIssue._pendingRelated||openIssue.related_refs||[];
+  const updated=current.filter(r=>r.toUpperCase()!==ref.toUpperCase());
+  openIssue._pendingRelated=updated;
+  renderRelatedChips(updated);
+  toast('Unlinked '+ref+' — save to persist',true);
+}
 
 /* ══════════════════════════════════════
    NEW ISSUE MODAL
