@@ -637,6 +637,49 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .user-pill{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:20px;background:var(--bg3);border:1px solid var(--border2);font-size:12px;color:var(--text2)}
 .user-avatar{width:24px;height:24px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
 .user-name{font-weight:600;color:var(--text)}.user-org{font-size:10px;color:var(--brand-teal);font-weight:600}
+
+/* ══ ANALYTICS / MERGED PANEL IMPROVEMENTS ══ */
+.analytics-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0;flex-wrap:wrap;gap:10px;flex-shrink:0}
+.analytics-title{font-size:15px;font-weight:800;letter-spacing:-.3px}
+.analytics-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+.analytics-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.period-strip{display:flex;gap:4px;flex-wrap:wrap}
+.period-chip{padding:4px 11px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);background:var(--bg2);transition:all .12s;white-space:nowrap}
+.period-chip:hover{border-color:var(--border3);color:var(--text)}
+.period-chip.active{background:var(--grad);border-color:transparent;color:#fff}
+.csv-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font);white-space:nowrap}
+.csv-btn:hover{background:var(--bg4);border-color:var(--border3);color:var(--text)}
+.csv-btn svg{opacity:.7}
+.net-change-tip{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.4}
+.analytics-scroll{overflow-y:auto;flex:1;padding-bottom:24px}
+.section-divider{margin:20px 20px 14px;border-bottom:1px solid var(--border2);padding-bottom:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);display:flex;align-items:center;gap:8px}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+/* Sprint selector */
+.sprint-sel{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);padding:4px 9px;font-size:11.5px;font-family:var(--font);cursor:pointer}
+.sprint-sel:focus{outline:none;border-color:var(--brand-teal)}
+/* Aging table */
+.aging-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.aging-row:last-child{border-bottom:none}
+.aging-ref{font-family:var(--mono);font-size:10px;color:var(--teal-hi);flex-shrink:0;width:70px}
+.aging-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
+.aging-days{font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;flex-shrink:0}
+.aging-days.age-crit{background:var(--red-d);color:var(--red-hi)}
+.aging-days.age-warn{background:var(--amber-d);color:var(--amber-hi)}
+.aging-days.age-ok{background:var(--green-d);color:var(--green-hi)}
+/* Area breakdown */
+.area-bar-row{display:flex;align-items:center;gap:8px;padding:3px 0}
+.area-bar-label{font-size:11px;color:var(--text2);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.area-bar-wrap{flex:1;height:14px;background:var(--bg3);border-radius:3px;overflow:hidden;cursor:pointer}
+.area-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--brand-teal),#3b82f6);transition:width .4s ease}
+.area-bar-count{font-size:11px;font-weight:700;color:var(--text2);width:26px;text-align:right;flex-shrink:0}
+/* Source breakdown donut-style pills */
+.source-pills{display:flex;flex-direction:column;gap:6px}
+.source-pill-row{display:flex;align-items:center;gap:8px}
+.source-pill-label{font-size:11.5px;color:var(--text2);flex:1}
+.source-pill-bar{height:8px;border-radius:4px;min-width:4px;transition:width .4s}
+.source-pill-val{font-size:11px;font-weight:700;color:var(--text2);width:36px;text-align:right;flex-shrink:0}
+[data-theme="light"] .csv-btn{background:var(--bg3)}
+[data-theme="light"] .period-chip{background:var(--bg2)}
 </style>
 </head>
 <body>
@@ -914,10 +957,7 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <span class="tab-badge" id="tab-badge-open">–</span>
       </div>
       <div class="ws-tab" id="tab-overview" onclick="switchTab('overview')">
-        <span class="tab-ico">📊</span> Overview &amp; KPIs
-      </div>
-      <div class="ws-tab" id="tab-history" onclick="switchTab('history')">
-        <span class="tab-ico">📅</span> History &amp; Reports
+        <span class="tab-ico">📊</span> Analytics &amp; Reports
       </div>
       <div class="ws-tab" id="tab-qa" onclick="switchTab('qa')">
         <span class="tab-ico">🧪</span> QA Workspace
@@ -1055,11 +1095,40 @@ input.p-in:focus{border-color:var(--brand-teal)}
     </div><!-- /panel-issues -->
 
     <!-- ════ TAB PANEL: OVERVIEW & KPIs ════ -->
+    <!-- ════ TAB PANEL: ANALYTICS & REPORTS (merged Overview + History) ════ -->
     <div class="tab-panel" id="panel-overview">
-      <div class="overview-scroll">
+      <div class="analytics-scroll">
 
-        <!-- GPT bar is duplicated briefly here for context access from overview — hidden by default -->
-        <div style="padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap">
+        <!-- ANALYTICS HEADER -->
+        <div class="analytics-header">
+          <div>
+            <div class="analytics-title">Analytics &amp; Reports</div>
+            <div class="analytics-sub">Live KPIs, sprint velocity, aging issues, area breakdown, and CSV export.</div>
+          </div>
+          <div class="analytics-actions">
+            <!-- Period selector -->
+            <div class="period-strip" id="period-strip">
+              <div class="period-chip active" onclick="setHistPeriod('today',this)">Today</div>
+              <div class="period-chip" onclick="setHistPeriod('week',this)">This Week</div>
+              <div class="period-chip" onclick="setHistPeriod('last7',this)">Last 7 Days</div>
+              <div class="period-chip" onclick="setHistPeriod('month',this)">This Month</div>
+              <div class="period-chip" onclick="setHistPeriod('last30',this)">Last 30 Days</div>
+              <div class="period-chip" onclick="setHistPeriod('all',this)">All Time</div>
+            </div>
+            <!-- Sprint filter -->
+            <select class="sprint-sel" id="analytics-sprint-sel" onchange="setAnalyticsSprint(this.value)">
+              <option value="all">All Sprints</option>
+            </select>
+            <!-- CSV export -->
+            <button class="csv-btn" onclick="exportCSV('all')" title="Download all issues as CSV">
+              <svg style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- LIVE STATUS -->
+        <div style="padding:6px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;margin-top:10px">
           <div class="live-status"><div class="live-ring" id="live-ring-ov"></div><span id="live-label-ov">–</span></div>
           <span style="color:var(--border2)">·</span>
           <span style="font-size:11px;color:var(--text3)">Last refreshed: <span id="last-refresh-ov">–</span></span>
@@ -1070,22 +1139,49 @@ input.p-in:focus{border-color:var(--brand-teal)}
           <span style="margin-left:auto;font-size:11px;color:var(--text3)"><span id="realtime-event-count-ov" style="color:var(--brand-teal);font-weight:600">–</span> live events</span>
         </div>
 
-        <!-- KPIs -->
-        <div class="kpi-section">
+        <div style="padding:0 20px">
+
+        <!-- ── SECTION: PERIOD SUMMARY ── -->
+        <div class="section-divider" style="margin-top:18px">Period Summary</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px">
+          <div class="hist-card" style="border-left:3px solid var(--green)">
+            <div class="hist-card-title">✅ Fixed in Period</div>
+            <div style="font-size:32px;font-weight:800;color:var(--green-hi);letter-spacing:-1px" id="hist-stat-fixed">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-fixed-sub">issues resolved</div>
+          </div>
+          <div class="hist-card" style="border-left:3px solid var(--red)">
+            <div class="hist-card-title">🆕 Added in Period</div>
+            <div style="font-size:32px;font-weight:800;color:var(--amber-hi);letter-spacing:-1px" id="hist-stat-added">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-added-sub">issues logged</div>
+          </div>
+          <div class="hist-card" style="border-left:3px solid var(--blue)">
+            <div class="hist-card-title">⚡ Net Change</div>
+            <div style="font-size:32px;font-weight:800;letter-spacing:-1px" id="hist-stat-net">–</div>
+            <div class="net-change-tip" id="hist-net-tip">Fixed minus added. Positive = closing faster than opening.</div>
+          </div>
+          <div class="hist-card" style="border-left:3px solid var(--teal)">
+            <div class="hist-card-title">📊 Overall Fix Rate</div>
+            <div style="font-size:32px;font-weight:800;color:var(--teal-hi);letter-spacing:-1px" id="hist-stat-rate">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">of all issues ever logged</div>
+          </div>
+        </div>
+
+        <!-- ── SECTION: OVERALL KPIs ── -->
+        <div class="section-divider" style="margin-top:18px">Current Sprint Health</div>
+        <div class="kpi-section" style="padding:0;margin-bottom:0">
           <div class="kpi-row">
             <div class="kpi-card kc-total">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--icon-clr)"><use href="#ic-zap"/></svg>Total</div>
               <div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub" id="kpi-total-sub">All sprint issues</div>
             </div>
-            <div class="kpi-card kc-crit">
+            <div class="kpi-card kc-crit" style="cursor:pointer" onclick="filterSb('sev:Critical');switchTab('issues')" title="Click to see Critical issues">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--red-hi)"><use href="#ic-alert"/></svg>Critical Open</div>
               <div class="kpi-value" id="kpi-crit">–</div><div class="kpi-sub" id="kpi-crit-sub">–</div>
             </div>
-            <div class="kpi-card kc-high">
+            <div class="kpi-card kc-high" style="cursor:pointer" onclick="filterSb('sev:High');switchTab('issues')" title="Click to see High issues">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)"><use href="#ic-alert"/></svg>High Open</div>
               <div class="kpi-value" id="kpi-high">–</div><div class="kpi-sub">need attention</div>
             </div>
-            <!-- Resolution donut -->
             <div class="donut-card">
               <div class="donut-wrap">
                 <svg viewBox="0 0 52 52"><circle class="donut-track" cx="26" cy="26" r="21"/><circle class="donut-fill" cx="26" cy="26" r="21" id="donut-path" stroke-dasharray="132" stroke-dashoffset="132"/></svg>
@@ -1097,64 +1193,59 @@ input.p-in:focus{border-color:var(--brand-teal)}
                 <div class="dm-sub">of <span id="kpi-total-sm">–</span> total</div>
               </div>
             </div>
-            <div class="kpi-card kc-prog">
+            <div class="kpi-card kc-prog" style="cursor:pointer" onclick="filterSb('In Progress');switchTab('issues')" title="Click to see In Progress issues">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--blue-hi)"><use href="#ic-clock"/></svg>In Progress</div>
               <div class="kpi-value" id="kpi-prog">–</div><div class="kpi-sub">being fixed</div>
             </div>
-            <div class="kpi-card kc-7d">
+            <div class="kpi-card kc-7d" style="cursor:pointer" onclick="filterSb('target:7-Day Rescue');switchTab('issues')" title="Click to see 7-Day Rescue issues">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--purple-hi)"><use href="#ic-alert"/></svg>7-Day Rescue</div>
               <div class="kpi-value" id="kpi-7d">–</div><div class="kpi-sub" id="kpi-7d-sub">–</div>
             </div>
-            <div class="kpi-card kc-30d">
+            <div class="kpi-card kc-30d" style="cursor:pointer" onclick="filterSb('target:30-Day Cleanup');switchTab('issues')" title="Click to see 30-Day Cleanup issues">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)"><use href="#ic-settings"/></svg>30-Day Track</div>
               <div class="kpi-value" id="kpi-30d">–</div><div class="kpi-sub" id="kpi-30d-sub">–</div>
             </div>
           </div>
-          <!-- KPI Row 2: Temporal -->
+          <!-- Temporal KPI row -->
           <div class="kpi-row2">
             <div class="kpi-card kc-today">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Added Today</div>
-              <div class="kpi-value" id="kpi-added-today">–</div>
-              <div class="kpi-sub">new issues logged today</div>
+              <div class="kpi-value" id="kpi-added-today">–</div><div class="kpi-sub">new issues today</div>
             </div>
             <div class="kpi-card kc-week">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#a5b4fc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Added This Week</div>
-              <div class="kpi-value" id="kpi-added-week">–</div>
-              <div class="kpi-sub">since Monday</div>
+              <div class="kpi-value" id="kpi-added-week">–</div><div class="kpi-sub">since Monday</div>
             </div>
             <div class="kpi-card kc-res-today">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#6ee7b7" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved Today</div>
-              <div class="kpi-value" id="kpi-res-today">–</div>
-              <div class="kpi-sub" id="kpi-res-today-sub">issues closed today</div>
+              <div class="kpi-value" id="kpi-res-today">–</div><div class="kpi-sub" id="kpi-res-today-sub">closed today</div>
             </div>
             <div class="kpi-card kc-res-week">
               <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved This Week</div>
-              <div class="kpi-value" id="kpi-res-week">–</div>
-              <div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
+              <div class="kpi-value" id="kpi-res-week">–</div><div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
             </div>
           </div>
-
-          <!-- CATEGORY CARDS -->
+          <!-- Category cards — clickable filters -->
           <div class="cat-cards" id="cat-row">
-            <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug');switchTab('issues')" title="Click to filter by Bugs" style="border-left:3px solid var(--red)">
+            <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug');switchTab('issues')" title="Click to filter Bugs" style="border-left:3px solid var(--red)">
               <div class="cat-header"><span class="cat-icon">🐛</span><span class="cat-pct-pill" id="cat-pct-Bug">–%</span></div>
               <div class="cat-val" id="cat-val-Bug">–</div><div class="cat-label">Bugs</div>
               <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Bug">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Bug">–% done</span></div>
               <div class="cat-bar"><div class="cat-fill cat-fill-bug" id="cat-fill-Bug" style="width:0%"></div></div>
             </div>
-            <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement');switchTab('issues')" title="Click to filter by Enhancements" style="border-left:3px solid var(--purple)">
+            <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement');switchTab('issues')" title="Click to filter Enhancements" style="border-left:3px solid var(--purple)">
               <div class="cat-header"><span class="cat-icon">✨</span><span class="cat-pct-pill" id="cat-pct-Enhancement">–%</span></div>
               <div class="cat-val" id="cat-val-Enhancement">–</div><div class="cat-label">Enhancements</div>
               <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Enhancement">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Enhancement">–% done</span></div>
               <div class="cat-bar"><div class="cat-fill cat-fill-enh" id="cat-fill-Enhancement" style="width:0%"></div></div>
             </div>
-            <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing');switchTab('issues')" title="Click to filter by Testing Finds" style="border-left:3px solid var(--teal)">
+            <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing');switchTab('issues')" title="Click to filter Testing Finds" style="border-left:3px solid var(--teal)">
               <div class="cat-header"><span class="cat-icon">🧪</span><span class="cat-pct-pill" id="cat-pct-Testing">–%</span></div>
               <div class="cat-val" id="cat-val-Testing">–</div><div class="cat-label">Testing Finds</div>
               <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Testing">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Testing">–% done</span></div>
               <div class="cat-bar"><div class="cat-fill cat-fill-test" id="cat-fill-Testing" style="width:0%"></div></div>
             </div>
-            <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX');switchTab('issues')" title="Click to filter by UX Issues" style="border-left:3px solid var(--amber)">
+            <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX');switchTab('issues')" title="Click to filter UX Issues" style="border-left:3px solid var(--amber)">
               <div class="cat-header"><span class="cat-icon">🎨</span><span class="cat-pct-pill" id="cat-pct-UX">–%</span></div>
               <div class="cat-val" id="cat-val-UX">–</div><div class="cat-label">UX Issues</div>
               <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-UX">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-UX">–% done</span></div>
@@ -1163,8 +1254,8 @@ input.p-in:focus{border-color:var(--brand-teal)}
           </div>
         </div>
 
-        <!-- Dual progress -->
-        <div class="prog-section">
+        <!-- Dual progress tracks -->
+        <div class="prog-section" style="padding:12px 0">
           <div class="prog-track-item">
             <span class="pt-badge ptb-rescue">7-Day Rescue</span>
             <div class="prog-bar"><div class="prog-fill-rescue" id="pfill-rescue" style="width:0%"></div></div>
@@ -1177,114 +1268,97 @@ input.p-in:focus{border-color:var(--brand-teal)}
           </div>
         </div>
 
-        <!-- ChatGPT Fix Prompt in overview -->
-        <div style="padding:0 20px 20px">
-          <div class="gpt-bar" style="border-radius:var(--rl);border:1px solid var(--border2);margin-top:14px">
+        <!-- ── SECTION: RECENTLY FIXED + ADDED ── -->
+        <div class="section-divider" id="hist-period-label">Recently Fixed &amp; Added</div>
+        <div class="hist-grid" style="grid-template-columns:1fr 1fr;margin-bottom:4px">
+          <div class="hist-card">
+            <div class="hist-card-title">✅ Recently Fixed <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--green-hi)" id="hist-fixed-count">–</span></div>
+            <div class="hist-issues-list" id="hist-fixed-list"><div class="hist-empty">Loading…</div></div>
+          </div>
+          <div class="hist-card">
+            <div class="hist-card-title">🆕 Recently Added <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--amber-hi)" id="hist-added-count">–</span></div>
+            <div class="hist-issues-list" id="hist-added-list"><div class="hist-empty">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- ── SECTION: VELOCITY + SEVERITY ── -->
+        <div class="section-divider" style="margin-top:18px">Sprint Velocity &amp; Severity</div>
+        <div class="hist-grid" style="grid-template-columns:2fr 1fr 1fr">
+          <div class="hist-card">
+            <div class="hist-card-title">📈 Sprint Velocity — Issues Resolved per Sprint</div>
+            <div id="hist-velocity-bars" style="padding-top:6px"><div class="hist-empty">Loading…</div></div>
+          </div>
+          <div class="hist-card">
+            <div class="hist-card-title">🎯 Open by Severity</div>
+            <div id="hist-severity-bars" style="padding-top:6px"><div class="hist-empty">Loading…</div></div>
+          </div>
+          <div class="hist-card">
+            <div class="hist-card-title">📋 Breakdown</div>
+            <div id="hist-summary-table"><div class="hist-empty">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- ── SECTION: AREA BREAKDOWN ── -->
+        <div class="section-divider" style="margin-top:18px">Open Issues by Area <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(click bar to filter)</span></div>
+        <div class="hist-grid" style="grid-template-columns:1fr 1fr">
+          <div class="hist-card">
+            <div class="hist-card-title">📍 Top Areas — Open Issues</div>
+            <div id="hist-area-bars" style="padding-top:6px"><div class="hist-empty">Loading…</div></div>
+          </div>
+          <div class="hist-card">
+            <div class="hist-card-title">⏳ Oldest Open Issues (Aging)</div>
+            <div id="hist-aging-list" style="padding-top:4px"><div class="hist-empty">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- ── SECTION: BUG SOURCE + CSV ── -->
+        <div class="section-divider" style="margin-top:18px">Bug Sources &amp; Export</div>
+        <div class="hist-grid" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="hist-card">
+            <div class="hist-card-title">🔬 Bug Source Breakdown</div>
+            <div id="hist-source-bars" style="padding-top:6px"><div class="hist-empty">Loading…</div></div>
+          </div>
+          <div class="hist-card">
+            <div class="hist-card-title">📊 Category Resolution Rate</div>
+            <div id="hist-cat-resolution" style="padding-top:6px"><div class="hist-empty">Loading…</div></div>
+          </div>
+          <div class="hist-card" style="display:flex;flex-direction:column;gap:8px">
+            <div class="hist-card-title">⬇️ Export Issues to CSV</div>
+            <div style="font-size:11.5px;color:var(--text3);margin-bottom:6px;line-height:1.5">Download a spreadsheet of all issues for reporting, sharing with leadership, or offline review.</div>
+            <button class="csv-btn" onclick="exportCSV('open')" style="width:100%;justify-content:center">
+              <svg style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export Open Issues (.csv)
+            </button>
+            <button class="csv-btn" onclick="exportCSV('all')" style="width:100%;justify-content:center">
+              <svg style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export All Issues (.csv)
+            </button>
+            <button class="csv-btn" onclick="exportCSV('sprint')" style="width:100%;justify-content:center">
+              <svg style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export Current Sprint (.csv)
+            </button>
+          </div>
+        </div>
+
+        <!-- ChatGPT Prompt -->
+        <div style="margin-top:20px">
+          <div class="gpt-bar" style="border-radius:var(--rl);border:1px solid var(--border2)">
             <div class="gpt-left">
               <div class="gpt-icon"><svg class="ico" style="color:var(--brand-teal)" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-              <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Drift-proof workflow: verified repo → Supabase tracker → checkpoint updates → Vercel proof</div></div>
+              <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Drift-proof: verified repo → Supabase tracker → checkpoint updates → Vercel proof</div></div>
             </div>
             <div class="gpt-actions">
               <button class="gpt-btn gpt-btn-outline" onclick="toggleGPT()">Show prompt</button>
               <button class="gpt-btn gpt-btn-primary" onclick="copyPrompt()">
-                <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Prompt
+                <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy
               </button>
             </div>
           </div>
         </div>
 
-      </div><!-- /overview-scroll -->
+        </div><!-- /padding wrapper -->
+      </div><!-- /analytics-scroll -->
     </div><!-- /panel-overview -->
-
-    <!-- ════ TAB PANEL: HISTORY & REPORTS ════ -->
-    <div class="tab-panel" id="panel-history">
-      <div class="history-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div>
-            <div class="hist-section-title">History &amp; Reports</div>
-            <div style="font-size:12px;color:var(--text3)">What got fixed, when, and by whom. Velocity, trends, and sprint-over-sprint progress.</div>
-          </div>
-          <div class="hist-period-tabs" id="hist-period-tabs">
-            <div class="hist-period-tab active" onclick="setHistPeriod('today',this)">Today</div>
-            <div class="hist-period-tab" onclick="setHistPeriod('week',this)">This Week</div>
-            <div class="hist-period-tab" onclick="setHistPeriod('month',this)">This Month</div>
-            <div class="hist-period-tab" onclick="setHistPeriod('all',this)">All Time</div>
-          </div>
-        </div>
-
-        <!-- SUMMARY STATS ROW -->
-        <div class="hist-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
-          <div class="hist-card" style="border-left:3px solid var(--green)">
-            <div class="hist-card-title">✅ Fixed in Period</div>
-            <div style="font-size:32px;font-weight:800;color:var(--green-hi);letter-spacing:-1px" id="hist-stat-fixed">–</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-fixed-sub">issues resolved</div>
-          </div>
-          <div class="hist-card" style="border-left:3px solid var(--red)">
-            <div class="hist-card-title">🐛 Added in Period</div>
-            <div style="font-size:32px;font-weight:800;color:var(--amber-hi);letter-spacing:-1px" id="hist-stat-added">–</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-added-sub">issues logged</div>
-          </div>
-          <div class="hist-card" style="border-left:3px solid var(--blue)">
-            <div class="hist-card-title">⚡ Net Change</div>
-            <div style="font-size:32px;font-weight:800;letter-spacing:-1px" id="hist-stat-net">–</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">fixed minus added</div>
-          </div>
-          <div class="hist-card" style="border-left:3px solid var(--teal)">
-            <div class="hist-card-title">📊 Fix Rate</div>
-            <div style="font-size:32px;font-weight:800;color:var(--teal-hi);letter-spacing:-1px" id="hist-stat-rate">–</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">overall resolved %</div>
-          </div>
-        </div>
-
-        <div class="hist-grid">
-          <!-- RECENTLY FIXED -->
-          <div class="hist-card" style="grid-column:span 2">
-            <div class="hist-card-title">
-              ✅ Recently Fixed
-              <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--green-hi)" id="hist-fixed-count">–</span>
-            </div>
-            <div class="hist-issues-list" id="hist-fixed-list">
-              <div class="hist-empty">Loading…</div>
-            </div>
-          </div>
-
-          <!-- RECENTLY ADDED -->
-          <div class="hist-card" style="grid-column:span 2">
-            <div class="hist-card-title">
-              🆕 Recently Added
-              <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--amber-hi)" id="hist-added-count">–</span>
-            </div>
-            <div class="hist-issues-list" id="hist-added-list">
-              <div class="hist-empty">Loading…</div>
-            </div>
-          </div>
-
-          <!-- VELOCITY BY SPRINT -->
-          <div class="hist-card" style="grid-column:span 2">
-            <div class="hist-card-title">📈 Sprint Velocity — Issues Resolved per Sprint</div>
-            <div id="hist-velocity-bars" style="padding-top:6px">
-              <div class="hist-empty">Loading…</div>
-            </div>
-          </div>
-
-          <!-- OPEN BY SEVERITY -->
-          <div class="hist-card">
-            <div class="hist-card-title">🎯 Current Open by Severity</div>
-            <div id="hist-severity-bars" style="padding-top:6px">
-              <div class="hist-empty">Loading…</div>
-            </div>
-          </div>
-
-          <!-- STATS TABLE -->
-          <div class="hist-card">
-            <div class="hist-card-title">📋 Breakdown Summary</div>
-            <div id="hist-summary-table">
-              <div class="hist-empty">Loading…</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div><!-- /panel-history -->
 
     <!-- ════ TAB PANEL: QA WORKSPACE ════ -->
     <div class="tab-panel" id="panel-qa">
@@ -1475,6 +1549,8 @@ async function load(showLoader=true){
   if(!realtimeChannel) subscribeRealtime();
   // Load QA data asynchronously after main data
   setTimeout(()=>loadQaData(false),1500);
+  // Pre-render analytics so it's ready when user clicks the tab
+  renderHistory();
 }
 
 function buildSprintFilter(sprints){
@@ -1827,14 +1903,16 @@ function toggleSbAreas(){
 }
 
 function switchTab(name){
+  // 'history' is now merged into 'overview'
+  if(name==='history') name='overview';
   activeTab=name;
-  ['issues','overview','history','qa'].forEach(t=>{
+  ['issues','overview','qa'].forEach(t=>{
     const tab=$('tab-'+t),panel=$('panel-'+t);
     if(tab)tab.classList.toggle('active',t===name);
     if(panel)panel.classList.toggle('active',t===name);
   });
-  if(name==='history')renderHistory();
-  if(name==='qa')loadQaData(false);
+  if(name==='overview') renderHistory();
+  if(name==='qa') loadQaData(false);
 }
 
 /* ══════════════════════════════════════
@@ -1855,9 +1933,13 @@ function getHistoryWindow(){
   const dow=now.getDay();const daysSinceMonday=(dow+6)%7;
   const weekStart=new Date(todayStart);weekStart.setDate(weekStart.getDate()-daysSinceMonday);
   const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
-  if(histPeriod==='today')return{start:todayStart,label:'today'};
-  if(histPeriod==='week')return{start:weekStart,label:'this week'};
-  if(histPeriod==='month')return{start:monthStart,label:'this month'};
+  const last7=new Date(todayStart);last7.setDate(last7.getDate()-7);
+  const last30=new Date(todayStart);last30.setDate(last30.getDate()-30);
+  if(histPeriod==='today')  return{start:todayStart,label:'today'};
+  if(histPeriod==='week')   return{start:weekStart,  label:'this week'};
+  if(histPeriod==='last7')  return{start:last7,      label:'last 7 days'};
+  if(histPeriod==='month')  return{start:monthStart,  label:'this month'};
+  if(histPeriod==='last30') return{start:last30,      label:'last 30 days'};
   return{start:new Date(0),label:'all time'};
 }
 
@@ -1967,7 +2049,110 @@ function renderHistory(){
     ].map(([l,v,c])=>`<div class="hist-row"><span class="hist-row-label">${l}</span><span class="hist-row-val ${c}">${v}</span></div>`).join('');
   }
 
-  // Update tab badge with open count
+  // ── AREA BREAKDOWN ────────────────────────────────────────────────────────
+  const areaEl=$('hist-area-bars');
+  if(areaEl){
+    const openIss=sf.filter(i=>!isResolved(i)&&!isDeferred(i));
+    const areaCounts={};
+    openIss.forEach(i=>{const a=i.area||'Uncategorised';areaCounts[a]=(areaCounts[a]||0)+1;});
+    const sorted=Object.entries(areaCounts).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    const maxA=sorted[0]?sorted[0][1]:1;
+    if(!sorted.length){areaEl.innerHTML='<div class="hist-empty">No open issues</div>';}
+    else areaEl.innerHTML=sorted.map(([area,cnt])=>{
+      const safeArea=esc(area);
+      const pct=Math.round(cnt/maxA*100);
+      return`<div class="area-bar-row">
+        <div class="area-bar-label" title="${safeArea}">${safeArea}</div>
+        <div class="area-bar-wrap" onclick="filterSb('area:${safeArea}');switchTab('issues')" title="Click to filter" style="cursor:pointer">
+          <div class="area-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="area-bar-count">${cnt}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── AGING — oldest open issues ────────────────────────────────────────────
+  const agingEl=$('hist-aging-list');
+  if(agingEl){
+    const now=Date.now();
+    const openForAging=sf.filter(i=>!isResolved(i)&&!isDeferred(i)&&i.created_at)
+      .map(i=>({...i,ageDays:Math.floor((now-new Date(i.created_at))/86400000)}))
+      .sort((a,b)=>b.ageDays-a.ageDays).slice(0,8);
+    if(!openForAging.length){agingEl.innerHTML='<div class="hist-empty">No open issues</div>';}
+    else agingEl.innerHTML=openForAging.map(i=>{
+      const cls=i.ageDays>30?'age-crit':i.ageDays>14?'age-warn':'age-ok';
+      return`<div class="aging-row">
+        <span class="aging-ref">${esc(i.issue_ref||'–')}</span>
+        <span class="aging-title" title="${esc(i.title)}">${esc(i.title)}</span>
+        <span class="aging-days ${cls}">${i.ageDays}d</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── BUG SOURCE BREAKDOWN ──────────────────────────────────────────────────
+  const srcEl=$('hist-source-bars');
+  if(srcEl){
+    const bugs=sf.filter(i=>(i.category||'').toLowerCase()==='bug');
+    const total=bugs.length||1;
+    const sources=[
+      {label:'Manual report',    color:'#3b82f6', count:bugs.filter(i=>!i.submitted_via||i.submitted_via==='manual'||i.submitted_via==='whatsapp-report').length},
+      {label:'QA Test Suite',    color:'#8b5cf6', count:bugs.filter(i=>i.submitted_via==='e2e-test-suite').length},
+      {label:'Demo Checklist',   color:'#0d9488', count:bugs.filter(i=>i.submitted_via==='demo-checklist').length},
+      {label:'Tracker form',     color:'#f59e0b', count:bugs.filter(i=>i.submitted_via==='tracker-form').length},
+    ];
+    srcEl.innerHTML='<div class="source-pills">'+sources.map(s=>`
+      <div class="source-pill-row">
+        <div class="source-pill-label">${s.label}</div>
+        <div class="source-pill-bar" style="background:${s.color};width:${Math.round(s.count/total*100)}%;flex-shrink:0"></div>
+        <div class="source-pill-val">${s.count}</div>
+      </div>`).join('')+'</div>'
+    +'<div style="margin-top:8px;font-size:10px;color:var(--text3)">'+(total-1)+' total bugs logged</div>';
+  }
+
+  // ── CATEGORY RESOLUTION RATE ──────────────────────────────────────────────
+  const catResEl=$('hist-cat-resolution');
+  if(catResEl){
+    const cats=[
+      {k:'Bug',   icon:'🐛', c:'var(--red-hi)'},
+      {k:'Enhancement', icon:'✨', c:'var(--purple-hi)'},
+      {k:'Testing',icon:'🧪', c:'var(--teal-hi)'},
+      {k:'UX',    icon:'🎨', c:'var(--amber-hi)'},
+    ];
+    catResEl.innerHTML=cats.map(cat=>{
+      const items=sf.filter(i=>(i.category||i.issue_category||'').toLowerCase()===cat.k.toLowerCase());
+      const res=items.filter(i=>isResolved(i)).length;
+      const pct=items.length?Math.round(res/items.length*100):0;
+      return`<div class="vel-bar-row" style="margin-bottom:6px">
+        <div class="vel-bar-label" style="color:${cat.c};width:90px">${cat.icon} ${cat.k}</div>
+        <div class="vel-bar-wrap" style="height:18px">
+          <div class="vel-bar-fill" style="width:${pct}%;height:100%;background:${cat.c};opacity:.8"></div>
+        </div>
+        <div class="vel-bar-count" style="color:${cat.c};width:40px">${pct}%</div>
+      </div><div style="font-size:9.5px;color:var(--text3);padding-left:0;margin-top:-4px;margin-bottom:4px">${res}/${items.length} resolved</div>`;
+    }).join('');
+  }
+
+  // ── NET CHANGE TOOLTIP ────────────────────────────────────────────────────
+  const tipEl=$('hist-net-tip');
+  if(tipEl){
+    if(net>0) tipEl.textContent='✓ Fixing faster than new issues are coming in. Great velocity.';
+    else if(net===0) tipEl.textContent='Even — same number fixed as added. Neutral.';
+    else tipEl.textContent='More issues added than fixed this period. Backlog is growing.';
+    tipEl.style.color=net>0?'var(--green-hi)':net<0?'var(--red-hi)':'var(--text3)';
+  }
+
+  // ── UPDATE PERIOD LABEL ────────────────────────────────────────────────────
+  const labelEl=$('hist-period-label');
+  if(labelEl) labelEl.firstChild.textContent='Recently Fixed & Added — '+label.charAt(0).toUpperCase()+label.slice(1);
+
+  // ── POPULATE SPRINT SELECTOR ──────────────────────────────────────────────
+  const sprintSel=$('analytics-sprint-sel');
+  if(sprintSel&&sprintSel.options.length<=1){
+    const sprints=[...new Set(ALL.map(i=>i.sprint_number))].filter(Boolean).sort((a,b)=>b-a);
+    sprints.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent='Sprint '+s;sprintSel.appendChild(o);});
+  }
+
+  // ── UPDATE TAB BADGE ─────────────────────────────────────────────────────
   const openCnt=ALL.filter(i=>!isResolved(i)&&!isDeferred(i)).length;
   const badge=$('tab-badge-open');
   if(badge){badge.textContent=openCnt;badge.className='tab-badge'+(openCnt>0?' '+(openCnt>5?'':'ok'):'ok');}
@@ -2750,6 +2935,50 @@ function fmtDateCell(iso,isResolved){
   const full=d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
   const cls=isResolved&&iso?'date-resolved':'';
   return`<div class="date-cell ${cls}" title="${full}"><span class="date-main">${rel}</span><span class="date-sub">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span></div>`;
+}
+
+/* ══════════════════════════════════════
+   CSV EXPORT
+══════════════════════════════════════ */
+function exportCSV(mode){
+  let rows;
+  if(mode==='open')    rows=ALL.filter(i=>!isResolved(i)&&!isDeferred(i));
+  else if(mode==='sprint') rows=activeSprint==='all'?ALL:ALL.filter(i=>i.sprint_number===activeSprint);
+  else rows=ALL;
+
+  const headers=['Ref','Sprint','Title','Severity','Category','Area','Status','Sprint Target','Added','Fixed','Days Open','Submitted Via'];
+  const now=Date.now();
+  const escape=v=>'"'+String(v||'').replace(/"/g,'""')+'"';
+  const lines=[headers.join(','),...rows.map(i=>{
+    const age=i.created_at?Math.floor((now-new Date(i.created_at))/86400000):'';
+    return[
+      escape(i.issue_ref||''),
+      escape(i.sprint_number||''),
+      escape(i.title||''),
+      escape(i.severity||''),
+      escape(i.category||i.issue_category||''),
+      escape(i.area||''),
+      escape(i.status||''),
+      escape(i.sprint_target||''),
+      escape(i.created_at?new Date(i.created_at).toLocaleDateString():''),
+      escape(i.resolved_at?new Date(i.resolved_at).toLocaleDateString():''),
+      escape(age),
+      escape(i.submitted_via||''),
+    ].join(',');
+  })];
+
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  const label=mode==='open'?'open-issues':mode==='sprint'?'sprint-'+(activeSprint==='all'?'all':activeSprint):'all-issues';
+  a.download='setuflow-'+label+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+function setAnalyticsSprint(val){
+  if(val==='all') filterBySprint('all');
+  else filterBySprint(parseInt(val));
+  renderHistory();
 }
 
 /* ── Light/dark theme toggle ── */
