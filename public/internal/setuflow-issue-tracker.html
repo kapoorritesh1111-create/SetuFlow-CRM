@@ -799,11 +799,14 @@ input.p-in:focus{border-color:var(--brand-teal)}
   <div class="sprint-pill"><span class="sprint-dot"></span><span id="sprint-pill-label">All Sprints · Live</span></div>
   <div class="health-strip" id="health-strip">
     <span class="hs-label">Health:</span>
-    <span class="hs-crit" id="hs-crit">– crit</span>
+    <span class="hs-crit" id="tb-crit" title="Critical open issues">–</span>
+    <span class="hs-label" style="opacity:.4">crit</span>
     <span style="color:var(--border2)">·</span>
-    <span class="hs-high" id="hs-high">– high</span>
+    <span class="hs-high" id="tb-high" title="High open issues">–</span>
+    <span class="hs-label" style="opacity:.4">high</span>
     <span style="color:var(--border2)">·</span>
-    <span class="hs-prog" id="hs-prog">– in progress</span>
+    <span class="hs-prog" id="tb-prog" title="In progress">–</span>
+    <span class="hs-label" style="opacity:.4">in progress</span>
   </div>
   <div class="topbar-nav">
     <a href="setuflow-docs.html" class="nav-link">
@@ -890,8 +893,6 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <span class="sb-item-text">All Sprints</span><span class="sb-count" id="cnt-all">–</span>
       </div>
     </div>
-
-    <!-- BY STATUS -->
     <div class="sb-divider"></div>
     <div class="sb-section"><div class="sb-section-label">By Status</div></div>
     <div class="sb-item" id="sb-Open" onclick="filterSb('Open')">
@@ -973,10 +974,13 @@ input.p-in:focus{border-color:var(--brand-teal)}
       </div>
     </div>
 
-    <!-- BY AREA — collapsible accordion -->
+    <!-- BY AREA — collapsible with chevron -->
     <div class="sb-divider"></div>
-    <div class="sb-section"><div class="sb-section-label">By Area</div></div>
-    <div id="sb-areas"></div>
+    <div class="sb-item" onclick="toggleSbAreas()" style="padding:4px 10px;cursor:pointer;user-select:none">
+      <div class="sb-section-label" style="flex:1;margin:0;padding:0;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">By Area</div>
+      <span id="sb-areas-toggle" style="font-size:13px;color:var(--text3);transition:transform .25s;display:inline-block;line-height:1;margin-left:4px">›</span>
+    </div>
+    <div id="sb-areas" style="max-height:0;overflow:hidden;transition:max-height .3s ease"></div>
 
     <!-- CTA -->
     <div class="sb-cta-wrap">
@@ -1566,6 +1570,7 @@ function buildSprintFilter(sprints){
   const sprintRows=sprints.slice().reverse().map(s=>{
     const items=ALL.filter(i=>i.sprint_number===s);
     const res=items.filter(i=>isResolved(i)).length;
+    const openRem=items.filter(i=>!isResolved(i)&&!isDeferred(i)).length;
     const pct=items.length?Math.round(res/items.length*100):0;
     const isDone=pct===100;
     const isActive=activeSprint===s;
@@ -1575,7 +1580,7 @@ function buildSprintFilter(sprints){
         <span class="sb-item-text">Sprint ${s}</span>
         ${isDone
           ? `<span style="font-size:10px;color:var(--green-hi);font-weight:700;margin-left:auto">✓ 100%</span>`
-          : `<span class="sb-count" style="font-size:9px;margin-left:auto">${res}/${items.length}</span>`
+          : `<span class="sb-count" style="font-size:9px;margin-left:auto;background:var(--red-d);color:var(--red-hi)">${openRem} open</span>`
         }
       </div>`;
   }).join('');
@@ -1586,7 +1591,7 @@ function buildSprintFilter(sprints){
          onclick="toggleSprintDropdown()">
       <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-zap"/></svg>
       <span class="sb-item-text">All Sprints</span>
-      <span class="sb-count" style="margin-right:4px">${totalCount}</span>
+      <span class="sb-count" style="margin-right:4px" id="cnt-all">${ALL.filter(i=>!isResolved(i)&&!isDeferred(i)).length}</span>
       <span style="font-size:11px;color:var(--text3);transition:transform .2s;display:inline-block;transform:${sprintDropdownOpen?'rotate(90deg)':'rotate(0deg)'}">›</span>
     </div>
     <div id="sb-sprint-sub" style="overflow:hidden;max-height:${sprintDropdownOpen?'600px':'0'};transition:max-height .25s ease">
@@ -1741,9 +1746,10 @@ function buildSidebar(){
   });
 
   // Active (non-resolved) count for "All Issues"
-  const activeCount=sprintFiltered.filter(i=>!isResolved(i)).length;
+  const activeCount=sprintFiltered.filter(i=>!isResolved(i)&&!isDeferred(i)).length;
   const totalCount=sprintFiltered.length;
-  setText('cnt-all', hideResolved ? activeCount+' / '+totalCount : totalCount);
+  // cnt-all shows open (non-resolved, non-deferred) count — updated by buildSprintFilter too
+  setText('cnt-all', activeCount); // activeCount already excludes resolved+deferred
   setText('cnt-Open',sc.Open||0);setText('cnt-InProgress',sc['In Progress']||0);
   setText('cnt-Resolved',sc.Resolved||0);setText('cnt-Deferred',sc.Deferred||0);setText('cnt-WontFix',sc["Won't Fix"]||0);
   setText('cnt-sevCritical',sev.Critical||0);setText('cnt-sevHigh',sev.High||0);setText('cnt-sevMedium',sev.Medium||0);setText('cnt-sevLow',sev.Low||0);
@@ -1789,10 +1795,12 @@ function buildSidebar(){
   setText('ring-pct',pct+'%');
   setText('ss-crit',critOpen);setText('ss-res',resolved);setText('ss-rem',open);
 
-  // Health strip
-  const inProg=ALL.filter(i=>i.status==='In Progress').length;
-  const highOpen=ALL.filter(i=>(i.severity||'').toLowerCase()==='high'&&!isResolved(i)).length;
-  setText('hs-crit',critOpen+' crit');setText('hs-high',highOpen+' high');setText('hs-prog',inProg+' active');
+  // Health strip — topbar (tb-*) and issues-panel strip (via updateHealthStrip)
+  const inProg=ALL.filter(i=>(i.status||'').toLowerCase()==='in progress').length;
+  const highOpen=ALL.filter(i=>(i.severity||'').toLowerCase()==='high'&&!isResolved(i)&&!isDeferred(i)).length;
+  // Topbar health badge
+  const tbSet=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  tbSet('tb-crit', critOpen); tbSet('tb-high', highOpen); tbSet('tb-prog', inProg);
 
   // Dual progress bars
   const r7=ALL.filter(i=>i.sprint_target==='7-Day Rescue');
@@ -1925,14 +1933,8 @@ function toggleSbAreas(){
   sbAreasOpen=!sbAreasOpen;
   const el=document.getElementById('sb-areas');
   const tog=document.getElementById('sb-areas-toggle');
-  if(el){
-    if(sbAreasOpen){
-      el.style.maxHeight='600px'; // generous ceiling
-    } else {
-      el.style.maxHeight='0';
-    }
-  }
-  if(tog)tog.style.transform=sbAreasOpen?'rotate(90deg)':'rotate(0deg)';
+  if(el) el.style.maxHeight=sbAreasOpen?'600px':'0';
+  if(tog) tog.style.transform=sbAreasOpen?'rotate(90deg)':'rotate(0deg)';
 }
 
 function switchTab(name){
@@ -1988,6 +1990,10 @@ function updateHealthStrip(){
   // Highlight open cell
   const openCell=document.getElementById('hs-open');
   if(openCell) openCell.style.color=openCnt>0?'var(--text)':'var(--green-hi)';
+
+  // Sync topbar health badge
+  const tbSet2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  tbSet2('tb-crit', crit); tbSet2('tb-high', high); tbSet2('tb-prog', inprog);
 }
 
 /* ══════════════════════════════════════
