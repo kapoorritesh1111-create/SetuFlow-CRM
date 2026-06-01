@@ -975,13 +975,8 @@ input.p-in:focus{border-color:var(--brand-teal)}
 
     <!-- BY AREA — collapsible accordion -->
     <div class="sb-divider"></div>
-    <div class="sb-section" style="cursor:pointer;user-select:none" onclick="toggleSbAreas()">
-      <div class="sb-section-label" style="display:flex;align-items:center;justify-content:space-between">
-        By Area
-        <span id="sb-areas-toggle" style="font-size:11px;color:var(--text3);transition:transform .2s">›</span>
-      </div>
-    </div>
-    <div id="sb-areas" style="max-height:0;overflow:hidden;transition:max-height .25s ease"></div>
+    <div class="sb-section"><div class="sb-section-label">By Area</div></div>
+    <div id="sb-areas"></div>
 
     <!-- CTA -->
     <div class="sb-cta-wrap">
@@ -1013,10 +1008,6 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <span class="tab-badge blue" id="tab-badge-qa">–</span>
       </div>
       <div class="ws-tab-spacer"></div>
-      <button class="ws-tab-action" onclick="openNewIssueModal()">
-        <svg class="ico" style="width:12px;height:12px" stroke="#fff" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Report Issue
-      </button>
     </div>
 
     <!-- ════ TAB PANEL: ISSUES ════ -->
@@ -1057,17 +1048,21 @@ input.p-in:focus{border-color:var(--brand-teal)}
 
     <!-- COMPACT HEALTH STRIP — KPIs always visible on Issues tab -->
     <div class="health-strip" id="issues-health-strip">
-      <div class="hs-cell hs-total" title="Total issues across all sprints">
+      <div class="hs-cell hs-total" title="Total issues · click to show all" onclick="filterSb('all')">
         <div class="hs-val v-text" id="hs-total">–</div>
         <div class="hs-lbl">Total</div>
       </div>
+      <div class="hs-cell" style="border-top:2px solid var(--green)" onclick="filterSb('Open')" title="Open issues — click to filter">
+        <div class="hs-val v-text" id="hs-open">–</div>
+        <div class="hs-lbl">Open</div>
+      </div>
       <div class="hs-cell hs-crit" onclick="filterSb('sev:Critical')" title="Critical open — click to filter">
         <div class="hs-val v-red" id="hs-crit">–</div>
-        <div class="hs-lbl">Critical</div>
+        <div class="hs-lbl">🔴 Critical</div>
       </div>
       <div class="hs-cell hs-high" onclick="filterSb('sev:High')" title="High open — click to filter">
         <div class="hs-val v-amber" id="hs-high">–</div>
-        <div class="hs-lbl">High Open</div>
+        <div class="hs-lbl">🟠 High</div>
       </div>
       <div class="hs-cell hs-prog" onclick="filterSb('In Progress')" title="In Progress — click to filter">
         <div class="hs-val v-blue" id="hs-prog">–</div>
@@ -1958,33 +1953,41 @@ function switchTab(name){
    ISSUES TAB HEALTH STRIP
 ══════════════════════════════════════ */
 function updateHealthStrip(){
+  if(!ALL||!ALL.length) return; // wait until data loaded
   const sf=activeSprint==='all'?ALL:ALL.filter(i=>i.sprint_number===activeSprint);
   const total=sf.length;
-  const open=sf.filter(i=>!isResolved(i)&&!isDeferred(i));
-  const crit=open.filter(i=>(i.severity||'').toLowerCase()==='critical').length;
-  const high=open.filter(i=>(i.severity||'').toLowerCase()==='high').length;
+  const openIss=sf.filter(i=>!isResolved(i)&&!isDeferred(i));
+  const openCnt=openIss.length;
+  const crit=openIss.filter(i=>(i.severity||'').toLowerCase()==='critical').length;
+  const high=openIss.filter(i=>(i.severity||'').toLowerCase()==='high').length;
   const inprog=sf.filter(i=>(i.status||'').toLowerCase()==='in progress').length;
   const resolved=sf.filter(i=>isResolved(i)).length;
   const pct=total?Math.round(resolved/total*100):0;
   const rescue=sf.filter(i=>i.sprint_target==='7-Day Rescue'&&!isResolved(i)&&!isDeferred(i)).length;
   const cleanup=sf.filter(i=>i.sprint_target==='30-Day Cleanup'&&!isResolved(i)&&!isDeferred(i)).length;
 
-  const setText2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  setText2('hs-total',total||'–');
-  setText2('hs-crit',crit||'0');
-  setText2('hs-high',high||'0');
-  setText2('hs-prog',inprog||'0');
-  setText2('hs-rescue',rescue||'0');
-  setText2('hs-cleanup',cleanup||'0');
-  setText2('hs-donut-pct',pct+'%');
+  // Use direct getElementById to avoid any scope issues
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('hs-total', total);
+  set('hs-open',  openCnt);
+  set('hs-crit',  crit);
+  set('hs-high',  high);
+  set('hs-prog',  inprog);
+  set('hs-rescue',  rescue);
+  set('hs-cleanup', cleanup);
+  set('hs-donut-pct', pct+'%');
 
-  // Donut arc (circumference of r=14 circle = 87.96 ≈ 88)
+  // Donut arc (r=14, circumference≈88)
   const fill=document.getElementById('hs-donut-fill');
   if(fill){const offset=Math.round(88-(88*pct/100));fill.style.strokeDashoffset=offset;}
 
-  // Colour the crit cell red if >0
+  // Highlight crit cell background when there are critical issues
   const critCell=document.querySelector('.hs-cell.hs-crit');
-  if(critCell) critCell.style.background=crit>0?'rgba(239,68,68,.08)':'';
+  if(critCell) critCell.style.background=crit>0?'rgba(239,68,68,.1)':'';
+
+  // Highlight open cell
+  const openCell=document.getElementById('hs-open');
+  if(openCell) openCell.style.color=openCnt>0?'var(--text)':'var(--green-hi)';
 }
 
 /* ══════════════════════════════════════
@@ -1994,8 +1997,9 @@ let histPeriod='week';
 
 function setHistPeriod(p,el){
   histPeriod=p;
-  document.querySelectorAll('.hist-period-tab').forEach(e=>e.classList.remove('active'));
-  if(el)el.classList.add('active');
+  // Clear ALL period chip variants (period-chip in analytics, hist-period-tab in legacy)
+  document.querySelectorAll('.period-chip,.hist-period-tab').forEach(e=>e.classList.remove('active'));
+  if(el) el.classList.add('active');
   renderHistory();
 }
 
