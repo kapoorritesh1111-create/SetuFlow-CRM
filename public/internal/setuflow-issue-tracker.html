@@ -680,6 +680,41 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .source-pill-val{font-size:11px;font-weight:700;color:var(--text2);width:36px;text-align:right;flex-shrink:0}
 [data-theme="light"] .csv-btn{background:var(--bg3)}
 [data-theme="light"] .period-chip{background:var(--bg2)}
+
+/* ══ ISSUES TAB — COMPACT HEALTH STRIP ══ */
+.health-strip{display:flex;align-items:stretch;background:var(--bg2);border-bottom:1px solid var(--border2);flex-shrink:0;overflow-x:auto;gap:0}
+.hs-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 16px;border-right:1px solid var(--border);cursor:pointer;transition:background .12s;min-width:72px;position:relative;user-select:none}
+.hs-cell:last-child{border-right:none}
+.hs-cell:hover{background:rgba(255,255,255,.04)}
+.hs-cell.hs-crit{border-top:2px solid var(--red)}
+.hs-cell.hs-high{border-top:2px solid var(--amber)}
+.hs-cell.hs-prog{border-top:2px solid var(--blue)}
+.hs-cell.hs-res{border-top:2px solid var(--green)}
+.hs-cell.hs-rescue{border-top:2px solid var(--purple)}
+.hs-cell.hs-cleanup{border-top:2px solid var(--teal)}
+.hs-cell.hs-total{border-top:2px solid var(--border2)}
+.hs-val{font-size:18px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.hs-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-top:2px;white-space:nowrap}
+.hs-val.v-red{color:var(--red-hi)}
+.hs-val.v-amber{color:var(--amber-hi)}
+.hs-val.v-green{color:var(--green-hi)}
+.hs-val.v-blue{color:var(--blue-hi)}
+.hs-val.v-purple{color:var(--purple-hi)}
+.hs-val.v-teal{color:var(--teal-hi)}
+.hs-val.v-text{color:var(--text)}
+.hs-divider{width:1px;background:var(--border2);flex-shrink:0;margin:6px 0}
+.hs-donut-wrap{position:relative;width:36px;height:36px}
+.hs-donut-wrap svg{width:36px;height:36px}
+.hs-donut-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-hi)}
+
+/* ══ PERIOD CHIPS — clearer active state ══ */
+.period-chip{padding:5px 13px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);background:transparent;transition:all .15s;white-space:nowrap}
+.period-chip:hover{border-color:var(--border3);color:var(--text);background:var(--bg3)}
+.period-chip.active{background:var(--grad) !important;border-color:transparent !important;color:#fff !important;box-shadow:0 2px 8px rgba(53,159,145,.3)}
+
+/* ══ ANALYTICS — remove duplicate kpi-section section ══ */
+[data-theme="light"] .hs-cell:hover{background:rgba(0,0,0,.03)}
+
 </style>
 </head>
 <body>
@@ -1006,21 +1041,57 @@ input.p-in:focus{border-color:var(--brand-teal)}
       </div>
     </div>
 
-    <!-- LIVE STATUS BAR (compact - stays in issues tab) -->
-    <div style="display:flex;align-items:center;gap:10px;padding:5px 20px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
-      <div class="live-status">
-        <div class="live-ring" id="live-ring"></div>
-        <span id="live-label">Connecting…</span>
+    <!-- COMPACT HEALTH STRIP — KPIs always visible on Issues tab -->
+    <div class="health-strip" id="issues-health-strip">
+      <div class="hs-cell hs-total" title="Total issues across all sprints">
+        <div class="hs-val v-text" id="hs-total">–</div>
+        <div class="hs-lbl">Total</div>
       </div>
-      <span style="color:var(--border2)">·</span>
-      <span style="font-size:11px;color:var(--text3)">Last refreshed: <span id="last-refresh-time">–</span></span>
-      <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
-        <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Refresh
-      </button>
-      <span style="margin-left:auto;font-size:11px;color:var(--text3)">
-        <span id="realtime-event-count" style="color:var(--brand-teal);font-weight:600">0</span> live updates received
-      </span>
+      <div class="hs-cell hs-crit" onclick="filterSb('sev:Critical')" title="Critical open — click to filter">
+        <div class="hs-val v-red" id="hs-crit">–</div>
+        <div class="hs-lbl">Critical</div>
+      </div>
+      <div class="hs-cell hs-high" onclick="filterSb('sev:High')" title="High open — click to filter">
+        <div class="hs-val v-amber" id="hs-high">–</div>
+        <div class="hs-lbl">High Open</div>
+      </div>
+      <div class="hs-cell hs-prog" onclick="filterSb('In Progress')" title="In Progress — click to filter">
+        <div class="hs-val v-blue" id="hs-prog">–</div>
+        <div class="hs-lbl">In Progress</div>
+      </div>
+      <!-- Donut -->
+      <div class="hs-cell hs-res" onclick="filterSb('Resolved')" title="Resolved — click to filter" style="padding:4px 14px">
+        <div class="hs-donut-wrap">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg4)" stroke-width="4"/><circle cx="18" cy="18" r="14" fill="none" stroke="var(--green)" stroke-width="4" stroke-dasharray="88" stroke-dashoffset="88" id="hs-donut-fill" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset .6s ease"/></svg>
+          <div class="hs-donut-pct" id="hs-donut-pct">0%</div>
+        </div>
+        <div class="hs-lbl">Done</div>
+      </div>
+      <div class="hs-cell hs-rescue" onclick="filterSb('target:7-Day Rescue')" title="7-Day Rescue open — click to filter">
+        <div class="hs-val v-purple" id="hs-rescue">–</div>
+        <div class="hs-lbl">7-Day Open</div>
+      </div>
+      <div class="hs-cell hs-cleanup" onclick="filterSb('target:30-Day Cleanup')" title="30-Day Cleanup open — click to filter">
+        <div class="hs-val v-teal" id="hs-cleanup">–</div>
+        <div class="hs-lbl">30-Day Open</div>
+      </div>
+      <!-- right-aligned live status -->
+      <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding:0 14px;gap:8px;min-width:0">
+        <div class="live-status" style="flex-shrink:0">
+          <div class="live-ring" id="live-ring"></div>
+          <span id="live-label" style="font-size:11px">–</span>
+        </div>
+        <span style="color:var(--border2)">·</span>
+        <span style="font-size:10.5px;color:var(--text3);white-space:nowrap">
+          <span id="last-refresh-time">–</span>
+        </span>
+        <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()" style="flex-shrink:0">
+          <svg class="ico" style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+        <span style="font-size:10px;color:var(--text3);flex-shrink:0">
+          <span id="realtime-event-count" style="color:var(--brand-teal);font-weight:600">0</span> live
+        </span>
+      </div>
     </div>
 
     <!-- TOOLBAR -->
@@ -1155,102 +1226,14 @@ input.p-in:focus{border-color:var(--brand-teal)}
             <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-added-sub">issues logged</div>
           </div>
           <div class="hist-card" style="border-left:3px solid var(--blue)">
-            <div class="hist-card-title">⚡ Net Change</div>
-            <div style="font-size:32px;font-weight:800;letter-spacing:-1px" id="hist-stat-net">–</div>
-            <div class="net-change-tip" id="hist-net-tip">Fixed minus added. Positive = closing faster than opening.</div>
+            <div class="hist-card-title">⏱ Avg Days to Fix</div>
+            <div style="font-size:32px;font-weight:800;color:var(--blue-hi);letter-spacing:-1px" id="hist-stat-avgdays">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-avgdays-sub">days from open to resolved</div>
           </div>
           <div class="hist-card" style="border-left:3px solid var(--teal)">
             <div class="hist-card-title">📊 Overall Fix Rate</div>
             <div style="font-size:32px;font-weight:800;color:var(--teal-hi);letter-spacing:-1px" id="hist-stat-rate">–</div>
             <div style="font-size:11px;color:var(--text3);margin-top:3px">of all issues ever logged</div>
-          </div>
-        </div>
-
-        <!-- ── SECTION: OVERALL KPIs ── -->
-        <div class="section-divider" style="margin-top:18px">Current Sprint Health</div>
-        <div class="kpi-section" style="padding:0;margin-bottom:0">
-          <div class="kpi-row">
-            <div class="kpi-card kc-total">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--icon-clr)"><use href="#ic-zap"/></svg>Total</div>
-              <div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub" id="kpi-total-sub">All sprint issues</div>
-            </div>
-            <div class="kpi-card kc-crit" style="cursor:pointer" onclick="filterSb('sev:Critical');switchTab('issues')" title="Click to see Critical issues">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--red-hi)"><use href="#ic-alert"/></svg>Critical Open</div>
-              <div class="kpi-value" id="kpi-crit">–</div><div class="kpi-sub" id="kpi-crit-sub">–</div>
-            </div>
-            <div class="kpi-card kc-high" style="cursor:pointer" onclick="filterSb('sev:High');switchTab('issues')" title="Click to see High issues">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)"><use href="#ic-alert"/></svg>High Open</div>
-              <div class="kpi-value" id="kpi-high">–</div><div class="kpi-sub">need attention</div>
-            </div>
-            <div class="donut-card">
-              <div class="donut-wrap">
-                <svg viewBox="0 0 52 52"><circle class="donut-track" cx="26" cy="26" r="21"/><circle class="donut-fill" cx="26" cy="26" r="21" id="donut-path" stroke-dasharray="132" stroke-dashoffset="132"/></svg>
-                <div class="donut-text"><div class="donut-pct" id="donut-pct">0%</div><div class="donut-lbl">done</div></div>
-              </div>
-              <div class="donut-meta">
-                <div class="dm-label">Resolved</div>
-                <div class="dm-val" id="kpi-res">–</div>
-                <div class="dm-sub">of <span id="kpi-total-sm">–</span> total</div>
-              </div>
-            </div>
-            <div class="kpi-card kc-prog" style="cursor:pointer" onclick="filterSb('In Progress');switchTab('issues')" title="Click to see In Progress issues">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--blue-hi)"><use href="#ic-clock"/></svg>In Progress</div>
-              <div class="kpi-value" id="kpi-prog">–</div><div class="kpi-sub">being fixed</div>
-            </div>
-            <div class="kpi-card kc-7d" style="cursor:pointer" onclick="filterSb('target:7-Day Rescue');switchTab('issues')" title="Click to see 7-Day Rescue issues">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--purple-hi)"><use href="#ic-alert"/></svg>7-Day Rescue</div>
-              <div class="kpi-value" id="kpi-7d">–</div><div class="kpi-sub" id="kpi-7d-sub">–</div>
-            </div>
-            <div class="kpi-card kc-30d" style="cursor:pointer" onclick="filterSb('target:30-Day Cleanup');switchTab('issues')" title="Click to see 30-Day Cleanup issues">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)"><use href="#ic-settings"/></svg>30-Day Track</div>
-              <div class="kpi-value" id="kpi-30d">–</div><div class="kpi-sub" id="kpi-30d-sub">–</div>
-            </div>
-          </div>
-          <!-- Temporal KPI row -->
-          <div class="kpi-row2">
-            <div class="kpi-card kc-today">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Added Today</div>
-              <div class="kpi-value" id="kpi-added-today">–</div><div class="kpi-sub">new issues today</div>
-            </div>
-            <div class="kpi-card kc-week">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#a5b4fc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Added This Week</div>
-              <div class="kpi-value" id="kpi-added-week">–</div><div class="kpi-sub">since Monday</div>
-            </div>
-            <div class="kpi-card kc-res-today">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#6ee7b7" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved Today</div>
-              <div class="kpi-value" id="kpi-res-today">–</div><div class="kpi-sub" id="kpi-res-today-sub">closed today</div>
-            </div>
-            <div class="kpi-card kc-res-week">
-              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved This Week</div>
-              <div class="kpi-value" id="kpi-res-week">–</div><div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
-            </div>
-          </div>
-          <!-- Category cards — clickable filters -->
-          <div class="cat-cards" id="cat-row">
-            <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug');switchTab('issues')" title="Click to filter Bugs" style="border-left:3px solid var(--red)">
-              <div class="cat-header"><span class="cat-icon">🐛</span><span class="cat-pct-pill" id="cat-pct-Bug">–%</span></div>
-              <div class="cat-val" id="cat-val-Bug">–</div><div class="cat-label">Bugs</div>
-              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Bug">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Bug">–% done</span></div>
-              <div class="cat-bar"><div class="cat-fill cat-fill-bug" id="cat-fill-Bug" style="width:0%"></div></div>
-            </div>
-            <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement');switchTab('issues')" title="Click to filter Enhancements" style="border-left:3px solid var(--purple)">
-              <div class="cat-header"><span class="cat-icon">✨</span><span class="cat-pct-pill" id="cat-pct-Enhancement">–%</span></div>
-              <div class="cat-val" id="cat-val-Enhancement">–</div><div class="cat-label">Enhancements</div>
-              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Enhancement">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Enhancement">–% done</span></div>
-              <div class="cat-bar"><div class="cat-fill cat-fill-enh" id="cat-fill-Enhancement" style="width:0%"></div></div>
-            </div>
-            <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing');switchTab('issues')" title="Click to filter Testing Finds" style="border-left:3px solid var(--teal)">
-              <div class="cat-header"><span class="cat-icon">🧪</span><span class="cat-pct-pill" id="cat-pct-Testing">–%</span></div>
-              <div class="cat-val" id="cat-val-Testing">–</div><div class="cat-label">Testing Finds</div>
-              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Testing">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Testing">–% done</span></div>
-              <div class="cat-bar"><div class="cat-fill cat-fill-test" id="cat-fill-Testing" style="width:0%"></div></div>
-            </div>
-            <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX');switchTab('issues')" title="Click to filter UX Issues" style="border-left:3px solid var(--amber)">
-              <div class="cat-header"><span class="cat-icon">🎨</span><span class="cat-pct-pill" id="cat-pct-UX">–%</span></div>
-              <div class="cat-val" id="cat-val-UX">–</div><div class="cat-label">UX Issues</div>
-              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-UX">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-UX">–% done</span></div>
-              <div class="cat-bar"><div class="cat-fill cat-fill-ux" id="cat-fill-UX" style="width:0%"></div></div>
-            </div>
           </div>
         </div>
 
@@ -1781,7 +1764,9 @@ function buildSidebar(){
   }
 
   // Refresh history if it's the active tab
-  if(activeTab==='history')renderHistory();
+  if(activeTab==='history'||activeTab==='overview')renderHistory();
+  // Always update the issues-tab health strip
+  updateHealthStrip();
 }
 
 /* ══════════════════════════════════════
@@ -1915,6 +1900,40 @@ function switchTab(name){
   if(name==='qa') loadQaData(false);
 }
 
+
+/* ══════════════════════════════════════
+   ISSUES TAB HEALTH STRIP
+══════════════════════════════════════ */
+function updateHealthStrip(){
+  const sf=activeSprint==='all'?ALL:ALL.filter(i=>i.sprint_number===activeSprint);
+  const total=sf.length;
+  const open=sf.filter(i=>!isResolved(i)&&!isDeferred(i));
+  const crit=open.filter(i=>(i.severity||'').toLowerCase()==='critical').length;
+  const high=open.filter(i=>(i.severity||'').toLowerCase()==='high').length;
+  const inprog=sf.filter(i=>(i.status||'').toLowerCase()==='in progress').length;
+  const resolved=sf.filter(i=>isResolved(i)).length;
+  const pct=total?Math.round(resolved/total*100):0;
+  const rescue=sf.filter(i=>i.sprint_target==='7-Day Rescue'&&!isResolved(i)&&!isDeferred(i)).length;
+  const cleanup=sf.filter(i=>i.sprint_target==='30-Day Cleanup'&&!isResolved(i)&&!isDeferred(i)).length;
+
+  const setText2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setText2('hs-total',total||'–');
+  setText2('hs-crit',crit||'0');
+  setText2('hs-high',high||'0');
+  setText2('hs-prog',inprog||'0');
+  setText2('hs-rescue',rescue||'0');
+  setText2('hs-cleanup',cleanup||'0');
+  setText2('hs-donut-pct',pct+'%');
+
+  // Donut arc (circumference of r=14 circle = 87.96 ≈ 88)
+  const fill=document.getElementById('hs-donut-fill');
+  if(fill){const offset=Math.round(88-(88*pct/100));fill.style.strokeDashoffset=offset;}
+
+  // Colour the crit cell red if >0
+  const critCell=document.querySelector('.hs-cell.hs-crit');
+  if(critCell) critCell.style.background=crit>0?'rgba(239,68,68,.08)':'';
+}
+
 /* ══════════════════════════════════════
    HISTORY & REPORTS
 ══════════════════════════════════════ */
@@ -1960,8 +1979,23 @@ function renderHistory(){
 
   setText('hist-stat-fixed',fixed.length);setText('hist-stat-fixed-sub',fixed.length+' issues resolved '+label);
   setText('hist-stat-added',added.length);setText('hist-stat-added-sub',added.length+' issues logged '+label);
-  const netEl=$('hist-stat-net');
-  if(netEl){netEl.textContent=(net>=0?'+':'')+net;netEl.style.color=net>=0?'var(--green-hi)':net<-5?'var(--red-hi)':'var(--amber-hi)';}
+  // Avg days to fix — only for issues with both created_at and resolved_at in the period
+  const fixedWithDates=fixed.filter(i=>i.created_at&&i.resolved_at);
+  let avgDays='–';
+  if(fixedWithDates.length){
+    const totalDays=fixedWithDates.reduce((sum,i)=>{
+      const ms=new Date(i.resolved_at)-new Date(i.created_at);
+      return sum+Math.max(0,Math.floor(ms/86400000));
+    },0);
+    avgDays=Math.round(totalDays/fixedWithDates.length);
+  }
+  const avgEl=$('hist-stat-avgdays');
+  if(avgEl){
+    avgEl.textContent=avgDays==='–'?'–':avgDays+'d';
+    avgEl.style.color=avgDays==='–'?'var(--text3)':avgDays<=3?'var(--green-hi)':avgDays<=7?'var(--blue-hi)':avgDays<=14?'var(--amber-hi)':'var(--red-hi)';
+  }
+  const avgSubEl=$('hist-stat-avgdays-sub');
+  if(avgSubEl&&avgDays!=='–') avgSubEl.textContent=fixedWithDates.length+' issues measured '+label;
   setText('hist-stat-rate',totalAll?Math.round(totalResolved/totalAll*100)+'%':'–');
 
   // Fixed list
@@ -2132,14 +2166,6 @@ function renderHistory(){
     }).join('');
   }
 
-  // ── NET CHANGE TOOLTIP ────────────────────────────────────────────────────
-  const tipEl=$('hist-net-tip');
-  if(tipEl){
-    if(net>0) tipEl.textContent='✓ Fixing faster than new issues are coming in. Great velocity.';
-    else if(net===0) tipEl.textContent='Even — same number fixed as added. Neutral.';
-    else tipEl.textContent='More issues added than fixed this period. Backlog is growing.';
-    tipEl.style.color=net>0?'var(--green-hi)':net<0?'var(--red-hi)':'var(--text3)';
-  }
 
   // ── UPDATE PERIOD LABEL ────────────────────────────────────────────────────
   const labelEl=$('hist-period-label');
