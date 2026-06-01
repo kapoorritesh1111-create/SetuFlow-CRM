@@ -87,14 +87,15 @@ export async function GET(_request: Request, { params }: { params: { contractId:
     };
   });
 
-  const filename = `order-confirmation-${safeId(contract.id)}.pdf`;
+  const businessNumber = String(quote?.quote_number ?? '').trim() || safeId(contract.id).toUpperCase();
+  const filename = `order-confirmation-${businessNumber}.pdf`;
   const bytes = buildOrderDocumentPdf({
     documentType: 'order-confirmation',
-    documentNo: `Order Confirmation ${safeId(contract.id)}`,
+    documentNo: `Order Confirmation ${businessNumber}`,
     companyName: lead?.company_name ?? 'Customer',
     contactName: lead?.contact_name ?? null,
     country: lead?.country ?? null,
-    quoteId: quote?.id ?? contract.quote_id,
+    quoteId: String(quote?.quote_number ?? '').trim() || `Quote ${safeId(quote?.id ?? contract.quote_id)}`,
     contractId: contract.id,
     quoteCurrency: contract.quote_currency ?? quote?.display_currency ?? quote?.currency,
     pricingBasis: contract.pricing_basis ?? quote?.pricing_basis,
