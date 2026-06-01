@@ -32,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: { contractId:
   const [{ data: quote }, { data: org }] = await Promise.all([
     db
       .from('quotes')
-      .select('id, lead_id, currency, display_currency, pricing_basis, updated_at, created_at')
+      .select('id, quote_number, lead_id, currency, display_currency, pricing_basis, updated_at, created_at')
       .eq('organization_id', organizationId)
       .eq('id', contract.quote_id)
       .maybeSingle(),
