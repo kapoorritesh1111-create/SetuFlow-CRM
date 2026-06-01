@@ -747,7 +747,8 @@ input.p-in:focus{border-color:var(--brand-teal)}
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
-    <!-- Sprint ring -->
+
+    <!-- Sprint ring — always visible at top -->
     <div class="sb-sprint">
       <div class="sb-sprint-label">Sprint Progress</div>
       <div class="sb-sprint-ring">
@@ -763,15 +764,42 @@ input.p-in:focus{border-color:var(--brand-teal)}
       </div>
     </div>
 
-    <div class="sb-section" style="margin-top:8px"><div class="sb-section-label">By Sprint</div></div>
+    <!-- QA WORKSPACE — prominent, not buried -->
+    <div style="padding:8px 10px;border-bottom:1px solid var(--border2)">
+      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:6px;padding:0 4px">QA Workspace</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <a href="setuflow-demo-checklist.html"
+           style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:var(--r);background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.2);text-decoration:none;transition:all .15s;cursor:pointer"
+           onmouseover="this.style.background='rgba(20,184,166,.2)'" onmouseout="this.style.background='rgba(20,184,166,.1)'"
+           title="Pre-Demo Readiness — run before every demo">
+          <span style="font-size:16px;line-height:1">📋</span>
+          <span style="font-size:9.5px;font-weight:700;color:var(--teal-hi);text-align:center;line-height:1.3">Pre-Demo<br>Readiness</span>
+        </a>
+        <a href="setuflow-e2e-testing.html"
+           style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:var(--r);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);text-decoration:none;transition:all .15s;cursor:pointer"
+           onmouseover="this.style.background='rgba(59,130,246,.2)'" onmouseout="this.style.background='rgba(59,130,246,.1)'"
+           title="QA Test Suite — run after fixes are deployed">
+          <span style="font-size:16px;line-height:1">🧪</span>
+          <span style="font-size:9.5px;font-weight:700;color:var(--blue-hi);text-align:center;line-height:1.3">QA Test<br>Suite</span>
+        </a>
+      </div>
+      <div class="sb-item" onclick="switchTab('qa')" style="margin-top:5px;padding:5px 8px;border-radius:var(--r);background:var(--bg3)">
+        <svg class="ico sb-icon" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span class="sb-item-text" style="font-size:11.5px">View QA Runs &amp; History</span>
+        <span class="sb-count" id="sb-qa-runs" style="background:var(--teal-d);color:var(--teal-hi)">–</span>
+      </div>
+    </div>
+
+    <!-- BY SPRINT -->
+    <div class="sb-section" style="margin-top:6px"><div class="sb-section-label">By Sprint</div></div>
     <div id="sb-sprint-filter">
-      <!-- populated by buildSprintFilter() -->
       <div class="sb-item active" id="sb-sprint-all" onclick="filterBySprint('all')">
         <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-zap"/></svg>
         <span class="sb-item-text">All Sprints</span><span class="sb-count" id="cnt-all">–</span>
       </div>
     </div>
 
+    <!-- BY STATUS -->
     <div class="sb-divider"></div>
     <div class="sb-section"><div class="sb-section-label">By Status</div></div>
     <div class="sb-item" id="sb-Open" onclick="filterSb('Open')">
@@ -795,75 +823,75 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <span class="sb-item-text" style="color:var(--text3)">Won't Fix</span><span class="sb-count" id="cnt-WontFix" style="background:var(--bg4);color:var(--text3)">–</span>
     </div>
 
+    <!-- SEVERITY — compact chip row -->
     <div class="sb-divider"></div>
     <div class="sb-section"><div class="sb-section-label">By Severity</div></div>
-    <div class="sb-item" id="sb-sevCritical" onclick="filterSb('sev:Critical')">
-      <span style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;display:inline-block"></span>
-      <span class="sb-item-text">Critical</span><span class="sb-count" id="cnt-sevCritical">–</span>
-    </div>
-    <div class="sb-item" id="sb-sevHigh" onclick="filterSb('sev:High')">
-      <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;display:inline-block"></span>
-      <span class="sb-item-text">High</span><span class="sb-count" id="cnt-sevHigh">–</span>
-    </div>
-    <div class="sb-item" id="sb-sevMedium" onclick="filterSb('sev:Medium')">
-      <span style="width:8px;height:8px;border-radius:50%;background:#64748b;flex-shrink:0;display:inline-block"></span>
-      <span class="sb-item-text">Medium</span><span class="sb-count" id="cnt-sevMedium">–</span>
-    </div>
-    <div class="sb-item" id="sb-sevLow" onclick="filterSb('sev:Low')">
-      <span style="width:8px;height:8px;border-radius:50%;background:var(--bg5);border:1px solid var(--border2);flex-shrink:0;display:inline-block"></span>
-      <span class="sb-item-text">Low</span><span class="sb-count" id="cnt-sevLow">–</span>
-    </div>
-
-    <div class="sb-divider"></div>
-    <div class="sb-section"><div class="sb-section-label">Sprint Target</div></div>
-    <div class="sb-item" id="sb-rescue" onclick="filterSb('target:7-Day Rescue')">
-      <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-alert"/></svg>
-      <span class="sb-item-text">7-Day Rescue</span><span class="sb-count" id="cnt-t7d">–</span>
-    </div>
-    <div class="sb-item" id="sb-cleanup" onclick="filterSb('target:30-Day Cleanup')">
-      <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-settings"/></svg>
-      <span class="sb-item-text">30-Day Cleanup</span><span class="sb-count" id="cnt-t30d">–</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 8px 8px">
+      <div class="sb-item" id="sb-sevCritical" onclick="filterSb('sev:Critical')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;display:inline-block"></span>
+        <span class="sb-item-text" style="font-size:11.5px">Critical</span><span class="sb-count" id="cnt-sevCritical" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item" id="sb-sevHigh" onclick="filterSb('sev:High')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;display:inline-block"></span>
+        <span class="sb-item-text" style="font-size:11.5px">High</span><span class="sb-count" id="cnt-sevHigh" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item" id="sb-sevMedium" onclick="filterSb('sev:Medium')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="width:7px;height:7px;border-radius:50%;background:#64748b;flex-shrink:0;display:inline-block"></span>
+        <span class="sb-item-text" style="font-size:11.5px">Medium</span><span class="sb-count" id="cnt-sevMedium" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item" id="sb-sevLow" onclick="filterSb('sev:Low')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--bg5);border:1px solid var(--border2);flex-shrink:0;display:inline-block"></span>
+        <span class="sb-item-text" style="font-size:11.5px">Low</span><span class="sb-count" id="cnt-sevLow" style="font-size:9.5px">–</span>
+      </div>
     </div>
 
+    <!-- CATEGORY — compact chip row -->
     <div class="sb-divider"></div>
     <div class="sb-section"><div class="sb-section-label">By Category</div></div>
-    <div class="sb-item sb-cat-bug" id="sb-cat-Bug" onclick="filterSb('cat:Bug')">
-      <span style="font-size:13px;flex-shrink:0">🐛</span>
-      <span class="sb-item-text">Bug</span><span class="sb-count" id="cnt-cat-Bug">–</span>
-    </div>
-    <div class="sb-item sb-cat-enh" id="sb-cat-Enhancement" onclick="filterSb('cat:Enhancement')">
-      <span style="font-size:13px;flex-shrink:0">✨</span>
-      <span class="sb-item-text">Enhancement</span><span class="sb-count" id="cnt-cat-Enhancement">–</span>
-    </div>
-    <div class="sb-item sb-cat-test" id="sb-cat-Testing" onclick="filterSb('cat:Testing')">
-      <span style="font-size:13px;flex-shrink:0">🧪</span>
-      <span class="sb-item-text">Testing Find</span><span class="sb-count" id="cnt-cat-Testing">–</span>
-    </div>
-    <div class="sb-item sb-cat-ux" id="sb-cat-UX" onclick="filterSb('cat:UX')">
-      <span style="font-size:13px;flex-shrink:0">🎨</span>
-      <span class="sb-item-text">UX Issue</span><span class="sb-count" id="cnt-cat-UX">–</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 8px 8px">
+      <div class="sb-item sb-cat-bug" id="sb-cat-Bug" onclick="filterSb('cat:Bug')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="font-size:12px;flex-shrink:0">🐛</span>
+        <span class="sb-item-text" style="font-size:11.5px">Bug</span><span class="sb-count" id="cnt-cat-Bug" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item sb-cat-enh" id="sb-cat-Enhancement" onclick="filterSb('cat:Enhancement')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="font-size:12px;flex-shrink:0">✨</span>
+        <span class="sb-item-text" style="font-size:11.5px">Enh.</span><span class="sb-count" id="cnt-cat-Enhancement" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item sb-cat-test" id="sb-cat-Testing" onclick="filterSb('cat:Testing')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="font-size:12px;flex-shrink:0">🧪</span>
+        <span class="sb-item-text" style="font-size:11.5px">Test</span><span class="sb-count" id="cnt-cat-Testing" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item sb-cat-ux" id="sb-cat-UX" onclick="filterSb('cat:UX')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <span style="font-size:12px;flex-shrink:0">🎨</span>
+        <span class="sb-item-text" style="font-size:11.5px">UX</span><span class="sb-count" id="cnt-cat-UX" style="font-size:9.5px">–</span>
+      </div>
     </div>
 
+    <!-- SPRINT TARGET — compact -->
     <div class="sb-divider"></div>
-    <div class="sb-section"><div class="sb-section-label">By Area</div></div>
-    <div id="sb-areas"></div>
-
-    <div class="sb-divider"></div>
-    <div class="sb-section"><div class="sb-section-label">QA Workspace</div></div>
-    <div class="sb-item" onclick="switchTab('qa')">
-      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-      <span class="sb-item-text">QA Overview</span>
-      <span class="sb-count" id="sb-qa-runs" style="background:var(--teal-d);color:var(--teal-hi)">–</span>
+    <div class="sb-section"><div class="sb-section-label">Sprint Target</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 8px 8px">
+      <div class="sb-item" id="sb-rescue" onclick="filterSb('target:7-Day Rescue')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <svg class="ico sb-icon" style="width:11px;height:11px;stroke:var(--purple-hi)"><use href="#ic-alert"/></svg>
+        <span class="sb-item-text" style="font-size:11px">7-Day</span><span class="sb-count" id="cnt-t7d" style="font-size:9.5px">–</span>
+      </div>
+      <div class="sb-item" id="sb-cleanup" onclick="filterSb('target:30-Day Cleanup')" style="padding:5px 7px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <svg class="ico sb-icon" style="width:11px;height:11px;stroke:var(--teal-hi)"><use href="#ic-settings"/></svg>
+        <span class="sb-item-text" style="font-size:11px">30-Day</span><span class="sb-count" id="cnt-t30d" style="font-size:9.5px">–</span>
+      </div>
     </div>
-    <a href="setuflow-demo-checklist.html" class="sb-item" style="text-decoration:none;color:inherit" title="Run before every demo — 57 items, live sign-off">
-      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      <span class="sb-item-text">Pre-Demo Readiness ↗</span>
-    </a>
-    <a href="setuflow-e2e-testing.html" class="sb-item" style="text-decoration:none;color:inherit" title="Full system test suite — run after fixes are deployed">
-      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span class="sb-item-text">QA Test Suite ↗</span>
-    </a>
 
+    <!-- BY AREA — collapsible accordion -->
+    <div class="sb-divider"></div>
+    <div class="sb-section" style="cursor:pointer;user-select:none" onclick="toggleSbAreas()">
+      <div class="sb-section-label" style="display:flex;align-items:center;justify-content:space-between">
+        By Area
+        <span id="sb-areas-toggle" style="font-size:11px;color:var(--text3);transition:transform .2s">›</span>
+      </div>
+    </div>
+    <div id="sb-areas" style="max-height:0;overflow:hidden;transition:max-height .25s ease"></div>
+
+    <!-- CTA -->
     <div class="sb-cta-wrap">
       <button class="sb-add-btn" onclick="openNewIssueModal()">
         <svg class="ico" style="width:13px;height:13px" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -950,8 +978,6 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Refresh
       </button>
-      <button class="gpt-btn gpt-btn-outline" onclick="switchTab('overview')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2)">📊 KPIs &amp; Overview</button>
-      <button class="gpt-btn gpt-btn-outline" onclick="switchTab('history')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2)">📅 History</button>
       <span style="margin-left:auto;font-size:11px;color:var(--text3)">
         <span id="realtime-event-count" style="color:var(--brand-teal);font-weight:600">0</span> live updates received
       </span>
@@ -990,12 +1016,8 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <div class="spacer"></div>
       <div class="resolved-hidden-note" id="res-hidden-note">
         <svg class="ico" style="width:11px;height:11px;stroke:var(--icon-clr)" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-        <span id="res-hidden-count">0</span> resolved hidden &mdash; <span class="rhn-link" onclick="filterSb('Resolved')">show them</span>
+        <span id="res-hidden-count">0</span> hidden &mdash; <span class="rhn-link" onclick="filterSb('Resolved')">show</span>
       </div>
-      <button class="hide-toggle hiding" id="hide-toggle-btn" onclick="toggleHideResolved()" title="Toggle auto-hide resolved issues">
-        <div class="toggle-pill"><div class="toggle-knob"></div></div>
-        <span id="hide-toggle-label">Hiding resolved</span>
-      </button>
       <button class="hide-toggle hiding" id="hide-toggle-btn" onclick="toggleHideResolved()" title="Toggle auto-hide resolved issues">
         <div class="toggle-pill"><div class="toggle-knob"></div></div>
         <span id="hide-toggle-label">Hiding resolved</span>
@@ -1786,6 +1808,24 @@ function toggleHideDeferred(){
    WORKSPACE TAB SWITCHING
 ══════════════════════════════════════ */
 let activeTab='issues';
+/* ══════════════════════════════════════
+   SIDEBAR AREA ACCORDION
+══════════════════════════════════════ */
+let sbAreasOpen=false;
+function toggleSbAreas(){
+  sbAreasOpen=!sbAreasOpen;
+  const el=document.getElementById('sb-areas');
+  const tog=document.getElementById('sb-areas-toggle');
+  if(el){
+    if(sbAreasOpen){
+      el.style.maxHeight='600px'; // generous ceiling
+    } else {
+      el.style.maxHeight='0';
+    }
+  }
+  if(tog)tog.style.transform=sbAreasOpen?'rotate(90deg)':'rotate(0deg)';
+}
+
 function switchTab(name){
   activeTab=name;
   ['issues','overview','history','qa'].forEach(t=>{

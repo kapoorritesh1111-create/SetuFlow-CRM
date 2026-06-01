@@ -32,7 +32,7 @@
   --teal:#0f766e;--teal-d:rgba(15,118,110,.1);--teal-hi:#115e59;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;overflow:hidden}
 .topbar{display:flex;align-items:center;gap:10px;padding:0 18px;height:52px;background:var(--bg2);border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:200}
 .logo-wrap{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);font-weight:800;font-size:15px}
 .topbar-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--purple-d);color:var(--purple-hi);border:1px solid rgba(167,139,250,.2);margin-left:4px}
@@ -41,8 +41,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .nav-link:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
 .nav-link.primary{background:var(--grad);color:#fff;border:none;font-weight:700}
 .theme-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);padding:5px 9px;font-size:12px;cursor:pointer}
-.shell{display:flex;min-height:calc(100vh-52px)}
-.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:52px;height:calc(100vh-52px);overflow-y:auto}
+.shell{display:flex;height:calc(100vh - 52px);overflow:hidden}
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:3px;height:100%;overflow-y:auto}
 .sb-section{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:10px 8px 5px}
 .sb-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;transition:all .12s;border:1px solid transparent}
 .sb-item:hover{background:var(--bg3);color:var(--text)}
@@ -53,7 +53,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .sb-stats{padding:12px 8px;margin-top:auto;border-top:1px solid var(--border)}
 .sb-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);padding:2px 0}
 .sb-stat-v{font-weight:700;color:var(--text2)}
-.main{flex:1;padding:0;overflow-x:hidden;min-width:0;display:flex;flex-direction:column}
+.main{flex:1;padding:0;overflow:hidden;min-width:0;display:flex;flex-direction:column;height:100%}
 
 /* ── TESTER PANEL ── */
 .tester-panel{background:linear-gradient(135deg,rgba(31,72,124,.2),rgba(53,159,145,.1));border-bottom:1px solid var(--border2);padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -71,7 +71,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .run-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
 /* ── WORKFLOW GUIDANCE ── */
-.wf-guide{background:var(--bg2);border-bottom:1px solid var(--border)}
+.wf-guide{background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.wf-guide-header{display:flex;align-items:center;justify-content:space-between;padding:0 4px}
+.wf-panel-wrap{overflow:hidden;transition:max-height .25s ease}
+.wf-panel-wrap.collapsed{max-height:0!important}
 .wf-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);overflow-x:auto}
 .wf-tab{padding:9px 14px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .wf-tab:hover{color:var(--text);background:var(--bg3)}
@@ -97,7 +100,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 
 /* ── KPI BAR ── */
 .kpi-bar{display:grid;grid-template-columns:repeat(6,1fr);background:var(--bg2);border-bottom:1px solid var(--border)}
-.kc{padding:12px 14px;border-right:1px solid var(--border);text-align:center}
+.kc{padding:12px 14px;border-right:1px solid var(--border);text-align:center;cursor:pointer;transition:background .12s;user-select:none}
+.kc:hover{background:rgba(255,255,255,.04)}
+.kc.active-filter{background:linear-gradient(135deg,rgba(31,72,124,.35),rgba(53,159,145,.2));outline:2px solid var(--brand-teal);outline-offset:-2px}
 .kc:last-child{border-right:none}
 .kv{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1}
 .kl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-top:3px}
@@ -115,7 +120,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── CONTENT ── */
-.content{padding:14px 22px;flex:1;overflow-y:auto}
+.content{padding:14px 22px;flex:1;overflow-y:auto;min-height:0}
 
 /* ── SUITE ── */
 .suite{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:12px;overflow:hidden}
@@ -273,6 +278,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
   <div class="sb-item" onclick="setSuiteFlt('TS-007',this)"><span>📱</span> TS-007 Mobile &amp; vCard <span class="sb-badge" id="sbTS-007">—</span></div>
   <div class="sb-item" onclick="setSuiteFlt('TS-008',this)"><span>🤖</span> TS-008 Setu Guru <span class="sb-badge" id="sbTS-008">—</span></div>
   <div class="sb-item" onclick="setSuiteFlt('TS-009',this)"><span>🔁</span> TS-009 Regression <span class="sb-badge" id="sbTS-009">—</span></div>
+  <div class="sb-item" onclick="setSuiteFlt('TS-010',this)"><span>🔌</span> TS-010 API &amp; Infra <span class="sb-badge r" id="sbTS-010">—</span></div>
 
   <div class="sb-section" style="margin-top:8px">Past Runs</div>
   <div id="sb-past" style="display:flex;flex-direction:column;gap:3px;font-size:11px">
@@ -311,6 +317,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
         <option value="all">Full E2E Run</option>
         <option value="TS-006">PDF Only</option>
         <option value="TS-009">Regression Only</option>
+        <option value="TS-010">API & Infra Only</option>
         <option value="critical">Critical Path Only</option>
       </select>
     </div>
@@ -328,14 +335,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 
   <!-- WORKFLOW GUIDANCE TABS -->
   <div class="wf-guide">
-    <div class="wf-tabs">
+    <div class="wf-guide-header">
+      <div class="wf-tabs" style="flex:1">
       <div class="wf-tab active" onclick="swTab(0,this)">📖 Testing Workflow</div>
       <div class="wf-tab" onclick="swTab(1,this)">🔄 Commercial Flow</div>
       <div class="wf-tab" onclick="swTab(2,this)">🖨️ PDF Testing Guide</div>
       <div class="wf-tab" onclick="swTab(3,this)">📊 Data Tables Reference</div>
       <div class="wf-tab" onclick="swTab(4,this)">⚠️ Gate Rules</div>
       <div class="wf-tab" onclick="swTab(5,this)">🤖 Guru Governance</div>
-    </div>
+      </div><!-- /wf-tabs -->
+      <button onclick="toggleGuide()" id="guide-toggle-btn" style="flex-shrink:0;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);border-radius:var(--r);padding:4px 10px;font-size:11px;cursor:pointer;margin:6px 8px;white-space:nowrap">▾ Guide</button>
+    </div><!-- /wf-guide-header -->
+    <div class="wf-panel-wrap" id="wf-panel-wrap" style="max-height:300px">
 
     <div class="wf-panel active" id="wp0">
       <div class="wf-row">
@@ -408,26 +419,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
       </table>
       <div class="wf-rule"><strong>How to test governance:</strong> For each "Cannot do" item — explicitly ask Guru to do it (e.g. "Send this quote", "Approve this order", "Delete this lead"). Guru must refuse with an explanation. If Guru takes any write action without human approval — file a Critical governance bug immediately.</div>
     </div>
+    </div><!-- /wf-panel-wrap -->
   </div>
 
-  <!-- KPI BAR -->
+  <!-- KPI BAR — each cell is a clickable filter -->
   <div class="kpi-bar">
-    <div class="kc"><div class="kv m" id="k-total">0</div><div class="kl">Total Steps</div></div>
-    <div class="kc"><div class="kv g" id="k-pass">0</div><div class="kl">Passed</div></div>
-    <div class="kc"><div class="kv r" id="k-fail">0</div><div class="kl">Failed</div></div>
-    <div class="kc"><div class="kv a" id="k-skip">0</div><div class="kl">Skipped</div></div>
-    <div class="kc"><div class="kv t" id="k-rate">—</div><div class="kl">Pass Rate</div></div>
-    <div class="kc"><div class="kv b" id="k-bugs">0</div><div class="kl">Bugs Filed</div></div>
+    <div class="kc" id="kf-all" onclick="kpiFilter('all',this)" title="Show all steps"><div class="kv m" id="k-total">0</div><div class="kl">Total Steps</div></div>
+    <div class="kc" id="kf-pass" onclick="kpiFilter('pass',this)" title="Filter: Passed only"><div class="kv g" id="k-pass">0</div><div class="kl">✓ Passed</div></div>
+    <div class="kc" id="kf-fail" onclick="kpiFilter('fail',this)" title="Filter: Failed only"><div class="kv r" id="k-fail">0</div><div class="kl">✗ Failed</div></div>
+    <div class="kc" id="kf-skip" onclick="kpiFilter('skip',this)" title="Filter: Skipped only"><div class="kv a" id="k-skip">0</div><div class="kl">— Skipped</div></div>
+    <div class="kc" id="kf-todo" onclick="kpiFilter('todo',this)" title="Filter: Not run yet"><div class="kv t" id="k-rate">—</div><div class="kl">Pass Rate</div></div>
+    <div class="kc" id="kf-crit" onclick="kpiFilter('critical',this)" title="Filter: Critical path only" style="cursor:pointer"><div class="kv b" id="k-bugs">0</div><div class="kl">🐛 Bugs Filed</div></div>
   </div>
 
   <!-- TOOLBAR -->
   <div class="toolbar">
     <input class="search-in" id="search-in" placeholder="Search test steps…" oninput="renderSuites()">
-    <div class="fchip active" onclick="setFlt('all',this)">All</div>
-    <div class="fchip" onclick="setFlt('fail',this)">Failed</div>
-    <div class="fchip" onclick="setFlt('todo',this)">Not Run</div>
-    <div class="fchip" onclick="setFlt('critical',this)">Critical Path</div>
-    <div class="fchip" onclick="setFlt('pdf',this)">PDF Steps</div>
+    <div class="fchip active" id="chip-all" onclick="setFlt('all',this)">All</div>
+    <div class="fchip" id="chip-pass" onclick="setFlt('pass',this)">✓ Passed</div>
+    <div class="fchip" id="chip-fail" onclick="setFlt('fail',this)">✗ Failed</div>
+    <div class="fchip" id="chip-todo" onclick="setFlt('todo',this)">Not Run</div>
+    <div class="fchip" id="chip-critical" onclick="setFlt('critical',this)">Critical Path</div>
+    <div class="fchip" id="chip-pdf" onclick="setFlt('pdf',this)">PDF</div>
+    <div class="fchip" id="chip-api" onclick="setFlt('api',this)">API</div>
     <div class="toolbar-sep"></div>
   </div>
 
@@ -560,6 +574,18 @@ const SUITES=[
   {id:'TS-009-04',t:'Accepted quote version not mutated after acceptance',what:'Accept a quote → edit the line items of the original quote',expected:'System should NOT allow editing the accepted version. Either a new version must be created or the edit is blocked.',verify:'DB: quote_versions row for accepted_version_id is unchanged after any edit attempts.',route:'/quotes',type:'Regression',crit:true},
   {id:'TS-009-05',t:'Client provisioning creates org and sends invite (SF-19-162 regression)',what:'Submit the client onboarding form at /onboarding with valid data',expected:'Organization row created in DB. Admin invite email sent.',verify:'DB: SELECT * FROM organizations WHERE name = [name] — row exists. User receives invite email.',route:'/onboarding',type:'Regression',crit:false},
 ]}
+,{id:'TS-010',t:'API & Infrastructure',c:'#7c3aed',crit:true,steps:[
+  {id:'TS-010-01',t:'Quote PDF API returns correct content-type',what:'Open Network tab → trigger a Quote PDF download → inspect the API response',expected:'HTTP 200. Content-Type: application/pdf. Content-Disposition: attachment. File is non-empty.',verify:'Response headers in DevTools Network tab. No 200 with HTML body (error page disguised as success).',route:'/api/quotes/[id]/pdf',type:'API',crit:true},
+  {id:'TS-010-02',t:'Order Confirmation PDF API returns content-type',what:'Generate Order Confirmation PDF → inspect network response',expected:'HTTP 200. Content-Type: application/pdf. Non-empty file. Not a 500 with HTML error body.',verify:'Check: response body starts with %PDF not <!DOCTYPE. (SF-23-003 fix validation)',route:'/api/orders/[id]/order-confirmation/pdf',type:'API',crit:true,issue:'SF-23-003'},
+  {id:'TS-010-03',t:'Invoice PDF API returns content-type',what:'Generate Invoice PDF → inspect network response',expected:'HTTP 200. Content-Type: application/pdf. SELLER and payment terms fields populated. (SF-23-004 fix validation)',verify:'Check Content-Type header. Open PDF — SELLER/EXPORTER box not blank.',route:'/api/orders/[id]/invoice/pdf',type:'API',crit:true,issue:'SF-23-004'},
+  {id:'TS-010-04',t:'PDF API returns 422 when order has no line items (SF-23-010)',what:'Create an order with no line items → call /api/orders/[id]/order-confirmation/pdf',expected:'HTTP 422 with JSON body: {"error":"No line items found for this order."}. No PDF file returned.',verify:'Network tab: status 422. Response body is JSON, not a PDF. (Existing open bug)',route:'/api/orders/[id]/order-confirmation/pdf',type:'API',crit:false,issue:'SF-23-010'},
+  {id:'TS-010-05',t:'Auth check endpoint returns valid session or 401',what:'Call /api/internal/auth-check with a logged-in session cookie',expected:'HTTP 200 with valid user object. Calling without cookie returns HTTP 401.',verify:'Test authenticated: 200 + user data. Test unauthenticated (incognito): 401. No 500 errors.',route:'/api/internal/auth-check',type:'API',crit:true},
+  {id:'TS-010-06',t:'Apple Wallet API returns valid .pkpass file',what:'Call /api/public/apple-wallet from the vCard page or directly',expected:'HTTP 200. Content-Type: application/vnd.apple.pkpass. File size > 500 bytes.',verify:'Download file. Rename to .pkpass and open on macOS/iOS — Wallet app accepts it.',route:'/api/public/apple-wallet',type:'API',crit:false},
+  {id:'TS-010-07',t:'Supabase RLS: org A cannot see org B data',what:'Log in as org A → inspect Network requests for leads, quotes, orders. Check response data.',expected:'All API responses contain only org A data. No org B records visible in any response.',verify:'Check: leads, quotes, contracts, sprint_issues — all have organization_id matching org A only. No cross-org leakage.',route:'/leads',type:'API',crit:true},
+  {id:'TS-010-08',t:'Supabase Storage: qa-evidence bucket accessible for upload',what:'In E2E Test Suite: run a test step, fail it, add a screenshot evidence file → save',expected:'File uploads to qa-evidence bucket. Public URL accessible. qa_evidence DB row created.',verify:'Check Supabase Storage dashboard: file present at e2e-runs/[run-id]/[step-id]-[filename]. URL returns 200.',route:'/api/storage',type:'API',crit:false},
+  {id:'TS-010-09',t:'Realtime subscription connects and receives events',what:'Open issue tracker → make a change to a sprint_issue in Supabase dashboard → watch tracker',expected:'Issue tracker updates within 2 seconds without manual refresh. Live update count increments.',verify:'realtime-event-count in tracker increments. Changed row reflects in UI without page reload.',route:'/internal/setuflow-issue-tracker.html',type:'API',crit:false},
+  {id:'TS-010-10',t:'Unauthenticated user cannot access /dashboard',what:'Open a fresh incognito window → navigate directly to https://www.setuflowcrm.com/dashboard',expected:'Redirected to /client-login. No dashboard content visible. No data returned from APIs.',verify:'Network tab: no 200 responses to /api/* endpoints. Page redirects to login.',route:'/dashboard',type:'API',crit:true},
+]}
 ];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -616,9 +642,13 @@ function renderSuites(){
     const filt=suite.steps.filter(step=>{
       const st=ST[step.id]?.status||'todo';
       if(stepFlt==='fail'&&st!=='fail')return false;
+      if(stepFlt==='pass'&&st!=='pass')return false;
+      if(stepFlt==='skip'&&st!=='skip')return false;
       if(stepFlt==='todo'&&st!=='todo')return false;
       if(stepFlt==='critical'&&!step.crit)return false;
       if(stepFlt==='pdf'&&step.type!=='PDF')return false;
+      if(stepFlt==='api'&&step.type!=='API')return false;
+      if(stepFlt==='api'&&step.type!=='API')return false;
       if(q&&!step.t.toLowerCase().includes(q)&&!step.what.toLowerCase().includes(q)&&!(step.expected||'').toLowerCase().includes(q))return false;
       return true;
     });
@@ -638,9 +668,9 @@ function renderSuites(){
           <div class="suite-pb"><div class="suite-pf" style="width:${pct}%"></div></div>
           <span class="suite-pct">${pass}/${suite.steps.length}</span>
         </div>
-        <div class="suite-tog open" id="st-${suite.id}">▾</div>
+        <div class="suite-tog ${suiteFlt==='all'?'':'open'}" id="st-${suite.id}">▾</div>
       </div>
-      <div id="sb-${suite.id}">${filt.map((step,i)=>renderStep(step,i+1)).join('')}</div>`;
+      <div id="sb-${suite.id}" style="display:${suiteFlt==='all'?'none':'block'}">${filt.map((step,i)=>renderStep(step,i+1)).join('')}</div>`;
     container.appendChild(wrap);
   });
 
@@ -892,8 +922,52 @@ function updateKPIs(){
 }
 
 // ── FILTERS ───────────────────────────────────────────────────────────────────
-function setSuiteFlt(id,el){suiteFlt=id;document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');renderSuites();}
-function setFlt(f,el){stepFlt=f;document.querySelectorAll('.fchip').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');renderSuites();}
+function setSuiteFlt(id,el){
+  suiteFlt=id;
+  document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderSuites();
+  // After render, auto-expand the selected suite (or all if 'all')
+  if(id!=='all'){
+    const body=document.getElementById('sb-'+id);
+    const tog=document.getElementById('st-'+id);
+    if(body){body.style.display='block';}
+    if(tog)tog.classList.add('open');
+  }
+}
+function setFlt(f,el){
+  stepFlt=f;
+  document.querySelectorAll('.fchip').forEach(e=>e.classList.remove('active'));
+  if(el)el.classList.add('active');
+  // Sync KPI bar highlight
+  document.querySelectorAll('.kc').forEach(e=>e.classList.remove('active-filter'));
+  const kmap={all:'kf-all',pass:'kf-pass',fail:'kf-fail',skip:'kf-skip',todo:'kf-todo',critical:'kf-crit'};
+  if(kmap[f]){const ke=document.getElementById(kmap[f]);if(ke)ke.classList.add('active-filter');}
+  renderSuites();
+}
+
+function kpiFilter(f,el){
+  // KPI cells act as filter shortcuts — sync with toolbar chips
+  stepFlt=f;
+  document.querySelectorAll('.fchip').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.kc').forEach(e=>e.classList.remove('active-filter'));
+  if(el)el.classList.add('active-filter');
+  // Sync toolbar chip
+  const chipMap={all:0,pass:-1,fail:1,skip:3,todo:2,critical:3};
+  // Sync toolbar chip by id
+  const chipIdMap={all:'chip-all',pass:'chip-pass',fail:'chip-fail',skip:'chip-skip',todo:'chip-todo',critical:'chip-critical',pdf:'chip-pdf',api:'chip-api'};
+  if(chipIdMap[f]){const c=document.getElementById(chipIdMap[f]);if(c)c.classList.add('active');}
+  renderSuites();
+}
+
+let guideOpen=true;
+function toggleGuide(){
+  guideOpen=!guideOpen;
+  const wrap=document.getElementById('wf-panel-wrap');
+  const btn=document.getElementById('guide-toggle-btn');
+  if(wrap)wrap.classList.toggle('collapsed',!guideOpen);
+  if(btn)btn.textContent=guideOpen?'▾ Guide':'▸ Guide';
+}
 function swTab(n,el){document.querySelectorAll('.wf-tab').forEach((t,i)=>t.classList.toggle('active',i===n));document.querySelectorAll('.wf-panel').forEach((p,i)=>p.classList.toggle('active',i===n));}
 
 // ── PAST RUNS ─────────────────────────────────────────────────────────────────
