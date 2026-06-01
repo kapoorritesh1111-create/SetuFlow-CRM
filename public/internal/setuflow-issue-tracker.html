@@ -383,13 +383,99 @@ input.p-in:focus{border-color:var(--brand-teal)}
 .hide-toggle{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border2);cursor:pointer;font-size:11.5px;color:var(--text2);user-select:none;white-space:nowrap;transition:all .15s;flex-shrink:0}
 .hide-toggle:hover{border-color:var(--border3);color:var(--text)}
 .hide-toggle.hiding{background:var(--green-d);border-color:rgba(34,197,94,.3);color:var(--green-hi)}
+.hide-toggle.hiding-amber{background:var(--amber-d);border-color:rgba(245,158,11,.3);color:var(--amber-hi)}
 .toggle-pill{width:28px;height:15px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);position:relative;flex-shrink:0;transition:background .2s}
 .hide-toggle.hiding .toggle-pill{background:rgba(34,197,94,.3);border-color:rgba(34,197,94,.5)}
+.hide-toggle.hiding-amber .toggle-pill{background:rgba(245,158,11,.3);border-color:rgba(245,158,11,.5)}
 .toggle-knob{width:11px;height:11px;border-radius:50%;background:var(--text3);position:absolute;top:1px;left:1px;transition:all .2s}
-.hide-toggle.hiding .toggle-knob{background:var(--green);left:14px}
+.hide-toggle.hiding .toggle-knob,.hide-toggle.hiding-amber .toggle-knob{background:var(--green);left:14px}
+.hide-toggle.hiding-amber .toggle-knob{background:var(--amber)}
 .resolved-hidden-note{font-size:11px;color:var(--text3);display:none;gap:5px;align-items:center;white-space:nowrap}
 .resolved-hidden-note.visible{display:flex}
 .rhn-link{color:var(--brand-teal);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* ══ WORKSPACE TABS ══ */
+.ws-tab-bar{display:flex;align-items:stretch;gap:0;background:var(--bg2);border-bottom:2px solid var(--border2);flex-shrink:0;position:sticky;top:0;z-index:150;padding:0 20px}
+.ws-tab{display:flex;align-items:center;gap:6px;padding:10px 16px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;user-select:none;position:relative}
+.ws-tab:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.ws-tab.active{color:var(--text);border-bottom-color:var(--brand-teal)}
+.ws-tab .tab-ico{font-size:14px;line-height:1}
+.ws-tab .tab-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;background:var(--red-d);color:var(--red-hi);margin-left:2px}
+.ws-tab .tab-badge.ok{background:var(--green-d);color:var(--green-hi)}
+.ws-tab .tab-badge.blue{background:var(--blue-d);color:var(--blue-hi)}
+.ws-tab-spacer{flex:1}
+.ws-tab-action{display:flex;align-items:center;gap:6px;padding:6px 12px;margin:6px 0;border-radius:var(--r);background:var(--grad);color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);transition:opacity .15s;white-space:nowrap;box-shadow:0 2px 8px rgba(53,159,145,.25)}
+.ws-tab-action:hover{opacity:.88}
+
+/* ══ TAB PANELS ══ */
+.tab-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.tab-panel.active{display:flex}
+
+/* ══ OVERVIEW PANEL ══ */
+.overview-scroll{overflow-y:auto;flex:1;padding-bottom:20px}
+
+/* ══ HISTORY / REPORTS PANEL ══ */
+.history-panel{overflow-y:auto;flex:1;padding:20px}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:20px}
+.hist-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:16px}
+.hist-card-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.hist-card-title span{color:var(--text)}
+.hist-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.hist-row:last-child{border-bottom:none}
+.hist-row-label{color:var(--text2)}
+.hist-row-val{font-weight:700;font-family:var(--mono);font-size:13px}
+.hist-row-val.green{color:var(--green-hi)}
+.hist-row-val.red{color:var(--red-hi)}
+.hist-row-val.amber{color:var(--amber-hi)}
+.hist-row-val.blue{color:var(--blue-hi)}
+.hist-row-val.teal{color:var(--teal-hi)}
+.hist-issues-list{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.hist-issue-row{display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--bg3);border-radius:var(--r);font-size:11.5px;cursor:pointer;transition:background .12s;border:1px solid var(--border)}
+.hist-issue-row:hover{background:var(--bg4);border-color:var(--border2)}
+.hist-issue-ref{font-family:var(--mono);font-size:10px;color:var(--teal-hi);flex-shrink:0}
+.hist-issue-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
+.hist-issue-date{font-size:10px;color:var(--text3);white-space:nowrap;font-family:var(--mono)}
+.hist-empty{color:var(--text3);font-size:12px;padding:12px 0;text-align:center}
+.hist-section-title{font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:12px;color:var(--text)}
+.hist-period-tabs{display:flex;gap:4px;margin-bottom:16px}
+.hist-period-tab{padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);background:var(--bg2);transition:all .12s}
+.hist-period-tab:hover{border-color:var(--border3);color:var(--text)}
+.hist-period-tab.active{background:var(--grad);border-color:transparent;color:#fff}
+.vel-bar-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.vel-bar-label{font-size:10.5px;color:var(--text3);width:80px;flex-shrink:0;font-family:var(--mono)}
+.vel-bar-wrap{flex:1;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.vel-bar-fill{height:100%;border-radius:4px;background:var(--grad);transition:width .5s ease}
+.vel-bar-count{font-size:11px;font-weight:700;color:var(--text2);width:30px;text-align:right;flex-shrink:0}
+
+/* ══ QA PANEL ══ */
+.qa-panel{overflow-y:auto;flex:1;padding:20px}
+.qa-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;background:linear-gradient(135deg,rgba(20,184,166,.08),rgba(31,72,124,.06));border:1px solid rgba(20,184,166,.2);border-radius:var(--rl);padding:16px}
+.qa-strip-card{text-align:center}
+.qa-strip-val{font-size:24px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:3px}
+.qa-strip-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+.qa-links-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.qa-link-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:18px;text-decoration:none;color:inherit;transition:all .18s;display:block}
+.qa-link-card:hover{border-color:var(--border3);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.qa-link-card-icon{font-size:28px;margin-bottom:10px;line-height:1}
+.qa-link-card-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.qa-link-card-desc{font-size:12px;color:var(--text3);line-height:1.5}
+.qa-link-card-badge{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--teal-d);color:var(--teal-hi);border:1px solid rgba(20,184,166,.2)}
+.qa-recent{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:16px}
+.qa-recent-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:12px}
+.qa-run-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--r);background:var(--bg3);margin-bottom:5px;border:1px solid var(--border)}
+.qa-run-ref{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--teal-hi);min-width:130px}
+.qa-run-tester{font-size:11.5px;color:var(--text2);flex:1}
+.qa-run-date{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.qa-run-verdict{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:10px}
+.qa-run-verdict.ready{background:var(--green-d);color:var(--green-hi)}
+.qa-run-verdict.notready{background:var(--red-d);color:var(--red-hi)}
+.qa-run-verdict.pass{background:var(--blue-d);color:var(--blue-hi)}
+.qa-run-verdict.pending{background:var(--amber-d);color:var(--amber-hi)}
+[data-theme="light"] .ws-tab-bar{background:var(--bg2)}
+[data-theme="light"] .ws-tab:hover{background:rgba(0,0,0,.02)}
+[data-theme="light"] .hist-card{background:var(--bg2);border-color:var(--border)}
+[data-theme="light"] .qa-link-card{background:var(--bg2)}
+[data-theme="light"] .qa-strip{background:rgba(15,118,110,.05)}
 
 /* ══ NEW ISSUE MODAL ══ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
@@ -636,6 +722,16 @@ input.p-in:focus{border-color:var(--brand-teal)}
       <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Roadmap
     </a>
+    <div class="topbar-divider"></div>
+    <a href="setuflow-demo-checklist.html" class="nav-link" title="Demo Readiness Checklist">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Demo Check
+    </a>
+    <a href="setuflow-e2e-testing.html" class="nav-link" title="E2E Test Suite">
+      <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      E2E Tests
+    </a>
+    <div class="topbar-divider"></div>
     <a href="https://www.setuflowcrm.com" target="_blank" class="nav-link">
       <svg class="ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       CRM Live
@@ -698,15 +794,15 @@ input.p-in:focus{border-color:var(--brand-teal)}
     </div>
     <div class="sb-item" id="sb-Resolved" onclick="filterSb('Resolved')">
       <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-check"/></svg>
-      <span class="sb-item-text">Resolved</span><span class="sb-count" id="cnt-Resolved">–</span>
+      <span class="sb-item-text">Resolved</span><span class="sb-count" id="cnt-Resolved" style="background:rgba(34,197,94,.15);color:var(--green-hi)">–</span>
     </div>
-    <div class="sb-item" id="sb-Deferred" onclick="filterSb('Deferred')">
-      <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-x"/></svg>
-      <span class="sb-item-text">Deferred</span><span class="sb-count" id="cnt-Deferred">–</span>
+    <div class="sb-item" id="sb-Deferred" onclick="filterSb('Deferred')" style="opacity:.7">
+      <svg class="ico sb-icon" style="width:13px;height:13px;stroke:var(--amber)"><use href="#ic-x"/></svg>
+      <span class="sb-item-text" style="color:var(--text3)">Deferred</span><span class="sb-count" id="cnt-Deferred" style="background:var(--amber-d);color:var(--amber-hi)">–</span>
     </div>
-    <div class="sb-item" id="sb-WontFix" onclick="filterSb(\"Won't Fix\")">
-      <svg class="ico sb-icon" style="width:13px;height:13px"><use href="#ic-x"/></svg>
-      <span class="sb-item-text">Won't Fix</span><span class="sb-count" id="cnt-WontFix">–</span>
+    <div class="sb-item" id="sb-WontFix" onclick="filterSb(\"Won't Fix\")" style="opacity:.7">
+      <svg class="ico sb-icon" style="width:13px;height:13px;stroke:var(--text3)"><use href="#ic-x"/></svg>
+      <span class="sb-item-text" style="color:var(--text3)">Won't Fix</span><span class="sb-count" id="cnt-WontFix" style="background:var(--bg4);color:var(--text3)">–</span>
     </div>
 
     <div class="sb-divider"></div>
@@ -762,6 +858,22 @@ input.p-in:focus{border-color:var(--brand-teal)}
     <div class="sb-section"><div class="sb-section-label">By Area</div></div>
     <div id="sb-areas"></div>
 
+    <div class="sb-divider"></div>
+    <div class="sb-section"><div class="sb-section-label">QA Workspace</div></div>
+    <div class="sb-item" onclick="switchTab('qa')">
+      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span class="sb-item-text">QA Overview</span>
+      <span class="sb-count" id="sb-qa-runs" style="background:var(--teal-d);color:var(--teal-hi)">–</span>
+    </div>
+    <a href="setuflow-demo-checklist.html" class="sb-item" style="text-decoration:none;color:inherit">
+      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+      <span class="sb-item-text">Demo Checklist ↗</span>
+    </a>
+    <a href="setuflow-e2e-testing.html" class="sb-item" style="text-decoration:none;color:inherit">
+      <svg class="ico sb-icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="sb-item-text">E2E Test Suite ↗</span>
+    </a>
+
     <div class="sb-cta-wrap">
       <button class="sb-add-btn" onclick="openNewIssueModal()">
         <svg class="ico" style="width:13px;height:13px" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -776,6 +888,32 @@ input.p-in:focus{border-color:var(--brand-teal)}
 
   <!-- CONTENT -->
   <div class="content">
+
+    <!-- ════ WORKSPACE TAB BAR ════ -->
+    <div class="ws-tab-bar">
+      <div class="ws-tab active" id="tab-issues" onclick="switchTab('issues')">
+        <span class="tab-ico">⚡</span> Issues
+        <span class="tab-badge" id="tab-badge-open">–</span>
+      </div>
+      <div class="ws-tab" id="tab-overview" onclick="switchTab('overview')">
+        <span class="tab-ico">📊</span> Overview &amp; KPIs
+      </div>
+      <div class="ws-tab" id="tab-history" onclick="switchTab('history')">
+        <span class="tab-ico">📅</span> History &amp; Reports
+      </div>
+      <div class="ws-tab" id="tab-qa" onclick="switchTab('qa')">
+        <span class="tab-ico">🧪</span> QA Workspace
+        <span class="tab-badge blue" id="tab-badge-qa">–</span>
+      </div>
+      <div class="ws-tab-spacer"></div>
+      <button class="ws-tab-action" onclick="openNewIssueModal()">
+        <svg class="ico" style="width:12px;height:12px" stroke="#fff" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Report Issue
+      </button>
+    </div>
+
+    <!-- ════ TAB PANEL: ISSUES ════ -->
+    <div class="tab-panel active" id="panel-issues">
 
     <!-- GPT PANEL -->
     <div class="gpt-bar">
@@ -810,135 +948,8 @@ input.p-in:focus{border-color:var(--brand-teal)}
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-section">
-      <div class="kpi-row">
-        <div class="kpi-card kc-total">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--icon-clr)"><use href="#ic-zap"/></svg>Total</div>
-          <div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub" id="kpi-total-sub">All sprint issues</div>
-        </div>
-        <div class="kpi-card kc-crit">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--red-hi)"><use href="#ic-alert"/></svg>Critical Open</div>
-          <div class="kpi-value" id="kpi-crit">–</div><div class="kpi-sub" id="kpi-crit-sub">–</div>
-        </div>
-        <div class="kpi-card kc-high">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)"><use href="#ic-alert"/></svg>High Open</div>
-          <div class="kpi-value" id="kpi-high">–</div><div class="kpi-sub">need attention</div>
-        </div>
-        <!-- Resolution donut -->
-        <div class="donut-card">
-          <div class="donut-wrap">
-            <svg viewBox="0 0 52 52"><circle class="donut-track" cx="26" cy="26" r="21"/><circle class="donut-fill" cx="26" cy="26" r="21" id="donut-path" stroke-dasharray="132" stroke-dashoffset="132"/></svg>
-            <div class="donut-text"><div class="donut-pct" id="donut-pct">0%</div><div class="donut-lbl">done</div></div>
-          </div>
-          <div class="donut-meta">
-            <div class="dm-label">Resolved</div>
-            <div class="dm-val" id="kpi-res">–</div>
-            <div class="dm-sub">of <span id="kpi-total-sm">–</span> total</div>
-          </div>
-        </div>
-        <div class="kpi-card kc-prog">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--blue-hi)"><use href="#ic-clock"/></svg>In Progress</div>
-          <div class="kpi-value" id="kpi-prog">–</div><div class="kpi-sub">being fixed</div>
-        </div>
-        <div class="kpi-card kc-7d">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--purple-hi)"><use href="#ic-alert"/></svg>7-Day Rescue</div>
-          <div class="kpi-value" id="kpi-7d">–</div><div class="kpi-sub" id="kpi-7d-sub">–</div>
-        </div>
-        <div class="kpi-card kc-30d">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)"><use href="#ic-settings"/></svg>30-Day Track</div>
-          <div class="kpi-value" id="kpi-30d">–</div><div class="kpi-sub" id="kpi-30d-sub">–</div>
-        </div>
-      </div>
-      <!-- KPI Row 2: Temporal -->
-      <div class="kpi-row2">
-        <div class="kpi-card kc-today">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Added Today</div>
-          <div class="kpi-value" id="kpi-added-today">–</div>
-          <div class="kpi-sub">new issues logged today</div>
-        </div>
-        <div class="kpi-card kc-week">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#a5b4fc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Added This Week</div>
-          <div class="kpi-value" id="kpi-added-week">–</div>
-          <div class="kpi-sub">since Monday</div>
-        </div>
-        <div class="kpi-card kc-res-today">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#6ee7b7" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved Today</div>
-          <div class="kpi-value" id="kpi-res-today">–</div>
-          <div class="kpi-sub" id="kpi-res-today-sub">issues closed today</div>
-        </div>
-        <div class="kpi-card kc-res-week">
-          <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved This Week</div>
-          <div class="kpi-value" id="kpi-res-week">–</div>
-          <div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
-        </div>
-      </div>
-
-      <!-- CATEGORY CARDS — equal-width grid -->
-      <div class="cat-cards" id="cat-row">
-        <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug')" title="Click to filter by Bugs · click again to clear" style="border-left:3px solid var(--red)">
-          <div class="cat-header"><span class="cat-icon">🐛</span><span class="cat-pct-pill" id="cat-pct-Bug">–%</span></div>
-          <div class="cat-val" id="cat-val-Bug">–</div>
-          <div class="cat-label">Bugs</div>
-          <div class="cat-resolved-row">
-            <span class="cat-res-count" id="cat-res-Bug">–</span>
-            <span class="cat-res-label">resolved</span>
-            <span class="cat-res-pct" id="cat-res-pct-Bug">–% done</span>
-          </div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-bug" id="cat-fill-Bug" style="width:0%" title="Resolved %"></div></div>
-        </div>
-        <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement')" title="Click to filter by Enhancements · click again to clear" style="border-left:3px solid var(--purple)">
-          <div class="cat-header"><span class="cat-icon">✨</span><span class="cat-pct-pill" id="cat-pct-Enhancement">–%</span></div>
-          <div class="cat-val" id="cat-val-Enhancement">–</div>
-          <div class="cat-label">Enhancements</div>
-          <div class="cat-resolved-row">
-            <span class="cat-res-count" id="cat-res-Enhancement">–</span>
-            <span class="cat-res-label">resolved</span>
-            <span class="cat-res-pct" id="cat-res-pct-Enhancement">–% done</span>
-          </div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-enh" id="cat-fill-Enhancement" style="width:0%" title="Resolved %"></div></div>
-        </div>
-        <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing')" title="Click to filter by Testing Finds · click again to clear" style="border-left:3px solid var(--teal)">
-          <div class="cat-header"><span class="cat-icon">🧪</span><span class="cat-pct-pill" id="cat-pct-Testing">–%</span></div>
-          <div class="cat-val" id="cat-val-Testing">–</div>
-          <div class="cat-label">Testing Finds</div>
-          <div class="cat-resolved-row">
-            <span class="cat-res-count" id="cat-res-Testing">–</span>
-            <span class="cat-res-label">resolved</span>
-            <span class="cat-res-pct" id="cat-res-pct-Testing">–% done</span>
-          </div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-test" id="cat-fill-Testing" style="width:0%" title="Resolved %"></div></div>
-        </div>
-        <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX')" title="Click to filter by UX Issues · click again to clear" style="border-left:3px solid var(--amber)">
-          <div class="cat-header"><span class="cat-icon">🎨</span><span class="cat-pct-pill" id="cat-pct-UX">–%</span></div>
-          <div class="cat-val" id="cat-val-UX">–</div>
-          <div class="cat-label">UX Issues</div>
-          <div class="cat-resolved-row">
-            <span class="cat-res-count" id="cat-res-UX">–</span>
-            <span class="cat-res-label">resolved</span>
-            <span class="cat-res-pct" id="cat-res-pct-UX">–% done</span>
-          </div>
-          <div class="cat-bar"><div class="cat-fill cat-fill-ux" id="cat-fill-UX" style="width:0%" title="Resolved %"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dual progress -->
-    <div class="prog-section">
-      <div class="prog-track-item">
-        <span class="pt-badge ptb-rescue">7-Day Rescue</span>
-        <div class="prog-bar"><div class="prog-fill-rescue" id="pfill-rescue" style="width:0%"></div></div>
-        <span class="pt-label" id="plabel-rescue">–/– resolved</span>
-      </div>
-      <div class="prog-track-item">
-        <span class="pt-badge ptb-cleanup">30-Day Cleanup</span>
-        <div class="prog-bar"><div class="prog-fill-cleanup" id="pfill-cleanup" style="width:0%"></div></div>
-        <span class="pt-label" id="plabel-cleanup">–/– resolved</span>
-      </div>
-    </div>
-
-    <!-- LIVE STATUS BAR -->
-    <div style="display:flex;align-items:center;gap:10px;padding:6px 20px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+    <!-- LIVE STATUS BAR (compact - stays in issues tab) -->
+    <div style="display:flex;align-items:center;gap:10px;padding:5px 20px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
       <div class="live-status">
         <div class="live-ring" id="live-ring"></div>
         <span id="live-label">Connecting…</span>
@@ -949,6 +960,8 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Refresh
       </button>
+      <button class="gpt-btn gpt-btn-outline" onclick="switchTab('overview')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2)">📊 KPIs &amp; Overview</button>
+      <button class="gpt-btn gpt-btn-outline" onclick="switchTab('history')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border2)">📅 History</button>
       <span style="margin-left:auto;font-size:11px;color:var(--text3)">
         <span id="realtime-event-count" style="color:var(--brand-teal);font-weight:600">0</span> live updates received
       </span>
@@ -993,6 +1006,14 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <div class="toggle-pill"><div class="toggle-knob"></div></div>
         <span id="hide-toggle-label">Hiding resolved</span>
       </button>
+      <button class="hide-toggle hiding" id="hide-toggle-btn" onclick="toggleHideResolved()" title="Toggle auto-hide resolved issues">
+        <div class="toggle-pill"><div class="toggle-knob"></div></div>
+        <span id="hide-toggle-label">Hiding resolved</span>
+      </button>
+      <button class="hide-toggle hiding-amber" id="hide-deferred-btn" onclick="toggleHideDeferred()" title="Toggle auto-hide deferred issues">
+        <div class="toggle-pill"><div class="toggle-knob"></div></div>
+        <span id="hide-deferred-label">Hiding deferred</span>
+      </button>
       <span class="results-count" id="res-count"></span>
     </div>
 
@@ -1018,6 +1039,295 @@ input.p-in:focus{border-color:var(--brand-teal)}
         <tbody id="issues-tbody"></tbody>
       </table>
     </div>
+
+    </div><!-- /panel-issues -->
+
+    <!-- ════ TAB PANEL: OVERVIEW & KPIs ════ -->
+    <div class="tab-panel" id="panel-overview">
+      <div class="overview-scroll">
+
+        <!-- GPT bar is duplicated briefly here for context access from overview — hidden by default -->
+        <div style="padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap">
+          <div class="live-status"><div class="live-ring" id="live-ring-ov"></div><span id="live-label-ov">–</span></div>
+          <span style="color:var(--border2)">·</span>
+          <span style="font-size:11px;color:var(--text3)">Last refreshed: <span id="last-refresh-ov">–</span></span>
+          <button class="refresh-btn" onclick="manualRefresh()">
+            <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+          <span style="margin-left:auto;font-size:11px;color:var(--text3)"><span id="realtime-event-count-ov" style="color:var(--brand-teal);font-weight:600">–</span> live events</span>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-section">
+          <div class="kpi-row">
+            <div class="kpi-card kc-total">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--icon-clr)"><use href="#ic-zap"/></svg>Total</div>
+              <div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub" id="kpi-total-sub">All sprint issues</div>
+            </div>
+            <div class="kpi-card kc-crit">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--red-hi)"><use href="#ic-alert"/></svg>Critical Open</div>
+              <div class="kpi-value" id="kpi-crit">–</div><div class="kpi-sub" id="kpi-crit-sub">–</div>
+            </div>
+            <div class="kpi-card kc-high">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)"><use href="#ic-alert"/></svg>High Open</div>
+              <div class="kpi-value" id="kpi-high">–</div><div class="kpi-sub">need attention</div>
+            </div>
+            <!-- Resolution donut -->
+            <div class="donut-card">
+              <div class="donut-wrap">
+                <svg viewBox="0 0 52 52"><circle class="donut-track" cx="26" cy="26" r="21"/><circle class="donut-fill" cx="26" cy="26" r="21" id="donut-path" stroke-dasharray="132" stroke-dashoffset="132"/></svg>
+                <div class="donut-text"><div class="donut-pct" id="donut-pct">0%</div><div class="donut-lbl">done</div></div>
+              </div>
+              <div class="donut-meta">
+                <div class="dm-label">Resolved</div>
+                <div class="dm-val" id="kpi-res">–</div>
+                <div class="dm-sub">of <span id="kpi-total-sm">–</span> total</div>
+              </div>
+            </div>
+            <div class="kpi-card kc-prog">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--blue-hi)"><use href="#ic-clock"/></svg>In Progress</div>
+              <div class="kpi-value" id="kpi-prog">–</div><div class="kpi-sub">being fixed</div>
+            </div>
+            <div class="kpi-card kc-7d">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--purple-hi)"><use href="#ic-alert"/></svg>7-Day Rescue</div>
+              <div class="kpi-value" id="kpi-7d">–</div><div class="kpi-sub" id="kpi-7d-sub">–</div>
+            </div>
+            <div class="kpi-card kc-30d">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)"><use href="#ic-settings"/></svg>30-Day Track</div>
+              <div class="kpi-value" id="kpi-30d">–</div><div class="kpi-sub" id="kpi-30d-sub">–</div>
+            </div>
+          </div>
+          <!-- KPI Row 2: Temporal -->
+          <div class="kpi-row2">
+            <div class="kpi-card kc-today">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--amber-hi)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Added Today</div>
+              <div class="kpi-value" id="kpi-added-today">–</div>
+              <div class="kpi-sub">new issues logged today</div>
+            </div>
+            <div class="kpi-card kc-week">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#a5b4fc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Added This Week</div>
+              <div class="kpi-value" id="kpi-added-week">–</div>
+              <div class="kpi-sub">since Monday</div>
+            </div>
+            <div class="kpi-card kc-res-today">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:#6ee7b7" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved Today</div>
+              <div class="kpi-value" id="kpi-res-today">–</div>
+              <div class="kpi-sub" id="kpi-res-today-sub">issues closed today</div>
+            </div>
+            <div class="kpi-card kc-res-week">
+              <div class="kpi-label"><svg class="ico" style="width:10px;height:10px;stroke:var(--teal-hi)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved This Week</div>
+              <div class="kpi-value" id="kpi-res-week">–</div>
+              <div class="kpi-sub" id="kpi-res-week-sub">since Monday</div>
+            </div>
+          </div>
+
+          <!-- CATEGORY CARDS -->
+          <div class="cat-cards" id="cat-row">
+            <div class="cat-card" id="cat-seg-Bug" onclick="filterSb('cat:Bug');switchTab('issues')" title="Click to filter by Bugs" style="border-left:3px solid var(--red)">
+              <div class="cat-header"><span class="cat-icon">🐛</span><span class="cat-pct-pill" id="cat-pct-Bug">–%</span></div>
+              <div class="cat-val" id="cat-val-Bug">–</div><div class="cat-label">Bugs</div>
+              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Bug">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Bug">–% done</span></div>
+              <div class="cat-bar"><div class="cat-fill cat-fill-bug" id="cat-fill-Bug" style="width:0%"></div></div>
+            </div>
+            <div class="cat-card" id="cat-seg-Enhancement" onclick="filterSb('cat:Enhancement');switchTab('issues')" title="Click to filter by Enhancements" style="border-left:3px solid var(--purple)">
+              <div class="cat-header"><span class="cat-icon">✨</span><span class="cat-pct-pill" id="cat-pct-Enhancement">–%</span></div>
+              <div class="cat-val" id="cat-val-Enhancement">–</div><div class="cat-label">Enhancements</div>
+              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Enhancement">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Enhancement">–% done</span></div>
+              <div class="cat-bar"><div class="cat-fill cat-fill-enh" id="cat-fill-Enhancement" style="width:0%"></div></div>
+            </div>
+            <div class="cat-card" id="cat-seg-Testing" onclick="filterSb('cat:Testing');switchTab('issues')" title="Click to filter by Testing Finds" style="border-left:3px solid var(--teal)">
+              <div class="cat-header"><span class="cat-icon">🧪</span><span class="cat-pct-pill" id="cat-pct-Testing">–%</span></div>
+              <div class="cat-val" id="cat-val-Testing">–</div><div class="cat-label">Testing Finds</div>
+              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-Testing">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-Testing">–% done</span></div>
+              <div class="cat-bar"><div class="cat-fill cat-fill-test" id="cat-fill-Testing" style="width:0%"></div></div>
+            </div>
+            <div class="cat-card" id="cat-seg-UX" onclick="filterSb('cat:UX');switchTab('issues')" title="Click to filter by UX Issues" style="border-left:3px solid var(--amber)">
+              <div class="cat-header"><span class="cat-icon">🎨</span><span class="cat-pct-pill" id="cat-pct-UX">–%</span></div>
+              <div class="cat-val" id="cat-val-UX">–</div><div class="cat-label">UX Issues</div>
+              <div class="cat-resolved-row"><span class="cat-res-count" id="cat-res-UX">–</span><span class="cat-res-label">resolved</span><span class="cat-res-pct" id="cat-res-pct-UX">–% done</span></div>
+              <div class="cat-bar"><div class="cat-fill cat-fill-ux" id="cat-fill-UX" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dual progress -->
+        <div class="prog-section">
+          <div class="prog-track-item">
+            <span class="pt-badge ptb-rescue">7-Day Rescue</span>
+            <div class="prog-bar"><div class="prog-fill-rescue" id="pfill-rescue" style="width:0%"></div></div>
+            <span class="pt-label" id="plabel-rescue">–/– resolved</span>
+          </div>
+          <div class="prog-track-item">
+            <span class="pt-badge ptb-cleanup">30-Day Cleanup</span>
+            <div class="prog-bar"><div class="prog-fill-cleanup" id="pfill-cleanup" style="width:0%"></div></div>
+            <span class="pt-label" id="plabel-cleanup">–/– resolved</span>
+          </div>
+        </div>
+
+        <!-- ChatGPT Fix Prompt in overview -->
+        <div style="padding:0 20px 20px">
+          <div class="gpt-bar" style="border-radius:var(--rl);border:1px solid var(--border2);margin-top:14px">
+            <div class="gpt-left">
+              <div class="gpt-icon"><svg class="ico" style="color:var(--brand-teal)" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+              <div><div class="gpt-title">ChatGPT Issue Fix Protocol</div><div class="gpt-sub">Drift-proof workflow: verified repo → Supabase tracker → checkpoint updates → Vercel proof</div></div>
+            </div>
+            <div class="gpt-actions">
+              <button class="gpt-btn gpt-btn-outline" onclick="toggleGPT()">Show prompt</button>
+              <button class="gpt-btn gpt-btn-primary" onclick="copyPrompt()">
+                <svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-copy"/></svg>Copy Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /overview-scroll -->
+    </div><!-- /panel-overview -->
+
+    <!-- ════ TAB PANEL: HISTORY & REPORTS ════ -->
+    <div class="tab-panel" id="panel-history">
+      <div class="history-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div class="hist-section-title">History &amp; Reports</div>
+            <div style="font-size:12px;color:var(--text3)">What got fixed, when, and by whom. Velocity, trends, and sprint-over-sprint progress.</div>
+          </div>
+          <div class="hist-period-tabs" id="hist-period-tabs">
+            <div class="hist-period-tab active" onclick="setHistPeriod('today',this)">Today</div>
+            <div class="hist-period-tab" onclick="setHistPeriod('week',this)">This Week</div>
+            <div class="hist-period-tab" onclick="setHistPeriod('month',this)">This Month</div>
+            <div class="hist-period-tab" onclick="setHistPeriod('all',this)">All Time</div>
+          </div>
+        </div>
+
+        <!-- SUMMARY STATS ROW -->
+        <div class="hist-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+          <div class="hist-card" style="border-left:3px solid var(--green)">
+            <div class="hist-card-title">✅ Fixed in Period</div>
+            <div style="font-size:32px;font-weight:800;color:var(--green-hi);letter-spacing:-1px" id="hist-stat-fixed">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-fixed-sub">issues resolved</div>
+          </div>
+          <div class="hist-card" style="border-left:3px solid var(--red)">
+            <div class="hist-card-title">🐛 Added in Period</div>
+            <div style="font-size:32px;font-weight:800;color:var(--amber-hi);letter-spacing:-1px" id="hist-stat-added">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px" id="hist-stat-added-sub">issues logged</div>
+          </div>
+          <div class="hist-card" style="border-left:3px solid var(--blue)">
+            <div class="hist-card-title">⚡ Net Change</div>
+            <div style="font-size:32px;font-weight:800;letter-spacing:-1px" id="hist-stat-net">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">fixed minus added</div>
+          </div>
+          <div class="hist-card" style="border-left:3px solid var(--teal)">
+            <div class="hist-card-title">📊 Fix Rate</div>
+            <div style="font-size:32px;font-weight:800;color:var(--teal-hi);letter-spacing:-1px" id="hist-stat-rate">–</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">overall resolved %</div>
+          </div>
+        </div>
+
+        <div class="hist-grid">
+          <!-- RECENTLY FIXED -->
+          <div class="hist-card" style="grid-column:span 2">
+            <div class="hist-card-title">
+              ✅ Recently Fixed
+              <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--green-hi)" id="hist-fixed-count">–</span>
+            </div>
+            <div class="hist-issues-list" id="hist-fixed-list">
+              <div class="hist-empty">Loading…</div>
+            </div>
+          </div>
+
+          <!-- RECENTLY ADDED -->
+          <div class="hist-card" style="grid-column:span 2">
+            <div class="hist-card-title">
+              🆕 Recently Added
+              <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--amber-hi)" id="hist-added-count">–</span>
+            </div>
+            <div class="hist-issues-list" id="hist-added-list">
+              <div class="hist-empty">Loading…</div>
+            </div>
+          </div>
+
+          <!-- VELOCITY BY SPRINT -->
+          <div class="hist-card" style="grid-column:span 2">
+            <div class="hist-card-title">📈 Sprint Velocity — Issues Resolved per Sprint</div>
+            <div id="hist-velocity-bars" style="padding-top:6px">
+              <div class="hist-empty">Loading…</div>
+            </div>
+          </div>
+
+          <!-- OPEN BY SEVERITY -->
+          <div class="hist-card">
+            <div class="hist-card-title">🎯 Current Open by Severity</div>
+            <div id="hist-severity-bars" style="padding-top:6px">
+              <div class="hist-empty">Loading…</div>
+            </div>
+          </div>
+
+          <!-- STATS TABLE -->
+          <div class="hist-card">
+            <div class="hist-card-title">📋 Breakdown Summary</div>
+            <div id="hist-summary-table">
+              <div class="hist-empty">Loading…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-history -->
+
+    <!-- ════ TAB PANEL: QA WORKSPACE ════ -->
+    <div class="tab-panel" id="panel-qa">
+      <div class="qa-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div class="hist-section-title">QA Workspace</div>
+            <div style="font-size:12px;color:var(--text3)">Demo readiness and E2E testing — run logs, verdicts, and evidence tracked in live DB.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="gpt-btn gpt-btn-outline" onclick="loadQaData(true)">↺ Refresh QA Data</button>
+          </div>
+        </div>
+
+        <!-- QA KPI strip -->
+        <div class="qa-strip" id="qa-kpi-strip">
+          <div class="qa-strip-card"><div class="qa-strip-val" style="color:var(--teal-hi)" id="qa-kpi-demo-runs">–</div><div class="qa-strip-label">Demo Runs</div></div>
+          <div class="qa-strip-card"><div class="qa-strip-val" id="qa-kpi-last-verdict" style="font-size:16px">–</div><div class="qa-strip-label">Last Verdict</div></div>
+          <div class="qa-strip-card"><div class="qa-strip-val" style="color:var(--blue-hi)" id="qa-kpi-e2e-runs">–</div><div class="qa-strip-label">E2E Runs</div></div>
+          <div class="qa-strip-card"><div class="qa-strip-val" style="color:var(--amber-hi)" id="qa-kpi-test-bugs">–</div><div class="qa-strip-label">Bugs via Testing</div></div>
+          <div class="qa-strip-card"><div class="qa-strip-val" style="color:var(--purple-hi)" id="qa-kpi-evidence">–</div><div class="qa-strip-label">Evidence Files</div></div>
+          <div class="qa-strip-card"><div class="qa-strip-val" style="color:var(--green-hi)" id="qa-kpi-signoffs">–</div><div class="qa-strip-label">Sign-offs</div></div>
+        </div>
+
+        <!-- QA Links -->
+        <div class="qa-links-grid">
+          <a href="setuflow-demo-checklist.html" class="qa-link-card" style="border-left:3px solid var(--teal)">
+            <div class="qa-link-card-icon">📋</div>
+            <div class="qa-link-card-title">Demo Readiness Checklist</div>
+            <div class="qa-link-card-desc">57-item checklist covering Pre-flight, Auth, Navigation, Leads, Quotes, Orders, PDFs, Admin, Mobile, and Guru. Run before every prospect demo. Sign-off with DEMO_READY verdict writes to live DB.</div>
+            <div class="qa-link-card-badge">
+              <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
+              <span id="qa-card-demo-badge">– runs completed</span>
+            </div>
+          </a>
+          <a href="setuflow-e2e-testing.html" class="qa-link-card" style="border-left:3px solid var(--blue)">
+            <div class="qa-link-card-icon">⚡</div>
+            <div class="qa-link-card-title">E2E Test Suite</div>
+            <div class="qa-link-card-desc">9 suites, 49 steps covering Auth, Navigation, Lead Lifecycle, Quote Flow, Order Execution, PDF Generation, Mobile, Setu Guru, and Regression. Bug filing with screenshot upload goes straight to this tracker.</div>
+            <div class="qa-link-card-badge" style="background:var(--blue-d);color:var(--blue-hi);border-color:rgba(59,130,246,.2)">
+              <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span id="qa-card-e2e-badge">– runs completed</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Recent QA Runs -->
+        <div class="qa-recent">
+          <div class="qa-recent-title">Recent QA Runs</div>
+          <div id="qa-runs-list">
+            <div style="color:var(--text3);font-size:12px;padding:8px 0">Loading QA runs from database…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-qa -->
 
   </div><!-- /content -->
 </div><!-- /shell -->
@@ -1118,6 +1428,7 @@ const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6
 const db=supabase.createClient(SB,KEY);
 let ALL=[],VISIBLE=[],activeFlt='all',sortFld='issue_number',sortDir=1,openIssue=null,gptOpen=false;
 let hideResolved=true; // auto-hide resolved by default
+let hideDeferred=true; // auto-hide deferred by default
 let selectedCat='Bug';
 // SF-19 FIX: sprint filter — 'all' loads every sprint, number loads specific sprint
 let activeSprint='all';
@@ -1148,6 +1459,8 @@ async function load(showLoader=true){
   buildAreaFilter();buildSidebar();render();animateKPIs();
   updateLastRefresh();
   if(!realtimeChannel) subscribeRealtime();
+  // Load QA data asynchronously after main data
+  setTimeout(()=>loadQaData(false),1500);
 }
 
 function buildSprintFilter(sprints){
@@ -1368,6 +1681,17 @@ function buildSidebar(){
   $('pfill-rescue').style.width=(r7.length?Math.round(c7/r7.length*100):0)+'%';
   $('pfill-cleanup').style.width=(r30.length?Math.round(c30/r30.length*100):0)+'%';
   setText('plabel-rescue',c7+'/'+r7.length+' resolved');setText('plabel-cleanup',c30+'/'+r30.length+' resolved');
+
+  // Update issues tab badge (open + active only, excludes resolved/deferred/wontfix)
+  const openActive=ALL.filter(i=>!isResolved(i)&&!isDeferred(i)).length;
+  const badge=$('tab-badge-open');
+  if(badge){
+    badge.textContent=openActive;
+    badge.className='tab-badge'+(openActive===0?' ok':openActive>10?'':'');
+  }
+
+  // Refresh history if it's the active tab
+  if(activeTab==='history')renderHistory();
 }
 
 /* ══════════════════════════════════════
@@ -1444,6 +1768,239 @@ function isResolved(i){
   return s==='resolved'||s==="won't fix";
 }
 
+function isDeferred(i){
+  const s=(i.status||'').toLowerCase();
+  return s==='deferred';
+}
+
+/* ══════════════════════════════════════
+   DEFERRED TOGGLE
+══════════════════════════════════════ */
+function toggleHideDeferred(){
+  hideDeferred=!hideDeferred;
+  const btn=$('hide-deferred-btn');
+  if(hideDeferred){
+    btn.classList.add('hiding-amber');
+    setText('hide-deferred-label','Hiding deferred');
+  } else {
+    btn.classList.remove('hiding-amber');
+    setText('hide-deferred-label','Show deferred');
+  }
+  if(hideDeferred && activeFlt==='Deferred') filterSb('all');
+  else render();
+}
+
+/* ══════════════════════════════════════
+   WORKSPACE TAB SWITCHING
+══════════════════════════════════════ */
+let activeTab='issues';
+function switchTab(name){
+  activeTab=name;
+  ['issues','overview','history','qa'].forEach(t=>{
+    const tab=$('tab-'+t),panel=$('panel-'+t);
+    if(tab)tab.classList.toggle('active',t===name);
+    if(panel)panel.classList.toggle('active',t===name);
+  });
+  if(name==='history')renderHistory();
+  if(name==='qa')loadQaData(false);
+}
+
+/* ══════════════════════════════════════
+   HISTORY & REPORTS
+══════════════════════════════════════ */
+let histPeriod='week';
+
+function setHistPeriod(p,el){
+  histPeriod=p;
+  document.querySelectorAll('.hist-period-tab').forEach(e=>e.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderHistory();
+}
+
+function getHistoryWindow(){
+  const now=new Date();
+  const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const dow=now.getDay();const daysSinceMonday=(dow+6)%7;
+  const weekStart=new Date(todayStart);weekStart.setDate(weekStart.getDate()-daysSinceMonday);
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  if(histPeriod==='today')return{start:todayStart,label:'today'};
+  if(histPeriod==='week')return{start:weekStart,label:'this week'};
+  if(histPeriod==='month')return{start:monthStart,label:'this month'};
+  return{start:new Date(0),label:'all time'};
+}
+
+function renderHistory(){
+  const{start,label}=getHistoryWindow();
+  const sf=activeSprint==='all'?ALL:ALL.filter(i=>i.sprint_number===activeSprint);
+
+  // Fixed in period
+  const fixed=sf.filter(i=>i.resolved_at&&new Date(i.resolved_at)>=start&&isResolved(i))
+    .sort((a,b)=>new Date(b.resolved_at)-new Date(a.resolved_at));
+  // Added in period
+  const added=sf.filter(i=>new Date(i.created_at)>=start)
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+
+  const totalResolved=sf.filter(i=>isResolved(i)).length;
+  const totalAll=sf.length;
+  const net=fixed.length-added.length;
+
+  setText('hist-stat-fixed',fixed.length);setText('hist-stat-fixed-sub',fixed.length+' issues resolved '+label);
+  setText('hist-stat-added',added.length);setText('hist-stat-added-sub',added.length+' issues logged '+label);
+  const netEl=$('hist-stat-net');
+  if(netEl){netEl.textContent=(net>=0?'+':'')+net;netEl.style.color=net>=0?'var(--green-hi)':net<-5?'var(--red-hi)':'var(--amber-hi)';}
+  setText('hist-stat-rate',totalAll?Math.round(totalResolved/totalAll*100)+'%':'–');
+
+  // Fixed list
+  const fixedList=$('hist-fixed-list');
+  if(fixedList){
+    setText('hist-fixed-count',fixed.length+' issues');
+    if(!fixed.length){fixedList.innerHTML='<div class="hist-empty">No issues resolved '+label+'</div>';
+    } else {
+      fixedList.innerHTML=fixed.slice(0,15).map(i=>`
+        <div class="hist-issue-row" onclick="openPanel('${i.id}')">
+          <span class="hist-issue-ref">${esc(i.issue_ref||'SF-'+i.sprint_number+'-'+i.issue_number)}</span>
+          <span class="hist-issue-title">${esc(i.title)}</span>
+          <span style="flex-shrink:0"><span class="sev-chip sev-${i.severity||'Medium'}" style="font-size:9px;padding:1px 5px">${i.severity||'Med'}</span></span>
+          <span class="hist-issue-date">${i.resolved_at?new Date(i.resolved_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'–'}</span>
+        </div>`).join('')+(fixed.length>15?`<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px">+${fixed.length-15} more — filter by Resolved to see all</div>`:'');
+    }
+  }
+
+  // Added list
+  const addedList=$('hist-added-list');
+  if(addedList){
+    setText('hist-added-count',added.length+' issues');
+    if(!added.length){addedList.innerHTML='<div class="hist-empty">No issues added '+label+'</div>';
+    } else {
+      addedList.innerHTML=added.slice(0,15).map(i=>`
+        <div class="hist-issue-row" onclick="openPanel('${i.id}');switchTab('issues')">
+          <span class="hist-issue-ref">${esc(i.issue_ref||'SF-'+i.sprint_number+'-'+i.issue_number)}</span>
+          <span class="hist-issue-title">${esc(i.title)}</span>
+          <span style="flex-shrink:0"><span class="sev-chip sev-${i.severity||'Medium'}" style="font-size:9px;padding:1px 5px">${i.severity||'Med'}</span></span>
+          <span class="hist-issue-date">${new Date(i.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+        </div>`).join('')+(added.length>15?`<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px">+${added.length-15} more</div>`:'');
+    }
+  }
+
+  // Velocity by sprint
+  const velEl=$('hist-velocity-bars');
+  if(velEl){
+    const sprints=[...new Set(ALL.map(i=>i.sprint_number))].sort((a,b)=>a-b);
+    const maxRes=Math.max(...sprints.map(s=>ALL.filter(i=>i.sprint_number===s&&isResolved(i)).length),1);
+    velEl.innerHTML=sprints.map(s=>{
+      const items=ALL.filter(i=>i.sprint_number===s);
+      const res=items.filter(i=>isResolved(i)).length;
+      const pct=Math.round(res/maxRes*100);
+      return`<div class="vel-bar-row">
+        <div class="vel-bar-label">S${s}</div>
+        <div class="vel-bar-wrap"><div class="vel-bar-fill" style="width:${pct}%"></div></div>
+        <div class="vel-bar-count">${res}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Severity breakdown
+  const sevEl=$('hist-severity-bars');
+  if(sevEl){
+    const sevs=[{k:'Critical',c:'var(--red-hi)'},{k:'High',c:'var(--amber-hi)'},{k:'Medium',c:'var(--blue-hi)'},{k:'Low',c:'var(--text3)'}];
+    const openIssues=sf.filter(i=>!isResolved(i)&&!isDeferred(i));
+    const maxSev=Math.max(...sevs.map(s=>openIssues.filter(i=>(i.severity||'Medium').toLowerCase()===s.k.toLowerCase()).length),1);
+    sevEl.innerHTML=sevs.map(s=>{
+      const cnt=openIssues.filter(i=>(i.severity||'Medium').toLowerCase()===s.k.toLowerCase()).length;
+      const pct=Math.round(cnt/maxSev*100);
+      return`<div class="vel-bar-row">
+        <div class="vel-bar-label" style="color:${s.c}">${s.k}</div>
+        <div class="vel-bar-wrap"><div class="vel-bar-fill" style="width:${pct}%;background:${s.c}"></div></div>
+        <div class="vel-bar-count" style="color:${s.c}">${cnt}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Summary table
+  const sumEl=$('hist-summary-table');
+  if(sumEl){
+    const open=sf.filter(i=>!isResolved(i)&&!isDeferred(i)).length;
+    const inprog=sf.filter(i=>(i.status||'').toLowerCase()==='in progress').length;
+    const deferred=sf.filter(i=>isDeferred(i)).length;
+    const wontfix=sf.filter(i=>(i.status||'').toLowerCase()==="won't fix").length;
+    const testBugs=sf.filter(i=>i.submitted_via==='e2e-test-suite'||i.submitted_via==='demo-checklist').length;
+    sumEl.innerHTML=[
+      ['Total Issues',sf.length,''],
+      ['Open',open,open>10?'red':open>5?'amber':'green'],
+      ['In Progress',inprog,'blue'],
+      ['Resolved',totalResolved,'green'],
+      ['Deferred',deferred,'amber'],
+      ["Won't Fix",wontfix,''],
+      ['Filed via Testing',testBugs,'teal'],
+    ].map(([l,v,c])=>`<div class="hist-row"><span class="hist-row-label">${l}</span><span class="hist-row-val ${c}">${v}</span></div>`).join('');
+  }
+
+  // Update tab badge with open count
+  const openCnt=ALL.filter(i=>!isResolved(i)&&!isDeferred(i)).length;
+  const badge=$('tab-badge-open');
+  if(badge){badge.textContent=openCnt;badge.className='tab-badge'+(openCnt>0?' '+(openCnt>5?'':'ok'):'ok');}
+}
+
+/* ══════════════════════════════════════
+   QA WORKSPACE DATA
+══════════════════════════════════════ */
+let qaDataLoaded=false;
+async function loadQaData(force=false){
+  if(qaDataLoaded&&!force)return;
+  try{
+    const{data:runs}=await db.from('qa_test_runs').select('*').order('started_at',{ascending:false}).limit(20);
+    const allRuns=runs||[];
+    const demoRuns=allRuns.filter(r=>r.run_type==='demo_checklist');
+    const e2eRuns=allRuns.filter(r=>r.run_type==='e2e');
+    const lastDemo=demoRuns[0];
+    const{count:evCount}=await db.from('qa_evidence').select('id',{count:'exact',head:true});
+    const{count:testBugs}=await db.from('sprint_issues').select('id',{count:'exact',head:true}).in('submitted_via',['e2e-test-suite','demo-checklist']);
+    const{count:signoffCount}=await db.from('qa_demo_signoffs').select('id',{count:'exact',head:true});
+
+    setText('qa-kpi-demo-runs',demoRuns.length||0);
+    setText('qa-kpi-e2e-runs',e2eRuns.length||0);
+    setText('qa-kpi-test-bugs',testBugs||0);
+    setText('qa-kpi-evidence',evCount||0);
+    setText('qa-kpi-signoffs',signoffCount||0);
+    setText('qa-card-demo-badge',(demoRuns.length||0)+' runs completed');
+    setText('qa-card-e2e-badge',(e2eRuns.length||0)+' runs completed');
+    const tabBadge=$('tab-badge-qa');
+    if(tabBadge){tabBadge.textContent=allRuns.length||0;}
+
+    if(lastDemo){
+      const vEl=$('qa-kpi-last-verdict');
+      if(vEl){
+        const verd=lastDemo.demo_verdict||lastDemo.verdict||'—';
+        vEl.textContent=verd;
+        vEl.style.color=verd==='DEMO_READY'?'var(--green-hi)':verd==='NOT_READY'?'var(--red-hi)':'var(--text3)';
+      }
+      setText('sb-qa-runs',allRuns.length||0);
+    }
+
+    const runsList=$('qa-runs-list');
+    if(runsList){
+      if(!allRuns.length){runsList.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">No QA runs yet — start from Demo Checklist or E2E Test Suite</div>';
+      } else {
+        runsList.innerHTML=allRuns.map(r=>{
+          const verd=r.demo_verdict||r.verdict||r.status||'—';
+          const vCls=verd==='DEMO_READY'||verd==='PASS'?'ready':verd==='NOT_READY'||verd==='FAIL'?'notready':verd==='in_progress'?'pending':'pass';
+          const rate=r.pass_rate_pct!=null?r.pass_rate_pct+'% pass rate':'–';
+          const typeLbl=r.run_type==='demo_checklist'?'📋 Demo':'⚡ E2E';
+          return`<div class="qa-run-row">
+            <span style="font-size:10.5px;color:var(--text3);flex-shrink:0">${typeLbl}</span>
+            <span class="qa-run-ref">${esc(r.run_ref||'—')}</span>
+            <span class="qa-run-tester">${esc(r.tester_name||'—')}</span>
+            <span class="qa-run-date">${new Date(r.started_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+            <span style="font-size:10.5px;color:var(--text3);font-family:var(--mono)">${rate}</span>
+            <span class="qa-run-verdict ${vCls}">${verd}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+    qaDataLoaded=true;
+  }catch(e){console.warn('QA data load failed',e);}
+}
+
 /* ══════════════════════════════════════
    FILTER & RENDER
 ══════════════════════════════════════ */
@@ -1506,6 +2063,10 @@ function getFiltered(){
     const viewingResolved=(activeFlt==='Resolved'||activeFlt==="Won't Fix");
     if(hideResolved && !viewingResolved && isResolved(i)) return false;
 
+    // ── AUTO-HIDE DEFERRED (unless explicitly viewing Deferred filter) ──
+    const viewingDeferred=(activeFlt==='Deferred');
+    if(hideDeferred && !viewingDeferred && isDeferred(i)) return false;
+
     if(activeFlt!=='all'){
       if(activeFlt.startsWith('sev:')&&(i.severity||'').toLowerCase()!==(activeFlt.slice(4)).toLowerCase())return false;
       else if(activeFlt.startsWith('area:')&&area!==activeFlt.slice(5))return false;
@@ -1538,10 +2099,18 @@ function render(){
 
   // Show/hide "X resolved hidden" note
   const sfForNote = activeSprint==='all' ? ALL : ALL.filter(i=>i.sprint_number===activeSprint);
-  const hiddenCount=hideResolved&&activeFlt!=='Resolved'&&activeFlt!=="Won't Fix"&&activeFlt!=='resolved'
+  const hiddenResolved=hideResolved&&activeFlt!=='Resolved'&&activeFlt!=="Won't Fix"&&activeFlt!=='resolved'
     ? sfForNote.filter(i=>isResolved(i)).length : 0;
+  const hiddenDeferred=hideDeferred&&activeFlt!=='Deferred'
+    ? sfForNote.filter(i=>isDeferred(i)).length : 0;
+  const hiddenCount=hiddenResolved+hiddenDeferred;
   const noteEl=$('res-hidden-note');
-  if(hiddenCount>0){noteEl.classList.add('visible');setText('res-hidden-count',hiddenCount);}
+  if(hiddenCount>0){
+    noteEl.classList.add('visible');
+    setText('res-hidden-count',hiddenCount);
+    const noteText=`${hiddenResolved>0?hiddenResolved+' resolved':''}${hiddenResolved>0&&hiddenDeferred>0?' + ':''}${hiddenDeferred>0?hiddenDeferred+' deferred':''}`;
+    setText('res-hidden-count',noteText);
+  }
   else noteEl.classList.remove('visible');
 
   if(!VISIBLE.length){tbl.style.display='none';empty.style.display='flex';return;}
