@@ -2,9 +2,25 @@ import { type EmailOtpType } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+const PASSWORD_RESET_PENDING_COOKIE = 'setuflow-password-reset-pending';
+
 function safeNextPath(nextParam: string | null) {
   if (!nextParam || !nextParam.startsWith('/')) return '/dashboard';
+  if (nextParam.startsWith('//')) return '/dashboard';
   return nextParam;
+}
+
+function withPasswordResetCookie(response: NextResponse, nextPath: string) {
+  if (nextPath.startsWith('/reset-password')) {
+    response.cookies.set(PASSWORD_RESET_PENDING_COOKIE, '1', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: true,
+      path: '/',
+      maxAge: 15 * 60,
+    });
+  }
+  return response;
 }
 
 export async function GET(request: NextRequest) {
@@ -20,14 +36,14 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (!error) {
-      return NextResponse.redirect(redirectTo);
+      return withPasswordResetCookie(NextResponse.redirect(redirectTo), nextPath);
     }
   }
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(redirectTo);
+      return withPasswordResetCookie(NextResponse.redirect(redirectTo), nextPath);
     }
   }
 
