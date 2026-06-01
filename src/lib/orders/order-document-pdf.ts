@@ -15,6 +15,20 @@ export type OrderPdfLine = {
   notes?: string | null;
 };
 
+export type OrderPdfOrganization = {
+  name?: string | null;
+  legal_name?: string | null;
+  registered_address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  headquarters_country?: string | null;
+  website?: string | null;
+  contact_email?: string | null;
+  tax_id?: string | null;
+  quote_terms_conditions?: string | null;
+  order_terms_conditions?: string | null;
+};
+
 export type OrderPdfData = {
   documentType: 'order-confirmation' | 'invoice';
   documentNo: string;
@@ -29,6 +43,7 @@ export type OrderPdfData = {
   createdAt?: string | null;
   dueLabel?: string;
   paymentStatus?: string;
+  organization?: OrderPdfOrganization | null;
   lines: OrderPdfLine[];
 };
 
@@ -50,7 +65,7 @@ function short(v: unknown, max = 34, fallback = '-') {
 }
 
 function esc(v: string) {
-  return String(v).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' ');
+  return String(v).replace(/\/g, '\\').replace(/\(/g, '\(').replace(/\)/g, '\)').replace(/[\r\n]+/g, ' ');
 }
 
 function rgb(hex: string) {
@@ -69,6 +84,35 @@ function dateLabel(value: unknown) {
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB');
 }
 
+function addDaysLabel(value: unknown, days: number) {
+  const raw = s(value, '');
+  const base = raw ? new Date(raw.includes('T') ? raw : `${raw}T00:00:00`) : new Date();
+  if (Number.isNaN(base.getTime())) return '-';
+  base.setDate(base.getDate() + days);
+  return dateLabel(base.toISOString());
+}
+
+function paymentDaysFromTerms(terms: string) {
+  const netMatch = terms.match(/\bnet\s*(\d{1,3})\b/i);
+  if (!netMatch) return 30;
+  const days = Number(netMatch[1]);
+  return Number.isFinite(days) && days > 0 ? days : 30;
+}
+
+function compactAddress(org?: OrderPdfOrganization | null) {
+  const parts = [org?.registered_address, org?.city, org?.postal_code, org?.headquarters_country]
+    .map((part) => String(part ?? '').trim())
+    .filter(Boolean);
+  return parts.join(', ');
+}
+
+function splitTerms(text: string, maxLines = 3) {
+  const source = s(text, 'Commercial terms follow the accepted quote, signed contract, and agreed Incoterms.');
+  const sentences = source.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const lines = sentences.length ? sentences : [source];
+  return lines.slice(0, maxLines).map((line) => short(line, 110));
+}
+
 function lineTotal(line: OrderPdfLine) {
   return n(line.quantity, 0) * n(line.unitPrice, 0);
 }
@@ -76,6 +120,12 @@ function lineTotal(line: OrderPdfLine) {
 export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   const currency = String(data.quoteCurrency ?? data.lines[0]?.currency ?? 'USD').toUpperCase();
   const title = data.documentType === 'invoice' ? 'Invoice' : 'Order Confirmation';
+  const org = data.organization;
+  const orgName = org?.legal_name ?? org?.name ?? 'SETU Flow CRM';
+  const termsText = org?.order_terms_conditions ?? org?.quote_terms_conditions ?? 'Commercial terms follow the accepted quote, signed contract, and agreed Incoterms.';
+  const paymentDays = paymentDaysFromTerms(termsText);
+  const issueSource = data.createdAt ?? new Date().toISOString();
+  const dueDate = addDaysLabel(issueSource, paymentDays);
   const objects: string[] = [];
   const add = (body: string) => { objects.push(body); return objects.length; };
   const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
@@ -90,20 +140,20 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   const txt = (x: number, y: number, t: string, size = 7, bold = false, color = INK, right = false) => texts.push({ x, y, t, size, bold, color, right });
 
   const subtotal = data.lines.reduce((sum, row) => sum + lineTotal(row), 0);
-  const issueDate = dateLabel(data.createdAt ?? new Date().toISOString());
+  const issueDate = dateLabel(issueSource);
   const signedDate = dateLabel(data.signedAt);
 
   box(0, 0, 612, 792, '#ffffff');
   box(24, 724, 564, 44, '#ffffff', LINE);
   box(24, 724, 44, 44, NAVY);
   txt(37, 747, 'SETU', 7, true, '#ffffff');
-  txt(80, 750, 'SETU Flow CRM', 11, true, NAVY);
+  txt(80, 750, orgName, 11, true, NAVY);
   txt(80, 736, 'Trade execution document', 6.5, false, MUTED);
   txt(236, 752, title, 17, true, NAVY);
   txt(236, 736, data.documentNo, 8, true, BLUE);
   box(468, 732, 110, 28, PANEL, LINE);
   txt(480, 750, `Issued ${issueDate}`, 6, true, NAVY);
-  txt(480, 739, data.dueLabel ?? (data.documentType === 'invoice' ? 'Payment per terms' : 'Execution copy'), 5.8, false, MUTED);
+  txt(480, 739, data.documentType === 'invoice' ? `Due ${dueDate}` : (data.dueLabel ?? 'Execution copy'), 5.8, false, MUTED);
 
   box(24, 626, 270, 80, PANEL, LINE);
   txt(36, 690, 'BUYER / CUSTOMER', 6.5, true, BLUE);
@@ -113,16 +163,25 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   txt(36, 634, `Quote: ${short(data.quoteId, 24)}`, 6.2, false, MUTED);
 
   box(318, 626, 270, 80, PANEL, LINE);
-  txt(330, 690, 'ORDER DETAILS', 6.5, true, BLUE);
-  txt(330, 674, `Contract: ${short(data.contractId, 28)}`, 6.5, false, MUTED);
-  txt(330, 662, `Commercial lock: ${signedDate === '-' ? 'Pending signature' : `Signed ${signedDate}`}`, 6.5, false, MUTED);
-  txt(330, 650, `Pricing basis: ${short(data.pricingBasis, 28, 'FOB')}`, 6.5, false, MUTED);
-  txt(330, 638, `Currency: ${currency}`, 6.5, false, MUTED);
-  txt(330, 626, `Payment: ${short(data.paymentStatus, 28, 'Tracking pending')}`, 6.5, false, MUTED);
+  if (org) {
+    txt(330, 690, 'SELLER / EXPORTER', 6.5, true, BLUE);
+    txt(330, 674, short(orgName, 38), 9, true, INK);
+    txt(330, 661, short(compactAddress(org), 48, ''), 5.8, false, MUTED);
+    txt(330, 649, short(org.contact_email ?? org.website, 48, ''), 5.8, false, MUTED);
+    txt(330, 637, `Tax ID: ${short(org.tax_id, 34, 'Not provided')}`, 5.8, false, MUTED);
+    txt(330, 626, `Payment: Net ${paymentDays}`, 5.8, false, MUTED);
+  } else {
+    txt(330, 690, 'ORDER DETAILS', 6.5, true, BLUE);
+    txt(330, 674, `Contract: ${short(data.contractId, 28)}`, 6.5, false, MUTED);
+    txt(330, 662, `Commercial lock: ${signedDate === '-' ? 'Pending signature' : `Signed ${signedDate}`}`, 6.5, false, MUTED);
+    txt(330, 650, `Pricing basis: ${short(data.pricingBasis, 28, 'FOB')}`, 6.5, false, MUTED);
+    txt(330, 638, `Currency: ${currency}`, 6.5, false, MUTED);
+    txt(330, 626, `Payment: ${short(data.paymentStatus, 28, 'Tracking pending')}`, 6.5, false, MUTED);
+  }
 
   box(24, 596, 564, 18, data.documentType === 'invoice' ? '#f5f3ff' : '#eef6ff', data.documentType === 'invoice' ? '#ddd6fe' : '#bfdbfe');
   txt(36, 602, data.documentType === 'invoice'
-    ? 'Invoice generated from the accepted quote, signed contract snapshot, and current order execution state.'
+    ? `Invoice generated from accepted quote and signed contract. Contract: ${short(data.contractId, 18)}. Basis: ${short(data.pricingBasis, 18, 'FOB')}.`
     : 'Order confirmation generated from the accepted quote, signed contract snapshot, and locked order lines.', 5.7, false, data.documentType === 'invoice' ? '#5b21b6' : '#1e3a8a');
 
   let y = 560;
@@ -177,13 +236,20 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   box(318, y - 62, 270, 62, PANEL, LINE);
   txt(330, y - 13, data.documentType === 'invoice' ? 'PAYMENT SUMMARY' : 'ORDER CONFIRMATION', 7, true, NAVY);
   txt(330, y - 28, `Subtotal: ${money(subtotal, currency)}`, 5.8, false, MUTED);
-  txt(330, y - 40, data.documentType === 'invoice' ? 'Taxes/duties: per agreed Incoterm unless included.' : 'Order confirmation subject to document readiness.', 5.8, false, MUTED);
-  txt(330, y - 52, data.documentType === 'invoice' ? 'Payment clearance remains a human-reviewed order step.' : 'Invoice should be issued after release/dispatch posture is clear.', 5.8, false, MUTED);
+  txt(330, y - 40, data.documentType === 'invoice' ? `Payment due: ${dueDate} (Net ${paymentDays})` : 'Order confirmation subject to document readiness.', 5.8, false, MUTED);
+  txt(330, y - 52, data.documentType === 'invoice' ? 'Taxes/duties: per agreed Incoterm unless included.' : 'Invoice should be issued after release/dispatch posture is clear.', 5.8, false, MUTED);
 
   y -= 82;
+  box(24, y - 56, 564, 56, '#ffffff', LINE);
+  txt(36, y - 13, 'TERMS & CONDITIONS', 6.5, true, NAVY);
+  splitTerms(termsText, 3).forEach((termsLine, index) => {
+    txt(36, y - 27 - index * 10, termsLine, 5.4, false, MUTED);
+  });
+
+  y -= 70;
   box(24, y - 42, 564, 42, '#ffffff', LINE);
   txt(36, y - 13, 'AUTHORIZED REVIEW', 6.5, true, NAVY);
-  txt(36, y - 29, 'Prepared by SETU Flow CRM', 5.7, false, MUTED);
+  txt(36, y - 29, `Prepared by ${short(orgName, 34, 'SETU Flow CRM')}`, 5.7, false, MUTED);
   txt(300, y - 13, 'CUSTOMER / OPERATIONS ACKNOWLEDGEMENT', 6.5, true, NAVY);
   txt(300, y - 29, 'Signature: _______________________________', 5.7, false, MUTED);
 
