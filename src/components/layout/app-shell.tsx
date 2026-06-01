@@ -144,7 +144,7 @@ function DesktopLogo({ organizationName, expanded }: { organizationName?: string
   );
 }
 
-function DesktopNav({ pathname, scope, mode }: { pathname: string; scope: WorkspaceScope; mode: Exclude<DesktopSidebarMode, 'hidden'> }) {
+function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: string; scope: WorkspaceScope; mode: Exclude<DesktopSidebarMode, 'hidden'>; canAccessAdmin: boolean }) {
   const expanded = mode === 'expanded';
   const groups = [
     {
@@ -181,87 +181,92 @@ function DesktopNav({ pathname, scope, mode }: { pathname: string; scope: Worksp
       title: 'Setup',
       items: [
         { href: '/products', label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' },
-        { href: '/admin', label: 'Admin', expandedLabel: 'Admin', icon: 'lock' },
+        ...(canAccessAdmin ? [{ href: '/admin', label: 'Admin', expandedLabel: 'Admin', icon: 'lock' }] : []),
       ],
     },
   ];
   return (
-    <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2 pb-3 pt-3" aria-label="Desktop workflow navigation">
-      {groups.map((group) => (
-        <div key={group.title} className="space-y-1">
-          {expanded ? <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/35">{group.title}</p> : null}
-          {group.items.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={withScopeHref(item.href, scope)}
-                title={item.expandedLabel}
-                className={cn(
-                  'group flex items-center rounded-2xl font-bold transition',
-                  expanded ? 'gap-3 px-3 py-2.5 text-sm' : 'flex-col gap-1 px-2 py-2 text-[10px]',
-                  active ? 'bg-white/12 text-white shadow-[inset_3px_0_0_rgba(255,255,255,0.6)]' : 'text-white/58 hover:bg-white/8 hover:text-white',
-                )}
-              >
-                <FaIcon icon={item.icon} fixedWidth />
-                <span className={expanded ? 'truncate' : undefined}>{expanded ? item.expandedLabel : item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      ))}
+    <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-3 pt-3" aria-label="Desktop workflow navigation">
+      <div className="flex flex-col gap-4">
+        {groups.map((group) => (
+          <div key={group.title} className="space-y-1">
+            {expanded ? <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/35">{group.title}</p> : null}
+            {group.items.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={withScopeHref(item.href, scope)}
+                  title={item.expandedLabel}
+                  className={cn(
+                    'group flex items-center rounded-2xl font-bold transition',
+                    expanded ? 'gap-3 px-3 py-2.5 text-sm' : 'flex-col gap-1 px-2 py-2 text-[10px]',
+                    active ? 'bg-white/12 text-white shadow-[inset_3px_0_0_rgba(255,255,255,0.6)]' : 'text-white/58 hover:bg-white/8 hover:text-white',
+                  )}
+                >
+                  <FaIcon icon={item.icon} fixedWidth />
+                  <span className={expanded ? 'truncate' : undefined}>{expanded ? item.expandedLabel : item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </nav>
   );
 }
 
-function DesktopSidebar({ organizationName, pathname, scope, mode, onModeChange }: { organizationName?: string | null; pathname: string; scope: WorkspaceScope; mode: DesktopSidebarMode; onModeChange: (mode: DesktopSidebarMode) => void }) {
+function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmin, onModeChange }: { organizationName?: string | null; pathname: string; scope: WorkspaceScope; mode: DesktopSidebarMode; canAccessAdmin: boolean; onModeChange: (mode: DesktopSidebarMode) => void }) {
   if (mode === 'hidden') {
     return (
-      <aside className="hidden w-16 shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white md:flex">
-        <DesktopLogo organizationName={organizationName} expanded={false} />
-        <button
-          type="button"
-          onClick={() => onModeChange('collapsed')}
-          className="mt-4 flex h-10 w-full items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14"
-          aria-label="Show desktop navigation"
-          title="Show navigation"
-        >
-          <FaIcon icon="bars" fixedWidth />
-        </button>
+      <aside className="sticky top-0 hidden h-screen w-16 shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white md:flex">
+        <div className="shrink-0 space-y-3">
+          <DesktopLogo organizationName={organizationName} expanded={false} />
+          <button
+            type="button"
+            onClick={() => onModeChange('collapsed')}
+            className="flex h-10 w-full items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14"
+            aria-label="Show desktop navigation"
+            title="Show navigation"
+          >
+            <FaIcon icon="bars" fixedWidth />
+          </button>
+        </div>
       </aside>
     );
   }
 
   const expanded = mode === 'expanded';
   return (
-    <aside className={cn('hidden shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white transition-[width] duration-200 md:flex', expanded ? 'w-[232px]' : 'w-[104px]')}>
-      <div className={cn('flex items-center gap-2', expanded ? 'justify-between' : 'justify-center')}>
-        <DesktopLogo organizationName={organizationName} expanded={expanded} />
-        {expanded ? (
-          <button
-            type="button"
-            onClick={() => onModeChange('collapsed')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14"
-            aria-label="Collapse desktop sidebar"
-            title="Collapse sidebar"
-          >
-            <FaIcon icon="angle-double-left" fixedWidth />
-          </button>
-        ) : null}
-      </div>
-      <DesktopNav pathname={pathname} scope={scope} mode={mode} />
-      <div className="mt-2 border-t border-white/10 pt-3">
-        {expanded ? (
-          <div className="grid grid-cols-2 gap-2 px-2">
-            <button type="button" onClick={() => onModeChange('collapsed')} className="rounded-xl bg-white/8 px-3 py-2 text-xs font-black text-white/80 transition hover:bg-white/14">
-              Collapse
-            </button>
-            <button type="button" onClick={() => onModeChange('hidden')} className="rounded-xl bg-white/8 px-3 py-2 text-xs font-black text-white/80 transition hover:bg-white/14">
-              Hide
-            </button>
-          </div>
-        ) : (
-          <div className="flex justify-center gap-2">
+    <aside className={cn('sticky top-0 hidden h-screen shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white transition-[width] duration-200 md:flex', expanded ? 'w-[232px]' : 'w-[104px]')}>
+      <div className="shrink-0 border-b border-white/10 pb-3">
+        <div className={cn('flex items-center gap-2', expanded ? 'justify-between' : 'justify-center')}>
+          <DesktopLogo organizationName={organizationName} expanded={expanded} />
+          {expanded ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onModeChange('collapsed')}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14"
+                aria-label="Collapse desktop sidebar"
+                title="Collapse sidebar"
+              >
+                <FaIcon icon="angle-double-left" fixedWidth />
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange('hidden')}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14"
+                aria-label="Hide desktop navigation"
+                title="Hide navigation"
+              >
+                <FaIcon icon="bars" fixedWidth />
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {!expanded ? (
+          <div className="mt-3 flex justify-center gap-2">
             <button
               type="button"
               onClick={() => onModeChange('expanded')}
@@ -281,8 +286,9 @@ function DesktopSidebar({ organizationName, pathname, scope, mode, onModeChange 
               <FaIcon icon="bars" fixedWidth />
             </button>
           </div>
-        )}
+        ) : null}
       </div>
+      <DesktopNav pathname={pathname} scope={scope} mode={mode} canAccessAdmin={canAccessAdmin} />
     </aside>
   );
 }
@@ -323,10 +329,11 @@ export function AppShell({ children, profile, organization, membership, currentR
   const roleLabel = getWorkspaceRoleDisplayName(currentRole);
   const profileName = profile?.full_name ?? profile?.username ?? 'SETU Flow user';
   const profileEmail = profile?.email ?? 'Signed in via Supabase';
+  const canAccessAdmin = normalizedRoles.includes('owner') || normalizedRoles.includes('admin');
   const [globalScope, setGlobalScope] = useState<WorkspaceScope>(() => normalizeScope(searchParams.get('mode')));
   const [desktopSidebarMode, setDesktopSidebarMode] = useState<DesktopSidebarMode>('collapsed');
   const shareHref = useMemo(() => shareLinkFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
-  const downloadVcfHref = useMemo(() => downloadVcfHrefFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
+  const downloadVcfHref = useMemo(() => downloadVcfHrefFor(profile, organization, cardSettings, cardShareSlug, organization, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
   const signedInForMobile = useMemo(() => ({
     name: profileName,
     initials: getInitials(profileName),
@@ -393,7 +400,7 @@ export function AppShell({ children, profile, organization, membership, currentR
       <div className={cn('min-h-screen bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]', shouldUseCanonicalMobileShell ? 'hidden md:block' : undefined)}>
         <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">Skip to content</a>
         <div className="flex min-h-screen">
-          <DesktopSidebar organizationName={organization?.name} pathname={pathname} scope={globalScope} mode={desktopSidebarMode} onModeChange={changeDesktopSidebarMode} />
+          <DesktopSidebar organizationName={organization?.name} pathname={pathname} scope={globalScope} mode={desktopSidebarMode} canAccessAdmin={canAccessAdmin} onModeChange={changeDesktopSidebarMode} />
           <main id="app-content" className="min-w-0 flex-1">
             <header className="sticky top-0 z-30 hidden border-b border-slate-200/70 bg-white/85 px-6 py-4 backdrop-blur-xl md:block">
               <div className="flex items-center justify-between gap-4">
