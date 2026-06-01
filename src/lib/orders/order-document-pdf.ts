@@ -136,6 +136,7 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   const paymentDays = paymentDaysFromTerms(termsText);
   const issueSource = data.createdAt ?? new Date().toISOString();
   const dueDate = addDaysLabel(issueSource, paymentDays);
+  const pricingBasis = short(data.pricingBasis, 24, 'As agreed');
   const objects: string[] = [];
   const add = (body: string) => { objects.push(body); return objects.length; };
   const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
@@ -156,21 +157,21 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   box(0, 0, 612, 792, '#ffffff');
   box(24, 724, 564, 44, '#ffffff', LINE);
   box(24, 724, 44, 44, NAVY);
-  txt(37, 747, 'SETU', 7, true, '#ffffff');
+  txt(39, 747, 'SF', 8, true, '#ffffff');
   txt(80, 750, orgName, 11, true, NAVY);
   txt(80, 736, 'Trade execution document', 6.5, false, MUTED);
   txt(236, 752, title, 17, true, NAVY);
   txt(236, 736, data.documentNo, 8, true, BLUE);
   box(468, 732, 110, 28, PANEL, LINE);
   txt(480, 750, `Issued ${issueDate}`, 6, true, NAVY);
-  txt(480, 739, data.documentType === 'invoice' ? `Due ${dueDate}` : (data.dueLabel ?? 'Execution copy'), 5.8, false, MUTED);
+  txt(480, 739, data.documentType === 'invoice' ? `Due ${dueDate}` : `Terms: Net ${paymentDays}`, 5.8, false, MUTED);
 
   box(24, 626, 270, 80, PANEL, LINE);
   txt(36, 690, 'BUYER / CUSTOMER', 6.5, true, BLUE);
   txt(36, 674, short(data.companyName, 42), 10, true, INK);
   txt(36, 660, short(data.contactName, 44, ''), 6.5, false, MUTED);
   txt(36, 648, short(data.country, 44, ''), 6.5, false, MUTED);
-  txt(36, 634, `Quote: ${short(data.quoteId, 24)}`, 6.2, false, MUTED);
+  txt(36, 634, `Quote: ${short(data.quoteId, 30)}`, 6.2, false, MUTED);
 
   box(318, 626, 270, 80, PANEL, LINE);
   if (org) {
@@ -178,32 +179,32 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
     txt(330, 674, short(orgName, 38), 9, true, INK);
     txt(330, 661, short(compactAddress(org), 48, ''), 5.8, false, MUTED);
     txt(330, 649, short(org.contact_email ?? org.website, 48, ''), 5.8, false, MUTED);
-    txt(330, 637, `Tax ID: ${short(org.tax_id, 34, 'Not provided')}`, 5.8, false, MUTED);
-    txt(330, 626, `Payment: Net ${paymentDays}`, 5.8, false, MUTED);
+    txt(330, 637, `Tax ID: ${short(org.tax_id, 34, 'Available on request')}`, 5.8, false, MUTED);
+    txt(330, 628, `Payment: Net ${paymentDays}`, 5.8, false, MUTED);
   } else {
     txt(330, 690, 'ORDER DETAILS', 6.5, true, BLUE);
     txt(330, 674, `Contract: ${short(data.contractId, 28)}`, 6.5, false, MUTED);
     txt(330, 662, `Commercial lock: ${signedDate === '-' ? 'Pending signature' : `Signed ${signedDate}`}`, 6.5, false, MUTED);
-    txt(330, 650, `Pricing basis: ${short(data.pricingBasis, 28, 'FOB')}`, 6.5, false, MUTED);
+    txt(330, 650, `Pricing basis: ${pricingBasis}`, 6.5, false, MUTED);
     txt(330, 638, `Currency: ${currency}`, 6.5, false, MUTED);
-    txt(330, 626, `Payment: ${short(data.paymentStatus, 28, 'Tracking pending')}`, 6.5, false, MUTED);
+    txt(330, 628, `Payment: ${short(data.paymentStatus, 28, 'Tracking pending')}`, 6.5, false, MUTED);
   }
 
   box(24, 596, 564, 18, data.documentType === 'invoice' ? '#f5f3ff' : '#eef6ff', data.documentType === 'invoice' ? '#ddd6fe' : '#bfdbfe');
   txt(36, 602, data.documentType === 'invoice'
-    ? `Invoice generated from accepted quote and signed contract. Contract: ${short(data.contractId, 18)}. Basis: ${short(data.pricingBasis, 18, 'FOB')}.`
-    : 'Order confirmation generated from the accepted quote, signed contract snapshot, and locked order lines.', 5.7, false, data.documentType === 'invoice' ? '#5b21b6' : '#1e3a8a');
+    ? `Invoice generated from the accepted quote and signed contract. Basis: ${pricingBasis}. Payment: Net ${paymentDays}.`
+    : `Order confirmation generated from the accepted quote. Basis: ${pricingBasis}. Payment terms: Net ${paymentDays}.`, 5.7, false, data.documentType === 'invoice' ? '#5b21b6' : '#1e3a8a');
 
   let y = 560;
   const tableX = 24;
   const tableW = 564;
   const cols: Array<[string, number, 'left' | 'right']> = [
     ['#', 24, 'left'],
-    ['Item', 210, 'left'],
-    ['SKU / Variant', 120, 'left'],
-    ['Qty', 50, 'right'],
-    ['Unit', 70, 'right'],
-    ['Total', 90, 'right'],
+    ['Item', 190, 'left'],
+    ['SKU / Variant', 95, 'left'],
+    ['Qty', 40, 'right'],
+    ['Unit', 90, 'right'],
+    ['Total', 109, 'right'],
   ];
   box(tableX, y - 16, tableW, 20, '#e2e8f0', LINE);
   let x = tableX + 8;
@@ -219,11 +220,11 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
     x = tableX + 8;
     const cells: Array<[string, number, 'left' | 'right']> = [
       [String(index + 1), 24, 'left'],
-      [short(row.productName, 34), 210, 'left'],
-      [short(row.sku ?? row.variantName, 22, '-'), 120, 'left'],
-      [String(n(row.quantity, 0)), 50, 'right'],
-      [money(row.unitPrice ?? 0, currency), 70, 'right'],
-      [money(lineTotal(row), currency), 90, 'right'],
+      [short(row.productName, 30), 190, 'left'],
+      [short(row.sku ?? row.variantName, 18, '-'), 95, 'left'],
+      [String(n(row.quantity, 0)), 40, 'right'],
+      [money(row.unitPrice ?? 0, currency), 90, 'right'],
+      [money(lineTotal(row), currency), 109, 'right'],
     ];
     cells.forEach(([value, width, align]) => {
       txt(align === 'right' ? x + width - 8 : x, y - 6, value, 5.5, index === 0 && align === 'left', INK, align === 'right');
@@ -233,21 +234,21 @@ export function buildOrderDocumentPdf(data: OrderPdfData): Buffer {
   });
 
   line(tableX, y + 3, tableX + tableW, y + 3, NAVY, 1.1);
-  txt(410, y - 10, data.documentType === 'invoice' ? 'Amount Due' : 'Order Value', 8.5, true, NAVY);
-  txt(584, y - 10, money(subtotal, currency), 9, true, NAVY, true);
+  txt(404, y - 10, data.documentType === 'invoice' ? 'Amount Due' : 'Order Value', 8.5, true, NAVY);
+  txt(572, y - 10, money(subtotal, currency), 9, true, NAVY, true);
 
   y -= 42;
   box(24, y - 62, 270, 62, PANEL, LINE);
-  txt(36, y - 13, 'EXECUTION NOTES', 7, true, NAVY);
-  txt(36, y - 28, '1. Commercial terms follow the accepted quote and locked contract snapshot.', 5.7, false, MUTED);
-  txt(36, y - 40, '2. Dispatch, release, waiver, and closeout require human approval.', 5.7, false, MUTED);
-  txt(36, y - 52, '3. Attach final signed evidence in the order workspace.', 5.7, false, MUTED);
+  txt(36, y - 13, 'COMMERCIAL NOTES', 7, true, NAVY);
+  txt(36, y - 28, '1. Commercial terms follow the accepted quote and this confirmation.', 5.7, false, MUTED);
+  txt(36, y - 40, '2. Delivery, dispatch, and documentation follow the agreed basis.', 5.7, false, MUTED);
+  txt(36, y - 52, '3. Review product details, quantities, pricing, and terms before approval.', 5.7, false, MUTED);
 
   box(318, y - 62, 270, 62, PANEL, LINE);
-  txt(330, y - 13, data.documentType === 'invoice' ? 'PAYMENT SUMMARY' : 'ORDER CONFIRMATION', 7, true, NAVY);
+  txt(330, y - 13, data.documentType === 'invoice' ? 'PAYMENT SUMMARY' : 'ORDER SUMMARY', 7, true, NAVY);
   txt(330, y - 28, `Subtotal: ${money(subtotal, currency)}`, 5.8, false, MUTED);
-  txt(330, y - 40, data.documentType === 'invoice' ? `Payment due: ${dueDate} (Net ${paymentDays})` : 'Order confirmation subject to document readiness.', 5.8, false, MUTED);
-  txt(330, y - 52, data.documentType === 'invoice' ? 'Taxes/duties: per agreed Incoterm unless included.' : 'Invoice should be issued after release/dispatch posture is clear.', 5.8, false, MUTED);
+  txt(330, y - 40, data.documentType === 'invoice' ? `Payment due: ${dueDate} (Net ${paymentDays})` : `Payment terms: Net ${paymentDays}`, 5.8, false, MUTED);
+  txt(330, y - 52, data.documentType === 'invoice' ? 'Taxes/duties: per agreed Incoterm unless included.' : `Delivery basis: ${pricingBasis}`, 5.8, false, MUTED);
 
   y -= 82;
   box(24, y - 56, 564, 56, '#ffffff', LINE);
