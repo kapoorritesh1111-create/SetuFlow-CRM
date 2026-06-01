@@ -4,36 +4,41 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/login';
+  return value;
+}
+
 export default function ResetPasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createClient(), []);
 
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [newSecret, setNewSecret] = useState("");
+  const [confirmSecret, setConfirmSecret] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const next = searchParams.get("next") || "/login";
+  const next = safeNextPath(searchParams.get("next"));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setMessage(null);
 
-    if (!password || !confirmPassword) {
-      setError("Please enter and confirm your new password.");
+    if (!newSecret || !confirmSecret) {
+      setError("Please enter and confirm your new credential.");
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (newSecret !== confirmSecret) {
+      setError("The two entries do not match.");
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    if (newSecret.length < 8) {
+      setError("The new credential must be at least 8 characters long.");
       return;
     }
 
@@ -41,7 +46,7 @@ export default function ResetPasswordClient() {
 
     try {
       const { error: updateError } = await supabase.auth.updateUser({
-        password,
+        password: newSecret,
       });
 
       if (updateError) {
@@ -49,13 +54,26 @@ export default function ResetPasswordClient() {
         return;
       }
 
-      setMessage("Your password has been updated successfully.");
+      const completeResponse = await fetch('/api/auth/reset-password/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!completeResponse.ok) {
+        const payload = await completeResponse.json().catch(() => null) as { error?: string } | null;
+        setError(payload?.error ?? 'Your credential was updated, but the recovery session could not be closed. Please sign out before continuing.');
+        return;
+      }
+
+      setNewSecret("");
+      setConfirmSecret("");
+      setMessage("Your account credential has been updated. Please sign in again.");
 
       setTimeout(() => {
-        router.push(next);
+        router.replace(next);
       }, 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to reset password.");
+      setError(err instanceof Error ? err.message : "Unable to complete account recovery.");
     } finally {
       setSubmitting(false);
     }
@@ -69,47 +87,53 @@ export default function ResetPasswordClient() {
             SETU FLOW
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-neutral-900">
-            Reset your password
+            Set account access
           </h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Enter a new password for your account.
+            For your security, enter and confirm a new account credential before continuing to the workspace.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label
-              htmlFor="password"
+              htmlFor="newSecret"
               className="mb-2 block text-sm font-medium text-neutral-800"
             >
-              New password
+              New account credential
             </label>
             <input
-              id="password"
+              id="newSecret"
+              name="newSecret"
               type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              value={newSecret}
+              onChange={(event) => setNewSecret(event.target.value)}
               className="w-full rounded-xl border px-4 py-3 outline-none ring-0"
-              placeholder="Enter new password"
+              placeholder="Enter new credential"
               autoComplete="new-password"
+              minLength={8}
+              required
             />
           </div>
 
           <div>
             <label
-              htmlFor="confirmPassword"
+              htmlFor="confirmSecret"
               className="mb-2 block text-sm font-medium text-neutral-800"
             >
-              Confirm password
+              Confirm account credential
             </label>
             <input
-              id="confirmPassword"
+              id="confirmSecret"
+              name="confirmSecret"
               type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
+              value={confirmSecret}
+              onChange={(event) => setConfirmSecret(event.target.value)}
               className="w-full rounded-xl border px-4 py-3 outline-none ring-0"
-              placeholder="Confirm new password"
+              placeholder="Confirm new credential"
               autoComplete="new-password"
+              minLength={8}
+              required
             />
           </div>
 
@@ -126,7 +150,7 @@ export default function ResetPasswordClient() {
             disabled={submitting}
             className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {submitting ? "Updating password..." : "Update password"}
+            {submitting ? "Updating access..." : "Set account access"}
           </button>
         </form>
       </div>
