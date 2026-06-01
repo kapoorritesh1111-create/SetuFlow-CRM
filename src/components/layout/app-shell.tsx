@@ -333,7 +333,7 @@ export function AppShell({ children, profile, organization, membership, currentR
   const [globalScope, setGlobalScope] = useState<WorkspaceScope>(() => normalizeScope(searchParams.get('mode')));
   const [desktopSidebarMode, setDesktopSidebarMode] = useState<DesktopSidebarMode>('collapsed');
   const shareHref = useMemo(() => shareLinkFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
-  const downloadVcfHref = useMemo(() => downloadVcfHrefFor(profile, organization, cardSettings, cardShareSlug, organization, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
+  const downloadVcfHref = useMemo(() => downloadVcfHrefFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
   const signedInForMobile = useMemo(() => ({
     name: profileName,
     initials: getInitials(profileName),
