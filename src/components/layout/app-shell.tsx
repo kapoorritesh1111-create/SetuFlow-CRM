@@ -143,6 +143,32 @@ function DesktopNav({ pathname, canAccessAdmin, scope }: { pathname: string; can
   );
 }
 
+function DesktopUserMenu({ profileName, profileEmail, avatarUrl }: { profileName: string; profileEmail: string; avatarUrl?: string | null }) {
+  return (
+    <details className="group relative">
+      <summary className="list-none rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+        <span className="sr-only">Open user menu</span>
+        <UserAvatar name={profileName} email={profileEmail} avatarUrl={avatarUrl} initials={getInitials(profileName)} size="md" />
+      </summary>
+      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl bg-white p-2 text-slate-700 shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+        <div className="px-3 py-2">
+          <p className="truncate text-sm font-black text-slate-950">{profileName}</p>
+          <p className="truncate text-xs font-semibold text-slate-500">{profileEmail}</p>
+        </div>
+        <div className="my-1 h-px bg-slate-100" />
+        <Link href="/profile" className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+          Profile
+        </Link>
+        <form action="/api/logout" method="post">
+          <button type="submit" className="block w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50">
+            Sign out
+          </button>
+        </form>
+      </div>
+    </details>
+  );
+}
+
 export function AppShell({ children, profile, organization, membership, currentRoles = [], cardSettings, cardShareSlug, organizationId, userId }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -250,7 +276,7 @@ export function AppShell({ children, profile, organization, membership, currentR
                   {organizationId && userId ? (
                     <InAppNotificationCenter organizationId={organizationId} userId={userId} variant="inline" />
                   ) : null}
-                  <UserAvatar name={profileName} email={profileEmail} avatarUrl={profile?.avatar_url} initials={getInitials(profileName)} size="md" />
+                  <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} />
                 </div>
               </div>
             </header>
