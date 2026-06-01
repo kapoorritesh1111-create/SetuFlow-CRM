@@ -29,12 +29,19 @@ export async function GET(_request: Request, { params }: { params: { contractId:
   if (contractError) return NextResponse.json({ error: contractError.message }, { status: 500 });
   if (!contract?.id) return NextResponse.json({ error: 'Contract not found.' }, { status: 404 });
 
-  const { data: quote } = await db
-    .from('quotes')
-    .select('id, lead_id, currency, display_currency, pricing_basis, updated_at, created_at')
-    .eq('organization_id', organizationId)
-    .eq('id', contract.quote_id)
-    .maybeSingle();
+  const [{ data: quote }, { data: org }] = await Promise.all([
+    db
+      .from('quotes')
+      .select('id, lead_id, currency, display_currency, pricing_basis, updated_at, created_at')
+      .eq('organization_id', organizationId)
+      .eq('id', contract.quote_id)
+      .maybeSingle(),
+    db
+      .from('organizations')
+      .select('id, name, legal_name, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, order_terms_conditions')
+      .eq('id', organizationId)
+      .maybeSingle(),
+  ]);
 
   const { data: lead } = quote?.lead_id
     ? await db
@@ -93,7 +100,9 @@ export async function GET(_request: Request, { params }: { params: { contractId:
     pricingBasis: contract.pricing_basis ?? quote?.pricing_basis,
     signedAt: contract.signed_at,
     createdAt: quote?.updated_at ?? quote?.created_at,
+    dueLabel: 'Commercial terms from organization profile',
     paymentStatus: 'Tracking pending',
+    organization: org ?? null,
     lines,
   });
 
