@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useRef } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { SprintIssue, SprintMeta } from '@/lib/queries/workspace';
 import { cn } from '@/lib/utils';
 import {
@@ -14,7 +15,8 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ViewMode = 'table' | 'kanban' | 'backlog';
-type SortField = 'priority_rank' | 'severity' | 'status' | 'sprint_number' | 'created_at' | 'updated_at';
+type SortField = 'priority_rank' | 'issue_ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint_number' | 'assigned_to' | 'reporter_name' | 'effort' | 'created_at' | 'updated_at' | 'age';
+type ColumnKey = 'priority' | 'ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint' | 'assignee' | 'reporter' | 'effort' | 'updated';
 
 const STATUSES = ['Open', 'In Progress', 'Resolved', "Won't Fix", 'Deferred'] as const;
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'] as const;
@@ -23,6 +25,8 @@ const CATEGORIES = ['Bug', 'Enhancement', 'Testing', 'UX', 'Task', 'Docs'];
 const EFFORTS = ['XS', 'S', 'M', 'L', 'XL'];
 
 const SEV_ORDER: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+const STATUS_ORDER: Record<string, number> = { Open: 0, 'In Progress': 1, Resolved: 2, Deferred: 3, "Won't Fix": 4 };
+const EFFORT_ORDER: Record<string, number> = { XS: 0, S: 1, M: 2, L: 3, XL: 4 };
 const STATUS_COLORS: Record<string, string> = {
   Open: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   'In Progress': 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
@@ -35,6 +39,11 @@ const SEV_COLORS: Record<string, string> = {
   High: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
   Medium: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
   Low: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+};
+
+const DEFAULT_COLUMNS: ColumnKey[] = ['priority', 'ref', 'title', 'severity', 'area', 'status', 'sprint', 'assignee', 'reporter', 'effort', 'updated'];
+const COLUMN_LABELS: Record<ColumnKey, string> = {
+  priority: '#', ref: 'Ref', title: 'Title', severity: 'Severity', area: 'Area', status: 'Status', sprint: 'Sprint', assignee: 'Assignee', reporter: 'Reported By', effort: 'Effort', updated: 'Updated',
 };
 
 const KANBAN_COLS = [
@@ -495,21 +504,27 @@ export function IssuesBoard({
 }: {
   issues: SprintIssue[];
   sprints: SprintMeta[];
-  initialFilter?: { status?: string; severity?: string; sprint?: number; area?: string; ref?: string; action?: string };
+  initialFilter?: { status?: string; severity?: string; sprint?: number; area?: string; reporter?: string; ref?: string; action?: string; sort?: string; dir?: string; q?: string; view?: string };
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [issues, setIssues] = useState<SprintIssue[]>(initialIssues);
-  const [view, setView] = useState<ViewMode>('table');
-  const [search, setSearch] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState(initialFilter?.severity ?? '');
-  const [filterStatus, setFilterStatus] = useState(initialFilter?.status ?? '');
-  const [filterSprint, setFilterSprint] = useState(initialFilter?.sprint ? String(initialFilter.sprint) : '');
-  const [filterArea, setFilterArea] = useState(initialFilter?.area ?? '');
+  const [view, setView] = useState<ViewMode>((initialFilter?.view === 'kanban' || initialFilter?.view === 'backlog') ? initialFilter.view : 'table');
+  const [search, setSearch] = useState(initialFilter?.q ?? '');
+  const [filterSeverity, setFilterSeverity] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterSprint, setFilterSprint] = useState('');
+  const [filterArea, setFilterArea] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterAssignee, setFilterAssignee] = useState('');
+  const [filterReporter, setFilterReporter] = useState('');
   const [hideResolved, setHideResolved] = useState(true);
   const [hideDeferred, setHideDeferred] = useState(true);
-  const [sortField, setSortField] = useState<SortField>('priority_rank');
-  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const validSortFields: SortField[] = ['priority_rank', 'issue_ref', 'title', 'severity', 'area', 'status', 'sprint_number', 'assigned_to', 'reporter_name', 'effort', 'created_at', 'updated_at', 'age'];
+  const initialSort = validSortFields.includes(initialFilter?.sort as SortField) ? initialFilter?.sort as SortField : 'priority_rank';
+  const [sortField, setSortField] = useState<SortField>(initialSort);
+  const [sortDir, setSortDir] = useState<1 | -1>(initialFilter?.dir === 'desc' ? -1 : 1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openIssue, setOpenIssue] = useState<SprintIssue | null>(
     initialFilter?.ref ? initialIssues.find((i) => i.issue_ref === initialFilter.ref) ?? null : null,
@@ -517,6 +532,7 @@ export function IssuesBoard({
   const [showNewIssue, setShowNewIssue] = useState(initialFilter?.action === 'new');
   const [bulkAction, setBulkAction] = useState('');
   const [bulkApplying, setBulkApplying] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_COLUMNS));
 
   const activeSprint = sprints[0]?.sprint_number ?? 23;
 
@@ -566,10 +582,43 @@ export function IssuesBoard({
     setBulkApplying(false);
   }
 
+  function setBoardQuery(patch: Record<string, string | null>) {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) params.delete(key);
+      else params.set(key, value);
+    }
+    const query = params.toString();
+    router.push(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }
+
+  function changeView(nextView: ViewMode) {
+    setView(nextView);
+    setBoardQuery({ view: nextView === 'table' ? null : nextView });
+  }
+
+  function changeSearch(nextSearch: string) {
+    setSearch(nextSearch);
+    setBoardQuery({ q: nextSearch || null });
+  }
+
+  function toggleColumn(column: ColumnKey) {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(column) && next.size > 1) next.delete(column);
+      else next.add(column);
+      return next;
+    });
+  }
+
+  const showColumn = (column: ColumnKey) => visibleColumns.has(column);
+
   // Sort toggle
   function toggleSort(field: SortField) {
-    if (sortField === field) setSortDir((d) => (d === 1 ? -1 : 1));
-    else { setSortField(field); setSortDir(1); }
+    const nextDir: 1 | -1 = sortField === field ? (sortDir === 1 ? -1 : 1) : 1;
+    setSortField(field);
+    setSortDir(nextDir);
+    setBoardQuery({ sort: field, dir: nextDir === -1 ? 'desc' : 'asc' });
   }
 
   // Filter + sort
@@ -583,10 +632,11 @@ export function IssuesBoard({
       if (filterArea && i.area !== filterArea) return false;
       if (filterCategory && i.issue_category !== filterCategory) return false;
       if (filterAssignee && !(i.assigned_to ?? '').toLowerCase().includes(filterAssignee.toLowerCase())) return false;
+      if (filterReporter && !(i.reporter_name ?? '').toLowerCase().includes(filterReporter.toLowerCase())) return false;
       if (search) {
         const q = search.toLowerCase();
         if (!(i.title?.toLowerCase().includes(q) || i.issue_ref?.toLowerCase().includes(q) ||
-          i.area?.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q))) return false;
+          i.area?.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q) || i.reporter_name?.toLowerCase().includes(q) || i.assigned_to?.toLowerCase().includes(q))) return false;
       }
       return true;
     });
@@ -594,9 +644,16 @@ export function IssuesBoard({
     arr.sort((a, b) => {
       let av: number | string = 0, bv: number | string = 0;
       if (sortField === 'priority_rank') { av = a.priority_rank ?? 9999; bv = b.priority_rank ?? 9999; }
+      else if (sortField === 'issue_ref') { av = a.issue_ref ?? ''; bv = b.issue_ref ?? ''; }
+      else if (sortField === 'title') { av = a.title ?? ''; bv = b.title ?? ''; }
       else if (sortField === 'severity') { av = SEV_ORDER[a.severity] ?? 4; bv = SEV_ORDER[b.severity] ?? 4; }
-      else if (sortField === 'status') { av = a.status ?? ''; bv = b.status ?? ''; }
+      else if (sortField === 'area') { av = a.area ?? a.workflow_area ?? ''; bv = b.area ?? b.workflow_area ?? ''; }
+      else if (sortField === 'status') { av = STATUS_ORDER[a.status] ?? 99; bv = STATUS_ORDER[b.status] ?? 99; }
       else if (sortField === 'sprint_number') { av = a.sprint_number; bv = b.sprint_number; }
+      else if (sortField === 'assigned_to') { av = a.assigned_to ?? ''; bv = b.assigned_to ?? ''; }
+      else if (sortField === 'reporter_name') { av = a.reporter_name ?? ''; bv = b.reporter_name ?? ''; }
+      else if (sortField === 'effort') { av = EFFORT_ORDER[a.effort ?? ''] ?? 99; bv = EFFORT_ORDER[b.effort ?? ''] ?? 99; }
+      else if (sortField === 'age') { av = new Date(a.created_at).getTime(); bv = new Date(b.created_at).getTime(); }
       else if (sortField === 'created_at') { av = a.created_at; bv = b.created_at; }
       else if (sortField === 'updated_at') { av = a.updated_at; bv = b.updated_at; }
       if (av < bv) return -1 * sortDir;
@@ -605,7 +662,7 @@ export function IssuesBoard({
     });
 
     return arr;
-  }, [issues, search, filterSeverity, filterStatus, filterSprint, filterArea, filterCategory, filterAssignee, hideResolved, hideDeferred, sortField, sortDir]);
+  }, [issues, search, filterSeverity, filterStatus, filterSprint, filterArea, filterCategory, filterAssignee, filterReporter, hideResolved, hideDeferred, sortField, sortDir]);
 
   const SortIcon = ({ field }: { field: SortField }) => (
     <span className={cn('ml-1 text-[10px]', sortField === field ? 'text-brand-primary' : 'text-slate-300')}>
@@ -626,37 +683,39 @@ export function IssuesBoard({
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/[0.04]">
               {(['table', 'kanban', 'backlog'] as ViewMode[]).map((v) => (
-                <button key={v} onClick={() => setView(v)}
+                <button key={v} onClick={() => changeView(v)}
                   className={cn('rounded-xl px-3 py-2 text-xs font-black capitalize transition',
                     view === v ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950' : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white')}>
                   {v === 'kanban' ? 'Kanban' : v === 'table' ? 'Table' : 'Backlog'}
                 </button>
               ))}
             </div>
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+            <input type="text" value={search} onChange={(e) => changeSearch(e.target.value)}
               placeholder="Search issues..."
               className={cn('w-full rounded-2xl border px-3 py-2 text-sm shadow-sm sm:w-64', workspaceFieldSurfaceClass)} />
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:items-center">
-            <select value={filterSprint} onChange={(e) => setFilterSprint(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
-              <option value="">All sprints</option>{sprints.map((s) => <option key={s.sprint_number} value={s.sprint_number}>S{s.sprint_number}</option>)}
-            </select>
-            <select value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
-              <option value="">All severities</option>{SEVERITIES.map((s) => <option key={s}>{s}</option>)}
-            </select>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
-              <option value="">All statuses</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}
-            </select>
-            <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
-              <option value="">All areas</option>{AREAS.map((a) => <option key={a}>{a}</option>)}
-            </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="text" value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} placeholder="Assignee..." className={cn('w-36 rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)} />
+            <input type="text" value={filterReporter} onChange={(e) => setFilterReporter(e.target.value)} placeholder="Reporter..." className={cn('w-36 rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)} />
+            <details className="relative">
+              <summary className={cn('cursor-pointer rounded-2xl border px-3 py-2 text-sm font-black shadow-sm', workspaceFieldSurfaceClass)}>Columns</summary>
+              <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-white/10 dark:bg-slate-950">
+                {DEFAULT_COLUMNS.map((column) => (
+                  <label key={column} className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.05]">
+                    <input type="checkbox" checked={visibleColumns.has(column)} onChange={() => toggleColumn(column)} />
+                    {COLUMN_LABELS[column]}
+                  </label>
+                ))}
+              </div>
+            </details>
+            <button onClick={() => setShowNewIssue(true)} className={cn('rounded-2xl px-4 py-2 text-sm font-black transition', workspacePrimaryButtonClass)}>+ Report Issue</button>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3 dark:border-white/10">
           <button onClick={() => setHideResolved((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideResolved ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideResolved ? 'Hiding resolved' : 'Show resolved'}</button>
           <button onClick={() => setHideDeferred((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideDeferred ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideDeferred ? 'Hiding deferred' : 'Show deferred'}</button>
-          <button onClick={() => setShowNewIssue(true)} className={cn('ml-auto rounded-2xl px-4 py-2 text-sm font-black transition', workspacePrimaryButtonClass)}>+ Report Issue</button>
+
         </div>
       </div>
 
@@ -706,29 +765,22 @@ export function IssuesBoard({
                     onChange={(e) => setSelectedIds(e.target.checked ? new Set(filtered.map((i) => i.id)) : new Set())}
                     className="rounded" />
                 </th>
-                <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('priority_rank')}>
-                  # <SortIcon field="priority_rank" />
-                </th>
-                <th className="px-3 py-3">Ref</th>
-                <th className="px-3 py-3">Title</th>
-                <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('severity')}>
-                  Severity <SortIcon field="severity" />
-                </th>
-                <th className="px-3 py-3">Area</th>
-                <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('status')}>
-                  Status <SortIcon field="status" />
-                </th>
-                <th className="px-3 py-3">Sprint</th>
-                <th className="px-3 py-3">Assignee</th>
-                <th className="px-3 py-3">Effort</th>
-                <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('updated_at')}>
-                  Updated <SortIcon field="updated_at" />
-                </th>
+                {showColumn('priority') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('priority_rank')}># <SortIcon field="priority_rank" /></th>}
+                {showColumn('ref') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('issue_ref')}>Ref <SortIcon field="issue_ref" /></th>}
+                {showColumn('title') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('title')}>Title <SortIcon field="title" /></th>}
+                {showColumn('severity') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('severity')}>Severity <SortIcon field="severity" /></th>}
+                {showColumn('area') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('area')}>Area <SortIcon field="area" /></th>}
+                {showColumn('status') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('status')}>Status <SortIcon field="status" /></th>}
+                {showColumn('sprint') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('sprint_number')}>Sprint <SortIcon field="sprint_number" /></th>}
+                {showColumn('assignee') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('assigned_to')}>Assignee <SortIcon field="assigned_to" /></th>}
+                {showColumn('reporter') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('reporter_name')}>Reported By <SortIcon field="reporter_name" /></th>}
+                {showColumn('effort') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('effort')}>Effort <SortIcon field="effort" /></th>}
+                {showColumn('updated') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('updated_at')}>Updated <SortIcon field="updated_at" /></th>}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={11} className="px-6 py-12 text-center text-slate-400">No issues match this filter</td></tr>
+                <tr><td colSpan={12} className="px-6 py-12 text-center text-slate-400">No issues match this filter</td></tr>
               ) : (
                 filtered.map((issue) => (
                   <tr key={issue.id}
@@ -745,57 +797,58 @@ export function IssuesBoard({
                         }}
                         className="rounded" />
                     </td>
-                    <td className="px-3 py-2.5 text-[11px] text-slate-400">{issue.priority_rank ?? '—'}</td>
-                    <td className="px-3 py-2.5 font-mono text-[11px] text-slate-500">{issue.issue_ref ?? `S${issue.sprint_number}-?`}</td>
-                    <td className="max-w-xs px-3 py-2.5">
+                    {showColumn('priority') && <td className="px-3 py-2.5 text-[11px] text-slate-400">{issue.priority_rank ?? '—'}</td>}
+                    {showColumn('ref') && <td className="px-3 py-2.5 font-mono text-[11px] text-slate-500">{issue.issue_ref ?? `S${issue.sprint_number}-?`}</td>}
+                    {showColumn('title') && <td className="max-w-xs px-3 py-2.5">
                       <span className="line-clamp-2 text-sm font-medium text-slate-800 dark:text-slate-100">{issue.title}</span>
                       {issue.issue_category && (
                         <span className="mt-0.5 block text-[10px] text-slate-400">{issue.issue_category}</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    </td>}
+                    {showColumn('severity') && <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <InlineSelect
                         value={issue.severity ?? 'Medium'}
                         options={[...SEVERITIES]}
                         onChange={(v) => updateIssue(issue.id, { severity: v } as any)}
                         className={SEV_COLORS[issue.severity] ?? SEV_COLORS.Medium}
                       />
-                    </td>
-                    <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    </td>}
+                    {showColumn('area') && <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <InlineSelect
                         value={issue.area ?? ''}
                         options={['', ...AREAS]}
                         onChange={(v) => updateIssue(issue.id, { area: v } as any)}
                         className="text-xs text-slate-600 dark:text-slate-300"
                       />
-                    </td>
-                    <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    </td>}
+                    {showColumn('status') && <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <InlineSelect
                         value={issue.status ?? 'Open'}
                         options={[...STATUSES]}
                         onChange={(v) => updateIssue(issue.id, { status: v } as any)}
                         className={STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}
                       />
-                    </td>
-                    <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    </td>}
+                    {showColumn('sprint') && <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <InlineSelect
                         value={String(issue.sprint_number)}
                         options={sprints.map((s) => String(s.sprint_number))}
                         onChange={(v) => updateIssue(issue.id, { sprint_number: Number(v) } as any)}
                         className="text-xs"
                       />
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500">{issue.assigned_to ?? '—'}</td>
-                    <td className="px-3 py-2.5">
+                    </td>}
+                    {showColumn('assignee') && <td className="px-3 py-2.5 text-xs text-slate-500">{issue.assigned_to ?? '—'}</td>}
+                    {showColumn('reporter') && <td className="px-3 py-2.5 text-xs text-slate-500">{issue.reporter_name ?? '—'}</td>}
+                    {showColumn('effort') && <td className="px-3 py-2.5">
                       {issue.effort && (
                         <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                           {issue.effort}
                         </span>
                       )}
-                    </td>
-                    <td className="px-3 py-2.5 text-[11px] text-slate-400">
+                    </td>}
+                    {showColumn('updated') && <td className="px-3 py-2.5 text-[11px] text-slate-400">
                       {issue.updated_at ? new Date(issue.updated_at).toLocaleDateString() : '—'}
-                    </td>
+                    </td>}
                   </tr>
                 ))
               )}

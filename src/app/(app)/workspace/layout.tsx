@@ -42,10 +42,11 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
     ...issues.map((issue) => issue.sprint_number),
   ])).filter(Boolean).sort((a, b) => b - a);
   const areas = Array.from(new Set(issues.map((issue) => issue.area ?? issue.workflow_area ?? '').filter(Boolean))).sort();
+  const reporters = Array.from(new Set(issues.map((issue) => issue.reporter_name ?? '').filter(Boolean))).sort();
 
   return (
     <div className="flex flex-col gap-4">
-      <SmcGlobalFilterStrip sprints={sprintNumbers} areas={areas} />
+      <SmcGlobalFilterStrip sprints={sprintNumbers} areas={areas} reporters={reporters} />
       {children}
     </div>
   );

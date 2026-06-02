@@ -45,9 +45,11 @@ function nextParams(searchParams: URLSearchParams, patch: Record<string, string 
 export function SmcGlobalFilterStrip({
   sprints,
   areas,
+  reporters,
 }: {
   sprints: number[];
   areas: string[];
+  reporters: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -66,9 +68,9 @@ export function SmcGlobalFilterStrip({
   }
 
   return (
-    <div className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-950/[0.03] dark:border-white/10 dark:bg-slate-950/75">
-      <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+    <div className="sticky top-0 z-30 overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white/95 shadow-[0_12px_44px_rgba(15,23,42,0.08)] ring-1 ring-slate-950/[0.03] backdrop-blur dark:border-white/10 dark:bg-slate-950/85">
+      <div className="flex flex-col gap-2 p-2">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
           <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[#0c7fff]/20 bg-[#0c7fff]/10 px-3 py-2 text-[#0c7fff] dark:border-violet-300/20 dark:bg-violet-500/15 dark:text-violet-200">
             <SmcIcon name="mission" className="h-4 w-4" />
             <span className="text-[10px] font-black uppercase tracking-[0.18em]">SMC</span>
@@ -94,7 +96,7 @@ export function SmcGlobalFilterStrip({
           })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-2 dark:border-white/10">
           <div className="flex rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/[0.04]">
             {SMC_RANGE_OPTIONS.map((option) => (
               <button
@@ -125,21 +127,25 @@ export function SmcGlobalFilterStrip({
             </button>
           </div>
 
-          <select value={searchParams.get('sprint') ?? ''} onChange={(e) => apply({ sprint: e.target.value || null })} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
+          <select value={searchParams.get('sprint') ?? ''} onChange={(e) => apply({ sprint: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
             <option value="">All sprints</option>
             {sprints.map((sprint) => <option key={sprint} value={sprint}>S{sprint}</option>)}
           </select>
-          <select value={searchParams.get('severity') ?? ''} onChange={(e) => apply({ severity: e.target.value || null })} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
+          <select value={searchParams.get('severity') ?? ''} onChange={(e) => apply({ severity: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
             <option value="">All severity</option>
             {SEVERITIES.map((severity) => <option key={severity}>{severity}</option>)}
           </select>
-          <select value={searchParams.get('status') ?? ''} onChange={(e) => apply({ status: e.target.value || null })} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
+          <select value={searchParams.get('status') ?? ''} onChange={(e) => apply({ status: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
             <option value="">All status</option>
             {STATUSES.map((status) => <option key={status}>{status}</option>)}
           </select>
-          <select value={searchParams.get('area') ?? ''} onChange={(e) => apply({ area: e.target.value || null })} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
+          <select value={searchParams.get('area') ?? ''} onChange={(e) => apply({ area: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
             <option value="">All areas</option>
             {areas.map((area) => <option key={area}>{area}</option>)}
+          </select>
+          <select value={searchParams.get('reporter') ?? ''} onChange={(e) => apply({ reporter: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
+            <option value="">All reporters</option>
+            {reporters.map((reporter) => <option key={reporter}>{reporter}</option>)}
           </select>
         </div>
       </div>

@@ -13,6 +13,7 @@ export type SmcFilters = {
   severity?: string;
   status?: string;
   area?: string;
+  reporter?: string;
 };
 
 function first(value: string | string[] | undefined) {
@@ -38,6 +39,7 @@ export function normalizeSmcFilters(searchParams?: SmcFilterInput): SmcFilters {
     severity: first(searchParams?.severity) || undefined,
     status: first(searchParams?.status) || undefined,
     area: first(searchParams?.area) || undefined,
+    reporter: first(searchParams?.reporter) || undefined,
   };
 }
 
@@ -125,6 +127,10 @@ export function issueMatchesSmcFilters(issue: SprintIssue, filters: SmcFilters, 
     const area = issue.area ?? issue.workflow_area ?? '';
     if (area !== filters.area) return false;
   }
+  if (filters.reporter) {
+    const reporter = issue.reporter_name ?? '';
+    if (reporter !== filters.reporter) return false;
+  }
   return issueMatchesRange(issue, filters, issues);
 }
 
@@ -144,6 +150,7 @@ export function appendSmcQuery(path: string, filters: SmcFilters, overrides: Par
   if (merged.severity) params.set('severity', merged.severity);
   if (merged.status) params.set('status', merged.status);
   if (merged.area) params.set('area', merged.area);
+  if (merged.reporter) params.set('reporter', merged.reporter);
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }
