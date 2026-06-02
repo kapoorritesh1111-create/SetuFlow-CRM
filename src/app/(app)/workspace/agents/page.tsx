@@ -1,22 +1,21 @@
 import Link from 'next/link';
-import { PageHeader } from '@/components/ui/page-header';
-import { getWorkspaceIssues, getAgentActions, type AgentAction } from '@/lib/queries/workspace';
-import { workspaceHeroClass, workspaceTableShellClass, workspaceMetricClass } from '@/components/ui/workspace-surfaces';
+import { getWorkspaceIssues, getAgentActions } from '@/lib/queries/workspace';
+import { SmcActionLink, SmcHeader, SmcMetricCard, isClosedIssue } from '@/features/workspace/components/smc-shell';
 
 export const dynamic = 'force-dynamic';
 
 const AGENT_COLORS: Record<string, string> = {
-  claude: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-  openai: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300',
-  cursor: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
-  human: 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300',
-  system: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  claude: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200',
+  openai: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200',
+  cursor: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-200',
+  human: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200',
+  system: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300',
 };
 
 export default async function AgentsPage() {
   const [issues, actions] = await Promise.all([
     getWorkspaceIssues(),
-    getAgentActions(30),
+    getAgentActions(40),
   ]);
 
   const queue = issues
@@ -25,161 +24,88 @@ export default async function AgentsPage() {
       const s: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
       return (s[a.severity] ?? 2) - (s[b.severity] ?? 2);
     })
-    .slice(0, 8);
+    .slice(0, 12);
 
   const inProgress = issues.filter((i) => i.status === 'In Progress');
+  const active = issues.filter((i) => !isClosedIssue(i.status));
+  const completedAi = actions.filter((a) => a.agent_type !== 'human' && ['done', 'completed', 'resolved'].includes(a.status ?? '')).length;
+  const nextIssue = queue[0];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Engineering workspace"
+    <div className="space-y-5">
+      <SmcHeader
         title="AI Agent Queue"
-        description="Context packets for Claude, OpenAI, and Cursor. Every agent action is logged and auditable."
-        actions={[
-          { label: 'Issue Board', href: '/workspace/issues' },
-        ]}
+        description="Operational queue for Claude, OpenAI, Cursor, and human handoffs. Context packets stay dry-run friendly until an admin intentionally picks up work."
+        actions={<SmcActionLink href="/workspace/issues" icon="board" label="Issues" />}
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: 'In Queue', value: queue.length, color: 'text-slate-900 dark:text-slate-50' },
-          { label: 'In Progress', value: inProgress.length, color: 'text-blue-600 dark:text-blue-400' },
-          { label: 'Agent Actions', value: actions.length, color: 'text-purple-600 dark:text-purple-400' },
-          { label: 'AI Fixes', value: actions.filter((a) => a.agent_type !== 'human' && a.status === 'completed').length, color: 'text-green-600 dark:text-green-400' },
-        ].map((s) => (
-          <div key={s.label} className={workspaceMetricClass}>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{s.label}</p>
-            <p className={`mt-1 text-3xl font-bold ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <SmcMetricCard icon="agent" label="In queue" value={queue.length} sub="open issues ready for pickup" tone="text-slate-950 dark:text-white" />
+        <SmcMetricCard icon="sprint" label="In progress" value={inProgress.length} sub="active work items" tone="text-blue-600 dark:text-blue-300" />
+        <SmcMetricCard icon="trend" label="Actions logged" value={actions.length} sub="AI + human audit trail" tone="text-violet-600 dark:text-violet-300" />
+        <SmcMetricCard icon="shield" label="AI fixes" value={completedAi} sub="completed agent outcomes" tone="text-emerald-600 dark:text-emerald-300" />
+        <SmcMetricCard icon="risk" label="Active scope" value={active.length} sub="non-closed issues" tone="text-amber-600 dark:text-amber-300" />
       </div>
 
-      {/* API endpoints */}
-      <div className={`${workspaceHeroClass} p-6`}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-brand-primary dark:text-sky-400">Agent API</p>
-        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-50">Connect any AI agent in one call</h3>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          These endpoints work with Claude (MCP), OpenAI function calling, and Cursor terminal commands.
-          The context packet includes the issue, how-to-fix, DB schema reference, and exact PATCH instructions.
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {[
-            {
-              label: 'Get next issue + context',
-              method: 'GET',
-              path: '/api/workspace/agent',
-              desc: 'Returns highest-priority open issue with full context. Marks it In Progress automatically.',
-            },
-            {
-              label: 'Log checkpoint',
-              method: 'POST',
-              path: '/api/workspace/agent',
-              desc: 'Log a step, commit reference, or status update. Stored in agent_actions table.',
-            },
-            {
-              label: 'Patch issue',
-              method: 'PATCH',
-              path: '/api/workspace/issues/:id',
-              desc: 'Update status, fix_applied, pr_link. Triggers resolved_at auto-stamp.',
-            },
-          ].map((ep) => (
-            <div key={ep.path} className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 dark:border-slate-700/70 dark:bg-slate-800/50">
-              <div className="flex items-center gap-2">
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${ep.method === 'GET' ? 'bg-green-100 text-green-700' : ep.method === 'POST' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {ep.method}
-                </span>
-                <code className="font-mono text-xs text-slate-600 dark:text-slate-400">{ep.path}</code>
-              </div>
-              <p className="mt-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200">{ep.label}</p>
-              <p className="mt-0.5 text-[11px] text-slate-400">{ep.desc}</p>
+      <section className="grid gap-5 xl:grid-cols-[1.1fr_1fr]">
+        <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff] dark:text-violet-300">Next pickup</p>
+              <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Priority context packet</h2>
             </div>
-          ))}
-        </div>
-        <div className="mt-4 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
-          <p className="font-mono text-xs text-slate-500 dark:text-slate-400">
-            # For Claude (MCP or API):<br />
-            curl https://setuflowcrm.com/api/workspace/agent?agent=claude<br />
-            <br />
-            # For Cursor terminal:<br />
-            curl https://setuflowcrm.com/api/workspace/agent?agent=cursor&dry_run=true<br />
-            <br />
-            # Mark resolved:<br />
-            curl -X PATCH https://setuflowcrm.com/api/workspace/issues/{'{id}'} \<br />
-            {'  '}-d '{JSON.stringify({ status: 'Resolved', fix_applied: 'Fixed auth bug', pr_link: 'https://github.com/…/pull/42' })}'
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Issue queue */}
-        <div className={workspaceTableShellClass}>
-          <div className="border-b border-slate-200/80 px-5 py-3 dark:border-slate-700/70">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Next in Queue</h3>
-            <p className="text-[11px] text-slate-400">Priority order · Ready for AI agent pickup</p>
+            {nextIssue ? <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">{nextIssue.severity}</span> : null}
           </div>
-          <div className="divide-y divide-slate-200/80 dark:divide-slate-700/70">
-            {queue.map((issue, i) => (
-              <div key={issue.id} className="flex items-start gap-3 px-4 py-3">
-                <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 dark:bg-slate-800">
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <code className="font-mono text-[10px] text-slate-400">{issue.issue_ref}</code>
-                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${issue.severity === 'Critical' ? 'bg-red-100 text-red-700' : issue.severity === 'High' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {issue.severity}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-sm text-slate-700 dark:text-slate-200 line-clamp-1">{issue.title}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-400">{issue.area ?? '—'} · S{issue.sprint_number}</p>
+          {nextIssue ? (
+            <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+              <p className="font-mono text-xs font-bold text-slate-400">{nextIssue.issue_ref}</p>
+              <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{nextIssue.title}</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">S{nextIssue.sprint_number} · {nextIssue.area ?? nextIssue.workflow_area ?? 'General'} · {nextIssue.status}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/api/workspace/agent?agent=claude&issue_ref=${nextIssue.issue_ref}&dry_run=true`} target="_blank" className="rounded-2xl bg-[#0c7fff] px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-[#075ec2]">Claude packet</Link>
+                <Link href={`/api/workspace/agent?agent=openai&issue_ref=${nextIssue.issue_ref}&dry_run=true`} target="_blank" className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]">OpenAI packet</Link>
+                <Link href={`/api/workspace/agent?agent=cursor&issue_ref=${nextIssue.issue_ref}&dry_run=true`} target="_blank" className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]">Cursor packet</Link>
+              </div>
+            </div>
+          ) : <p className="mt-5 rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400 dark:border-white/10">No open issue is waiting for pickup.</p>}
+        </div>
+
+        <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff] dark:text-violet-300">Agent activity</p>
+          <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Recent audit trail</h2>
+          <div className="mt-4 max-h-[360px] space-y-2 overflow-y-auto pr-1">
+            {actions.length ? actions.slice(0, 12).map((action) => (
+              <div key={action.id} className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${AGENT_COLORS[action.agent_type] ?? AGENT_COLORS.system}`}>{action.agent_type}</span>
+                  <span className="text-[10px] font-semibold text-slate-400">{new Date(action.created_at).toLocaleDateString()}</span>
                 </div>
-                <Link
-                  href={`/api/workspace/agent?agent=claude&issue_ref=${issue.issue_ref}&dry_run=true`}
-                  target="_blank"
-                  className="flex-shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 transition"
-                >
-                  Context ↗
-                </Link>
+                <p className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">{action.issue_ref ?? 'Action'} · {action.action}</p>
+                {action.commit_ref ? <p className="mt-1 font-mono text-[10px] text-slate-400">{action.commit_ref}</p> : null}
+              </div>
+            )) : <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400 dark:border-white/10">No agent actions yet.</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+        <details>
+          <summary className="cursor-pointer text-sm font-black uppercase tracking-[0.16em] text-slate-500">Agent API reference</summary>
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {[
+              ['GET', '/api/workspace/agent', 'Get next issue + context packet. Use dry_run=true before pickup.'],
+              ['POST', '/api/workspace/agent', 'Log checkpoint, action, commit, or status update.'],
+              ['PATCH', '/api/workspace/issues/:id', 'Patch issue status, fix proof, PR link, or resolved_at.'],
+            ].map(([method, path, copy]) => (
+              <div key={path} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="text-[10px] font-black text-[#0c7fff] dark:text-violet-300">{method}</p>
+                <code className="mt-1 block text-xs font-bold text-slate-900 dark:text-white">{path}</code>
+                <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{copy}</p>
               </div>
             ))}
-            {queue.length === 0 && <p className="px-4 py-6 text-center text-sm text-slate-400">Queue empty 🎉</p>}
           </div>
-        </div>
-
-        {/* Agent action log */}
-        <div className={workspaceTableShellClass}>
-          <div className="border-b border-slate-200/80 px-5 py-3 dark:border-slate-700/70">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Agent Action Log</h3>
-            <p className="text-[11px] text-slate-400">All AI + human actions audited here</p>
-          </div>
-          <div className="divide-y divide-slate-200/80 dark:divide-slate-700/70 max-h-[400px] overflow-y-auto">
-            {actions.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-slate-400">No agent actions yet</p>
-            ) : (
-              actions.map((action) => (
-                <div key={action.id} className="flex items-start gap-3 px-4 py-2.5">
-                  <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${AGENT_COLORS[action.agent_type] ?? AGENT_COLORS.system}`}>
-                    {action.agent_type}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      {action.issue_ref && <code className="font-mono text-[10px] text-slate-400">{action.issue_ref}</code>}
-                      <span className="text-xs text-slate-600 dark:text-slate-300">{action.action}</span>
-                    </div>
-                    {action.commit_ref && (
-                      <p className="mt-0.5 font-mono text-[10px] text-slate-400">{action.commit_ref}</p>
-                    )}
-                  </div>
-                  <span className="flex-shrink-0 text-[10px] text-slate-400">
-                    {new Date(action.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
+        </details>
+      </section>
     </div>
   );
 }

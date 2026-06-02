@@ -25,6 +25,7 @@ export function getSectionIcon(icon: string) {
 }
 
 export function getNavItemIcon(href: string) {
+  if (href.includes('/workspace')) return 'rocket';
   if (href.includes(PRODUCT_ROUTES.app.capture)) return 'camera';
   if (href.includes(PRODUCT_ROUTES.app.leads)) return 'users';
   if (href.includes(PRODUCT_ROUTES.app.quotes)) return 'file-text-o';

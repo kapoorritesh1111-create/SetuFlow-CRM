@@ -1,6 +1,6 @@
-import { PageHeader } from '@/components/ui/page-header';
 import { getWorkspaceIssues, getSprintList } from '@/lib/queries/workspace';
 import { SprintPlanningBoard } from '@/features/workspace/components/sprint-planning-board';
+import { SmcActionLink, SmcHeader } from '@/features/workspace/components/smc-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,15 +13,16 @@ export default async function SprintsPage({ searchParams }: { searchParams?: { s
   const currentSprint = searchParams?.sprint ? Number(searchParams.sprint) : (sprints[0]?.sprint_number ?? 23);
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        eyebrow="Engineering workspace"
-        title="Sprint Planning"
-        description="Move issues between sprints, set goals, track velocity, and manage backlog."
-        actions={[
-          { label: 'Issue Board', href: '/workspace/issues' },
-          { label: 'Report Issue', href: '/workspace/issues?action=new', type: 'primary' },
-        ]}
+    <div className="space-y-5">
+      <SmcHeader
+        title="Sprint War Room"
+        description="Plan sprint commitment against active risk, proof requirements, backlog candidates, AI-ready issues, and demo-critical blockers."
+        actions={(
+          <>
+            <SmcActionLink href="/workspace/issues" icon="board" label="Issues" />
+            <SmcActionLink href="/workspace/issues?action=new" icon="risk" label="Report Issue" />
+          </>
+        )}
       />
       <SprintPlanningBoard issues={issues} sprints={sprints} currentSprint={currentSprint} />
     </div>

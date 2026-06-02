@@ -5,6 +5,7 @@ import {
   getWorkspaceStats,
   type SprintIssue,
 } from '@/lib/queries/workspace';
+import { DOCS_WORKSPACE_HREF, DEMO_CHECKLIST_HREF, E2E_WORKSPACE_HREF } from '@/features/workspace/components/smc-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -334,8 +335,9 @@ export default async function WorkspaceDashboardPage({ searchParams }: { searchP
     { label: 'Sprint Planning', href: '/workspace/sprints' },
     { label: 'AI Agents', href: '/workspace/agents' },
     { label: 'Client Impact', href: '/workspace/clients' },
-    { label: 'Demo Checklist', href: '/internal/setuflow-demo-checklist.html', ext: true },
-    { label: 'QA Suite', href: '/internal/setuflow-e2e-testing.html', ext: true },
+    { label: 'Docs Workspace', href: DOCS_WORKSPACE_HREF, ext: true },
+    { label: 'Demo Checklist', href: DEMO_CHECKLIST_HREF, ext: true },
+    { label: 'QA Suite', href: E2E_WORKSPACE_HREF, ext: true },
   ];
 
   return (
@@ -350,12 +352,15 @@ export default async function WorkspaceDashboardPage({ searchParams }: { searchP
                   <p className="text-[11px] font-black uppercase tracking-[0.22em] text-violet-300/90">Setu Flow</p>
                   <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${readinessState.badge}`}><Icon name="deploy" className="h-3.5 w-3.5" /> Production: {stats.critical > 0 ? 'Needs Review' : 'Ready'}</span>
                 </div>
-                <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Command Center</h1>
-                <p className="mt-1 text-sm text-slate-400">Sprint S{stats.activeSprint}{stats.sprintMeta?.goal ? ` - ${stats.sprintMeta.goal}` : ''}</p>
+                <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Setu Mission Control</h1>
+                <p className="mt-1 text-sm text-slate-400">SMC · Sprint S{stats.activeSprint}{stats.sprintMeta?.goal ? ` - ${stats.sprintMeta.goal}` : ''}</p>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[360px]">
-                <Link href="/workspace/issues" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">Board</Link>
-                <Link href="/workspace/sprints" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">Plan</Link>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[520px] sm:grid-cols-6">
+                <Link href="/workspace/issues" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">▦ Board</Link>
+                <Link href="/workspace/sprints" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">▥ Plan</Link>
+                <Link href="/workspace/agents" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">⌁ AI</Link>
+                <Link href={DOCS_WORKSPACE_HREF} target="_blank" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">◫ Docs</Link>
+                <Link href={E2E_WORKSPACE_HREF} target="_blank" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">✓ QA</Link>
                 <Link href="/workspace?range=today#analytics" className="rounded-2xl border border-violet-300/30 bg-violet-500/15 px-3 py-2 font-bold text-violet-100 hover:bg-violet-500/25">Today</Link>
               </div>
             </div>
@@ -419,7 +424,7 @@ export default async function WorkspaceDashboardPage({ searchParams }: { searchP
           </section>
 
           <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-            <div className={`${panelClass} p-4 sm:p-5`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Connected proof surfaces</p><h3 className="mt-1 text-lg font-bold text-white">Docs, tests, and demo readiness</h3></div><Link href="/workspace/issues" className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-bold text-violet-200 hover:bg-white/10">Open board</Link></div><div className="mt-4 grid gap-3 md:grid-cols-3">{[{ label: 'Docs workspace', href: '/documents', value: 'Linked proof', icon: 'DOC' }, { label: 'E2E testing', href: '/internal/setuflow-e2e-testing.html', value: 'QA suite', icon: 'QA' }, { label: 'Demo checklist', href: '/internal/setuflow-demo-checklist.html', value: 'Go/no-go', icon: 'GO' }].map((signal) => (<Link key={signal.label} href={signal.href} target={signal.href.startsWith('/internal') ? '_blank' : undefined} className="block rounded-[1.4rem] border border-white/10 bg-white/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-violet-500/10"><span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/25 bg-violet-500/15 text-xs font-black text-violet-100">{signal.icon}</span><p className="mt-3 font-bold text-white">{signal.label}</p><p className="mt-1 text-sm text-slate-400">{signal.value}</p></Link>))}</div></div>
+            <div className={`${panelClass} p-4 sm:p-5`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Connected proof surfaces</p><h3 className="mt-1 text-lg font-bold text-white">Docs, tests, and demo readiness</h3></div><Link href="/workspace/issues" className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-bold text-violet-200 hover:bg-white/10">Open board</Link></div><div className="mt-4 grid gap-3 md:grid-cols-3">{[{ label: 'Docs workspace', href: DOCS_WORKSPACE_HREF, value: 'Linked proof', icon: 'DOC' }, { label: 'E2E testing', href: E2E_WORKSPACE_HREF, value: 'QA suite', icon: 'QA' }, { label: 'Demo checklist', href: DEMO_CHECKLIST_HREF, value: 'Go/no-go', icon: 'GO' }].map((signal) => (<Link key={signal.label} href={signal.href} target={signal.href.startsWith('/internal') ? '_blank' : undefined} className="block rounded-[1.4rem] border border-white/10 bg-white/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-violet-500/10"><span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/25 bg-violet-500/15 text-xs font-black text-violet-100">{signal.icon}</span><p className="mt-3 font-bold text-white">{signal.label}</p><p className="mt-1 text-sm text-slate-400">{signal.value}</p></Link>))}</div></div>
             <div className={`${panelClass} p-4 sm:p-5`}><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Recent movement</p><div className="mt-4 space-y-2">{recentMovement.map((issue) => (<Link key={issue.id} href={`/workspace/issues?ref=${issue.issue_ref}`} className="block rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 transition hover:border-violet-300/35 hover:bg-violet-500/10"><div className="flex items-center justify-between gap-3"><span className="font-mono text-[10px] text-violet-200">{issue.issue_ref}</span><span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}`}>{issue.status}</span></div><p className="mt-1 line-clamp-1 text-sm font-semibold text-slate-200">{issue.title}</p><p className="mt-1 text-[11px] text-slate-500">Updated {daysSince(issue.updated_at)}d ago</p></Link>))}</div></div>
           </section>
         </div>

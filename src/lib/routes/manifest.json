@@ -199,7 +199,7 @@
   "adminTabs": [
     {
       "href": "/workspace",
-      "label": "Dev Workspace",
+      "label": "Setu Mission Control",
       "exact": false
     },
     {
@@ -404,6 +404,21 @@
             "pricing baseline"
           ],
           "navKey": "k"
+        },
+        {
+          "href": "/workspace",
+          "label": "Setu Mission Control",
+          "exact": false,
+          "description": "Live readiness cockpit for sprint health, issue risk, AI queue, docs proof, QA proof, and demo readiness.",
+          "aliases": [
+            "smc",
+            "mission control",
+            "setu mission control",
+            "workspace",
+            "release readiness"
+          ],
+          "navKey": "m",
+          "requiresAdmin": true
         },
         {
           "href": "/admin/organization",

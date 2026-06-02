@@ -1,8 +1,8 @@
-import { PageHeader } from '@/components/ui/page-header';
+import Link from 'next/link';
 import { getWorkspaceIssues } from '@/lib/queries/workspace';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { workspaceTableShellClass, workspaceMetricClass } from '@/components/ui/workspace-surfaces';
+import { SmcActionLink, SmcHeader, SmcMetricCard, daysOld, isClosedIssue } from '@/features/workspace/components/smc-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,116 +15,114 @@ async function getOrganizations() {
 
 export default async function ClientsPage() {
   const [issues, orgs] = await Promise.all([getWorkspaceIssues(), getOrganizations()]);
-
-  const clientOrgs = orgs.filter((o) => o.id !== '3327b9a7-aadb-44b0-9793-30c4045d3c92');
-
-  // Issues linked to clients (reporter or client_org_id)
+  const setuOrgId = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+  const clientOrgs = orgs.filter((o) => o.id !== setuOrgId);
   const clientIssues = issues.filter((i) => i.client_org_id != null);
-  const unlinkedOpen = issues.filter((i) => !i.client_org_id && !['Resolved', "Won't Fix", 'Deferred'].includes(i.status ?? ''));
+  const unlinkedOpen = issues.filter((i) => !i.client_org_id && !isClosedIssue(i.status));
+  const clientOpen = clientIssues.filter((i) => !isClosedIssue(i.status));
+  const oldestUnlinked = unlinkedOpen.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+  const highClientRisk = clientOpen.filter((i) => ['Critical', 'High'].includes(i.severity ?? ''));
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Engineering workspace"
-        title="Client Issues"
-        description="Issues linked to specific client organizations. Track SLA status and what's been fixed per client."
-        actions={[
-          { label: 'Issue Board', href: '/workspace/issues' },
-        ]}
+    <div className="space-y-5">
+      <SmcHeader
+        title="Client Impact"
+        description="See which readiness issues are attributed to client organizations, which open items are unlinked, and where SLA or demo risk needs cleanup."
+        actions={<SmcActionLink href="/workspace/issues" icon="board" label="Issues" />}
       />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <div className={workspaceMetricClass}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Client Orgs</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-50">{clientOrgs.length}</p>
-        </div>
-        <div className={workspaceMetricClass}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Client Issues</p>
-          <p className="mt-1 text-3xl font-bold text-blue-600 dark:text-blue-400">{clientIssues.length}</p>
-        </div>
-        <div className={workspaceMetricClass}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Unlinked Open</p>
-          <p className="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-400">{unlinkedOpen.length}</p>
-          <p className="text-[11px] text-slate-400">not attributed to a client</p>
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <SmcMetricCard icon="client" label="Client orgs" value={clientOrgs.length} sub="non-SETU organizations" tone="text-slate-950 dark:text-white" />
+        <SmcMetricCard icon="board" label="Client issues" value={clientIssues.length} sub="linked to client_org_id" tone="text-blue-600 dark:text-blue-300" />
+        <SmcMetricCard icon="risk" label="Client open risk" value={clientOpen.length} sub={`${highClientRisk.length} high/critical`} tone="text-amber-600 dark:text-amber-300" />
+        <SmcMetricCard icon="shield" label="Unlinked open" value={unlinkedOpen.length} sub="needs attribution" tone="text-red-600 dark:text-red-300" />
+        <SmcMetricCard icon="clock" label="Oldest unlinked" value={oldestUnlinked ? `${daysOld(oldestUnlinked.created_at)}d` : '—'} sub={oldestUnlinked?.issue_ref ?? 'none'} tone="text-violet-600 dark:text-violet-300" />
       </div>
 
-      {/* Client orgs */}
-      <div className={workspaceTableShellClass}>
-        <div className="border-b border-slate-200/80 px-5 py-3 dark:border-slate-700/70">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Client Organizations</h3>
-          <p className="text-[11px] text-slate-400">Link issues to clients by setting client_org_id on any issue in the Issue Board</p>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50/90 text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
-            <tr>
-              <th className="px-5 py-3 text-left">Organization</th>
-              <th className="px-5 py-3 text-left">Open Issues</th>
-              <th className="px-5 py-3 text-left">Resolved</th>
-              <th className="px-5 py-3 text-left">Oldest Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientOrgs.map((org) => {
-              const orgIssues = clientIssues.filter((i) => i.client_org_id === org.id);
-              const orgOpen = orgIssues.filter((i) => !['Resolved', "Won't Fix", 'Deferred'].includes(i.status ?? ''));
-              const orgResolved = orgIssues.filter((i) => ['Resolved', "Won't Fix"].includes(i.status ?? ''));
-              const oldest = orgOpen.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
-              const oldestDays = oldest
-                ? Math.floor((Date.now() - new Date(oldest.created_at).getTime()) / 86400000)
-                : null;
-
-              return (
-                <tr key={org.id} className="border-b border-slate-200/80 hover:bg-slate-50 dark:border-slate-700/70 dark:hover:bg-slate-800/50">
-                  <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{org.name}</td>
-                  <td className="px-5 py-3">
-                    <span className={`rounded px-2 py-0.5 text-xs font-bold ${orgOpen.length > 0 ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'bg-green-100 text-green-700'}`}>
-                      {orgOpen.length}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-slate-500">{orgResolved.length}</td>
-                  <td className="px-5 py-3 text-slate-500">
-                    {oldestDays !== null ? (
-                      <span className={`text-xs ${oldestDays > 14 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>
-                        {oldestDays}d ago
-                      </span>
-                    ) : '—'}
-                  </td>
-                </tr>
-              );
-            })}
-            {clientOrgs.length === 0 && (
-              <tr><td colSpan={4} className="px-5 py-8 text-center text-slate-400">No client organizations found</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Recently filed by clients */}
-      {clientIssues.length > 0 && (
-        <div className={workspaceTableShellClass}>
-          <div className="border-b border-slate-200/80 px-5 py-3 dark:border-slate-700/70">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Client-Linked Issues</h3>
+      {unlinkedOpen.length ? (
+        <section className="rounded-[1.75rem] border border-amber-200/80 bg-amber-50/80 p-5 dark:border-amber-400/20 dark:bg-amber-500/10">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">Attribution cleanup</p>
+              <h2 className="mt-1 text-xl font-black text-amber-950 dark:text-amber-50">{unlinkedOpen.length} open issues are not linked to a client</h2>
+              <p className="mt-1 text-sm text-amber-800/80 dark:text-amber-100/70">Use the issue drawer to set client_org_id when an issue is buyer/supplier/client-impacting.</p>
+            </div>
+            <Link href="/workspace/issues" className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-amber-600">Open issue board</Link>
           </div>
-          <div className="divide-y divide-slate-200/80 dark:divide-slate-700/70">
-            {clientIssues.slice(0, 20).map((issue) => {
+        </section>
+      ) : null}
+
+      <section className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+        <div className="border-b border-slate-200/80 px-5 py-4 dark:border-white/10">
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">Client organizations</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Open, resolved, and oldest-open readiness issues by client.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead className="bg-slate-50/90 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
+              <tr>
+                <th className="px-5 py-3 text-left">Organization</th>
+                <th className="px-5 py-3 text-left">Open</th>
+                <th className="px-5 py-3 text-left">High risk</th>
+                <th className="px-5 py-3 text-left">Resolved</th>
+                <th className="px-5 py-3 text-left">Oldest open</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200/80 dark:divide-white/10">
+              {clientOrgs.map((org) => {
+                const orgIssues = clientIssues.filter((i) => i.client_org_id === org.id);
+                const orgOpen = orgIssues.filter((i) => !isClosedIssue(i.status));
+                const orgResolved = orgIssues.filter((i) => ['Resolved', "Won't Fix"].includes(i.status ?? ''));
+                const orgHigh = orgOpen.filter((i) => ['Critical', 'High'].includes(i.severity ?? ''));
+                const oldest = orgOpen.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+                return (
+                  <tr key={org.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.035]">
+                    <td className="px-5 py-3 font-bold text-slate-900 dark:text-slate-100">{org.name}</td>
+                    <td className="px-5 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-black ${orgOpen.length ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200'}`}>{orgOpen.length}</span></td>
+                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{orgHigh.length}</td>
+                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{orgResolved.length}</td>
+                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{oldest ? `${daysOld(oldest.created_at)}d ago` : '—'}</td>
+                  </tr>
+                );
+              })}
+              {!clientOrgs.length ? <tr><td colSpan={5} className="px-5 py-8 text-center text-slate-400">No client organizations found</td></tr> : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff] dark:text-violet-300">Client-linked issues</p>
+          <div className="mt-4 space-y-2">
+            {clientIssues.slice(0, 12).map((issue) => {
               const clientOrg = clientOrgs.find((o) => o.id === issue.client_org_id);
               return (
-                <div key={issue.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <code className="font-mono text-[10px] text-slate-400 w-24 flex-shrink-0">{issue.issue_ref}</code>
-                  <span className="flex-1 text-sm text-slate-700 dark:text-slate-200 line-clamp-1">{issue.title}</span>
-                  <span className="flex-shrink-0 rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    {clientOrg?.name ?? 'Unknown client'}
-                  </span>
-                  <span className={`flex-shrink-0 rounded px-2 py-0.5 text-[10px] font-medium ${issue.status === 'Resolved' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {issue.status}
-                  </span>
-                </div>
+                <Link key={issue.id} href={`/workspace/issues?ref=${issue.issue_ref}`} className="block rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-[#0c7fff]/30 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]">
+                  <div className="flex items-center justify-between gap-3"><span className="font-mono text-[10px] font-bold text-slate-400">{issue.issue_ref}</span><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-white/[0.08] dark:text-slate-300">{issue.status}</span></div>
+                  <p className="mt-1 line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">{issue.title}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{clientOrg?.name ?? 'Unknown client'}</p>
+                </Link>
               );
             })}
+            {!clientIssues.length ? <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400 dark:border-white/10">No client-linked issues yet.</p> : null}
           </div>
         </div>
-      )}
+
+        <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff] dark:text-violet-300">Unlinked open issues</p>
+          <div className="mt-4 space-y-2">
+            {unlinkedOpen.slice(0, 12).map((issue) => (
+              <Link key={issue.id} href={`/workspace/issues?ref=${issue.issue_ref}`} className="block rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-amber-300 hover:bg-amber-50/50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-amber-500/10">
+                <div className="flex items-center justify-between gap-3"><span className="font-mono text-[10px] font-bold text-slate-400">{issue.issue_ref}</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">{issue.severity}</span></div>
+                <p className="mt-1 line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">{issue.title}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{daysOld(issue.created_at)}d old · {issue.area ?? issue.workflow_area ?? 'Other'}</p>
+              </Link>
+            ))}
+            {!unlinkedOpen.length ? <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400 dark:border-white/10">All open issues are attributed.</p> : null}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

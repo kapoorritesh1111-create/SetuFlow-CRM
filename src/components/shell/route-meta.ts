@@ -10,6 +10,15 @@ const PRODUCT_SHELL_TABS: ContextTab[] = primaryAppShellNav.map((item) => ({
 const ADMIN_TABS: ContextTab[] = adminAppShellTabs.map((item) => ({ href: item.href, label: item.label, exact: item.exact }));
 
 export function getRouteMeta(pathname: string): RouteMeta {
+  if (pathname.startsWith('/workspace')) {
+    return {
+      title: 'Setu Mission Control',
+      description: 'Live sprint health, issue risk, AI queue, docs proof, QA proof, and demo readiness for the main org.',
+      sectionLabel: 'Setu Mission Control',
+      showWorkspaceModeSwitch: false,
+    };
+  }
+
   if (pathname.startsWith('/admin/')) {
     return {
       title: pathname.startsWith('/admin/invitations')

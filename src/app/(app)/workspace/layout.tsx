@@ -3,17 +3,16 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { WorkspaceState } from '@/components/ui/workspace-state';
+import { SmcIcon } from '@/features/workspace/components/smc-shell';
 
-const WORKSPACE_TABS = [
-  { href: '/workspace',         label: '⚡ Dashboard',       exact: true  },
-  { href: '/workspace/issues',  label: 'Issues Board',       exact: false },
-  { href: '/workspace/sprints', label: 'Sprint Planning',    exact: false },
-  { href: '/workspace/agents',  label: 'AI Agents',          exact: false },
-  { href: '/workspace/clients', label: 'Clients',            exact: false },
+const SMC_TABS = [
+  { href: '/workspace', label: 'Dashboard', icon: 'mission', exact: true },
+  { href: '/workspace/issues', label: 'Issues', icon: 'board', exact: false },
+  { href: '/workspace/sprints', label: 'Sprints', icon: 'sprint', exact: false },
+  { href: '/workspace/agents', label: 'AI Queue', icon: 'agent', exact: false },
+  { href: '/workspace/clients', label: 'Client Impact', icon: 'client', exact: false },
 ] as const;
 
-// The internal workspace is only accessible to admin/owner roles within any org
-// For non-admin users it simply returns 404 via the canAccessAdmin check
 export const dynamic = 'force-dynamic';
 
 export default async function WorkspaceLayout({ children }: { children: ReactNode }) {
@@ -24,73 +23,62 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
   if (!access.membership || !access.organization) {
     return (
       <WorkspaceState
-        eyebrow="Dev Workspace"
+        eyebrow="Setu Mission Control"
         title="Organization access required"
-        description="An active organization membership is needed to access the dev workspace."
+        description="An active organization membership is needed to access Setu Mission Control."
         primaryActionHref="/dashboard"
         primaryActionLabel="Return to dashboard"
       />
     );
   }
 
-  // Workspace is admin-only — non-admin users see 404 equivalent
   if (!access.canAccessAdmin) {
     return (
       <WorkspaceState
-        eyebrow="Dev Workspace"
+        eyebrow="Setu Mission Control"
         title="Admin access required"
-        description="The internal engineering workspace is only available to organization admins and owners."
+        description="Setu Mission Control is available to organization admins and owners."
         primaryActionHref="/dashboard"
         primaryActionLabel="Return to dashboard"
       />
     );
   }
 
-  const orgName = access.organization.name ?? 'your organization';
+  const orgName = access.organization.name ?? 'SETU Flow';
   const userName = access.profile?.full_name ?? access.user.email ?? 'Admin';
 
   return (
-    <div className="flex flex-col gap-0">
-      {/* Workspace header bar */}
-      <div className="mb-6 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-soft dark:border-slate-700/70 dark:bg-slate-900/80">
-        {/* Tab row */}
-        <div className="flex items-center gap-0 overflow-x-auto border-b border-slate-200/80 px-3 dark:border-slate-700/70">
-          {/* Brand badge */}
-          <div className="flex items-center gap-2 border-r border-slate-200/80 py-2 pr-4 dark:border-slate-700/70 mr-1 flex-shrink-0">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-primary text-[10px] font-black text-white">W</div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-              Dev Workspace
+    <div className="flex flex-col gap-5">
+      <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-950/[0.03] dark:border-white/10 dark:bg-slate-950/75 dark:shadow-[0_18px_60px_rgba(2,6,23,0.28)]">
+        <div className="flex items-center gap-0 overflow-x-auto border-b border-slate-200/80 px-3 dark:border-white/10">
+          <div className="mr-1 flex shrink-0 items-center gap-2 border-r border-slate-200/80 py-2 pr-4 dark:border-white/10">
+            <div className="grid h-8 w-8 place-items-center rounded-xl bg-[#0c7fff] text-white shadow-sm">
+              <SmcIcon name="mission" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
+              SMC
             </span>
           </div>
-          {WORKSPACE_TABS.map((tab) => (
+          {SMC_TABS.map((tab) => (
             <Link
               key={tab.href}
               href={tab.href}
-              className="relative flex flex-shrink-0 items-center px-4 py-3 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+              className="relative flex shrink-0 items-center gap-2 px-4 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.04] dark:hover:text-white"
             >
+              <SmcIcon name={tab.icon} className="h-4 w-4" />
               {tab.label}
             </Link>
           ))}
-          {/* Right side: legacy link + user context */}
-          <div className="ml-auto flex flex-shrink-0 items-center gap-3 py-2 pl-3 border-l border-slate-200/80 dark:border-slate-700/70">
-            <a
-              href="/internal/setuflow-issue-tracker.html"
-              className="rounded-lg px-2 py-1 text-[11px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-              target="_blank"
-            >
+          <div className="ml-auto flex shrink-0 items-center gap-3 border-l border-slate-200/80 py-2 pl-3 dark:border-white/10">
+            <a href="/internal/setuflow-issue-tracker.html" className="rounded-xl px-2 py-1 text-[11px] font-semibold text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/[0.06] dark:hover:text-slate-200" target="_blank">
               HTML tracker ↗
             </a>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500">
-              {userName}
-            </span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">{userName}</span>
           </div>
         </div>
-        {/* Org context strip */}
-        <div className="flex items-center gap-2 px-4 py-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            {orgName} · Internal engineering workspace · Admin only · Not visible in main navigation
-          </p>
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{orgName} · Setu Mission Control · Main org readiness workspace</p>
         </div>
       </div>
 
