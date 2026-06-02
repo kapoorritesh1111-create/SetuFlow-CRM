@@ -25,13 +25,10 @@ type OrderDocumentRow = {
   id: string;
   organization_id: string;
   order_id: string;
-  document_id: string | null;
   document_type: string | null;
   stage_key: string | null;
   status: string | null;
-  version_no: number | null;
   pdf_storage_path: string | null;
-  orders: { order_number: string | null; legacy_contract_id: string | null; lead_id: string | null; source_quote_id: string | null } | null;
 };
 
 function buildOrigin(request: NextRequest) {
@@ -51,24 +48,8 @@ function isExternalOrRoute(value?: string | null) {
   return /^https?:\/\//i.test(path) || path.startsWith('/');
 }
 
-function safeDocumentLabel(value?: string | null) {
-  const type = normalize(value).toLowerCase();
-  if (type.includes('packing')) return 'packing-sheet';
-  if (type.includes('delivery')) return 'delivery-note';
-  if (type.includes('freight')) return 'freight-request';
-  if (type.includes('invoice')) return 'invoice';
-  if (type.includes('order')) return 'order-confirmation';
-  return type.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'order-document';
-}
-
-async function loadChromium() {
-  const chromium = await import('@sparticuz/chromium');
-  return chromium.default;
-}
-
-async function loadPuppeteer() {
-  const puppeteer = await import('puppeteer-core');
-  return puppeteer.default;
+function previewUrlFor(request: NextRequest, sendRow: Pick<OrderDocumentSendRow, 'share_token' | 'share_url'>) {
+  return normalize(sendRow.share_url) || `${buildOrigin(request)}/order-documents/preview/${encodeURIComponent(sendRow.share_token)}`;
 }
 
 async function createSignedOrderDocumentUrl(db: NonNullable<ReturnType<typeof createServiceRoleClient>>, storagePath: string) {
@@ -85,86 +66,33 @@ async function createSignedOrderDocumentUrl(db: NonNullable<ReturnType<typeof cr
   return signed.signedUrl;
 }
 
-async function renderAndStorePdf(params: {
-  db: NonNullable<ReturnType<typeof createServiceRoleClient>>;
-  origin: string;
-  organizationId: string;
-  orderId: string;
-  orderDocumentId: string;
-  sendId: string;
-  shareToken: string;
-  documentType?: string | null;
-}) {
-  const chromium = await loadChromium();
-  const puppeteer = await loadPuppeteer();
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: true,
-  });
+async function loadSendRow(db: NonNullable<ReturnType<typeof createServiceRoleClient>>, sendId: string, shareToken: string) {
+  const query = db
+    .from('order_document_sends')
+    .select('id, organization_id, order_id, order_document_id, share_token, share_url, document_type, order_documents(pdf_storage_path)')
+    .limit(1);
 
-  try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 1800, deviceScaleFactor: 1 });
-    const previewUrl = `${params.origin}/order-documents/preview/${encodeURIComponent(params.shareToken)}`;
-    await page.goto(previewUrl, { waitUntil: 'networkidle0', timeout: 45_000 });
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
-    });
-
-    const date = new Date().toISOString().slice(0, 10);
-    const storagePath = `${params.organizationId}/${params.orderId}/${params.orderDocumentId}/${date}-${params.sendId}-${safeDocumentLabel(params.documentType)}.pdf`;
-
-    const upload = await params.db.storage
-      .from('order-documents')
-      .upload(storagePath, pdf, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
-
-    if (upload.error) throw new Error(upload.error.message);
-
-    await params.db
-      .from('order_documents')
-      .update({ pdf_storage_path: storagePath, updated_at: new Date().toISOString() })
-      .eq('id', params.orderDocumentId)
-      .eq('organization_id', params.organizationId);
-
-    return storagePath;
-  } finally {
-    await browser.close();
-  }
+  return sendId
+    ? query.eq('id', sendId).returns<OrderDocumentSendRow[]>().maybeSingle()
+    : query.eq('share_token', shareToken).returns<OrderDocumentSendRow[]>().maybeSingle();
 }
 
-async function generateFromSend(request: NextRequest, sendRow: OrderDocumentSendRow) {
+async function respondForSend(request: NextRequest, sendRow: OrderDocumentSendRow) {
   const db = createServiceRoleClient();
   if (!db) return NextResponse.json({ ok: false, error: 'Server configuration error.' }, { status: 500 });
 
   const existingPath = sendRow.order_documents?.pdf_storage_path;
   if (existingPath) {
     const signedUrl = await createSignedOrderDocumentUrl(db, existingPath);
-    return NextResponse.json({ ok: true, storagePath: existingPath, signedUrl, reused: true });
+    return NextResponse.json({ ok: true, pdfAvailable: true, storagePath: existingPath, signedUrl, reused: true });
   }
 
-  try {
-    const storagePath = await renderAndStorePdf({
-      db,
-      origin: buildOrigin(request),
-      organizationId: sendRow.organization_id,
-      orderId: sendRow.order_id,
-      orderDocumentId: sendRow.order_document_id,
-      sendId: sendRow.id,
-      shareToken: sendRow.share_token,
-      documentType: sendRow.document_type,
-    });
-    const signedUrl = await createSignedOrderDocumentUrl(db, storagePath);
-    return NextResponse.json({ ok: true, storagePath, signedUrl, reused: false });
-  } catch (pdfError) {
-    return NextResponse.json({ ok: false, error: pdfError instanceof Error ? pdfError.message : 'Could not render order document PDF.' }, { status: 500 });
-  }
+  return NextResponse.json({
+    ok: true,
+    pdfAvailable: false,
+    previewUrl: previewUrlFor(request, sendRow),
+    message: 'No stored PDF exists yet. Use the tracked workflow preview instead.',
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -175,31 +103,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const sendId = String(body.sendId ?? '').trim();
-  const shareToken = String(body.shareToken ?? '').trim();
+  const sendId = normalize(body.sendId);
+  const shareToken = normalize(body.shareToken);
   if (!sendId && !shareToken) {
     return NextResponse.json({ ok: false, error: 'sendId or shareToken is required.' }, { status: 400 });
   }
 
   const db = createServiceRoleClient();
-  if (!db) {
-    return NextResponse.json({ ok: false, error: 'Server configuration error.' }, { status: 500 });
-  }
+  if (!db) return NextResponse.json({ ok: false, error: 'Server configuration error.' }, { status: 500 });
 
-  const query = db
-    .from('order_document_sends')
-    .select('id, organization_id, order_id, order_document_id, share_token, share_url, document_type, order_documents(pdf_storage_path)')
-    .limit(1);
-
-  const { data: sendRow, error } = sendId
-    ? await query.eq('id', sendId).returns<OrderDocumentSendRow[]>().maybeSingle()
-    : await query.eq('share_token', shareToken).returns<OrderDocumentSendRow[]>().maybeSingle();
-
+  const { data: sendRow, error } = await loadSendRow(db, sendId, shareToken);
   if (error || !sendRow?.id || !sendRow?.share_token) {
     return NextResponse.json({ ok: false, error: 'Tracked order document send was not found.' }, { status: 404 });
   }
 
-  return generateFromSend(request, sendRow);
+  return respondForSend(request, sendRow);
 }
 
 export async function GET(request: NextRequest) {
@@ -209,10 +127,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       service: 'setuflow-order-document-pdf',
-      renderer: 'puppeteer-core + @sparticuz/chromium',
       storageBucket: 'order-documents',
-      fallback: 'browser-print',
       redirectContract: '/api/order-documents/pdf?orderDocumentId={order_document_id}',
+      fallback: 'tracked-preview-when-no-stored-pdf',
     });
   }
 
@@ -225,7 +142,7 @@ export async function GET(request: NextRequest) {
 
   const { data: orderDocument, error: orderDocumentError } = await db
     .from('order_documents')
-    .select('id, organization_id, order_id, document_id, document_type, stage_key, status, version_no, pdf_storage_path, orders(order_number, legacy_contract_id, lead_id, source_quote_id)')
+    .select('id, organization_id, order_id, document_type, stage_key, status, pdf_storage_path')
     .eq('id', orderDocumentId)
     .eq('organization_id', organizationId)
     .returns<OrderDocumentRow[]>()
@@ -258,20 +175,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'No tracked preview/send exists for this order document yet.' }, { status: 404 });
   }
 
-  try {
-    const storagePath = await renderAndStorePdf({
-      db,
-      origin: buildOrigin(request),
-      organizationId,
-      orderId: orderDocument.order_id,
-      orderDocumentId: orderDocument.id,
-      sendId: sendRow.id,
-      shareToken: sendRow.share_token,
-      documentType: orderDocument.document_type ?? sendRow.document_type,
-    });
-    const signedUrl = await createSignedOrderDocumentUrl(db, storagePath);
-    return NextResponse.redirect(signedUrl, 302);
-  } catch (pdfError) {
-    return NextResponse.json({ ok: false, error: pdfError instanceof Error ? pdfError.message : 'Could not render order document PDF.' }, { status: 500 });
-  }
+  return NextResponse.redirect(previewUrlFor(request, sendRow), 302);
 }
