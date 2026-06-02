@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { SmcIcon, type SmcIconName, DOCS_WORKSPACE_HREF, E2E_WORKSPACE_HREF, DEMO_CHECKLIST_HREF } from './smc-shell';
 import { SMC_RANGE_OPTIONS } from '@/features/workspace/filters';
@@ -18,7 +19,7 @@ const SMC_NAV: NavItem[] = [
   { href: '/workspace', label: 'Dashboard', icon: 'mission', exact: true },
   { href: '/workspace/issues', label: 'Issues', icon: 'board' },
   { href: '/workspace/sprints', label: 'Sprints', icon: 'sprint' },
-  { href: '/workspace/agents', label: 'AI Queue', icon: 'agent' },
+  { href: '/workspace/agents', label: 'Guru Queue', icon: 'agent' },
   { href: '/workspace/clients', label: 'Client Impact', icon: 'client' },
   { href: DOCS_WORKSPACE_HREF, label: 'Docs', icon: 'docs', external: true },
   { href: E2E_WORKSPACE_HREF, label: 'QA', icon: 'qa', external: true },
@@ -42,6 +43,37 @@ function nextParams(searchParams: URLSearchParams, patch: Record<string, string 
   return query ? `?${query}` : '';
 }
 
+function compactValue(value: string | null, fallback: string) {
+  return value && value.trim() ? value : fallback;
+}
+
+function CompactSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="group relative flex min-w-[132px] items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.055] px-2.5 py-1.5 text-[11px] font-black text-slate-200 shadow-sm ring-1 ring-white/[0.03] transition hover:border-sky-300/30 hover:bg-white/[0.085] md:min-w-[142px]">
+      <span className="whitespace-nowrap text-slate-400">{label}:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        className="min-w-0 flex-1 appearance-none bg-transparent pr-4 text-[11px] font-black text-white outline-none [&>option]:bg-slate-950 [&>option]:text-white"
+      >
+        {children}
+      </select>
+      <span className="pointer-events-none absolute right-2.5 text-[9px] text-slate-400">▼</span>
+    </label>
+  );
+}
+
 export function SmcGlobalFilterStrip({
   sprints,
   areas,
@@ -56,6 +88,7 @@ export function SmcGlobalFilterStrip({
   const searchParams = useSearchParams();
   const range = searchParams.get('range') ?? '14d';
   const showCustomDates = range === 'custom';
+  const searchValue = searchParams.get('q') ?? '';
 
   function apply(patch: Record<string, string | null>) {
     router.push(`${pathname}${nextParams(searchParams, patch)}`, { scroll: false });
@@ -67,11 +100,19 @@ export function SmcGlobalFilterStrip({
     return query ? `${href}?${query}` : href;
   }
 
+  const currentNav = SMC_NAV.find((item) => (item.exact ? pathname === item.href : pathname.startsWith(item.href)))?.label ?? 'Dashboard';
+
   return (
-    <div className="sticky top-0 z-30 overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white/95 shadow-[0_12px_44px_rgba(15,23,42,0.08)] ring-1 ring-slate-950/[0.03] backdrop-blur dark:border-white/10 dark:bg-slate-950/85">
-      <div className="flex flex-col gap-2 p-2">
+    <div className="sticky top-0 z-30 overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#07111f]/95 text-white shadow-[0_18px_70px_rgba(2,6,23,0.30)] ring-1 ring-white/[0.04] backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.22),transparent_34%),radial-gradient(circle_at_top_right,rgba(124,58,237,0.18),transparent_28%)]" />
+      <div className="relative flex flex-col gap-2 p-2">
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-[#0c7fff]/20 bg-[#0c7fff]/10 px-3 py-2 text-[#0c7fff] dark:border-violet-300/20 dark:bg-violet-500/15 dark:text-violet-200">
+          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-sky-100 md:hidden">
+            <SmcIcon name="mission" className="h-4 w-4" />
+            <span className="text-[10px] font-black uppercase tracking-[0.18em]">SMC</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-slate-300">{currentNav}</span>
+          </div>
+          <div className="hidden shrink-0 items-center gap-2 rounded-2xl border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-sky-100 md:flex">
             <SmcIcon name="mission" className="h-4 w-4" />
             <span className="text-[10px] font-black uppercase tracking-[0.18em]">SMC</span>
           </div>
@@ -83,10 +124,10 @@ export function SmcGlobalFilterStrip({
                 href={hrefWithCurrentQuery(item.href)}
                 target={item.external ? '_blank' : undefined}
                 className={cn(
-                  'flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition',
+                  'hidden shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition md:flex',
                   active
-                    ? 'border-slate-950 bg-slate-950 text-white shadow-sm dark:border-white dark:bg-white dark:text-slate-950'
-                    : 'border-slate-200/80 bg-white text-slate-600 hover:border-[#0c7fff]/30 hover:text-[#0c7fff] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:border-violet-300/40 dark:hover:text-white',
+                    ? 'border-white bg-white text-slate-950 shadow-sm'
+                    : 'border-white/10 bg-white/[0.045] text-slate-300 hover:border-sky-300/35 hover:bg-white/[0.085] hover:text-white',
                 )}
               >
                 <SmcIcon name={item.icon} className="h-4 w-4" />
@@ -96,18 +137,18 @@ export function SmcGlobalFilterStrip({
           })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-2 dark:border-white/10">
-          <div className="flex rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/[0.04]">
+        <div className="grid gap-2 lg:grid-cols-[auto_minmax(0,1fr)_minmax(180px,260px)] lg:items-center">
+          <div className="flex min-w-0 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.045] p-1">
             {SMC_RANGE_OPTIONS.map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => apply({ range: option })}
                 className={cn(
-                  'rounded-xl px-2.5 py-1.5 text-[11px] font-black transition',
+                  'shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-black transition',
                   range === option
-                    ? 'bg-[#0c7fff] text-white shadow-sm dark:bg-violet-500'
-                    : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white',
+                    ? 'bg-sky-400 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:bg-white/[0.08] hover:text-white',
                 )}
               >
                 {option === 'all' ? 'All' : option === 'today' ? 'Today' : option.toUpperCase()}
@@ -117,36 +158,52 @@ export function SmcGlobalFilterStrip({
               type="button"
               onClick={() => apply({ range: 'custom' })}
               className={cn(
-                'rounded-xl px-2.5 py-1.5 text-[11px] font-black transition',
+                'shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-black transition',
                 showCustomDates
-                  ? 'bg-[#0c7fff] text-white shadow-sm dark:bg-violet-500'
-                  : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white',
+                  ? 'bg-sky-400 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:bg-white/[0.08] hover:text-white',
               )}
             >
               Custom
             </button>
           </div>
 
-          <select value={searchParams.get('sprint') ?? ''} onChange={(e) => apply({ sprint: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
-            <option value="">All sprints</option>
-            {sprints.map((sprint) => <option key={sprint} value={sprint}>S{sprint}</option>)}
-          </select>
-          <select value={searchParams.get('severity') ?? ''} onChange={(e) => apply({ severity: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
-            <option value="">All severity</option>
-            {SEVERITIES.map((severity) => <option key={severity}>{severity}</option>)}
-          </select>
-          <select value={searchParams.get('status') ?? ''} onChange={(e) => apply({ status: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
-            <option value="">All status</option>
-            {STATUSES.map((status) => <option key={status}>{status}</option>)}
-          </select>
-          <select value={searchParams.get('area') ?? ''} onChange={(e) => apply({ area: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
-            <option value="">All areas</option>
-            {areas.map((area) => <option key={area}>{area}</option>)}
-          </select>
-          <select value={searchParams.get('reporter') ?? ''} onChange={(e) => apply({ reporter: e.target.value || null })} className="min-w-[132px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">
-            <option value="">All reporters</option>
-            {reporters.map((reporter) => <option key={reporter}>{reporter}</option>)}
-          </select>
+          <div className="flex min-w-0 gap-2 overflow-x-auto lg:justify-center">
+            <CompactSelect label="Sprint" value={searchParams.get('sprint') ?? ''} onChange={(value) => apply({ sprint: value || null })}>
+              <option value="">All</option>
+              {sprints.map((sprint) => <option key={sprint} value={sprint}>S{sprint}</option>)}
+            </CompactSelect>
+            <CompactSelect label="Severity" value={searchParams.get('severity') ?? ''} onChange={(value) => apply({ severity: value || null })}>
+              <option value="">All</option>
+              {SEVERITIES.map((severity) => <option key={severity}>{severity}</option>)}
+            </CompactSelect>
+            <CompactSelect label="Status" value={searchParams.get('status') ?? ''} onChange={(value) => apply({ status: value || null })}>
+              <option value="">All</option>
+              {STATUSES.map((status) => <option key={status}>{status}</option>)}
+            </CompactSelect>
+            <CompactSelect label="Area" value={searchParams.get('area') ?? ''} onChange={(value) => apply({ area: value || null })}>
+              <option value="">All</option>
+              {areas.map((area) => <option key={area}>{area}</option>)}
+            </CompactSelect>
+            <CompactSelect label="Reporter" value={searchParams.get('reporter') ?? ''} onChange={(value) => apply({ reporter: value || null })}>
+              <option value="">All</option>
+              {reporters.map((reporter) => <option key={reporter}>{reporter}</option>)}
+            </CompactSelect>
+          </div>
+
+          <label className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 py-2 text-slate-300 ring-1 ring-white/[0.03] transition focus-within:border-sky-300/45 focus-within:bg-white/[0.08]">
+            <span className="text-[12px] text-slate-500">⌕</span>
+            <input
+              value={searchValue}
+              onChange={(e) => apply({ q: e.target.value || null })}
+              placeholder="Search SMC..."
+              aria-label="Search Setu Mission Control"
+              className="min-w-0 flex-1 bg-transparent text-xs font-bold text-white outline-none placeholder:text-slate-500"
+            />
+            {searchValue ? (
+              <button type="button" onClick={() => apply({ q: null })} className="rounded-full px-1.5 text-[11px] font-black text-slate-400 hover:bg-white/10 hover:text-white">×</button>
+            ) : null}
+          </label>
         </div>
       </div>
 
@@ -161,11 +218,12 @@ export function SmcGlobalFilterStrip({
               end: String(form.get('end') ?? '') || null,
             });
           }}
-          className="flex flex-wrap items-end gap-2 border-t border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.025]"
+          className="relative flex flex-wrap items-end gap-2 border-t border-white/10 bg-white/[0.035] px-3 py-2"
         >
-          <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Start<input name="start" type="date" defaultValue={searchParams.get('start') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200" /></label>
-          <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">End<input name="end" type="date" defaultValue={searchParams.get('end') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-200" /></label>
-          <button type="submit" className="rounded-xl bg-[#0c7fff] px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-[#0867cf] dark:bg-violet-500 dark:hover:bg-violet-400">Apply range</button>
+          <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Start<input name="start" type="date" defaultValue={searchParams.get('start') ?? ''} className="mt-1 block rounded-xl border border-white/10 bg-slate-950/70 px-2 py-1.5 text-xs text-white outline-none" /></label>
+          <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">End<input name="end" type="date" defaultValue={searchParams.get('end') ?? ''} className="mt-1 block rounded-xl border border-white/10 bg-slate-950/70 px-2 py-1.5 text-xs text-white outline-none" /></label>
+          <button type="submit" className="rounded-xl bg-sky-400 px-3 py-2 text-xs font-black text-slate-950 shadow-sm hover:bg-sky-300">Apply range</button>
+          <span className="text-xs text-slate-500">{compactValue(searchParams.get('start'), 'Start')} → {compactValue(searchParams.get('end'), 'Today')}</span>
         </form>
       ) : null}
     </div>
