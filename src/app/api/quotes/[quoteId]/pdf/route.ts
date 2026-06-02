@@ -14,7 +14,7 @@ function n(v: unknown, f = 0) { const x = Number(v ?? f); return Number.isFinite
 function s(v: unknown, f = '-') { const t = String(v ?? '').trim(); return t || f; }
 function c(v: unknown, m = 36, f = '-') { const t = s(v, f); return t.length > m ? t.slice(0, m - 3) + '...' : t; }
 function d(v: unknown) { const t = s(v, ''); if (!t) return '-'; const dt = new Date(t.includes('T') ? t : `${t}T00:00:00`); return Number.isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('en-GB'); }
-function esc(v: string) { return String(v).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' '); }
+function esc(v: string) { return String(v).replace(/\/g, '\\').replace(/\(/g, '\(').replace(/\)/g, '\)').replace(/[\r\n]+/g, ' '); }
 function rgb(hex: string) { const x = Number.parseInt(hex.replace('#', ''), 16); return `${(((x >> 16) & 255) / 255).toFixed(3)} ${(((x >> 8) & 255) / 255).toFixed(3)} ${((x & 255) / 255).toFixed(3)}`; }
 function money(v: unknown, cur = 'USD') { return `${cur} ${n(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 function basis(v: unknown) { const x = s(v, 'FOB').replace(/_/g, ' ').trim().toUpperCase(); return x.includes('EX') ? 'EXW' : x || 'FOB'; }
@@ -27,6 +27,7 @@ function packGrams(variant: any, product: any) { const grams = parsePackGrams(va
 function inferredUnitsPerCase(product: any, variant: any) { const value = n(variant?.units_per_case); if (value > 1) return Math.round(value); const source = textFor(product, variant); return /(chips|chana|okra|mango|banana|beetroot|jackfruit|sweet corn|sweet potato)/.test(source) ? 72 : Math.max(1, Math.round(value || 1)); }
 function inferredMoqCases(product: any, variant: any, line: any) { const value = n(variant?.moq_cases); if (value > 1) return Math.round(value); const source = textFor(product, variant); if (/(chips|chana|okra|mango|banana|beetroot|jackfruit|sweet corn|sweet potato)/.test(source)) return 15; return Math.max(1, Math.round(n(line?.quantity, 1))); }
 function addressLines(org: any) { const cityLine = [org?.city, org?.postal_code, org?.headquarters_country].map((v) => s(v, '')).filter(Boolean).join(', '); return [s(org?.registered_address, ''), cityLine].filter(Boolean); }
+function quoteDocumentStatus(quote: any) { return quote.approval_required && !quote.approved_at ? 'submitted' : 'approved'; }
 
 type Row = { sku: string; product: string; hs: string; packGrams: string; unitsPerCase: number; moqCases: number; basis: string; origin: string; unitPrice: number; casePrice: number; total: number; note: string; shelf: string; lead: string; };
 type TextOp = { x: number; y: number; t: string; size?: number; bold?: boolean; color?: string; right?: boolean };
@@ -78,22 +79,18 @@ function buildPdf(data: { quoteNo: string; org: any; buyer: any; market: string;
   box(24, y - 68, 274, 68, PANEL, LINE); txt(36, y - 13, 'COMMERCIAL & COMPLIANCE', 7, true, NAVY); [`Country of origin: ${originSummary}`, `Shelf life: ${shelfSummary}`, 'Specs, ingredients and nutrition available on request.', 'HS codes are indicative and should be validated for destination market.'].forEach((l, i) => txt(36, y - 27 - i * 10, `- ${c(l, 72)}`, 5.7, false, MUTED));
   box(314, y - 68, 274, 68, PANEL, LINE); txt(326, y - 13, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY); [['Subtotal', money(total, data.currency)], ['Documentation / packaging', money(0, data.currency)], ['Freight / insurance', 'Not included unless stated'], ['Taxes / duties', 'Per Incoterm / buyer account']].forEach(([k, v], i) => { txt(326, y - 27 - i * 10, k, 5.8, false, MUTED); txt(578, y - 27 - i * 10, v, 5.8, false, INK, true); });
   y -= 82;
-  box(24, y - 54, 564, 54, '#ffffff', LINE); txt(36, y - 13, 'TERMS & CONDITIONS', 7, true, NAVY); [`Quote valid until ${data.validUntil}.`, `Prices quoted on ${data.basis} basis from ${data.place}.`, 'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.', 'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.', 'Prices may change before confirmation if cost, freight, policy or currency inputs change.'].forEach((l, i) => txt(i < 3 ? 36 : 322, y - 26 - (i % 3) * 10, `${i + 1}. ${c(l, 67)}`, 5.5, false, MUTED));
-  y -= 66;
-  box(24, y - 40, 274, 40, PANEL, LINE); txt(36, y - 12, 'LEAD TIME & SHIPMENT', 7, true, NAVY); [`Lead time: ${leadSummary}.`, `Port/place: ${data.place}.`, 'Schedule confirmed after PO and document review.'].forEach((l, i) => txt(36, y - 24 - i * 8, `- ${c(l, 66)}`, 5.6, false, MUTED));
-  box(314, y - 40, 274, 40, PANEL, LINE); txt(326, y - 12, 'NOTES', 7, true, NAVY); ['Quote is confidential and intended solely for the addressee.', 'Pricing basis and charges must be reviewed before sending.', c(data.terms, 68)].forEach((l, i) => txt(326, y - 24 - i * 8, `- ${l}`, 5.6, false, MUTED));
-  y -= 52;
-  box(24, y - 42, 564, 42, '#ffffff', LINE); txt(36, y - 13, 'AUTHORIZED SIGNATURE (SELLER)', 6.5, true, NAVY); txt(36, y - 29, 'Name: ______________________', 5.7, false, MUTED); txt(236, y - 13, 'GET IN TOUCH', 6.5, true, NAVY); txt(236, y - 28, c(data.org.contact_email, 34), 5.7, false, MUTED); txt(420, y - 13, 'ACCEPTANCE (IMPORTER)', 6.5, true, NAVY); txt(420, y - 29, 'Signature: _________________', 5.7, false, MUTED);
+  box(24, y - 54, 564, 54, '#ffffff', LINE); txt(36, y - 13, 'TERMS & CONDITIONS', 7, true, NAVY); [`Quote valid until ${data.validUntil}.`, `Prices quoted on ${data.basis} basis from ${data.place}.`, 'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.', 'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.', 'Prices may change before confirmation if cost, freight, policy or currency inputs change.'].forEach((l, i) => txt(36, y - 25 - i * 8.5, c(l, 138), 5.2, false, MUTED));
 
-  ops.push('BT'); for (const item of texts) { const size = item.size ?? 7; const xPos = item.right ? Math.max(18, item.x - item.t.length * size * 0.45) : item.x; ops.push(`/${item.bold ? 'F2' : 'F1'} ${size} Tf\n${rgb(item.color ?? INK)} rg\n1 0 0 1 ${xPos} ${item.y} Tm (${esc(item.t)}) Tj`); } ops.push('ET');
-  const content = ops.join('\n'); const contentId = add(`<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`);
-  const pageId = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${font} 0 R /F2 ${fontBold} 0 R >> >> /Contents ${contentId} 0 R >>`);
-  const pagesId = add(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`); objects[pageId - 1] = objects[pageId - 1].replace('/Parent 0 0 R', `/Parent ${pagesId} 0 R`); const catalogId = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-  let out = '%PDF-1.4\n'; const offsets = [0]; objects.forEach((body, i) => { offsets.push(Buffer.byteLength(out)); out += `${i + 1} 0 obj\n${body}\nendobj\n`; }); const xref = Buffer.byteLength(out); out += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`; for (let i = 1; i <= objects.length; i++) out += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`; out += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return Buffer.from(out, 'utf8');
+  const stream = [...ops, 'BT', ...texts.map(t => `${rgb(t.color ?? INK)} rg /F${t.bold ? 'B' : 'R'} ${t.size ?? 7} Tf ${t.x} ${t.y} Td (${esc(t.t)}) Tj`), 'ET'].join('\n');
+  const content = add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+  const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${content} 0 R >>`);
+  const pages = add(`<< /Type /Pages /Kids [${page} 0 R] /Count 1 >>`);
+  objects[page - 1] = objects[page - 1].replace('/Parent 0 0 R', `/Parent ${pages} 0 R`);
+  const catalog = add(`<< /Type /Catalog /Pages ${pages} 0 R >>`);
+  let pdf = '%PDF-1.4\n'; const offsets = [0]; objects.forEach((obj, i) => { offsets.push(pdf.length); pdf += `${i + 1} 0 obj\n${obj}\nendobj\n`; }); const xref = pdf.length; pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map(o => String(o).padStart(10, '0') + ' 00000 n ').join('\n')}\ntrailer << /Size ${objects.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return Buffer.from(pdf, 'binary');
 }
 
-// SF-18-039: Graceful fallback if Chromium unavailable
 export async function GET(_request: Request, { params }: { params: { quoteId: string } }) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 });
   const workspace = await requireWorkspace(); const organizationId = workspace.organization?.id; if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
@@ -124,6 +121,6 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   });
   const place = s(quote.destination_port ?? freight?.destination_port ?? country?.default_port_of_loading, 'Confirm port/place before sending');
   const bytes = buildPdf({ quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`, org: org ?? { name: workspace.organization?.name }, buyer: leadRow ?? {}, market: s(market?.name), destination: s(country?.name ?? leadRow?.country), place, basis: quoteBasis, currency, quoteDate: d(quote.updated_at ?? quote.created_at), validUntil: d(quote.valid_until), terms: s(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'), rows });
-  await db.from('documents').upsert({ organization_id: organizationId, related_entity: 'quote', related_id: quote.id, file_name: `quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf`, file_url: `/api/quotes/${quote.id}/pdf`, doc_type: 'quote_pdf', uploaded_by: workspace.user?.id ?? null, version: 1, status: quote.approval_required && !quote.approved_at ? 'pending_approval' : 'ready' }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
+  await db.from('documents').upsert({ organization_id: organizationId, related_entity: 'quote', related_id: quote.id, file_name: `quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf`, file_url: `/api/quotes/${quote.id}/pdf`, doc_type: 'quote_pdf', uploaded_by: workspace.user?.id ?? null, uploaded_at: quote.updated_at ?? quote.created_at ?? new Date().toISOString(), version: 1, status: quoteDocumentStatus(quote), linked_quote_id: quote.id }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
   return new Response(new Uint8Array(bytes), { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf"`, 'Cache-Control': 'no-store' } });
 }
