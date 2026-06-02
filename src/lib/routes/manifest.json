@@ -10,6 +10,7 @@
   "approvedReworkTitle": "Language system reset",
   "routeLabels": {
     "overview": "Dashboard / Overview",
+    "reports": "Reports",
     "capture": "Capture",
     "followUp": "Follow-up",
     "quote": "Quote",
@@ -25,6 +26,7 @@
   "routes": {
     "app": {
       "dashboard": "/dashboard",
+      "reports": "/reports",
       "leads": "/leads",
       "pipeline": "/pipeline",
       "quotes": "/quotes",
@@ -55,12 +57,7 @@
       "label": "Capture",
       "exact": true,
       "description": "Review inbound contact details before anything enters CRM.",
-      "aliases": [
-        "scan",
-        "intake",
-        "card capture",
-        "contact intake"
-      ],
+      "aliases": ["scan", "intake", "card capture", "contact intake"],
       "navKey": "c"
     },
     {
@@ -68,11 +65,7 @@
       "label": "Follow-up",
       "exact": true,
       "description": "Own next actions, qualification, and record progression.",
-      "aliases": [
-        "leads",
-        "follow up",
-        "command center"
-      ],
+      "aliases": ["leads", "follow up", "command center"],
       "navKey": "f"
     },
     {
@@ -80,11 +73,7 @@
       "label": "Quote",
       "exact": true,
       "description": "Build quotes from catalog pricing, apply overrides with a reason, and keep approval checks visible.",
-      "aliases": [
-        "quote desk",
-        "pricing",
-        "builder"
-      ],
+      "aliases": ["quote desk", "pricing", "builder"],
       "navKey": "q"
     },
     {
@@ -92,13 +81,7 @@
       "label": "Approvals & Sending",
       "exact": true,
       "description": "Check approval status, send readiness, latest message activity, and resend history in one place.",
-      "aliases": [
-        "approvals",
-        "sending",
-        "send",
-        "outbound",
-        "communications"
-      ],
+      "aliases": ["approvals", "sending", "send", "outbound", "communications"],
       "navKey": "s"
     },
     {
@@ -106,11 +89,7 @@
       "label": "Orders / Execution",
       "exact": true,
       "description": "Prove operational readiness with blockers, documentary posture, release state, and dispatch evidence in one desk.",
-      "aliases": [
-        "orders",
-        "execution",
-        "handoff"
-      ],
+      "aliases": ["orders", "execution", "handoff"],
       "navKey": "o"
     },
     {
@@ -118,13 +97,7 @@
       "label": "Pipeline / Risks",
       "exact": true,
       "description": "Keep the pipeline view visible so stalled, aging, or fragile work can be rescued fast.",
-      "aliases": [
-        "pipeline",
-        "risks",
-        "exceptions",
-        "blockers",
-        "kanban"
-      ],
+      "aliases": ["pipeline", "risks", "exceptions", "blockers", "kanban"],
       "navKey": "x"
     },
     {
@@ -132,13 +105,7 @@
       "label": "Trade events",
       "exact": true,
       "description": "Manage trade shows and events. Capture leads on the show floor and track conversion.",
-      "aliases": [
-        "events",
-        "trade show",
-        "trade events",
-        "show floor",
-        "primary trade events"
-      ],
+      "aliases": ["events", "trade show", "trade events", "show floor", "primary trade events"],
       "navKey": "t"
     },
     {
@@ -146,12 +113,7 @@
       "label": "Tasks",
       "exact": true,
       "description": "Track overdue follow-ups and supporting work without leaving the operating shell.",
-      "aliases": [
-        "tasks",
-        "to do",
-        "follow up tasks",
-        "overdue tasks"
-      ],
+      "aliases": ["tasks", "to do", "follow up tasks", "overdue tasks"],
       "navKey": "u"
     },
     {
@@ -159,11 +121,7 @@
       "label": "Catalog",
       "exact": true,
       "description": "Use Catalog as the pricing source: start from the base price, record override reasons, and keep approval thresholds visible.",
-      "aliases": [
-        "products",
-        "catalog",
-        "pricing baseline"
-      ],
+      "aliases": ["products", "catalog", "pricing baseline"],
       "navKey": "k"
     },
     {
@@ -171,77 +129,37 @@
       "label": "Admin & Settings",
       "exact": true,
       "description": "Compatibility route that redirects into the unified Admin & Settings workspace.",
-      "aliases": [
-        "settings",
-        "lists",
-        "reference data",
-        "admin settings"
-      ],
+      "aliases": ["settings", "lists", "reference data", "admin settings"],
       "navKey": "g",
       "requiresAdmin": true
+    },
+    {
+      "href": "/reports",
+      "label": "Reports",
+      "exact": true,
+      "description": "Open commercial and operational reporting for conversion, pricing variance, blockers, and audit outcomes.",
+      "aliases": ["reports", "reporting", "commercial reports", "operations reporting", "analytics reports"],
+      "navKey": "r"
     },
     {
       "href": "/dashboard",
       "label": "Dashboard / Overview",
       "exact": true,
       "description": "Get a quick geo-first view of market, country, and queue health.",
-      "aliases": [
-        "dashboard",
-        "overview",
-        "leadership",
-        "geo",
-        "market",
-        "country"
-      ],
+      "aliases": ["dashboard", "overview", "leadership", "geo", "market", "country"],
       "navKey": "d"
     }
   ],
   "adminTabs": [
-    {
-      "href": "/workspace",
-      "label": "Setu Mission Control",
-      "exact": false
-    },
-    {
-      "href": "/admin/organization",
-      "label": "Organization setup",
-      "exact": true
-    },
-    {
-      "href": "/admin/users",
-      "label": "People & access",
-      "exact": true
-    },
-    {
-      "href": "/admin/invitations",
-      "label": "Invitations",
-      "exact": true
-    },
-    {
-      "href": "/admin/integrations",
-      "label": "Integrations",
-      "exact": true
-    },
-    {
-      "href": "/admin/audit",
-      "label": "Audit trail",
-      "exact": true
-    },
-    {
-      "href": "/admin/ai-analytics",
-      "label": "AI review",
-      "exact": true
-    },
-    {
-      "href": "/admin/product-management",
-      "label": "Catalog admin",
-      "exact": true
-    },
-    {
-      "href": "/products",
-      "label": "Catalog",
-      "exact": true
-    }
+    { "href": "/workspace", "label": "Setu Mission Control", "exact": false },
+    { "href": "/admin/organization", "label": "Organization setup", "exact": true },
+    { "href": "/admin/users", "label": "People & access", "exact": true },
+    { "href": "/admin/invitations", "label": "Invitations", "exact": true },
+    { "href": "/admin/integrations", "label": "Integrations", "exact": true },
+    { "href": "/admin/audit", "label": "Audit trail", "exact": true },
+    { "href": "/admin/ai-analytics", "label": "AI review", "exact": true },
+    { "href": "/admin/product-management", "label": "Catalog admin", "exact": true },
+    { "href": "/products", "label": "Catalog", "exact": true }
   ],
   "shellSections": [
     {
@@ -256,33 +174,24 @@
           "label": "Dashboard / Overview",
           "exact": true,
           "description": "Get a quick geo-first view of market, country, and queue health.",
-          "aliases": [
-            "dashboard",
-            "overview",
-            "leadership",
-            "geo",
-            "market",
-            "country"
-          ],
+          "aliases": ["dashboard", "overview", "leadership", "geo", "market", "country"],
           "navKey": "d"
         },
+        { "href": "/dashboard/analytics", "label": "Analytics", "requiresAdmin": false },
         {
-          "href": "/dashboard/analytics",
-          "label": "Analytics",
-          "requiresAdmin": false
+          "href": "/reports",
+          "label": "Reports",
+          "exact": true,
+          "description": "Track conversion, pricing variance, blockers, and audit outcomes from one reporting workspace.",
+          "aliases": ["reports", "reporting", "commercial reports", "operations reporting", "analytics reports"],
+          "navKey": "r"
         },
         {
           "href": "/pipeline",
           "label": "Pipeline / Risks",
           "exact": true,
           "description": "Keep the pipeline view visible so stalled, aging, or fragile work can be rescued fast.",
-          "aliases": [
-            "pipeline",
-            "risks",
-            "exceptions",
-            "blockers",
-            "kanban"
-          ],
+          "aliases": ["pipeline", "risks", "exceptions", "blockers", "kanban"],
           "navKey": "x"
         }
       ]
@@ -299,12 +208,7 @@
           "label": "Capture",
           "exact": true,
           "description": "Review inbound contact details before anything enters CRM.",
-          "aliases": [
-            "scan",
-            "intake",
-            "card capture",
-            "contact intake"
-          ],
+          "aliases": ["scan", "intake", "card capture", "contact intake"],
           "navKey": "c"
         },
         {
@@ -312,11 +216,7 @@
           "label": "Follow-up",
           "exact": true,
           "description": "Own next actions, qualification, and record progression.",
-          "aliases": [
-            "leads",
-            "follow up",
-            "command center"
-          ],
+          "aliases": ["leads", "follow up", "command center"],
           "navKey": "f"
         },
         {
@@ -324,11 +224,7 @@
           "label": "Quote",
           "exact": true,
           "description": "Build quotes from catalog pricing, apply overrides with a reason, and keep approval checks visible.",
-          "aliases": [
-            "quote desk",
-            "pricing",
-            "builder"
-          ],
+          "aliases": ["quote desk", "pricing", "builder"],
           "navKey": "q"
         },
         {
@@ -336,13 +232,7 @@
           "label": "Trade events",
           "exact": true,
           "description": "Manage trade shows and events. Capture leads on the show floor and track conversion.",
-          "aliases": [
-            "events",
-            "trade show",
-            "trade events",
-            "show floor",
-            "primary trade events"
-          ],
+          "aliases": ["events", "trade show", "trade events", "show floor", "primary trade events"],
           "navKey": "t"
         },
         {
@@ -350,13 +240,7 @@
           "label": "Approvals & Sending",
           "exact": true,
           "description": "Check approval status, send readiness, latest message activity, and resend history in one place.",
-          "aliases": [
-            "approval",
-            "send",
-            "outbound",
-            "communications",
-            "send desk"
-          ],
+          "aliases": ["approval", "send", "outbound", "communications", "send desk"],
           "navKey": "s"
         },
         {
@@ -364,11 +248,7 @@
           "label": "Orders / Execution",
           "exact": true,
           "description": "Prove operational readiness with blockers, documentary posture, release state, and dispatch evidence in one desk.",
-          "aliases": [
-            "orders",
-            "execution",
-            "handoff"
-          ],
+          "aliases": ["orders", "execution", "handoff"],
           "navKey": "o"
         },
         {
@@ -376,12 +256,7 @@
           "label": "Tasks",
           "exact": true,
           "description": "Track overdue follow-ups and supporting work without leaving the operating shell.",
-          "aliases": [
-            "tasks",
-            "to do",
-            "follow up tasks",
-            "overdue tasks"
-          ],
+          "aliases": ["tasks", "to do", "follow up tasks", "overdue tasks"],
           "navKey": "u"
         }
       ]
@@ -398,11 +273,7 @@
           "label": "Catalog",
           "exact": true,
           "description": "Use Catalog as the pricing source: start from the base price, record override reasons, and keep approval thresholds visible.",
-          "aliases": [
-            "products",
-            "catalog",
-            "pricing baseline"
-          ],
+          "aliases": ["products", "catalog", "pricing baseline"],
           "navKey": "k"
         },
         {
@@ -410,13 +281,7 @@
           "label": "Setu Mission Control",
           "exact": false,
           "description": "Live readiness cockpit for sprint health, issue risk, AI queue, docs proof, QA proof, and demo readiness.",
-          "aliases": [
-            "smc",
-            "mission control",
-            "setu mission control",
-            "workspace",
-            "release readiness"
-          ],
+          "aliases": ["smc", "mission control", "setu mission control", "workspace", "release readiness"],
           "navKey": "m",
           "requiresAdmin": true
         },
@@ -424,12 +289,7 @@
           "href": "/admin/organization",
           "label": "Admin / Organization",
           "description": "Own organization setup, people, invitations, and audit visibility without turning admin into archaeology.",
-          "aliases": [
-            "admin",
-            "users",
-            "audit",
-            "organization"
-          ],
+          "aliases": ["admin", "users", "audit", "organization"],
           "navKey": "a",
           "requiresAdmin": true
         }
@@ -447,22 +307,14 @@
           "label": "AI assist",
           "exact": true,
           "description": "Helpful analysis, but still secondary to contextual in-flow guidance.",
-          "aliases": [
-            "ai",
-            "assist",
-            "suggestions"
-          ]
+          "aliases": ["ai", "assist", "suggestions"]
         },
         {
           "href": "/contact-exchange/vcard",
           "label": "My Card",
           "exact": true,
           "description": "Personal sharing tool. Useful, but not part of the main operating spine.",
-          "aliases": [
-            "vcard",
-            "my card",
-            "share card"
-          ]
+          "aliases": ["vcard", "my card", "share card"]
         }
       ]
     }
@@ -489,6 +341,7 @@
   "tests": {
     "requiredFiles": [
       "src/app/(app)/dashboard/page.tsx",
+      "src/app/(app)/reports/page.tsx",
       "src/app/(app)/leads/page.tsx",
       "src/app/(app)/pipeline/page.tsx",
       "src/app/(app)/quotes/page.tsx",
