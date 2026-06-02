@@ -175,6 +175,7 @@ function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: strin
       items: [
         { href: '/tasks', label: 'Tasks', expandedLabel: 'Tasks', icon: 'check-square-o' },
         { href: '/trade-events', label: 'Events', expandedLabel: 'Events', icon: 'calendar' },
+        { href: '/documents', label: 'Docs', expandedLabel: 'Documents', icon: 'file-text-o' },
       ],
     },
     {
