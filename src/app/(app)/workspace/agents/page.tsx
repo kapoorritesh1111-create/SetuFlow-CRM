@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getWorkspaceIssues, getAgentActions, getActiveTrackerPrompt } from '@/lib/queries/workspace';
 import { SmcIcon, SmcMetricCard, isClosedIssue } from '@/features/workspace/components/smc-shell';
+import { AgentPromptCopy } from '@/features/workspace/components/agent-prompt-copy';
 import { filterIssuesForSmc, normalizeSmcFilters, type SmcFilterInput } from '@/features/workspace/filters';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,7 @@ export default async function AgentsPage({ searchParams }: { searchParams?: SmcF
   const completedAgentActions = actions.filter((action) => action.agent_type !== 'human' && ['done', 'completed', 'resolved'].includes(action.status ?? '')).length;
   const nextIssue = queue[0];
   const protocolLoaded = Boolean(protocol?.prompt_text && protocol?.is_active);
+  const selectedIssueArea = nextIssue ? (nextIssue.area ?? nextIssue.workflow_area ?? 'General') : null;
   const checklist = [
     ['Protocol source loaded', protocolLoaded],
     ['Issue selection rule active', Boolean(nextIssue)],
@@ -50,23 +52,6 @@ export default async function AgentsPage({ searchParams }: { searchParams?: SmcF
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#0c7fff]/10 text-[#0c7fff] dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name="agent" /></span>
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#0c7fff] dark:text-violet-300">Setu Mission Control</p>
-              <h1 className="mt-1 text-2xl font-black text-slate-950 dark:text-white">Workspace Agents</h1>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">{protocolLoaded ? 'Protocol loaded' : 'Protocol missing'}</span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">Source: tracker_prompts</span>
-          </div>
-        </div>
-        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-500 dark:text-slate-400">Agents load the active tracker protocol from Supabase and pick the next eligible issue automatically. Users should not copy and paste the old prompt for each issue.</p>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <SmcMetricCard icon="agent" label="Eligible queue" value={queue.length} sub="open issues ready for protocol pickup" tone="text-slate-950 dark:text-white" />
         <SmcMetricCard icon="sprint" label="In progress" value={inProgress.length} sub="active work items" tone="text-blue-600 dark:text-blue-300" />
@@ -74,6 +59,14 @@ export default async function AgentsPage({ searchParams }: { searchParams?: SmcF
         <SmcMetricCard icon="shield" label="Agent fixes" value={completedAgentActions} sub="completed agent outcomes" tone="text-emerald-600 dark:text-emerald-300" />
         <SmcMetricCard icon="risk" label="Active scope" value={active.length} sub="non-closed issues" tone="text-amber-600 dark:text-amber-300" />
       </div>
+
+      <AgentPromptCopy
+        protocolText={protocol?.prompt_text}
+        issueRef={nextIssue?.issue_ref}
+        issueTitle={nextIssue?.title}
+        issueSeverity={nextIssue?.severity}
+        issueArea={selectedIssueArea}
+      />
 
       <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
@@ -89,7 +82,7 @@ export default async function AgentsPage({ searchParams }: { searchParams?: SmcF
             <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
               <p className="font-mono text-xs font-bold text-slate-400">{nextIssue.issue_ref}</p>
               <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{nextIssue.title}</h3>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">S{nextIssue.sprint_number} · {nextIssue.area ?? nextIssue.workflow_area ?? 'General'} · {nextIssue.status}</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">S{nextIssue.sprint_number} · {selectedIssueArea} · {nextIssue.status}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={`/workspace/issues?ref=${nextIssue.issue_ref}&action=start`} className="rounded-2xl bg-[#0c7fff] px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-[#075ec2]">Open selected issue</Link>
                 <Link href={`/workspace/issues?status=Open&severity=${nextIssue.severity}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:border-[#0c7fff]/40 hover:text-[#0c7fff] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">Review similar priority</Link>
