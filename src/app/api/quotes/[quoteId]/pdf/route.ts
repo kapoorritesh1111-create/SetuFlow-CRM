@@ -14,7 +14,7 @@ function n(v: unknown, f = 0) { const x = Number(v ?? f); return Number.isFinite
 function s(v: unknown, f = '-') { const t = String(v ?? '').trim(); return t || f; }
 function c(v: unknown, m = 36, f = '-') { const t = s(v, f); return t.length > m ? t.slice(0, m - 3) + '...' : t; }
 function d(v: unknown) { const t = s(v, ''); if (!t) return '-'; const dt = new Date(t.includes('T') ? t : `${t}T00:00:00`); return Number.isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('en-GB'); }
-function esc(v: string) { return String(v).replace(/\/g, '\\').replace(/\(/g, '\(').replace(/\)/g, '\)').replace(/[\r\n]+/g, ' '); }
+function esc(v: string) { return String(v).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]+/g, ' '); }
 function rgb(hex: string) { const x = Number.parseInt(hex.replace('#', ''), 16); return `${(((x >> 16) & 255) / 255).toFixed(3)} ${(((x >> 8) & 255) / 255).toFixed(3)} ${((x & 255) / 255).toFixed(3)}`; }
 function money(v: unknown, cur = 'USD') { return `${cur} ${n(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 function basis(v: unknown) { const x = s(v, 'FOB').replace(/_/g, ' ').trim().toUpperCase(); return x.includes('EX') ? 'EXW' : x || 'FOB'; }
