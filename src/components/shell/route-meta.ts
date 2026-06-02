@@ -63,6 +63,15 @@ export function getRouteMeta(pathname: string): RouteMeta {
     };
   }
 
+  if (pathname === PRODUCT_ROUTES.app.reports || pathname.startsWith(`${PRODUCT_ROUTES.app.reports}/`)) {
+    return {
+      title: 'Reports',
+      description: 'Track conversion, pricing variance, blockers, and audited workflow changes from one explainable operator-facing workspace.',
+      sectionLabel: 'Leadership / overview',
+      tabs: PRODUCT_SHELL_TABS,
+    };
+  }
+
   if (pathname === PRODUCT_ROUTES.app.capture || pathname.startsWith(`${PRODUCT_ROUTES.app.capture}/`)) {
     return {
       title: 'Capture',
