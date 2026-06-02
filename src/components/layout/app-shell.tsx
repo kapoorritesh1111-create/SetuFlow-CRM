@@ -168,7 +168,7 @@ function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: strin
       items: [
         { href: PRODUCT_ROUTES.app.dashboard, label: 'Dash', expandedLabel: 'Dashboard', icon: 'home' },
         { href: '/dashboard/analytics', label: 'Analytics', expandedLabel: 'Analytics', icon: 'line-chart' },
-        { href: PRODUCT_ROUTES.app.reports, label: 'Reports', expandedLabel: 'Reports', icon: 'bar-chart' },
+        { href: '/reports', label: 'Reports', expandedLabel: 'Reports', icon: 'bar-chart' },
       ],
     },
     {
