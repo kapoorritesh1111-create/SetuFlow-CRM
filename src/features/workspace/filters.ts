@@ -135,7 +135,6 @@ function issueMatchesSearch(issue: SprintIssue, query?: string) {
     issue.assigned_to,
     issue.reporter_name,
     issue.sprint_name,
-    issue.sprint_label,
     issue.issue_category,
     issue.effort,
   ];
