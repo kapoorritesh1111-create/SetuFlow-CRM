@@ -2475,16 +2475,48 @@ async function cycleStatus(event,id){
   event.stopPropagation();
   const i=ALL.find(x=>x.id===id);if(!i)return;
   const next=STATUSES[(STATUSES.indexOf(i.status)+1)%STATUSES.length];
-  await patchIssue(id,{status:next});
+  patchIssue(id,{status:next}); // fire-and-forget — UI updates instantly
 }
 
 async function patchIssue(id,payload){
+  // ── Auto-manage resolved_at ───────────────────────────────────────
+  if(payload.status!==undefined){
+    const isNowResolved=payload.status==='Resolved'||payload.status==="Won't Fix";
+    const row=ALL.find(x=>x.id===id);
+    if(isNowResolved && !row?.resolved_at){
+      payload.resolved_at=new Date().toISOString();
+    } else if(!isNowResolved){
+      payload.resolved_at=null;
+    }
+    payload.updated_at=new Date().toISOString();
+  }
+
+  // ── OPTIMISTIC UPDATE — apply to local state immediately ──────────
+  const row=ALL.find(x=>x.id===id);
+  const snapshot=row?{...row}:null; // keep a rollback copy
+  if(row) Object.assign(row,payload);
+  if(openIssue&&openIssue.id===id){
+    Object.assign(openIssue,payload);
+    fillPanel(openIssue); // panel reflects change instantly
+  }
+  buildSidebar();render();updateHealthStrip();
+  // Optimistic toast — shown right away
+  const changedKeys=Object.keys(payload).filter(k=>k!=='updated_at'&&k!=='resolved_at');
+  if(changedKeys.length) toast('↑ '+changedKeys.join(', ')+'…',true);
+
+  // ── BACKGROUND DB SYNC ────────────────────────────────────────────
   const{error}=await db.from('sprint_issues').update(payload).eq('id',id);
-  if(error){toast('✗ '+error.message,false);return false;}
-  const i=ALL.find(x=>x.id===id);if(i)Object.assign(i,payload);
-  buildSidebar();animateKPIs();render();
-  if(openIssue&&openIssue.id===id){Object.assign(openIssue,payload);fillPanel(openIssue);}
-  toast('✓ Updated: '+Object.keys(payload).join(', '));return true;
+  if(error){
+    // Rollback local state
+    if(row&&snapshot) Object.assign(row,snapshot);
+    if(openIssue&&openIssue.id===id){Object.assign(openIssue,snapshot||{});fillPanel(openIssue);}
+    buildSidebar();render();updateHealthStrip();
+    toast('✗ Save failed: '+error.message,false);
+    return false;
+  }
+  // Confirm success quietly
+  if(changedKeys.length) toast('✓ '+changedKeys.join(', '),true);
+  return true;
 }
 
 function sortBy(f){
@@ -2547,18 +2579,45 @@ function fillPanel(i){
   renderPanelAttachments(i.attachments);
   // Load DB reference docs for this issue
   loadRefDocs(i.issue_ref||'');
-  // Load DB-stored reference docs
-  loadRefDocs(i.issue_ref||'');
 
-  $('p-status-btns').innerHTML=STATUSES.map(s=>`<button class="s-btn${s===i.status?' active':''}" onclick="patchIssue('${i.id}',{status:'${s.replace(/'/g,"\'")}'})">${s}</button>`).join('');
+  // Status buttons — always show all statuses, always clickable regardless of current state
+  const statusConfig={
+    'Open':       {color:'var(--text3)',   bg:'var(--bg3)'},
+    'In Progress':{color:'var(--blue-hi)', bg:'rgba(59,130,246,.12)'},
+    'Resolved':   {color:'var(--green-hi)',bg:'rgba(34,197,94,.12)'},
+    "Won't Fix":  {color:'var(--red-hi)',  bg:'rgba(239,68,68,.1)'},
+    'Deferred':   {color:'var(--amber-hi)',bg:'rgba(245,158,11,.1)'},
+  };
+  const curStatus=i.status||'Open';
+  $('p-status-btns').innerHTML=STATUSES.map(s=>{
+    const isCurrent=s===curStatus;
+    const cfg=statusConfig[s]||{color:'var(--text2)',bg:'var(--bg3)'};
+    return`<button class="s-btn${isCurrent?' active':''}"
+      style="${isCurrent?`background:${cfg.bg};color:${cfg.color};border-color:${cfg.color};font-weight:700`:''}"
+      onclick="patchIssue('${i.id}',{status:'${s.replace(/'/g,"\\'")}'})"
+      title="${isCurrent?'Current status — click another to change':'Change to '+s}"
+    >${s}${isCurrent?' ✓':''}</button>`;
+  }).join('');
 }
 
 async function savePanel(){
   if(!openIssue)return;
+  // Show instant feedback before DB round-trip
+  const saveBtn=document.querySelector('.save-btn');
+  if(saveBtn){saveBtn.textContent='Saving…';saveBtn.disabled=true;}
   setText('p-save-msg','Saving…');
-  const ok=await patchIssue(openIssue.id,{fix_applied:$('p-notes').value,pr_link:$('p-pr').value,assigned_to:$('p-assignee').value,related_refs:openIssue._pendingRelated||openIssue.related_refs||[]});
-  setText('p-save-msg',ok?'✓ Saved':'✗ Error');
-  setTimeout(()=>setText('p-save-msg',''),3000);
+  const ok=await patchIssue(openIssue.id,{
+    fix_applied:$('p-notes').value,
+    pr_link:$('p-pr').value,
+    assigned_to:$('p-assignee').value,
+    related_refs:openIssue._pendingRelated||openIssue.related_refs||[]
+  });
+  if(saveBtn){
+    saveBtn.innerHTML='<svg class="ico" style="width:13px;height:13px" stroke="#fff"><use href="#ic-check"/></svg>Save to Supabase';
+    saveBtn.disabled=false;
+  }
+  setText('p-save-msg',ok?'✓ Saved to DB':'✗ Error — check connection');
+  setTimeout(()=>setText('p-save-msg',''),2500);
 }
 
 function closePanel(e){if(!e||e.target===$('overlay')){$('overlay').classList.remove('open');openIssue=null;}}
