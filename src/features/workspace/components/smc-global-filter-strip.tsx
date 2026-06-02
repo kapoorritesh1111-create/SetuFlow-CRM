@@ -59,17 +59,17 @@ function CompactSelect({
   children: ReactNode;
 }) {
   return (
-    <label className="group relative flex min-w-[132px] items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.055] px-2.5 py-1.5 text-[11px] font-black text-slate-200 shadow-sm ring-1 ring-white/[0.03] transition hover:border-sky-300/30 hover:bg-white/[0.085] md:min-w-[142px]">
-      <span className="whitespace-nowrap text-slate-400">{label}:</span>
+    <label className="group relative flex min-w-[128px] items-center gap-1.5 rounded-2xl border border-sky-200/10 bg-slate-950/35 px-3 py-2 text-[11px] font-black text-slate-200 shadow-inner ring-1 ring-white/[0.03] transition hover:border-sky-300/25 hover:bg-slate-900/60 md:min-w-[138px]">
+      <span className="whitespace-nowrap text-slate-400">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
-        className="min-w-0 flex-1 appearance-none bg-transparent pr-4 text-[11px] font-black text-white outline-none [&>option]:bg-slate-950 [&>option]:text-white"
+        className="min-w-0 flex-1 appearance-none border-0 bg-transparent px-0 py-0 pr-5 text-[11px] font-black text-white outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 [&>option]:bg-slate-950 [&>option]:text-white"
       >
         {children}
       </select>
-      <span className="pointer-events-none absolute right-2.5 text-[9px] text-slate-400">▼</span>
+      <span className="pointer-events-none absolute right-3 text-[9px] text-sky-300/70">▾</span>
     </label>
   );
 }
@@ -123,6 +123,7 @@ export function SmcGlobalFilterStrip({
                 key={item.href}
                 href={hrefWithCurrentQuery(item.href)}
                 target={item.external ? '_blank' : undefined}
+                title={item.label}
                 className={cn(
                   'hidden shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition md:flex',
                   active
