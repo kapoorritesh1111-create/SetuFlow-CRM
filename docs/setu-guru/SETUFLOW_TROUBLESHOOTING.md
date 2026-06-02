@@ -1,5 +1,5 @@
 # SetuFlow CRM — New Organization Onboarding Guide
-_For chatbot knowledge base upload — May 2026_
+_For chatbot knowledge base upload — June 2026_
 
 ## Orders Execution Cockpit onboarding note
 
@@ -107,6 +107,40 @@ Rules:
 
 Do not erase audit history. The system records a clear `catalog_admin_mark_product_deleted` audit event with reason, actor, timestamp, eligibility check, and product/variant snapshot.
 
+## Sprint 21 Setu Guru operating copilot capabilities
+
+Setu Guru is no longer only static help text. Current behavior includes these governed capabilities:
+
+- **Brain layer**: route-aware answers that use the current workspace, page title, user role, and organization context.
+- **Source search**: Guru can summarize matching internal help/knowledge snippets when the user asks about workflows, blockers, setup, or troubleshooting.
+- **Action layer**: Guru may guide the user toward actions and explain next steps, but must not directly approve quotes, send commercial documents, waive compliance, book freight, sync finance, close orders, or mutate governed commercial records.
+- **Feedback and telemetry**: Guru interactions may be tracked for product improvement and follow-up triage.
+- **Playbook routes**: onboarding, order execution, product setup, quote send gates, and trade-show workflows should be answered from the current docs and product rules.
+
+When Guru answers an operating question, it should identify the relevant page, explain the allowed action, call out permissions or blockers, and avoid inventing integrations that are not live.
+
+## Current known issue guidance for Guru
+
+### Order PDF line items
+
+If a user says an order confirmation or invoice PDF shows a placeholder or zero-value line, Guru should explain that current guarded routes now return a clear error when no `contract_line_items` exist. The user should add product lines to the order/contract before generating the order confirmation or invoice PDF.
+
+### Order PDF seller identity and terms
+
+Order PDFs should include seller/exporter identity and terms from the organization profile where available. If those details are missing, Guru should direct admins to update Admin → Organization before regenerating documents.
+
+### Desktop navigation and profile access
+
+The desktop shell now has a workflow sidebar with command, growth, commercial, work, and setup groupings. The organization logo stays visible and links to `/dashboard`; the sidebar can be collapsed, expanded, or hidden. Profile access is through the header avatar menu.
+
+### Reports and documents visibility
+
+`/reports` exists but should only be described as accessible if it is linked in the active shell/navigation. `/documents` should not be described as a dedicated document library unless the current product route has been validated as distinct from compliance.
+
+### Sign out
+
+Desktop sign-out is available from the header avatar menu. Mobile sign-out depends on the mobile shell/account surface.
+
 ## Troubleshooting
 
 ### Product import cannot find a category
@@ -127,4 +161,4 @@ Use Catalog Admin for full setup and onboarding imports. Use Products for day-to
 ### Delete button stays disabled in Data cleanup
 Run **Check eligibility** first. Then enter a cleanup reason and type the exact confirmation phrase shown by the wizard. Capitalization is accepted either way, but the SKU/text must match.
 
-_Updated: May 2026. Sprint 10 import/catalog onboarding is closed and protected._
+_Updated: June 2026. Includes Sprint 21 Setu Guru operating copilot guidance and current PDF/navigation troubleshooting notes._
