@@ -1,759 +1,130 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useMemo, useReducer, useRef } from 'react';
 import { slugifyCompanyName } from '@/features/client-onboarding/shared';
 import { MODULE_DEFINITIONS } from '@/lib/modules/module-grants';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const COUNTRIES = ['India', 'United Arab Emirates', 'United States', 'United Kingdom', 'Saudi Arabia', 'Germany', 'Singapore', 'Australia', 'Canada', 'Other'];
 const MARKETS = ['North America', 'Middle East', 'Europe', 'Asia Pacific', 'South Asia', 'Africa', 'Latin America', 'Southeast Asia'];
-const HQ_COUNTRIES = ['India', 'United Arab Emirates', 'United States', 'United Kingdom', 'Saudi Arabia', 'Germany', 'Singapore', 'Australia', 'Canada', 'Other'];
-const INCOTERMS = ['FOB', 'CIF', 'EXW', 'DDP', 'CFR', 'Mix / Flexible'];
-const CURRENCIES = ['USD', 'EUR', 'AED', 'INR', 'GBP', 'SGD'];
-
-const DEFAULT_PIPELINE_STAGES = ['New lead', 'Qualified', 'Samples / documents', 'Quote sent', 'Negotiation', 'Won', 'Lost'];
-const DEFAULT_PIPELINES = ['Buyer pipeline', 'Supplier pipeline'];
-const DEFAULT_NEXT_STEPS = ['Call back', 'Send catalog', 'Send quote', 'Share sample details', 'Follow up after trade show', 'Schedule meeting'];
-
-const MODULE_ICONS: Record<string, string> = {
-  full_crm: '🏢',
-  trade_show: '🎪',
-  orders_compliance: '📦',
-  setu_guru: '🤖',
-  analytics: '📊',
-  vcard: '💳',
-};
-
-const PLAN_OPTIONS = [
-  { key: 'trial', label: '14-Day Free Trial', seats: 5, description: 'All modules included. No billing required. Perfect for evaluating Setu Flow with your team.', tag: 'No credit card', highlight: true },
-  { key: 'starter', label: 'Starter', seats: 10, description: 'Up to 10 users. Core CRM modules. Ideal for small export teams getting started.', tag: null, highlight: false },
-  { key: 'growth', label: 'Growth', seats: 25, description: 'Up to 25 users. Full module access. Built for growing trade operations.', tag: 'Most popular', highlight: false },
-  { key: 'professional', label: 'Professional', seats: 50, description: 'Up to 50 users. Priority support, advanced analytics and Guru AI limits.', tag: null, highlight: false },
-  { key: 'enterprise', label: 'Enterprise', seats: 200, description: 'Unlimited users, custom integrations, dedicated onboarding, and SLA.', tag: null, highlight: false },
+const PIPELINES = ['Buyer pipeline', 'Supplier pipeline'];
+const STAGES = ['New lead', 'Qualified', 'Samples / documents', 'Quote sent', 'Negotiation', 'Won', 'Lost'];
+const NEXT_STEPS = ['Call back', 'Send catalog', 'Send quote', 'Share sample details', 'Follow up after trade show', 'Schedule meeting'];
+const BUSINESS_TYPES = [
+  { key: 'B2B', label: 'B2B', icon: '🏢', description: 'Business to Business' },
+  { key: 'B2C', label: 'B2C', icon: '👤', description: 'Business to Consumer' },
+  { key: 'B2B2C', label: 'B2B2C', icon: '🛍', description: 'Business to Business to Consumer' },
 ];
-
+const MODULE_ICONS: Record<string, string> = { full_crm: '🏢', trade_show: '🎪', orders_compliance: '📦', setu_guru: '🤖', analytics: '📊', vcard: '💳' };
+const PLANS = [
+  { key: 'trial', label: '14-Day Free Trial', seats: 5, description: 'All modules included. No billing required.', tag: 'No credit card' },
+  { key: 'starter', label: 'Starter', seats: 10, description: 'Core CRM modules for smaller export teams.', tag: null },
+  { key: 'growth', label: 'Growth', seats: 25, description: 'Full module access for growing trade teams.', tag: 'Most popular' },
+  { key: 'professional', label: 'Professional', seats: 50, description: 'Priority support, analytics and Guru AI limits.', tag: null },
+  { key: 'enterprise', label: 'Enterprise', seats: 200, description: 'Custom integrations, onboarding and SLA.', tag: null },
+];
 const STEPS = [
-  { id: 'workspace', label: 'Workspace', short: 'Company & workspace' },
-  { id: 'logo', label: 'Brand', short: 'Logo & identity' },
-  { id: 'admin', label: 'Admin', short: 'Team & admin access' },
-  { id: 'markets', label: 'Markets', short: 'Markets & workflow' },
-  { id: 'modules', label: 'Modules', short: 'Feature selection' },
-  { id: 'plan', label: 'Plan', short: 'Plan & trial' },
-  { id: 'review', label: 'Review', short: 'Final review' },
+  { label: 'Company Basics', short: 'Tell us about your organization', title: 'Let’s start with your company', icon: '🏢' },
+  { label: 'Branding', short: 'Logo and identity', title: 'Add your brand identity', icon: '◇' },
+  { label: 'Admin Details', short: 'Who manages this account', title: 'Who should manage this workspace?', icon: '👤' },
+  { label: 'Business Presence', short: 'Locations and markets', title: 'Map your markets and workflow', icon: '🌎' },
+  { label: 'Modules', short: 'Choose the tools you need', title: 'Choose the tools you need', icon: '⚙' },
+  { label: 'Choose Plan', short: 'Select the right plan', title: 'Select the right plan', icon: '▣' },
+  { label: 'Finish Setup', short: 'Review and launch your workspace', title: 'Review and launch your workspace', icon: '✓' },
 ];
 
-// ─── Small helpers ─────────────────────────────────────────────────────────────
+type Data = {
+  company_name: string; website: string; headquarters_country: string; business_type: string;
+  logo_tab: 'file' | 'url'; logo_url: string; logo_file: File | null; logo_preview: string;
+  primary_admin_name: string; primary_admin_email: string; primary_phone: string; requested_seat_count: number; additional_notes: string;
+  requested_markets: string[]; requested_countries: string[]; requested_pipelines: string[]; requested_pipeline_stages: string[]; requested_next_steps: string[]; wants_trade_events: boolean; pricing_rules_notes: string;
+  requested_modules: string[]; requested_plan: string; is_trial_request: boolean;
+};
+type Errors = Partial<Record<keyof Data, string>>;
+type Model = { step: number; max: number; data: Data; errors: Errors; toast: { text: string; tone: 'ok' | 'err' | 'default' } | null };
+type Action = { type: 'set'; key: keyof Data; value: Data[keyof Data] } | { type: 'patch'; value: Partial<Data> } | { type: 'step'; value: number } | { type: 'errors'; value: Errors } | { type: 'toast'; value: Model['toast'] };
 
-function cn(...classes: (string | false | undefined | null)[]) {
-  return classes.filter(Boolean).join(' ');
+const initialData = (): Data => ({
+  company_name: '', website: '', headquarters_country: 'India', business_type: 'B2B',
+  logo_tab: 'file', logo_url: '', logo_file: null, logo_preview: '',
+  primary_admin_name: '', primary_admin_email: '', primary_phone: '', requested_seat_count: 5, additional_notes: '',
+  requested_markets: ['North America', 'Middle East', 'Europe', 'Asia Pacific'], requested_countries: ['United States', 'United Arab Emirates'], requested_pipelines: [...PIPELINES], requested_pipeline_stages: [...STAGES], requested_next_steps: [...NEXT_STEPS], wants_trade_events: false, pricing_rules_notes: '',
+  requested_modules: MODULE_DEFINITIONS.map((item) => item.key), requested_plan: 'trial', is_trial_request: true,
+});
+
+function reducer(model: Model, action: Action): Model {
+  if (action.type === 'set') return { ...model, data: { ...model.data, [action.key]: action.value }, errors: { ...model.errors, [action.key]: undefined } };
+  if (action.type === 'patch') return { ...model, data: { ...model.data, ...action.value } };
+  if (action.type === 'step') { const step = Math.max(0, Math.min(action.value, STEPS.length - 1)); return { ...model, step, max: Math.max(model.max, step), errors: {} }; }
+  if (action.type === 'errors') return { ...model, errors: action.value };
+  if (action.type === 'toast') return { ...model, toast: action.value };
+  return model;
 }
+
+function cn(...classes: (string | false | null | undefined)[]) { return classes.filter(Boolean).join(' '); }
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
-  return (
-    <span className="block text-sm font-semibold text-slate-800">
-      {children}
-      {required && <span className="ml-0.5 text-rose-500">*</span>}
-    </span>
-  );
+  return <span className="block text-[13px] font-bold text-slate-900">{children}{required && <span className="ml-1 text-rose-500">*</span>}</span>;
 }
 
-function Input({ name, value, onChange, placeholder, type = 'text', required }: {
-  name: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string; required?: boolean;
-}) {
-  return (
-    <input
-      name={name} type={type} required={required} value={value} placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-    />
-  );
+function Input({ label, value, onChange, placeholder, type = 'text', error, required }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; error?: string; required?: boolean }) {
+  return <label className="block"><Label required={required}>{label}</Label><input value={value} type={type} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className={cn('mt-2 h-11 rounded-xl border bg-white px-3.5 text-sm shadow-none outline-none transition focus:ring-4', error ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100' : 'border-slate-200 focus:border-brand-primary focus:ring-brand-primary/10')} />{error && <p className="mt-1.5 text-xs font-semibold text-rose-600">{error}</p>}</label>;
 }
 
-function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (t: string[]) => void; placeholder?: string }) {
-  const [draft, setDraft] = useState('');
-  const add = (v: string) => {
-    const clean = v.trim();
-    if (clean && !tags.includes(clean)) onChange([...tags, clean]);
-    setDraft('');
-  };
-  return (
-    <div className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-      <div className="flex flex-wrap gap-1.5">
-        {tags.map((t) => (
-          <span key={t} className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">
-            {t}
-            <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} className="ml-0.5 text-blue-400 hover:text-blue-700">×</button>
-          </span>
-        ))}
-        <input
-          value={draft} placeholder={tags.length === 0 ? placeholder : 'Add more…'}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(draft); } }}
-          onBlur={() => { if (draft.trim()) add(draft); }}
-          className="min-w-[140px] flex-1 bg-transparent py-1 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-        />
-      </div>
-    </div>
-  );
+function Choice({ active, onClick, label, description, icon, badge, disabled }: { active: boolean; onClick: () => void; label: string; description?: string; icon?: string; badge?: string | null; disabled?: boolean }) {
+  return <button type="button" disabled={disabled} onClick={onClick} className={cn('relative w-full rounded-2xl border p-4 text-left transition', active ? 'border-brand-primary bg-gradient-to-br from-white to-blue-50 shadow-[inset_0_0_0_1px_rgba(31,72,124,0.18)]' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50', disabled && 'cursor-default')}>
+    {badge && <span className="absolute right-3 top-3 rounded-full bg-brand-teal/10 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-brand-teal">{badge}</span>}
+    <div className="flex items-start gap-3">{icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xl text-brand-primary">{icon}</span>}<div className="min-w-0 flex-1"><p className="text-sm font-extrabold text-slate-950">{label}</p>{description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}</div><span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full border', active ? 'border-brand-primary bg-brand-primary text-white' : 'border-slate-300 bg-white text-transparent')}><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span></div>
+  </button>;
 }
 
-function CheckCard({ checked, onChange, label, description, icon, badge }: {
-  checked: boolean; onChange: (v: boolean) => void;
-  label: string; description?: string; icon?: string; badge?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={cn(
-        'group relative w-full rounded-2xl border p-4 text-left transition',
-        checked ? 'border-blue-300 bg-blue-50 shadow-[inset_0_0_0_2px_#2563eb22]' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
-      )}
-    >
-      {badge && <span className="absolute right-3 top-3 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">{badge}</span>}
-      <div className="flex items-start gap-3">
-        {icon && <span className="mt-0.5 text-xl leading-none">{icon}</span>}
-        <div className="min-w-0 flex-1">
-          <p className={cn('text-sm font-semibold', checked ? 'text-blue-900' : 'text-slate-900')}>{label}</p>
-          {description && <p className={cn('mt-1 text-xs leading-5', checked ? 'text-blue-700' : 'text-slate-500')}>{description}</p>}
-        </div>
-        <span className={cn(
-          'mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2',
-          checked ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300',
-        )}>
-          {checked && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-        </span>
-      </div>
-    </button>
-  );
+function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (tags: string[]) => void; placeholder: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  function add(raw: string) { const clean = raw.trim(); if (clean && !tags.includes(clean)) onChange([...tags, clean]); if (ref.current) ref.current.value = ''; }
+  return <div className="mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-brand-primary focus-within:ring-4 focus-within:ring-brand-primary/10"><div className="flex flex-wrap gap-1.5">{tags.map((tag) => <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-brand-teal/20 bg-brand-teal/10 px-2.5 py-1 text-xs font-bold text-brand-teal">{tag}<button type="button" onClick={() => onChange(tags.filter((item) => item !== tag))} className="min-h-0 text-brand-teal/70 hover:text-brand-teal">×</button></span>)}<input ref={ref} placeholder={tags.length ? 'Add more…' : placeholder} onBlur={(event) => add(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ',') { event.preventDefault(); add(event.currentTarget.value); } }} className="min-h-0 min-w-[140px] flex-1 border-0 bg-transparent px-1 py-1 text-sm shadow-none outline-none focus:ring-0" /></div></div>;
 }
 
-function StepIndicator({ steps, activeIndex }: { steps: typeof STEPS; activeIndex: number }) {
-  return (
-    <div className="flex items-center gap-0 overflow-x-auto">
-      {steps.map((step, i) => {
-        const done = i < activeIndex;
-        const active = i === activeIndex;
-        return (
-          <div key={step.id} className="flex flex-shrink-0 items-center">
-            <div className={cn(
-              'flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all',
-              active ? 'bg-slate-950 text-white' : done ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-slate-400',
-            )}>
-              <span className={cn(
-                'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
-                active ? 'bg-white/20 text-white' : done ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-500',
-              )}>
-                {done ? '✓' : i + 1}
-              </span>
-              <span className="hidden sm:inline">{step.label}</span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={cn('h-px w-4 flex-shrink-0 transition-colors', done ? 'bg-emerald-300' : 'bg-slate-200')} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+function DesktopRail({ step, max, go }: { step: number; max: number; go: (step: number) => void }) {
+  return <aside className="hidden lg:block"><div className="sticky top-24 rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"><div className="relative space-y-3 before:absolute before:left-6 before:top-8 before:h-[calc(100%-64px)] before:w-px before:bg-slate-200">{STEPS.map((item, index) => { const done = index < step; const active = index === step; const clickable = index <= max; return <button key={item.label} type="button" disabled={!clickable} onClick={() => go(index)} className={cn('relative z-10 flex w-full items-start gap-3 rounded-2xl p-3 text-left transition', active ? 'border border-brand-primary/15 bg-blue-50 shadow-sm' : clickable ? 'hover:bg-slate-50' : 'cursor-default')}><span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold', active ? 'bg-gradient-to-br from-brand-primary to-brand-dark text-white' : done ? 'bg-brand-teal text-white' : 'border border-slate-300 bg-white text-slate-600')}>{done ? '✓' : index + 1}</span><span><span className="block text-sm font-extrabold text-slate-950">{item.label}</span><span className="mt-1 block text-xs leading-5 text-slate-500">{item.short}</span></span></button>; })}</div></div></aside>;
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
-
-type WizardState = {
-  // Step 1 — Workspace
-  company_name: string;
-  website: string;
-  headquarters_country: string;
-  // Step 2 — Logo
-  logo_url: string;
-  logo_file: File | null;
-  logo_preview: string;
-  logo_tab: 'file' | 'url';
-  // Step 3 — Admin & Team
-  primary_admin_name: string;
-  primary_admin_email: string;
-  primary_phone: string;
-  requested_seat_count: number;
-  additional_notes: string;
-  // Step 4 — Markets & Workflow
-  requested_markets: string[];
-  requested_countries: string[];
-  requested_pipelines: string[];
-  requested_pipeline_stages: string[];
-  requested_next_steps: string[];
-  wants_trade_events: boolean;
-  pricing_rules_notes: string;
-  // Step 5 — Modules
-  requested_modules: string[];
-  // Step 6 — Plan
-  requested_plan: string;
-  is_trial_request: boolean;
-};
-
-function initState(): WizardState {
-  return {
-    company_name: '', website: '', headquarters_country: 'India',
-    logo_url: '', logo_file: null, logo_preview: '', logo_tab: 'file',
-    primary_admin_name: '', primary_admin_email: '', primary_phone: '',
-    requested_seat_count: 5, additional_notes: '',
-    requested_markets: ['North America', 'Middle East', 'Europe', 'Asia Pacific'],
-    requested_countries: ['United States', 'United Arab Emirates'],
-    requested_pipelines: [...DEFAULT_PIPELINES],
-    requested_pipeline_stages: [...DEFAULT_PIPELINE_STAGES],
-    requested_next_steps: [...DEFAULT_NEXT_STEPS],
-    wants_trade_events: false,
-    pricing_rules_notes: '',
-    requested_modules: MODULE_DEFINITIONS.map((m) => m.key),
-    requested_plan: 'trial',
-    is_trial_request: true,
-  };
+function SidePanel({ data, score, step }: { data: Data; score: number; step: number }) {
+  const plan = PLANS.find((item) => item.key === data.requested_plan)?.label ?? 'Not selected';
+  const rows = [
+    ['Company Info', data.company_name.trim() ? '20/20' : '0/20', Boolean(data.company_name.trim())], ['Country', data.headquarters_country ? '10/10' : '0/10', Boolean(data.headquarters_country)], ['Admin Name', data.primary_admin_name.trim() ? '15/15' : '0/15', Boolean(data.primary_admin_name.trim())], ['Admin Email', EMAIL_RE.test(data.primary_admin_email) ? '15/15' : '0/15', EMAIL_RE.test(data.primary_admin_email)], ['Markets', data.requested_markets.length ? '15/15' : '0/15', data.requested_markets.length > 0], ['Modules', data.requested_modules.length ? '15/15' : '0/15', data.requested_modules.length > 0], ['Almost There', step >= 5 ? '10/10' : '0/10', step >= 5],
+  ] as const;
+  const circumference = 2 * Math.PI * 38;
+  return <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start"><div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"><div className="flex items-start justify-between gap-3"><div><h2 className="text-base font-extrabold text-slate-950">Setup Overview</h2><p className="mt-1 text-sm text-slate-500">Your progress</p></div><span className="rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-extrabold text-brand-teal">{score}%</span></div><div className="relative mx-auto mt-5 h-28 w-28"><svg className="h-28 w-28 -rotate-90" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="#E5E7EB" strokeWidth="8" /><circle cx="50" cy="50" r="38" fill="none" stroke="#359F91" strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference - (score / 100) * circumference} /></svg><div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-2xl font-extrabold text-slate-950">{score}%</span><span className="text-xs font-semibold text-slate-500">Complete</span></div></div><p className="mt-4 text-center text-sm font-semibold text-slate-600">Keep going! You’re building a launch-ready workspace.</p><div className="mt-5 space-y-2.5">{rows.map(([label, points, done]) => <div key={label} className="flex items-center justify-between gap-3 text-sm"><span className="inline-flex items-center gap-2 text-slate-700"><span className={cn('h-2.5 w-2.5 rounded-full', done ? 'bg-brand-teal' : 'bg-slate-300')} />{label}</span><span className={cn('font-extrabold', done ? 'text-brand-teal' : 'text-slate-500')}>{points}</span></div>)}</div><div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-brand-primary"><span>Total</span><span>{score}/100</span></div></div><div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"><h2 className="text-base font-extrabold text-slate-950">Workspace Preview</h2><div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-brand-primary">{data.logo_preview || data.logo_url ? <img src={data.logo_preview || data.logo_url} alt="Logo preview" className="max-h-10 max-w-10 rounded-lg object-contain" /> : '🏢'}</div><p className="mt-4 text-base font-extrabold text-slate-950">{data.company_name || 'Your Company'}</p><p className="mt-2 text-sm font-semibold text-slate-600">{data.headquarters_country || 'Country not selected'}</p><p className="mt-2 text-sm text-slate-600">Plan: <span className="font-bold text-slate-950">{plan}</span></p><p className="mt-2 text-sm text-slate-600">Users: <span className="font-bold text-slate-950">{data.requested_seat_count}</span></p></div></div></aside>;
 }
-
-// ─── Main wizard ───────────────────────────────────────────────────────────────
 
 export function OnboardingWizard() {
-  const [step, setStep] = useState(0);
-  const [state, setState] = useState<WizardState>(initState);
-  const [errors, setErrors] = useState<string[]>([]);
-  const formRef = useRef<HTMLFormElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [model, dispatch] = useReducer(reducer, undefined, () => ({ step: 0, max: 0, data: initialData(), errors: {}, toast: null }));
+  const formRef = useRef<HTMLFormElement>(null); const uploadRef = useRef<HTMLInputElement>(null); const hiddenFileRef = useRef<HTMLInputElement>(null);
+  const data = model.data; const step = model.step; const workspaceDomain = data.company_name ? `${slugifyCompanyName(data.company_name)}.setuflowcrm.com` : 'yourcompany.setuflowcrm.com';
+  const score = useMemo(() => (data.company_name.trim() ? 20 : 0) + (data.headquarters_country ? 10 : 0) + (data.primary_admin_name.trim() ? 15 : 0) + (EMAIL_RE.test(data.primary_admin_email) ? 15 : 0) + (data.requested_markets.length ? 15 : 0) + (data.requested_modules.length ? 15 : 0) + (step >= 5 ? 10 : 0), [data, step]);
+  const set = <K extends keyof Data>(key: K, value: Data[K]) => dispatch({ type: 'set', key, value });
+  const toast = (text: string, tone: 'ok' | 'err' | 'default' = 'default') => { dispatch({ type: 'toast', value: { text, tone } }); window.setTimeout(() => dispatch({ type: 'toast', value: null }), 2600); };
+  const validate = (target = step) => { const errors: Errors = {}; if (target === 0) { if (!data.company_name.trim()) errors.company_name = 'Company name is required.'; if (!data.headquarters_country) errors.headquarters_country = 'Country is required.'; } if (target === 2) { if (!data.primary_admin_name.trim()) errors.primary_admin_name = 'Admin name is required.'; if (!EMAIL_RE.test(data.primary_admin_email)) errors.primary_admin_email = 'Enter a valid email address.'; } if (target === 3 && !data.requested_markets.length) errors.requested_markets = 'Select at least one market.'; if (target === 4 && !data.requested_modules.length) errors.requested_modules = 'Select at least one module.'; dispatch({ type: 'errors', value: errors }); return Object.keys(errors).length === 0; };
+  const arraySet = (key: 'requested_markets' | 'requested_pipelines' | 'requested_modules', value: string, active: boolean) => set(key, active ? [...data[key], value] : data[key].filter((item) => item !== value));
+  const next = () => { if (!validate()) { toast('Please fix the highlighted fields before continuing.', 'err'); return; } dispatch({ type: 'step', value: step + 1 }); toast(step === 0 ? 'Company basics look great!' : 'Progress saved.', 'ok'); };
+  const submit = () => { if (!validate(0) || !validate(2) || !validate(4)) { toast('Required details are missing before submit.', 'err'); return; } if (data.logo_file && data.logo_tab === 'file' && hiddenFileRef.current) { const transfer = new DataTransfer(); transfer.items.add(data.logo_file); hiddenFileRef.current.files = transfer.files; } formRef.current?.submit(); };
 
-  const set = useCallback(<K extends keyof WizardState>(key: K, value: WizardState[K]) => {
-    setState((s) => ({ ...s, [key]: value }));
-  }, []);
+  function fileChange(event: React.ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { toast('Logo file must be under 2 MB.', 'err'); return; } const reader = new FileReader(); reader.onload = (ev) => { dispatch({ type: 'patch', value: { logo_file: file, logo_preview: String(ev.target?.result ?? '') } }); toast('Logo added to the workspace preview.', 'ok'); }; reader.readAsDataURL(file); }
+  function planSelect(key: string) { const plan = PLANS.find((item) => item.key === key); dispatch({ type: 'patch', value: { requested_plan: key, is_trial_request: key === 'trial', requested_seat_count: key === 'trial' ? 5 : (plan?.seats ?? data.requested_seat_count), requested_modules: key === 'trial' ? MODULE_DEFINITIONS.map((item) => item.key) : data.requested_modules } }); }
 
-  const workspaceDomain = state.company_name
-    ? `${slugifyCompanyName(state.company_name)}.setuflowcrm.com`
-    : 'yourcompany.setuflowcrm.com';
-
-  // Validate current step before advancing
-  function validate() {
-    const errs: string[] = [];
-    if (step === 0 && !state.company_name.trim()) errs.push('Company name is required.');
-    if (step === 2) {
-      if (!state.primary_admin_name.trim()) errs.push('Admin name is required.');
-      if (!state.primary_admin_email.trim() || !state.primary_admin_email.includes('@')) errs.push('A valid admin email is required.');
-    }
-    if (step === 4 && state.requested_modules.length === 0) errs.push('Please select at least one module.');
-    setErrors(errs);
-    return errs.length === 0;
+  function content() {
+    if (step === 0) return <div className="space-y-5"><div className="grid gap-4 sm:grid-cols-2"><Input label="Company Name" value={data.company_name} onChange={(value) => set('company_name', value)} placeholder="Acme Corporation" required error={model.errors.company_name} /><label className="block"><Label required>Country</Label><select value={data.headquarters_country} onChange={(event) => set('headquarters_country', event.target.value)} className="mt-2 h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm shadow-none outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10">{COUNTRIES.map((country) => <option key={country}>{country}</option>)}</select></label></div><Input label="Company Website" value={data.website} onChange={(value) => set('website', value)} placeholder="https://acme.com" type="url" /><div><Label>What best describes your business?</Label><div className="mt-3 grid gap-3 sm:grid-cols-3">{BUSINESS_TYPES.map((item) => <Choice key={item.key} active={data.business_type === item.key} onClick={() => set('business_type', item.key)} icon={item.icon} label={item.label} description={item.description} />)}</div></div><div className="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">Reserved workspace URL</p><p className="mt-1 text-sm font-extrabold text-slate-950">{workspaceDomain}</p></div></div>;
+    if (step === 1) return <div className="space-y-5"><p className="text-sm leading-6 text-slate-500">Your logo appears in your workspace, emails, and client-facing documents.</p><div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">{(['file', 'url'] as const).map((tab) => <button key={tab} type="button" onClick={() => set('logo_tab', tab)} className={cn('flex-1 rounded-xl py-2 text-sm font-extrabold transition', data.logo_tab === tab ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')}>{tab === 'file' ? 'Upload file' : 'Use logo URL'}</button>)}</div>{data.logo_tab === 'file' ? <><button type="button" onClick={() => uploadRef.current?.click()} className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center transition hover:border-brand-primary/30 hover:bg-blue-50/40">{data.logo_preview ? <img src={data.logo_preview} alt="Logo preview" className="h-16 max-w-[220px] rounded-xl object-contain" /> : <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-primary to-brand-teal font-extrabold text-white">SF</span>}<span><span className="block text-sm font-extrabold text-slate-800">{data.logo_preview ? 'Click to change logo' : 'Click to upload logo'}</span><span className="mt-1 block text-xs text-slate-500">PNG, JPG, SVG or WebP — max 2 MB</span></span></button><input ref={uploadRef} type="file" accept="image/*" className="sr-only" onChange={fileChange} /></> : <Input label="Logo URL" value={data.logo_url} onChange={(value) => set('logo_url', value)} placeholder="https://yourcompany.com/logo.png" />}</div>;
+    if (step === 2) return <div className="space-y-5"><div className="grid gap-4 sm:grid-cols-2"><Input label="Primary Admin Name" value={data.primary_admin_name} onChange={(value) => set('primary_admin_name', value)} placeholder="Full name" required error={model.errors.primary_admin_name} /><Input label="Primary Admin Email" value={data.primary_admin_email} onChange={(value) => set('primary_admin_email', value)} placeholder="admin@company.com" type="email" required error={model.errors.primary_admin_email} /></div><div className="grid gap-4 sm:grid-cols-[1fr_220px]"><Input label="Phone / WhatsApp" value={data.primary_phone} onChange={(value) => set('primary_phone', value)} placeholder="+1 555 0100" /><label><Label>Users to set up</Label><input type="number" min="1" max="500" value={data.requested_seat_count} onChange={(event) => set('requested_seat_count', Number.parseInt(event.target.value, 10) || 5)} className="mt-2 h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm shadow-none outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10" /></label></div><label><Label>Additional setup notes</Label><textarea value={data.additional_notes} onChange={(event) => set('additional_notes', event.target.value)} rows={3} placeholder="Role structure, regions, permissions or launch preferences…" className="mt-2 min-h-[96px] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm shadow-none outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10" /></label></div>;
+    if (step === 3) return <div className="space-y-5"><div><Label>Target markets</Label>{model.errors.requested_markets && <p className="mt-1 text-xs font-semibold text-rose-600">{model.errors.requested_markets}</p>}<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">{MARKETS.map((market) => <Choice key={market} label={market} active={data.requested_markets.includes(market)} onClick={() => arraySet('requested_markets', market, !data.requested_markets.includes(market))} />)}</div></div><div><Label>Key countries</Label><TagInput tags={data.requested_countries} onChange={(tags) => set('requested_countries', tags)} placeholder="e.g. United States" /></div><div className="grid gap-4 sm:grid-cols-2"><div><Label>Pipelines to activate</Label><div className="mt-3 space-y-2">{PIPELINES.map((pipeline) => <Choice key={pipeline} label={pipeline} active={data.requested_pipelines.includes(pipeline)} onClick={() => arraySet('requested_pipelines', pipeline, !data.requested_pipelines.includes(pipeline))} />)}</div></div><div><Label>Pipeline stages</Label><TagInput tags={data.requested_pipeline_stages} onChange={(tags) => set('requested_pipeline_stages', tags)} placeholder="Add stage…" /></div></div><div><Label>Follow-up next steps</Label><TagInput tags={data.requested_next_steps} onChange={(tags) => set('requested_next_steps', tags)} placeholder="Add activity…" /></div><Choice label="Enable trade events from day one" description="QR capture, business card scan and post-show workflows." icon="🎪" active={data.wants_trade_events} onClick={() => set('wants_trade_events', !data.wants_trade_events)} /><label><Label>Pricing & quoting notes</Label><textarea value={data.pricing_rules_notes} onChange={(event) => set('pricing_rules_notes', event.target.value)} rows={2} placeholder="FOB/CIF/EXW preferences, customer tiers, multi-currency needs…" className="mt-2 min-h-[80px] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm shadow-none outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10" /></label></div>;
+    if (step === 4) return <div className="space-y-4"><div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-brand-primary"><strong>All modules are on by default.</strong> Deselect anything you do not need at launch. Full CRM stays locked as the core workspace.</div>{model.errors.requested_modules && <p className="text-xs font-semibold text-rose-600">{model.errors.requested_modules}</p>}<div className="grid gap-3 sm:grid-cols-2">{MODULE_DEFINITIONS.map((mod) => <Choice key={mod.key} label={mod.title} description={mod.subtitle} icon={MODULE_ICONS[mod.key]} badge={mod.key === 'full_crm' ? 'Core' : null} disabled={mod.key === 'full_crm'} active={data.requested_modules.includes(mod.key)} onClick={() => arraySet('requested_modules', mod.key, !data.requested_modules.includes(mod.key))} />)}</div></div>;
+    if (step === 5) return <div className="space-y-4"><div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800"><strong>Billing is not collected here.</strong> Select your intended plan so the SetuFlow team provisions the right workspace.</div><div className="grid gap-3 sm:grid-cols-2">{PLANS.map((plan) => <Choice key={plan.key} active={data.requested_plan === plan.key} onClick={() => planSelect(plan.key)} label={plan.label} description={`${plan.description} Up to ${plan.seats} users.`} badge={plan.tag} />)}</div></div>;
+    return <div className="space-y-4"><div className="rounded-2xl border border-brand-teal/20 bg-brand-teal/10 px-4 py-3 text-sm leading-6 text-brand-teal"><strong>Ready for review.</strong> Submit this request and the SetuFlow team will provision the workspace.</div><Review title="Workspace" rows={[['Company', data.company_name || '—'], ['Domain', workspaceDomain], ['Website', data.website || '—'], ['Country', data.headquarters_country]]} /><Review title="Admin & Plan" rows={[['Admin', `${data.primary_admin_name || '—'} · ${data.primary_admin_email || '—'}`], ['Seats', `${data.requested_seat_count} users`], ['Plan', PLANS.find((plan) => plan.key === data.requested_plan)?.label ?? data.requested_plan]]} /><Review title="Markets" rows={[['Markets', data.requested_markets.join(', ') || '—'], ['Countries', data.requested_countries.join(', ') || '—'], ['Trade events', data.wants_trade_events ? 'Enabled from day one' : 'Not enabled at setup']]} /><div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-brand-primary">Modules selected</p><div className="mt-3 flex flex-wrap gap-2">{MODULE_DEFINITIONS.filter((mod) => data.requested_modules.includes(mod.key)).map((mod) => <span key={mod.key} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-brand-primary">{MODULE_ICONS[mod.key]} {mod.title}</span>)}</div></div></div>;
   }
 
-  function next() { if (validate()) { setErrors([]); setStep((s) => Math.min(s + 1, STEPS.length - 1)); } }
-  function back() { setErrors([]); setStep((s) => Math.max(s - 1, 0)); }
-
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setErrors(['Logo file must be under 2 MB.']); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      set('logo_preview', ev.target?.result as string);
-      set('logo_file', file);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function toggleModule(key: string) {
-    set('requested_modules',
-      state.requested_modules.includes(key)
-        ? state.requested_modules.filter((k) => k !== key)
-        : [...state.requested_modules, key],
-    );
-  }
-
-  function handlePlanSelect(planKey: string) {
-    const isTrial = planKey === 'trial';
-    const plan = PLAN_OPTIONS.find((p) => p.key === planKey);
-    setState((s) => ({
-      ...s,
-      requested_plan: planKey,
-      is_trial_request: isTrial,
-      requested_seat_count: isTrial ? 5 : (plan?.seats ?? s.requested_seat_count),
-      requested_modules: isTrial ? MODULE_DEFINITIONS.map((m) => m.key) : s.requested_modules,
-    }));
-  }
-
-  // ── Render steps ─────────────────────────────────────────────────────────────
-
-  function renderStep() {
-    switch (step) {
-
-      // ── 1. Workspace ─────────────────────────────────────────────────────────
-      case 0: return (
-        <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <Label required>Company name</Label>
-              <Input name="company_name" value={state.company_name} onChange={(v) => set('company_name', v)} placeholder="Your company name" required />
-            </label>
-            <label className="block">
-              <Label>Website</Label>
-              <Input name="website" type="url" value={state.website} onChange={(v) => set('website', v)} placeholder="https://example.com" />
-            </label>
-          </div>
-          <label className="block">
-            <Label>Headquarters country</Label>
-            <select
-              name="headquarters_country"
-              value={state.headquarters_country}
-              onChange={(e) => set('headquarters_country', e.target.value)}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-            >
-              {HQ_COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </label>
-          {state.company_name.trim() && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Your reserved workspace URL</p>
-              <p className="mt-1 text-sm font-semibold text-brand-primary">{workspaceDomain}</p>
-              <p className="mt-1 text-xs text-slate-400">This is auto-generated from your company name. The Setu Flow team can adjust it before go-live.</p>
-            </div>
-          )}
-        </div>
-      );
-
-      // ── 2. Logo ───────────────────────────────────────────────────────────────
-      case 1: return (
-        <div className="space-y-5">
-          <p className="text-sm text-slate-500">Your logo appears in your workspace, emails, and client-facing documents. You can update it anytime from Admin settings after setup.</p>
-          <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
-            {(['file', 'url'] as const).map((tab) => (
-              <button key={tab} type="button" onClick={() => set('logo_tab', tab)}
-                className={cn('flex-1 rounded-xl py-2 text-sm font-semibold transition',
-                  state.logo_tab === tab ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
-                )}>
-                {tab === 'file' ? 'Upload file' : 'Enter URL'}
-              </button>
-            ))}
-          </div>
-
-          {state.logo_tab === 'file' ? (
-            <div>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className={cn(
-                  'group flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 transition',
-                  state.logo_preview ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40',
-                )}
-              >
-                {state.logo_preview ? (
-                  <img src={state.logo_preview} alt="Logo preview" className="h-16 w-auto max-w-[200px] rounded-xl object-contain" />
-                ) : (
-                  <svg className="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                  </svg>
-                )}
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-700">{state.logo_preview ? 'Click to change' : 'Click to upload'}</p>
-                  <p className="mt-1 text-xs text-slate-400">PNG, JPG, SVG or WebP — max 2 MB</p>
-                </div>
-              </button>
-              <input ref={fileRef} type="file" name="logo_file" accept="image/*" className="sr-only" onChange={handleFileSelect} />
-            </div>
-          ) : (
-            <label className="block">
-              <Label>Logo URL</Label>
-              <Input name="logo_url" value={state.logo_url} onChange={(v) => set('logo_url', v)} placeholder="https://yourcompany.com/logo.png" />
-              {state.logo_url && (
-                <img src={state.logo_url} alt="Preview" className="mt-3 h-12 w-auto rounded-xl object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
-              )}
-            </label>
-          )}
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-            If no logo is provided, the Setu Flow logo is used in your workspace until you upload one in Admin settings.
-          </div>
-        </div>
-      );
-
-      // ── 3. Admin & Team ──────────────────────────────────────────────────────
-      case 2: return (
-        <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <Label required>Primary admin name</Label>
-              <Input name="primary_admin_name" value={state.primary_admin_name} onChange={(v) => set('primary_admin_name', v)} placeholder="Full name" required />
-            </label>
-            <label className="block">
-              <Label required>Primary admin email</Label>
-              <Input name="primary_admin_email" type="email" value={state.primary_admin_email} onChange={(v) => set('primary_admin_email', v)} placeholder="admin@yourcompany.com" required />
-            </label>
-          </div>
-          <label className="block">
-            <Label>Phone / WhatsApp</Label>
-            <Input name="primary_phone" value={state.primary_phone} onChange={(v) => set('primary_phone', v)} placeholder="+91 98765 43210" />
-          </label>
-          <div>
-            <Label>Number of users to set up</Label>
-            <p className="mt-1 text-xs text-slate-500">How many team members need access from day one? You can add more after setup.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[5, 10, 15, 25, 50, 100].map((n) => (
-                <button
-                  key={n} type="button"
-                  onClick={() => set('requested_seat_count', n)}
-                  className={cn(
-                    'rounded-xl border px-4 py-2 text-sm font-semibold transition',
-                    state.requested_seat_count === n
-                      ? 'border-slate-900 bg-slate-950 text-white'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
-                  )}
-                >
-                  {n} users
-                </button>
-              ))}
-              <div className="flex items-center gap-2">
-                <input
-                  type="number" min="1" max="500"
-                  value={state.requested_seat_count}
-                  onChange={(e) => set('requested_seat_count', parseInt(e.target.value, 10) || 5)}
-                  className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-700 outline-none focus:border-blue-400"
-                />
-                <span className="text-xs text-slate-400">custom</span>
-              </div>
-            </div>
-          </div>
-          <label className="block">
-            <Label>Additional setup notes</Label>
-            <textarea
-              name="additional_notes"
-              rows={3}
-              value={state.additional_notes}
-              onChange={(e) => set('additional_notes', e.target.value)}
-              placeholder="Any specific team structure, role requirements, or setup preferences…"
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-            />
-          </label>
-        </div>
-      );
-
-      // ── 4. Markets & Workflow ────────────────────────────────────────────────
-      case 3: return (
-        <div className="space-y-6">
-          <div>
-            <Label>Target markets</Label>
-            <p className="mt-1 text-xs text-slate-500">Select the regions your team actively sells into.</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {MARKETS.map((m) => (
-                <CheckCard
-                  key={m} label={m}
-                  checked={state.requested_markets.includes(m)}
-                  onChange={(v) => set('requested_markets', v ? [...state.requested_markets, m] : state.requested_markets.filter((x) => x !== m))}
-                />
-              ))}
-            </div>
-          </div>
-          <div>
-            <Label>Key countries</Label>
-            <p className="mt-1 text-xs text-slate-500">Type a country and press Enter to add.</p>
-            <TagInput tags={state.requested_countries} onChange={(t) => set('requested_countries', t)} placeholder="e.g. United States" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label>Pipelines to activate</Label>
-              <div className="mt-2 space-y-2">
-                {DEFAULT_PIPELINES.map((p) => (
-                  <CheckCard key={p} label={p}
-                    checked={state.requested_pipelines.includes(p)}
-                    onChange={(v) => set('requested_pipelines', v ? [...state.requested_pipelines, p] : state.requested_pipelines.filter((x) => x !== p))}
-                  />
-                ))}
-              </div>
-            </div>
-            <div>
-              <Label>Pipeline stages</Label>
-              <p className="mt-1 text-xs text-slate-500">Edit or add stages.</p>
-              <TagInput tags={state.requested_pipeline_stages} onChange={(t) => set('requested_pipeline_stages', t)} placeholder="Add stage…" />
-            </div>
-          </div>
-          <div>
-            <Label>Follow-up next steps</Label>
-            <TagInput tags={state.requested_next_steps} onChange={(t) => set('requested_next_steps', t)} placeholder="Add activity…" />
-          </div>
-          <CheckCard
-            label="Enable trade events from day one"
-            description="Show / event capture, QR contact exchange, and post-event follow-up workflows pre-configured at setup."
-            icon="🎪"
-            checked={state.wants_trade_events}
-            onChange={(v) => set('wants_trade_events', v)}
-          />
-          <label className="block">
-            <Label>Pricing & quoting notes</Label>
-            <textarea
-              name="pricing_rules_notes"
-              rows={2}
-              value={state.pricing_rules_notes}
-              onChange={(e) => set('pricing_rules_notes', e.target.value)}
-              placeholder="FOB/CIF/EXW preferences, customer tiers, multi-currency requirements, approval thresholds…"
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-            />
-          </label>
-        </div>
-      );
-
-      // ── 5. Modules ───────────────────────────────────────────────────────────
-      case 4: return (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <strong>All modules are on by default.</strong> Deselect anything you don't need at launch — your Setu Flow admin can enable or disable them at any time from Client Management.
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {MODULE_DEFINITIONS.map((mod) => (
-              <CheckCard
-                key={mod.key}
-                label={mod.title}
-                description={mod.subtitle}
-                icon={MODULE_ICONS[mod.key]}
-                badge={mod.key === 'full_crm' ? 'Core' : undefined}
-                checked={state.requested_modules.includes(mod.key)}
-                onChange={() => {
-                  if (mod.key === 'full_crm') return; // Core module always on
-                  toggleModule(mod.key);
-                }}
-              />
-            ))}
-          </div>
-          <p className="text-xs text-slate-400">* Full CRM is always included — it is the core workspace and cannot be deselected.</p>
-        </div>
-      );
-
-      // ── 6. Plan ───────────────────────────────────────────────────────────────
-      case 5: return (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <strong>Billing is not set up in this form.</strong> Select your intended plan so the Setu Flow team can provision the right workspace. Payment will be arranged separately after setup.
-          </div>
-          <div className="space-y-3">
-            {PLAN_OPTIONS.map((plan) => {
-              const active = state.requested_plan === plan.key;
-              return (
-                <button
-                  key={plan.key}
-                  type="button"
-                  onClick={() => handlePlanSelect(plan.key)}
-                  className={cn(
-                    'group relative w-full rounded-2xl border p-4 text-left transition',
-                    active
-                      ? 'border-slate-900 bg-slate-950 text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)]'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
-                  )}
-                >
-                  {plan.tag && (
-                    <span className={cn(
-                      'absolute right-4 top-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
-                      active ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700',
-                    )}>{plan.tag}</span>
-                  )}
-                  <div className="flex items-start gap-3">
-                    <span className={cn(
-                      'mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2',
-                      active ? 'border-white bg-white text-slate-950' : 'border-slate-300',
-                    )}>
-                      {active && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </span>
-                    <div>
-                      <p className={cn('font-semibold', active ? 'text-white' : 'text-slate-900')}>{plan.label}</p>
-                      <p className={cn('mt-1 text-xs leading-5', active ? 'text-slate-300' : 'text-slate-500')}>{plan.description}</p>
-                      <p className={cn('mt-1 text-xs font-semibold', active ? 'text-slate-300' : 'text-slate-400')}>
-                        Up to {plan.seats} {plan.key === 'enterprise' ? '' : ''}users
-                        {plan.key === 'trial' ? ' · 14-day free trial' : ' · billing arranged post-setup'}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      );
-
-      // ── 7. Review ────────────────────────────────────────────────────────────
-      case 6: {
-        const planLabel = PLAN_OPTIONS.find((p) => p.key === state.requested_plan)?.label ?? state.requested_plan;
-        return (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              Review your details below then submit. The Setu Flow team will be notified immediately and will provision your workspace.
-            </div>
-            <ReviewSection title="Workspace">
-              <ReviewRow label="Company" value={state.company_name} />
-              <ReviewRow label="Domain" value={workspaceDomain} accent />
-              {state.website && <ReviewRow label="Website" value={state.website} />}
-              <ReviewRow label="HQ country" value={state.headquarters_country} />
-            </ReviewSection>
-            <ReviewSection title="Brand">
-              {(state.logo_preview || state.logo_url) ? (
-                <div className="flex items-center gap-3">
-                  <img src={state.logo_preview || state.logo_url} alt="" className="h-10 w-auto rounded-xl object-contain" />
-                  <span className="text-sm text-slate-600">Logo provided</span>
-                </div>
-              ) : <p className="text-sm text-slate-400">Using Setu Flow default logo until uploaded in settings</p>}
-            </ReviewSection>
-            <ReviewSection title="Admin & Team">
-              <ReviewRow label="Admin" value={`${state.primary_admin_name} · ${state.primary_admin_email}`} />
-              {state.primary_phone && <ReviewRow label="Phone" value={state.primary_phone} />}
-              <ReviewRow label="Requested seats" value={`${state.requested_seat_count} users`} />
-            </ReviewSection>
-            <ReviewSection title="Markets">
-              <ReviewRow label="Markets" value={state.requested_markets.join(', ') || '—'} />
-              <ReviewRow label="Countries" value={state.requested_countries.join(', ') || '—'} />
-              <ReviewRow label="Trade events" value={state.wants_trade_events ? 'Enabled from day one' : 'Not enabled at setup'} />
-            </ReviewSection>
-            <ReviewSection title="Modules selected">
-              <div className="flex flex-wrap gap-1.5">
-                {MODULE_DEFINITIONS.filter((m) => state.requested_modules.includes(m.key)).map((m) => (
-                  <span key={m.key} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">
-                    {MODULE_ICONS[m.key]} {m.title}
-                  </span>
-                ))}
-              </div>
-            </ReviewSection>
-            <ReviewSection title="Plan">
-              <ReviewRow label="Plan" value={planLabel} />
-              <ReviewRow label="Seats" value={`${state.requested_seat_count} users`} />
-              {state.is_trial_request && <p className="mt-1 text-xs text-slate-400">14-day free trial · no billing required at this stage</p>}
-              {!state.is_trial_request && <p className="mt-1 text-xs text-slate-400">Billing will be arranged by the Setu Flow team after workspace setup</p>}
-            </ReviewSection>
-          </div>
-        );
-      }
-
-      default: return null;
-    }
-  }
-
-  const isLastStep = step === STEPS.length - 1;
-
-  return (
-    <div className="space-y-6">
-      {/* Step indicator */}
-      <div className="overflow-x-auto">
-        <StepIndicator steps={STEPS} activeIndex={step} />
-      </div>
-
-      {/* Step header */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-          Step {step + 1} of {STEPS.length} — {STEPS[step]?.short}
-        </p>
-      </div>
-
-      {/* Errors */}
-      {errors.length > 0 && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <p className="text-sm font-semibold text-rose-800">Please fix the following:</p>
-          <ul className="mt-1 space-y-0.5 text-sm text-rose-700">
-            {errors.map((e) => <li key={e}>• {e}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {/* Hidden form for submission */}
-      <form
-        ref={formRef}
-        action="/api/public/client-onboarding"
-        method="post"
-        encType="multipart/form-data"
-        className="hidden"
-        id="wizard-form"
-      >
-        <input name="company_name" value={state.company_name} readOnly />
-        <input name="website" value={state.website} readOnly />
-        <input name="headquarters_country" value={state.headquarters_country} readOnly />
-        <input name="primary_admin_name" value={state.primary_admin_name} readOnly />
-        <input name="primary_admin_email" value={state.primary_admin_email} readOnly />
-        <input name="primary_phone" value={state.primary_phone} readOnly />
-        <input name="logo_url" value={state.logo_tab === 'url' ? state.logo_url : ''} readOnly />
-        <input name="requested_seat_count" value={state.requested_seat_count} readOnly />
-        <input name="requested_markets" value={state.requested_markets.join('\n')} readOnly />
-        <input name="requested_countries" value={state.requested_countries.join('\n')} readOnly />
-        <input name="requested_pipelines" value={state.requested_pipelines.join('\n')} readOnly />
-        <input name="requested_pipeline_stages" value={state.requested_pipeline_stages.join('\n')} readOnly />
-        <input name="requested_next_steps" value={state.requested_next_steps.join('\n')} readOnly />
-        <input name="pricing_rules_notes" value={state.pricing_rules_notes} readOnly />
-        <input name="additional_notes" value={state.additional_notes} readOnly />
-        {state.wants_trade_events && <input name="wants_trade_events" value="on" readOnly />}
-        {state.requested_modules.map((m) => <input key={m} name="requested_modules" value={m} readOnly />)}
-        <input name="requested_plan" value={state.requested_plan} readOnly />
-        {state.is_trial_request && <input name="is_trial_request" value="on" readOnly />}
-      </form>
-
-      {/* File input for logo (outside hidden form so it can be shown) */}
-      {step === 1 && state.logo_tab === 'file' && state.logo_file && (
-        <div id="file-transfer-note" className="hidden" />
-      )}
-
-      {/* Step content */}
-      <div className="min-h-[320px]">
-        {renderStep()}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-5">
-        <button
-          type="button"
-          onClick={back}
-          disabled={step === 0}
-          className="inline-flex min-h-11 items-center rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
-        >
-          ← Back
-        </button>
-
-        <div className="flex items-center gap-3">
-          <span className="hidden text-xs text-slate-400 sm:block">
-            {step + 1} / {STEPS.length}
-          </span>
-          {isLastStep ? (
-            <button
-              type="button"
-              onClick={() => {
-                // Attach logo file if present, then submit
-                if (state.logo_file && state.logo_tab === 'file') {
-                  const dt = new DataTransfer();
-                  dt.items.add(state.logo_file);
-                  const fileInput = formRef.current?.querySelector('input[name="logo_file"]') as HTMLInputElement | null;
-                  if (fileInput) fileInput.files = dt.files;
-                }
-                formRef.current?.submit();
-              }}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_20px_rgba(5,150,105,0.3)] transition hover:bg-emerald-700"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              Submit workspace request
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={next}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-            >
-              Continue →
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)_280px]"><DesktopRail step={step} max={model.max} go={(target) => target <= model.max && dispatch({ type: 'step', value: target })} /><section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]"><div className="border-b border-slate-100 px-4 py-4 sm:px-5"><div className="-mx-3 overflow-x-auto px-3 pb-2 lg:hidden"><div className="flex min-w-max gap-2">{STEPS.map((item, index) => <button key={item.label} type="button" disabled={index > model.max} onClick={() => dispatch({ type: 'step', value: index })} className={cn('inline-flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-xs font-extrabold transition', index === step ? 'bg-gradient-to-br from-brand-primary to-brand-dark text-white shadow-[0_10px_24px_rgba(31,72,124,0.24)]' : index < step ? 'bg-brand-teal/10 text-brand-teal' : 'bg-slate-100 text-slate-500')}>{index + 1}</button>)}</div></div><div className="flex items-start gap-4"><span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-brand-primary sm:flex">{STEPS[step].icon}</span><div className="min-w-0 flex-1"><p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand-primary">Step {step + 1} of {STEPS.length}</p><h1 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">{STEPS[step].title}</h1><p className="mt-1 text-sm leading-6 text-slate-500">{STEPS[step].short}</p></div></div></div><form ref={formRef} action="/api/public/client-onboarding" method="post" encType="multipart/form-data" className="hidden"><input name="company_name" value={data.company_name} readOnly /><input name="website" value={data.website} readOnly /><input name="headquarters_country" value={data.headquarters_country} readOnly /><input name="primary_admin_name" value={data.primary_admin_name} readOnly /><input name="primary_admin_email" value={data.primary_admin_email} readOnly /><input name="primary_phone" value={data.primary_phone} readOnly /><input name="logo_url" value={data.logo_tab === 'url' ? data.logo_url : ''} readOnly /><input ref={hiddenFileRef} name="logo_file" type="file" className="hidden" readOnly /><input name="requested_seat_count" value={data.requested_seat_count} readOnly /><input name="requested_markets" value={data.requested_markets.join('\n')} readOnly /><input name="requested_countries" value={data.requested_countries.join('\n')} readOnly /><input name="requested_pipelines" value={data.requested_pipelines.join('\n')} readOnly /><input name="requested_pipeline_stages" value={data.requested_pipeline_stages.join('\n')} readOnly /><input name="requested_next_steps" value={data.requested_next_steps.join('\n')} readOnly /><input name="pricing_rules_notes" value={data.pricing_rules_notes} readOnly /><input name="additional_notes" value={data.additional_notes} readOnly />{data.wants_trade_events && <input name="wants_trade_events" value="on" readOnly />}{data.requested_modules.map((moduleKey) => <input key={moduleKey} name="requested_modules" value={moduleKey} readOnly />)}<input name="requested_plan" value={data.requested_plan} readOnly />{data.is_trial_request && <input name="is_trial_request" value="on" readOnly />}</form><div className="min-h-[430px] px-4 py-5 sm:px-5">{content()}</div><div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-4 sm:px-5"><button type="button" onClick={() => dispatch({ type: 'step', value: step - 1 })} disabled={step === 0} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">Back</button>{step === STEPS.length - 1 ? <button type="button" onClick={submit} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(53,159,145,0.26)] transition hover:bg-brand-teal/90">Submit request →</button> : <button type="button" onClick={next} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-brand-primary to-brand-dark px-5 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(31,72,124,0.24)] transition hover:brightness-105">Continue →</button>}</div></section><SidePanel data={data} score={score} step={step} />{model.toast && <div className="fixed bottom-6 left-1/2 z-50 w-[min(92vw,360px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.18)]"><div className="flex items-start gap-3"><span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white', model.toast.tone === 'err' ? 'bg-rose-500' : model.toast.tone === 'ok' ? 'bg-brand-teal' : 'bg-brand-primary')}>{model.toast.tone === 'err' ? '!' : '✓'}</span><p className="flex-1 text-sm font-bold text-slate-800">{model.toast.text}</p><button type="button" onClick={() => dispatch({ type: 'toast', value: null })} className="min-h-0 text-slate-400 hover:text-slate-700">×</button></div></div>}</div>;
 }
 
-// ─── Review helpers ────────────────────────────────────────────────────────────
-
-function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">{title}</p>
-      <div className="space-y-2">{children}</div>
-    </div>
-  );
-}
-
-function ReviewRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <span className="text-xs font-semibold text-slate-500">{label}</span>
-      <span className={cn('text-right text-xs font-semibold', accent ? 'text-brand-primary' : 'text-slate-800')}>{value}</span>
-    </div>
-  );
+function Review({ title, rows }: { title: string; rows: [string, string][] }) {
+  return <div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-brand-primary">{title}</p><div className="mt-3 space-y-2">{rows.map(([label, value]) => <div key={label} className="flex flex-wrap items-start justify-between gap-3 text-sm"><span className="font-semibold text-slate-500">{label}</span><span className="max-w-[70%] text-right font-extrabold text-slate-900">{value}</span></div>)}</div></div>;
 }
