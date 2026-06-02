@@ -4,9 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
+export const runtime = 'nodejs';
+
 const PASSWORD_RESET_PENDING_COOKIE = 'setuflow-password-reset-pending';
-const USED_RECOVERY_DIGESTS_KEY = 'setuflow_used_recovery_digests';
-const MAX_STORED_RECOVERY_DIGESTS = 20;
+const USED_ACCESS_DIGESTS_KEY = 'setuflow_used_access_digests';
+const MAX_STORED_ACCESS_DIGESTS = 20;
+
+type AccessUsageResult =
+  | { ok: true; message: null }
+  | { ok: false; message: string };
 
 function safeNextPath(nextParam: string | null) {
   if (!nextParam || !nextParam.startsWith('/')) return '/dashboard';
@@ -14,11 +20,11 @@ function safeNextPath(nextParam: string | null) {
   return nextParam;
 }
 
-function isRecoveryFlow(nextPath: string) {
+function isCredentialSetupFlow(nextPath: string) {
   return nextPath === '/reset-password' || nextPath.startsWith('/reset-password?');
 }
 
-function recoveryLinkDigest(value: string) {
+function accessDigest(value: string) {
   return createHash('sha256').update(value).digest('hex');
 }
 
@@ -32,29 +38,29 @@ function errorRedirect(request: NextRequest, message: string) {
   return NextResponse.redirect(redirectTo);
 }
 
-async function markRecoveryLinkUsed(user: User, digest: string) {
+async function markAccessLinkUsed(user: User, digest: string): Promise<AccessUsageResult> {
   const admin = createAdminSupabaseClient();
   if (!admin) {
-    return { ok: false, message: 'Recovery link verification is unavailable. Please contact support.' };
+    return { ok: false, message: 'Account access verification is unavailable. Please contact support.' };
   }
 
   const { data, error } = await admin.auth.admin.getUserById(user.id);
   if (error || !data.user) {
-    return { ok: false, message: error?.message ?? 'Unable to verify the recovery link.' };
+    return { ok: false, message: error?.message ?? 'Unable to verify the account access link.' };
   }
 
   const appMetadata = (data.user.app_metadata ?? {}) as Record<string, unknown>;
-  const usedDigests = normalizeStringArray(appMetadata[USED_RECOVERY_DIGESTS_KEY]);
+  const usedDigests = normalizeStringArray(appMetadata[USED_ACCESS_DIGESTS_KEY]);
 
   if (usedDigests.includes(digest)) {
-    return { ok: false, message: 'This recovery link has already been used. Please request a new link.' };
+    return { ok: false, message: 'This account access link has already been used. Please request a new one.' };
   }
 
-  const nextDigests = [digest, ...usedDigests].slice(0, MAX_STORED_RECOVERY_DIGESTS);
+  const nextDigests = [digest, ...usedDigests].slice(0, MAX_STORED_ACCESS_DIGESTS);
   const { error: updateError } = await admin.auth.admin.updateUserById(user.id, {
     app_metadata: {
       ...appMetadata,
-      [USED_RECOVERY_DIGESTS_KEY]: nextDigests,
+      [USED_ACCESS_DIGESTS_KEY]: nextDigests,
     },
   });
 
@@ -66,7 +72,7 @@ async function markRecoveryLinkUsed(user: User, digest: string) {
 }
 
 function withPasswordResetCookie(response: NextResponse, nextPath: string) {
-  if (isRecoveryFlow(nextPath)) {
+  if (isCredentialSetupFlow(nextPath)) {
     response.cookies.set(PASSWORD_RESET_PENDING_COOKIE, '1', {
       httpOnly: true,
       sameSite: 'lax',
@@ -85,15 +91,15 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   const nextPath = safeNextPath(requestUrl.searchParams.get('next'));
   const redirectTo = new URL(nextPath, request.url);
-  const recoveryFlow = isRecoveryFlow(nextPath);
+  const credentialSetupFlow = isCredentialSetupFlow(nextPath);
 
   const supabase = await createClient();
 
   if (token_hash && type) {
     const { data, error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (!error) {
-      if (recoveryFlow && data.user) {
-        const usage = await markRecoveryLinkUsed(data.user, recoveryLinkDigest(`${type}:${token_hash}`));
+      if (credentialSetupFlow && data.user) {
+        const usage = await markAccessLinkUsed(data.user, accessDigest(`${type}:${token_hash}`));
         if (!usage.ok) {
           await supabase.auth.signOut();
           return errorRedirect(request, usage.message);
@@ -106,8 +112,8 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      if (recoveryFlow && data.user) {
-        const usage = await markRecoveryLinkUsed(data.user, recoveryLinkDigest(`code:${code}`));
+      if (credentialSetupFlow && data.user) {
+        const usage = await markAccessLinkUsed(data.user, accessDigest(`code:${code}`));
         if (!usage.ok) {
           await supabase.auth.signOut();
           return errorRedirect(request, usage.message);
@@ -117,5 +123,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return errorRedirect(request, 'The sign-in or recovery link is invalid or has expired.');
+  return errorRedirect(request, 'The account access link is invalid or expired.');
 }
