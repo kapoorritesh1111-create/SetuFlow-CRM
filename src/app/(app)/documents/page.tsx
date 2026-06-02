@@ -7,62 +7,57 @@ import type { Database } from '@/types/database';
 
 type DocumentRow = Database['public']['Tables']['documents']['Row'];
 
-type LeadRow = {
+type LeadRow = { id: string; company_name: string | null; contact_name: string | null };
+type QuoteRow = { id: string; quote_number: string | null; lead_id: string | null };
+type ContractRow = { id: string; quote_id: string | null; lead_id: string | null };
+type OrderRow = { id: string; order_number: string | null; lead_id: string | null; source_quote_id: string | null; legacy_contract_id: string | null };
+type OrderDocumentRow = {
   id: string;
-  company_name: string | null;
-  contact_name: string | null;
-};
-
-type QuoteRow = {
-  id: string;
-  quote_number: string | null;
-  lead_id: string | null;
-};
-
-type ContractRow = {
-  id: string;
-  quote_id: string | null;
-  lead_id: string | null;
+  order_id: string;
+  legacy_contract_id: string | null;
+  document_id: string | null;
+  document_type: string;
+  stage_key: string | null;
+  status: string | null;
+  version_no: number | null;
+  pdf_storage_path: string | null;
+  created_at: string | null;
 };
 
 type DocumentsPageProps = {
-  searchParams?: {
-    q?: string;
-    status?: string;
-    type?: string;
-    view?: string;
-    sort?: string;
-    dir?: string;
-  };
+  searchParams?: { q?: string; status?: string; type?: string; view?: string; sort?: string; dir?: string };
+};
+
+type DocumentItem = {
+  id: string;
+  source: 'document' | 'order_document';
+  sourceId: string;
+  documentId: string | null;
+  relatedEntity: string;
+  relatedId: string;
+  fileName: string | null;
+  fileUrl: string | null;
+  docType: string | null;
+  status: string | null;
+  uploadedAt: string | null;
+  expiresAt: string | null;
+  version: number | null;
+  versionLabel: string | null;
+  requirementCode: string | null;
+  orderId: string | null;
+  legacyContractId: string | null;
+  pdfStoragePath: string | null;
 };
 
 type DocumentContext = {
   clientName: string;
-  leadName: string | null;
+  leadName: string;
   linkedLabel: string;
   linkedHref: string;
   documentTitle: string;
   documentSubtitle: string;
   pdfHref: string | null;
-};
-
-const DEMO_CLIENTS: Record<string, string> = {
-  '001': 'Setu Groups',
-  '002': 'Pacific Gourmet Distributors',
-  '003': 'Emerald Isle Foods',
-  '004': 'Atlas Natural Grocers',
-  '005': 'Gulf Fresh Trading',
-  '006': 'Claude E2E USA Buyer',
-  '007': 'Claude E2E USA Supplier',
-  '008': 'Andes Premium Foods',
-  '009': 'Nordic Snack House',
-  '010': 'Blue Harbour Wholesale',
-  '011': 'Moriga Powder Trading',
-  '012': 'Claude E2E USA Buyer',
-  '013': 'Test Lead 1A',
-  '014': 'Setu Groups',
-  '015': 'Mediterranean Specialty Foods',
-  '016': 'Desert Bloom Hypermarket',
+  pdfLabel: string;
 };
 
 function normalize(value?: string | null) {
@@ -78,34 +73,13 @@ function shortId(value?: string | null) {
   return normalize(value).slice(0, 8).toUpperCase();
 }
 
-function isExpired(document: DocumentRow) {
-  return document.expires_at ? new Date(document.expires_at).getTime() < Date.now() : false;
-}
-
-function isExpiringSoon(document: DocumentRow) {
-  if (!document.expires_at) return false;
-  const expiry = new Date(document.expires_at).getTime();
-  const now = Date.now();
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-  return expiry >= now && expiry <= now + thirtyDays;
-}
-
-function isNeedsReview(status?: string | null) {
-  const normalized = normalize(status).toLowerCase();
-  return ['pending', 'review', 'in_review', 'needs_review', 'submitted', 'uploaded'].includes(normalized) || normalized.includes('review');
-}
-
-function isApproved(status?: string | null) {
-  const normalized = normalize(status).toLowerCase();
-  return ['approved', 'ready', 'active', 'valid'].includes(normalized);
-}
-
 function documentTypeLabel(value?: string | null) {
   const type = normalize(value).toLowerCase();
   if (type.includes('order_confirmation')) return 'Order Confirmation';
   if (type.includes('completion_packet')) return 'Completion Packet';
-  if (type.includes('final_invoice') || type.includes('dispatch_invoice') || type === 'invoice') return 'Final Invoice';
+  if (type.includes('final_invoice') || type.includes('dispatch_invoice') || type.includes('proforma_invoice') || type === 'invoice') return 'Invoice';
   if (type.includes('packing')) return 'Packing List';
+  if (type.includes('freight')) return 'Freight Request';
   if (type.includes('quote')) return 'Commercial Quote';
   if (type.includes('evidence')) return 'Uploaded Evidence';
   if (type.includes('delivery')) return 'Delivery Note';
@@ -118,28 +92,46 @@ function typeIcon(value?: string | null) {
   if (type.includes('invoice')) return 'file-text-o';
   if (type.includes('quote')) return 'file-pdf-o';
   if (type.includes('packing')) return 'archive';
+  if (type.includes('freight')) return 'truck';
   if (type.includes('evidence')) return 'cloud-upload';
   if (type.includes('delivery')) return 'truck';
   return 'file-text-o';
 }
 
-function statusBadge(document: DocumentRow) {
-  if (isExpired(document)) return { label: 'Expired', className: 'bg-rose-50 text-rose-700 ring-rose-100', icon: 'warning' };
-  if (isExpiringSoon(document)) return { label: 'Expiring soon', className: 'bg-orange-50 text-orange-700 ring-orange-100', icon: 'clock-o' };
-  if (isNeedsReview(document.status)) return { label: 'Needs review', className: 'bg-amber-50 text-amber-700 ring-amber-100', icon: 'exclamation-circle' };
-  if (isApproved(document.status)) return { label: 'Approved', className: 'bg-emerald-50 text-emerald-700 ring-emerald-100', icon: 'check-circle-o' };
-  return { label: normalize(document.status) || 'Tracked', className: 'bg-slate-100 text-slate-700 ring-slate-200', icon: 'circle-o' };
+function isExpired(item: DocumentItem) {
+  return item.expiresAt ? new Date(item.expiresAt).getTime() < Date.now() : false;
 }
 
-function demoClientFromFilename(fileName?: string | null) {
-  const match = normalize(fileName).match(/seed-(?:quote|order-doc)-(\d{3})/i);
-  return match?.[1] ? DEMO_CLIENTS[match[1]] ?? null : null;
+function isExpiringSoon(item: DocumentItem) {
+  if (!item.expiresAt) return false;
+  const expiry = new Date(item.expiresAt).getTime();
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  return expiry >= now && expiry <= now + thirtyDays;
+}
+
+function isNeedsReview(status?: string | null) {
+  const normalized = normalize(status).toLowerCase();
+  return ['pending', 'review', 'in_review', 'needs_review', 'submitted', 'uploaded', 'previewed', 'link_created'].includes(normalized) || normalized.includes('review');
+}
+
+function isApproved(status?: string | null) {
+  const normalized = normalize(status).toLowerCase();
+  return ['approved', 'ready', 'active', 'valid'].includes(normalized);
+}
+
+function statusBadge(item: DocumentItem) {
+  if (isExpired(item)) return { label: 'Expired', className: 'bg-rose-50 text-rose-700 ring-rose-100', icon: 'warning' };
+  if (isExpiringSoon(item)) return { label: 'Expiring soon', className: 'bg-orange-50 text-orange-700 ring-orange-100', icon: 'clock-o' };
+  if (isNeedsReview(item.status)) return { label: 'Needs review', className: 'bg-amber-50 text-amber-700 ring-amber-100', icon: 'exclamation-circle' };
+  if (isApproved(item.status)) return { label: 'Approved', className: 'bg-emerald-50 text-emerald-700 ring-emerald-100', icon: 'check-circle-o' };
+  return { label: normalize(item.status) || 'Tracked', className: 'bg-slate-100 text-slate-700 ring-slate-200', icon: 'circle-o' };
 }
 
 function rawFileMeta(fileName?: string | null) {
   const name = normalize(fileName);
-  if (!name) return 'Generated document';
-  return name.toLowerCase().startsWith('seed-') ? 'System generated PDF' : name;
+  if (!name) return 'Workflow document';
+  return name.toLowerCase().startsWith('seed-') ? 'System generated record' : name;
 }
 
 function directLeadName(lead?: LeadRow | null) {
@@ -155,31 +147,58 @@ function safeExplicitFileUrl(value?: string | null) {
   return null;
 }
 
-function buildPdfHref(document: DocumentRow) {
-  const entity = normalize(document.related_entity).toLowerCase();
-  const type = normalize(document.doc_type).toLowerCase();
-  const generatedOrderRoute = entity === 'contract' || entity === 'order';
-  if (generatedOrderRoute && (type.includes('invoice') || type.includes('completion'))) return `/api/orders/${document.related_id}/invoice/pdf`;
-  if (generatedOrderRoute && (type.includes('order') || type.includes('dispatch'))) return `/api/orders/${document.related_id}/order-confirmation/pdf`;
-  const explicit = safeExplicitFileUrl(document.file_url);
-  if (explicit) return explicit;
+function safePdfStoragePath(value?: string | null) {
+  const path = normalize(value);
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/')) return path;
   return null;
 }
 
-function recordRoute(document: DocumentRow) {
-  const entity = normalize(document.related_entity).toLowerCase();
-  if (entity === 'contract' || entity === 'order') return `/orders/${document.related_id}`;
-  if (entity === 'quote') return `/quotes/${document.related_id}`;
-  if (entity === 'lead') return `/leads/${document.related_id}`;
-  return '/documents';
+function itemFromDocument(row: DocumentRow, linkedOrderDoc?: OrderDocumentRow): DocumentItem {
+  return {
+    id: `document:${row.id}`,
+    source: 'document',
+    sourceId: row.id,
+    documentId: row.id,
+    relatedEntity: row.related_entity,
+    relatedId: row.related_id,
+    fileName: row.file_name,
+    fileUrl: row.file_url,
+    docType: linkedOrderDoc?.document_type ?? row.doc_type,
+    status: linkedOrderDoc?.status ?? row.status,
+    uploadedAt: linkedOrderDoc?.created_at ?? row.uploaded_at,
+    expiresAt: row.expires_at,
+    version: linkedOrderDoc?.version_no ?? row.version,
+    versionLabel: row.version_label,
+    requirementCode: row.requirement_code,
+    orderId: linkedOrderDoc?.order_id ?? (row.related_entity === 'order' ? row.related_id : null),
+    legacyContractId: linkedOrderDoc?.legacy_contract_id ?? null,
+    pdfStoragePath: linkedOrderDoc?.pdf_storage_path ?? null,
+  };
 }
 
-function recordLabel(document: DocumentRow, quote?: QuoteRow | null) {
-  const entity = normalize(document.related_entity).toLowerCase();
-  if (entity === 'contract' || entity === 'order') return `Order ${shortId(document.related_id)}`;
-  if (entity === 'quote') return `Quote ${normalize(quote?.quote_number) || shortId(document.related_id)}`;
-  if (entity === 'lead') return `Lead ${shortId(document.related_id)}`;
-  return `${normalize(document.related_entity) || 'Record'} ${shortId(document.related_id)}`;
+function itemFromOrderDocument(row: OrderDocumentRow): DocumentItem {
+  return {
+    id: `order-document:${row.id}`,
+    source: 'order_document',
+    sourceId: row.id,
+    documentId: row.document_id,
+    relatedEntity: 'order',
+    relatedId: row.order_id,
+    fileName: null,
+    fileUrl: null,
+    docType: row.document_type,
+    status: row.status,
+    uploadedAt: row.created_at,
+    expiresAt: null,
+    version: row.version_no,
+    versionLabel: row.stage_key,
+    requirementCode: row.stage_key,
+    orderId: row.order_id,
+    legacyContractId: row.legacy_contract_id,
+    pdfStoragePath: row.pdf_storage_path,
+  };
 }
 
 function sortHref(searchParams: DocumentsPageProps['searchParams'], sort: string) {
@@ -201,141 +220,145 @@ function sortLabel(searchParams: DocumentsPageProps['searchParams'], sort: strin
   return `${label}${active ? (dir === 'desc' ? ' ↓' : ' ↑') : ''}`;
 }
 
-function matchesSearch(document: DocumentRow, context: DocumentContext, query: string) {
-  if (!query) return true;
-  const haystack = [
-    context.clientName,
-    context.leadName,
-    context.documentTitle,
-    context.documentSubtitle,
-    context.linkedLabel,
-    document.file_name,
-    document.doc_type,
-    document.status,
-    document.related_entity,
-    document.related_id,
-    document.requirement_code,
-  ].map((value) => normalize(value).toLowerCase()).join(' ');
-  return haystack.includes(query.toLowerCase());
-}
-
 function metricCard(label: string, value: number, helper: string, icon: string, tone: string) {
   return (
     <div className="rounded-[1.35rem] border border-slate-200/80 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
       <div className="flex items-center gap-3">
         <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}><FaIcon icon={icon} fixedWidth /></span>
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
-          <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
-        </div>
+        <div><p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</p><p className="mt-1 text-2xl font-black text-slate-950">{value}</p></div>
       </div>
       <p className="mt-3 text-xs font-semibold text-slate-500">{helper}</p>
     </div>
   );
 }
 
-async function loadDocumentContext(documents: DocumentRow[], organizationId: string) {
-  const directLeadIds = new Set<string>();
-  const directQuoteIds = new Set<string>();
-  const contractIds = new Set<string>();
+function buildWorkspaceRoute(item: DocumentItem, quote?: QuoteRow | null, order?: OrderRow | null, lead?: LeadRow | null) {
+  if (item.relatedEntity === 'order' || item.orderId) return `/orders?q=${encodeURIComponent(order?.order_number ?? item.orderId ?? item.relatedId)}`;
+  if (item.relatedEntity === 'quote') return `/quotes?q=${encodeURIComponent(quote?.quote_number ?? item.relatedId)}`;
+  if (item.relatedEntity === 'lead') return `/leads?q=${encodeURIComponent(directLeadName(lead) ?? item.relatedId)}`;
+  return '/documents';
+}
 
-  documents.forEach((document) => {
-    const entity = normalize(document.related_entity).toLowerCase();
-    if (entity === 'lead') directLeadIds.add(document.related_id);
-    if (entity === 'quote') directQuoteIds.add(document.related_id);
-    if (entity === 'contract' || entity === 'order') contractIds.add(document.related_id);
+function buildPdfHref(item: DocumentItem, order?: OrderRow | null, contract?: ContractRow | null) {
+  const storagePath = safePdfStoragePath(item.pdfStoragePath);
+  if (storagePath) return storagePath;
+
+  const type = normalize(item.docType).toLowerCase();
+  const legacyContractId = item.legacyContractId ?? order?.legacy_contract_id ?? contract?.id ?? null;
+  if (legacyContractId) {
+    if (type.includes('invoice') || type.includes('completion')) return `/api/orders/${legacyContractId}/invoice/pdf`;
+    if (type.includes('order') || type.includes('dispatch')) return `/api/orders/${legacyContractId}/order-confirmation/pdf`;
+  }
+
+  return safeExplicitFileUrl(item.fileUrl);
+}
+
+function pdfUnavailableLabel(item: DocumentItem) {
+  const type = normalize(item.docType).toLowerCase();
+  if (type.includes('quote')) return 'Generate from quote';
+  if (type.includes('invoice') || type.includes('order') || type.includes('dispatch') || item.source === 'order_document') return 'Generate from order';
+  return 'No file yet';
+}
+
+function matchesSearch(item: DocumentItem, context: DocumentContext, query: string) {
+  if (!query) return true;
+  const haystack = [context.clientName, context.leadName, context.documentTitle, context.documentSubtitle, context.linkedLabel, item.fileName, item.docType, item.status, item.relatedEntity, item.relatedId, item.requirementCode].map((value) => normalize(value).toLowerCase()).join(' ');
+  return haystack.includes(query.toLowerCase());
+}
+
+async function buildItemsAndContext(organizationId: string) {
+  const db = await createClient();
+  const [{ data: documentData, error: documentError }, { data: orderDocumentData, error: orderDocumentError }] = await Promise.all([
+    db.from('documents').select('id, organization_id, related_entity, related_id, file_name, file_url, doc_type, uploaded_by, uploaded_at, version, status, owner_user_id, reviewer_user_id, reviewed_at, review_notes, expires_at, version_label, requirement_code').eq('organization_id', organizationId).order('uploaded_at', { ascending: false }).limit(250),
+    db.from('order_documents').select('id, order_id, legacy_contract_id, document_id, document_type, stage_key, status, version_no, pdf_storage_path, created_at').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(250),
+  ]);
+
+  if (documentError) return { error: documentError.message, items: [] as DocumentItem[], contextById: {} as Record<string, DocumentContext> };
+  if (orderDocumentError) return { error: orderDocumentError.message, items: [] as DocumentItem[], contextById: {} as Record<string, DocumentContext> };
+
+  const documents = (documentData ?? []) as unknown as DocumentRow[];
+  const orderDocuments = (orderDocumentData ?? []) as unknown as OrderDocumentRow[];
+  const orderDocByDocumentId = new Map(orderDocuments.filter((row) => row.document_id).map((row) => [row.document_id as string, row]));
+  const documentIds = new Set(documents.map((row) => row.id));
+  const items = [
+    ...documents.map((row) => itemFromDocument(row, orderDocByDocumentId.get(row.id))),
+    ...orderDocuments.filter((row) => !row.document_id || !documentIds.has(row.document_id)).map(itemFromOrderDocument),
+  ];
+
+  const orderIds = new Set<string>();
+  const quoteIds = new Set<string>();
+  const contractIds = new Set<string>();
+  const leadIds = new Set<string>();
+
+  items.forEach((item) => {
+    if (item.orderId) orderIds.add(item.orderId);
+    if (item.relatedEntity === 'order') orderIds.add(item.relatedId);
+    if (item.relatedEntity === 'quote') quoteIds.add(item.relatedId);
+    if (item.relatedEntity === 'contract') contractIds.add(item.relatedId);
+    if (item.legacyContractId) contractIds.add(item.legacyContractId);
+    if (item.relatedEntity === 'lead') leadIds.add(item.relatedId);
   });
 
-  const db = await createClient();
-  const { data: contractData } = contractIds.size
-    ? await db.from('contracts').select('id, quote_id, lead_id').eq('organization_id', organizationId).in('id', Array.from(contractIds))
-    : { data: [] };
+  const { data: orderData } = orderIds.size ? await db.from('orders').select('id, order_number, lead_id, source_quote_id, legacy_contract_id').eq('organization_id', organizationId).in('id', Array.from(orderIds)) : { data: [] };
+  const orders = (orderData ?? []) as unknown as OrderRow[];
+  const orderMap = new Map(orders.map((order) => [order.id, order]));
+  orders.forEach((order) => {
+    if (order.source_quote_id) quoteIds.add(order.source_quote_id);
+    if (order.lead_id) leadIds.add(order.lead_id);
+    if (order.legacy_contract_id) contractIds.add(order.legacy_contract_id);
+  });
+
+  const { data: contractData } = contractIds.size ? await db.from('contracts').select('id, quote_id, lead_id').eq('organization_id', organizationId).in('id', Array.from(contractIds)) : { data: [] };
   const contracts = (contractData ?? []) as unknown as ContractRow[];
   const contractMap = new Map(contracts.map((contract) => [contract.id, contract]));
-
   contracts.forEach((contract) => {
-    if (contract.quote_id) directQuoteIds.add(contract.quote_id);
-    if (contract.lead_id) directLeadIds.add(contract.lead_id);
+    if (contract.quote_id) quoteIds.add(contract.quote_id);
+    if (contract.lead_id) leadIds.add(contract.lead_id);
   });
 
-  const { data: quoteData } = directQuoteIds.size
-    ? await db.from('quotes').select('id, quote_number, lead_id').eq('organization_id', organizationId).in('id', Array.from(directQuoteIds))
-    : { data: [] };
+  const { data: quoteData } = quoteIds.size ? await db.from('quotes').select('id, quote_number, lead_id').eq('organization_id', organizationId).in('id', Array.from(quoteIds)) : { data: [] };
   const quotes = (quoteData ?? []) as unknown as QuoteRow[];
   const quoteMap = new Map(quotes.map((quote) => [quote.id, quote]));
+  quotes.forEach((quote) => { if (quote.lead_id) leadIds.add(quote.lead_id); });
 
-  quotes.forEach((quote) => {
-    if (quote.lead_id) directLeadIds.add(quote.lead_id);
-  });
-
-  const { data: leadData } = directLeadIds.size
-    ? await db.from('leads').select('id, company_name, contact_name').eq('organization_id', organizationId).in('id', Array.from(directLeadIds))
-    : { data: [] };
+  const { data: leadData } = leadIds.size ? await db.from('leads').select('id, company_name, contact_name').eq('organization_id', organizationId).in('id', Array.from(leadIds)) : { data: [] };
   const leads = (leadData ?? []) as unknown as LeadRow[];
   const leadMap = new Map(leads.map((lead) => [lead.id, lead]));
 
-  function leadForDocument(document: DocumentRow) {
-    const entity = normalize(document.related_entity).toLowerCase();
-    if (entity === 'lead') return leadMap.get(document.related_id) ?? null;
-    if (entity === 'quote') {
-      const quote = quoteMap.get(document.related_id);
-      return quote?.lead_id ? leadMap.get(quote.lead_id) ?? null : null;
-    }
-    if (entity === 'contract' || entity === 'order') {
-      const contract = contractMap.get(document.related_id);
-      if (contract?.lead_id) return leadMap.get(contract.lead_id) ?? null;
-      const quote = contract?.quote_id ? quoteMap.get(contract.quote_id) : null;
-      return quote?.lead_id ? leadMap.get(quote.lead_id) ?? null : null;
-    }
-    return null;
-  }
-
-  return documents.reduce<Record<string, DocumentContext>>((acc, document) => {
-    const entity = normalize(document.related_entity).toLowerCase();
-    const contract = entity === 'contract' || entity === 'order' ? contractMap.get(document.related_id) ?? null : null;
-    const quote = entity === 'quote' ? quoteMap.get(document.related_id) ?? null : contract?.quote_id ? quoteMap.get(contract.quote_id) ?? null : null;
-    const lead = leadForDocument(document);
-    const clientName = directLeadName(lead) || demoClientFromFilename(document.file_name) || 'Client pending link';
-    const docType = documentTypeLabel(document.doc_type);
-    acc[document.id] = {
+  const contextById = items.reduce<Record<string, DocumentContext>>((acc, item) => {
+    const order = item.orderId ? orderMap.get(item.orderId) ?? null : item.relatedEntity === 'order' ? orderMap.get(item.relatedId) ?? null : null;
+    const contract = item.legacyContractId ? contractMap.get(item.legacyContractId) ?? null : item.relatedEntity === 'contract' ? contractMap.get(item.relatedId) ?? null : order?.legacy_contract_id ? contractMap.get(order.legacy_contract_id) ?? null : null;
+    const quote = item.relatedEntity === 'quote' ? quoteMap.get(item.relatedId) ?? null : order?.source_quote_id ? quoteMap.get(order.source_quote_id) ?? null : contract?.quote_id ? quoteMap.get(contract.quote_id) ?? null : null;
+    const lead = item.relatedEntity === 'lead' ? leadMap.get(item.relatedId) ?? null : order?.lead_id ? leadMap.get(order.lead_id) ?? null : quote?.lead_id ? leadMap.get(quote.lead_id) ?? null : contract?.lead_id ? leadMap.get(contract.lead_id) ?? null : null;
+    const clientName = directLeadName(lead) || 'Client pending link';
+    const docType = documentTypeLabel(item.docType);
+    const linkedLabel = item.relatedEntity === 'order' || item.orderId ? `Order ${normalize(order?.order_number) || shortId(item.orderId ?? item.relatedId)}` : item.relatedEntity === 'quote' ? `Quote ${normalize(quote?.quote_number) || shortId(item.relatedId)}` : item.relatedEntity === 'lead' ? `Lead ${directLeadName(lead) ?? shortId(item.relatedId)}` : `${normalize(item.relatedEntity) || 'Record'} ${shortId(item.relatedId)}`;
+    const linkedHref = buildWorkspaceRoute(item, quote, order, lead);
+    acc[item.id] = {
       clientName,
       leadName: lead?.contact_name ? `Lead: ${lead.contact_name}` : directLeadName(lead) ? `Lead: ${directLeadName(lead)}` : 'Lead context pending',
-      linkedLabel: recordLabel(document, quote),
-      linkedHref: recordRoute(document),
+      linkedLabel,
+      linkedHref,
       documentTitle: `${clientName} — ${docType}`,
-      documentSubtitle: `${docType} · ${rawFileMeta(document.file_name)}`,
-      pdfHref: buildPdfHref(document),
+      documentSubtitle: `${docType} · ${rawFileMeta(item.fileName)}${item.source === 'order_document' ? ' · Order workflow' : ''}`,
+      pdfHref: buildPdfHref(item, order, contract),
+      pdfLabel: pdfUnavailableLabel(item),
     };
     return acc;
   }, {});
+
+  return { error: null, items, contextById };
 }
 
-function sortDocuments(documents: DocumentRow[], contextById: Record<string, DocumentContext>, sort: string, dir: string) {
+function sortItems(items: DocumentItem[], contextById: Record<string, DocumentContext>, sort: string, dir: string) {
   const direction = dir === 'desc' ? -1 : 1;
-  const sorted = [...documents].sort((a, b) => {
+  return [...items].sort((a, b) => {
     const aContext = contextById[a.id];
     const bContext = contextById[b.id];
-    const aValue = sort === 'document'
-      ? aContext.documentTitle
-      : sort === 'record'
-        ? aContext.linkedLabel
-        : sort === 'status'
-          ? statusBadge(a).label
-          : sort === 'date'
-            ? normalize(a.uploaded_at)
-            : aContext.clientName;
-    const bValue = sort === 'document'
-      ? bContext.documentTitle
-      : sort === 'record'
-        ? bContext.linkedLabel
-        : sort === 'status'
-          ? statusBadge(b).label
-          : sort === 'date'
-            ? normalize(b.uploaded_at)
-            : bContext.clientName;
+    const aValue = sort === 'document' ? aContext.documentTitle : sort === 'record' ? aContext.linkedLabel : sort === 'status' ? statusBadge(a).label : sort === 'date' ? normalize(a.uploadedAt) : aContext.clientName;
+    const bValue = sort === 'document' ? bContext.documentTitle : sort === 'record' ? bContext.linkedLabel : sort === 'status' ? statusBadge(b).label : sort === 'date' ? normalize(b.uploadedAt) : bContext.clientName;
     return aValue.localeCompare(bValue) * direction;
   });
-  return sorted;
 }
 
 export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
@@ -344,20 +367,9 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
     return <WorkspaceState eyebrow="Documents workspace" title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded." primaryActionHref="/dashboard" primaryActionLabel="Go to dashboard" />;
   }
 
-  const db = await createClient();
-  const { data, error } = await db
-    .from('documents')
-    .select('id, organization_id, related_entity, related_id, file_name, file_url, doc_type, uploaded_by, uploaded_at, version, status, owner_user_id, reviewer_user_id, reviewed_at, review_notes, expires_at, version_label, requirement_code')
-    .eq('organization_id', workspace.organization.id)
-    .order('uploaded_at', { ascending: false })
-    .limit(150);
+  const { error, items, contextById } = await buildItemsAndContext(workspace.organization.id);
+  if (error) return <WorkspaceState eyebrow="Documents workspace" title="Documents could not be loaded" description={error} primaryActionHref="/dashboard" primaryActionLabel="Back to dashboard" />;
 
-  if (error) {
-    return <WorkspaceState eyebrow="Documents workspace" title="Documents could not be loaded" description={error.message} primaryActionHref="/dashboard" primaryActionLabel="Back to dashboard" />;
-  }
-
-  const documents: DocumentRow[] = (data ?? []) as unknown as DocumentRow[];
-  const contextById = await loadDocumentContext(documents, workspace.organization.id);
   const query = normalize(searchParams?.q);
   const selectedStatus = normalize(searchParams?.status).toLowerCase();
   const selectedType = normalize(searchParams?.type).toLowerCase();
@@ -365,140 +377,39 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   const selectedSort = normalize(searchParams?.sort) || 'client';
   const selectedDir = normalize(searchParams?.dir) || 'asc';
 
-  const filteredDocuments = sortDocuments(documents.filter((document) => {
-    const context = contextById[document.id];
-    const statusMatch = !selectedStatus || normalize(document.status).toLowerCase() === selectedStatus;
-    const typeMatch = !selectedType || normalize(document.doc_type).toLowerCase() === selectedType;
-    return statusMatch && typeMatch && matchesSearch(document, context, query);
+  const filteredItems = sortItems(items.filter((item) => {
+    const context = contextById[item.id];
+    const statusMatch = !selectedStatus || normalize(item.status).toLowerCase() === selectedStatus;
+    const typeMatch = !selectedType || normalize(item.docType).toLowerCase() === selectedType;
+    return statusMatch && typeMatch && matchesSearch(item, context, query);
   }), contextById, selectedSort, selectedDir);
 
-  const statusOptions = Array.from(new Set(documents.map((document) => normalize(document.status)).filter(Boolean))).sort();
-  const typeOptions = Array.from(new Set(documents.map((document) => normalize(document.doc_type)).filter(Boolean))).sort();
-  const needsReview = documents.filter((document) => isNeedsReview(document.status)).length;
-  const approved = documents.filter((document) => isApproved(document.status)).length;
-  const expiringSoon = documents.filter(isExpiringSoon).length;
-  const generatedPdfs = documents.filter((document) => normalize(document.file_name).toLowerCase().endsWith('.pdf') || normalize(document.doc_type).toLowerCase().includes('pdf')).length;
+  const statusOptions = Array.from(new Set(items.map((item) => normalize(item.status)).filter(Boolean))).sort();
+  const typeOptions = Array.from(new Set(items.map((item) => normalize(item.docType)).filter(Boolean))).sort();
+  const needsReview = items.filter((item) => isNeedsReview(item.status)).length;
+  const approved = items.filter((item) => isApproved(item.status)).length;
+  const expiringSoon = items.filter(isExpiringSoon).length;
+  const pdfReady = items.filter((item) => contextById[item.id]?.pdfHref).length;
 
-  const grouped = filteredDocuments.reduce<Record<string, DocumentRow[]>>((acc, document) => {
-    const context = contextById[document.id];
-    const key = selectedView === 'status'
-      ? statusBadge(document).label
-      : selectedView === 'type'
-        ? documentTypeLabel(document.doc_type)
-        : selectedView === 'timeline'
-          ? formatDate(document.uploaded_at)
-          : context.clientName;
-    acc[key] = [...(acc[key] ?? []), document];
+  const grouped = filteredItems.reduce<Record<string, DocumentItem[]>>((acc, item) => {
+    const context = contextById[item.id];
+    const key = selectedView === 'status' ? statusBadge(item).label : selectedView === 'type' ? documentTypeLabel(item.docType) : selectedView === 'timeline' ? formatDate(item.uploadedAt) : context.clientName;
+    acc[key] = [...(acc[key] ?? []), item];
     return acc;
   }, {});
 
   return (
     <div className="space-y-5">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0c7fff]">Documents</p>
-          <p className="mt-2 max-w-3xl text-sm font-semibold text-slate-600">Manage client documents, generated PDFs, expiry posture, and review status across leads, quotes, and orders.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm"><FaIcon icon="download" fixedWidth />Export view</button>
-          <Link href="/leads" className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#061c2e] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(6,28,46,0.2)]"><FaIcon icon="users" fixedWidth />Attach from lead</Link>
-        </div>
-      </section>
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0c7fff]">Documents</p><p className="mt-2 max-w-3xl text-sm font-semibold text-slate-600">Manage client documents, generated PDFs, expiry posture, and review status across leads, quotes, and orders.</p></div><div className="flex flex-wrap gap-2"><button type="button" className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm"><FaIcon icon="download" fixedWidth />Export view</button><Link href="/leads" className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#061c2e] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(6,28,46,0.2)]"><FaIcon icon="users" fixedWidth />Attach from lead</Link></div></section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metricCard('Total', documents.length, 'Across active clients', 'file-text-o', 'bg-blue-50 text-[#0c7fff]')}
-        {metricCard('Needs review', needsReview, 'Awaiting action', 'exclamation-circle', 'bg-amber-50 text-amber-700')}
-        {metricCard('Approved', approved, 'Ready to use', 'check-circle-o', 'bg-emerald-50 text-emerald-700')}
-        {metricCard('Generated PDFs', generatedPdfs, `${expiringSoon} expiring soon`, 'file-pdf-o', 'bg-rose-50 text-rose-700')}
-      </section>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{metricCard('Total', items.length, 'Global and order workflow docs', 'file-text-o', 'bg-blue-50 text-[#0c7fff]')}{metricCard('Needs review', needsReview, 'Awaiting action', 'exclamation-circle', 'bg-amber-50 text-amber-700')}{metricCard('Approved', approved, 'Ready to use', 'check-circle-o', 'bg-emerald-50 text-emerald-700')}{metricCard('PDF ready', pdfReady, `${expiringSoon} expiring soon`, 'file-pdf-o', 'bg-rose-50 text-rose-700')}</section>
 
       <section className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-        <form className="grid gap-3 xl:grid-cols-[1fr_190px_210px_260px_auto]" action="/documents">
-          <label className="relative">
-            <span className="sr-only">Search documents</span>
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><FaIcon icon="search" fixedWidth /></span>
-            <input name="q" defaultValue={searchParams?.q ?? ''} placeholder="Search documents, clients, orders, quotes..." className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100" />
-          </label>
-          <select name="status" defaultValue={searchParams?.status ?? ''} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none">
-            <option value="">All statuses</option>
-            {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
-          </select>
-          <select name="type" defaultValue={searchParams?.type ?? ''} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none">
-            <option value="">All document types</option>
-            {typeOptions.map((type) => <option key={type} value={type}>{documentTypeLabel(type)}</option>)}
-          </select>
-          <div className="flex rounded-2xl bg-slate-100 p-1">
-            {['client', 'status', 'type', 'timeline'].map((view) => (
-              <button key={view} type="submit" name="view" value={view} className={`flex-1 rounded-xl px-3 py-2 text-xs font-black capitalize transition ${selectedView === view ? 'bg-[#0c7fff] text-white shadow-sm' : 'text-slate-600 hover:bg-white'}`}>{view}</button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="h-12 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white">Apply</button>
-            <Link href="/documents" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Reset</Link>
-          </div>
-        </form>
-        <div className="mt-3 grid gap-2 rounded-2xl bg-slate-50 p-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_100px]">
-          <Link href={sortHref(searchParams, 'document')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'document', 'Document')}</Link>
-          <Link href={sortHref(searchParams, 'client')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'client', 'Client')}</Link>
-          <Link href={sortHref(searchParams, 'record')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'record', 'Linked record')}</Link>
-          <Link href={sortHref(searchParams, 'status')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'status', 'Status')}</Link>
-          <Link href={sortHref(searchParams, 'date')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'date', 'Date')}</Link>
-          <span className="px-3 py-2">PDF</span>
-        </div>
+        <form className="grid gap-3 xl:grid-cols-[1fr_190px_210px_260px_auto]" action="/documents"><label className="relative"><span className="sr-only">Search documents</span><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><FaIcon icon="search" fixedWidth /></span><input name="q" defaultValue={searchParams?.q ?? ''} placeholder="Search documents, clients, orders, quotes..." className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100" /></label><select name="status" defaultValue={searchParams?.status ?? ''} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none"><option value="">All statuses</option>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select><select name="type" defaultValue={searchParams?.type ?? ''} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none"><option value="">All document types</option>{typeOptions.map((type) => <option key={type} value={type}>{documentTypeLabel(type)}</option>)}</select><div className="flex rounded-2xl bg-slate-100 p-1">{['client', 'status', 'type', 'timeline'].map((view) => (<button key={view} type="submit" name="view" value={view} className={`flex-1 rounded-xl px-3 py-2 text-xs font-black capitalize transition ${selectedView === view ? 'bg-[#0c7fff] text-white shadow-sm' : 'text-slate-600 hover:bg-white'}`}>{view}</button>))}</div><div className="flex gap-2"><button type="submit" className="h-12 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white">Apply</button><Link href="/documents" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Reset</Link></div></form>
+        <div className="mt-3 grid gap-2 rounded-2xl bg-slate-50 p-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_120px]"><Link href={sortHref(searchParams, 'document')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'document', 'Document')}</Link><Link href={sortHref(searchParams, 'client')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'client', 'Client')}</Link><Link href={sortHref(searchParams, 'record')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'record', 'Linked record')}</Link><Link href={sortHref(searchParams, 'status')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'status', 'Status')}</Link><Link href={sortHref(searchParams, 'date')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'date', 'Date')}</Link><span className="px-3 py-2">PDF</span></div>
       </section>
 
-      {Object.entries(grouped).length ? (
-        <section className="space-y-4">
-          {Object.entries(grouped).map(([groupName, groupDocuments]) => {
-            const hasAttention = groupDocuments.some((document) => isNeedsReview(document.status) || isExpired(document) || isExpiringSoon(document));
-            const defaultOpen = selectedView === 'status' ? groupName !== 'Approved' : hasAttention;
-            return (
-              <details key={groupName} open={defaultOpen} className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-sky-50/70 px-5 py-4 marker:hidden">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-[#0c7fff]"><FaIcon icon="building-o" fixedWidth /></span>
-                    <div>
-                      <h2 className="text-base font-black text-slate-950">{groupName}</h2>
-                      <p className="text-xs font-semibold text-slate-500">{groupDocuments.length} document{groupDocuments.length === 1 ? '' : 's'} · click to expand/collapse</p>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${hasAttention ? 'bg-amber-50 text-amber-700 ring-amber-100' : 'bg-emerald-50 text-emerald-700 ring-emerald-100'}`}><FaIcon icon={hasAttention ? 'exclamation-circle' : 'check-circle-o'} fixedWidth />{hasAttention ? 'Attention' : 'Healthy'}</span>
-                </summary>
-                <div className="divide-y divide-slate-100">
-                  {groupDocuments.map((document) => {
-                    const context = contextById[document.id];
-                    const badge = statusBadge(document);
-                    return (
-                      <div key={document.id} className={`grid gap-4 px-5 py-4 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_100px] lg:items-center ${badge.label === 'Needs review' || badge.label === 'Expired' || badge.label === 'Expiring soon' ? 'bg-amber-50/45' : 'bg-white'}`}>
-                        <div className="flex items-start gap-3">
-                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100"><FaIcon icon={typeIcon(document.doc_type)} fixedWidth /></span>
-                          <div>
-                            <p className="font-black text-slate-950">{context.documentTitle}</p>
-                            <p className="mt-1 text-xs font-semibold text-slate-500">{context.documentSubtitle}</p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-950">{context.clientName}</p>
-                          <p className="mt-1 text-xs font-semibold text-slate-400">{context.leadName}</p>
-                        </div>
-                        <Link href={context.linkedHref} className="font-black text-[#075985] transition hover:text-[#0c7fff] hover:underline">{context.linkedLabel}</Link>
-                        <span className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${badge.className}`}><FaIcon icon={badge.icon} fixedWidth />{badge.label}</span>
-                        <div className="text-xs font-semibold text-slate-500"><p>{formatDate(document.uploaded_at)}</p><p className="mt-1">Expiry: {formatDate(document.expires_at)}</p></div>
-                        {context.pdfHref ? <a href={context.pdfHref} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 rounded-full bg-[#061c2e] px-4 py-2 text-xs font-black text-white shadow-sm"><FaIcon icon="external-link" fixedWidth />PDF</a> : <span className="rounded-full bg-slate-100 px-3 py-2 text-center text-xs font-black text-slate-400">No PDF</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </details>
-            );
-          })}
-        </section>
-      ) : (
-        <section className="rounded-[1.6rem] border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
-          <p className="text-lg font-black text-slate-950">No documents match this view</p>
-          <p className="mt-2 text-sm font-semibold text-slate-500">Clear filters or generate documents from Quotes and Orders.</p>
-        </section>
-      )}
+      {Object.entries(grouped).length ? <section className="space-y-4">{Object.entries(grouped).map(([groupName, groupItems]) => { const hasAttention = groupItems.some((item) => isNeedsReview(item.status) || isExpired(item) || isExpiringSoon(item)); const defaultOpen = selectedView === 'status' ? groupName !== 'Approved' : hasAttention; return <details key={groupName} open={defaultOpen} className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.05)]"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-sky-50/70 px-5 py-4 marker:hidden"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-[#0c7fff]"><FaIcon icon="building-o" fixedWidth /></span><div><h2 className="text-base font-black text-slate-950">{groupName}</h2><p className="text-xs font-semibold text-slate-500">{groupItems.length} document{groupItems.length === 1 ? '' : 's'} · click to expand/collapse</p></div></div><span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${hasAttention ? 'bg-amber-50 text-amber-700 ring-amber-100' : 'bg-emerald-50 text-emerald-700 ring-emerald-100'}`}><FaIcon icon={hasAttention ? 'exclamation-circle' : 'check-circle-o'} fixedWidth />{hasAttention ? 'Attention' : 'Healthy'}</span></summary><div className="divide-y divide-slate-100">{groupItems.map((item) => { const context = contextById[item.id]; const badge = statusBadge(item); return <div key={item.id} className={`grid gap-4 px-5 py-4 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_120px] lg:items-center ${badge.label === 'Needs review' || badge.label === 'Expired' || badge.label === 'Expiring soon' ? 'bg-amber-50/45' : 'bg-white'}`}><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100"><FaIcon icon={typeIcon(item.docType)} fixedWidth /></span><div><p className="font-black text-slate-950">{context.documentTitle}</p><p className="mt-1 text-xs font-semibold text-slate-500">{context.documentSubtitle}</p></div></div><div><p className="font-black text-slate-950">{context.clientName}</p><p className="mt-1 text-xs font-semibold text-slate-400">{context.leadName}</p></div><Link href={context.linkedHref} className="font-black text-[#075985] transition hover:text-[#0c7fff] hover:underline">{context.linkedLabel}</Link><span className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${badge.className}`}><FaIcon icon={badge.icon} fixedWidth />{badge.label}</span><div className="text-xs font-semibold text-slate-500"><p>{formatDate(item.uploadedAt)}</p><p className="mt-1">Expiry: {formatDate(item.expiresAt)}</p></div>{context.pdfHref ? <a href={context.pdfHref} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 rounded-full bg-[#061c2e] px-4 py-2 text-xs font-black text-white shadow-sm"><FaIcon icon="external-link" fixedWidth />PDF</a> : <span className="rounded-full bg-slate-100 px-3 py-2 text-center text-xs font-black text-slate-500">{context.pdfLabel}</span>}</div>; })}</div></details>; })}</section> : <section className="rounded-[1.6rem] border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm"><p className="text-lg font-black text-slate-950">No documents match this view</p><p className="mt-2 text-sm font-semibold text-slate-500">Clear filters or generate documents from Quotes and Orders.</p></section>}
     </div>
   );
 }
