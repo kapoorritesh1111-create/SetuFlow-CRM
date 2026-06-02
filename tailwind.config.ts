@@ -12,7 +12,8 @@ const config: Config = {
       colors: {
         brand: {
           primary: '#1F487C',
-          dark: '#193769'
+          dark: '#193769',
+          teal: '#359F91'
         },
         stage: {
           new: '#3B82F6',
