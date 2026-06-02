@@ -12,7 +12,7 @@ const iconPaths: Record<SmcIconName, string[]> = {
   mission: ['M12 3a9 9 0 1 0 9 9', 'M12 12 20 4', 'M15 4h5v5'],
   board: ['M4 4h16v16H4z', 'M9 4v16', 'M15 4v16', 'M4 10h16'],
   sprint: ['M4 19h16', 'M7 16V8', 'M12 16V5', 'M17 16v-6', 'M6 8h3', 'M11 5h3', 'M16 10h3'],
-  agent: ['M5 8h14v10H5z', 'M9 8V5', 'M15 8V5', 'M9 13h.01', 'M15 13h.01', 'M10 17h4'],
+  agent: ['M12 3l1.9 5.8L20 10l-5 3.6L16.5 20 12 16.4 7.5 20 9 13.6 4 10l6.1-1.2L12 3Z', 'M12 8.5l.8 2.3 2.4.4-2 1.4.6 2.4-1.8-1.4-1.8 1.4.6-2.4-2-1.4 2.4-.4.8-2.3Z'],
   client: ['M16 8a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z', 'M5 21a7 7 0 0 1 14 0', 'M18 9a3 3 0 0 1 0 6'],
   docs: ['M14 3H7a2 2 0 0 0-2 2v14h14V8z', 'M14 3v5h5', 'M8 13h8', 'M8 17h6'],
   qa: ['M9 12l2 2 4-5', 'M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z'],
@@ -101,6 +101,5 @@ export function isClosedIssue(status?: string | null) {
 export function daysOld(value?: string | null) {
   if (!value) return 0;
   const time = new Date(value).getTime();
-  if (Number.isNaN(time)) return 0;
   return Math.max(0, Math.floor((Date.now() - time) / 86_400_000));
 }
