@@ -52,32 +52,29 @@ function compactValue(value: string | null, fallback: string) {
 }
 
 function SelectField({
-  label,
   value,
   options,
   onChange,
+  ariaLabel,
 }: {
-  label: string;
   value: string;
   options: FilterOption[];
   onChange: (value: string) => void;
+  ariaLabel: string;
 }) {
   return (
     <label className="group relative min-w-[150px] shrink-0 sm:min-w-[170px]">
-      <span className="absolute -top-2 left-3 rounded-full bg-white px-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
-        {label}
-      </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 pr-9 text-sm font-black text-slate-800 shadow-sm outline-none transition hover:border-sky-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-        aria-label={label}
+        className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 pr-9 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:border-sky-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+        aria-label={ariaLabel}
       >
         {options.map((option) => (
-          <option key={`${label}-${option.value || 'all'}`} value={option.value}>{option.label}</option>
+          <option key={`${ariaLabel}-${option.value || 'all'}`} value={option.value}>{option.label}</option>
         ))}
       </select>
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">▾</span>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400">▾</span>
     </label>
   );
 }
@@ -137,7 +134,7 @@ export function SmcGlobalFilterStrip({
                 target={item.external ? '_blank' : undefined}
                 title={item.label}
                 className={cn(
-                  'flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-4 text-[14px] font-black tracking-tight transition',
+                  'flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-4 text-[14px] font-bold tracking-tight transition',
                   active
                     ? 'border-white bg-white text-slate-950 shadow-sm'
                     : 'border-white/10 bg-white/[0.07] text-white/90 hover:border-sky-300/40 hover:bg-white/[0.14] hover:text-white',
@@ -153,7 +150,7 @@ export function SmcGlobalFilterStrip({
 
       <div className="bg-white px-3 py-3">
         <div className="flex items-center gap-3 overflow-x-auto pb-1">
-          <span className="shrink-0 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Viewing</span>
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Viewing</span>
           <div className="flex shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-sm">
             {SMC_RANGE_OPTIONS.map((option) => (
               <button
@@ -161,7 +158,7 @@ export function SmcGlobalFilterStrip({
                 type="button"
                 onClick={() => apply({ range: option })}
                 className={cn(
-                  'h-9 shrink-0 rounded-xl px-3 text-xs font-black transition',
+                  'h-9 shrink-0 rounded-xl px-3 text-xs font-semibold transition',
                   range === option
                     ? 'bg-sky-500 text-white shadow-sm'
                     : 'text-slate-500 hover:bg-white hover:text-slate-900',
@@ -174,7 +171,7 @@ export function SmcGlobalFilterStrip({
               type="button"
               onClick={() => apply({ range: 'custom' })}
               className={cn(
-                'h-9 shrink-0 rounded-xl px-3 text-xs font-black transition',
+                'h-9 shrink-0 rounded-xl px-3 text-xs font-semibold transition',
                 showCustomDates
                   ? 'bg-sky-500 text-white shadow-sm'
                   : 'text-slate-500 hover:bg-white hover:text-slate-900',
@@ -183,13 +180,13 @@ export function SmcGlobalFilterStrip({
               Custom
             </button>
           </div>
-          <SelectField label="Sprint" value={sprintValue} options={sprintOptions} onChange={(value) => apply({ sprint: value || null })} />
-          <SelectField label="Severity" value={severityValue} options={severityOptions} onChange={(value) => apply({ severity: value || null })} />
-          <SelectField label="Status" value={statusValue} options={statusOptions} onChange={(value) => apply({ status: value || null })} />
-          <SelectField label="Area" value={areaValue} options={areaOptions} onChange={(value) => apply({ area: value || null })} />
-          <SelectField label="Reporter" value={reporterValue} options={reporterOptions} onChange={(value) => apply({ reporter: value || null })} />
+          <SelectField ariaLabel="Sprint filter" value={sprintValue} options={sprintOptions} onChange={(value) => apply({ sprint: value || null })} />
+          <SelectField ariaLabel="Severity filter" value={severityValue} options={severityOptions} onChange={(value) => apply({ severity: value || null })} />
+          <SelectField ariaLabel="Status filter" value={statusValue} options={statusOptions} onChange={(value) => apply({ status: value || null })} />
+          <SelectField ariaLabel="Area filter" value={areaValue} options={areaOptions} onChange={(value) => apply({ area: value || null })} />
+          <SelectField ariaLabel="Reporter filter" value={reporterValue} options={reporterOptions} onChange={(value) => apply({ reporter: value || null })} />
           {activeFilterCount ? (
-            <button type="button" onClick={() => apply({ sprint: null, severity: null, status: null, area: null, reporter: null })} className="h-11 shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-600 shadow-sm hover:border-sky-300 hover:text-sky-700">
+            <button type="button" onClick={() => apply({ sprint: null, severity: null, status: null, area: null, reporter: null })} className="h-11 shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-600 shadow-sm hover:border-sky-300 hover:text-sky-700">
               Clear {activeFilterCount}
             </button>
           ) : null}
@@ -200,10 +197,10 @@ export function SmcGlobalFilterStrip({
               onChange={(event) => apply({ q: event.target.value || null })}
               placeholder="Search SMC..."
               aria-label="Search Setu Mission Control"
-              className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-800 outline-none placeholder:text-slate-400"
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400"
             />
             {searchValue ? (
-              <button type="button" onClick={() => apply({ q: null })} className="rounded-full px-1.5 text-xs font-black text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
+              <button type="button" onClick={() => apply({ q: null })} className="rounded-full px-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
             ) : null}
           </label>
         </div>
@@ -222,9 +219,9 @@ export function SmcGlobalFilterStrip({
           }}
           className="flex flex-wrap items-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3"
         >
-          <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Start<input name="start" type="date" defaultValue={searchParams.get('start') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none" /></label>
-          <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">End<input name="end" type="date" defaultValue={searchParams.get('end') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none" /></label>
-          <button type="submit" className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-sky-600">Apply range</button>
+          <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Start<input name="start" type="date" defaultValue={searchParams.get('start') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none" /></label>
+          <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">End<input name="end" type="date" defaultValue={searchParams.get('end') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none" /></label>
+          <button type="submit" className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-600">Apply range</button>
           <span className="text-xs text-slate-500">{compactValue(searchParams.get('start'), 'Start')} → {compactValue(searchParams.get('end'), 'Today')}</span>
         </form>
       ) : null}
