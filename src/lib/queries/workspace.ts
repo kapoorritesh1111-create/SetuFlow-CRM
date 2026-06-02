@@ -1,0 +1,150 @@
+import { createClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+
+export const SETU_FLOW_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+
+export type SprintIssue = {
+  id: string;
+  issue_ref: string | null;
+  issue_number: number | null;
+  sprint_number: number;
+  sprint_name: string;
+  title: string;
+  description: string | null;
+  category: string;
+  issue_category: string | null;
+  severity: string;
+  status: string;
+  area: string | null;
+  workflow_area: string | null;
+  sprint_target: string | null;
+  assigned_to: string | null;
+  reporter_name: string | null;
+  priority_rank: number | null;
+  effort: string | null;
+  story_points: number | null;
+  labels: string[] | null;
+  milestone: string | null;
+  client_org_id: string | null;
+  related_refs: string[] | null;
+  depends_on: string[] | null;
+  parent_ref: string | null;
+  pr_link: string | null;
+  fix_applied: string | null;
+  how_to_fix: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SprintMeta = {
+  id: string;
+  sprint_number: number;
+  sprint_name: string;
+  goal: string | null;
+  started_at: string | null;
+  closed_at: string | null;
+  capacity_points: number | null;
+  retro_notes: string | null;
+};
+
+export type WorkspaceStats = {
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+  deferred: number;
+  critical: number;
+  high: number;
+  activeSprint: number;
+  sprintMeta: SprintMeta | null;
+};
+
+export async function getWorkspaceIssues(sprintNumber?: number): Promise<SprintIssue[]> {
+  const admin = createAdminSupabaseClient();
+  const supabase = admin ?? await createClient();
+
+  let q = (supabase as any)
+    .from('sprint_issues')
+    .select('*')
+    .eq('organization_id', SETU_FLOW_ORG_ID)
+    .order('priority_rank', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (sprintNumber) {
+    q = q.eq('sprint_number', sprintNumber);
+  }
+
+  const { data, error } = await q;
+  if (error) return [];
+  return (data ?? []) as SprintIssue[];
+}
+
+export async function getWorkspaceStats(): Promise<WorkspaceStats> {
+  const issues = await getWorkspaceIssues();
+  const sprints = [...new Set(issues.map((i) => i.sprint_number))].sort((a, b) => b - a);
+  const activeSprint = sprints[0] ?? 23;
+
+  const open = issues.filter((i) => !['Resolved', "Won't Fix", 'Deferred'].includes(i.status ?? '')).length;
+  const inProgress = issues.filter((i) => i.status === 'In Progress').length;
+  const resolved = issues.filter((i) => ['Resolved', "Won't Fix"].includes(i.status ?? '')).length;
+  const deferred = issues.filter((i) => i.status === 'Deferred').length;
+  const critical = issues.filter((i) => i.severity?.toLowerCase() === 'critical' && open).length;
+  const high = issues.filter((i) => i.severity?.toLowerCase() === 'high' && !['Resolved', "Won't Fix", 'Deferred'].includes(i.status ?? '')).length;
+
+  // Get sprint meta
+  const admin = createAdminSupabaseClient();
+  const supabase = admin ?? await createClient();
+  const { data: sprintMetaData } = await (supabase as any)
+    .from('sprint_meta')
+    .select('*')
+    .eq('organization_id', SETU_FLOW_ORG_ID)
+    .eq('sprint_number', activeSprint)
+    .maybeSingle();
+
+  return {
+    total: issues.length,
+    open,
+    inProgress,
+    resolved,
+    deferred,
+    critical,
+    high,
+    activeSprint,
+    sprintMeta: sprintMetaData ?? null,
+  };
+}
+
+export async function getSprintList(): Promise<SprintMeta[]> {
+  const admin = createAdminSupabaseClient();
+  const supabase = admin ?? await createClient();
+  const { data } = await (supabase as any)
+    .from('sprint_meta')
+    .select('*')
+    .eq('organization_id', SETU_FLOW_ORG_ID)
+    .order('sprint_number', { ascending: false });
+  return (data ?? []) as SprintMeta[];
+}
+
+export async function getIssueComments(issueId: string) {
+  const admin = createAdminSupabaseClient();
+  const supabase = admin ?? await createClient();
+  const { data } = await (supabase as any)
+    .from('issue_comments')
+    .select('*')
+    .eq('issue_id', issueId)
+    .order('created_at', { ascending: true });
+  return data ?? [];
+}
+
+export async function getAgentActions(limit = 20) {
+  const admin = createAdminSupabaseClient();
+  const supabase = admin ?? await createClient();
+  const { data } = await (supabase as any)
+    .from('agent_actions')
+    .select('*')
+    .eq('organization_id', SETU_FLOW_ORG_ID)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}

@@ -35,7 +35,8 @@
       "admin": "/admin/organization",
       "capture": "/contact-exchange/scan",
       "myCard": "/contact-exchange/vcard",
-      "tasks": "/tasks"
+      "tasks": "/tasks",
+      "workspace": "/workspace"
     },
     "internal": {
       "dcc": "/internal-dcc/"
@@ -387,6 +388,21 @@
       "description": "Governed setup, not daily workflow. Keep list defaults, workspace controls, and catalog authority understandable.",
       "tone": "support",
       "items": [
+        {
+          "href": "/workspace",
+          "label": "Dev Workspace",
+          "exact": false,
+          "description": "Internal engineering workspace \u2014 issues, sprint planning, AI agent queue, and client tracking.",
+          "aliases": [
+            "workspace",
+            "issues",
+            "tracker",
+            "sprint",
+            "engineering"
+          ],
+          "navKey": "w",
+          "requiresAdmin": true
+        },
         {
           "href": "/products",
           "label": "Catalog",
