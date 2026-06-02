@@ -36,6 +36,18 @@ type AppShellProps = {
   userId?: string;
 };
 
+type DesktopNavItem = {
+  href: string;
+  label: string;
+  expandedLabel: string;
+  icon: string;
+};
+
+type DesktopNavGroup = {
+  title: string;
+  items: DesktopNavItem[];
+};
+
 const GLOBAL_SCOPE_KEY = 'setuflow-global-workspace-scope';
 const DESKTOP_SIDEBAR_KEY = 'setuflow-desktop-sidebar-mode';
 const MODE_AWARE_PREFIXES = ['/dashboard', '/leads', '/pipeline', '/quotes', '/orders', '/compliance'];
@@ -107,6 +119,7 @@ function GlobalWorkspaceFilter({ scope, onScopeChange }: { scope: WorkspaceScope
     { value: 'buyers', label: 'Buyer' },
     { value: 'suppliers', label: 'Supplier' },
   ];
+
   return (
     <div className="hidden items-center rounded-[0.9rem] bg-slate-100 p-1 md:flex" aria-label="Global workspace filter">
       {items.map((item) => (
@@ -114,7 +127,10 @@ function GlobalWorkspaceFilter({ scope, onScopeChange }: { scope: WorkspaceScope
           key={item.value}
           type="button"
           onClick={() => onScopeChange(item.value)}
-          className={cn('h-9 min-w-[4.5rem] rounded-[0.75rem] px-3 text-xs font-black transition', scope === item.value ? 'bg-[#0c7fff] text-white shadow-[0_8px_18px_rgba(12,127,255,0.25)]' : 'text-slate-600 hover:bg-white')}
+          className={cn(
+            'h-9 min-w-[4.5rem] rounded-[0.75rem] px-3 text-xs font-black transition',
+            scope === item.value ? 'bg-[#0c7fff] text-white shadow-[0_8px_18px_rgba(12,127,255,0.25)]' : 'text-slate-600 hover:bg-white',
+          )}
         >
           {item.label}
         </button>
@@ -146,34 +162,35 @@ function DesktopLogo({ organizationName, expanded }: { organizationName?: string
 
 function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: string; scope: WorkspaceScope; mode: Exclude<DesktopSidebarMode, 'hidden'>; canAccessAdmin: boolean }) {
   const expanded = mode === 'expanded';
-  const groups = [
+  const groups: DesktopNavGroup[] = [
     {
       title: 'Command',
       items: [
-        { href: '/dashboard', label: 'Dash', expandedLabel: 'Dashboard', icon: 'home' },
+        { href: PRODUCT_ROUTES.app.dashboard, label: 'Dash', expandedLabel: 'Dashboard', icon: 'home' },
         { href: '/dashboard/analytics', label: 'Analytics', expandedLabel: 'Analytics', icon: 'line-chart' },
+        { href: PRODUCT_ROUTES.app.reports, label: 'Reports', expandedLabel: 'Reports', icon: 'bar-chart' },
       ],
     },
     {
       title: 'Growth',
       items: [
-        { href: '/contact-exchange/scan', label: 'Capture', expandedLabel: 'Capture', icon: 'qrcode' },
+        { href: PRODUCT_ROUTES.app.capture, label: 'Capture', expandedLabel: 'Capture', icon: 'qrcode' },
         { href: PRODUCT_ROUTES.app.leads, label: 'Leads', expandedLabel: 'Leads', icon: 'users' },
-        { href: '/pipeline', label: 'Pipeline', expandedLabel: 'Pipeline', icon: 'filter' },
+        { href: PRODUCT_ROUTES.app.pipeline, label: 'Pipeline', expandedLabel: 'Pipeline', icon: 'filter' },
       ],
     },
     {
       title: 'Commercial',
       items: [
-        { href: '/quotes', label: 'Quotes', expandedLabel: 'Quotes', icon: 'comments-o' },
-        { href: '/approval-send', label: 'Send', expandedLabel: 'Send', icon: 'paper-plane-o' },
-        { href: '/orders', label: 'Orders', expandedLabel: 'Orders', icon: 'archive' },
+        { href: PRODUCT_ROUTES.app.quotes, label: 'Quotes', expandedLabel: 'Quotes', icon: 'comments-o' },
+        { href: PRODUCT_ROUTES.app.integrations, label: 'Send', expandedLabel: 'Send', icon: 'paper-plane-o' },
+        { href: PRODUCT_ROUTES.app.orders, label: 'Orders', expandedLabel: 'Orders', icon: 'archive' },
       ],
     },
     {
       title: 'Work',
       items: [
-        { href: '/tasks', label: 'Tasks', expandedLabel: 'Tasks', icon: 'check-square-o' },
+        { href: PRODUCT_ROUTES.app.tasks, label: 'Tasks', expandedLabel: 'Tasks', icon: 'check-square-o' },
         { href: '/trade-events', label: 'Events', expandedLabel: 'Events', icon: 'calendar' },
         { href: '/documents', label: 'Docs', expandedLabel: 'Documents', icon: 'file-text-o' },
       ],
@@ -181,11 +198,12 @@ function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: strin
     {
       title: 'Setup',
       items: [
-        { href: '/products', label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' },
+        { href: PRODUCT_ROUTES.app.products, label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' },
         ...(canAccessAdmin ? [{ href: '/admin', label: 'Admin', expandedLabel: 'Admin', icon: 'lock' }] : []),
       ],
     },
   ];
+
   return (
     <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-3 pt-3" aria-label="Desktop workflow navigation">
       <div className="flex flex-col gap-4">
@@ -223,13 +241,7 @@ function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmi
       <aside className="sticky top-0 hidden h-screen w-16 shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white md:flex">
         <div className="shrink-0 space-y-3">
           <DesktopLogo organizationName={organizationName} expanded={false} />
-          <button
-            type="button"
-            onClick={() => onModeChange('collapsed')}
-            className="flex h-10 w-full items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14"
-            aria-label="Show desktop navigation"
-            title="Show navigation"
-          >
+          <button type="button" onClick={() => onModeChange('collapsed')} className="flex h-10 w-full items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Show desktop navigation" title="Show navigation">
             <FaIcon icon="bars" fixedWidth />
           </button>
         </div>
@@ -245,22 +257,10 @@ function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmi
           <DesktopLogo organizationName={organizationName} expanded={expanded} />
           {expanded ? (
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onModeChange('collapsed')}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14"
-                aria-label="Collapse desktop sidebar"
-                title="Collapse sidebar"
-              >
+              <button type="button" onClick={() => onModeChange('collapsed')} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Collapse desktop sidebar" title="Collapse sidebar">
                 <FaIcon icon="angle-double-left" fixedWidth />
               </button>
-              <button
-                type="button"
-                onClick={() => onModeChange('hidden')}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14"
-                aria-label="Hide desktop navigation"
-                title="Hide navigation"
-              >
+              <button type="button" onClick={() => onModeChange('hidden')} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Hide desktop navigation" title="Hide navigation">
                 <FaIcon icon="bars" fixedWidth />
               </button>
             </div>
@@ -268,22 +268,10 @@ function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmi
         </div>
         {!expanded ? (
           <div className="mt-3 flex justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => onModeChange('expanded')}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14"
-              aria-label="Expand desktop sidebar"
-              title="Expand sidebar"
-            >
+            <button type="button" onClick={() => onModeChange('expanded')} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Expand desktop sidebar" title="Expand sidebar">
               <FaIcon icon="angle-double-right" fixedWidth />
             </button>
-            <button
-              type="button"
-              onClick={() => onModeChange('hidden')}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14"
-              aria-label="Hide desktop navigation"
-              title="Hide navigation"
-            >
+            <button type="button" onClick={() => onModeChange('hidden')} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Hide desktop navigation" title="Hide navigation">
               <FaIcon icon="bars" fixedWidth />
             </button>
           </div>
@@ -335,20 +323,23 @@ export function AppShell({ children, profile, organization, membership, currentR
   const [desktopSidebarMode, setDesktopSidebarMode] = useState<DesktopSidebarMode>('collapsed');
   const shareHref = useMemo(() => shareLinkFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
   const downloadVcfHref = useMemo(() => downloadVcfHrefFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
-  const signedInForMobile = useMemo(() => ({
-    name: profileName,
-    initials: getInitials(profileName),
-    email: profile?.email,
-    organizationName: organization?.name ?? 'SETU Flow',
-    roleLabel,
-    primaryPhone: cardSettings?.primaryPhone ?? null,
-    secondaryPhone: cardSettings?.secondaryPhone ?? null,
-    website: cardSettings?.website ?? null,
-    address: cardSettings?.address ?? null,
-    avatarUrl: profile?.avatar_url ?? null,
-    shareHref,
-    downloadVcfHref,
-  }), [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, downloadVcfHref, organization?.name, profile?.avatar_url, profile?.email, profileName, roleLabel, shareHref]);
+  const signedInForMobile = useMemo(
+    () => ({
+      name: profileName,
+      initials: getInitials(profileName),
+      email: profile?.email,
+      organizationName: organization?.name ?? 'SETU Flow',
+      roleLabel,
+      primaryPhone: cardSettings?.primaryPhone ?? null,
+      secondaryPhone: cardSettings?.secondaryPhone ?? null,
+      website: cardSettings?.website ?? null,
+      address: cardSettings?.address ?? null,
+      avatarUrl: profile?.avatar_url ?? null,
+      shareHref,
+      downloadVcfHref,
+    }),
+    [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, downloadVcfHref, organization?.name, profile?.avatar_url, profile?.email, profileName, roleLabel, shareHref],
+  );
   const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders', '/tasks'];
   const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const desktopOnlyRoutes = ['/pipeline', '/quotes', '/products', '/admin', '/approval-send', '/reports'];
@@ -395,18 +386,24 @@ export function AppShell({ children, profile, organization, membership, currentR
     <>
       {shouldUseCanonicalMobileShell ? (
         <div className="md:hidden">
-          <MobileShell signedIn={signedInForMobile} canonical>{children}</MobileShell>
+          <MobileShell signedIn={signedInForMobile} canonical>
+            {children}
+          </MobileShell>
         </div>
       ) : null}
       <div className={cn('min-h-screen bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]', shouldUseCanonicalMobileShell ? 'hidden md:block' : undefined)}>
-        <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">Skip to content</a>
+        <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">
+          Skip to content
+        </a>
         <div className="flex min-h-screen">
           <DesktopSidebar organizationName={organization?.name} pathname={pathname} scope={globalScope} mode={desktopSidebarMode} canAccessAdmin={canAccessAdmin} onModeChange={changeDesktopSidebarMode} />
           <main id="app-content" className="min-w-0 flex-1">
             <header className="sticky top-0 z-30 hidden border-b border-slate-200/70 bg-white/85 px-6 py-4 backdrop-blur-xl md:block">
               <div className="flex items-center justify-between gap-4">
-                <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0c7fff]">Trade command center</p><h1 className="mt-1 text-2xl font-black text-slate-950">{routeMeta.title}</h1></div>
-                {/* Header right cluster — order: filter | offline | vCard | quickLead | [gear:dashboard-only] | bell | avatar */}
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0c7fff]">Trade command center</p>
+                  <h1 className="mt-1 text-2xl font-black text-slate-950">{routeMeta.title}</h1>
+                </div>
                 <div className="flex items-center gap-2">
                   <GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} />
                   <OfflineIndicator />
@@ -416,7 +413,6 @@ export function AppShell({ children, profile, organization, membership, currentR
                   <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
                     ＋ Quick Lead
                   </Link>
-                  {/* Gear — only on /dashboard, fires window event to toggle customize panel */}
                   {pathname.startsWith('/dashboard') ? (
                     <button
                       type="button"
@@ -425,13 +421,10 @@ export function AppShell({ children, profile, organization, membership, currentR
                       onClick={() => window.dispatchEvent(new CustomEvent('setu:dashboard:toggle-customize'))}
                       className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                     >
-                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.25" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.21 7.2a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
+                      <FaIcon icon="cog" fixedWidth />
                     </button>
                   ) : null}
-                  {/* Bell — always visible in header, inline (no fixed floating) */}
-                  {organizationId && userId ? (
-                    <InAppNotificationCenter organizationId={organizationId} userId={userId} variant="inline" />
-                  ) : null}
+                  {organizationId && userId ? <InAppNotificationCenter organizationId={organizationId} userId={userId} variant="inline" /> : null}
                   <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} />
                 </div>
               </div>
@@ -442,7 +435,9 @@ export function AppShell({ children, profile, organization, membership, currentR
             </div>
           </main>
         </div>
-        <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} aria-label="Quick Lead" className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-[#0c7fff] to-[#0052cc] text-3xl font-black text-white shadow-[0_6px_22px_rgba(12,127,255,0.5)] ring-2 ring-white/80 md:hidden">+</Link>
+        <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} aria-label="Quick Lead" className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-[#0c7fff] to-[#0052cc] text-3xl font-black text-white shadow-[0_6px_22px_rgba(12,127,255,0.5)] ring-2 ring-white/80 md:hidden">
+          +
+        </Link>
         <MobileTabBar />
       </div>
       <SetuGuruWidget pathname={pathname} routeTitle={routeMeta.title} organizationName={organization?.name} roleLabel={roleLabel} />
