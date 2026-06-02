@@ -14,6 +14,7 @@ export type SmcFilters = {
   status?: string;
   area?: string;
   reporter?: string;
+  q?: string;
 };
 
 function first(value: string | string[] | undefined) {
@@ -40,6 +41,7 @@ export function normalizeSmcFilters(searchParams?: SmcFilterInput): SmcFilters {
     status: first(searchParams?.status) || undefined,
     area: first(searchParams?.area) || undefined,
     reporter: first(searchParams?.reporter) || undefined,
+    q: first(searchParams?.q)?.trim() || undefined,
   };
 }
 
@@ -119,6 +121,27 @@ export function issueMatchesRange(issue: SprintIssue, filters: SmcFilters, issue
     || isBetween(safeDate(issue.resolved_at), start, end);
 }
 
+function issueMatchesSearch(issue: SprintIssue, query?: string) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  const searchable = [
+    issue.issue_ref,
+    issue.title,
+    issue.description,
+    issue.area,
+    issue.workflow_area,
+    issue.status,
+    issue.severity,
+    issue.assigned_to,
+    issue.reporter_name,
+    issue.sprint_name,
+    issue.sprint_label,
+    issue.issue_category,
+    issue.effort,
+  ];
+  return searchable.some((value) => String(value ?? '').toLowerCase().includes(q));
+}
+
 export function issueMatchesSmcFilters(issue: SprintIssue, filters: SmcFilters, issues: SprintIssue[]) {
   if (filters.sprint && issue.sprint_number !== filters.sprint) return false;
   if (filters.severity && issue.severity !== filters.severity) return false;
@@ -131,6 +154,7 @@ export function issueMatchesSmcFilters(issue: SprintIssue, filters: SmcFilters, 
     const reporter = issue.reporter_name ?? '';
     if (reporter !== filters.reporter) return false;
   }
+  if (!issueMatchesSearch(issue, filters.q)) return false;
   return issueMatchesRange(issue, filters, issues);
 }
 
@@ -151,6 +175,7 @@ export function appendSmcQuery(path: string, filters: SmcFilters, overrides: Par
   if (merged.status) params.set('status', merged.status);
   if (merged.area) params.set('area', merged.area);
   if (merged.reporter) params.set('reporter', merged.reporter);
+  if (merged.q) params.set('q', merged.q);
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }
