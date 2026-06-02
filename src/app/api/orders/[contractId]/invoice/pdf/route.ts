@@ -51,13 +51,19 @@ export async function GET(_request: Request, { params }: { params: { contractId:
       .maybeSingle()
     : { data: null };
 
-  const { data: lineRows } = await db
+  const { data: lineRows, error: lineRowsError } = await db
     .from('contract_line_items')
     .select('id, product_id, product_variant_id, quantity, unit_price, currency, notes')
     .eq('contract_id', contract.id)
     .order('id', { ascending: true });
 
+  if (lineRowsError) return NextResponse.json({ error: lineRowsError.message }, { status: 500 });
+
   const linesRaw = Array.isArray(lineRows) ? lineRows : [];
+  if (linesRaw.length === 0) {
+    return NextResponse.json({ error: 'No line items found for this order. Add product lines before generating the invoice PDF.' }, { status: 422 });
+  }
+
   const productIds = Array.from(new Set(linesRaw.map((line: any) => line.product_id).filter(Boolean)));
   const variantIds = Array.from(new Set(linesRaw.map((line: any) => line.product_variant_id).filter(Boolean)));
 
