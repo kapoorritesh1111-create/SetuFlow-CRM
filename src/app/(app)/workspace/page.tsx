@@ -9,6 +9,20 @@ import {
 export const dynamic = 'force-dynamic';
 
 const CLOSED_STATUSES = ['Resolved', "Won't Fix", 'Deferred'] as const;
+const RANGE_OPTIONS = ['14d', '30d', '90d', 'all'] as const;
+
+type RangeOption = (typeof RANGE_OPTIONS)[number] | 'custom';
+type AnalyticsBucket = 'day' | 'week' | 'month';
+type SearchParams = { range?: string; start?: string; end?: string };
+
+type TimelinePoint = {
+  key: string;
+  label: string;
+  created: number;
+  resolved: number;
+  updated: number;
+  risk: number;
+};
 
 const SEVERITY_COLORS: Record<string, string> = {
   Critical: 'border-red-400/30 bg-red-500/10 text-red-200 ring-red-400/20',
@@ -31,15 +45,107 @@ const panelClass =
 const softPanelClass =
   'rounded-[1.4rem] border border-white/10 bg-white/[0.045] shadow-[0_16px_44px_rgba(2,6,23,0.24)] ring-1 ring-white/[0.03]';
 
+type IconName = 'readiness' | 'shield' | 'sprint' | 'blocker' | 'agent' | 'deploy' | 'trend' | 'flow' | 'activity' | 'calendar';
+
 function isClosedStatus(status?: string | null) {
   return CLOSED_STATUSES.includes((status ?? '') as (typeof CLOSED_STATUSES)[number]);
 }
 
+function safeDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function startOfUtcDay(value: Date) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function endOfUtcDay(value: Date) {
+  const date = startOfUtcDay(value);
+  date.setUTCHours(23, 59, 59, 999);
+  return date;
+}
+
+function dateKey(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function shortDate(value: Date, bucket: AnalyticsBucket) {
+  if (bucket === 'month') return value.toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+  if (bucket === 'week') return value.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return value.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+function addBucket(date: Date, bucket: AnalyticsBucket) {
+  const next = new Date(date);
+  if (bucket === 'month') next.setUTCMonth(next.getUTCMonth() + 1, 1);
+  else if (bucket === 'week') next.setUTCDate(next.getUTCDate() + 7);
+  else next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+function diffDays(start: Date, end: Date) {
+  return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
+}
+
+function normalizeRange(value?: string | null): RangeOption {
+  if (value === '30d' || value === '90d' || value === 'all' || value === 'custom') return value;
+  return '14d';
+}
+
+function getOldestIssueDate(issues: SprintIssue[]) {
+  const oldest = issues
+    .map((issue) => safeDate(issue.created_at))
+    .filter(Boolean)
+    .sort((a, b) => a!.getTime() - b!.getTime())[0];
+  return startOfUtcDay(oldest ?? new Date());
+}
+
+function parseDateOnly(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getAnalyticsRange(issues: SprintIssue[], searchParams?: SearchParams) {
+  const range = normalizeRange(searchParams?.range);
+  const today = startOfUtcDay(new Date());
+  let start = new Date(today);
+  let end = endOfUtcDay(today);
+  let label = 'Last 14 days';
+
+  if (range === 'custom') {
+    const customStart = parseDateOnly(searchParams?.start);
+    const customEnd = parseDateOnly(searchParams?.end);
+    start = customStart ?? getOldestIssueDate(issues);
+    end = endOfUtcDay(customEnd ?? today);
+    label = `${shortDate(start, 'day')} - ${shortDate(end, 'day')}`;
+  } else if (range === 'all') {
+    start = getOldestIssueDate(issues);
+    label = 'All time';
+  } else {
+    const days = range === '90d' ? 90 : range === '30d' ? 30 : 14;
+    start.setUTCDate(today.getUTCDate() - (days - 1));
+    label = `Last ${days} days`;
+  }
+
+  if (start.getTime() > end.getTime()) {
+    const fallback = start;
+    start = startOfUtcDay(end);
+    end = endOfUtcDay(fallback);
+  }
+
+  const days = diffDays(start, end);
+  const bucket: AnalyticsBucket = days > 210 ? 'month' : days > 45 ? 'week' : 'day';
+
+  return { range, start: startOfUtcDay(start), end, label, bucket, days };
+}
+
 function daysSince(value?: string | null) {
-  if (!value) return 0;
-  const time = new Date(value).getTime();
-  if (Number.isNaN(time)) return 0;
-  return Math.max(0, Math.floor((Date.now() - time) / 86_400_000));
+  const date = safeDate(value);
+  if (!date) return 0;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
 }
 
 function severityWeight(issue: SprintIssue) {
@@ -68,12 +174,174 @@ function readinessLabel(readiness: number, critical: number, high: number) {
   return { label: 'Needs QA', tone: 'text-amber-200', badge: 'border-amber-400/30 bg-amber-500/12 text-amber-100' };
 }
 
-export default async function WorkspaceDashboardPage() {
+function safeNumber(value: number) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+function isBetween(date: Date | null, start: Date, end: Date) {
+  if (!date) return false;
+  const time = date.getTime();
+  return time >= start.getTime() && time <= end.getTime();
+}
+
+function buildTimeline(issues: SprintIssue[], start: Date, end: Date, bucket: AnalyticsBucket): TimelinePoint[] {
+  const points: TimelinePoint[] = [];
+  let cursor = startOfUtcDay(start);
+
+  while (cursor.getTime() <= end.getTime()) {
+    const bucketStart = new Date(cursor);
+    const bucketEnd = endOfUtcDay(addBucket(bucketStart, bucket));
+    bucketEnd.setUTCDate(bucketEnd.getUTCDate() - 1);
+    const clippedEnd = bucketEnd.getTime() > end.getTime() ? end : bucketEnd;
+    const endTime = clippedEnd.getTime();
+
+    const created = issues.filter((issue) => isBetween(safeDate(issue.created_at), bucketStart, clippedEnd)).length;
+    const resolved = issues.filter((issue) => isBetween(safeDate(issue.resolved_at), bucketStart, clippedEnd)).length;
+    const updated = issues.filter((issue) => isBetween(safeDate(issue.updated_at), bucketStart, clippedEnd)).length;
+    const risk = issues
+      .filter((issue) => (safeDate(issue.created_at)?.getTime() ?? Infinity) <= endTime)
+      .filter((issue) => {
+        const resolvedAt = safeDate(issue.resolved_at);
+        return !resolvedAt || resolvedAt.getTime() > endTime;
+      })
+      .filter((issue) => !isClosedStatus(issue.status) || !issue.resolved_at)
+      .reduce((sum, issue) => sum + severityWeight(issue), 0);
+
+    points.push({
+      key: `${dateKey(bucketStart)}-${bucket}`,
+      label: shortDate(bucketStart, bucket),
+      created,
+      resolved,
+      updated,
+      risk,
+    });
+
+    cursor = addBucket(cursor, bucket);
+  }
+
+  return points;
+}
+
+function sumPoints(points: TimelinePoint[], key: 'created' | 'resolved' | 'updated' | 'risk') {
+  return points.reduce((sum, point) => sum + point[key], 0);
+}
+
+function deltaLabel(current: number, previous: number, suffix = '') {
+  const diff = current - previous;
+  if (diff === 0) return `No change${suffix}`;
+  return `${diff > 0 ? '+' : ''}${diff}${suffix}`;
+}
+
+function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {
+  const common = { className, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+  if (name === 'readiness') return <svg {...common}><path d="M12 3a9 9 0 1 0 9 9" /><path d="M12 12 20 4" /><path d="M15 4h5v5" /></svg>;
+  if (name === 'shield') return <svg {...common}><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z" /><path d="m9 12 2 2 4-5" /></svg>;
+  if (name === 'sprint') return <svg {...common}><path d="M4 19h16" /><path d="M7 16V8" /><path d="M12 16V5" /><path d="M17 16v-6" /><path d="M6 8h3" /><path d="M11 5h3" /><path d="M16 10h3" /></svg>;
+  if (name === 'blocker') return <svg {...common}><path d="M12 9v4" /><path d="M12 17h.01" /><path d="M10.3 4.3 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.7 4.3a2 2 0 0 0-3.4 0Z" /></svg>;
+  if (name === 'agent') return <svg {...common}><rect x="5" y="8" width="14" height="10" rx="3" /><path d="M9 8V5" /><path d="M15 8V5" /><path d="M9 13h.01" /><path d="M15 13h.01" /><path d="M10 17h4" /></svg>;
+  if (name === 'deploy') return <svg {...common}><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" /></svg>;
+  if (name === 'trend') return <svg {...common}><path d="M4 19V5" /><path d="M4 19h16" /><path d="m6 15 4-4 3 3 6-7" /><path d="M16 7h3v3" /></svg>;
+  if (name === 'calendar') return <svg {...common}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4" /><path d="M16 3v4" /><path d="M4 10h16" /></svg>;
+  if (name === 'flow') return <svg {...common}><path d="M7 7h10" /><path d="M7 12h6" /><path d="M7 17h10" /><circle cx="4" cy="7" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="17" r="1" /></svg>;
+  return <svg {...common}><path d="M12 20v-6" /><path d="M18 20V10" /><path d="M6 20v-3" /><path d="M4 4h16" /><path d="M4 8h16" /></svg>;
+}
+
+function Sparkline({ values }: { values: number[] }) {
+  const max = Math.max(...values, 1);
+  const points = values.map((value, index) => {
+    const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
+    const y = 44 - (safeNumber(value) / max) * 36;
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg viewBox="0 0 100 48" className="h-12 w-full overflow-visible" aria-hidden="true">
+      <path d="M0 44H100" stroke="rgba(148,163,184,0.18)" strokeWidth="1" />
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      {values.map((value, index) => {
+        const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
+        const y = 44 - (safeNumber(value) / max) * 36;
+        return <circle key={`${index}-${value}`} cx={x} cy={y} r="2.2" fill="currentColor" />;
+      })}
+    </svg>
+  );
+}
+
+function ActivityBars({ timeline }: { timeline: TimelinePoint[] }) {
+  const max = Math.max(...timeline.flatMap((point) => [point.created, point.resolved, point.updated]), 1);
+  return (
+    <div className="mt-4 overflow-x-auto pb-1">
+      <div className="flex min-w-[620px] items-end gap-2">
+        {timeline.map((point) => (
+          <div key={point.key} className="flex flex-1 flex-col items-center gap-2">
+            <div className="flex h-28 w-full items-end justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.025] px-1.5 py-2">
+              <span title={`${point.created} created`} className="w-2 rounded-t bg-sky-400/80" style={{ height: `${Math.max(4, (point.created / max) * 92)}px` }} />
+              <span title={`${point.resolved} resolved`} className="w-2 rounded-t bg-emerald-400/80" style={{ height: `${Math.max(4, (point.resolved / max) * 92)}px` }} />
+              <span title={`${point.updated} updated`} className="w-2 rounded-t bg-violet-400/80" style={{ height: `${Math.max(4, (point.updated / max) * 92)}px` }} />
+            </div>
+            <span className="max-w-14 truncate text-[10px] text-slate-500">{point.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  sub,
+  tone,
+  trend,
+}: {
+  icon: IconName;
+  label: string;
+  value: string | number;
+  sub: string;
+  tone: string;
+  trend: string;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-white/[0.07]">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent opacity-0 transition group-hover:opacity-100" />
+      <div className="flex items-start justify-between gap-3">
+        <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.055] ${tone}`}>
+          <Icon name={icon} />
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/[0.035] px-2 py-0.5 text-[10px] font-bold text-slate-400">{trend}</span>
+      </div>
+      <p className="mt-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className={`mt-2 text-3xl font-black tracking-tight ${tone}`}>{value}</p>
+      <p className="mt-1 text-xs leading-5 text-slate-400">{sub}</p>
+    </div>
+  );
+}
+
+function rangeHref(range: RangeOption) {
+  return `/workspace?range=${range}#analytics`;
+}
+
+export default async function WorkspaceDashboardPage({ searchParams }: { searchParams?: SearchParams }) {
   const [stats, issues, actions] = await Promise.all([
     getWorkspaceStats(),
     getWorkspaceIssues(),
     getAgentActions(6),
   ]);
+
+  const analytics = getAnalyticsRange(issues, searchParams);
+  const timeline = buildTimeline(issues, analytics.start, analytics.end, analytics.bucket);
+  const midpoint = Math.max(1, Math.floor(timeline.length / 2));
+  const previousSegment = timeline.slice(0, midpoint);
+  const currentSegment = timeline.slice(midpoint);
+  const selectedCreated = sumPoints(timeline, 'created');
+  const selectedResolved = sumPoints(timeline, 'resolved');
+  const selectedUpdated = sumPoints(timeline, 'updated');
+  const currentCreated = sumPoints(currentSegment, 'created');
+  const previousCreated = sumPoints(previousSegment, 'created');
+  const currentResolved = sumPoints(currentSegment, 'resolved');
+  const previousResolved = sumPoints(previousSegment, 'resolved');
+  const currentRisk = timeline[timeline.length - 1]?.risk ?? 0;
+  const previousRisk = timeline[0]?.risk ?? currentRisk;
 
   const activeIssues = issues.filter((issue) => !isClosedStatus(issue.status));
   const sprintIssues = issues.filter((issue) => issue.sprint_number === stats.activeSprint);
@@ -85,14 +353,14 @@ export default async function WorkspaceDashboardPage() {
   const readiness = Math.max(0, Math.min(100, overallPct - stats.critical * 14 - stats.high * 4 - Math.min(weightedOpenRisk, 18)));
   const readinessState = readinessLabel(readiness, stats.critical, stats.high);
   const demoRisk = stats.critical > 0 ? 'High' : stats.high > 2 ? 'Medium' : 'Low';
-  const demoRiskClass = demoRisk === 'High'
-    ? 'text-red-200'
-    : demoRisk === 'Medium'
-      ? 'text-amber-200'
-      : 'text-emerald-200';
+  const demoRiskClass = demoRisk === 'High' ? 'text-red-200' : demoRisk === 'Medium' ? 'text-amber-200' : 'text-emerald-200';
   const highestRiskIssues = [...activeIssues].sort((a, b) => scoreIssueRisk(b) - scoreIssueRisk(a)).slice(0, 5);
   const nextAgentIssue = highestRiskIssues[0] ?? activeIssues[0] ?? null;
   const aiQueue = activeIssues.filter((issue) => issue.status === 'Open').length;
+  const recentMovement = [...issues]
+    .filter((issue) => issue.updated_at)
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 6);
   const qaSignals = [
     { label: 'Docs workspace', href: '/documents', value: 'Linked proof', icon: 'DOC' },
     { label: 'E2E testing', href: '/internal/setuflow-e2e-testing.html', value: 'QA suite', icon: 'QA' },
@@ -106,7 +374,7 @@ export default async function WorkspaceDashboardPage() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/50 to-transparent" />
         <div className="relative space-y-5 p-4 sm:p-5 lg:p-6">
           <section className={`${panelClass} overflow-hidden`}>
-            <div className="grid gap-5 p-5 lg:grid-cols-[1.25fr_2fr] lg:p-6">
+            <div className="grid gap-5 p-5 lg:grid-cols-[1.15fr_2.15fr] lg:p-6">
               <div className="space-y-5">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.28em] text-violet-300/90">Setu Flow</p>
@@ -119,13 +387,13 @@ export default async function WorkspaceDashboardPage() {
                 </div>
                 <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-1">
                   {[
-                    'Real-time sprint health',
-                    'AI agent queue',
-                    'Risk and readiness intelligence',
-                    'Client impact tracking',
-                  ].map((item) => (
+                    ['Real-time sprint health', 'trend'],
+                    ['AI agent queue', 'agent'],
+                    ['Risk and readiness intelligence', 'shield'],
+                    ['Client impact tracking', 'flow'],
+                  ].map(([item, icon]) => (
                     <div key={item} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
-                      <span className="h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_18px_rgba(167,139,250,0.9)]" />
+                      <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><Icon name={icon as IconName} className="h-4 w-4" /></span>
                       <span>{item}</span>
                     </div>
                   ))}
@@ -141,14 +409,17 @@ export default async function WorkspaceDashboardPage() {
                       Active sprint S{stats.activeSprint}{stats.sprintMeta?.goal ? ` - ${stats.sprintMeta.goal}` : ''}
                     </p>
                   </div>
-                  <span className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs font-bold ${readinessState.badge}`}>
-                    Production: {stats.critical > 0 ? 'Needs Review' : 'Ready'}
+                  <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${readinessState.badge}`}>
+                    <Icon name="deploy" className="h-3.5 w-3.5" /> Production: {stats.critical > 0 ? 'Needs Review' : 'Ready'}
                   </span>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                   <div className="rounded-3xl border border-violet-400/20 bg-violet-500/10 p-4 xl:col-span-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">Release readiness</p>
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-9 w-9 place-items-center rounded-2xl bg-violet-400/15 text-violet-100"><Icon name="readiness" className="h-4.5 w-4.5" /></span>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">Release readiness</p>
+                    </div>
                     <div className="mt-4 flex items-center gap-4">
                       <div
                         className="grid h-20 w-20 shrink-0 place-items-center rounded-full"
@@ -164,18 +435,10 @@ export default async function WorkspaceDashboardPage() {
                     </div>
                   </div>
 
-                  {[
-                    { label: 'Demo risk', value: demoRisk, sub: `${stats.high} high priority open`, tone: demoRiskClass },
-                    { label: 'Active sprint', value: `S${stats.activeSprint}`, sub: `${sprintOpenIssues.length} remaining`, tone: 'text-emerald-200' },
-                    { label: 'Critical blockers', value: stats.critical, sub: stats.critical ? 'Needs attention' : "You're clear", tone: stats.critical ? 'text-red-200' : 'text-emerald-200' },
-                    { label: 'AI queue health', value: aiQueue, sub: `${stats.inProgress} in progress`, tone: 'text-amber-200' },
-                  ].map((metric) => (
-                    <div key={metric.label} className="rounded-3xl border border-white/10 bg-white/[0.045] p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{metric.label}</p>
-                      <p className={`mt-3 text-3xl font-black ${metric.tone}`}>{metric.value}</p>
-                      <p className="mt-1 text-xs text-slate-400">{metric.sub}</p>
-                    </div>
-                  ))}
+                  <MetricCard icon="shield" label="Demo risk" value={demoRisk} sub={`${stats.high} high priority open`} tone={demoRiskClass} trend={stats.critical ? 'Blocked' : 'Live'} />
+                  <MetricCard icon="sprint" label="Active sprint" value={`S${stats.activeSprint}`} sub={`${sprintOpenIssues.length} remaining`} tone="text-emerald-200" trend={`${sprintPct}% done`} />
+                  <MetricCard icon="blocker" label="Critical blockers" value={stats.critical} sub={stats.critical ? 'Needs attention' : "You're clear"} tone={stats.critical ? 'text-red-200' : 'text-emerald-200'} trend={stats.critical ? 'Act now' : 'Clear'} />
+                  <MetricCard icon="agent" label="AI queue health" value={aiQueue} sub={`${stats.inProgress} in progress`} tone="text-amber-200" trend={`${selectedUpdated} moves`} />
                 </div>
               </div>
             </div>
@@ -183,14 +446,19 @@ export default async function WorkspaceDashboardPage() {
 
           <section className="grid gap-4 xl:grid-cols-[1.1fr_2.1fr_1.15fr_1.1fr]">
             <div className={`${panelClass} p-4 sm:p-5`}>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Sprint health</p>
-              <h3 className="mt-2 text-lg font-bold text-white">Sprint {stats.activeSprint}</h3>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Sprint health</p>
+                  <h3 className="mt-2 text-lg font-bold text-white">Sprint {stats.activeSprint}</h3>
+                </div>
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-sky-400/15 text-sky-200"><Icon name="sprint" /></span>
+              </div>
               <div className="mt-5 flex items-center gap-4">
                 <div
                   className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
                   style={{ background: `conic-gradient(rgb(96 165 250) ${sprintPct}%, rgba(148,163,184,0.15) 0)` }}
                 >
-                  <div className="grid h-19 w-19 place-items-center rounded-full bg-[#070b17] text-xl font-black text-white">{sprintPct}%</div>
+                  <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-[#070b17] text-xl font-black text-white">{sprintPct}%</div>
                 </div>
                 <div className="min-w-0 flex-1 space-y-2 text-sm">
                   <div className="flex justify-between gap-3"><span className="text-slate-400">Resolved</span><span className="font-bold text-white">{sprintResolved}</span></div>
@@ -306,6 +574,61 @@ export default async function WorkspaceDashboardPage() {
             </div>
           </section>
 
+          <section id="analytics" className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+            <div className={`${panelClass} p-4 sm:p-5`}>
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Timeline analytics</p>
+                  <h3 className="mt-1 text-lg font-bold text-white">What happened over time</h3>
+                  <p className="mt-1 text-xs text-slate-400">{analytics.label} - grouped by {analytics.bucket}. Created, resolved, updated, and risk trend are derived from live tracker timestamps.</p>
+                </div>
+                <div className="flex flex-col gap-2 xl:items-end">
+                  <div className="flex flex-wrap gap-2">
+                    {RANGE_OPTIONS.map((range) => (
+                      <Link key={range} href={rangeHref(range)} className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${analytics.range === range ? 'border-violet-300/50 bg-violet-500/20 text-white' : 'border-white/10 bg-white/[0.035] text-slate-400 hover:text-white'}`}>
+                        {range === 'all' ? 'All time' : range.toUpperCase()}
+                      </Link>
+                    ))}
+                  </div>
+                  <form action="/workspace" className="flex flex-wrap items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-2">
+                    <input type="hidden" name="range" value="custom" />
+                    <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Start<input name="start" type="date" defaultValue={searchParams?.start ?? ''} className="mt-1 block rounded-xl border border-white/10 bg-slate-950 px-2 py-1.5 text-xs text-slate-200 outline-none" /></label>
+                    <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">End<input name="end" type="date" defaultValue={searchParams?.end ?? ''} className="mt-1 block rounded-xl border border-white/10 bg-slate-950 px-2 py-1.5 text-xs text-slate-200 outline-none" /></label>
+                    <button type="submit" className="rounded-xl bg-violet-500 px-3 py-2 text-xs font-black text-white hover:bg-violet-400">Apply</button>
+                  </form>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-2xl border border-sky-400/20 bg-sky-500/10 px-3 py-2"><p className="font-black text-sky-200">{selectedCreated}</p><p className="text-slate-400">Created</p></div>
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2"><p className="font-black text-emerald-200">{selectedResolved}</p><p className="text-slate-400">Resolved</p></div>
+                <div className="rounded-2xl border border-violet-400/20 bg-violet-500/10 px-3 py-2"><p className="font-black text-violet-200">{selectedUpdated}</p><p className="text-slate-400">Updated</p></div>
+              </div>
+              <ActivityBars timeline={timeline} />
+              <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-400">
+                <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-sky-400" /> Created {deltaLabel(currentCreated, previousCreated, ' vs previous period')}</span>
+                <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Resolved {deltaLabel(currentResolved, previousResolved, ' vs previous period')}</span>
+                <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-violet-400" /> Updated activity</span>
+              </div>
+            </div>
+
+            <div className={`${panelClass} p-4 sm:p-5`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Open risk trend</p>
+                  <h3 className="mt-1 text-lg font-bold text-white">Risk pressure</h3>
+                </div>
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-400/15 text-amber-200"><Icon name="trend" /></span>
+              </div>
+              <div className="mt-5 text-amber-200">
+                <Sparkline values={timeline.map((point) => point.risk)} />
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><p className="text-slate-400">Current risk</p><p className="mt-1 text-2xl font-black text-amber-200">{currentRisk}</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3"><p className="text-slate-400">Range change</p><p className="mt-1 text-2xl font-black text-slate-100">{deltaLabel(currentRisk, previousRisk)}</p></div>
+              </div>
+            </div>
+          </section>
+
           <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
             <div className={`${panelClass} p-4 sm:p-5`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -326,15 +649,19 @@ export default async function WorkspaceDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-violet-300/20 bg-gradient-to-br from-violet-500/18 via-slate-950/70 to-sky-500/12 p-5 shadow-[0_24px_70px_rgba(76,29,149,0.25)]">
-              <div className="flex items-start gap-4">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-violet-500/25 text-2xl">*</div>
-                <div>
-                  <p className="text-sm font-bold text-violet-100">Today's Focus</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Close {Math.max(stats.critical, Math.min(3, activeIssues.length))} critical/high-impact issues to improve release readiness.
-                  </p>
-                </div>
+            <div className={`${panelClass} p-4 sm:p-5`}>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Recent movement</p>
+              <div className="mt-4 space-y-2">
+                {recentMovement.map((issue) => (
+                  <Link key={issue.id} href={`/workspace/issues?ref=${issue.issue_ref}`} className="block rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 transition hover:border-violet-300/35 hover:bg-violet-500/10">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-mono text-[10px] text-violet-200">{issue.issue_ref}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}`}>{issue.status}</span>
+                    </div>
+                    <p className="mt-1 line-clamp-1 text-sm font-semibold text-slate-200">{issue.title}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">Updated {daysSince(issue.updated_at)}d ago</p>
+                  </Link>
+                ))}
               </div>
             </div>
           </section>
