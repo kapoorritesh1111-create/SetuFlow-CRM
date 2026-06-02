@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { SprintIssue, SprintMeta } from '@/lib/queries/workspace';
 import { cn } from '@/lib/utils';
-import { DOCS_WORKSPACE_HREF, DEMO_CHECKLIST_HREF, E2E_WORKSPACE_HREF, SmcIcon, isClosedIssue, daysOld } from '@/features/workspace/components/smc-shell';
+import { SmcIcon, isClosedIssue, daysOld } from '@/features/workspace/components/smc-shell';
 
 const SEV_COLORS: Record<string, string> = {
   Critical: 'border-red-200 bg-red-50 text-red-700 dark:border-red-400/20 dark:bg-red-500/10 dark:text-red-200',
@@ -73,21 +73,6 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints, currentSpr
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff] dark:text-violet-300">Sprint War Room</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950 dark:text-white">Plan → Commit → Prove → Demo</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Move issues with capacity, risk, proof surfaces, and demo impact in one view.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a href={DOCS_WORKSPACE_HREF} target="_blank" className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]">Docs</a>
-            <a href={E2E_WORKSPACE_HREF} target="_blank" className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]">E2E</a>
-            <a href={DEMO_CHECKLIST_HREF} target="_blank" className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.05]">Demo</a>
-          </div>
-        </div>
-      </section>
-
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-sm font-bold text-slate-600 dark:text-slate-300">Active sprint</span>
         {sprints.map((s) => {

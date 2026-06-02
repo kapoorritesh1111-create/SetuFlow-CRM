@@ -495,7 +495,7 @@ export function IssuesBoard({
 }: {
   issues: SprintIssue[];
   sprints: SprintMeta[];
-  initialFilter?: { status?: string; severity?: string; sprint?: number; ref?: string; action?: string };
+  initialFilter?: { status?: string; severity?: string; sprint?: number; area?: string; ref?: string; action?: string };
 }) {
   const [issues, setIssues] = useState<SprintIssue[]>(initialIssues);
   const [view, setView] = useState<ViewMode>('table');
@@ -503,7 +503,7 @@ export function IssuesBoard({
   const [filterSeverity, setFilterSeverity] = useState(initialFilter?.severity ?? '');
   const [filterStatus, setFilterStatus] = useState(initialFilter?.status ?? '');
   const [filterSprint, setFilterSprint] = useState(initialFilter?.sprint ? String(initialFilter.sprint) : '');
-  const [filterArea, setFilterArea] = useState('');
+  const [filterArea, setFilterArea] = useState(initialFilter?.area ?? '');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterAssignee, setFilterAssignee] = useState('');
   const [hideResolved, setHideResolved] = useState(true);
@@ -620,62 +620,43 @@ export function IssuesBoard({
 
   return (
     <>
-      {/* View tabs + actions */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
-          {(['table', 'kanban', 'backlog'] as ViewMode[]).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={cn('rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition',
-                view === v ? 'bg-slate-900 text-white dark:bg-sky-500 dark:text-slate-950' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200')}>
-              {v === 'kanban' ? '⬜ Kanban' : v === 'table' ? '☰ Table' : '📋 Backlog'}
-            </button>
-          ))}
+      {/* Board controls */}
+      <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-3 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/[0.04]">
+              {(['table', 'kanban', 'backlog'] as ViewMode[]).map((v) => (
+                <button key={v} onClick={() => setView(v)}
+                  className={cn('rounded-xl px-3 py-2 text-xs font-black capitalize transition',
+                    view === v ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950' : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white')}>
+                  {v === 'kanban' ? 'Kanban' : v === 'table' ? 'Table' : 'Backlog'}
+                </button>
+              ))}
+            </div>
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search issues..."
+              className={cn('w-full rounded-2xl border px-3 py-2 text-sm shadow-sm sm:w-64', workspaceFieldSurfaceClass)} />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:items-center">
+            <select value={filterSprint} onChange={(e) => setFilterSprint(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
+              <option value="">All sprints</option>{sprints.map((s) => <option key={s.sprint_number} value={s.sprint_number}>S{s.sprint_number}</option>)}
+            </select>
+            <select value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
+              <option value="">All severities</option>{SEVERITIES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
+              <option value="">All statuses</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+            <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)} className={cn('rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)}>
+              <option value="">All areas</option>{AREAS.map((a) => <option key={a}>{a}</option>)}
+            </select>
+          </div>
         </div>
-
-        {/* Filters */}
-        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search issues…"
-          className={cn('rounded-xl border px-3 py-1.5 text-sm w-48', workspaceFieldSurfaceClass)} />
-
-        <select value={filterSprint} onChange={(e) => setFilterSprint(e.target.value)}
-          className={cn('rounded-xl border px-3 py-1.5 text-sm', workspaceFieldSurfaceClass)}>
-          <option value="">All sprints</option>
-          {sprints.map((s) => <option key={s.sprint_number} value={s.sprint_number}>S{s.sprint_number}</option>)}
-        </select>
-
-        <select value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value)}
-          className={cn('rounded-xl border px-3 py-1.5 text-sm', workspaceFieldSurfaceClass)}>
-          <option value="">All severities</option>
-          {SEVERITIES.map((s) => <option key={s}>{s}</option>)}
-        </select>
-
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-          className={cn('rounded-xl border px-3 py-1.5 text-sm', workspaceFieldSurfaceClass)}>
-          <option value="">All statuses</option>
-          {STATUSES.map((s) => <option key={s}>{s}</option>)}
-        </select>
-
-        <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)}
-          className={cn('rounded-xl border px-3 py-1.5 text-sm', workspaceFieldSurfaceClass)}>
-          <option value="">All areas</option>
-          {AREAS.map((a) => <option key={a}>{a}</option>)}
-        </select>
-
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => setHideResolved((v) => !v)}
-            className={cn('rounded-xl px-3 py-1.5 text-xs font-medium transition',
-              hideResolved ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>
-            {hideResolved ? '✓ Hiding resolved' : 'Show resolved'}
-          </button>
-          <button onClick={() => setHideDeferred((v) => !v)}
-            className={cn('rounded-xl px-3 py-1.5 text-xs font-medium transition',
-              hideDeferred ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>
-            {hideDeferred ? '✓ Hiding deferred' : 'Show deferred'}
-          </button>
-          <button onClick={() => setShowNewIssue(true)}
-            className={cn('rounded-xl px-4 py-1.5 text-sm font-medium transition', workspacePrimaryButtonClass)}>
-            + Report Issue
-          </button>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3 dark:border-white/10">
+          <button onClick={() => setHideResolved((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideResolved ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideResolved ? 'Hiding resolved' : 'Show resolved'}</button>
+          <button onClick={() => setHideDeferred((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideDeferred ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideDeferred ? 'Hiding deferred' : 'Show deferred'}</button>
+          <button onClick={() => setShowNewIssue(true)} className={cn('ml-auto rounded-2xl px-4 py-2 text-sm font-black transition', workspacePrimaryButtonClass)}>+ Report Issue</button>
         </div>
       </div>
 
