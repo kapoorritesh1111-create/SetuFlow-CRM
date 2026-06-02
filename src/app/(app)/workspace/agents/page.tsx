@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/ui/page-header';
-import { getWorkspaceIssues, getAgentActions } from '@/lib/queries/workspace';
+import { getWorkspaceIssues, getAgentActions, type AgentAction } from '@/lib/queries/workspace';
 import { workspaceHeroClass, workspaceTableShellClass, workspaceMetricClass } from '@/components/ui/workspace-surfaces';
 
 export const dynamic = 'force-dynamic';

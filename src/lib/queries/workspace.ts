@@ -137,7 +137,21 @@ export async function getIssueComments(issueId: string) {
   return data ?? [];
 }
 
-export async function getAgentActions(limit = 20) {
+export type AgentAction = {
+  id: string;
+  issue_id: string | null;
+  issue_ref: string | null;
+  agent_type: string;
+  agent_model: string | null;
+  action: string;
+  payload: Record<string, unknown>;
+  commit_ref: string | null;
+  pr_url: string | null;
+  status: string;
+  created_at: string;
+};
+
+export async function getAgentActions(limit = 20): Promise<AgentAction[]> {
   const admin = createAdminSupabaseClient();
   const supabase = admin ?? await createClient();
   const { data } = await (supabase as any)

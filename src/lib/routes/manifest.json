@@ -198,6 +198,11 @@
   ],
   "adminTabs": [
     {
+      "href": "/workspace",
+      "label": "Dev Workspace",
+      "exact": false
+    },
+    {
       "href": "/admin/organization",
       "label": "Organization setup",
       "exact": true
@@ -388,21 +393,6 @@
       "description": "Governed setup, not daily workflow. Keep list defaults, workspace controls, and catalog authority understandable.",
       "tone": "support",
       "items": [
-        {
-          "href": "/workspace",
-          "label": "Dev Workspace",
-          "exact": false,
-          "description": "Internal engineering workspace \u2014 issues, sprint planning, AI agent queue, and client tracking.",
-          "aliases": [
-            "workspace",
-            "issues",
-            "tracker",
-            "sprint",
-            "engineering"
-          ],
-          "navKey": "w",
-          "requiresAdmin": true
-        },
         {
           "href": "/products",
           "label": "Catalog",

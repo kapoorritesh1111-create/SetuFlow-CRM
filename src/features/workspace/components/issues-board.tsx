@@ -105,7 +105,6 @@ function NewIssueModal({
       const created = await createIssue({
         ...form,
         sprint_name: sprints.find((s) => s.sprint_number === form.sprint_number)?.sprint_name ?? `Sprint ${form.sprint_number}`,
-        organization_id: '3327b9a7-aadb-44b0-9793-30c4045d3c92' as any,
       });
       onCreated(created);
     } catch (e) {

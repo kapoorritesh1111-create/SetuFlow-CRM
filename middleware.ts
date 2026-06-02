@@ -3,13 +3,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const workspaceRedirects: Record<string, string> = {
-  '/workspace': '/dashboard',
+  // Legacy workspace URL aliases — these old paths redirect to the current CRM routes
   '/workspace/dashboard': '/dashboard',
   '/workspace/leads': '/leads',
   '/workspace/capture': '/contact-exchange/scan',
   '/workspace/quotes': '/quotes',
   '/workspace/orders': '/orders',
   '/workspace/my-card': '/contact-exchange/vcard',
+  // NOTE: /workspace itself is now the internal engineering workspace (not a redirect)
 };
 
 type RateLimitBucket = { count: number; resetAt: number };
