@@ -6,7 +6,7 @@ export const DOCS_WORKSPACE_HREF = '/internal/setuflow-docs.html#overview';
 export const E2E_WORKSPACE_HREF = '/internal/setuflow-e2e-testing.html';
 export const DEMO_CHECKLIST_HREF = '/internal/setuflow-demo-checklist.html';
 
-export type SmcIconName = 'mission' | 'board' | 'sprint' | 'agent' | 'client' | 'docs' | 'qa' | 'demo' | 'risk' | 'bug' | 'trend' | 'shield' | 'target' | 'clock';
+export type SmcIconName = 'mission' | 'board' | 'sprint' | 'agent' | 'client' | 'docs' | 'qa' | 'demo' | 'risk' | 'bug' | 'trend' | 'shield' | 'target' | 'clock' | 'deploy';
 
 const iconPaths: Record<SmcIconName, string[]> = {
   mission: ['M12 3a9 9 0 1 0 9 9', 'M12 12 20 4', 'M15 4h5v5'],
@@ -23,6 +23,7 @@ const iconPaths: Record<SmcIconName, string[]> = {
   shield: ['M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', 'm9 12 2 2 4-5'],
   target: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z', 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z'],
   clock: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 7v5l3 2'],
+  deploy: ['M12 3v12', 'm7 8 5-5 5 5', 'M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3'],
 };
 
 export function SmcIcon({ name, className }: { name: SmcIconName; className?: string }) {
