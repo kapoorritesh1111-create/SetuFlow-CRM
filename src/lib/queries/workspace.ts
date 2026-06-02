@@ -34,6 +34,7 @@ export type SprintIssue = {
   pr_link: string | null;
   fix_applied: string | null;
   how_to_fix: string | null;
+  gpt_prompt?: string | null;
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
@@ -48,6 +49,15 @@ export type SprintMeta = {
   closed_at: string | null;
   capacity_points: number | null;
   retro_notes: string | null;
+};
+
+export type TrackerPrompt = {
+  id: string;
+  prompt_key: string | null;
+  title: string | null;
+  prompt_text: string | null;
+  version: number | null;
+  is_active: boolean | null;
 };
 
 export type WorkspaceStats = {
@@ -142,6 +152,22 @@ export async function getIssueComments(issueId: string) {
     .eq('issue_id', issueId)
     .order('created_at', { ascending: true });
   return data ?? [];
+}
+
+export async function getActiveTrackerPrompt(promptKey = 'chatgpt_fix_protocol'): Promise<TrackerPrompt | null> {
+  const admin = createAdminSupabaseClient();
+  const supabase = admin ?? await createClient();
+  const { data, error } = await (supabase as any)
+    .from('tracker_prompts')
+    .select('id,prompt_key,title,prompt_text,version,is_active')
+    .eq('prompt_key', promptKey)
+    .eq('is_active', true)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as TrackerPrompt;
 }
 
 export type AgentAction = {
