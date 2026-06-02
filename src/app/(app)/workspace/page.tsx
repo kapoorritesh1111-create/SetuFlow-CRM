@@ -24,11 +24,14 @@ type TimelinePoint = {
   risk: number;
 };
 
+const panelClass =
+  'rounded-[1.5rem] border border-white/10 bg-slate-950/58 shadow-[0_20px_60px_rgba(2,6,23,0.32)] ring-1 ring-white/[0.03] backdrop-blur-xl';
+
 const SEVERITY_COLORS: Record<string, string> = {
-  Critical: 'border-red-400/30 bg-red-500/10 text-red-200 ring-red-400/20',
-  High: 'border-amber-400/30 bg-amber-500/10 text-amber-200 ring-amber-400/20',
-  Medium: 'border-blue-400/25 bg-blue-500/10 text-blue-200 ring-blue-400/20',
-  Low: 'border-slate-500/30 bg-slate-500/10 text-slate-300 ring-slate-400/10',
+  Critical: 'border-red-400/30 bg-red-500/10 text-red-200',
+  High: 'border-amber-400/30 bg-amber-500/10 text-amber-200',
+  Medium: 'border-blue-400/25 bg-blue-500/10 text-blue-200',
+  Low: 'border-slate-500/30 bg-slate-500/10 text-slate-300',
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -39,13 +42,7 @@ const STATUS_COLORS: Record<string, string> = {
   "Won't Fix": 'border-red-400/30 bg-red-500/10 text-red-200',
 };
 
-const panelClass =
-  'rounded-[1.75rem] border border-white/10 bg-slate-950/54 shadow-[0_24px_70px_rgba(2,6,23,0.36)] ring-1 ring-white/[0.03] backdrop-blur-xl';
-
-const softPanelClass =
-  'rounded-[1.4rem] border border-white/10 bg-white/[0.045] shadow-[0_16px_44px_rgba(2,6,23,0.24)] ring-1 ring-white/[0.03]';
-
-type IconName = 'readiness' | 'shield' | 'sprint' | 'blocker' | 'agent' | 'deploy' | 'trend' | 'flow' | 'activity' | 'calendar' | 'bug';
+type IconName = 'readiness' | 'shield' | 'sprint' | 'agent' | 'trend' | 'bug' | 'deploy' | 'board' | 'docs';
 
 function isClosedStatus(status?: string | null) {
   return CLOSED_STATUSES.includes((status ?? '') as (typeof CLOSED_STATUSES)[number]);
@@ -65,10 +62,6 @@ function endOfUtcDay(value: Date) {
   const date = startOfUtcDay(value);
   date.setUTCHours(23, 59, 59, 999);
   return date;
-}
-
-function dateKey(value: Date) {
-  return value.toISOString().slice(0, 10);
 }
 
 function shortDate(value: Date, bucket: AnalyticsBucket) {
@@ -93,18 +86,18 @@ function normalizeRange(value?: string | null): RangeOption {
   return '14d';
 }
 
+function parseDateOnly(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function getOldestIssueDate(issues: SprintIssue[]) {
   const oldest = issues
     .map((issue) => safeDate(issue.created_at))
     .filter(Boolean)
     .sort((a, b) => a!.getTime() - b!.getTime())[0];
   return startOfUtcDay(oldest ?? new Date());
-}
-
-function parseDateOnly(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function getAnalyticsRange(issues: SprintIssue[], searchParams?: SearchParams) {
@@ -115,7 +108,6 @@ function getAnalyticsRange(issues: SprintIssue[], searchParams?: SearchParams) {
   let label = 'Last 14 days';
 
   if (range === 'today') {
-    start = new Date(today);
     label = 'Today';
   } else if (range === 'custom') {
     const customStart = parseDateOnly(searchParams?.start);
@@ -133,15 +125,14 @@ function getAnalyticsRange(issues: SprintIssue[], searchParams?: SearchParams) {
   }
 
   if (start.getTime() > end.getTime()) {
-    const fallback = start;
-    start = startOfUtcDay(end);
-    end = endOfUtcDay(fallback);
+    const nextStart = startOfUtcDay(end);
+    end = endOfUtcDay(start);
+    start = nextStart;
   }
 
   const days = diffDays(start, end);
   const bucket: AnalyticsBucket = days > 210 ? 'month' : days > 45 ? 'week' : 'day';
-
-  return { range, start: startOfUtcDay(start), end, label, bucket, days };
+  return { range, start: startOfUtcDay(start), end, label, bucket };
 }
 
 function daysSince(value?: string | null) {
@@ -158,11 +149,10 @@ function severityWeight(issue: SprintIssue) {
 }
 
 function scoreIssueRisk(issue: SprintIssue) {
-  const age = daysSince(issue.created_at);
   const dependencyPenalty = (issue.depends_on?.length ?? 0) * 2;
   const clientPenalty = issue.client_org_id ? 4 : 0;
   const progressPenalty = issue.status === 'In Progress' ? 1 : 3;
-  return severityWeight(issue) * 10 + Math.min(age, 21) + dependencyPenalty + clientPenalty + progressPenalty;
+  return severityWeight(issue) * 10 + Math.min(daysSince(issue.created_at), 21) + dependencyPenalty + clientPenalty + progressPenalty;
 }
 
 function pct(numerator: number, denominator: number) {
@@ -189,10 +179,6 @@ function readinessLabel(readiness: number, critical: number) {
   if (readiness >= 90) return { label: 'Demo Ready', tone: 'text-emerald-200', badge: 'border-emerald-400/30 bg-emerald-500/12 text-emerald-100' };
   if (readiness >= 80) return { label: 'Nearly Ready', tone: 'text-sky-200', badge: 'border-sky-400/30 bg-sky-500/12 text-sky-100' };
   return { label: 'Needs QA', tone: 'text-amber-200', badge: 'border-amber-400/30 bg-amber-500/12 text-amber-100' };
-}
-
-function safeNumber(value: number) {
-  return Number.isFinite(value) ? value : 0;
 }
 
 function isBetween(date: Date | null, start: Date, end: Date) {
@@ -224,15 +210,7 @@ function buildTimeline(issues: SprintIssue[], start: Date, end: Date, bucket: An
       .filter((issue) => !isClosedStatus(issue.status) || !issue.resolved_at)
       .reduce((sum, issue) => sum + severityWeight(issue), 0);
 
-    points.push({
-      key: `${dateKey(bucketStart)}-${bucket}`,
-      label: shortDate(bucketStart, bucket),
-      created,
-      resolved,
-      updated,
-      risk,
-    });
-
+    points.push({ key: `${bucketStart.toISOString()}-${bucket}`, label: shortDate(bucketStart, bucket), created, resolved, updated, risk });
     cursor = addBucket(cursor, bucket);
   }
 
@@ -254,13 +232,12 @@ function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: str
   if (name === 'readiness') return <svg {...common}><path d="M12 3a9 9 0 1 0 9 9" /><path d="M12 12 20 4" /><path d="M15 4h5v5" /></svg>;
   if (name === 'shield') return <svg {...common}><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z" /><path d="m9 12 2 2 4-5" /></svg>;
   if (name === 'sprint') return <svg {...common}><path d="M4 19h16" /><path d="M7 16V8" /><path d="M12 16V5" /><path d="M17 16v-6" /><path d="M6 8h3" /><path d="M11 5h3" /><path d="M16 10h3" /></svg>;
-  if (name === 'blocker') return <svg {...common}><path d="M12 9v4" /><path d="M12 17h.01" /><path d="M10.3 4.3 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.7 4.3a2 2 0 0 0-3.4 0Z" /></svg>;
   if (name === 'agent') return <svg {...common}><rect x="5" y="8" width="14" height="10" rx="3" /><path d="M9 8V5" /><path d="M15 8V5" /><path d="M9 13h.01" /><path d="M15 13h.01" /><path d="M10 17h4" /></svg>;
   if (name === 'deploy') return <svg {...common}><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" /></svg>;
   if (name === 'trend') return <svg {...common}><path d="M4 19V5" /><path d="M4 19h16" /><path d="m6 15 4-4 3 3 6-7" /><path d="M16 7h3v3" /></svg>;
-  if (name === 'calendar') return <svg {...common}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4" /><path d="M16 3v4" /><path d="M4 10h16" /></svg>;
   if (name === 'bug') return <svg {...common}><path d="M8 8a4 4 0 0 1 8 0" /><rect x="7" y="8" width="10" height="12" rx="4" /><path d="M3 13h4" /><path d="M17 13h4" /><path d="M4 19l3-2" /><path d="M20 19l-3-2" /><path d="M4 7l3 2" /><path d="M20 7l-3 2" /></svg>;
-  if (name === 'flow') return <svg {...common}><path d="M7 7h10" /><path d="M7 12h6" /><path d="M7 17h10" /><circle cx="4" cy="7" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="17" r="1" /></svg>;
+  if (name === 'board') return <svg {...common}><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16" /><path d="M15 4v16" /><path d="M4 10h16" /></svg>;
+  if (name === 'docs') return <svg {...common}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /><path d="M8 13h8" /><path d="M8 17h6" /></svg>;
   return <svg {...common}><path d="M12 20v-6" /><path d="M18 20V10" /><path d="M6 20v-3" /><path d="M4 4h16" /><path d="M4 8h16" /></svg>;
 }
 
@@ -268,20 +245,10 @@ function Sparkline({ values }: { values: number[] }) {
   const max = Math.max(...values, 1);
   const points = values.map((value, index) => {
     const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
-    const y = 44 - (safeNumber(value) / max) * 36;
+    const y = 44 - (value / max) * 36;
     return `${x},${y}`;
   }).join(' ');
-  return (
-    <svg viewBox="0 0 100 48" className="h-12 w-full overflow-visible" aria-hidden="true">
-      <path d="M0 44H100" stroke="rgba(148,163,184,0.18)" strokeWidth="1" />
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      {values.map((value, index) => {
-        const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
-        const y = 44 - (safeNumber(value) / max) * 36;
-        return <circle key={`${index}-${value}`} cx={x} cy={y} r="2.2" fill="currentColor" />;
-      })}
-    </svg>
-  );
+  return <svg viewBox="0 0 100 48" className="h-12 w-full overflow-visible" aria-hidden="true"><path d="M0 44H100" stroke="rgba(148,163,184,0.18)" strokeWidth="1" /><polyline points={points} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
 function ActivityBars({ timeline }: { timeline: TimelinePoint[] }) {
@@ -307,7 +274,6 @@ function ActivityBars({ timeline }: { timeline: TimelinePoint[] }) {
 function MetricCard({ icon, label, value, sub, tone, trend }: { icon: IconName; label: string; value: string | number; sub: string; tone: string; trend: string }) {
   return (
     <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-white/[0.07]">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent opacity-0 transition group-hover:opacity-100" />
       <div className="flex items-start justify-between gap-3">
         <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.055] ${tone}`}><Icon name={icon} /></div>
         <span className="rounded-full border border-white/10 bg-white/[0.035] px-2 py-0.5 text-[10px] font-bold text-slate-400">{trend}</span>
@@ -362,65 +328,50 @@ export default async function WorkspaceDashboardPage({ searchParams }: { searchP
     .filter((issue) => issue.updated_at)
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6);
-  const qaSignals = [
-    { label: 'Docs workspace', href: '/documents', value: 'Linked proof', icon: 'DOC' },
-    { label: 'E2E testing', href: '/internal/setuflow-e2e-testing.html', value: 'QA suite', icon: 'QA' },
-    { label: 'Demo checklist', href: '/internal/setuflow-demo-checklist.html', value: 'Go/no-go', icon: 'GO' },
+
+  const quickActions = [
+    { label: 'Issues Board', href: '/workspace/issues' },
+    { label: 'Sprint Planning', href: '/workspace/sprints' },
+    { label: 'AI Agents', href: '/workspace/agents' },
+    { label: 'Client Impact', href: '/workspace/clients' },
+    { label: 'Demo Checklist', href: '/internal/setuflow-demo-checklist.html', ext: true },
+    { label: 'QA Suite', href: '/internal/setuflow-e2e-testing.html', ext: true },
   ];
 
   return (
-    <div className="min-h-screen rounded-[2rem] border border-slate-200/20 bg-[#050816] text-slate-100 shadow-[0_30px_120px_rgba(2,6,23,0.35)] md:rounded-[2.5rem]">
+    <div className="min-h-screen rounded-[1.5rem] border border-slate-200/20 bg-[#050816] text-slate-100 shadow-[0_30px_120px_rgba(2,6,23,0.35)] md:rounded-[2rem]">
       <div className="relative overflow-hidden rounded-[inherit]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.28),transparent_32%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.16),transparent_30%),linear-gradient(180deg,#07111f_0%,#050816_54%,#080b18_100%)]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/50 to-transparent" />
-        <div className="relative space-y-5 p-4 sm:p-5 lg:p-6">
-          <section className={`${panelClass} overflow-hidden`}>
-            <div className="grid gap-5 p-5 lg:grid-cols-[1.15fr_2.15fr] lg:p-6">
-              <div className="space-y-5">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-violet-300/90">Setu Flow</p>
-                  <h1 className="mt-2 text-4xl font-black uppercase leading-[0.9] tracking-tight text-white sm:text-5xl lg:text-6xl">Command<br />Center</h1>
-                  <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300 sm:text-base">Mission control for release readiness, sprint health, AI agent queue, and client-impact tracking.</p>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.20),transparent_28%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.12),transparent_30%),linear-gradient(180deg,#07111f_0%,#050816_54%,#080b18_100%)]" />
+        <div className="relative space-y-4 p-3 sm:p-5 lg:p-6">
+          <section className={`${panelClass} p-4 sm:p-5`}>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-violet-300/90">Setu Flow</p>
+                  <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${readinessState.badge}`}><Icon name="deploy" className="h-3.5 w-3.5" /> Production: {stats.critical > 0 ? 'Needs Review' : 'Ready'}</span>
                 </div>
-                <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-1">
-                  {[
-                    ['Real-time sprint health', 'trend'],
-                    ['AI agent queue', 'agent'],
-                    ['Risk and readiness intelligence', 'shield'],
-                    ['Client impact tracking', 'flow'],
-                  ].map(([item, icon]) => (
-                    <div key={item} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
-                      <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><Icon name={icon as IconName} className="h-4 w-4" /></span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
+                <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Command Center</h1>
+                <p className="mt-1 text-sm text-slate-400">Sprint S{stats.activeSprint}{stats.sprintMeta?.goal ? ` - ${stats.sprintMeta.goal}` : ''}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[360px]">
+                <Link href="/workspace/issues" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">Board</Link>
+                <Link href="/workspace/sprints" className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 font-bold text-slate-200 hover:bg-white/[0.08]">Plan</Link>
+                <Link href="/workspace?range=today#analytics" className="rounded-2xl border border-violet-300/30 bg-violet-500/15 px-3 py-2 font-bold text-violet-100 hover:bg-violet-500/25">Today</Link>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+              <div className="rounded-3xl border border-violet-400/20 bg-violet-500/10 p-4 xl:col-span-2">
+                <div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-2xl bg-violet-400/15 text-violet-100"><Icon name="readiness" /></span><p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">Demo readiness</p></div>
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(rgb(52 211 153) ${readiness}%, rgba(148,163,184,0.18) 0)` }}><div className="grid h-16 w-16 place-items-center rounded-full bg-[#070b17] text-xl font-black text-white">{readiness}%</div></div>
+                  <div><p className={`text-2xl font-black ${readinessState.tone}`}>{readiness}%</p><p className="text-xs text-slate-400">{readinessState.label}</p><p className="mt-1 text-[11px] text-emerald-300">{stats.resolved}/{stats.total} resolved - {overallPct}% complete</p></div>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Command Center</p>
-                    <h2 className="mt-1 text-2xl font-bold text-white sm:text-3xl">Setu Flow Command Center</h2>
-                    <p className="mt-1 text-sm text-slate-400">Active sprint S{stats.activeSprint}{stats.sprintMeta?.goal ? ` - ${stats.sprintMeta.goal}` : ''}</p>
-                  </div>
-                  <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${readinessState.badge}`}><Icon name="deploy" className="h-3.5 w-3.5" /> Production: {stats.critical > 0 ? 'Needs Review' : 'Ready'}</span>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                  <div className="rounded-3xl border border-violet-400/20 bg-violet-500/10 p-4 xl:col-span-2">
-                    <div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-2xl bg-violet-400/15 text-violet-100"><Icon name="readiness" /></span><p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">Demo readiness</p></div>
-                    <div className="mt-4 flex items-center gap-4">
-                      <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(rgb(52 211 153) ${readiness}%, rgba(148,163,184,0.18) 0)` }}><div className="grid h-16 w-16 place-items-center rounded-full bg-[#070b17] text-xl font-black text-white">{readiness}%</div></div>
-                      <div><p className={`text-2xl font-black ${readinessState.tone}`}>{readiness}%</p><p className="text-xs text-slate-400">{readinessState.label}</p><p className="mt-1 text-[11px] text-emerald-300">{stats.resolved}/{stats.total} resolved - {overallPct}% complete</p></div>
-                    </div>
-                  </div>
-                  <MetricCard icon="bug" label="Bugs resolved" value={stats.resolved} sub="tracker items closed across all sprints" tone="text-emerald-200" trend={stats.resolved >= 200 ? '200+ cleared' : `${overallPct}% done`} />
-                  <MetricCard icon="shield" label="Demo risk" value={demoRisk} sub={`${stats.high} high priority open`} tone={demoRiskClass} trend={stats.critical ? 'Blocked' : 'Live'} />
-                  <MetricCard icon="sprint" label="Active sprint" value={`S${stats.activeSprint}`} sub={`${sprintOpenIssues.length} remaining`} tone="text-emerald-200" trend={`${sprintPct}% done`} />
-                  <MetricCard icon="agent" label="AI queue health" value={aiQueue} sub={`${stats.inProgress} in progress`} tone="text-amber-200" trend={`${selectedUpdated} moves`} />
-                </div>
-              </div>
+              <MetricCard icon="bug" label="Bugs resolved" value={stats.resolved} sub="tracker items closed across all sprints" tone="text-emerald-200" trend={stats.resolved >= 200 ? '200+ cleared' : `${overallPct}% done`} />
+              <MetricCard icon="shield" label="Demo risk" value={demoRisk} sub={`${stats.high} high priority open`} tone={demoRiskClass} trend={stats.critical ? 'Blocked' : 'Live'} />
+              <MetricCard icon="sprint" label="Active sprint" value={`S${stats.activeSprint}`} sub={`${sprintOpenIssues.length} remaining`} tone="text-sky-200" trend={`${sprintPct}% done`} />
+              <MetricCard icon="agent" label="AI queue" value={aiQueue} sub={`${stats.inProgress} in progress`} tone="text-amber-200" trend={`${selectedUpdated} moves`} />
             </div>
           </section>
 
@@ -434,18 +385,18 @@ export default async function WorkspaceDashboardPage({ searchParams }: { searchP
 
             <div className={`${panelClass} overflow-hidden`}>
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Highest risk issues</p><p className="mt-1 text-xs text-slate-400">Sorted by severity, age, dependencies, and client impact</p></div><Link href="/workspace/issues" className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-violet-200 hover:bg-white/10">All issues</Link></div>
-              <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500"><tr><th className="px-4 py-3">Issue</th><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Age</th><th className="px-4 py-3">Sprint</th></tr></thead><tbody className="divide-y divide-white/10">{highestRiskIssues.length === 0 ? (<tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400">No active issues. Beautiful.</td></tr>) : highestRiskIssues.map((issue) => (<tr key={issue.id} className="transition hover:bg-white/[0.035]"><td className="px-4 py-3"><Link href={`/workspace/issues?ref=${issue.issue_ref}`} className="group block"><span className="font-mono text-[10px] text-violet-300 group-hover:text-violet-100">{issue.issue_ref ?? `S${issue.sprint_number}`}</span><span className="mt-1 line-clamp-1 block font-medium text-slate-200 group-hover:text-white">{issue.title}</span></Link></td><td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${SEVERITY_COLORS[issue.severity] ?? SEVERITY_COLORS.Medium}`}>{issue.severity}</span></td><td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}`}>{issue.status}</span></td><td className="px-4 py-3 text-xs text-slate-400">{daysSince(issue.created_at)}d</td><td className="px-4 py-3 text-xs text-slate-400">S{issue.sprint_number}</td></tr>))}</tbody></table></div>
+              <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500"><tr><th className="px-4 py-3">Issue</th><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Age</th><th className="px-4 py-3">Sprint</th></tr></thead><tbody className="divide-y divide-white/10">{highestRiskIssues.length === 0 ? (<tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400">No active issues.</td></tr>) : highestRiskIssues.map((issue) => (<tr key={issue.id} className="transition hover:bg-white/[0.035]"><td className="px-4 py-3"><Link href={`/workspace/issues?ref=${issue.issue_ref}`} className="group block"><span className="font-mono text-[10px] text-violet-300 group-hover:text-violet-100">{issue.issue_ref ?? `S${issue.sprint_number}`}</span><span className="mt-1 line-clamp-1 block font-medium text-slate-200 group-hover:text-white">{issue.title}</span></Link></td><td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${SEVERITY_COLORS[issue.severity] ?? SEVERITY_COLORS.Medium}`}>{issue.severity}</span></td><td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}`}>{issue.status}</span></td><td className="px-4 py-3 text-xs text-slate-400">{daysSince(issue.created_at)}d</td><td className="px-4 py-3 text-xs text-slate-400">S{issue.sprint_number}</td></tr>))}</tbody></table></div>
             </div>
 
             <div className={`${panelClass} p-4 sm:p-5`}>
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">AI agent queue</p>
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-xs text-slate-400">Next in queue</p>{nextAgentIssue ? (<><div className="mt-3 flex items-start justify-between gap-3"><div><p className="font-mono text-[11px] text-violet-200">{nextAgentIssue.issue_ref}</p><p className="mt-1 line-clamp-2 text-sm font-semibold text-white">{nextAgentIssue.title}</p><p className="mt-1 text-xs text-slate-400">S{nextAgentIssue.sprint_number} - est. 45m</p></div><span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${SEVERITY_COLORS[nextAgentIssue.severity] ?? SEVERITY_COLORS.Medium}`}>{nextAgentIssue.severity}</span></div><Link href={`/api/workspace/agent?agent=claude&issue_ref=${nextAgentIssue.issue_ref}&dry_run=true`} target="_blank" className="mt-4 inline-flex rounded-xl border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-xs font-bold text-violet-100 hover:bg-violet-500/25">View context packet -&gt;</Link></>) : (<p className="mt-3 text-sm text-slate-400">Queue is clear.</p>)}</div>
-              <div className="mt-4 space-y-2"><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Recent activity</p>{actions.length === 0 ? (<div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.025] p-4 text-sm text-slate-400">No agent actions yet. Use dry run first, then pick up when ready.</div>) : actions.slice(0, 4).map((action) => (<div key={action.id} className="flex items-center gap-2 rounded-xl bg-white/[0.035] px-3 py-2 text-xs text-slate-300"><span className="rounded-full bg-violet-500/15 px-2 py-0.5 font-bold text-violet-200">{action.agent_type}</span><span className="truncate">{action.issue_ref ?? 'Action'} - {action.action}</span></div>))}</div>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-xs text-slate-400">Next in queue</p>{nextAgentIssue ? (<><div className="mt-3 flex items-start justify-between gap-3"><div><p className="font-mono text-[11px] text-violet-200">{nextAgentIssue.issue_ref}</p><p className="mt-1 line-clamp-2 text-sm font-semibold text-white">{nextAgentIssue.title}</p><p className="mt-1 text-xs text-slate-400">S{nextAgentIssue.sprint_number}</p></div><span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${SEVERITY_COLORS[nextAgentIssue.severity] ?? SEVERITY_COLORS.Medium}`}>{nextAgentIssue.severity}</span></div><Link href={`/api/workspace/agent?agent=claude&issue_ref=${nextAgentIssue.issue_ref}&dry_run=true`} target="_blank" className="mt-4 inline-flex rounded-xl border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-xs font-bold text-violet-100 hover:bg-violet-500/25">View context packet -&gt;</Link></>) : (<p className="mt-3 text-sm text-slate-400">Queue is clear.</p>)}</div>
+              <div className="mt-4 space-y-2"><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Recent activity</p>{actions.length === 0 ? (<div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.025] p-4 text-sm text-slate-400">No agent actions yet.</div>) : actions.slice(0, 4).map((action) => (<div key={action.id} className="flex items-center gap-2 rounded-xl bg-white/[0.035] px-3 py-2 text-xs text-slate-300"><span className="rounded-full bg-violet-500/15 px-2 py-0.5 font-bold text-violet-200">{action.agent_type}</span><span className="truncate">{action.issue_ref ?? 'Action'} - {action.action}</span></div>))}</div>
             </div>
 
             <div className={`${panelClass} p-4 sm:p-5`}>
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Quick actions</p>
-              <div className="mt-4 grid gap-2">{[{ label: 'View Issues Board', href: '/workspace/issues' }, { label: 'Sprint Planning', href: '/workspace/sprints' }, { label: 'AI Agents & Queue', href: '/workspace/agents' }, { label: 'Client Impact', href: '/workspace/clients' }, { label: 'Demo Checklist', href: '/internal/setuflow-demo-checklist.html', ext: true }, { label: 'QA Suite', href: '/internal/setuflow-e2e-testing.html', ext: true }].map((item) => (<Link key={item.label} href={item.href} target={item.ext ? '_blank' : undefined} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-sm font-semibold text-slate-200 transition hover:border-violet-300/35 hover:bg-violet-500/10 hover:text-white"><span>{item.label}</span><span className="text-violet-300">-&gt;</span></Link>))}</div>
+              <div className="mt-4 grid gap-2">{quickActions.map((item) => (<Link key={item.label} href={item.href} target={item.ext ? '_blank' : undefined} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-sm font-semibold text-slate-200 transition hover:border-violet-300/35 hover:bg-violet-500/10 hover:text-white"><span>{item.label}</span><span className="text-violet-300">-&gt;</span></Link>))}</div>
             </div>
           </section>
 
@@ -468,7 +419,7 @@ export default async function WorkspaceDashboardPage({ searchParams }: { searchP
           </section>
 
           <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-            <div className={`${panelClass} p-4 sm:p-5`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Connected proof surfaces</p><h3 className="mt-1 text-lg font-bold text-white">Docs, tests, and demo readiness stay one click away</h3></div><Link href="/workspace/issues" className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-bold text-violet-200 hover:bg-white/10">Open board</Link></div><div className="mt-4 grid gap-3 md:grid-cols-3">{qaSignals.map((signal) => (<Link key={signal.label} href={signal.href} target={signal.href.startsWith('/internal') ? '_blank' : undefined} className={`${softPanelClass} block p-4 transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-violet-500/10`}><span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/25 bg-violet-500/15 text-xs font-black text-violet-100">{signal.icon}</span><p className="mt-3 font-bold text-white">{signal.label}</p><p className="mt-1 text-sm text-slate-400">{signal.value}</p></Link>))}</div></div>
+            <div className={`${panelClass} p-4 sm:p-5`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Connected proof surfaces</p><h3 className="mt-1 text-lg font-bold text-white">Docs, tests, and demo readiness</h3></div><Link href="/workspace/issues" className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-bold text-violet-200 hover:bg-white/10">Open board</Link></div><div className="mt-4 grid gap-3 md:grid-cols-3">{[{ label: 'Docs workspace', href: '/documents', value: 'Linked proof', icon: 'DOC' }, { label: 'E2E testing', href: '/internal/setuflow-e2e-testing.html', value: 'QA suite', icon: 'QA' }, { label: 'Demo checklist', href: '/internal/setuflow-demo-checklist.html', value: 'Go/no-go', icon: 'GO' }].map((signal) => (<Link key={signal.label} href={signal.href} target={signal.href.startsWith('/internal') ? '_blank' : undefined} className="block rounded-[1.4rem] border border-white/10 bg-white/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-violet-500/10"><span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/25 bg-violet-500/15 text-xs font-black text-violet-100">{signal.icon}</span><p className="mt-3 font-bold text-white">{signal.label}</p><p className="mt-1 text-sm text-slate-400">{signal.value}</p></Link>))}</div></div>
             <div className={`${panelClass} p-4 sm:p-5`}><p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-300">Recent movement</p><div className="mt-4 space-y-2">{recentMovement.map((issue) => (<Link key={issue.id} href={`/workspace/issues?ref=${issue.issue_ref}`} className="block rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 transition hover:border-violet-300/35 hover:bg-violet-500/10"><div className="flex items-center justify-between gap-3"><span className="font-mono text-[10px] text-violet-200">{issue.issue_ref}</span><span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}`}>{issue.status}</span></div><p className="mt-1 line-clamp-1 text-sm font-semibold text-slate-200">{issue.title}</p><p className="mt-1 text-[11px] text-slate-500">Updated {daysSince(issue.updated_at)}d ago</p></Link>))}</div></div>
           </section>
         </div>
