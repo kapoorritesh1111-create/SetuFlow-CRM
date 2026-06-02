@@ -2,7 +2,7 @@ const Docs = (() => {
   const shared = { active: false, token: null, recipient: null, expiry: null };
   let authUser = null;
   let screenshots = [];
-  let metrics = { open: 4, resolved: 228, criticalHigh: 1, milestones: 3 };
+  let metrics = { open: 18, resolved: 247, criticalHigh: 9, milestones: 3 }; // updated from live DB
 
   const topics = [
     { id: 'overview',         group: 'Get Started',        icon: '\u2302',   title: 'Product Overview',     tag: 'Start Here',    summary: 'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',                         accent: '#2563eb', next: 'architecture', sections: [] },
