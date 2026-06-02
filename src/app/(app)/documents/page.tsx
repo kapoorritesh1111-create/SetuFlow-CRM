@@ -97,7 +97,7 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
     return <WorkspaceState eyebrow="Documents workspace" title="Documents could not be loaded" description={error.message} primaryActionHref="/dashboard" primaryActionLabel="Back to dashboard" />;
   }
 
-  const documents = data ?? [];
+  const documents: DocumentRow[] = (data ?? []) as unknown as DocumentRow[];
   const filteredDocuments = filterDocuments(documents, searchParams);
   const statusOptions = Array.from(new Set(documents.map((document) => normalize(document.status)).filter(Boolean))).sort();
   const typeOptions = Array.from(new Set(documents.map((document) => normalize(document.doc_type)).filter(Boolean))).sort();
