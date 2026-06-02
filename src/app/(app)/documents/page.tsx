@@ -31,6 +31,8 @@ type DocumentsPageProps = {
     status?: string;
     type?: string;
     view?: string;
+    sort?: string;
+    dir?: string;
   };
 };
 
@@ -42,6 +44,25 @@ type DocumentContext = {
   documentTitle: string;
   documentSubtitle: string;
   pdfHref: string | null;
+};
+
+const DEMO_CLIENTS: Record<string, string> = {
+  '001': 'Setu Groups',
+  '002': 'Pacific Gourmet Distributors',
+  '003': 'Emerald Isle Foods',
+  '004': 'Atlas Natural Grocers',
+  '005': 'Gulf Fresh Trading',
+  '006': 'Claude E2E USA Buyer',
+  '007': 'Claude E2E USA Supplier',
+  '008': 'Andes Premium Foods',
+  '009': 'Nordic Snack House',
+  '010': 'Blue Harbour Wholesale',
+  '011': 'Moriga Powder Trading',
+  '012': 'Claude E2E USA Buyer',
+  '013': 'Test Lead 1A',
+  '014': 'Setu Groups',
+  '015': 'Mediterranean Specialty Foods',
+  '016': 'Desert Bloom Hypermarket',
 };
 
 function normalize(value?: string | null) {
@@ -82,6 +103,7 @@ function isApproved(status?: string | null) {
 function documentTypeLabel(value?: string | null) {
   const type = normalize(value).toLowerCase();
   if (type.includes('order_confirmation')) return 'Order Confirmation';
+  if (type.includes('completion_packet')) return 'Completion Packet';
   if (type.includes('final_invoice') || type.includes('dispatch_invoice') || type === 'invoice') return 'Final Invoice';
   if (type.includes('packing')) return 'Packing List';
   if (type.includes('quote')) return 'Commercial Quote';
@@ -109,6 +131,11 @@ function statusBadge(document: DocumentRow) {
   return { label: normalize(document.status) || 'Tracked', className: 'bg-slate-100 text-slate-700 ring-slate-200', icon: 'circle-o' };
 }
 
+function demoClientFromFilename(fileName?: string | null) {
+  const match = normalize(fileName).match(/seed-(?:quote|order-doc)-(\d{3})/i);
+  return match?.[1] ? DEMO_CLIENTS[match[1]] ?? null : null;
+}
+
 function rawFileMeta(fileName?: string | null) {
   const name = normalize(fileName);
   if (!name) return 'Generated document';
@@ -119,14 +146,23 @@ function directLeadName(lead?: LeadRow | null) {
   return normalize(lead?.company_name) || normalize(lead?.contact_name) || null;
 }
 
+function safeExplicitFileUrl(value?: string | null) {
+  const explicit = normalize(value);
+  if (!explicit) return null;
+  if (/example\.test/i.test(explicit)) return null;
+  if (/^https?:\/\//i.test(explicit)) return explicit;
+  if (explicit.startsWith('/')) return explicit;
+  return null;
+}
+
 function buildPdfHref(document: DocumentRow) {
-  const explicit = normalize(document.file_url);
-  if (explicit) return explicit;
   const entity = normalize(document.related_entity).toLowerCase();
   const type = normalize(document.doc_type).toLowerCase();
-  if ((entity === 'contract' || entity === 'order') && type.includes('invoice')) return `/api/orders/${document.related_id}/invoice/pdf`;
-  if ((entity === 'contract' || entity === 'order') && type.includes('order')) return `/api/orders/${document.related_id}/order-confirmation/pdf`;
-  if (entity === 'quote') return `/api/quotes/${document.related_id}/pdf`;
+  const generatedOrderRoute = entity === 'contract' || entity === 'order';
+  if (generatedOrderRoute && (type.includes('invoice') || type.includes('completion'))) return `/api/orders/${document.related_id}/invoice/pdf`;
+  if (generatedOrderRoute && (type.includes('order') || type.includes('dispatch'))) return `/api/orders/${document.related_id}/order-confirmation/pdf`;
+  const explicit = safeExplicitFileUrl(document.file_url);
+  if (explicit) return explicit;
   return null;
 }
 
@@ -144,6 +180,25 @@ function recordLabel(document: DocumentRow, quote?: QuoteRow | null) {
   if (entity === 'quote') return `Quote ${normalize(quote?.quote_number) || shortId(document.related_id)}`;
   if (entity === 'lead') return `Lead ${shortId(document.related_id)}`;
   return `${normalize(document.related_entity) || 'Record'} ${shortId(document.related_id)}`;
+}
+
+function sortHref(searchParams: DocumentsPageProps['searchParams'], sort: string) {
+  const params = new URLSearchParams();
+  if (searchParams?.q) params.set('q', searchParams.q);
+  if (searchParams?.status) params.set('status', searchParams.status);
+  if (searchParams?.type) params.set('type', searchParams.type);
+  if (searchParams?.view) params.set('view', searchParams.view);
+  const currentSort = normalize(searchParams?.sort) || 'client';
+  const currentDir = normalize(searchParams?.dir) || 'asc';
+  params.set('sort', sort);
+  params.set('dir', currentSort === sort && currentDir === 'asc' ? 'desc' : 'asc');
+  return `/documents?${params.toString()}`;
+}
+
+function sortLabel(searchParams: DocumentsPageProps['searchParams'], sort: string, label: string) {
+  const active = (normalize(searchParams?.sort) || 'client') === sort;
+  const dir = normalize(searchParams?.dir) || 'asc';
+  return `${label}${active ? (dir === 'desc' ? ' ↓' : ' ↑') : ''}`;
 }
 
 function matchesSearch(document: DocumentRow, context: DocumentContext, query: string) {
@@ -240,11 +295,11 @@ async function loadDocumentContext(documents: DocumentRow[], organizationId: str
     const contract = entity === 'contract' || entity === 'order' ? contractMap.get(document.related_id) ?? null : null;
     const quote = entity === 'quote' ? quoteMap.get(document.related_id) ?? null : contract?.quote_id ? quoteMap.get(contract.quote_id) ?? null : null;
     const lead = leadForDocument(document);
-    const clientName = directLeadName(lead) || 'Unassigned client';
+    const clientName = directLeadName(lead) || demoClientFromFilename(document.file_name) || 'Client pending link';
     const docType = documentTypeLabel(document.doc_type);
     acc[document.id] = {
       clientName,
-      leadName: lead?.contact_name ? `Lead: ${lead.contact_name}` : directLeadName(lead) ? `Lead: ${directLeadName(lead)}` : null,
+      leadName: lead?.contact_name ? `Lead: ${lead.contact_name}` : directLeadName(lead) ? `Lead: ${directLeadName(lead)}` : 'Lead context pending',
       linkedLabel: recordLabel(document, quote),
       linkedHref: recordRoute(document),
       documentTitle: `${clientName} — ${docType}`,
@@ -253,6 +308,34 @@ async function loadDocumentContext(documents: DocumentRow[], organizationId: str
     };
     return acc;
   }, {});
+}
+
+function sortDocuments(documents: DocumentRow[], contextById: Record<string, DocumentContext>, sort: string, dir: string) {
+  const direction = dir === 'desc' ? -1 : 1;
+  const sorted = [...documents].sort((a, b) => {
+    const aContext = contextById[a.id];
+    const bContext = contextById[b.id];
+    const aValue = sort === 'document'
+      ? aContext.documentTitle
+      : sort === 'record'
+        ? aContext.linkedLabel
+        : sort === 'status'
+          ? statusBadge(a).label
+          : sort === 'date'
+            ? normalize(a.uploaded_at)
+            : aContext.clientName;
+    const bValue = sort === 'document'
+      ? bContext.documentTitle
+      : sort === 'record'
+        ? bContext.linkedLabel
+        : sort === 'status'
+          ? statusBadge(b).label
+          : sort === 'date'
+            ? normalize(b.uploaded_at)
+            : bContext.clientName;
+    return aValue.localeCompare(bValue) * direction;
+  });
+  return sorted;
 }
 
 export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
@@ -279,19 +362,20 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   const selectedStatus = normalize(searchParams?.status).toLowerCase();
   const selectedType = normalize(searchParams?.type).toLowerCase();
   const selectedView = normalize(searchParams?.view) || 'client';
+  const selectedSort = normalize(searchParams?.sort) || 'client';
+  const selectedDir = normalize(searchParams?.dir) || 'asc';
 
-  const filteredDocuments = documents.filter((document) => {
+  const filteredDocuments = sortDocuments(documents.filter((document) => {
     const context = contextById[document.id];
     const statusMatch = !selectedStatus || normalize(document.status).toLowerCase() === selectedStatus;
     const typeMatch = !selectedType || normalize(document.doc_type).toLowerCase() === selectedType;
     return statusMatch && typeMatch && matchesSearch(document, context, query);
-  });
+  }), contextById, selectedSort, selectedDir);
 
   const statusOptions = Array.from(new Set(documents.map((document) => normalize(document.status)).filter(Boolean))).sort();
   const typeOptions = Array.from(new Set(documents.map((document) => normalize(document.doc_type)).filter(Boolean))).sort();
   const needsReview = documents.filter((document) => isNeedsReview(document.status)).length;
   const approved = documents.filter((document) => isApproved(document.status)).length;
-  const expired = documents.filter(isExpired).length;
   const expiringSoon = documents.filter(isExpiringSoon).length;
   const generatedPdfs = documents.filter((document) => normalize(document.file_name).toLowerCase().endsWith('.pdf') || normalize(document.doc_type).toLowerCase().includes('pdf')).length;
 
@@ -317,16 +401,15 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm"><FaIcon icon="download" fixedWidth />Export view</button>
-          <button type="button" className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#061c2e] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(6,28,46,0.2)]"><FaIcon icon="cloud-upload" fixedWidth />Upload / Register</button>
+          <Link href="/leads" className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#061c2e] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(6,28,46,0.2)]"><FaIcon icon="users" fixedWidth />Attach from lead</Link>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metricCard('Total', documents.length, 'Across active clients', 'file-text-o', 'bg-blue-50 text-[#0c7fff]')}
         {metricCard('Needs review', needsReview, 'Awaiting action', 'exclamation-circle', 'bg-amber-50 text-amber-700')}
         {metricCard('Approved', approved, 'Ready to use', 'check-circle-o', 'bg-emerald-50 text-emerald-700')}
-        {metricCard('Expiring soon', expiringSoon, 'Within 30 days', 'clock-o', 'bg-orange-50 text-orange-700')}
-        {metricCard('Generated PDFs', generatedPdfs, 'Quotes and orders', 'file-pdf-o', 'bg-rose-50 text-rose-700')}
+        {metricCard('Generated PDFs', generatedPdfs, `${expiringSoon} expiring soon`, 'file-pdf-o', 'bg-rose-50 text-rose-700')}
       </section>
 
       <section className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
@@ -354,48 +437,59 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
             <Link href="/documents" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Reset</Link>
           </div>
         </form>
+        <div className="mt-3 grid gap-2 rounded-2xl bg-slate-50 p-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_100px]">
+          <Link href={sortHref(searchParams, 'document')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'document', 'Document')}</Link>
+          <Link href={sortHref(searchParams, 'client')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'client', 'Client')}</Link>
+          <Link href={sortHref(searchParams, 'record')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'record', 'Linked record')}</Link>
+          <Link href={sortHref(searchParams, 'status')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'status', 'Status')}</Link>
+          <Link href={sortHref(searchParams, 'date')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'date', 'Date')}</Link>
+          <span className="px-3 py-2">PDF</span>
+        </div>
       </section>
 
       {Object.entries(grouped).length ? (
         <section className="space-y-4">
           {Object.entries(grouped).map(([groupName, groupDocuments]) => {
             const hasAttention = groupDocuments.some((document) => isNeedsReview(document.status) || isExpired(document) || isExpiringSoon(document));
+            const defaultOpen = selectedView === 'status' ? groupName !== 'Approved' : hasAttention;
             return (
-              <div key={groupName} className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-                <div className="flex items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-sky-50/70 px-5 py-4">
+              <details key={groupName} open={defaultOpen} className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-sky-50/70 px-5 py-4 marker:hidden">
                   <div className="flex items-center gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-[#0c7fff]"><FaIcon icon="building-o" fixedWidth /></span>
                     <div>
                       <h2 className="text-base font-black text-slate-950">{groupName}</h2>
-                      <p className="text-xs font-semibold text-slate-500">{groupDocuments.length} document{groupDocuments.length === 1 ? '' : 's'} · grouped by {selectedView}</p>
+                      <p className="text-xs font-semibold text-slate-500">{groupDocuments.length} document{groupDocuments.length === 1 ? '' : 's'} · click to expand/collapse</p>
                     </div>
                   </div>
                   <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${hasAttention ? 'bg-amber-50 text-amber-700 ring-amber-100' : 'bg-emerald-50 text-emerald-700 ring-emerald-100'}`}><FaIcon icon={hasAttention ? 'exclamation-circle' : 'check-circle-o'} fixedWidth />{hasAttention ? 'Attention' : 'Healthy'}</span>
-                </div>
+                </summary>
                 <div className="divide-y divide-slate-100">
                   {groupDocuments.map((document) => {
                     const context = contextById[document.id];
                     const badge = statusBadge(document);
                     return (
-                      <div key={document.id} className={`grid gap-4 px-5 py-4 lg:grid-cols-[44px_1.4fr_1fr_130px_170px_110px] lg:items-center ${badge.label === 'Needs review' || badge.label === 'Expired' || badge.label === 'Expiring soon' ? 'bg-amber-50/45' : 'bg-white'}`}>
-                        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100"><FaIcon icon={typeIcon(document.doc_type)} fixedWidth /></span>
+                      <div key={document.id} className={`grid gap-4 px-5 py-4 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_100px] lg:items-center ${badge.label === 'Needs review' || badge.label === 'Expired' || badge.label === 'Expiring soon' ? 'bg-amber-50/45' : 'bg-white'}`}>
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100"><FaIcon icon={typeIcon(document.doc_type)} fixedWidth /></span>
+                          <div>
+                            <p className="font-black text-slate-950">{context.documentTitle}</p>
+                            <p className="mt-1 text-xs font-semibold text-slate-500">{context.documentSubtitle}</p>
+                          </div>
+                        </div>
                         <div>
-                          <p className="font-black text-slate-950">{context.documentTitle}</p>
-                          <p className="mt-1 text-xs font-semibold text-slate-500">{context.documentSubtitle}</p>
-                          <p className="mt-1 text-xs font-semibold text-slate-400">{context.leadName ?? 'Lead context not linked'}</p>
+                          <p className="font-black text-slate-950">{context.clientName}</p>
+                          <p className="mt-1 text-xs font-semibold text-slate-400">{context.leadName}</p>
                         </div>
                         <Link href={context.linkedHref} className="font-black text-[#075985] transition hover:text-[#0c7fff] hover:underline">{context.linkedLabel}</Link>
                         <span className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${badge.className}`}><FaIcon icon={badge.icon} fixedWidth />{badge.label}</span>
-                        <div className="text-xs font-semibold text-slate-500">
-                          <p>{formatDate(document.uploaded_at)}</p>
-                          <p className="mt-1">Expiry: {formatDate(document.expires_at)}</p>
-                        </div>
-                        {context.pdfHref ? <a href={context.pdfHref} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-full bg-[#061c2e] px-4 py-2 text-xs font-black text-white shadow-sm"><FaIcon icon="external-link" fixedWidth /> PDF</a> : <span className="text-xs font-bold text-slate-400">No PDF</span>}
+                        <div className="text-xs font-semibold text-slate-500"><p>{formatDate(document.uploaded_at)}</p><p className="mt-1">Expiry: {formatDate(document.expires_at)}</p></div>
+                        {context.pdfHref ? <a href={context.pdfHref} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 rounded-full bg-[#061c2e] px-4 py-2 text-xs font-black text-white shadow-sm"><FaIcon icon="external-link" fixedWidth />PDF</a> : <span className="rounded-full bg-slate-100 px-3 py-2 text-center text-xs font-black text-slate-400">No PDF</span>}
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              </details>
             );
           })}
         </section>
