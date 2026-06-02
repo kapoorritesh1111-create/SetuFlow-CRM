@@ -70,14 +70,6 @@ export default async function WorkspaceIssuesPage({ searchParams }: { searchPara
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/55 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#0c7fff] dark:text-violet-300">Setu Mission Control</p>
-          <h1 className="mt-1 text-2xl font-black text-slate-950 dark:text-white">Issues Board</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Global filters apply here. Use board controls for view, search, visibility, and reporting.</p>
-        </div>
-      </div>
-
       <section className="overflow-hidden rounded-[1.5rem] border border-slate-800 bg-[#07111f] text-white shadow-[0_18px_70px_rgba(2,6,23,0.28)] ring-1 ring-white/[0.05]">
         <div className="flex items-stretch overflow-x-auto">
           {metrics.map((metric) => <MetricTile key={metric.label} metric={metric} />)}
