@@ -1635,19 +1635,31 @@ async function manualRefresh(){
 }
 
 function subscribeRealtime(){
+  // Unique channel name per tab to avoid cross-tab conflicts
+  const channelId='sprint_issues_live_'+Math.random().toString(36).slice(2,7);
   realtimeChannel=db
-    .channel('sprint_issues_live')
-    .on('postgres_changes',{event:'*',schema:'public',table:'sprint_issues'},payload=>{
+    .channel(channelId)
+    .on('postgres_changes',{
+      event:'*',
+      schema:'public',
+      table:'sprint_issues'
+      // No filter — REPLICA IDENTITY FULL means we get full rows; org filter via RLS
+    },payload=>{
       realtimeEventCount++;
-      setText('realtime-event-count',realtimeEventCount);
+      // Update all live event counters
+      ['realtime-event-count','realtime-event-count-ov'].forEach(id=>{
+        const el=document.getElementById(id);if(el)el.textContent=realtimeEventCount;
+      });
       handleRealtimeChange(payload);
     })
     .subscribe(status=>{
       if(status==='SUBSCRIBED'){
         setLiveStatus('live','Live · auto-updating');
-        toast('✓ Live tracker connected',true);
-      } else if(status==='CLOSED'||status==='CHANNEL_ERROR'){
-        setLiveStatus('stale','Realtime disconnected');
+      } else if(status==='CLOSED'||status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+        setLiveStatus('stale','Reconnecting…');
+        // Auto-reconnect after 3 seconds
+        realtimeChannel=null;
+        setTimeout(()=>{if(!realtimeChannel)subscribeRealtime();},3000);
       } else {
         setLiveStatus('checking','Connecting…');
       }
@@ -1658,43 +1670,51 @@ async function handleRealtimeChange(payload){
   const{eventType,new:newRow,old:oldRow}=payload;
 
   if(eventType==='INSERT'){
-    // Fetch the full row from DB so trigger-applied defaults (reporter, org) are included
-    try{
-      const{data}=await db.from('sprint_issues').select('*').eq('id',newRow.id).single();
-      const fullRow=data||newRow;
-      ALL.push(fullRow);
-      const ref=fullRow.issue_ref||('#'+(fullRow.issue_number||'?'));
-      const reporter=fullRow.reporter_name?(' by '+fullRow.reporter_name.split(' ')[0]):'';
-      toast('✓ New issue'+reporter+': '+ref);
-    } catch(e){
-      ALL.push(newRow);
-      toast('✓ New issue added: '+(newRow.issue_ref||'#'+newRow.issue_number));
+    // REPLICA IDENTITY FULL → newRow has all columns already
+    // Still do a secondary fetch to get trigger-applied defaults (reporter_name, org)
+    // which run BEFORE the change reaches realtime, so newRow should already have them
+    // But we verify: if reporter is missing, fetch fresh
+    let fullRow=newRow;
+    if(!newRow.reporter_name||!newRow.organization_id){
+      try{
+        const{data}=await db.from('sprint_issues').select('*').eq('id',newRow.id).single();
+        if(data)fullRow=data;
+      }catch(e){}
     }
+    // Only add if not already in ALL (prevents duplicate on reconnect)
+    if(!ALL.find(i=>i.id===fullRow.id)) ALL.push(fullRow);
+    const ref=fullRow.issue_ref||('#'+(fullRow.issue_number||'?'));
+    const reporter=fullRow.reporter_name?(' by '+fullRow.reporter_name.split(' ')[0]):'';
+    toast('⚡ New issue'+reporter+': '+ref,true);
+
   } else if(eventType==='UPDATE'){
-    // Fetch full updated row to ensure all fields are current
-    try{
-      const{data}=await db.from('sprint_issues').select('*').eq('id',newRow.id).single();
-      const fullRow=data||newRow;
-      const idx=ALL.findIndex(i=>i.id===fullRow.id);
-      if(idx>=0) ALL[idx]=fullRow;
-      else ALL.push(fullRow);
-      if(openIssue&&openIssue.id===fullRow.id){openIssue=fullRow;fillPanel(fullRow);}
-    } catch(e){
-      const idx=ALL.findIndex(i=>i.id===newRow.id);
-      if(idx>=0) ALL[idx]=newRow; else ALL.push(newRow);
-      if(openIssue&&openIssue.id===newRow.id){openIssue=newRow;fillPanel(newRow);}
+    // With REPLICA IDENTITY FULL, newRow contains the complete updated row
+    // Use it directly — no secondary fetch needed
+    const updRow=newRow;
+    const idx=ALL.findIndex(i=>i.id===updRow.id);
+    if(idx>=0) ALL[idx]=updRow;
+    else ALL.push(updRow);
+    // If this issue is open in the detail panel, refresh it live
+    if(openIssue&&openIssue.id===updRow.id){
+      openIssue=updRow;
+      fillPanel(updRow);
+      toast('↺ Issue updated: '+(updRow.issue_ref||updRow.title?.slice(0,40)),true);
     }
+
   } else if(eventType==='DELETE'){
-    ALL=ALL.filter(i=>i.id!==oldRow.id);
+    const delId=oldRow?.id;
+    if(delId) ALL=ALL.filter(i=>i.id!==delId);
+    if(openIssue&&openIssue.id===delId) closePanel();
     toast('Issue removed from tracker');
   }
 
-  buildAreaFilter();buildSidebar();render();animateKPIs();updateLastRefresh();
-  // Also update live counters in both panels
-  const cnt=document.getElementById('realtime-event-count');
-  if(cnt) cnt.textContent=realtimeEventCount;
-  const cntOv=document.getElementById('realtime-event-count-ov');
-  if(cntOv) cntOv.textContent=realtimeEventCount;
+  // Full UI refresh — all panels, sidebar, KPIs, health strip
+  buildAreaFilter();
+  buildSidebar();
+  render();
+  animateKPIs();
+  updateHealthStrip();
+  updateLastRefresh();
 }
 
 function setLiveStatus(state,label){

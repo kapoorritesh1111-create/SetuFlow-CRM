@@ -146,33 +146,59 @@ const Docs = (() => {
     <p>Live issue counts and roadmap signals refresh from Supabase when available.</p>
   </div>
 </section>
-<section class="quick-grid">
+<section class="quick-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
   <div class="quick-card internal-only">
-    <div class="quick-icon" style="background:#0d9488">&#x27A4;</div>
+    <div class="quick-icon" style="background:#0d9488">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </div>
     <h3>Share Doc</h3>
     <p>Share this documentation with team members or external stakeholders.</p>
     <button onclick="Docs.openShare()">Share documentation</button>
     <div class="quick-card-arrow">&#x2192;</div>
   </div>
   <div class="quick-card internal-only">
-    <div class="quick-icon" style="background:#2563eb">&#x25CE;</div>
+    <div class="quick-icon" style="background:#2563eb">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
     <h3>Issue Tracker <span class="quick-card-count" id="issueQuick">${openIssues}</span></h3>
     <p>View open issues, report bugs, or track documentation tasks and improvements.</p>
     <a href="setuflow-issue-tracker.html">Open issue tracker</a>
     <div class="quick-card-arrow">&#x2192;</div>
   </div>
   <div class="quick-card internal-only">
-    <div class="quick-icon" style="background:#7c3aed">&#x2691;</div>
+    <div class="quick-icon" style="background:#7c3aed">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
     <h3>Roadmap <span class="quick-card-count" style="background:#7c3aed">${milestones}</span></h3>
     <p>Explore upcoming features, milestones, and product delivery timelines.</p>
     <a href="setuflow-roadmap.html">Open roadmap</a>
     <div class="quick-card-arrow">&#x2192;</div>
   </div>
   <div class="quick-card">
-    <div class="quick-icon" style="background:#db2777">&#x25a3;</div>
+    <div class="quick-icon" style="background:#db2777">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    </div>
     <h3>${isInternal() ? 'Add / Review' : 'View'} Screenshots</h3>
     <p>Browse all documentation sections and live UI snapshots at a glance.</p>
     <button onclick="Docs.openTopic('live-ui')">Open snapshots</button>
+    <div class="quick-card-arrow">&#x2192;</div>
+  </div>
+  <div class="quick-card internal-only">
+    <div class="quick-icon" style="background:#0f766e">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
+    <h3>Pre-Demo Readiness</h3>
+    <p>57-item checklist. Run before every prospect demo. Sign-off writes a DEMO_READY verdict to the DB.</p>
+    <a href="setuflow-demo-checklist.html">Open checklist</a>
+    <div class="quick-card-arrow">&#x2192;</div>
+  </div>
+  <div class="quick-card internal-only">
+    <div class="quick-icon" style="background:#4f46e5">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <h3>QA Test Suite</h3>
+    <p>9 suites, 49 steps covering the full commercial journey. Failed steps auto-file bugs in the tracker.</p>
+    <a href="setuflow-e2e-testing.html">Open test suite</a>
     <div class="quick-card-arrow">&#x2192;</div>
   </div>
 </section>
@@ -2796,17 +2822,32 @@ flowchart LR
       // Wire directly to Supabase sprint_issues table — same source as issue tracker
       const SB_URL = 'https://sjzfzloggabsmcuxktnl.supabase.co';
       const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqemZ6bG9nZ2Fic21jdXhrdG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjgzMTYsImV4cCI6MjA4ODY0NDMxNn0.DvHcAw34QCFB00WtXJ95MRCHhtrZunDQvWlm9NQo-0w';
-      const r = await fetch(`${SB_URL}/rest/v1/sprint_issues?select=status`, {
+      // Filter to SETU Flow main org (3327b9a7) — same as issue tracker
+      const ORG = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+      const r = await fetch(`${SB_URL}/rest/v1/sprint_issues?select=status,severity&organization_id=eq.${ORG}`, {
         headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
       });
       if (r.ok) {
         const rows = await r.json();
         const open = rows.filter(i => i.status && i.status !== 'Resolved' && i.status !== "Won't Fix" && i.status !== 'Deferred').length;
         const resolved = rows.filter(i => i.status === 'Resolved').length;
-        metrics = { ...metrics, open, resolved };
+        const criticalHigh = rows.filter(i => {
+          const s = (i.status||'').toLowerCase();
+          const sev = (i.severity||'').toLowerCase();
+          return s !== 'resolved' && s !== "won't fix" && s !== 'deferred' && (sev === 'critical' || sev === 'high');
+        }).length;
+        metrics = { ...metrics, open, resolved, criticalHigh };
+        // Update topbar pill
         const pill = document.getElementById('issuePill');
         if (pill) { pill.textContent = open; pill.style.background = open > 5 ? '#ef4444' : '#22c55e'; }
-        // Re-render right rail to show live numbers
+        // Update inline overview metrics (already rendered, patch in place)
+        const om = document.getElementById('openMetric');
+        const iq = document.getElementById('issueQuick');
+        const rm = document.getElementById('riskMetric');
+        if (om) om.textContent = open;
+        if (iq) iq.textContent = open;
+        if (rm) rm.textContent = criticalHigh + ' critical / high';
+        // Re-render right rail for live numbers
         renderRail();
         return;
       }
