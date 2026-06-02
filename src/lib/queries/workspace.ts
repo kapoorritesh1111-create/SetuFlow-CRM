@@ -3,6 +3,8 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 
 export const SETU_FLOW_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
 
+const CLOSED_STATUSES = ['Resolved', "Won't Fix", 'Deferred'] as const;
+
 export type SprintIssue = {
   id: string;
   issue_ref: string | null;
@@ -60,6 +62,10 @@ export type WorkspaceStats = {
   sprintMeta: SprintMeta | null;
 };
 
+function isOpenIssue(issue: Pick<SprintIssue, 'status'>) {
+  return !CLOSED_STATUSES.includes((issue.status ?? '') as (typeof CLOSED_STATUSES)[number]);
+}
+
 export async function getWorkspaceIssues(sprintNumber?: number): Promise<SprintIssue[]> {
   const admin = createAdminSupabaseClient();
   const supabase = admin ?? await createClient();
@@ -85,12 +91,13 @@ export async function getWorkspaceStats(): Promise<WorkspaceStats> {
   const sprints = [...new Set(issues.map((i) => i.sprint_number))].sort((a, b) => b - a);
   const activeSprint = sprints[0] ?? 23;
 
-  const open = issues.filter((i) => !['Resolved', "Won't Fix", 'Deferred'].includes(i.status ?? '')).length;
+  const openIssues = issues.filter(isOpenIssue);
+  const open = openIssues.length;
   const inProgress = issues.filter((i) => i.status === 'In Progress').length;
   const resolved = issues.filter((i) => ['Resolved', "Won't Fix"].includes(i.status ?? '')).length;
   const deferred = issues.filter((i) => i.status === 'Deferred').length;
-  const critical = issues.filter((i) => i.severity?.toLowerCase() === 'critical' && open).length;
-  const high = issues.filter((i) => i.severity?.toLowerCase() === 'high' && !['Resolved', "Won't Fix", 'Deferred'].includes(i.status ?? '')).length;
+  const critical = openIssues.filter((i) => i.severity?.toLowerCase() === 'critical').length;
+  const high = openIssues.filter((i) => i.severity?.toLowerCase() === 'high').length;
 
   // Get sprint meta
   const admin = createAdminSupabaseClient();
