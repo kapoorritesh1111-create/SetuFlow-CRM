@@ -6,27 +6,13 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import type { Database } from '@/types/database';
 
 type DocumentRow = Database['public']['Tables']['documents']['Row'];
-
 type LeadRow = { id: string; company_name: string | null; contact_name: string | null };
 type QuoteRow = { id: string; quote_number: string | null; lead_id: string | null };
 type ContractRow = { id: string; quote_id: string | null; lead_id: string | null };
 type OrderRow = { id: string; order_number: string | null; lead_id: string | null; source_quote_id: string | null; legacy_contract_id: string | null };
-type OrderDocumentRow = {
-  id: string;
-  order_id: string;
-  legacy_contract_id: string | null;
-  document_id: string | null;
-  document_type: string;
-  stage_key: string | null;
-  status: string | null;
-  version_no: number | null;
-  pdf_storage_path: string | null;
-  created_at: string | null;
-};
+type OrderDocumentRow = { id: string; order_id: string; legacy_contract_id: string | null; document_id: string | null; document_type: string; stage_key: string | null; status: string | null; version_no: number | null; pdf_storage_path: string | null; created_at: string | null };
 
-type DocumentsPageProps = {
-  searchParams?: { q?: string; status?: string; type?: string; view?: string; sort?: string; dir?: string };
-};
+type DocumentsPageProps = { searchParams?: { q?: string; status?: string; type?: string; view?: string; sort?: string; dir?: string } };
 
 type DocumentItem = {
   id: string;
@@ -239,11 +225,14 @@ function buildWorkspaceRoute(item: DocumentItem, quote?: QuoteRow | null, order?
   return '/documents';
 }
 
-function buildPdfHref(item: DocumentItem, order?: OrderRow | null, contract?: ContractRow | null) {
+function buildPdfHref(item: DocumentItem, quote?: QuoteRow | null, order?: OrderRow | null, contract?: ContractRow | null) {
   const storagePath = safePdfStoragePath(item.pdfStoragePath);
   if (storagePath) return storagePath;
 
   const type = normalize(item.docType).toLowerCase();
+  if (item.relatedEntity === 'quote' && quote?.id && type.includes('quote')) return `/api/quotes/${quote.id}/pdf`;
+  if (item.relatedEntity === 'quote' && type.includes('quote')) return `/api/quotes/${item.relatedId}/pdf`;
+
   const legacyContractId = item.legacyContractId ?? order?.legacy_contract_id ?? contract?.id ?? null;
   if (legacyContractId) {
     if (type.includes('invoice') || type.includes('completion')) return `/api/orders/${legacyContractId}/invoice/pdf`;
@@ -341,7 +330,7 @@ async function buildItemsAndContext(organizationId: string) {
       linkedHref,
       documentTitle: `${clientName} — ${docType}`,
       documentSubtitle: `${docType} · ${rawFileMeta(item.fileName)}${item.source === 'order_document' ? ' · Order workflow' : ''}`,
-      pdfHref: buildPdfHref(item, order, contract),
+      pdfHref: buildPdfHref(item, quote, order, contract),
       pdfLabel: pdfUnavailableLabel(item),
     };
     return acc;
