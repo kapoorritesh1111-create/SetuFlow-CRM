@@ -63,7 +63,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
     };
   }
 
-  if (pathname === PRODUCT_ROUTES.app.reports || pathname.startsWith(`${PRODUCT_ROUTES.app.reports}/`)) {
+  if (pathname === '/reports' || pathname.startsWith('/reports/')) {
     return {
       title: 'Reports',
       description: 'Track conversion, pricing variance, blockers, and audited workflow changes from one explainable operator-facing workspace.',
