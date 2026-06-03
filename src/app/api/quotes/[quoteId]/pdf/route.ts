@@ -9,63 +9,13 @@ const NAVY = '#0b2e4a';
 const BLUE = '#1d4ed8';
 const LINE = '#cbd5e1';
 const PANEL = '#f8fafc';
+const NL = String.fromCharCode(10);
+const BS = String.fromCharCode(92);
 
-function n(value: unknown, fallback = 0) {
-  const parsed = Number(value ?? fallback);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
+type PdfRow = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number };
 
-function s(value: unknown, fallback = '-') {
-  const text = String(value ?? '').trim();
-  return text || fallback;
-}
-
-function c(value: unknown, max = 36, fallback = '-') {
-  const text = s(value, fallback);
-  return text.length > max ? `${text.slice(0, max - 3)}...` : text;
-}
-
-function d(value: unknown) {
-  const text = s(value, '');
-  if (!text) return '-';
-  const date = new Date(text.includes('T') ? text : `${text}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB');
-}
-
-function esc(value: string) {
-  return String(value)
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-    .replace(/[\r\n]+/g, ' ');
-}
-
-function rgb(hex: string) {
-  const value = Number.parseInt(hex.replace('#', ''), 16);
-  return `${(((value >> 16) & 255) / 255).toFixed(3)} ${(((value >> 8) & 255) / 255).toFixed(3)} ${((value & 255) / 255).toFixed(3)}`;
-}
-
-function money(value: unknown, currency = 'USD') {
-  return `${currency} ${n(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function basis(value: unknown) {
-  const normalized = s(value, 'FOB').replace(/_/g, ' ').trim().toUpperCase();
-  return normalized.includes('EX') ? 'EXW' : normalized || 'FOB';
-}
-
-function quoteDocumentStatus(quote: any) {
-  return quote.approval_required && !quote.approved_at ? 'submitted' : 'approved';
-}
-
-function textWidth(text: string, size: number, bold = false) {
-  return String(text).length * size * (bold ? 0.56 : 0.52);
-}
-
-type TextOp = { x: number; y: number; text: string; size?: number; bold?: boolean; color?: string; right?: boolean };
-type QuoteLine = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number; note: string };
-
-function buildPdf(data: {
+type PdfData = {
   quoteNo: string;
   org: any;
   buyer: any;
@@ -77,149 +27,178 @@ function buildPdf(data: {
   quoteDate: string;
   validUntil: string;
   terms: string;
-  rows: QuoteLine[];
-}) {
+  rows: PdfRow[];
+};
+
+function num(value: unknown, fallback = 0) {
+  const parsed = Number(value ?? fallback);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function text(value: unknown, fallback = '-') {
+  const out = String(value ?? '').trim();
+  return out || fallback;
+}
+
+function clip(value: unknown, max = 36, fallback = '-') {
+  const out = text(value, fallback);
+  return out.length > max ? `${out.slice(0, Math.max(1, max - 3))}...` : out;
+}
+
+function dateText(value: unknown) {
+  const out = text(value, '');
+  if (!out) return '-';
+  const date = new Date(out.includes('T') ? out : `${out}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-GB');
+}
+
+function pdfText(value: string) {
+  return String(value).split(BS).join(BS + BS).split('(').join(BS + '(').split(')').join(BS + ')').split(NL).join(' ');
+}
+
+function rgb(hex: string) {
+  const value = Number.parseInt(hex.replace('#', ''), 16);
+  return `${(((value >> 16) & 255) / 255).toFixed(3)} ${(((value >> 8) & 255) / 255).toFixed(3)} ${((value & 255) / 255).toFixed(3)}`;
+}
+
+function money(value: unknown, currency = 'USD') {
+  return `${currency} ${num(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function quoteBasis(value: unknown) {
+  const out = text(value, 'FOB').replaceAll('_', ' ').trim().toUpperCase();
+  return out.includes('EX') ? 'EXW' : out || 'FOB';
+}
+
+function docStatus(quote: any) {
+  return quote.approval_required && !quote.approved_at ? 'submitted' : 'approved';
+}
+
+function width(value: string, size: number, bold = false) {
+  return value.length * size * (bold ? 0.56 : 0.52);
+}
+
+function buildPdf(data: PdfData) {
   const objects: string[] = [];
   const add = (body: string) => {
     objects.push(body);
     return objects.length;
   };
-
   const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const fontBold = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
   const ops: string[] = [];
-  const texts: TextOp[] = [];
-
+  const copy: PdfText[] = [];
+  const left = 24;
+  const right = 588;
   const box = (x: number, y: number, w: number, h: number, fill?: string, stroke?: string) => {
     if (fill) ops.push(`${rgb(fill)} rg ${x} ${y} ${w} ${h} re f`);
     if (stroke) ops.push(`${rgb(stroke)} RG ${x} ${y} ${w} ${h} re S`);
   };
-  const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, width = 0.7) => {
-    ops.push(`${rgb(color)} RG ${width} w ${x1} ${y1} m ${x2} ${y2} l S`);
-  };
-  const txt = (x: number, y: number, text: string, size = 7, bold = false, color = INK, right = false) => {
-    texts.push({ x, y, text, size, bold, color, right });
-  };
-
+  const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, lineWidth = 0.7) => ops.push(`${rgb(color)} RG ${lineWidth} w ${x1} ${y1} m ${x2} ${y2} l S`);
+  const put = (x: number, y: number, value: string, size = 7, bold = false, color = INK, alignRight = false) => copy.push({ x, y, text: value, size, bold, color, right: alignRight });
   const total = data.rows.reduce((sum, row) => sum + row.total, 0);
 
   box(0, 0, 612, 792, '#ffffff');
-  box(24, 724, 564, 44, '#ffffff', LINE);
-  box(24, 724, 44, 44, NAVY);
-  txt(35, 746, 'SETU', 7, true, '#ffffff');
-  txt(78, 750, c(data.org?.legal_name ?? data.org?.name, 34, 'SETU Groups LLC'), 10.5, true, NAVY);
-  txt(78, 736, c(data.org?.website, 42, 'https://www.setuflowcrm.com'), 6.4, false, MUTED);
-  txt(204, 752, 'SETU Flow - Client Price List', 15.2, true, NAVY);
-  txt(204, 736, 'Pro Forma Quotation', 8.8, false, MUTED);
+  box(left, 724, 564, 44, '#ffffff', LINE);
+  box(left, 724, 44, 44, NAVY);
+  put(35, 746, 'SETU', 7, true, '#ffffff');
+  put(78, 750, clip(data.org?.legal_name ?? data.org?.name, 34, 'SETU Groups LLC'), 10.5, true, NAVY);
+  put(78, 736, clip(data.org?.website, 42, 'https://www.setuflowcrm.com'), 6.4, false, MUTED);
+  put(204, 752, 'SETU Flow - Client Price List', 15.2, true, NAVY);
+  put(204, 736, 'Pro Forma Quotation', 8.8, false, MUTED);
   box(474, 732, 104, 28, PANEL, LINE);
-  txt(578, 750, data.quoteNo, 8.5, true, NAVY, true);
-  txt(578, 739, `${data.quoteDate} | Valid ${data.validUntil}`, 5.7, false, MUTED, true);
+  put(578, 750, data.quoteNo, 8.5, true, NAVY, true);
+  put(578, 739, `${data.quoteDate} | Valid ${data.validUntil}`, 5.7, false, MUTED, true);
 
   box(24, 612, 176, 92, PANEL, LINE);
-  txt(36, 686, 'SELLER / EXPORTER', 6.5, true, BLUE);
-  txt(36, 672, c(data.org?.legal_name ?? data.org?.name, 34, 'SETU Groups LLC'), 8, true);
-  txt(36, 658, c(data.org?.registered_address, 38), 6.2, false, MUTED);
-  txt(36, 648, c([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 38), 6.2, false, MUTED);
-  txt(36, 632, c(data.org?.contact_email, 36), 6.2, false, MUTED);
-  txt(36, 622, `Tax ID: ${c(data.org?.tax_id, 28)}`, 6.2, false, MUTED);
+  put(36, 686, 'SELLER / EXPORTER', 6.5, true, BLUE);
+  put(36, 672, clip(data.org?.legal_name ?? data.org?.name, 34, 'SETU Groups LLC'), 8, true);
+  put(36, 658, clip(data.org?.registered_address, 38), 6.2, false, MUTED);
+  put(36, 648, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 38), 6.2, false, MUTED);
+  put(36, 632, clip(data.org?.contact_email, 36), 6.2, false, MUTED);
+  put(36, 622, `Tax ID: ${clip(data.org?.tax_id, 28)}`, 6.2, false, MUTED);
 
   box(216, 612, 176, 92, PANEL, LINE);
-  txt(228, 686, 'BUYER / IMPORTER', 6.5, true, BLUE);
-  txt(228, 672, c(data.buyer?.company_name, 34, 'Unknown customer'), 8, true);
-  txt(228, 658, c(data.buyer?.contact_name, 35, ''), 6.2, false, MUTED);
-  txt(228, 648, c(data.buyer?.country, 35, data.destination), 6.2, false, MUTED);
-  txt(228, 632, c(data.buyer?.email, 36), 6.2, false, MUTED);
-  txt(228, 622, c(data.buyer?.phone, 36), 6.2, false, MUTED);
+  put(228, 686, 'BUYER / IMPORTER', 6.5, true, BLUE);
+  put(228, 672, clip(data.buyer?.company_name, 34, 'Unknown customer'), 8, true);
+  put(228, 658, clip(data.buyer?.contact_name, 35, ''), 6.2, false, MUTED);
+  put(228, 648, clip(data.buyer?.country, 35, data.destination), 6.2, false, MUTED);
+  put(228, 632, clip(data.buyer?.email, 36), 6.2, false, MUTED);
+  put(228, 622, clip(data.buyer?.phone, 36), 6.2, false, MUTED);
 
   box(408, 612, 180, 92, PANEL, LINE);
   [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]].forEach(([label, value], index) => {
-    const rowY = 688 - index * 12;
-    txt(420, rowY, label, 5.3, true, MUTED);
-    txt(580, rowY, c(value, 24), 5.7, false, INK, true);
+    const y = 688 - index * 12;
+    put(420, y, label, 5.3, true, MUTED);
+    put(580, y, clip(value, 24), 5.7, false, INK, true);
   });
 
-  box(24, 590, 564, 14, '#eef6ff', '#bfdbfe');
-  txt(36, 594, 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
+  box(left, 590, 564, 14, '#eef6ff', '#bfdbfe');
+  put(36, 594, 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
 
-  const tableX = 18;
-  const tableW = 576;
   let y = 560;
-  box(tableX, y - 17, tableW, 20, '#e2e8f0', LINE);
-  const columns = [
-    { label: '#', x: 24, width: 24 },
-    { label: 'SKU', x: 62, width: 80 },
-    { label: 'Product', x: 142, width: 180 },
-    { label: 'Qty', x: 318, width: 46, right: true },
-    { label: 'Basis', x: 372, width: 50 },
-    { label: `${data.currency}/Case`, x: 458, width: 72, right: true },
-    { label: `Total ${data.currency}`, x: 582, width: 88, right: true },
-  ];
-  columns.forEach((column) => {
-    txt(column.right ? column.x : column.x, y - 10, column.label, 5, true, NAVY, Boolean(column.right));
-  });
-
+  box(18, y - 17, 576, 20, '#e2e8f0', LINE);
+  put(24, y - 10, '#', 5, true, NAVY);
+  put(62, y - 10, 'SKU', 5, true, NAVY);
+  put(142, y - 10, 'Product', 5, true, NAVY);
+  put(318, y - 10, 'Qty', 5, true, NAVY, true);
+  put(372, y - 10, 'Basis', 5, true, NAVY);
+  put(458, y - 10, `${data.currency}/Case`, 5, true, NAVY, true);
+  put(582, y - 10, `Total ${data.currency}`, 5, true, NAVY, true);
   y -= 23;
+
   data.rows.slice(0, 12).forEach((row, index) => {
-    box(tableX, y - 15, tableW, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
-    txt(24, y - 6, String(index + 1), 5.2, false, INK);
-    txt(62, y - 6, c(row.sku, 16), 5.2, false, INK);
-    txt(142, y - 6, c(row.product, 34), 5.2, index === 0, INK);
-    txt(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
-    txt(372, y - 6, row.basis, 5.2, false, INK);
-    txt(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
-    txt(582, y - 6, money(row.total, data.currency), 5.2, index === 0, INK, true);
+    box(18, y - 15, 576, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
+    put(24, y - 6, String(index + 1), 5.2);
+    put(62, y - 6, clip(row.sku, 16), 5.2);
+    put(142, y - 6, clip(row.product, 34), 5.2, index === 0);
+    put(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
+    put(372, y - 6, row.basis, 5.2);
+    put(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
+    put(582, y - 6, money(row.total, data.currency), 5.2, index === 0, INK, true);
     y -= 21;
   });
 
-  line(tableX, y + 5, tableX + tableW, y + 5, NAVY, 1.1);
-  txt(450, y - 7, 'Grand Total', 8.5, true, NAVY, true);
-  txt(582, y - 7, money(total, data.currency), 9, true, NAVY, true);
+  line(18, y + 5, 594, y + 5, NAVY, 1.1);
+  put(450, y - 7, 'Grand Total', 8.5, true, NAVY, true);
+  put(582, y - 7, money(total, data.currency), 9, true, NAVY, true);
 
-  y -= 32;
-  box(24, y - 58, 274, 58, PANEL, LINE);
-  txt(36, y - 13, 'COMMERCIAL & COMPLIANCE', 7, true, NAVY);
-  [`Destination: ${data.destination}`, `Basis: ${data.basis}`, 'Specs, ingredients and nutrition available on request.', 'HS codes are indicative and should be validated.'].forEach((lineText, index) => {
-    txt(36, y - 27 - index * 10, `- ${c(lineText, 72)}`, 5.7, false, MUTED);
-  });
-  box(314, y - 58, 274, 58, PANEL, LINE);
-  txt(326, y - 13, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
+  y -= 44;
+  box(24, y - 68, 274, 68, PANEL, LINE);
+  put(36, y - 15, 'COMMERCIAL & COMPLIANCE', 7, true, NAVY);
+  [`Destination: ${data.destination}`, `Basis: ${data.basis}`, 'Specs, ingredients and nutrition available on request.', 'HS codes are indicative and should be validated.'].forEach((lineText, index) => put(36, y - 31 - index * 10, `- ${clip(lineText, 72)}`, 5.7, false, MUTED));
+
+  box(314, y - 68, 274, 68, PANEL, LINE);
+  put(326, y - 15, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
   [['Subtotal', money(total, data.currency)], ['Documentation / packaging', money(0, data.currency)], ['Freight / insurance', 'Not included'], ['Taxes / duties', 'Per Incoterm']].forEach(([label, value], index) => {
-    txt(326, y - 27 - index * 10, label, 5.8, false, MUTED);
-    txt(580, y - 27 - index * 10, value, 5.8, false, INK, true);
+    put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
+    put(580, y - 31 - index * 10, value, 5.8, false, INK, true);
   });
 
-  y -= 76;
-  box(24, y - 54, 564, 54, '#ffffff', LINE);
-  txt(36, y - 13, 'TERMS & CONDITIONS', 7, true, NAVY);
-  [`Quote valid until ${data.validUntil}.`, `Prices quoted on ${data.basis} basis from ${data.place}.`, 'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.', 'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.', c(data.terms, 120)].forEach((lineText, index) => {
-    txt(36, y - 25 - index * 8.5, c(lineText, 138), 5.2, false, MUTED);
-  });
+  y -= 90;
+  box(left, y - 76, right - left, 76, '#ffffff', LINE);
+  put(36, y - 15, 'TERMS & CONDITIONS', 7, true, NAVY);
+  [`Quote valid until ${data.validUntil}.`, `Prices quoted on ${data.basis} basis from ${data.place}.`, 'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.', 'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.', clip(data.terms, 118)].forEach((lineText, index) => put(36, y - 31 - index * 9.5, clip(lineText, 135), 5.2, false, MUTED));
 
-  const textOps = texts.flatMap((text) => {
-    const fontSize = text.size ?? 7;
-    const x = text.right ? Math.max(24, text.x - textWidth(text.text, fontSize, Boolean(text.bold))) : text.x;
-    return [
-      'BT',
-      `${rgb(text.color ?? INK)} rg /F${text.bold ? 'B' : 'R'} ${fontSize} Tf`,
-      `1 0 0 1 ${x.toFixed(2)} ${text.y.toFixed(2)} Tm (${esc(text.text)}) Tj`,
-      'ET',
-    ];
+  const textOps = copy.flatMap((entry) => {
+    const x = entry.right ? Math.max(left, entry.x - width(entry.text, entry.size, entry.bold)) : entry.x;
+    return ['BT', `${rgb(entry.color)} rg /F${entry.bold ? 'B' : 'R'} ${entry.size} Tf`, `1 0 0 1 ${x.toFixed(2)} ${entry.y.toFixed(2)} Tm (${pdfText(entry.text)}) Tj`, 'ET'];
   });
-  const stream = [...ops, ...textOps].join('\n');
-  const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>\nstream\n${stream}\nendstream`);
+  const stream = [...ops, ...textOps].join(NL);
+  const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>${NL}stream${NL}${stream}${NL}endstream`);
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${content} 0 R >>`);
   const pages = add(`<< /Type /Pages /Kids [${page} 0 R] /Count 1 >>`);
   objects[page - 1] = objects[page - 1].replace('/Parent 0 0 R', `/Parent ${pages} 0 R`);
   const catalog = add(`<< /Type /Catalog /Pages ${pages} 0 R >>`);
 
-  let pdf = '%PDF-1.4\n';
+  let pdf = `%PDF-1.4${NL}`;
   const offsets = [0];
   objects.forEach((object, index) => {
     offsets.push(Buffer.byteLength(pdf, 'binary'));
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    pdf += `${index + 1} 0 obj${NL}${object}${NL}endobj${NL}`;
   });
   const xref = Buffer.byteLength(pdf, 'binary');
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer << /Size ${objects.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  pdf += `xref${NL}0 ${objects.length + 1}${NL}0000000000 65535 f ${NL}${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join(NL)}${NL}trailer << /Size ${objects.length + 1} /Root ${catalog} 0 R >>${NL}startxref${NL}${xref}${NL}%%EOF`;
   return Buffer.from(pdf, 'binary');
 }
 
@@ -262,25 +241,24 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
   const [{ data: products }, { data: variants }] = await Promise.all([
     productIds.length ? db.from('products').select('id, name, sku, sku_code, hsn_code, category_id').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
-    productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code, hsn_code, country_of_origin, pack_label, units_per_case').in('product_id', productIds) : Promise.resolve({ data: [] }),
+    productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code, country_of_origin, pack_label, units_per_case').in('product_id', productIds) : Promise.resolve({ data: [] }),
   ]);
 
   const productMap = new Map((products ?? []).map((product: any) => [product.id, product]));
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
-  const quoteBasis = basis(quote.pricing_basis);
+  const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
-  const rows: QuoteLine[] = lines.map((line) => {
+  const rows: PdfRow[] = lines.map((line) => {
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
-    const casePrice = n(line.unit_price ?? line.catalog_price_amount);
+    const casePrice = num(line.unit_price ?? line.catalog_price_amount);
     return {
-      sku: s(variant.sku_code ?? product.sku_code ?? product.sku),
-      product: s(product.name ?? variant.name, 'Catalog line'),
-      qty: n(line.quantity, 1),
-      basis: quoteBasis,
+      sku: text(variant.sku_code ?? product.sku_code ?? product.sku),
+      product: text(product.name ?? variant.name, 'Catalog line'),
+      qty: num(line.quantity, 1),
+      basis: quoteBase,
       casePrice,
-      total: n(line.quantity, 1) * casePrice,
-      note: s(line.override_reason ?? line.notes, '-'),
+      total: num(line.quantity, 1) * casePrice,
     };
   });
 
@@ -288,14 +266,14 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
     org: org ?? { name: workspace.organization?.name },
     buyer: leadRow ?? {},
-    market: s(market?.name),
-    destination: s(country?.name ?? leadRow?.country),
-    place: s(quote.destination_port ?? freight?.destination_port ?? country?.default_port_of_loading, 'Confirm port/place before sending'),
-    basis: quoteBasis,
+    market: text(market?.name),
+    destination: text(country?.name ?? leadRow?.country),
+    place: text(quote.destination_port ?? freight?.destination_port ?? country?.default_port_of_loading, 'Confirm port/place before sending'),
+    basis: quoteBase,
     currency,
-    quoteDate: d(quote.updated_at ?? quote.created_at),
-    validUntil: d(quote.valid_until),
-    terms: s(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
+    quoteDate: dateText(quote.updated_at ?? quote.created_at),
+    validUntil: dateText(quote.valid_until),
+    terms: text(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
     rows,
   });
 
@@ -309,7 +287,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     uploaded_by: workspace.user?.id ?? null,
     uploaded_at: quote.updated_at ?? quote.created_at ?? new Date().toISOString(),
     version: 1,
-    status: quoteDocumentStatus(quote),
+    status: docStatus(quote),
     linked_quote_id: quote.id,
   }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
 
