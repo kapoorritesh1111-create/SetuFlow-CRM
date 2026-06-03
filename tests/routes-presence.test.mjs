@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const manifest = JSON.parse(readFileSync(new URL('../src/lib/routes/manifest.json', import.meta.url), 'utf8'));
 const appShell = readFileSync(new URL('../src/components/layout/app-shell.tsx', import.meta.url), 'utf8');
+const notificationCenter = readFileSync(new URL('../src/components/notifications/in-app-notification-center.tsx', import.meta.url), 'utf8');
 const globals = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
 const dashboardPage = readFileSync(new URL('../src/app/(app)/dashboard/page.tsx', import.meta.url), 'utf8');
 const dashboardTabs = readFileSync(new URL('../src/components/dashboard/dashboard-section-tabs.tsx', import.meta.url), 'utf8');
@@ -97,4 +98,12 @@ test('persistent desktop shell closes profile and notification popovers across n
   assert.match(appShell, /closeOnEscape/, 'profile menu should close on Escape');
   assert.match(appShell, /notificationResetKey/, 'notification center should be remountable to clear persisted open state');
   assert.match(appShell, /onOpenMenu=\{closeNotificationCard\}/, 'opening the profile menu should close any open notification card');
+});
+
+test('notification center links alerts to relevant records or model entities', () => {
+  assert.match(notificationCenter, /safeRelativeActionUrl/, 'notification links should only use safe relative action URLs');
+  assert.match(notificationCenter, /routeForNotification/, 'notifications without explicit action URLs should resolve a model route');
+  assert.match(notificationCenter, /lead\|follow\[-_\\s\]\?up\|contact/, 'lead and follow-up notifications should resolve to lead routes');
+  assert.match(notificationCenter, /Open linked record/, 'notification CTA should clearly open the linked record');
+  assert.match(notificationCenter, /entity_ref: row\.lead_id \? `lead:\$\{row\.lead_id\}`/, 'derived lead alerts should keep the lead id in entity_ref for deep-link recovery');
 });
