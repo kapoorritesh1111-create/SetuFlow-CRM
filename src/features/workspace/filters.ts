@@ -122,9 +122,10 @@ function isBetween(date: Date | null, start: Date, end: Date) {
 export function issueMatchesRange(issue: SprintIssue, filters: SmcFilters, issues: SprintIssue[]) {
   if (filters.range === 'all') return true;
   const { start, end } = getRangeBounds(filters, issues);
+  // Range filters on created_at only — "show issues created in this window"
+  // Also include issues updated within range so active work stays visible
   return isBetween(safeDate(issue.created_at), start, end)
-    || isBetween(safeDate(issue.updated_at), start, end)
-    || isBetween(safeDate(issue.resolved_at), start, end);
+    || isBetween(safeDate(issue.updated_at), start, end);
 }
 
 function issueMatchesSearch(issue: SprintIssue, query?: string) {
