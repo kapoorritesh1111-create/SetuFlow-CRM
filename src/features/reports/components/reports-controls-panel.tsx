@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
 import type { ReportsData } from '@/lib/queries/reports';
 
 type DateRangeKey = '7d' | '30d' | '90d' | 'quarter';
@@ -63,10 +62,6 @@ function getWeekKey(record: DateRecord) {
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
-function getCreatedCount<T extends DateRecord>(records: T[], from: string, to: string) {
-  return records.filter((record) => inRange(record, from, to)).length;
-}
-
 function downloadCsv(rows: CsvRow[]) {
   const headers: Array<keyof CsvRow> = ['metric', 'value', 'dateRangeStart', 'dateRangeEnd'];
   const escapeCell = (cell: string | number) => `"${String(cell).replaceAll('"', '""')}"`;
@@ -116,10 +111,9 @@ export function ReportsControlsPanel({ data }: { data: ReportsData }) {
 
   return (
     <SectionCard>
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Date-filtered reporting</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Filtered export, quote trend, and conversion funnel</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900">Filtered export, quote trend, and conversion funnel</h2>
           <p className="mt-2 text-sm text-slate-600">Use presets or a custom date range to review created leads, RFQs, quotes, won movement, and audit volume.</p>
         </div>
         <button type="button" onClick={() => downloadCsv(csvRows)} className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
@@ -144,8 +138,13 @@ export function ReportsControlsPanel({ data }: { data: ReportsData }) {
         </label>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-5">
-        {csvRows.map((row) => <StatusBadge key={row.metric} label={`${row.metric}: ${row.value}`} tone="info" />)}
+      <div className="mt-5 grid gap-3 md:grid-cols-5">
+        {csvRows.map((row) => (
+          <div key={row.metric} className="rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-500">{row.metric}</p>
+            <p className="mt-1 text-lg font-black text-slate-950">{row.value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
