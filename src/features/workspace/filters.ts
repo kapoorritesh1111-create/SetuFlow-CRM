@@ -1,6 +1,6 @@
 import type { SprintIssue } from '@/lib/queries/workspace';
 
-export const SMC_RANGE_OPTIONS = ['today', '14d', '30d', '90d', 'all'] as const;
+export const SMC_RANGE_OPTIONS = ['today', 'yesterday', '7d', '14d', '30d', '90d', 'all'] as const;
 export type SmcRange = (typeof SMC_RANGE_OPTIONS)[number] | 'custom';
 
 export type SmcFilterInput = Record<string, string | string[] | undefined> | undefined;
@@ -28,7 +28,7 @@ function toDateOnly(value?: string) {
 
 export function normalizeSmcFilters(searchParams?: SmcFilterInput): SmcFilters {
   const rawRange = first(searchParams?.range);
-  const range: SmcRange = rawRange === 'today' || rawRange === '30d' || rawRange === '90d' || rawRange === 'all' || rawRange === 'custom'
+  const range: SmcRange = rawRange === 'today' || rawRange === 'yesterday' || rawRange === '7d' || rawRange === '30d' || rawRange === '90d' || rawRange === 'all' || rawRange === 'custom'
     ? rawRange
     : '14d';
   const sprintValue = Number(first(searchParams?.sprint));
@@ -75,6 +75,12 @@ export function getRangeBounds(filters: SmcFilters, issues: SprintIssue[]) {
 
   if (filters.range === 'today') {
     label = 'Today';
+  } else if (filters.range === 'yesterday') {
+    const yesterday = new Date(today);
+    yesterday.setUTCDate(today.getUTCDate() - 1);
+    start = startOfUtcDay(yesterday);
+    end = endOfUtcDay(yesterday);
+    label = 'Yesterday';
   } else if (filters.range === 'custom') {
     const oldest = issues
       .map((issue) => safeDate(issue.created_at))
@@ -91,7 +97,7 @@ export function getRangeBounds(filters: SmcFilters, issues: SprintIssue[]) {
     start = startOfUtcDay(oldest ?? today);
     label = 'All time';
   } else {
-    const days = filters.range === '90d' ? 90 : filters.range === '30d' ? 30 : 14;
+    const days = filters.range === '90d' ? 90 : filters.range === '30d' ? 30 : filters.range === '7d' ? 7 : 14;
     start.setUTCDate(today.getUTCDate() - (days - 1));
     label = `Last ${days} days`;
   }

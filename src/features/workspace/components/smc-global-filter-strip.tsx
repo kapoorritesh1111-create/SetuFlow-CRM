@@ -164,7 +164,7 @@ export function SmcGlobalFilterStrip({
                     : 'text-slate-500 hover:bg-white hover:text-slate-900',
                 )}
               >
-                {option === 'all' ? 'All' : option === 'today' ? 'Today' : option.toUpperCase()}
+                {option === 'all' ? 'All' : option === 'today' ? 'Today' : option === 'yesterday' ? 'Yest' : option.toUpperCase()}
               </button>
             ))}
             <button

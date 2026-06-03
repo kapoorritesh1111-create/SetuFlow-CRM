@@ -10,21 +10,15 @@ type Metric = {
   value: string | number;
   sub: string;
   tone: string;
-  border?: string;
 };
 
 function compactNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }
 
-function daysOld(value?: string | null) {
-  if (!value) return 0;
-  return Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000));
-}
-
 function MetricTile({ metric }: { metric: Metric }) {
   return (
-    <div className={`min-w-[130px] border-r border-white/10 px-4 py-3 last:border-r-0 ${metric.border ?? ''}`}>
+    <div className="min-w-[120px] border-r border-white/10 px-4 py-3 last:border-r-0">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{metric.label}</p>
       <p className={`mt-2 text-2xl font-black leading-none ${metric.tone}`}>{metric.value}</p>
       <p className="mt-1 text-[11px] font-semibold leading-4 text-slate-400">{metric.sub}</p>
@@ -35,19 +29,34 @@ function MetricTile({ metric }: { metric: Metric }) {
 export default async function WorkspaceIssuesPage({ searchParams }: { searchParams?: SmcFilterInput & { ref?: string | string[]; action?: string | string[]; sort?: string | string[]; dir?: string | string[]; q?: string | string[]; view?: string | string[] } }) {
   const [allIssues, sprints] = await Promise.all([getWorkspaceIssues(), getSprintList()]);
   const filters = normalizeSmcFilters(searchParams);
+
+  // Filtered set respects the SMC range + sprint + severity + status + area + reporter
   const issues = filterIssuesForSmc(allIssues, filters);
-  const openIssues = issues.filter((issue) => !isClosedIssue(issue.status));
-  const inProgress = issues.filter((issue) => issue.status === 'In Progress');
-  const critical = openIssues.filter((issue) => issue.severity === 'Critical');
-  const high = openIssues.filter((issue) => issue.severity === 'High');
-  const hidden = issues.length - openIssues.length;
-  const resolved = issues.filter((issue) => issue.status === 'Resolved').length;
+
+  // Active sprint = filter override OR highest sprint number in all issues
+  const activeSprint = filters.sprint ?? Math.max(...allIssues.map((i) => i.sprint_number), sprints[0]?.sprint_number ?? 23);
+
+  // KPI calculations on the FILTERED issues set
+  const openIssues = issues.filter((i) => !isClosedIssue(i.status));
+  const inProgress = issues.filter((i) => i.status === 'In Progress');
+  const critical = openIssues.filter((i) => i.severity === 'Critical');
+  const high = openIssues.filter((i) => i.severity === 'High');
+  const resolved = issues.filter((i) => i.status === 'Resolved').length;
   const total = issues.length;
+  const hidden = total - openIssues.length;
   const donePct = total ? Math.round((resolved / total) * 100) : 0;
-  const sevenDayOpen = openIssues.filter((issue) => issue.sprint_target === '7-Day' || issue.labels?.includes('7-day') || daysOld(issue.created_at) <= 7).length;
-  const thirtyDayOpen = openIssues.filter((issue) => issue.sprint_target === '30-Day' || issue.labels?.includes('30-day') || daysOld(issue.created_at) <= 30).length;
-  const activeSprint = filters.sprint ?? Math.max(...allIssues.map((issue) => issue.sprint_number), sprints[0]?.sprint_number ?? 23);
-  const sprintOpen = openIssues.filter((issue) => issue.sprint_number === activeSprint).length;
+
+  // 7-day and 30-day open: issues created within those windows (uses ALL issues, not filtered, like standalone tracker)
+  const now = Date.now();
+  const ms7 = 7 * 86_400_000;
+  const ms30 = 30 * 86_400_000;
+  const allOpen = allIssues.filter((i) => !isClosedIssue(i.status));
+  const sevenDayOpen = allOpen.filter((i) => i.created_at && (now - new Date(i.created_at).getTime()) <= ms7).length;
+  const thirtyDayOpen = allOpen.filter((i) => i.created_at && (now - new Date(i.created_at).getTime()) <= ms30).length;
+
+  // Sprint KPI: open in active sprint from ALL issues (so it doesn't disappear when range filter is narrow)
+  const sprintOpen = allIssues.filter((i) => i.sprint_number === activeSprint && !isClosedIssue(i.status)).length;
+
   const ref = Array.isArray(searchParams?.ref) ? searchParams?.ref[0] : searchParams?.ref;
   const action = Array.isArray(searchParams?.action) ? searchParams?.action[0] : searchParams?.action;
   const sort = Array.isArray(searchParams?.sort) ? searchParams?.sort[0] : searchParams?.sort;
@@ -58,7 +67,7 @@ export default async function WorkspaceIssuesPage({ searchParams }: { searchPara
   const metrics: Metric[] = [
     { label: 'Total', value: compactNumber(total), sub: 'issues in current view', tone: 'text-sky-300' },
     { label: 'Open', value: compactNumber(openIssues.length), sub: 'needs owner action', tone: 'text-white' },
-    { label: 'Critical', value: compactNumber(critical.length), sub: 'critical open', tone: 'text-rose-300' },
+    { label: 'Critical', value: compactNumber(critical.length), sub: 'critical open', tone: critical.length > 0 ? 'text-rose-300' : 'text-emerald-300' },
     { label: 'High', value: compactNumber(high.length), sub: 'high open', tone: 'text-amber-300' },
     { label: 'In Progress', value: compactNumber(inProgress.length), sub: 'currently being fixed', tone: 'text-blue-300' },
     { label: 'Done', value: `${donePct}%`, sub: `${compactNumber(resolved)} resolved`, tone: 'text-emerald-300' },
