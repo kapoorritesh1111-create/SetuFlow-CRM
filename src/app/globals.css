@@ -88,6 +88,10 @@ button {
   display: none;
 }
 
+.setu-reports-workspace-cleanup > div > div:first-child {
+  display: none;
+}
+
 @media (min-width: 768px) {
   aside nav a[href^="/dashboard/analytics"],
   aside nav a[href^="/reports"] {
