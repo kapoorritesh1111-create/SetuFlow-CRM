@@ -58,6 +58,10 @@ function quoteDocumentStatus(quote: any) {
   return quote.approval_required && !quote.approved_at ? 'submitted' : 'approved';
 }
 
+function textWidth(text: string, size: number, bold = false) {
+  return String(text).length * size * (bold ? 0.56 : 0.52);
+}
+
 type TextOp = { x: number; y: number; text: string; size?: number; bold?: boolean; color?: string; right?: boolean };
 type QuoteLine = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number; note: string };
 
@@ -108,8 +112,8 @@ function buildPdf(data: {
   txt(204, 752, 'SETU Flow - Client Price List', 15.2, true, NAVY);
   txt(204, 736, 'Pro Forma Quotation', 8.8, false, MUTED);
   box(474, 732, 104, 28, PANEL, LINE);
-  txt(484, 750, data.quoteNo, 8.5, true, NAVY);
-  txt(484, 739, `${data.quoteDate} | Valid ${data.validUntil}`, 5.7, false, MUTED);
+  txt(578, 750, data.quoteNo, 8.5, true, NAVY, true);
+  txt(578, 739, `${data.quoteDate} | Valid ${data.validUntil}`, 5.7, false, MUTED, true);
 
   box(24, 612, 176, 92, PANEL, LINE);
   txt(36, 686, 'SELLER / EXPORTER', 6.5, true, BLUE);
@@ -131,7 +135,7 @@ function buildPdf(data: {
   [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]].forEach(([label, value], index) => {
     const rowY = 688 - index * 12;
     txt(420, rowY, label, 5.3, true, MUTED);
-    txt(578, rowY, c(value, 23), 5.7, false, INK, true);
+    txt(580, rowY, c(value, 24), 5.7, false, INK, true);
   });
 
   box(24, 590, 564, 14, '#eef6ff', '#bfdbfe');
@@ -141,36 +145,35 @@ function buildPdf(data: {
   const tableW = 576;
   let y = 560;
   box(tableX, y - 17, tableW, 20, '#e2e8f0', LINE);
-  const headers: Array<[string, number]> = [['#', 24], ['SKU', 70], ['Product', 160], ['Qty', 44], ['Basis', 46], [`${data.currency}/Case`, 80], [`Total ${data.currency}`, 92]];
-  let x = tableX + 6;
-  headers.forEach(([header, width]) => {
-    txt(x, y - 10, header, 5, true, NAVY);
-    x += width;
+  const columns = [
+    { label: '#', x: 24, width: 24 },
+    { label: 'SKU', x: 62, width: 80 },
+    { label: 'Product', x: 142, width: 180 },
+    { label: 'Qty', x: 318, width: 46, right: true },
+    { label: 'Basis', x: 372, width: 50 },
+    { label: `${data.currency}/Case`, x: 458, width: 72, right: true },
+    { label: `Total ${data.currency}`, x: 582, width: 88, right: true },
+  ];
+  columns.forEach((column) => {
+    txt(column.right ? column.x : column.x, y - 10, column.label, 5, true, NAVY, Boolean(column.right));
   });
 
   y -= 23;
   data.rows.slice(0, 12).forEach((row, index) => {
     box(tableX, y - 15, tableW, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
-    x = tableX + 6;
-    const cells: Array<[string, number, boolean?]> = [
-      [String(index + 1), 24],
-      [c(row.sku, 15), 70],
-      [c(row.product, 30), 160],
-      [String(row.qty || '-'), 44],
-      [row.basis, 46],
-      [money(row.casePrice, data.currency), 80, true],
-      [money(row.total, data.currency), 92, true],
-    ];
-    cells.forEach(([value, width, right]) => {
-      txt(right ? x + width - 4 : x, y - 6, value, 5.2, index === 0, INK, Boolean(right));
-      x += width;
-    });
+    txt(24, y - 6, String(index + 1), 5.2, false, INK);
+    txt(62, y - 6, c(row.sku, 16), 5.2, false, INK);
+    txt(142, y - 6, c(row.product, 34), 5.2, index === 0, INK);
+    txt(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
+    txt(372, y - 6, row.basis, 5.2, false, INK);
+    txt(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
+    txt(582, y - 6, money(row.total, data.currency), 5.2, index === 0, INK, true);
     y -= 21;
   });
 
   line(tableX, y + 5, tableX + tableW, y + 5, NAVY, 1.1);
-  txt(392, y - 7, 'Grand Total', 8.5, true, NAVY);
-  txt(590, y - 7, money(total, data.currency), 9, true, NAVY, true);
+  txt(450, y - 7, 'Grand Total', 8.5, true, NAVY, true);
+  txt(582, y - 7, money(total, data.currency), 9, true, NAVY, true);
 
   y -= 32;
   box(24, y - 58, 274, 58, PANEL, LINE);
@@ -180,9 +183,9 @@ function buildPdf(data: {
   });
   box(314, y - 58, 274, 58, PANEL, LINE);
   txt(326, y - 13, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
-  [['Subtotal', money(total, data.currency)], ['Documentation / packaging', money(0, data.currency)], ['Freight / insurance', 'Not included unless stated'], ['Taxes / duties', 'Per Incoterm / buyer account']].forEach(([label, value], index) => {
+  [['Subtotal', money(total, data.currency)], ['Documentation / packaging', money(0, data.currency)], ['Freight / insurance', 'Not included'], ['Taxes / duties', 'Per Incoterm']].forEach(([label, value], index) => {
     txt(326, y - 27 - index * 10, label, 5.8, false, MUTED);
-    txt(578, y - 27 - index * 10, value, 5.8, false, INK, true);
+    txt(580, y - 27 - index * 10, value, 5.8, false, INK, true);
   });
 
   y -= 76;
@@ -192,12 +195,16 @@ function buildPdf(data: {
     txt(36, y - 25 - index * 8.5, c(lineText, 138), 5.2, false, MUTED);
   });
 
-  const textOps = texts.flatMap((text) => [
-    'BT',
-    `${rgb(text.color ?? INK)} rg /F${text.bold ? 'B' : 'R'} ${text.size ?? 7} Tf`,
-    `1 0 0 1 ${text.x} ${text.y} Tm (${esc(text.text)}) Tj`,
-    'ET',
-  ]);
+  const textOps = texts.flatMap((text) => {
+    const fontSize = text.size ?? 7;
+    const x = text.right ? Math.max(24, text.x - textWidth(text.text, fontSize, Boolean(text.bold))) : text.x;
+    return [
+      'BT',
+      `${rgb(text.color ?? INK)} rg /F${text.bold ? 'B' : 'R'} ${fontSize} Tf`,
+      `1 0 0 1 ${x.toFixed(2)} ${text.y.toFixed(2)} Tm (${esc(text.text)}) Tj`,
+      'ET',
+    ];
+  });
   const stream = [...ops, ...textOps].join('\n');
   const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>\nstream\n${stream}\nendstream`);
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${content} 0 R >>`);
