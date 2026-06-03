@@ -1,4 +1,3 @@
-import { NotificationToast } from '@/features/mobile/components/mobile-cards';
-import { ThreeDIconOrb } from '@/features/mobile/components/icon-3d-orb';
-const updates = ['Q-MOB-001 saved for Aster Retail LLC', 'Supplier record queued for sourcing follow-up', 'Nova Foods sample reminder due today'];
-export default function MobileNotificationsPage() { return <section className="space-y-3"><NotificationToast message="All mobile work is synced" />{updates.map((item, index) => <article key={item} className="flex gap-3 rounded-[1.75rem] bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90"><ThreeDIconOrb icon={index === 0 ? '✅' : index === 1 ? '🏭' : '⚡'} tone={index === 1 ? 'violet' : 'blue'} /><div><h2 className="font-black text-slate-950 dark:text-white">{item}</h2><p className="text-sm text-slate-500 dark:text-slate-300">Open the related lead when you are ready.</p></div></article>)}</section>; }
+export default function MobileNotificationsPage() {
+  return <section className="space-y-3"><h1 className="text-xl font-black">Notifications</h1></section>;
+}
