@@ -15,8 +15,8 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ViewMode = 'table' | 'kanban' | 'backlog';
-type SortField = 'priority_rank' | 'issue_ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint_number' | 'assigned_to' | 'reporter_name' | 'effort' | 'created_at' | 'updated_at' | 'age';
-type ColumnKey = 'priority' | 'ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint' | 'assignee' | 'reporter' | 'effort' | 'updated';
+type SortField = 'priority_rank' | 'issue_ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint_number' | 'assigned_to' | 'reporter_name' | 'effort' | 'created_at' | 'updated_at' | 'resolved_at' | 'age';
+type ColumnKey = 'priority' | 'ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint' | 'assignee' | 'reporter' | 'effort' | 'added' | 'fixed' | 'updated';
 
 const STATUSES = ['Open', 'In Progress', 'Resolved', "Won't Fix", 'Deferred'] as const;
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'] as const;
@@ -41,10 +41,26 @@ const SEV_COLORS: Record<string, string> = {
   Low: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
 };
 
-const DEFAULT_COLUMNS: ColumnKey[] = ['priority', 'ref', 'title', 'severity', 'area', 'status', 'sprint', 'assignee', 'reporter', 'effort', 'updated'];
+// All available columns shown in picker; added/fixed ON by default, updated OFF (opt-in)
+const ALL_COLUMNS: ColumnKey[] = ['priority', 'ref', 'title', 'severity', 'area', 'status', 'sprint', 'assignee', 'reporter', 'effort', 'added', 'fixed', 'updated'];
+const DEFAULT_COLUMNS: ColumnKey[] = ['priority', 'ref', 'title', 'severity', 'area', 'status', 'sprint', 'assignee', 'reporter', 'effort', 'added', 'fixed'];
 const COLUMN_LABELS: Record<ColumnKey, string> = {
-  priority: '#', ref: 'Ref', title: 'Title', severity: 'Severity', area: 'Area', status: 'Status', sprint: 'Sprint', assignee: 'Assignee', reporter: 'Reported By', effort: 'Effort', updated: 'Updated',
+  priority: '#', ref: 'Ref', title: 'Title', severity: 'Severity', area: 'Area', status: 'Status',
+  sprint: 'Sprint', assignee: 'Assignee', reporter: 'Reported By', effort: 'Effort',
+  added: 'Added', fixed: 'Fixed', updated: 'Updated',
 };
+
+// Format a date as "May 26" + "\n1d ago" like the standalone tracker
+function fmtDateCell(isoString: string | null | undefined): { date: string; ago: string } | null {
+  if (!isoString) return null;
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return null;
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const diffMs = Date.now() - d.getTime();
+  const diffD = Math.floor(diffMs / 86_400_000);
+  const ago = diffD === 0 ? 'today' : diffD === 1 ? '1d ago' : `${diffD}d ago`;
+  return { date, ago };
+}
 
 const KANBAN_COLS = [
   { id: 'Open', label: 'Open', color: 'bg-slate-500' },
@@ -521,7 +537,7 @@ export function IssuesBoard({
   const [filterReporter, setFilterReporter] = useState('');
   const [hideResolved, setHideResolved] = useState(true);
   const [hideDeferred, setHideDeferred] = useState(true);
-  const validSortFields: SortField[] = ['priority_rank', 'issue_ref', 'title', 'severity', 'area', 'status', 'sprint_number', 'assigned_to', 'reporter_name', 'effort', 'created_at', 'updated_at', 'age'];
+  const validSortFields: SortField[] = ['priority_rank', 'issue_ref', 'title', 'severity', 'area', 'status', 'sprint_number', 'assigned_to', 'reporter_name', 'effort', 'created_at', 'updated_at', 'resolved_at', 'age'];
   const initialSort = validSortFields.includes(initialFilter?.sort as SortField) ? initialFilter?.sort as SortField : 'priority_rank';
   const [sortField, setSortField] = useState<SortField>(initialSort);
   const [sortDir, setSortDir] = useState<1 | -1>(initialFilter?.dir === 'desc' ? -1 : 1);
@@ -670,6 +686,7 @@ export function IssuesBoard({
       else if (sortField === 'age') { av = new Date(a.created_at).getTime(); bv = new Date(b.created_at).getTime(); }
       else if (sortField === 'created_at') { av = a.created_at; bv = b.created_at; }
       else if (sortField === 'updated_at') { av = a.updated_at; bv = b.updated_at; }
+      else if (sortField === 'resolved_at') { av = a.resolved_at ?? ''; bv = b.resolved_at ?? ''; }
       if (av < bv) return -1 * sortDir;
       if (av > bv) return 1 * sortDir;
       return 0;
@@ -728,7 +745,7 @@ export function IssuesBoard({
                     <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Toggle Columns</p>
                   </div>
                   <div className="p-2">
-                    {DEFAULT_COLUMNS.map((column) => (
+                    {ALL_COLUMNS.map((column) => (
                       <label key={column} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.06]">
                         <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-black transition', visibleColumns.has(column) ? 'border-sky-400 bg-sky-500 text-white' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800')}>
                           {visibleColumns.has(column) ? '✓' : ''}
@@ -805,6 +822,8 @@ export function IssuesBoard({
                 {showColumn('assignee') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('assigned_to')}>Assignee <SortIcon field="assigned_to" /></th>}
                 {showColumn('reporter') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('reporter_name')}>Reported By <SortIcon field="reporter_name" /></th>}
                 {showColumn('effort') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('effort')}>Effort <SortIcon field="effort" /></th>}
+                {showColumn('added') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('created_at')}>Added <SortIcon field="created_at" /></th>}
+                {showColumn('fixed') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('resolved_at')}>Fixed <SortIcon field="resolved_at" /></th>}
                 {showColumn('updated') && <th className="cursor-pointer px-3 py-3 hover:text-slate-700" onClick={() => toggleSort('updated_at')}>Updated <SortIcon field="updated_at" /></th>}
               </tr>
             </thead>
@@ -875,6 +894,12 @@ export function IssuesBoard({
                           {issue.effort}
                         </span>
                       )}
+                    </td>}
+                    {showColumn('added') && <td className="px-3 py-2.5 text-right">
+                      {(() => { const f = fmtDateCell(issue.created_at); return f ? (<><div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{f.date}</div><div className="text-[10px] text-slate-400 dark:text-slate-500">{f.ago}</div></>) : <span className="text-slate-300">—</span>; })()}
+                    </td>}
+                    {showColumn('fixed') && <td className="px-3 py-2.5 text-right">
+                      {(() => { const f = fmtDateCell(issue.resolved_at); return f ? (<><div className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">{f.date}</div><div className="text-[10px] text-emerald-500/70 dark:text-emerald-500/60">{f.ago}</div></>) : <span className="text-slate-300 dark:text-slate-600">—</span>; })()}
                     </td>}
                     {showColumn('updated') && <td className="px-3 py-2.5 text-[11px] text-slate-400">
                       {issue.updated_at ? new Date(issue.updated_at).toLocaleDateString() : '—'}
