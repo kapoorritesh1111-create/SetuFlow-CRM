@@ -1,10 +1,10 @@
 /**
  * analytics.ts — Sprint 15
  * Live analytics queries for the dashboard analytics page.
- * 6 parallel queries: funnel, quotes, orders, doc sends, markets, products.
  */
 
 import { createClient } from '@/lib/supabase/server';
+import type { WorkspaceMode } from '@/features/workspace/types';
 
 export interface FunnelStage {
   label: string;
@@ -62,8 +62,23 @@ export interface AnalyticsData {
   docSendMetrics: DocSendMetrics;
   marketBreakdown: MarketBreakdown[];
   productBreakdown: ProductBreakdown[];
+  pipelineValueUsd: number;
   lastUpdated: string;
 }
+
+type LeadAnalyticsRow = {
+  id: string;
+  lead_type: string | null;
+  qualification_status: string | null;
+  status: string | null;
+  deal_value: number | null;
+};
+
+type QuoteAnalyticsRow = { id: string; status: string | null; lead_id: string | null; created_at: string; updated_at: string };
+type OrderAnalyticsRow = { id: string; lead_id: string | null; status: string | null; current_stage: string | null; execution_state: string | null };
+type SendAnalyticsRow = { id: string; channel: string | null; open_count: number | null; email_delivery_status: string | null };
+type LeadMarketAnalyticsRow = { lead_id: string | null; market_id: string | null; markets: { name: string | null } | null };
+type LeadProductAnalyticsRow = { lead_id: string | null; product_category_id: string | null; product_categories: { name: string | null } | null };
 
 function safePct(n: number, d: number) {
   return d ? Math.round((n / d) * 100) : 0;
@@ -71,19 +86,31 @@ function safePct(n: number, d: number) {
 
 function avgDays(rows: Array<{ created_at: string; updated_at: string }>) {
   if (!rows.length) return null;
-  const diffs = rows.map(r =>
-    Math.max(0, (new Date(r.updated_at).getTime() - new Date(r.created_at).getTime()) / 86400000)
-  );
-  return Math.round((diffs.reduce((a, b) => a + b, 0) / diffs.length) * 10) / 10;
+  const diffs = rows.map((row) => Math.max(0, (new Date(row.updated_at).getTime() - new Date(row.created_at).getTime()) / 86400000));
+  return Math.round((diffs.reduce((sum, value) => sum + value, 0) / diffs.length) * 10) / 10;
 }
 
-export async function getAnalyticsData(organizationId: string): Promise<AnalyticsData> {
-  const db = (await createClient()) as any;
+function matchesWorkspaceMode(leadType: string | null | undefined, mode: WorkspaceMode) {
+  if (mode === 'all') return true;
+  return mode === 'buyers' ? leadType === 'buyer' : leadType === 'supplier';
+}
+
+function normalizedStatus(...values: Array<string | null | undefined>) {
+  return values.map((value) => String(value ?? '').trim().toLowerCase()).filter(Boolean);
+}
+
+function hasStatus(values: Array<string | null | undefined>, allowed: string[]) {
+  const statuses = normalizedStatus(...values);
+  return statuses.some((status) => allowed.includes(status));
+}
+
+export async function getAnalyticsData(organizationId: string, mode: WorkspaceMode = 'all'): Promise<AnalyticsData> {
+  const db = await createClient();
   const now = new Date().toISOString();
   const since90 = new Date(Date.now() - 90 * 86400000).toISOString();
 
   const [leadsRes, quotesRes, ordersRes, sendsRes, marketsRes, productsRes] = await Promise.all([
-    db.from('leads').select('id, qualification_status, status').eq('organization_id', organizationId).limit(2000),
+    db.from('leads').select('id, lead_type, qualification_status, status, deal_value').eq('organization_id', organizationId).limit(2000),
     db.from('quotes').select('id, status, lead_id, created_at, updated_at').eq('organization_id', organizationId).limit(1000),
     db.from('orders').select('id, lead_id, status, current_stage, execution_state').eq('organization_id', organizationId).limit(500),
     db.from('order_document_sends').select('id, channel, open_count, email_delivery_status').eq('organization_id', organizationId).gte('created_at', since90).limit(5000),
@@ -91,51 +118,80 @@ export async function getAnalyticsData(organizationId: string): Promise<Analytic
     db.from('lead_product_interests').select('lead_id, product_category_id, product_categories(name)').eq('organization_id', organizationId).eq('status', 'active').limit(2000),
   ]);
 
-  const leads = (leadsRes.data ?? []) as any[];
-  const quotes = (quotesRes.data ?? []) as any[];
-  const orders = (ordersRes.data ?? []) as any[];
-  const sends = (sendsRes.data ?? []) as any[];
-  const markets = (marketsRes.data ?? []) as any[];
-  const products = (productsRes.data ?? []) as any[];
+  const allLeads = (leadsRes.data ?? []) as LeadAnalyticsRow[];
+  const leads = allLeads.filter((lead) => matchesWorkspaceMode(lead.lead_type, mode));
+  const scopedLeadIds = new Set(leads.map((lead) => lead.id));
+  const quotes = ((quotesRes.data ?? []) as QuoteAnalyticsRow[]).filter((quote) => quote.lead_id && scopedLeadIds.has(quote.lead_id));
+  const orders = ((ordersRes.data ?? []) as OrderAnalyticsRow[]).filter((order) => order.lead_id && scopedLeadIds.has(order.lead_id));
+  const sends = (sendsRes.data ?? []) as SendAnalyticsRow[];
+  const markets = ((marketsRes.data ?? []) as LeadMarketAnalyticsRow[]).filter((market) => market.lead_id && scopedLeadIds.has(market.lead_id));
+  const products = ((productsRes.data ?? []) as LeadProductAnalyticsRow[]).filter((product) => product.lead_id && scopedLeadIds.has(product.lead_id));
 
-  const quotedIds = new Set(quotes.map((q: any) => q.lead_id).filter(Boolean));
-  const orderedIds = new Set(orders.map((o: any) => o.lead_id).filter(Boolean));
-  const dispatched = orders.filter((o: any) => ['dispatched','completed','closed'].includes(String(o.current_stage ?? o.execution_state ?? '').toLowerCase())).length;
-  const completed = orders.filter((o: any) => ['completed','closed','paid'].includes(String(o.status ?? '').toLowerCase())).length;
+  const quotedIds = new Set(quotes.map((quote) => quote.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
+  const orderedIds = new Set(orders.map((order) => order.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
+  const dispatched = orders.filter((order) => hasStatus([order.current_stage, order.execution_state, order.status], ['dispatched', 'completed', 'closed'])).length;
+  const completed = orders.filter((order) => hasStatus([order.current_stage, order.execution_state, order.status], ['completed', 'closed', 'paid'])).length;
 
   const funnel: FunnelStage[] = [
     { label: 'Total Leads', count: leads.length, pct: 100, href: '/leads', color: '#3b82f6' },
-    { label: 'Quoted', count: leads.filter((l: any) => quotedIds.has(l.id)).length, pct: safePct(leads.filter((l: any) => quotedIds.has(l.id)).length, leads.length), href: '/quotes', color: '#8b5cf6' },
-    { label: 'Order Created', count: leads.filter((l: any) => orderedIds.has(l.id)).length, pct: safePct(leads.filter((l: any) => orderedIds.has(l.id)).length, leads.length), href: '/orders', color: '#f59e0b' },
+    { label: 'Quoted', count: leads.filter((lead) => quotedIds.has(lead.id)).length, pct: safePct(leads.filter((lead) => quotedIds.has(lead.id)).length, leads.length), href: '/quotes', color: '#8b5cf6' },
+    { label: 'Order Created', count: leads.filter((lead) => orderedIds.has(lead.id)).length, pct: safePct(leads.filter((lead) => orderedIds.has(lead.id)).length, leads.length), href: '/orders', color: '#f59e0b' },
     { label: 'Dispatched', count: dispatched, pct: safePct(dispatched, leads.length), href: '/orders', color: '#10b981' },
     { label: 'Paid & Closed', count: completed, pct: safePct(completed, leads.length), href: '/orders', color: '#059669' },
   ];
 
-  const sentQ = quotes.filter((q: any) => ['sent','accepted','rejected','expired'].includes(q.status));
-  const acceptedQ = quotes.filter((q: any) => q.status === 'accepted');
-
-  const emailSends = sends.filter((s: any) => s.channel === 'email');
+  const sentQ = quotes.filter((quote) => ['sent', 'accepted', 'rejected', 'expired'].includes(String(quote.status ?? '').toLowerCase()));
+  const acceptedQ = quotes.filter((quote) => String(quote.status ?? '').toLowerCase() === 'accepted');
+  const emailSends = sends.filter((send) => send.channel === 'email');
 
   const marketMap = new Map<string, Set<string>>();
-  for (const m of markets) {
-    const name = m.markets?.name ?? 'Unknown';
+  for (const market of markets) {
+    const name = market.markets?.name ?? 'Unknown';
     if (!marketMap.has(name)) marketMap.set(name, new Set());
-    marketMap.get(name)!.add(m.lead_id);
+    if (market.lead_id) marketMap.get(name)?.add(market.lead_id);
   }
   const productMap = new Map<string, Set<string>>();
-  for (const p of products) {
-    const name = p.product_categories?.name ?? 'Uncategorized';
+  for (const product of products) {
+    const name = product.product_categories?.name ?? 'Uncategorized';
     if (!productMap.has(name)) productMap.set(name, new Set());
-    productMap.get(name)!.add(p.lead_id);
+    if (product.lead_id) productMap.get(name)?.add(product.lead_id);
   }
+
+  const openedLinks = sends.filter((send) => (send.open_count ?? 0) > 0).length;
+  const deliveredEmails = emailSends.filter((send) => send.email_delivery_status === 'delivered').length;
+  const measurableEmails = emailSends.filter((send) => send.email_delivery_status !== null).length;
+  const pipelineValueUsd = leads.reduce((sum, lead) => sum + Number(lead.deal_value ?? 0), 0);
 
   return {
     funnel,
-    quoteMetrics: { totalSent: sentQ.length, totalAccepted: acceptedQ.length, totalRejected: quotes.filter((q: any) => q.status === 'rejected').length, winRate: safePct(acceptedQ.length, sentQ.length), avgDaysToAccept: avgDays(acceptedQ), pendingApproval: quotes.filter((q: any) => q.status === 'pending_approval').length },
-    orderMetrics: { draft: orders.filter((o: any) => ['draft','quote_approved'].includes(String(o.current_stage ?? o.status ?? ''))).length, active: orders.filter((o: any) => !['completed','closed','dispatched','draft','quote_approved'].includes(String(o.current_stage ?? o.status ?? ''))).length, dispatched, completed, totalActive: orders.length },
-    docSendMetrics: { totalSends: sends.length, emailSends: emailSends.length, whatsappSends: sends.filter((s: any) => s.channel === 'whatsapp').length, openedLinks: sends.filter((s: any) => (s.open_count ?? 0) > 0).length, emailDelivered: emailSends.filter((s: any) => s.email_delivery_status === 'delivered').length, emailBounced: emailSends.filter((s: any) => s.email_delivery_status === 'bounced').length, openRate: safePct(sends.filter((s: any) => (s.open_count ?? 0) > 0).length, sends.length), emailDeliveryRate: safePct(emailSends.filter((s: any) => s.email_delivery_status === 'delivered').length, emailSends.filter((s: any) => s.email_delivery_status !== null).length) },
-    marketBreakdown: Array.from(marketMap.entries()).map(([market, ids]) => ({ market, leadCount: ids.size, quoteCount: [...ids].filter(id => quotedIds.has(id)).length, orderCount: [...ids].filter(id => orderedIds.has(id)).length })).sort((a, b) => b.leadCount - a.leadCount).slice(0, 8),
-    productBreakdown: Array.from(productMap.entries()).map(([category, ids]) => ({ category, leadCount: ids.size, activeQuotes: [...ids].filter(id => quotedIds.has(id)).length })).sort((a, b) => b.leadCount - a.leadCount).slice(0, 8),
+    quoteMetrics: {
+      totalSent: sentQ.length,
+      totalAccepted: acceptedQ.length,
+      totalRejected: quotes.filter((quote) => String(quote.status ?? '').toLowerCase() === 'rejected').length,
+      winRate: safePct(acceptedQ.length, sentQ.length),
+      avgDaysToAccept: avgDays(acceptedQ),
+      pendingApproval: quotes.filter((quote) => String(quote.status ?? '').toLowerCase() === 'pending_approval').length,
+    },
+    orderMetrics: {
+      draft: orders.filter((order) => hasStatus([order.current_stage, order.status], ['draft', 'quote_approved'])).length,
+      active: orders.filter((order) => !hasStatus([order.current_stage, order.execution_state, order.status], ['completed', 'closed', 'dispatched', 'draft', 'quote_approved'])).length,
+      dispatched,
+      completed,
+      totalActive: orders.length,
+    },
+    docSendMetrics: {
+      totalSends: sends.length,
+      emailSends: emailSends.length,
+      whatsappSends: sends.filter((send) => send.channel === 'whatsapp').length,
+      openedLinks,
+      emailDelivered: deliveredEmails,
+      emailBounced: emailSends.filter((send) => send.email_delivery_status === 'bounced').length,
+      openRate: safePct(openedLinks, sends.length),
+      emailDeliveryRate: safePct(deliveredEmails, measurableEmails),
+    },
+    marketBreakdown: Array.from(marketMap.entries()).map(([market, ids]) => ({ market, leadCount: ids.size, quoteCount: [...ids].filter((id) => quotedIds.has(id)).length, orderCount: [...ids].filter((id) => orderedIds.has(id)).length })).sort((a, b) => b.leadCount - a.leadCount).slice(0, 8),
+    productBreakdown: Array.from(productMap.entries()).map(([category, ids]) => ({ category, leadCount: ids.size, activeQuotes: [...ids].filter((id) => quotedIds.has(id)).length })).sort((a, b) => b.leadCount - a.leadCount).slice(0, 8),
+    pipelineValueUsd,
     lastUpdated: now,
   };
 }
