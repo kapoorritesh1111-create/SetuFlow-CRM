@@ -20,6 +20,10 @@ type PreviewRpcResult = {
   error: { message?: string } | null;
 };
 
+type PreviewRpcClient = {
+  rpc: (name: string, args: Row) => Promise<PreviewRpcResult>;
+};
+
 function text(value: unknown, fallback = '') {
   const trimmed = String(value ?? '').trim();
   return trimmed || fallback;
@@ -56,8 +60,8 @@ export async function GET(_request: Request, { params }: { params: { token: stri
   const token = text(params.token);
   if (!token) return NextResponse.json({ error: 'Preview token is required.' }, { status: 400 });
 
-  const db = await createClient();
-  const { data: preview, error } = await db.rpc('get_order_document_preview_by_token', { p_share_token: token }) as unknown as PreviewRpcResult;
+  const db = await createClient() as unknown as PreviewRpcClient;
+  const { data: preview, error } = await db.rpc('get_order_document_preview_by_token', { p_share_token: token });
   if (error) return NextResponse.json({ error: error.message ?? 'Could not load preview data.' }, { status: 500 });
   if (!preview?.send) return NextResponse.json({ error: 'Tracked document preview not found.' }, { status: 404 });
 
