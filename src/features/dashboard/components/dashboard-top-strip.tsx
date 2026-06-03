@@ -27,27 +27,32 @@ export function DashboardTopStrip({ kpis, mode = 'all' }: Props) {
     return kpiMode === 'all' || kpiMode === mode;
   });
   const display = filtered.length >= 2 ? filtered : kpis;
+  const gridClass = display.length >= 5
+    ? 'sm:grid-cols-2 xl:grid-cols-5'
+    : display.length === 4
+      ? 'sm:grid-cols-2 xl:grid-cols-4'
+      : 'sm:grid-cols-2 xl:grid-cols-3';
 
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Commercial signals">
+    <section className={cn('grid grid-cols-1 gap-3', gridClass)} aria-label="Commercial signals">
       {display.map((kpi) => {
         const style = intentStyles[kpi.intent ?? 'default'];
         const trendArrow = kpi.trendDirection === 'up' ? '↑' : kpi.trendDirection === 'down' ? '↓' : '•';
         const card = (
-          <article className={cn('group setu-kpi-card relative overflow-hidden rounded-[1.5rem] border bg-white px-5 py-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)] focus-within:-translate-y-0.5 focus-within:shadow-[0_16px_36px_rgba(15,23,42,0.09)]', style.border)}>
+          <article className={cn('group setu-kpi-card relative h-full min-h-[136px] overflow-hidden rounded-[1.25rem] border bg-white px-4 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)] focus-within:-translate-y-0.5 focus-within:shadow-[0_14px_30px_rgba(15,23,42,0.08)] 2xl:px-5 2xl:py-5', style.border)}>
             <div className={cn('absolute inset-x-0 top-0 h-1', style.accent)} />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{kpi.label}</p>
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-400">{kpi.label}</p>
             <div className="mt-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[1.95rem] font-semibold leading-none tracking-tight text-slate-950">{kpi.value}</p>
-                {kpi.contextLabel ? <p className="mt-2 text-[12px] font-medium leading-5 text-slate-500">{kpi.contextLabel}</p> : null}
+              <div className="min-w-0">
+                <p className="truncate text-[1.6rem] font-semibold leading-none tracking-tight text-slate-950 2xl:text-[1.8rem]">{kpi.value}</p>
+                {kpi.contextLabel ? <p className="mt-2 line-clamp-2 text-[12px] font-medium leading-5 text-slate-500">{kpi.contextLabel}</p> : null}
               </div>
-              {kpi.trendLabel ? <span className={cn('mt-0.5 shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold shadow-sm ring-1 ring-black/5', style.badge)}>{trendArrow} {kpi.trendLabel}</span> : null}
+              {kpi.trendLabel ? <span className={cn('mt-0.5 max-w-[120px] shrink-0 truncate rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold shadow-sm ring-1 ring-black/5', style.badge)}>{trendArrow} {kpi.trendLabel}</span> : null}
             </div>
-            {kpi.drillThroughLabel ? <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3"><p className={cn('text-[10px] font-semibold uppercase tracking-[0.14em]', style.action)}>{kpi.drillThroughLabel}</p><span className={cn('text-sm transition group-hover:translate-x-0.5', style.action)}>→</span></div> : null}
+            {kpi.drillThroughLabel ? <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><p className={cn('truncate text-[10px] font-semibold uppercase tracking-[0.13em]', style.action)}>{kpi.drillThroughLabel}</p><span className={cn('text-sm transition group-hover:translate-x-0.5', style.action)}>→</span></div> : null}
           </article>
         );
-        return kpi.href ? <Link key={kpi.id} href={kpi.href} className="block">{card}</Link> : <div key={kpi.id}>{card}</div>;
+        return kpi.href ? <Link key={kpi.id} href={kpi.href} className="block h-full">{card}</Link> : <div key={kpi.id} className="h-full">{card}</div>;
       })}
     </section>
   );
