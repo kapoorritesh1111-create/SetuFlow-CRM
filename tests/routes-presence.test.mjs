@@ -57,3 +57,10 @@ test('desktop sidebar presents one Home dashboard door instead of separate Analy
   assert.match(globals, /aside nav a\[href\^="\/reports"\]/, 'desktop CSS should hide Reports as a separate sidebar door');
   assert.match(globals, /content: "Home";/, 'desktop CSS should present the dashboard item as Home');
 });
+
+test('desktop account menu keeps profile page discoverable', () => {
+  assert.equal(existsSync('src/app/(app)/profile/page.tsx'), true, 'authenticated profile page should exist');
+  assert.match(appShell, /<DesktopUserMenu[\s\S]*profileName=\{profileName\}/, 'desktop header should render the user account menu');
+  assert.match(appShell, /<Link href="\/profile"[\s\S]*Profile[\s\S]*<\/Link>/, 'desktop account menu should link to /profile');
+  assert.match(appShell, /<span className="sr-only">Open user menu<\/span>/, 'avatar menu should expose an accessible label');
+});
