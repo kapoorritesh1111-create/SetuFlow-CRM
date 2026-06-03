@@ -56,7 +56,9 @@ export default async function ReportsPage() {
     <div className="space-y-5">
       <QueryIssuesAlert issues={data.queryIssues} title="Some reporting sources could not be loaded" />
       <ReportsControlsPanel data={data} />
-      <ReportsWorkspace data={data} readOnlyMessage={readOnlyMessage} />
+      <div className="setu-reports-workspace-cleanup">
+        <ReportsWorkspace data={data} readOnlyMessage={readOnlyMessage} />
+      </div>
     </div>
   );
 }
