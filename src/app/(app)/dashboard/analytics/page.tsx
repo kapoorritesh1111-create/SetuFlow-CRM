@@ -4,6 +4,8 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getAnalyticsData } from '@/lib/queries/analytics';
 import type { AnalyticsData } from '@/lib/queries/analytics';
 import { hasSupabaseEnv } from '@/lib/env';
+import { parseWorkspaceMode } from '@/features/workspace/mode';
+import type { WorkspaceMode } from '@/features/workspace/types';
 
 function fmt(n: number) {
   return n.toLocaleString('en-US');
@@ -13,12 +15,14 @@ function pct(n: number) {
   return `${Math.round(n * 10) / 10}%`;
 }
 
-function moneyFromCount(count: number) {
-  return `USD ${(count * 1000).toLocaleString('en-US')}`;
+function money(value: number) {
+  return `USD ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
-function HeadlineDate() {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+function modeLabel(mode: WorkspaceMode) {
+  if (mode === 'buyers') return 'Buyer view';
+  if (mode === 'suppliers') return 'Supplier view';
+  return 'All workspace view';
 }
 
 function IconBubble({ children, tone }: { children: React.ReactNode; tone: 'green' | 'blue' | 'orange' | 'purple' | 'whatsapp' }) {
@@ -48,39 +52,13 @@ function KPI({ label, value, delta, icon, tone, href }: { label: string; value: 
   return href ? <Link href={href}>{card}</Link> : card;
 }
 
-function FilterBar() {
-  const filters = [
-    ['Date range', 'Last 90 days'],
-    ['Team', 'All teams'],
-    ['Market', 'All markets'],
-    ['Product', 'All products'],
-    ['Order status', 'All statuses'],
-    ['Channel', 'All channels'],
-  ];
-  return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-      <div className="grid gap-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto_auto]">
-        {filters.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2">
-            <div className="text-[11px] font-semibold text-slate-500">{label}</div>
-            <div className="mt-1 flex items-center justify-between gap-2 text-sm font-bold text-slate-800"><span>{value}</span><span className="text-slate-400">⌄</span></div>
-          </div>
-        ))}
-        <button type="button" className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-50">Reset</button>
-        <button type="button" className="rounded-xl bg-[#082f49] px-5 py-2 text-sm font-bold text-white shadow-lg shadow-slate-200">Apply</button>
-      </div>
-      <p className="mt-3 text-xs text-slate-400">Shared dashboard filter shell is live as an honest snapshot control. Segment-specific filtering will be wired as analytics dimensions expand.</p>
-    </section>
-  );
-}
-
 function Funnel({ funnel }: { funnel: AnalyticsData['funnel'] }) {
   const stages = funnel.map((stage) => ({ ...stage, label: stage.label.replace('Total Leads', 'Lead').replace('Order Created', 'Order').replace('Paid & Closed', 'Closed') }));
   return (
     <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-900">Conversion funnel <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">All teams ⌄</span>
+        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Live scope</span>
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
         <div className="flex flex-col items-center justify-center gap-2 py-2">
@@ -116,8 +94,8 @@ function PipelineChart({ funnel }: { funnel: AnalyticsData['funnel'] }) {
   return (
     <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">Pipeline value over time (USD) <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Daily ⌄</span>
+        <h2 className="text-base font-black text-slate-900">Pipeline movement <span className="text-slate-300">ⓘ</span></h2>
+        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Stage trend</span>
       </div>
       <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-white to-blue-50/60 p-2">
         <svg viewBox="0 0 520 220" className="h-56 w-full" role="img" aria-label="Pipeline trend based on current funnel stage counts">
@@ -131,7 +109,7 @@ function PipelineChart({ funnel }: { funnel: AnalyticsData['funnel'] }) {
           })}
         </svg>
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="h-2 w-2 rounded-full bg-blue-500" /> Snapshot trend uses current funnel stage volumes until historical analytics snapshots mature.</div>
+      <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="h-2 w-2 rounded-full bg-blue-500" /> Uses the same top Buyer/Supplier/All workspace scope.</div>
     </section>
   );
 }
@@ -141,7 +119,7 @@ function RankingCard({ title, action, rows, href }: { title: string; action: str
     <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-900">{title} <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">{action} ⌄</span>
+        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">{action}</span>
       </div>
       <div className="space-y-3">
         {rows.length ? rows.map((row) => (
@@ -163,9 +141,9 @@ function Insights({ data }: { data: AnalyticsData }) {
   const openRate = data.docSendMetrics.openRate;
   const delayed = Math.max(0, data.orderMetrics.active - data.orderMetrics.dispatched);
   const rows = [
-    { icon: '↗', title: 'Pipeline growth', body: `${fmt(data.funnel[0]?.count ?? 0)} leads and ${fmt(data.orderMetrics.totalActive)} orders are currently visible in live data.`, tag: 'Positive', tone: 'emerald' },
+    { icon: '↗', title: 'Pipeline growth', body: `${fmt(data.funnel[0]?.count ?? 0)} leads and ${fmt(data.orderMetrics.totalActive)} orders are currently visible in this scope.`, tag: 'Live', tone: 'emerald' },
     { icon: '⚠', title: 'Quote acceptance watch', body: `Quote acceptance rate is ${winRate}%. Review pricing and response times where needed.`, tag: winRate >= 30 ? 'Watch' : 'Action', tone: 'amber' },
-    { icon: '⚡', title: 'WhatsApp engagement', body: `${fmt(data.docSendMetrics.whatsappSends)} WhatsApp tracked links and ${openRate}% total document open rate are recorded in the last 90 days.`, tag: 'Positive', tone: 'emerald' },
+    { icon: '⚡', title: 'WhatsApp engagement', body: `${fmt(data.docSendMetrics.whatsappSends)} WhatsApp tracked links and ${openRate}% total document open rate are recorded in the last 90 days.`, tag: 'Live', tone: 'emerald' },
     { icon: 'ⓘ', title: 'Orders delayed', body: `${fmt(delayed)} orders remain active before dispatched/closed status. Follow up to avoid further delay.`, tag: delayed ? 'Action' : 'Clear', tone: delayed ? 'blue' : 'emerald' },
   ];
   return (
@@ -184,11 +162,12 @@ function Insights({ data }: { data: AnalyticsData }) {
   );
 }
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({ searchParams }: { searchParams?: { mode?: string | string[] } }) {
   if (!hasSupabaseEnv) redirect('/dashboard');
   const workspace = await getWorkspaceAccess();
   if (!workspace.user || !workspace.organization) redirect('/login');
-  const data = await getAnalyticsData(workspace.organization.id);
+  const mode = parseWorkspaceMode(searchParams?.mode);
+  const data = await getAnalyticsData(workspace.organization.id, mode);
   const { quoteMetrics: qm, orderMetrics: om, docSendMetrics: dm } = data;
   const acceptanceRate = qm.totalSent ? (qm.totalAccepted / qm.totalSent) * 100 : 0;
   const executionRate = om.totalActive ? (om.active / om.totalActive) * 100 : 0;
@@ -209,50 +188,30 @@ export default async function AnalyticsPage() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#f5f8fb] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1480px] space-y-5">
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-[1.6rem] border border-slate-200 bg-white px-5 py-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">Dashboard</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-950">Analytics</h1>
-            <p className="mt-1 text-sm text-slate-500">{HeadlineDate()}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/contact-exchange/vcard" className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-100">▣ Share my vCard</Link>
-            <span className="rounded-xl bg-[#082f49] px-4 py-2 text-sm font-black text-white">All</span>
-            <span className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600">Buyers</span>
-            <span className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600">Suppliers</span>
-            <Link href="/leads" className="rounded-xl bg-[#082f49] px-4 py-2 text-sm font-black text-white">+ Quick Lead</Link>
-            <Link href="/dashboard" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600">Dashboard</Link>
-          </div>
-        </header>
-
-        <FilterBar />
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <KPI label="Pipeline value" value={moneyFromCount(data.funnel[0]?.count ?? 0)} delta="live snapshot" icon="$" tone="green" href="/pipeline" />
-          <KPI label="Quote acceptance rate" value={pct(acceptanceRate)} delta={`${qm.totalAccepted} accepted`} icon="⌁" tone="blue" href="/quotes" />
-          <KPI label="Orders in execution" value={fmt(om.active)} delta={`${pct(executionRate)} active`} icon="▣" tone="orange" href="/orders" />
-          <KPI label="Document sends" value={fmt(dm.totalSends)} delta={`${dm.openRate}% opened`} icon="✈" tone="purple" href="/orders" />
-          <KPI label="WhatsApp response rate" value={`${dm.openRate}%`} delta={`${fmt(dm.whatsappSends)} tracked links`} icon="☘" tone="whatsapp" />
-        </section>
-
-        <section className="grid gap-4 xl:grid-cols-[1fr_1.05fr_1fr]">
-          <Funnel funnel={data.funnel} />
-          <PipelineChart funnel={data.funnel} />
-          <RankingCard title="Top markets by pipeline (USD)" action="By pipeline value" href="/leads" rows={marketRows} />
-        </section>
-
-        <section className="grid gap-4 xl:grid-cols-[1fr_1.1fr]">
-          <RankingCard title="Top products by pipeline (USD)" action="By pipeline value" href="/products" rows={productRows} />
-          <Insights data={data} />
-        </section>
-
-        <footer className="flex flex-wrap items-center justify-between gap-3 px-2 pb-2 text-xs text-slate-400">
-          <span>Last updated: {new Date(data.lastUpdated).toLocaleString('en-US')}</span>
-          <span>All amounts in USD. Current page uses live CRM data where available; historical trend and advanced filters are prepared for the approved analytics redesign.</span>
-        </footer>
+    <main className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs font-semibold text-slate-500">
+        <span>{modeLabel(mode)}</span>
+        <span>Last updated: {new Date(data.lastUpdated).toLocaleString('en-US')}</span>
       </div>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <KPI label="Pipeline value" value={money(data.pipelineValueUsd)} delta="live scoped value" icon="$" tone="green" href="/pipeline" />
+        <KPI label="Quote acceptance rate" value={pct(acceptanceRate)} delta={`${qm.totalAccepted} accepted`} icon="⌁" tone="blue" href="/quotes" />
+        <KPI label="Orders in execution" value={fmt(om.active)} delta={`${pct(executionRate)} active`} icon="▣" tone="orange" href="/orders" />
+        <KPI label="Document sends" value={fmt(dm.totalSends)} delta={`${dm.openRate}% opened`} icon="✈" tone="purple" href="/orders" />
+        <KPI label="WhatsApp response rate" value={`${dm.openRate}%`} delta={`${fmt(dm.whatsappSends)} tracked links`} icon="☘" tone="whatsapp" />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_1.05fr_1fr]">
+        <Funnel funnel={data.funnel} />
+        <PipelineChart funnel={data.funnel} />
+        <RankingCard title="Top markets by pipeline" action="Live scope" href="/leads" rows={marketRows} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_1.1fr]">
+        <RankingCard title="Top products by pipeline" action="Live scope" href="/products" rows={productRows} />
+        <Insights data={data} />
+      </section>
     </main>
   );
 }
