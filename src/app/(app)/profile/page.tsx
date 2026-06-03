@@ -123,8 +123,8 @@ export default async function ProfilePage({ searchParams }: { searchParams?: Rec
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <DetailRow label="Primary phone" value={cardSettings?.primary_phone} />
-              <DetailRow label="Website" value={cardSettings?.website || workspace.organization?.website} />
-              <DetailRow label="Address" value={cardSettings?.address || workspace.organization?.registered_address} />
+              <DetailRow label="Website" value={cardSettings?.website} />
+              <DetailRow label="Address" value={cardSettings?.address} />
               <DetailRow label="Share link" value={cardSettings?.share_slug ? `/card?share=${cardSettings.share_slug}` : null} />
             </div>
             <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
