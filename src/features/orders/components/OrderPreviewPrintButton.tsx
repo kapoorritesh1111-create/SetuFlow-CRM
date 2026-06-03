@@ -1,5 +1,5 @@
 'use client';
 
-export function OrderPreviewPrintButton() {
-  return <button type="button" onClick={() => window.print()}>Download / Print PDF</button>;
+export function OrderPreviewPrintButton({ pdfHref }: { pdfHref: string }) {
+  return <a className="odx-pdf-link" href={pdfHref} target="_blank" rel="noreferrer">Download PDF</a>;
 }
