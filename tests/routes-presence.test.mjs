@@ -72,6 +72,6 @@ test('profile page stays compact and keeps vCard as a helper surface', () => {
   assert.doesNotMatch(profilePage, /MyCardWorkspace/, 'profile should not embed the full vCard workspace');
   assert.match(profilePage, /vCard helper/, 'profile should include a compact vCard readiness helper');
   assert.match(profilePage, /Manage vCard details/, 'profile should hand off to the dedicated vCard workspace');
-  assert.match(profilePage, /xl:grid-cols=\{?"?\[1\.1fr_0\.9fr\]/, 'desktop profile should use a two-column layout to reduce scrolling');
+  assert.match(profilePage, /xl:grid-cols-\[1\.1fr_0\.9fr\]/, 'desktop profile should use a two-column layout to reduce scrolling');
   assert.match(compactAvatarManager, /The full illustrated gallery stays in the vCard workspace/, 'profile avatar manager should not show the full gallery');
 });
