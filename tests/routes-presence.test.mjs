@@ -8,6 +8,7 @@ const globals = readFileSync(new URL('../src/app/globals.css', import.meta.url),
 const dashboardPage = readFileSync(new URL('../src/app/(app)/dashboard/page.tsx', import.meta.url), 'utf8');
 const dashboardTabs = readFileSync(new URL('../src/components/dashboard/dashboard-section-tabs.tsx', import.meta.url), 'utf8');
 const profilePage = readFileSync(new URL('../src/app/(app)/profile/page.tsx', import.meta.url), 'utf8');
+const vCardPage = readFileSync(new URL('../src/app/(app)/contact-exchange/vcard/page.tsx', import.meta.url), 'utf8');
 const compactAvatarManager = readFileSync(new URL('../src/features/profile/components/profile-compact-avatar-manager.tsx', import.meta.url), 'utf8');
 const { requiredFiles, forbiddenPaths } = manifest.tests;
 const primaryNav = manifest.primaryNav.map((item) => item.href);
@@ -69,9 +70,13 @@ test('desktop account menu keeps profile page discoverable', () => {
 
 test('profile page stays compact and keeps vCard as a helper surface', () => {
   assert.match(profilePage, /ProfileCompactAvatarManager/, 'profile should use the compact avatar manager, not the full avatar gallery');
+  assert.doesNotMatch(profilePage, /PageHeader/, 'profile should not render a duplicate page hero below the shell title');
   assert.doesNotMatch(profilePage, /MyCardWorkspace/, 'profile should not embed the full vCard workspace');
+  assert.match(profilePage, /Profile basics/, 'profile should merge personal details and account context');
   assert.match(profilePage, /vCard helper/, 'profile should include a compact vCard readiness helper');
-  assert.match(profilePage, /Manage vCard details/, 'profile should hand off to the dedicated vCard workspace');
-  assert.match(profilePage, /xl:grid-cols-\[1\.1fr_0\.9fr\]/, 'desktop profile should use a two-column layout to reduce scrolling');
-  assert.match(compactAvatarManager, /The full illustrated gallery stays in the vCard workspace/, 'profile avatar manager should not show the full gallery');
+  assert.match(profilePage, /Manage vCard/, 'profile should hand off to the dedicated vCard workspace');
+  assert.match(profilePage, /xl:grid-cols-\[minmax\(0,1\.35fr\)_minmax\(320px,0\.65fr\)\]/, 'desktop profile should use a compact two-column layout');
+  assert.match(compactAvatarManager, /Select avatar/, 'profile should open avatar selection from a compact action');
+  assert.match(compactAvatarManager, /fixed inset-0/, 'avatar selection should be a modal, not a full page gallery');
+  assert.match(vCardPage, /Back to Profile/, 'vCard workspace should provide a return path to Profile');
 });
