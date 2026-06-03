@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { SmcIcon, type SmcIconName, DOCS_WORKSPACE_HREF, E2E_WORKSPACE_HREF, DEMO_CHECKLIST_HREF } from './smc-shell';
@@ -94,6 +95,7 @@ export function SmcGlobalFilterStrip({
   const range = searchParams.get('range') ?? '14d';
   const showCustomDates = range === 'custom';
   const searchValue = searchParams.get('q') ?? '';
+  const [localSearch, setLocalSearch] = useState(searchValue);
   const sprintValue = searchParams.get('sprint') ?? '';
   const severityValue = searchParams.get('severity') ?? '';
   const statusValue = searchParams.get('status') ?? '';
@@ -193,14 +195,19 @@ export function SmcGlobalFilterStrip({
           <label className="ml-auto flex h-11 min-w-[220px] shrink-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-slate-400 shadow-sm focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-100 sm:min-w-[280px]">
             <span className="text-[13px]">⌕</span>
             <input
-              value={searchValue}
-              onChange={(event) => apply({ q: event.target.value || null })}
+              value={localSearch}
+              onChange={(event) => setLocalSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') apply({ q: localSearch || null });
+                if (event.key === 'Escape') { setLocalSearch(''); apply({ q: null }); }
+              }}
+              onBlur={() => apply({ q: localSearch || null })}
               placeholder="Search SMC..."
               aria-label="Search Setu Mission Control"
               className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400"
             />
-            {searchValue ? (
-              <button type="button" onClick={() => apply({ q: null })} className="rounded-full px-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
+            {localSearch ? (
+              <button type="button" onClick={() => { setLocalSearch(''); apply({ q: null }); }} className="rounded-full px-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
             ) : null}
           </label>
         </div>

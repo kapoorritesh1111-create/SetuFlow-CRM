@@ -56,9 +56,13 @@ function fmtDateCell(isoString: string | null | undefined): { date: string; ago:
   const d = new Date(isoString);
   if (Number.isNaN(d.getTime())) return null;
   const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const diffMs = Date.now() - d.getTime();
-  const diffD = Math.floor(diffMs / 86_400_000);
-  const ago = diffD === 0 ? 'today' : diffD === 1 ? '1d ago' : `${diffD}d ago`;
+  // Calendar-day diff: compare date parts only to avoid timezone/partial-day issues
+  const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'UTC' });
+  const itemStr = d.toLocaleDateString('en-US', { timeZone: 'UTC' });
+  const todayMs = new Date(todayStr).getTime();
+  const itemMs = new Date(itemStr).getTime();
+  const diffD = Math.round((todayMs - itemMs) / 86_400_000);
+  const ago = diffD <= 0 ? 'today' : diffD === 1 ? '1d ago' : `${diffD}d ago`;
   return { date, ago };
 }
 
@@ -629,7 +633,11 @@ export function IssuesBoard({
 
   function changeSearch(nextSearch: string) {
     setSearch(nextSearch);
-    setBoardQuery({ q: nextSearch || null });
+    // Don't push to URL on every keystroke — commitSearch() does that on Enter
+  }
+
+  function commitSearch(value: string) {
+    setBoardQuery({ q: value || null });
   }
 
   function toggleColumn(column: ColumnKey) {
@@ -721,7 +729,10 @@ export function IssuesBoard({
                 </button>
               ))}
             </div>
-            <input type="text" value={search} onChange={(e) => changeSearch(e.target.value)}
+            <input type="text" value={search} 
+              onChange={(e) => changeSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitSearch(search); if (e.key === 'Escape') { setSearch(''); commitSearch(''); } }}
+              onBlur={() => commitSearch(search)}
               placeholder="Search issues..."
               className={cn('w-full rounded-2xl border px-3 py-2 text-sm shadow-sm sm:w-64', workspaceFieldSurfaceClass)} />
           </div>
