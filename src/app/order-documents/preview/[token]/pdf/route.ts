@@ -37,10 +37,10 @@ function num(value: unknown) {
 function documentTitle(type: string, orderType: unknown) {
   const exportMode = String(orderType ?? '').toLowerCase() === 'export' || ['proforma_invoice', 'packing_list', 'freight_request'].includes(type);
   if (type === 'proforma_invoice') return 'Export Proforma Invoice';
-  if (type === 'packing_sheet') return exportMode ? 'Export Packing Sheet' : 'Regional Packing / Picklist / QC Sheet';
+  if (type === 'packing_sheet') return exportMode ? 'Export Packing Sheet' : 'Regional Packing Picklist QC Sheet';
   if (type === 'packing_list') return 'Export Packing List';
   if (type === 'delivery_note') return exportMode ? 'Export Delivery Note' : 'Regional Delivery Note';
-  if (type === 'dispatch_invoice') return exportMode ? 'Export Commercial / Dispatch Invoice' : 'Regional Tax / Dispatch Invoice';
+  if (type === 'dispatch_invoice') return exportMode ? 'Export Commercial Dispatch Invoice' : 'Regional Tax Dispatch Invoice';
   return exportMode ? 'Export Order Confirmation' : 'Regional Order Confirmation';
 }
 
@@ -51,7 +51,16 @@ function documentQuantity(line: Row, documentType: string) {
 }
 
 function filenamePart(value: unknown) {
-  return text(value, 'document').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'document';
+  return text(value, 'document')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 96) || 'document';
+}
+
+function pdfFilename(clientName: unknown, orderNumber: unknown, title: unknown) {
+  return [filenamePart(clientName), filenamePart(orderNumber), filenamePart(title)].filter(Boolean).join('__') || 'setu-order-document';
 }
 
 export async function GET(_request: Request, { params }: { params: { token: string } }) {
@@ -87,11 +96,13 @@ export async function GET(_request: Request, { params }: { params: { token: stri
   }));
 
   const title = documentTitle(documentType, order.order_type);
-  const documentNo = `${text(order.order_number, 'ORD')}-${text(send.id, token).slice(0, 8)}`;
+  const orderNumber = text(order.order_number, 'order');
+  const clientName = text(lead.company_name, 'buyer');
+  const documentNo = `${title} ${orderNumber}`;
   const bytes = buildOrderDocumentPdf({
     documentType: documentType === 'dispatch_invoice' ? 'invoice' : 'order-confirmation',
-    documentNo: `${title} ${documentNo}`,
-    companyName: text(lead.company_name, 'Buyer pending'),
+    documentNo,
+    companyName: clientName,
     contactName: text(lead.contact_name, '') || null,
     country: text(lead.country ?? order.destination_place, '') || null,
     quoteId: text(order.source_quote_id, 'Tracked order document'),
@@ -121,7 +132,7 @@ export async function GET(_request: Request, { params }: { params: { token: stri
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${filenamePart(title)}-${filenamePart(documentNo)}.pdf"`,
+      'Content-Disposition': `inline; filename="${pdfFilename(clientName, orderNumber, title)}.pdf"`,
       'Cache-Control': 'no-store',
     },
   });
