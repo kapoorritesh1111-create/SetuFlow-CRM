@@ -58,6 +58,16 @@ type PushSubscriptionJson = { endpoint?: string; keys?: { auth?: string; p256dh?
 const priorityCopy: Record<NotificationPriority, string> = { normal: 'Normal', high: 'High', critical: 'Critical' };
 const webPushPublicKey = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ?? '';
 const DISMISSED_DERIVED_KEY = 'setuflow-dismissed-derived-alerts';
+const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
+const ENTITY_ROUTE_ALIASES: Array<{ pattern: RegExp; route: string; supportsFocus: boolean }> = [
+  { pattern: /lead|follow[-_\s]?up|contact/i, route: '/leads', supportsFocus: true },
+  { pattern: /quote|rfq/i, route: '/quotes', supportsFocus: true },
+  { pattern: /order|shipment|execution/i, route: '/orders', supportsFocus: true },
+  { pattern: /task|todo/i, route: '/tasks', supportsFocus: true },
+  { pattern: /product|catalog/i, route: '/products', supportsFocus: true },
+  { pattern: /approval|send|communication|message|email/i, route: '/approval-send', supportsFocus: false },
+  { pattern: /pipeline|risk|exception|blocker/i, route: '/pipeline', supportsFocus: false },
+];
 
 function formatWhen(value: string) {
   const date = new Date(value);
@@ -98,6 +108,25 @@ function urlBase64ToUint8Array(value: string) {
   return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
 }
 
+function safeRelativeActionUrl(value: string | null | undefined) {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed || !trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.includes('://')) return null;
+  return trimmed;
+}
+
+function routeForNotification(notification: NotificationRow) {
+  const explicitUrl = safeRelativeActionUrl(notification.action_url);
+  if (explicitUrl) return explicitUrl;
+
+  const context = [notification.type, notification.title, notification.body ?? '', notification.entity_ref ?? ''].join(' ');
+  const route = ENTITY_ROUTE_ALIASES.find((item) => item.pattern.test(context));
+  if (!route) return null;
+
+  const entityId = notification.entity_ref?.match(UUID_PATTERN)?.[0] ?? null;
+  if (entityId && route.supportsFocus) return `${route.route}?focus=${encodeURIComponent(entityId)}`;
+  return route.route;
+}
+
 function canUseBrowserPush() {
   return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 }
@@ -118,13 +147,13 @@ function isOpenStatus(status: string | null | undefined) {
 
 function derivedFollowUpAlert(row: FollowUpRow): NotificationRow | null {
   if (!row.scheduled_at || !isOpenStatus(row.status) || new Date(row.scheduled_at).getTime() > Date.now()) return null;
-  return { id: `derived:follow-up:${row.id}:${row.scheduled_at}`, type: 'overdue_follow_up', title: 'Overdue follow-up', body: row.notes || 'A lead follow-up is past due and needs attention.', icon: 'clock-o', priority: 'high', entity_ref: 'Follow-up', action_url: row.lead_id ? `/leads?focus=${encodeURIComponent(row.lead_id)}` : '/leads?view=overdue', read: false, created_at: row.scheduled_at, source: 'derived' };
+  return { id: `derived:follow-up:${row.id}:${row.scheduled_at}`, type: 'overdue_follow_up', title: 'Overdue follow-up', body: row.notes || 'A lead follow-up is past due and needs attention.', icon: 'clock-o', priority: 'high', entity_ref: row.lead_id ? `lead:${row.lead_id}` : 'Follow-up', action_url: row.lead_id ? `/leads?focus=${encodeURIComponent(row.lead_id)}` : '/leads?view=overdue', read: false, created_at: row.scheduled_at, source: 'derived' };
 }
 
 function derivedTaskAlert(row: ScheduledTaskRow): NotificationRow | null {
   if (!row.scheduled_for || !isOpenStatus(row.status) || new Date(row.scheduled_for).getTime() > Date.now()) return null;
   const taskLabel = row.task_type ? row.task_type.replace(/_/g, ' ') : 'scheduled task';
-  return { id: `derived:task:${row.id}:${row.scheduled_for}`, type: 'overdue_task', title: 'Overdue task', body: `${taskLabel} is past due and needs attention.`, icon: 'exclamation-circle', priority: 'high', entity_ref: 'Task', action_url: row.lead_id ? `/leads?focus=${encodeURIComponent(row.lead_id)}` : '/tasks', read: false, created_at: row.scheduled_for, source: 'derived' };
+  return { id: `derived:task:${row.id}:${row.scheduled_for}`, type: 'overdue_task', title: 'Overdue task', body: `${taskLabel} is past due and needs attention.`, icon: 'exclamation-circle', priority: 'high', entity_ref: row.lead_id ? `lead:${row.lead_id}` : 'Task', action_url: row.lead_id ? `/leads?focus=${encodeURIComponent(row.lead_id)}` : '/tasks', read: false, created_at: row.scheduled_for, source: 'derived' };
 }
 
 export function InAppNotificationCenter({ organizationId, userId, variant = 'floating' }: { organizationId: string; userId: string; variant?: 'floating' | 'inline' }) {
@@ -219,20 +248,60 @@ export function InAppNotificationCenter({ organizationId, userId, variant = 'flo
   const mobilePushHint = iosDevice && !standalonePwa ? 'On iPhone/iPad, add SETU Flow to your Home Screen first, then open the app icon to enable push alerts.' : pushStatus === 'missing-key' ? 'Browser push setup is pending, but in-app alerts are active.' : pushStatus === 'denied' ? 'Push is blocked in this browser. In-app alerts still appear here.' : 'Mobile push uses the installed PWA service worker and your notification preferences.';
   const showPushButton = pushStatus === 'idle' || pushStatus === 'saving' || pushStatus === 'enabled' || pushStatus === 'error';
 
-  // The inner bell + dropdown panel — reused by both variants
   const bellAndPanel = (
     <div className="relative">
-      <button type="button" onClick={() => setOpen((value) => !value)} className="relative grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:text-[#0b2e4a]" aria-label="Open notifications" aria-expanded={open}><FaIcon icon="bell-o" fixedWidth />{unreadCount > 0 ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#0c7fff] px-1 text-[10px] font-black text-white ring-2 ring-white">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}</button>
-      {open ? <section className="fixed inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-28px_70px_rgba(15,23,42,0.24)] ring-1 ring-slate-950/5 md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:mt-2 md:w-[min(360px,calc(100vw-2rem))] md:rounded-[1.35rem] md:pb-0 md:shadow-[0_28px_70px_rgba(15,23,42,0.22)]"><div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-slate-200 md:hidden" aria-hidden="true" /><div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p><h2 className="text-sm font-bold text-slate-950">{unreadCount ? `${unreadCount} unread alert${unreadCount === 1 ? ''  : 's'}` : 'All caught up'}</h2><p className="mt-1 max-w-[16rem] text-[11px] leading-5 text-slate-500 md:hidden">{mobilePushHint}</p></div><div className="flex shrink-0 items-center gap-2">{showPushButton ? <button type="button" onClick={enablePush} disabled={pushStatus === 'saving' || pushStatus === 'enabled'} className={cn('rounded-xl border px-3 py-2 text-[11px] font-bold transition', pushStatus === 'enabled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')} title="Enable browser push notifications">{pushLabel}</button> : null}<button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">×</button></div></div><div className="max-h-[58vh] overflow-y-auto p-2 md:max-h-[420px]">{loading ? <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading alerts...</div> : notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center"><p className="text-sm font-bold text-slate-900">No active alerts found</p><p className="mt-1 text-xs leading-5 text-slate-500">No generated notifications, overdue follow-ups, or overdue tasks are visible for this workspace right now.</p></div> : <div className="space-y-2">{notifications.map((notification) => <div key={notification.id} className={cn('rounded-2xl border p-3 transition', notification.read ? 'border-slate-100 bg-white' : 'border-[#0c7fff]/20 bg-[#f4f9ff]')}><div className="flex items-start gap-3"><div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl border', getPriorityClasses(notification.priority))}><FaIcon icon={notification.icon || 'bell-o'} fixedWidth /></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-bold text-slate-950">{notification.title}</p><span className="shrink-0 text-[11px] font-semibold text-slate-400">{formatWhen(notification.created_at)}</span></div>{notification.body ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{notification.body}</p> : null}<div className="mt-2 flex flex-wrap items-center gap-2"><span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]', getPriorityClasses(notification.priority))}>{priorityCopy[notification.priority]}</span>{notification.source === 'derived' ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Live signal</span> : null}{notification.entity_ref ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{notification.entity_ref}</span> : null}{notification.action_url ? <a href={notification.action_url} onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-[#0c7fff] hover:underline">Open</a> : null}{!notification.read ? <button type="button" onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-slate-500 hover:text-slate-900">Mark read</button> : null}</div></div></div></div>)}</div>}</div></section> : null}
+      <button type="button" onClick={() => setOpen((value) => !value)} className="relative grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:text-[#0b2e4a]" aria-label="Open notifications" aria-expanded={open}>
+        <FaIcon icon="bell-o" fixedWidth />
+        {unreadCount > 0 ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#0c7fff] px-1 text-[10px] font-black text-white ring-2 ring-white">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
+      </button>
+      {open ? (
+        <section className="fixed inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-28px_70px_rgba(15,23,42,0.24)] ring-1 ring-slate-950/5 md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:mt-2 md:w-[min(360px,calc(100vw-2rem))] md:rounded-[1.35rem] md:pb-0 md:shadow-[0_28px_70px_rgba(15,23,42,0.22)]">
+          <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-slate-200 md:hidden" aria-hidden="true" />
+          <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p>
+              <h2 className="text-sm font-bold text-slate-950">{unreadCount ? `${unreadCount} unread alert${unreadCount === 1 ? '' : 's'}` : 'All caught up'}</h2>
+              <p className="mt-1 max-w-[16rem] text-[11px] leading-5 text-slate-500 md:hidden">{mobilePushHint}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {showPushButton ? <button type="button" onClick={enablePush} disabled={pushStatus === 'saving' || pushStatus === 'enabled'} className={cn('rounded-xl border px-3 py-2 text-[11px] font-bold transition', pushStatus === 'enabled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')} title="Enable browser push notifications">{pushLabel}</button> : null}
+              <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">x</button>
+            </div>
+          </div>
+          <div className="max-h-[58vh] overflow-y-auto p-2 md:max-h-[420px]">
+            {loading ? <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading alerts...</div> : notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center"><p className="text-sm font-bold text-slate-900">No active alerts found</p><p className="mt-1 text-xs leading-5 text-slate-500">No generated notifications, overdue follow-ups, or overdue tasks are visible for this workspace right now.</p></div> : (
+              <div className="space-y-2">
+                {notifications.map((notification) => {
+                  const notificationHref = routeForNotification(notification);
+                  return (
+                    <div key={notification.id} className={cn('rounded-2xl border p-3 transition', notification.read ? 'border-slate-100 bg-white' : 'border-[#0c7fff]/20 bg-[#f4f9ff]')}>
+                      <div className="flex items-start gap-3">
+                        <div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl border', getPriorityClasses(notification.priority))}><FaIcon icon={notification.icon || 'bell-o'} fixedWidth /></div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-bold text-slate-950">{notification.title}</p><span className="shrink-0 text-[11px] font-semibold text-slate-400">{formatWhen(notification.created_at)}</span></div>
+                          {notification.body ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{notification.body}</p> : null}
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]', getPriorityClasses(notification.priority))}>{priorityCopy[notification.priority]}</span>
+                            {notification.source === 'derived' ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Live signal</span> : null}
+                            {notification.entity_ref ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{notification.entity_ref}</span> : null}
+                            {notificationHref ? <a href={notificationHref} onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-[#0c7fff] hover:underline">Open linked record</a> : null}
+                            {!notification.read ? <button type="button" onClick={() => markRead(notification.id)} className="text-[11px] font-bold text-slate-500 hover:text-slate-900">Mark read</button> : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 
-  // 'inline' variant: used in the desktop header row — no fixed wrapper, renders in document flow
-  if (variant === 'inline') {
-    return <>{bellAndPanel}</>;
-  }
+  if (variant === 'inline') return <>{bellAndPanel}</>;
 
-  // 'floating' variant (default): fixed-positioned overlay for pages that don't have inline header slot
   return (
     <div className="pointer-events-none fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[340] flex flex-col items-end gap-3 md:hidden">
       <div className="pointer-events-auto relative flex w-full justify-end">
