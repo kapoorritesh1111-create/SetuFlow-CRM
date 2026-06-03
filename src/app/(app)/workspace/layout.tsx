@@ -2,8 +2,9 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { getSprintList, getWorkspaceIssues } from '@/lib/queries/workspace';
+import { getSprintList, getWorkspaceIssues, SETU_FLOW_ORG_ID } from '@/lib/queries/workspace';
 import { SmcGlobalFilterStrip } from '@/features/workspace/components/smc-global-filter-strip';
+import { WorkspaceRealtimeSync } from '@/features/workspace/components/workspace-realtime-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,7 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
     <div className="flex flex-col gap-4">
       <SmcGlobalFilterStrip sprints={sprintNumbers} areas={areas} reporters={reporters} />
       {children}
+      <WorkspaceRealtimeSync orgId={SETU_FLOW_ORG_ID} />
     </div>
   );
 }
