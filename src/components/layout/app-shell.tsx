@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FaIcon } from '@/components/ui/fa-icon';
@@ -282,29 +282,63 @@ function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmi
   );
 }
 
-function DesktopUserMenu({ profileName, profileEmail, avatarUrl }: { profileName: string; profileEmail: string; avatarUrl?: string | null }) {
+function DesktopUserMenu({ profileName, profileEmail, avatarUrl, onOpenMenu }: { profileName: string; profileEmail: string; avatarUrl?: string | null; onOpenMenu?: () => void }) {
+  const pathname = usePathname();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeIfOutside(event: PointerEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('pointerdown', closeIfOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeIfOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  function toggleMenu() {
+    setOpen((current) => {
+      const next = !current;
+      if (next) onOpenMenu?.();
+      return next;
+    });
+  }
+
   return (
-    <details className="group relative">
-      <summary className="list-none rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+    <div ref={menuRef} className="relative">
+      <button type="button" onClick={toggleMenu} aria-expanded={open} aria-haspopup="menu" className="rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2">
         <span className="sr-only">Open user menu</span>
         <UserAvatar name={profileName} email={profileEmail} avatarUrl={avatarUrl} initials={getInitials(profileName)} size="md" />
-      </summary>
-      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl bg-white p-2 text-slate-700 shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
-        <div className="px-3 py-2">
-          <p className="truncate text-sm font-black text-slate-950">{profileName}</p>
-          <p className="truncate text-xs font-semibold text-slate-500">{profileEmail}</p>
+      </button>
+      {open ? (
+        <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl bg-white p-2 text-slate-700 shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+          <div className="px-3 py-2">
+            <p className="truncate text-sm font-black text-slate-950">{profileName}</p>
+            <p className="truncate text-xs font-semibold text-slate-500">{profileEmail}</p>
+          </div>
+          <div className="my-1 h-px bg-slate-100" />
+          <Link href="/profile" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50" role="menuitem">
+            Profile
+          </Link>
+          <form action="/api/logout" method="post">
+            <button type="submit" className="block w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50" role="menuitem">
+              Sign out
+            </button>
+          </form>
         </div>
-        <div className="my-1 h-px bg-slate-100" />
-        <Link href="/profile" className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-          Profile
-        </Link>
-        <form action="/api/logout" method="post">
-          <button type="submit" className="block w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50">
-            Sign out
-          </button>
-        </form>
-      </div>
-    </details>
+      ) : null}
+    </div>
   );
 }
 
@@ -321,6 +355,7 @@ export function AppShell({ children, profile, organization, membership, currentR
   const canAccessAdmin = normalizedRoles.includes('owner') || normalizedRoles.includes('admin');
   const [globalScope, setGlobalScope] = useState<WorkspaceScope>(() => normalizeScope(searchParams.get('mode')));
   const [desktopSidebarMode, setDesktopSidebarMode] = useState<DesktopSidebarMode>('collapsed');
+  const [notificationResetKey, setNotificationResetKey] = useState(0);
   const shareHref = useMemo(() => shareLinkFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
   const downloadVcfHref = useMemo(() => downloadVcfHrefFor(profile, organization, cardSettings, cardShareSlug, roleLabel), [cardSettings, cardShareSlug, organization, profile, roleLabel]);
   const signedInForMobile = useMemo(
@@ -348,6 +383,10 @@ export function AppShell({ children, profile, organization, membership, currentR
   useEffect(() => {
     setDesktopSidebarMode(normalizeSidebarMode(window.localStorage.getItem(DESKTOP_SIDEBAR_KEY)));
   }, []);
+
+  useEffect(() => {
+    setNotificationResetKey((current) => current + 1);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isModeAwarePath(pathname)) return;
@@ -380,6 +419,10 @@ export function AppShell({ children, profile, organization, membership, currentR
   function changeDesktopSidebarMode(nextMode: DesktopSidebarMode) {
     window.localStorage.setItem(DESKTOP_SIDEBAR_KEY, nextMode);
     setDesktopSidebarMode(nextMode);
+  }
+
+  function closeNotificationCard() {
+    setNotificationResetKey((current) => current + 1);
   }
 
   return (
@@ -424,8 +467,8 @@ export function AppShell({ children, profile, organization, membership, currentR
                       <FaIcon icon="cog" fixedWidth />
                     </button>
                   ) : null}
-                  {organizationId && userId ? <InAppNotificationCenter organizationId={organizationId} userId={userId} variant="inline" /> : null}
-                  <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} />
+                  {organizationId && userId ? <InAppNotificationCenter key={`${organizationId}-${userId}-${pathname}-${notificationResetKey}`} organizationId={organizationId} userId={userId} variant="inline" /> : null}
+                  <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} onOpenMenu={closeNotificationCard} />
                 </div>
               </div>
             </header>
