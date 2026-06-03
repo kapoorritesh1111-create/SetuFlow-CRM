@@ -1,4 +1,3 @@
-import { PageHeader } from '@/components/ui/page-header';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { ReportsControlsPanel } from '@/features/reports/components/reports-controls-panel';
@@ -54,17 +53,7 @@ export default async function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Reporting"
-        title="Commercial and operational reporting"
-        description="Track conversion, pricing variance, blockers, and audited workflow changes from one explainable operator-facing workspace."
-        actions={[
-          { label: 'Admin audit', href: '/admin/audit' },
-          { label: 'Products', href: '/products' },
-          { label: 'Compliance', href: '/compliance', type: 'primary' },
-        ]}
-      />
+    <div className="space-y-5">
       <QueryIssuesAlert issues={data.queryIssues} title="Some reporting sources could not be loaded" />
       <ReportsControlsPanel data={data} />
       <ReportsWorkspace data={data} readOnlyMessage={readOnlyMessage} />
