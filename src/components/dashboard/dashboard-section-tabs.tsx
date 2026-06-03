@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 export type DashboardSectionTab = 'home' | 'analytics' | 'reports';
@@ -30,6 +33,13 @@ const DASHBOARD_SECTION_TABS: Array<{
 ];
 
 export function DashboardSectionTabs({ active }: { active: DashboardSectionTab }) {
+  const searchParams = useSearchParams();
+
+  function tabHref(path: string) {
+    const query = searchParams.toString();
+    return query ? path + '?' + query : path;
+  }
+
   return (
     <nav aria-label="Dashboard workspace tabs" className="mb-5 rounded-[1.6rem] border border-slate-200 bg-white/90 p-2 shadow-[0_16px_42px_rgba(15,23,42,0.07)] backdrop-blur">
       <div className="grid gap-2 lg:grid-cols-3">
@@ -38,7 +48,7 @@ export function DashboardSectionTabs({ active }: { active: DashboardSectionTab }
           return (
             <Link
               key={tab.key}
-              href={tab.href}
+              href={tabHref(tab.href)}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'rounded-[1.15rem] px-4 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2',
