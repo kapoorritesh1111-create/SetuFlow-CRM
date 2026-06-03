@@ -125,7 +125,6 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
   const data = await getDashboardData(workspace.organization.id, resolvedScope);
   const activeTradeEvent = await getActiveTradeEventStripData(workspace.organization.id);
 
-  // ── First-login detection: check if org has any leads or products ──────────
   const supabaseForCounts = await createClient();
   const db = supabaseForCounts as any;
   const [leadsCountResult, productsCountResult, quotesCountResult] = await Promise.all([
@@ -136,39 +135,46 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
   const hasLeads = (leadsCountResult.count ?? 0) > 0;
   const hasProducts = (productsCountResult.count ?? 0) > 0;
   const hasQuotes = (quotesCountResult.count ?? 0) > 0;
-  const isFirstLogin = !hasLeads && !hasProducts;
+  const showFirstLoginGuide = !hasLeads || !hasProducts || !hasQuotes;
+  const firstLoginGuide = showFirstLoginGuide ? (
+    <FirstLoginGuide
+      hasLeads={hasLeads}
+      hasProducts={hasProducts}
+      hasQuotes={hasQuotes}
+      orgName={workspace.organization.name ?? 'your workspace'}
+    />
+  ) : null;
+
   if (!data) {
     const emptyStateTitle =
       resolvedScope === 'buyer'
-        ? 'Buyer dashboard will appear here'
+        ? 'Buyer dashboard will appear after setup'
         : resolvedScope === 'supplier'
-          ? 'Supplier dashboard will appear here'
-          : 'Dashboard will appear here';
+          ? 'Supplier dashboard will appear after setup'
+          : 'Your dashboard will appear after setup';
 
     const emptyStateDescription =
       resolvedScope === 'buyer'
-        ? 'Connect Supabase and the buyer dashboard will render from your live CRM tables.'
+        ? 'Start by adding your catalog and first buyer lead. Once records exist, your buyer dashboard metrics will populate here.'
         : resolvedScope === 'supplier'
-          ? 'Connect Supabase and the supplier dashboard will render from your live CRM tables.'
-          : 'Connect Supabase and the workspace dashboard will render from your live CRM tables.';
+          ? 'Start by adding your catalog and first supplier lead. Once records exist, your supplier dashboard metrics will populate here.'
+          : 'Start with the guided setup checklist. Once records exist, your workspace dashboard metrics will populate here.';
 
-    return <EmptyState title={emptyStateTitle} description={emptyStateDescription} />;
+    return (
+      <div className="space-y-5">
+        {firstLoginGuide}
+        <EmptyState title={emptyStateTitle} description={emptyStateDescription} />
+      </div>
+    );
   }
 
   return (
     <>
+      {firstLoginGuide}
       <div className="md:hidden">
         <MobileDashboardHome data={data} />
       </div>
       <div className="hidden md:block">
-      {isFirstLogin && (
-        <FirstLoginGuide
-          hasLeads={hasLeads}
-          hasProducts={hasProducts}
-          hasQuotes={hasQuotes}
-          orgName={workspace.organization.name ?? 'your workspace'}
-        />
-      )}
       {activeTradeEvent ? (
         <section className="mb-5 rounded-[2rem] border border-emerald-200 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(16,185,129,0.18),rgba(255,255,255,0.96))] p-5 shadow-[0_20px_52px_rgba(15,118,110,0.12)] sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
