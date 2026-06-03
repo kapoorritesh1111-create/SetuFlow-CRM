@@ -11,6 +11,7 @@ type QuoteRow = { id: string; quote_number: string | null; lead_id: string | nul
 type ContractRow = { id: string; quote_id: string | null; lead_id: string | null };
 type OrderRow = { id: string; order_number: string | null; lead_id: string | null; source_quote_id: string | null; legacy_contract_id: string | null };
 type OrderDocumentRow = { id: string; order_id: string; legacy_contract_id: string | null; document_id: string | null; document_type: string; stage_key: string | null; status: string | null; version_no: number | null; pdf_storage_path: string | null; created_at: string | null };
+type OrderDocumentSendRow = { id: string; order_document_id: string | null; order_id: string; document_type: string | null; share_url: string | null; created_at: string | null };
 
 type DocumentsPageProps = { searchParams?: { q?: string; status?: string; type?: string; view?: string; sort?: string; dir?: string } };
 
@@ -33,6 +34,7 @@ type DocumentItem = {
   orderId: string | null;
   legacyContractId: string | null;
   pdfStoragePath: string | null;
+  latestShareUrl: string | null;
 };
 
 type DocumentContext = {
@@ -141,7 +143,18 @@ function safePdfStoragePath(value?: string | null) {
   return null;
 }
 
-function itemFromDocument(row: DocumentRow, linkedOrderDoc?: OrderDocumentRow): DocumentItem {
+function normalizedPdfShareUrl(value?: string | null) {
+  const url = safeExplicitFileUrl(value);
+  if (!url) return null;
+  if (!url.includes('/order-documents/preview/')) return url;
+  return url.replace(/\/pdf\/?$/, '') + '/pdf';
+}
+
+function sendKey(orderId?: string | null, documentType?: string | null) {
+  return `${normalize(orderId)}::${normalize(documentType).toLowerCase()}`;
+}
+
+function itemFromDocument(row: DocumentRow, linkedOrderDoc?: OrderDocumentRow, send?: OrderDocumentSendRow | null): DocumentItem {
   return {
     id: `document:${row.id}`,
     source: 'document',
@@ -161,10 +174,11 @@ function itemFromDocument(row: DocumentRow, linkedOrderDoc?: OrderDocumentRow): 
     orderId: linkedOrderDoc?.order_id ?? (row.related_entity === 'order' ? row.related_id : null),
     legacyContractId: linkedOrderDoc?.legacy_contract_id ?? null,
     pdfStoragePath: linkedOrderDoc?.pdf_storage_path ?? null,
+    latestShareUrl: send?.share_url ?? null,
   };
 }
 
-function itemFromOrderDocument(row: OrderDocumentRow): DocumentItem {
+function itemFromOrderDocument(row: OrderDocumentRow, send?: OrderDocumentSendRow | null): DocumentItem {
   return {
     id: `order-document:${row.id}`,
     source: 'order_document',
@@ -184,6 +198,7 @@ function itemFromOrderDocument(row: OrderDocumentRow): DocumentItem {
     orderId: row.order_id,
     legacyContractId: row.legacy_contract_id,
     pdfStoragePath: row.pdf_storage_path,
+    latestShareUrl: send?.share_url ?? null,
   };
 }
 
@@ -226,6 +241,9 @@ function buildWorkspaceRoute(item: DocumentItem, quote?: QuoteRow | null, order?
 }
 
 function buildPdfHref(item: DocumentItem, quote?: QuoteRow | null, order?: OrderRow | null, contract?: ContractRow | null) {
+  const shareUrl = normalizedPdfShareUrl(item.latestShareUrl);
+  if (shareUrl) return shareUrl;
+
   const storagePath = safePdfStoragePath(item.pdfStoragePath);
   if (storagePath) return storagePath;
 
@@ -245,8 +263,7 @@ function buildPdfHref(item: DocumentItem, quote?: QuoteRow | null, order?: Order
 function pdfUnavailableLabel(item: DocumentItem) {
   const type = normalize(item.docType).toLowerCase();
   if (type.includes('quote')) return 'No PDF';
-  if (type.includes('packing') || type.includes('freight') || type.includes('delivery')) return 'Workflow doc';
-  if (type.includes('invoice') || type.includes('order') || type.includes('dispatch') || item.source === 'order_document') return 'PDF pending';
+  if (item.source === 'order_document' || type.includes('packing') || type.includes('freight') || type.includes('delivery') || type.includes('invoice') || type.includes('order') || type.includes('dispatch')) return 'PDF pending';
   return 'No file yet';
 }
 
@@ -268,11 +285,29 @@ async function buildItemsAndContext(organizationId: string) {
 
   const documents = (documentData ?? []) as unknown as DocumentRow[];
   const orderDocuments = (orderDocumentData ?? []) as unknown as OrderDocumentRow[];
+  const orderDocIds = orderDocuments.map((row) => row.id);
+  const orderDocOrderIds = Array.from(new Set(orderDocuments.map((row) => row.order_id).filter(Boolean)));
+  const { data: sendData } = orderDocOrderIds.length
+    ? await db.from('order_document_sends').select('id, order_document_id, order_id, document_type, share_url, created_at').eq('organization_id', organizationId).in('order_id', orderDocOrderIds).order('created_at', { ascending: false }).limit(500)
+    : { data: [] };
+  const sends = (sendData ?? []) as unknown as OrderDocumentSendRow[];
+  const sendByOrderDocumentId = new Map<string, OrderDocumentSendRow>();
+  const sendByOrderAndType = new Map<string, OrderDocumentSendRow>();
+  sends.forEach((send) => {
+    if (send.order_document_id && orderDocIds.includes(send.order_document_id) && !sendByOrderDocumentId.has(send.order_document_id)) sendByOrderDocumentId.set(send.order_document_id, send);
+    const key = sendKey(send.order_id, send.document_type);
+    if (!sendByOrderAndType.has(key)) sendByOrderAndType.set(key, send);
+  });
+
+  const sendForOrderDoc = (row?: OrderDocumentRow | null) => row ? sendByOrderDocumentId.get(row.id) ?? sendByOrderAndType.get(sendKey(row.order_id, row.document_type)) ?? null : null;
   const orderDocByDocumentId = new Map(orderDocuments.filter((row) => row.document_id).map((row) => [row.document_id as string, row]));
   const documentIds = new Set(documents.map((row) => row.id));
   const items = [
-    ...documents.map((row) => itemFromDocument(row, orderDocByDocumentId.get(row.id))),
-    ...orderDocuments.filter((row) => !row.document_id || !documentIds.has(row.document_id)).map(itemFromOrderDocument),
+    ...documents.map((row) => {
+      const linkedOrderDoc = orderDocByDocumentId.get(row.id);
+      return itemFromDocument(row, linkedOrderDoc, sendForOrderDoc(linkedOrderDoc));
+    }),
+    ...orderDocuments.filter((row) => !row.document_id || !documentIds.has(row.document_id)).map((row) => itemFromOrderDocument(row, sendForOrderDoc(row))),
   ];
 
   const orderIds = new Set<string>();
