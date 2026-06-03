@@ -1,10 +1,9 @@
 /**
  * analytics.ts — live dashboard analytics queries.
- * Keep this file aligned to the live Supabase schema before using it for Analytics or exports.
+ * Uses direct server-side PostgREST requests because the generated Database type is behind the live schema for orders.
  */
 
-import { createAdminSupabaseClient } from '@/lib/supabase/admin';
-import { createClient } from '@/lib/supabase/server';
+import { env } from '@/lib/env';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
 export interface FunnelStage {
@@ -183,48 +182,48 @@ function productLabel(product: LeadProductAnalyticsRow) {
   return product.label?.trim() || 'Unspecified product';
 }
 
+async function fetchTableRows<T>(table: string, select: string, organizationId: string, limit: number, extraFilters: Record<string, string> = {}): Promise<T[]> {
+  if (!env.supabaseUrl) return [];
+  const key = env.supabaseServiceRoleKey || env.supabaseAnonKey;
+  if (!key) return [];
+  const url = new URL(`${env.supabaseUrl.replace(/\/$/, '')}/rest/v1/${table}`);
+  url.searchParams.set('select', select);
+  url.searchParams.set('organization_id', `eq.${organizationId}`);
+  url.searchParams.set('limit', String(limit));
+  for (const [name, value] of Object.entries(extraFilters)) url.searchParams.set(name, value);
+  const response = await fetch(url.toString(), {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      Prefer: 'count=exact',
+    },
+    cache: 'no-store',
+  });
+  if (!response.ok) return [];
+  return (await response.json()) as T[];
+}
+
 export async function getAnalyticsData(organizationId: string, mode: WorkspaceMode = 'all', range?: AnalyticsDateRange): Promise<AnalyticsData> {
   const now = new Date().toISOString();
   const sendSince = range?.from ? `${range.from}T00:00:00.000Z` : new Date(Date.now() - 90 * 86400000).toISOString();
 
-  let leadsRes;
-  let quotesRes;
-  let ordersRes;
-  let sendsRes;
-  let marketsRes;
-  let productsRes;
-  const adminClient = createAdminSupabaseClient();
+  const [allLeads, quotesData, ordersData, sendsData, marketsData, productsData] = await Promise.all([
+    fetchTableRows<LeadAnalyticsRow>('leads', 'id,lead_type,qualification_status,status,deal_value,created_at,updated_at', organizationId, 3000),
+    fetchTableRows<QuoteAnalyticsRow>('quotes', 'id,status,lead_id,created_at,updated_at', organizationId, 2000),
+    fetchTableRows<OrderAnalyticsRow>('orders', 'id,lead_id,status,current_stage,order_lifecycle_status,dispatch_status,fulfillment_status,total_order_value,created_at,updated_at,completed_at', organizationId, 1000),
+    fetchTableRows<SendAnalyticsRow>('order_document_sends', 'id,channel,open_count,email_delivery_status,created_at', organizationId, 5000, { created_at: `gte.${sendSince}` }),
+    fetchTableRows<LeadMarketAnalyticsRow>('lead_markets', 'lead_id,market_id,markets(name)', organizationId, 3000),
+    fetchTableRows<LeadProductAnalyticsRow>('lead_product_interests', 'lead_id,product_id,label,interest_type,created_at', organizationId, 5000),
+  ]);
 
-  if (adminClient) {
-    [leadsRes, quotesRes, ordersRes, sendsRes, marketsRes, productsRes] = await Promise.all([
-      adminClient.from('leads').select('id, lead_type, qualification_status, status, deal_value, created_at, updated_at').eq('organization_id', organizationId).limit(3000),
-      adminClient.from('quotes').select('id, status, lead_id, created_at, updated_at').eq('organization_id', organizationId).limit(2000),
-      adminClient.from('orders').select('id, lead_id, status, current_stage, order_lifecycle_status, dispatch_status, fulfillment_status, total_order_value, created_at, updated_at, completed_at').eq('organization_id', organizationId).limit(1000),
-      adminClient.from('order_document_sends').select('id, channel, open_count, email_delivery_status, created_at').eq('organization_id', organizationId).gte('created_at', sendSince).limit(5000),
-      adminClient.from('lead_markets').select('lead_id, market_id, markets(name)').eq('organization_id', organizationId).limit(3000),
-      adminClient.from('lead_product_interests').select('lead_id, product_id, label, interest_type, created_at').eq('organization_id', organizationId).limit(5000),
-    ]);
-  } else {
-    const db = await createClient();
-    [leadsRes, quotesRes, ordersRes, sendsRes, marketsRes, productsRes] = await Promise.all([
-      db.from('leads').select('id, lead_type, qualification_status, status, deal_value, created_at, updated_at').eq('organization_id', organizationId).limit(3000),
-      db.from('quotes').select('id, status, lead_id, created_at, updated_at').eq('organization_id', organizationId).limit(2000),
-      db.from('orders').select('id, lead_id, status, current_stage, order_lifecycle_status, dispatch_status, fulfillment_status, total_order_value, created_at, updated_at, completed_at').eq('organization_id', organizationId).limit(1000),
-      db.from('order_document_sends').select('id, channel, open_count, email_delivery_status, created_at').eq('organization_id', organizationId).gte('created_at', sendSince).limit(5000),
-      db.from('lead_markets').select('lead_id, market_id, markets(name)').eq('organization_id', organizationId).limit(3000),
-      db.from('lead_product_interests').select('lead_id, product_id, label, interest_type, created_at').eq('organization_id', organizationId).limit(5000),
-    ]);
-  }
-
-  const allLeads = (leadsRes.data ?? []) as LeadAnalyticsRow[];
   const scopedLeadUniverse = allLeads.filter((lead) => matchesWorkspaceMode(lead.lead_type, mode));
   const scopedUniverseLeadIds = new Set(scopedLeadUniverse.map((lead) => lead.id));
   const leads = scopedLeadUniverse.filter((lead) => withinAnalyticsRange(lead, range));
-  const quotes = ((quotesRes.data ?? []) as QuoteAnalyticsRow[]).filter((quote) => quote.lead_id && scopedUniverseLeadIds.has(quote.lead_id) && withinAnalyticsRange(quote, range));
-  const orders = ((ordersRes.data ?? []) as OrderAnalyticsRow[]).filter((order) => order.lead_id && scopedUniverseLeadIds.has(order.lead_id) && withinAnalyticsRange(order, range));
-  const sends = ((sendsRes.data ?? []) as SendAnalyticsRow[]).filter((send) => withinAnalyticsRange(send, range));
-  const markets = ((marketsRes.data ?? []) as LeadMarketAnalyticsRow[]).filter((market) => market.lead_id && scopedUniverseLeadIds.has(market.lead_id));
-  const products = ((productsRes.data ?? []) as LeadProductAnalyticsRow[]).filter((product) => product.lead_id && scopedUniverseLeadIds.has(product.lead_id) && withinAnalyticsRange(product, range));
+  const quotes = quotesData.filter((quote) => quote.lead_id && scopedUniverseLeadIds.has(quote.lead_id) && withinAnalyticsRange(quote, range));
+  const orders = ordersData.filter((order) => order.lead_id && scopedUniverseLeadIds.has(order.lead_id) && withinAnalyticsRange(order, range));
+  const sends = sendsData.filter((send) => withinAnalyticsRange(send, range));
+  const markets = marketsData.filter((market) => market.lead_id && scopedUniverseLeadIds.has(market.lead_id));
+  const products = productsData.filter((product) => product.lead_id && scopedUniverseLeadIds.has(product.lead_id) && withinAnalyticsRange(product, range));
 
   const quotedIds = new Set(quotes.map((quote) => quote.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
   const orderedIds = new Set(orders.map((order) => order.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
@@ -304,7 +303,7 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
       emailDeliveryRate: safePct(deliveredEmails, measurableEmails),
     },
     marketBreakdown: Array.from(marketMap.entries()).map(([market, ids]) => ({ market, leadCount: ids.size, quoteCount: [...ids].filter((id) => quotedIds.has(id)).length, orderCount: [...ids].filter((id) => orderedIds.has(id)).length })).sort((a, b) => b.leadCount - a.leadCount).slice(0, 8),
-    productBreakdown: Array.from(productMap.entries()).map(([category, data]) => ({ category, leadCount: data.leadIds.size, activeQuotes: data.quoteLeadIds.size, pipelineValueUsd: data.pipelineValueUsd })).sort((a, b) => b.leadCount - a.leadCount || b.pipelineValueUsd - data.pipelineValueUsd).slice(0, 8),
+    productBreakdown: Array.from(productMap.entries()).map(([category, data]) => ({ category, leadCount: data.leadIds.size, activeQuotes: data.quoteLeadIds.size, pipelineValueUsd: data.pipelineValueUsd })).sort((a, b) => b.leadCount - a.leadCount || b.pipelineValueUsd - a.pipelineValueUsd).slice(0, 8),
     pipelineValueUsd,
     lastUpdated: now,
   };
