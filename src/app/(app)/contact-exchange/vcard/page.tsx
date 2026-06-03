@@ -105,9 +105,9 @@ export default async function DigitalVCardPage() {
       <PageHeader
         eyebrow="Global contact exchange"
         title="My Digital vCard"
-        description="Create a polished digital business card your team can share from events, calls, and follow-ups."
+        description="Create a polished digital business card your team can share from events, calls, and follow-ups. Return to Profile for account identity and app avatar settings."
         badge={initialSettings?.share_slug ? 'Ready to share' : 'Setup needed'}
-        actions={[{ label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]}
+        actions={[{ label: 'Back to Profile', href: '/profile' }, { label: 'Go to leads', href: PRODUCT_ROUTES.app.leads, type: 'primary' }]}
       />
 
       {loadWarning ? (
