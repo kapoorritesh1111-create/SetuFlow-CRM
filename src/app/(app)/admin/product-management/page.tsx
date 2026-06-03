@@ -11,6 +11,12 @@ import { ProductGovernanceWorkbench, type PricingCalculatorDefaultRule } from '@
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { createClient } from '@/lib/supabase/server';
 
+type ProductManagementMarket = {
+  id: string;
+  name: string;
+  is_active: boolean | null;
+};
+
 export default async function ProductManagementPage({ searchParams }: { searchParams?: { notice?: string } }) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
@@ -37,6 +43,7 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
     .eq('is_active', true);
 
   const { categories, products, summary } = buildProductsViewModel(data);
+  const markets = ((data.markets ?? []) as ProductManagementMarket[]).map((market) => ({ id: market.id, name: market.name, isActive: Boolean(market.is_active) }));
 
   return (
     <AdminSettingsShell active="product-management" organizationName={workspace.organization.name} missingCount={summary.unpricedProducts === 0 ? 0 : 1}>
@@ -55,7 +62,7 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
         <ProductGovernanceWorkbench
           categories={categories}
           products={products}
-          markets={(data.markets ?? []).map((market) => ({ id: market.id, name: market.name, isActive: Boolean(market.is_active) }))}
+          markets={markets}
           summary={summary}
           auditEvents={data.auditEvents}
           canManageCatalog={canManageCatalog}
