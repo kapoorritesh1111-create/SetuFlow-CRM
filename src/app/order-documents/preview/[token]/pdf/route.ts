@@ -41,19 +41,18 @@ function documentQuantity(line: Row, documentType: string) {
   return num(line.ordered_quantity ?? line.quoted_quantity);
 }
 
-function lineTotal(line: Row, documentType: string) {
-  const stored = num(line.line_total);
-  return stored || documentQuantity(line, documentType) * num(line.unit_price);
-}
-
 function filenamePart(value: unknown) {
   return text(value, 'document').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'document';
 }
 
-export async function GET(_request: Request, { params }: { params: { token: string } }) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ token: string }> | { token: string } },
+) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 });
 
-  const token = text(params.token);
+  const resolvedParams = await params;
+  const token = text(resolvedParams.token);
   if (!token) return NextResponse.json({ error: 'Preview token is required.' }, { status: 400 });
 
   const db = (await createClient()) as { rpc: (name: string, args: Row) => Promise<{ data: PreviewPayload | null; error: { message?: string } | null }> };
@@ -110,7 +109,7 @@ export async function GET(_request: Request, { params }: { params: { token: stri
       quote_terms_conditions: null,
       order_terms_conditions: text(order.payment_terms, '') || null,
     },
-    lines: lines.map((line) => ({ ...line, unitPrice: line.unitPrice, quantity: line.quantity, notes: `${title}${line.notes ? ` - ${line.notes}` : ''}` })),
+    lines: lines.map((line) => ({ ...line, notes: `${title}${line.notes ? ` - ${line.notes}` : ''}` })),
   });
 
   return new Response(new Uint8Array(bytes), {
