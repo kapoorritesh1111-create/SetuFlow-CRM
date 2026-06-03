@@ -42,22 +42,19 @@ const TIME_RANGE_OPTIONS: Array<{ value: DashboardTimeRange; label: string }> = 
 function FilterSelect({ icon, label, value, onChange, children, minWidthClassName }: FilterSelectProps) {
   const isActive = Boolean(value);
   return (
-    <label className={["inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 cursor-pointer transition", minWidthClassName ?? "", isActive ? "border-blue-200 bg-blue-50 hover:bg-blue-50 hover:border-blue-300" : "border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 hover:shadow-sm"].join(" ")} style={{ minWidth: 120 }}>
-      <span aria-hidden="true" className="text-[13px] flex-shrink-0 leading-none">{icon}</span>
-      <div className="flex flex-col leading-none gap-[3px] min-w-0">
-        <span className="text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">{label}</span>
-        <select value={value} onChange={(event) => onChange(event.target.value)} className="border-none bg-transparent outline-none text-[11.5px] font-bold text-slate-800 appearance-none cursor-pointer leading-snug" aria-label={label}>
-          {children}
-        </select>
-      </div>
+    <label className={["inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border px-3 transition", minWidthClassName ?? "", isActive ? "border-blue-200 bg-blue-50 hover:border-blue-300 hover:bg-blue-50" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white hover:shadow-sm"].join(" ")} style={{ minWidth: 120 }}>
+      <span aria-hidden="true" className="shrink-0 text-[13px] leading-none">{icon}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="border-none bg-transparent text-[11.5px] font-bold leading-snug text-slate-800 outline-none appearance-none cursor-pointer" aria-label={label}>
+        {children}
+      </select>
     </label>
   );
 }
 
 function ActiveChip({ label, onClear }: { label: string; onClear: () => void; tone?: string }) {
   return (
-    <button type="button" onClick={onClear} className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 transition">
-      {label}<span aria-hidden="true" className="opacity-60 text-[9px]">✕</span>
+    <button type="button" onClick={onClear} className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 transition hover:bg-blue-100">
+      {label}<span aria-hidden="true" className="text-[9px] opacity-60">✕</span>
     </button>
   );
 }
@@ -78,9 +75,7 @@ export function DashboardControlBar({
   return (
     <section className="setu-dashboard-controls -mt-5 flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2 md:-mt-7">
       <div className="contents">
-        <span className="hidden shrink-0 pr-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:inline md:min-w-[72px]">Viewing:</span>
-
-        <div className="contents md:flex md:min-w-0 md:flex-1 md:items-center md:gap-3 md:flex-wrap">
+        <div className="contents md:flex md:min-w-0 md:flex-1 md:flex-wrap md:items-center md:gap-3">
           <FilterSelect icon="🌍" label="Market" value={filters.marketCode} onChange={(marketCode) => set({ marketCode })} minWidthClassName="md:min-w-[210px]">
             <option value="">All markets</option>
             {availableMarkets.map((market) => (
