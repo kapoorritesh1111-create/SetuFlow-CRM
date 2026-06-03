@@ -128,6 +128,8 @@ type LeadProductAnalyticsRow = {
   created_at: string | null;
 };
 
+type AnalyticsDbClient = Awaited<ReturnType<typeof createClient>>;
+
 function safePct(n: number, d: number) {
   return d ? Math.round((n / d) * 100) : 0;
 }
@@ -183,8 +185,14 @@ function productLabel(product: LeadProductAnalyticsRow) {
   return product.label?.trim() || 'Unspecified product';
 }
 
+async function getAnalyticsClient(): Promise<AnalyticsDbClient> {
+  const adminClient = createAdminSupabaseClient();
+  if (adminClient) return adminClient;
+  return createClient();
+}
+
 export async function getAnalyticsData(organizationId: string, mode: WorkspaceMode = 'all', range?: AnalyticsDateRange): Promise<AnalyticsData> {
-  const db = createAdminSupabaseClient() ?? await createClient();
+  const db = await getAnalyticsClient();
   const now = new Date().toISOString();
   const sendSince = range?.from ? `${range.from}T00:00:00.000Z` : new Date(Date.now() - 90 * 86400000).toISOString();
 
