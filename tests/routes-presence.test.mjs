@@ -88,3 +88,13 @@ test('profile page stays compact and keeps vCard as an editable helper surface',
   assert.match(compactAvatarManager, /fixed inset-0/, 'avatar selection should be a modal, not a full page gallery');
   assert.match(vCardPage, /Back to Profile/, 'vCard workspace should provide a return path to Profile');
 });
+
+test('persistent desktop shell closes profile and notification popovers across navigation', () => {
+  assert.doesNotMatch(appShell, /<details className="group relative">/, 'profile menu should not rely on persistent native details state');
+  assert.match(appShell, /setOpen\(false\)/, 'profile menu should close by controlled state');
+  assert.match(appShell, /\[pathname\]/, 'profile and notification shell state should respond to route changes');
+  assert.match(appShell, /closeIfOutside/, 'profile menu should close when clicking outside');
+  assert.match(appShell, /closeOnEscape/, 'profile menu should close on Escape');
+  assert.match(appShell, /notificationResetKey/, 'notification center should be remountable to clear persisted open state');
+  assert.match(appShell, /onOpenMenu=\{closeNotificationCard\}/, 'opening the profile menu should close any open notification card');
+});
