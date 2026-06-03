@@ -22,6 +22,18 @@ function DetailPill({ label, value }: { label: string; value?: string | null }) 
   );
 }
 
+function ContactPreviewItem({ icon, label, value }: { icon: string; label: string; value?: string | null }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white" aria-hidden="true">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+        <p className="mt-1 truncate text-sm font-semibold text-slate-900">{value?.trim() || 'Add in vCard'}</p>
+      </div>
+    </div>
+  );
+}
+
 export default async function ProfilePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const workspace = await requireWorkspace();
   if (workspace.missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure Supabase before editing your profile." tone="warning" />;
@@ -41,9 +53,7 @@ export default async function ProfilePage({ searchParams }: { searchParams?: Rec
     loadWarning = error instanceof Error ? error.message : 'Your vCard summary could not be loaded yet.';
   }
 
-  const vCardFields = [cardSettings?.primary_phone, cardSettings?.website, cardSettings?.address, cardSettings?.booking_url, cardSettings?.quote_url, cardSettings?.linkedin_url];
-  const completedVCardFields = vCardFields.filter((value) => value?.trim()).length;
-  const vCardReady = Boolean(cardSettings?.share_slug && cardSettings?.primary_phone?.trim());
+  const vCardReady = Boolean(cardSettings?.primary_phone?.trim() && cardSettings?.website?.trim());
 
   return (
     <div className="space-y-5">
@@ -93,22 +103,22 @@ export default async function ProfilePage({ searchParams }: { searchParams?: Rec
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">vCard helper</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">Public contact readiness</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">vCard is a separate sharing function. This compact helper only shows what still needs attention.</p>
+              <h2 className="mt-2 text-lg font-semibold text-slate-900">Contact preview</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">These are the public contact details shown from your vCard. Edit them in the vCard workspace.</p>
             </div>
             <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${vCardReady ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-amber-200 bg-amber-50 text-amber-700'}`}>
               {vCardReady ? 'Ready' : 'Needs details'}
             </span>
           </div>
           <div className="mt-5 space-y-3">
-            <DetailPill label="Primary phone" value={cardSettings?.primary_phone} />
-            <DetailPill label="Website" value={cardSettings?.website} />
-            <DetailPill label="Share link" value={cardSettings?.share_slug ? `/card?share=${cardSettings.share_slug}` : null} />
+            <ContactPreviewItem icon="☎" label="Phone" value={cardSettings?.primary_phone} />
+            <ContactPreviewItem icon="↗" label="Website" value={cardSettings?.website} />
+            <ContactPreviewItem icon="in" label="LinkedIn" value={cardSettings?.linkedin_url} />
+            <ContactPreviewItem icon="◎" label="Instagram" value={cardSettings?.instagram_url} />
           </div>
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            <p><span className="font-semibold text-slate-900">{completedVCardFields}/6</span> recommended public-contact fields are complete.</p>
-            <p className="mt-1">Phone, website, address, booking, quote, and social links live in the vCard workspace.</p>
-          </div>
+          <p className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+            Public share links and QR actions are generated from Share vCard, so they stay out of the Profile page.
+          </p>
           <a href="/contact-exchange/vcard" className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
             Manage vCard
           </a>
