@@ -84,32 +84,43 @@ function Funnel({ funnel }: { funnel: AnalyticsData['funnel'] }) {
 }
 
 function PipelineChart({ funnel }: { funnel: AnalyticsData['funnel'] }) {
-  const values = funnel.map((stage) => stage.count).slice(0, 5);
+  const stages = funnel.slice(0, 5).map((stage) => ({
+    label: stage.label.replace('Total Leads', 'Leads').replace('Order Created', 'Orders').replace('Paid & Closed', 'Closed'),
+    count: stage.count,
+    pct: stage.pct,
+  }));
+  const values = stages.map((stage) => stage.count);
   const max = Math.max(...values, 1);
   const points = values.map((value, index) => {
-    const x = 32 + index * 112;
-    const y = 178 - (value / max) * 126;
+    const x = 36 + index * 110;
+    const y = 154 - (value / max) * 104;
     return `${x},${y}`;
   }).join(' ');
   return (
     <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-900">Pipeline movement <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Stage trend</span>
+        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Funnel stage count</span>
       </div>
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-white to-blue-50/60 p-2">
-        <svg viewBox="0 0 520 220" className="h-56 w-full" role="img" aria-label="Pipeline trend based on current funnel stage counts">
-          {[40, 80, 120, 160, 200].map((y) => <line key={y} x1="20" x2="500" y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />)}
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-white to-blue-50/60 p-3">
+        <svg viewBox="0 0 540 230" className="h-56 w-full" role="img" aria-label="Pipeline movement by business stage">
+          {[48, 86, 124, 162].map((y) => <line key={y} x1="22" x2="510" y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />)}
           <polyline points={points} fill="none" stroke="#0c7fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points={`${points} 480,210 32,210`} fill="rgba(12,127,255,.10)" />
-          {values.map((value, index) => {
-            const x = 32 + index * 112;
-            const y = 178 - (value / max) * 126;
-            return <g key={index}><circle cx={x} cy={y} r="5" fill="#0c7fff" /><text x={x - 18} y="210" fontSize="11" fill="#64748b">S{index + 1}</text></g>;
+          <polygon points={`${points} 500,180 36,180`} fill="rgba(12,127,255,.10)" />
+          {stages.map((stage, index) => {
+            const x = 36 + index * 110;
+            const y = 154 - (stage.count / max) * 104;
+            return (
+              <g key={stage.label}>
+                <circle cx={x} cy={y} r="5" fill="#0c7fff" />
+                <text x={x} y={y - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#0f172a">{stage.count}</text>
+                <text x={x} y="204" textAnchor="middle" fontSize="11" fontWeight="700" fill="#475569">{stage.label}</text>
+              </g>
+            );
           })}
         </svg>
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="h-2 w-2 rounded-full bg-blue-500" /> Uses the same top Buyer/Supplier/All workspace scope.</div>
+      <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="h-2 w-2 rounded-full bg-blue-500" /> Shows real business stages in the current Buyer/Supplier/All scope.</div>
     </section>
   );
 }
