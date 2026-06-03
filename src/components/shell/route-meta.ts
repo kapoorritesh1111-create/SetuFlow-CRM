@@ -56,9 +56,11 @@ export function getRouteMeta(pathname: string): RouteMeta {
 
   if (pathname === PRODUCT_ROUTES.app.dashboard || pathname.startsWith(`${PRODUCT_ROUTES.app.dashboard}/`)) {
     return {
-      title: 'Dashboard',
-      description: 'Use Dashboard to see market, country, queue health, execution drift, and what needs intervention now. This is a support surface, but it should still feel operational.',
-      sectionLabel: 'Trade Command Center',
+      title: pathname.startsWith('/dashboard/analytics') ? 'Analytics' : 'Home',
+      description: pathname.startsWith('/dashboard/analytics')
+        ? 'Use Analytics inside the Home dashboard workspace for trends, conversion intelligence, and future-looking signals.'
+        : 'Use Home to see market, country, queue health, execution drift, and what needs intervention now. The map dashboard remains the default hero.',
+      sectionLabel: 'Home dashboard',
       tabs: PRODUCT_SHELL_TABS,
     };
   }
@@ -66,8 +68,8 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === '/reports' || pathname.startsWith('/reports/')) {
     return {
       title: 'Reports',
-      description: 'Track conversion, pricing variance, blockers, and audited workflow changes from one explainable operator-facing workspace.',
-      sectionLabel: 'Leadership / overview',
+      description: 'Use Reports inside the Home dashboard workspace for exportable snapshots, audit history, and explainable operating proof.',
+      sectionLabel: 'Home dashboard',
       tabs: PRODUCT_SHELL_TABS,
     };
   }
