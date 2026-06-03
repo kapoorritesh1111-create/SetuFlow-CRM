@@ -3,6 +3,7 @@
  * Keep this file aligned to the live Supabase schema before using it for Analytics or exports.
  */
 
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
@@ -183,7 +184,7 @@ function productLabel(product: LeadProductAnalyticsRow) {
 }
 
 export async function getAnalyticsData(organizationId: string, mode: WorkspaceMode = 'all', range?: AnalyticsDateRange): Promise<AnalyticsData> {
-  const db = await createClient();
+  const db = createAdminSupabaseClient() ?? await createClient();
   const now = new Date().toISOString();
   const sendSince = range?.from ? `${range.from}T00:00:00.000Z` : new Date(Date.now() - 90 * 86400000).toISOString();
 
@@ -200,7 +201,6 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
   const scopedLeadUniverse = allLeads.filter((lead) => matchesWorkspaceMode(lead.lead_type, mode));
   const scopedUniverseLeadIds = new Set(scopedLeadUniverse.map((lead) => lead.id));
   const leads = scopedLeadUniverse.filter((lead) => withinAnalyticsRange(lead, range));
-  const scopedLeadIds = new Set(leads.map((lead) => lead.id));
   const quotes = ((quotesRes.data ?? []) as QuoteAnalyticsRow[]).filter((quote) => quote.lead_id && scopedUniverseLeadIds.has(quote.lead_id) && withinAnalyticsRange(quote, range));
   const orders = ((ordersRes.data ?? []) as OrderAnalyticsRow[]).filter((order) => order.lead_id && scopedUniverseLeadIds.has(order.lead_id) && withinAnalyticsRange(order, range));
   const sends = ((sendsRes.data ?? []) as SendAnalyticsRow[]).filter((send) => withinAnalyticsRange(send, range));
@@ -233,18 +233,18 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
     if (!marketMap.has(name)) marketMap.set(name, new Set());
     if (market.lead_id) marketMap.get(name)?.add(market.lead_id);
   }
-  const productMap = new Map<string, { leadIds: Set<string>; quoteLeadIds: Set<string>; pipelineValueUsd: number }>();
+  const productMap = new Map<string, { leadIds: Set<string>; quoteLeadIds: Set<string>; valueLeadIds: Set<string>; pipelineValueUsd: number }>();
   const dealValueByLeadId = new Map(scopedLeadUniverse.map((lead) => [lead.id, Number(lead.deal_value ?? 0)]));
   for (const product of products) {
     const name = productLabel(product);
-    if (!productMap.has(name)) productMap.set(name, { leadIds: new Set(), quoteLeadIds: new Set(), pipelineValueUsd: 0 });
+    if (!productMap.has(name)) productMap.set(name, { leadIds: new Set(), quoteLeadIds: new Set(), valueLeadIds: new Set(), pipelineValueUsd: 0 });
     if (product.lead_id) {
       const bucket = productMap.get(name);
       bucket?.leadIds.add(product.lead_id);
       if (quotedIds.has(product.lead_id)) bucket?.quoteLeadIds.add(product.lead_id);
-      if (bucket && !bucket.leadIds.has(`value-counted:${product.lead_id}`)) {
+      if (bucket && !bucket.valueLeadIds.has(product.lead_id)) {
         bucket.pipelineValueUsd += dealValueByLeadId.get(product.lead_id) ?? 0;
-        bucket.leadIds.add(`value-counted:${product.lead_id}`);
+        bucket.valueLeadIds.add(product.lead_id);
       }
     }
   }
@@ -254,7 +254,7 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
   const measurableEmails = emailSends.filter((send) => send.email_delivery_status !== null).length;
   const leadPipelineValueUsd = scopedLeadUniverse.reduce((sum, lead) => sum + Number(lead.deal_value ?? 0), 0);
   const orderValueUsd = orders.reduce((sum, order) => sum + Number(order.total_order_value ?? 0), 0);
-  const pipelineValueUsd = orderValueUsd > 0 ? orderValueUsd : leadPipelineValueUsd;
+  const pipelineValueUsd = leadPipelineValueUsd || orderValueUsd;
 
   return {
     funnel,
@@ -285,10 +285,7 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
       emailDeliveryRate: safePct(deliveredEmails, measurableEmails),
     },
     marketBreakdown: Array.from(marketMap.entries()).map(([market, ids]) => ({ market, leadCount: ids.size, quoteCount: [...ids].filter((id) => quotedIds.has(id)).length, orderCount: [...ids].filter((id) => orderedIds.has(id)).length })).sort((a, b) => b.leadCount - a.leadCount).slice(0, 8),
-    productBreakdown: Array.from(productMap.entries()).map(([category, data]) => {
-      const realLeadIds = [...data.leadIds].filter((id) => !id.startsWith('value-counted:'));
-      return { category, leadCount: realLeadIds.length, activeQuotes: data.quoteLeadIds.size, pipelineValueUsd: data.pipelineValueUsd };
-    }).sort((a, b) => b.leadCount - a.leadCount || b.pipelineValueUsd - a.pipelineValueUsd).slice(0, 8),
+    productBreakdown: Array.from(productMap.entries()).map(([category, data]) => ({ category, leadCount: data.leadIds.size, activeQuotes: data.quoteLeadIds.size, pipelineValueUsd: data.pipelineValueUsd })).sort((a, b) => b.leadCount - a.leadCount || b.pipelineValueUsd - a.pipelineValueUsd).slice(0, 8),
     pipelineValueUsd,
     lastUpdated: now,
   };
