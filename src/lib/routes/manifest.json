@@ -9,8 +9,8 @@
   "approvedReworkPhase": "PR-UX-01 completed",
   "approvedReworkTitle": "Language system reset",
   "routeLabels": {
-    "overview": "Dashboard / Overview",
-    "reports": "Reports",
+    "overview": "Home",
+    "reports": "Home / Reports",
     "capture": "Capture",
     "followUp": "Follow-up",
     "quote": "Quote",
@@ -134,20 +134,12 @@
       "requiresAdmin": true
     },
     {
-      "href": "/reports",
-      "label": "Reports",
-      "exact": true,
-      "description": "Open commercial and operational reporting for conversion, pricing variance, blockers, and audit outcomes.",
-      "aliases": ["reports", "reporting", "commercial reports", "operations reporting", "analytics reports"],
-      "navKey": "r"
-    },
-    {
       "href": "/dashboard",
-      "label": "Dashboard / Overview",
+      "label": "Home",
       "exact": true,
-      "description": "Get a quick geo-first view of market, country, and queue health.",
-      "aliases": ["dashboard", "overview", "leadership", "geo", "market", "country"],
-      "navKey": "d"
+      "description": "Open the Home dashboard with the geo-first map, KPI cards, filters, Needs Attention, Analytics, and Reports tabs.",
+      "aliases": ["home", "dashboard", "overview", "leadership", "geo", "market", "country", "analytics", "reports"],
+      "navKey": "h"
     }
   ],
   "adminTabs": [
@@ -164,25 +156,31 @@
   "shellSections": [
     {
       "id": "leadership-watchtower",
-      "label": "Leadership / overview",
-      "icon": "line-chart",
-      "description": "A quick-read view for leadership and the team. Geo-first, market-first, and country-first views stay visible here.",
+      "label": "Home dashboard",
+      "icon": "home",
+      "description": "A quick-read Home view for leadership and the team. The map dashboard remains default while Analytics and Reports live as tabs.",
       "tone": "primary",
       "items": [
         {
           "href": "/dashboard",
-          "label": "Dashboard / Overview",
+          "label": "Home",
           "exact": true,
-          "description": "Get a quick geo-first view of market, country, and queue health.",
-          "aliases": ["dashboard", "overview", "leadership", "geo", "market", "country"],
-          "navKey": "d"
+          "description": "Get the geo-first map dashboard, KPI cards, filters, and Needs Attention panel by default.",
+          "aliases": ["home", "dashboard", "overview", "leadership", "geo", "market", "country"],
+          "navKey": "h"
         },
-        { "href": "/dashboard/analytics", "label": "Analytics", "requiresAdmin": false },
+        {
+          "href": "/dashboard/analytics",
+          "label": "Analytics",
+          "exact": true,
+          "description": "Use trends, conversion intelligence, and future-looking signals from the Home dashboard Analytics tab.",
+          "aliases": ["analytics", "trends", "future intelligence", "conversion intelligence"]
+        },
         {
           "href": "/reports",
           "label": "Reports",
           "exact": true,
-          "description": "Track conversion, pricing variance, blockers, and audit outcomes from one reporting workspace.",
+          "description": "Use exportable reporting, audit history, and explainable snapshots from the Home dashboard Reports tab.",
           "aliases": ["reports", "reporting", "commercial reports", "operations reporting", "analytics reports"],
           "navKey": "r"
         },
@@ -324,13 +322,15 @@
     "Compliance",
     "Contracts",
     "AI assist",
-    "My Card"
+    "My Card",
+    "Analytics",
+    "Reports"
   ],
   "driftGuardrails": [
     "Define the working shell once and reuse it everywhere.",
     "Keep All / Buyers / Suppliers visible as a workspace-wide perspective, not a page-specific trick.",
     "Do not bury the pipeline view behind language that hides the actual pipeline.",
-    "Treat dashboard as a leadership support surface with geo, market, and country visibility, not as a leftover report page.",
+    "Treat Home as the leadership support surface with geo, market, country, analytics, and reporting visibility, not as a leftover report page.",
     "Admin and Settings must stay unified as one workspace; /settings/lists is a compatibility redirect only.",
     "Keep README, current docs, source, tests, and Supabase review notes aligned as the source of truth for readiness and workflow direction.",
     "Catalog base price remains the system default; manual overrides require an auditable reason.",
@@ -341,7 +341,11 @@
   "tests": {
     "requiredFiles": [
       "src/app/(app)/dashboard/page.tsx",
+      "src/app/(app)/dashboard/analytics/page.tsx",
+      "src/app/(app)/dashboard/analytics/layout.tsx",
       "src/app/(app)/reports/page.tsx",
+      "src/app/(app)/reports/layout.tsx",
+      "src/components/dashboard/dashboard-section-tabs.tsx",
       "src/app/(app)/leads/page.tsx",
       "src/app/(app)/pipeline/page.tsx",
       "src/app/(app)/quotes/page.tsx",
