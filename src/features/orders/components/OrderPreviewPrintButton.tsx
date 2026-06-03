@@ -1,5 +1,10 @@
 'use client';
 
-export function OrderPreviewPrintButton({ pdfHref }: { pdfHref: string }) {
-  return <a className="odx-pdf-link" href={pdfHref} target="_blank" rel="noreferrer">Download PDF</a>;
+export function OrderPreviewPrintButton() {
+  function openPdf() {
+    const basePath = window.location.pathname.replace(/\/$/, '');
+    window.location.href = `${basePath}/pdf`;
+  }
+
+  return <button type="button" onClick={openPdf}>Download PDF</button>;
 }
