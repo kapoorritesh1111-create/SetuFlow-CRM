@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { SprintIssue, SprintMeta } from '@/lib/queries/workspace';
 import { cn } from '@/lib/utils';
@@ -533,6 +533,20 @@ export function IssuesBoard({
   const [bulkAction, setBulkAction] = useState('');
   const [bulkApplying, setBulkApplying] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_COLUMNS));
+  const [colPickerOpen, setColPickerOpen] = useState(false);
+  const colPickerRef = useRef<HTMLDivElement>(null);
+
+  // Close column picker on outside click
+  useEffect(() => {
+    if (!colPickerOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (colPickerRef.current && !colPickerRef.current.contains(e.target as Node)) {
+        setColPickerOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [colPickerOpen]);
 
   const activeSprint = sprints[0]?.sprint_number ?? 23;
 
@@ -696,26 +710,42 @@ export function IssuesBoard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <input type="text" value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} placeholder="Assignee..." className={cn('w-36 rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)} />
-            <input type="text" value={filterReporter} onChange={(e) => setFilterReporter(e.target.value)} placeholder="Reporter..." className={cn('w-36 rounded-2xl border px-3 py-2 text-sm', workspaceFieldSurfaceClass)} />
-            <details className="relative">
-              <summary className={cn('cursor-pointer rounded-2xl border px-3 py-2 text-sm font-black shadow-sm', workspaceFieldSurfaceClass)}>Columns</summary>
-              <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-white/10 dark:bg-slate-950">
-                {DEFAULT_COLUMNS.map((column) => (
-                  <label key={column} className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.05]">
-                    <input type="checkbox" checked={visibleColumns.has(column)} onChange={() => toggleColumn(column)} />
-                    {COLUMN_LABELS[column]}
-                  </label>
-                ))}
-              </div>
-            </details>
+            <button onClick={() => setHideResolved((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideResolved ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideResolved ? 'Hiding resolved' : 'Show resolved'}</button>
+            <button onClick={() => setHideDeferred((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideDeferred ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideDeferred ? 'Hiding deferred' : 'Show deferred'}</button>
+            {/* Controlled column picker — closes on outside click */}
+            <div ref={colPickerRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setColPickerOpen((v) => !v)}
+                className={cn('flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-sm font-black shadow-sm transition', workspaceFieldSurfaceClass, colPickerOpen ? 'border-sky-400 text-sky-600 dark:text-sky-300' : '')}
+              >
+                ⊞ Columns
+                <span className="text-[10px] opacity-60">{colPickerOpen ? '▲' : '▼'}</span>
+              </button>
+              {colPickerOpen && (
+                <div className="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-900">
+                  <div className="border-b border-slate-100 px-3 py-2 dark:border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Toggle Columns</p>
+                  </div>
+                  <div className="p-2">
+                    {DEFAULT_COLUMNS.map((column) => (
+                      <label key={column} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/[0.06]">
+                        <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-black transition', visibleColumns.has(column) ? 'border-sky-400 bg-sky-500 text-white' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800')}>
+                          {visibleColumns.has(column) ? '✓' : ''}
+                        </span>
+                        <input type="checkbox" checked={visibleColumns.has(column)} onChange={() => toggleColumn(column)} className="sr-only" />
+                        {COLUMN_LABELS[column]}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="border-t border-slate-100 px-3 py-2 dark:border-white/10">
+                    <button type="button" onClick={() => setColPickerOpen(false)} className="w-full rounded-xl bg-slate-100 py-1.5 text-xs font-black text-slate-600 hover:bg-slate-200 dark:bg-white/[0.08] dark:text-slate-300">Done</button>
+                  </div>
+                </div>
+              )}
+            </div>
             <button onClick={() => setShowNewIssue(true)} className={cn('rounded-2xl px-4 py-2 text-sm font-black transition', workspacePrimaryButtonClass)}>+ Report Issue</button>
           </div>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3 dark:border-white/10">
-          <button onClick={() => setHideResolved((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideResolved ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideResolved ? 'Hiding resolved' : 'Show resolved'}</button>
-          <button onClick={() => setHideDeferred((v) => !v)} className={cn('rounded-2xl px-3 py-2 text-xs font-black transition', hideDeferred ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>{hideDeferred ? 'Hiding deferred' : 'Show deferred'}</button>
-
         </div>
       </div>
 

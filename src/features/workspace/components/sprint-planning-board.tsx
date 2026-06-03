@@ -20,6 +20,80 @@ async function patchIssue(id: string, payload: Record<string, unknown>) {
   });
 }
 
+async function createSprintApi(payload: { sprint_number: number; sprint_name: string; goal?: string; started_at?: string; closed_at?: string }) {
+  const res = await fetch('/api/workspace/sprints', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Create sprint failed: ${res.status}`);
+  return res.json();
+}
+
+function NewSprintModal({ nextNumber, onClose, onCreated }: {
+  nextNumber: number;
+  onClose: () => void;
+  onCreated: (sprint: SprintMeta) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const twoWeeksOut = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+  const [form, setForm] = useState({ sprint_name: `Sprint ${nextNumber}`, goal: '', started_at: today, closed_at: twoWeeksOut });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleCreate() {
+    if (!form.sprint_name.trim()) { setError('Sprint name is required'); return; }
+    setSaving(true); setError('');
+    try {
+      const created = await createSprintApi({ sprint_number: nextNumber, ...form });
+      onCreated(created);
+    } catch (e) { setError(String(e)); } finally { setSaving(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-slate-200/80 px-6 py-4 dark:border-slate-700/70">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">New Sprint — S{nextNumber}</h2>
+          <p className="mt-0.5 text-xs text-slate-500">2-week cadence. Opens immediately on creation.</p>
+        </div>
+        <div className="space-y-4 p-6">
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Sprint name *</label>
+            <input type="text" value={form.sprint_name} onChange={(e) => setForm((f) => ({ ...f, sprint_name: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white" autoFocus />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Sprint goal</label>
+            <textarea value={form.goal} onChange={(e) => setForm((f) => ({ ...f, goal: e.target.value }))}
+              placeholder="What does success look like for this sprint?"
+              rows={2} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</label>
+              <input type="date" value={form.started_at} onChange={(e) => setForm((f) => ({ ...f, started_at: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">End date (2 wks)</label>
+              <input type="date" value={form.closed_at} onChange={(e) => setForm((f) => ({ ...f, closed_at: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+            </div>
+          </div>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-3 border-t border-slate-200/80 px-6 py-4 dark:border-slate-700/70">
+          <button onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300">Cancel</button>
+          <button onClick={handleCreate} disabled={saving} className="rounded-xl bg-[#1F487C] px-5 py-2 text-sm font-black text-white hover:bg-[#193769] disabled:opacity-50">
+            {saving ? 'Creating…' : `Create S${nextNumber}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MiniIssue({ issue, action }: { issue: SprintIssue; action?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04]">
@@ -40,13 +114,16 @@ function MiniIssue({ issue, action }: { issue: SprintIssue; action?: ReactNode }
   );
 }
 
-export function SprintPlanningBoard({ issues: initialIssues, sprints, currentSprint }: {
+export function SprintPlanningBoard({ issues: initialIssues, sprints: initialSprints, currentSprint }: {
   issues: SprintIssue[];
   sprints: SprintMeta[];
   currentSprint: number;
 }) {
   const [issues, setIssues] = useState(initialIssues);
+  const [sprints, setSprints] = useState(initialSprints);
   const [activeSprint, setActiveSprint] = useState(currentSprint);
+  const [showNewSprint, setShowNewSprint] = useState(false);
+  const nextSprintNumber = (sprints[0]?.sprint_number ?? currentSprint) + 1;
 
   const sprintIssues = issues.filter((i) => i.sprint_number === activeSprint);
   const openSprint = sprintIssues.filter((i) => !isClosedIssue(i.status));
@@ -73,6 +150,17 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints, currentSpr
 
   return (
     <div className="space-y-5">
+      {showNewSprint && (
+        <NewSprintModal
+          nextNumber={nextSprintNumber}
+          onClose={() => setShowNewSprint(false)}
+          onCreated={(sprint) => {
+            setSprints((prev) => [sprint, ...prev]);
+            setActiveSprint(sprint.sprint_number);
+            setShowNewSprint(false);
+          }}
+        />
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-sm font-bold text-slate-600 dark:text-slate-300">Active sprint</span>
         {sprints.map((s) => {
@@ -84,6 +172,9 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints, currentSpr
             </button>
           );
         })}
+        <button type="button" onClick={() => setShowNewSprint(true)} className="ml-2 flex items-center gap-1.5 rounded-2xl border border-dashed border-[#1F487C]/40 bg-[#1F487C]/05 px-3 py-1.5 text-sm font-black text-[#1F487C] transition hover:bg-[#1F487C]/10 dark:border-sky-400/30 dark:text-sky-300 dark:hover:bg-sky-400/10">
+          + New Sprint S{nextSprintNumber}
+        </button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
