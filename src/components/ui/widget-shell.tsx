@@ -77,6 +77,45 @@ export function WidgetFilterChip({
   );
 }
 
+function EmptyMarketMapPreview() {
+  return (
+    <div className="mb-5 overflow-hidden rounded-[1.35rem] border border-slate-700/80 bg-gradient-to-br from-[#071326] via-[#0b1e38] to-[#020917] p-4 shadow-inner ring-1 ring-white/10">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-sky-200">All markets · setup mode</span>
+        <span className="rounded-full border border-slate-600 bg-slate-950/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">Map ready</span>
+      </div>
+      <svg viewBox="0 0 640 260" role="img" aria-label="Empty market map preview" className="h-[230px] w-full rounded-[1rem] bg-[#08182f]">
+        <defs>
+          <radialGradient id="emptyMapOcean" cx="50%" cy="42%" r="74%">
+            <stop offset="0%" stopColor="#16315f" />
+            <stop offset="62%" stopColor="#0b2344" />
+            <stop offset="100%" stopColor="#061326" />
+          </radialGradient>
+        </defs>
+        <rect width="640" height="260" fill="url(#emptyMapOcean)" />
+        {[
+          'M72 96c38-24 76-24 118-8 28 11 55 5 80 20 29 18 14 48-18 54-44 8-72-22-111-17-33 4-73-9-79-30-2-8 2-14 10-19Z',
+          'M300 78c52-18 112-11 152 17 28 20 28 48-2 66-45 27-130 18-167-15-22-20-12-57 17-68Z',
+          'M478 141c32-10 74-3 96 16 20 17 8 42-29 51-47 11-98-11-98-39 0-12 11-22 31-28Z',
+          'M210 172c21-9 53-3 64 12 12 16-8 32-39 33-30 1-54-13-48-28 3-7 11-13 23-17Z',
+        ].map((path, index) => (
+          <path key={path} d={path} fill={index === 1 ? '#253a5d' : '#1f3353'} stroke="#3d5272" strokeWidth="1.2" opacity="0.9" />
+        ))}
+        <g opacity="0.72">
+          <circle cx="178" cy="118" r="3.5" fill="#38bdf8" />
+          <circle cx="382" cy="125" r="3.5" fill="#fbbf24" />
+          <circle cx="520" cy="170" r="3.5" fill="#22c55e" />
+        </g>
+      </svg>
+      <div className="mt-3 flex flex-wrap gap-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" />Critical</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-blue-500" />Active</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-cyan-600" />Watch</span>
+      </div>
+    </div>
+  );
+}
+
 export function WidgetEmptyState({
   title,
   description,
@@ -86,10 +125,15 @@ export function WidgetEmptyState({
   description?: string;
   className?: string;
 }) {
+  const showMarketPreview = title.toLowerCase().includes('no markets match');
+
   return (
-    <div className={cn('rounded-[1.5rem] border border-dashed px-5 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]', workspaceInsetClass, className)}>
-      <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{title}</p>
-      {description ? <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-300">{description}</p> : null}
+    <div className={cn('rounded-[1.5rem] border border-dashed px-5 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]', workspaceInsetClass, showMarketPreview && 'px-4 py-4 text-left', className)}>
+      {showMarketPreview ? <EmptyMarketMapPreview /> : null}
+      <div className={showMarketPreview ? 'text-center' : undefined}>
+        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{title}</p>
+        {description ? <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-300">{description}</p> : null}
+      </div>
     </div>
   );
 }
