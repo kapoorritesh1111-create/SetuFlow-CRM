@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { getAnalyticsData } from '@/lib/queries/analytics';
-import { getReportsData } from '@/lib/queries/reports';
 import { parseWorkspaceMode } from '@/features/workspace/mode';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -9,84 +8,55 @@ type ExportDataset = 'executive-summary' | 'pipeline-funnel' | 'markets' | 'prod
 type ExportSource = 'home' | 'analytics' | 'reports';
 type ExportRange = '7d' | '30d' | '90d' | 'quarter' | 'custom';
 type CsvValue = string | number | null;
-type ExportRow = {
-  export_id: string;
+
+type BusinessReportRow = {
+  report_title: string;
   generated_at: string;
   source_tab: ExportSource;
-  dataset: string;
-  mode: WorkspaceMode;
+  workspace_view: string;
   date_from: string;
   date_to: string;
   section: string;
-  row_type: 'metadata' | 'metric' | 'dimension' | 'record';
-  metric_code: string;
-  metric_name: string;
-  dimension_type: string;
-  dimension_key: string;
-  dimension_label: string;
-  value_number: number | null;
-  value_text: string;
-  percent_value: number | null;
-  unit: string;
-  currency: string;
-  source_href: string;
-  notes: string;
-};
-
-type DateRecord = { created_at?: string | null; updated_at?: string | null };
-type LeadLike = DateRecord & { id: string; lead_type?: string | null; stage_id?: string | null };
-
-type RowInput = Partial<Omit<ExportRow, 'export_id' | 'generated_at' | 'source_tab' | 'dataset' | 'mode' | 'date_from' | 'date_to'>> & {
-  section: string;
-  row_type?: ExportRow['row_type'];
-  metric_code: string;
-  metric_name: string;
+  line_item: string;
+  count: number | null;
+  amount_usd: number | null;
+  rate_percent: number | null;
+  status: string;
+  business_meaning: string;
+  recommended_action: string;
+  source_link: string;
 };
 
 const DATASET_LABELS: Record<ExportDataset, string> = {
   'executive-summary': 'Executive Summary',
-  'pipeline-funnel': 'Pipeline & Funnel',
-  markets: 'Markets',
-  products: 'Products',
-  'orders-execution': 'Orders / Execution',
-  'audit-reporting': 'Audit / Reporting',
-  'business-pack': 'Full Business Pack',
+  'pipeline-funnel': 'Pipeline and Funnel Report',
+  markets: 'Market Performance Report',
+  products: 'Product Performance Report',
+  'orders-execution': 'Orders and Execution Report',
+  'audit-reporting': 'Audit and Reporting Summary',
+  'business-pack': 'SetuFlow Business Performance Pack',
 };
 
-const EXPORT_COLUMNS: Array<keyof ExportRow> = [
-  'export_id',
+const CSV_COLUMNS: Array<keyof BusinessReportRow> = [
+  'report_title',
   'generated_at',
   'source_tab',
-  'dataset',
-  'mode',
+  'workspace_view',
   'date_from',
   'date_to',
   'section',
-  'row_type',
-  'metric_code',
-  'metric_name',
-  'dimension_type',
-  'dimension_key',
-  'dimension_label',
-  'value_number',
-  'value_text',
-  'percent_value',
-  'unit',
-  'currency',
-  'source_href',
-  'notes',
+  'line_item',
+  'count',
+  'amount_usd',
+  'rate_percent',
+  'status',
+  'business_meaning',
+  'recommended_action',
+  'source_link',
 ];
 
 function normalizeDataset(value: string | null): ExportDataset {
-  if (
-    value === 'executive-summary' ||
-    value === 'pipeline-funnel' ||
-    value === 'markets' ||
-    value === 'products' ||
-    value === 'orders-execution' ||
-    value === 'audit-reporting' ||
-    value === 'business-pack'
-  ) return value;
+  if (value === 'executive-summary' || value === 'pipeline-funnel' || value === 'markets' || value === 'products' || value === 'orders-execution' || value === 'audit-reporting' || value === 'business-pack') return value;
   return 'executive-summary';
 }
 
@@ -110,29 +80,26 @@ function getRange(range: ExportRange, fromParam: string | null, toParam: string 
   if (range === '7d') start.setDate(end.getDate() - 7);
   if (range === '30d') start.setDate(end.getDate() - 30);
   if (range === '90d') start.setDate(end.getDate() - 90);
-  if (range === 'quarter') start.setMonth(Math.floor(end.getMonth() / 3) * 3, 1);
-  if (range === 'quarter') start.setHours(0, 0, 0, 0);
-
-  const from = range === 'custom' && fromParam ? fromParam : dateInput(start);
-  const to = range === 'custom' && toParam ? toParam : dateInput(end);
-  return { from, to };
+  if (range === 'quarter') {
+    start.setMonth(Math.floor(end.getMonth() / 3) * 3, 1);
+    start.setHours(0, 0, 0, 0);
+  }
+  return {
+    from: range === 'custom' && fromParam ? fromParam : dateInput(start),
+    to: range === 'custom' && toParam ? toParam : dateInput(end),
+  };
 }
 
-function recordTime(record: DateRecord) {
-  const value = record.created_at ?? record.updated_at ?? '';
-  const time = new Date(value).getTime();
-  return Number.isFinite(time) ? time : null;
+function viewLabel(mode: WorkspaceMode) {
+  if (mode === 'buyers') return 'Buyer view';
+  if (mode === 'suppliers') return 'Supplier view';
+  return 'All workspace view';
 }
 
-function inRange(record: DateRecord, from: string, to: string) {
-  const time = recordTime(record);
-  if (time === null) return false;
-  return time >= new Date(`${from}T00:00:00.000Z`).getTime() && time <= new Date(`${to}T23:59:59.999Z`).getTime();
-}
-
-function matchesMode(record: LeadLike, mode: WorkspaceMode) {
-  if (mode === 'all') return true;
-  return mode === 'buyers' ? record.lead_type === 'buyer' : record.lead_type === 'supplier';
+function healthStatus(value: number, goodAt: number, watchAt: number) {
+  if (value >= goodAt) return 'Healthy';
+  if (value >= watchAt) return 'Watch';
+  return 'Needs attention';
 }
 
 function escapeCell(value: CsvValue) {
@@ -141,15 +108,13 @@ function escapeCell(value: CsvValue) {
   return `"${safeText.replaceAll('"', '""')}"`;
 }
 
-function csv(rows: ExportRow[]) {
-  return [EXPORT_COLUMNS.join(','), ...rows.map((row) => EXPORT_COLUMNS.map((column) => escapeCell(row[column])).join(','))].join('\n');
+function toCsv(rows: BusinessReportRow[]) {
+  return [CSV_COLUMNS.join(','), ...rows.map((row) => CSV_COLUMNS.map((column) => escapeCell(row[column])).join(','))].join('\n');
 }
 
 export async function GET(request: NextRequest) {
   const workspace = await getWorkspaceAccess();
-  if (!workspace.membership || !workspace.organization) {
-    return new Response('Workspace membership required', { status: 401 });
-  }
+  if (!workspace.membership || !workspace.organization) return new Response('Workspace membership required', { status: 401 });
 
   const searchParams = request.nextUrl.searchParams;
   const source = normalizeSource(searchParams.get('source'));
@@ -158,153 +123,94 @@ export async function GET(request: NextRequest) {
   const range = normalizeRange(searchParams.get('range'));
   const { from, to } = getRange(range, searchParams.get('from'), searchParams.get('to'));
   const generatedAt = new Date().toISOString();
-  const exportId = `setuflow-${dataset}-${mode}-${from}-to-${to}-${generatedAt.slice(0, 10)}`;
+  const analytics = await getAnalyticsData(workspace.organization.id, mode, { from, to });
+  const title = DATASET_LABELS[dataset];
 
-  const [analytics, reports] = await Promise.all([
-    getAnalyticsData(workspace.organization.id, mode, { from, to }),
-    getReportsData(workspace.organization.id),
-  ]);
-
-  if (!reports) return new Response('Reporting data unavailable', { status: 503 });
-
-  function buildRow(input: RowInput): ExportRow {
+  function row(input: Omit<BusinessReportRow, 'report_title' | 'generated_at' | 'source_tab' | 'workspace_view' | 'date_from' | 'date_to'>): BusinessReportRow {
     return {
-      export_id: exportId,
+      report_title: title,
       generated_at: generatedAt,
       source_tab: source,
-      dataset: DATASET_LABELS[dataset],
-      mode,
+      workspace_view: viewLabel(mode),
       date_from: from,
       date_to: to,
-      section: input.section,
-      row_type: input.row_type ?? 'metric',
-      metric_code: input.metric_code,
-      metric_name: input.metric_name,
-      dimension_type: input.dimension_type ?? '',
-      dimension_key: input.dimension_key ?? '',
-      dimension_label: input.dimension_label ?? '',
-      value_number: input.value_number ?? null,
-      value_text: input.value_text ?? '',
-      percent_value: input.percent_value ?? null,
-      unit: input.unit ?? 'count',
-      currency: input.currency ?? '',
-      source_href: input.source_href ?? '',
-      notes: input.notes ?? '',
+      ...input,
     };
   }
 
-  const leadTypeById = new Map(reports.leads.map((lead) => [lead.id, (lead as LeadLike).lead_type ?? null]));
-  const scopedLeads = (reports.leads as LeadLike[]).filter((lead) => matchesMode(lead, mode));
-  const scopedLeadIds = new Set(scopedLeads.map((lead) => lead.id));
-  const scopedQuotes = reports.quotes.filter((quote) => quote.lead_id && scopedLeadIds.has(quote.lead_id));
-  const scopedRfqs = reports.rfqs.filter((rfq) => rfq.lead_id && scopedLeadIds.has(rfq.lead_id));
-  const filteredLeads = scopedLeads.filter((lead) => inRange(lead, from, to));
-  const filteredRfqs = scopedRfqs.filter((rfq) => inRange(rfq, from, to));
-  const filteredQuotes = scopedQuotes.filter((quote) => inRange(quote, from, to));
-  const filteredAuditEvents = reports.auditEvents.filter((event) => inRange(event, from, to));
-  const wonStageIds = new Set(reports.stages.filter((stage) => stage.is_won).map((stage) => stage.id));
-  const wonLeads = filteredLeads.filter((lead) => lead.stage_id && wonStageIds.has(lead.stage_id));
-
-  const metadataRows = [
-    buildRow({ section: 'Export Scope', row_type: 'metadata', metric_code: 'source_tab', metric_name: 'Source tab', value_text: source, unit: 'text' }),
-    buildRow({ section: 'Export Scope', row_type: 'metadata', metric_code: 'dataset', metric_name: 'Dataset', value_text: DATASET_LABELS[dataset], unit: 'text' }),
-    buildRow({ section: 'Export Scope', row_type: 'metadata', metric_code: 'mode', metric_name: 'Mode', value_text: mode, unit: 'text' }),
-    buildRow({ section: 'Export Scope', row_type: 'metadata', metric_code: 'date_from', metric_name: 'Date range start', value_text: from, unit: 'date' }),
-    buildRow({ section: 'Export Scope', row_type: 'metadata', metric_code: 'date_to', metric_name: 'Date range end', value_text: to, unit: 'date' }),
-  ];
+  const leadCount = analytics.funnel[0]?.count ?? 0;
+  const quotedCount = analytics.funnel.find((item) => item.label === 'Quoted')?.count ?? 0;
+  const orderCount = analytics.funnel.find((item) => item.label === 'Order Created')?.count ?? 0;
+  const dispatchedCount = analytics.funnel.find((item) => item.label === 'Dispatched')?.count ?? 0;
+  const closedCount = analytics.funnel.find((item) => item.label === 'Paid & Closed')?.count ?? 0;
+  const quoteRate = leadCount ? Math.round((quotedCount / leadCount) * 100) : analytics.quoteMetrics.winRate;
+  const orderRate = leadCount ? Math.round((orderCount / leadCount) * 100) : 0;
+  const dispatchRate = orderCount ? Math.round((dispatchedCount / orderCount) * 100) : 0;
+  const closeRate = orderCount ? Math.round((closedCount / orderCount) * 100) : 0;
 
   const executiveRows = [
-    buildRow({ section: 'Executive Summary', metric_code: 'pipeline_value_usd', metric_name: 'Pipeline value', value_number: analytics.pipelineValueUsd, unit: 'money', currency: 'USD', source_href: '/pipeline', notes: 'Sum of scoped lead deal values in the selected date range.' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'leads_created', metric_name: 'Leads created', value_number: filteredLeads.length, source_href: '/leads', notes: 'Mode and date-filtered leads.' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'rfqs_created', metric_name: 'RFQs created', value_number: filteredRfqs.length, source_href: '/leads', notes: 'RFQs tied to scoped leads and selected date range.' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'quotes_created', metric_name: 'Quotes created', value_number: filteredQuotes.length, source_href: '/quotes', notes: 'Quotes tied to scoped leads and selected date range.' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'won_leads_touched', metric_name: 'Won leads touched', value_number: wonLeads.length, source_href: '/pipeline' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'quote_acceptance_rate', metric_name: 'Quote acceptance rate', percent_value: analytics.quoteMetrics.winRate, unit: 'percent', source_href: '/quotes' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'orders_in_execution', metric_name: 'Orders in execution', value_number: analytics.orderMetrics.active, source_href: '/orders' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'orders_completed', metric_name: 'Orders completed', value_number: analytics.orderMetrics.completed, source_href: '/orders' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'document_sends', metric_name: 'Document sends', value_number: analytics.docSendMetrics.totalSends, source_href: '/orders' }),
-    buildRow({ section: 'Executive Summary', metric_code: 'audit_events', metric_name: 'Audit events', value_number: filteredAuditEvents.length, source_href: '/admin/audit' }),
+    row({ section: 'Executive Overview', line_item: 'Pipeline value', count: null, amount_usd: analytics.pipelineValueUsd, rate_percent: null, status: analytics.pipelineValueUsd > 0 ? 'Healthy' : 'Needs attention', business_meaning: 'Total visible commercial value in the selected workspace view.', recommended_action: 'Use this as the headline value for the selected period and review large opportunities in Pipeline.', source_link: '/pipeline' }),
+    row({ section: 'Executive Overview', line_item: 'Leads in scope', count: leadCount, amount_usd: null, rate_percent: null, status: leadCount > 0 ? 'Healthy' : 'Needs attention', business_meaning: 'Number of leads included in this report after mode and date filters.', recommended_action: leadCount > 0 ? 'Review conversion and follow-up quality.' : 'Confirm filters or add new leads for the selected period.', source_link: '/leads' }),
+    row({ section: 'Executive Overview', line_item: 'Quote acceptance rate', count: analytics.quoteMetrics.totalAccepted, amount_usd: null, rate_percent: analytics.quoteMetrics.winRate, status: healthStatus(analytics.quoteMetrics.winRate, 50, 25), business_meaning: 'Accepted quotes compared with sent/rejected/expired quotes in scope.', recommended_action: analytics.quoteMetrics.winRate >= 50 ? 'Maintain pricing and response discipline.' : 'Review price competitiveness, quote timing, and buyer objections.', source_link: '/quotes' }),
+    row({ section: 'Executive Overview', line_item: 'Orders in execution', count: analytics.orderMetrics.active, amount_usd: analytics.orderMetrics.totalValueUsd, rate_percent: null, status: analytics.orderMetrics.active > 0 ? 'Watch' : 'Clear', business_meaning: 'Orders still moving through execution before dispatch/closure.', recommended_action: analytics.orderMetrics.active > 0 ? 'Open Orders and clear blockers before customer follow-up risk increases.' : 'No active execution backlog in this view.', source_link: '/orders' }),
+    row({ section: 'Executive Overview', line_item: 'Document sends', count: analytics.docSendMetrics.totalSends, amount_usd: null, rate_percent: analytics.docSendMetrics.openRate, status: healthStatus(analytics.docSendMetrics.openRate, 50, 20), business_meaning: 'Tracked commercial documents sent and opened in the selected period.', recommended_action: analytics.docSendMetrics.openRate >= 50 ? 'Continue current outbound cadence.' : 'Follow up with recipients who have not opened key documents.', source_link: '/orders' }),
   ];
 
-  const funnelRows = analytics.funnel.map((stage) => buildRow({
-    section: 'Pipeline & Funnel',
-    row_type: 'dimension',
-    metric_code: `funnel_${stage.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`,
-    metric_name: stage.label,
-    dimension_type: 'funnel_stage',
-    dimension_key: stage.href,
-    dimension_label: stage.label,
-    value_number: stage.count,
-    percent_value: stage.pct,
-    source_href: stage.href,
-    notes: 'Funnel is calculated from the same mode and date range as the export.',
+  const funnelRows = [
+    row({ section: 'Sales Funnel', line_item: 'Leads', count: leadCount, amount_usd: null, rate_percent: 100, status: leadCount > 0 ? 'Healthy' : 'Needs attention', business_meaning: 'Starting pool for conversion analysis.', recommended_action: 'Use this as the baseline for quote and order conversion.', source_link: '/leads' }),
+    row({ section: 'Sales Funnel', line_item: 'Quoted', count: quotedCount, amount_usd: null, rate_percent: quoteRate, status: healthStatus(quoteRate, 50, 25), business_meaning: 'Leads that have moved to quote stage.', recommended_action: quoteRate >= 50 ? 'Keep converting qualified leads to quotes.' : 'Review unquoted leads and buyer readiness.', source_link: '/quotes' }),
+    row({ section: 'Sales Funnel', line_item: 'Orders created', count: orderCount, amount_usd: analytics.orderMetrics.totalValueUsd, rate_percent: orderRate, status: healthStatus(orderRate, 30, 10), business_meaning: 'Quoted/opportunity work converted into orders.', recommended_action: 'Check accepted quotes and move confirmed business into execution.', source_link: '/orders' }),
+    row({ section: 'Sales Funnel', line_item: 'Dispatched', count: dispatchedCount, amount_usd: null, rate_percent: dispatchRate, status: healthStatus(dispatchRate, 50, 20), business_meaning: 'Orders that reached dispatch-ready or dispatched status.', recommended_action: 'Review orders that have not moved to dispatch.', source_link: '/orders' }),
+    row({ section: 'Sales Funnel', line_item: 'Closed / paid', count: closedCount, amount_usd: null, rate_percent: closeRate, status: healthStatus(closeRate, 40, 15), business_meaning: 'Orders that reached completed, closed, or paid status.', recommended_action: 'Use this to review completion and cash/closure discipline.', source_link: '/orders' }),
+  ];
+
+  const marketRows = analytics.marketBreakdown.map((market) => row({
+    section: 'Market Performance',
+    line_item: market.market,
+    count: market.leadCount,
+    amount_usd: null,
+    rate_percent: market.leadCount ? Math.round((market.quoteCount / market.leadCount) * 100) : null,
+    status: market.orderCount > 0 ? 'Healthy' : market.quoteCount > 0 ? 'Watch' : 'Needs attention',
+    business_meaning: `${market.leadCount} leads, ${market.quoteCount} quoted, ${market.orderCount} orders.`,
+    recommended_action: market.orderCount > 0 ? 'Protect active demand and execution quality in this market.' : 'Review why this market is not converting to orders yet.',
+    source_link: '/leads',
   }));
 
-  const marketRows = analytics.marketBreakdown.map((market) => buildRow({
-    section: 'Markets',
-    row_type: 'dimension',
-    metric_code: 'market_performance',
-    metric_name: 'Market performance',
-    dimension_type: 'market',
-    dimension_key: market.market,
-    dimension_label: market.market,
-    value_number: market.leadCount,
-    unit: 'leads',
-    value_text: `quotes=${market.quoteCount}; orders=${market.orderCount}`,
-    source_href: '/leads',
-  }));
-
-  const productRows = analytics.productBreakdown.map((product) => buildRow({
-    section: 'Products',
-    row_type: 'dimension',
-    metric_code: 'product_performance',
-    metric_name: 'Product performance',
-    dimension_type: 'product_category',
-    dimension_key: product.category,
-    dimension_label: product.category,
-    value_number: product.leadCount,
-    unit: 'leads',
-    value_text: `active_quotes=${product.activeQuotes}`,
-    source_href: '/products',
+  const productRows = analytics.productBreakdown.map((product) => row({
+    section: 'Product Performance',
+    line_item: product.category,
+    count: product.leadCount,
+    amount_usd: product.pipelineValueUsd,
+    rate_percent: product.leadCount ? Math.round((product.activeQuotes / product.leadCount) * 100) : null,
+    status: product.activeQuotes > 0 ? 'Healthy' : 'Watch',
+    business_meaning: `${product.leadCount} interested leads and ${product.activeQuotes} quoted leads for this product.`,
+    recommended_action: product.activeQuotes > 0 ? 'Prioritize follow-up on quoted product interest.' : 'Validate product demand and quote readiness.',
+    source_link: '/products',
   }));
 
   const orderRows = [
-    buildRow({ section: 'Orders / Execution', metric_code: 'orders_draft', metric_name: 'Draft orders', value_number: analytics.orderMetrics.draft, source_href: '/orders' }),
-    buildRow({ section: 'Orders / Execution', metric_code: 'orders_active', metric_name: 'Active orders', value_number: analytics.orderMetrics.active, source_href: '/orders' }),
-    buildRow({ section: 'Orders / Execution', metric_code: 'orders_dispatched', metric_name: 'Dispatched orders', value_number: analytics.orderMetrics.dispatched, source_href: '/orders' }),
-    buildRow({ section: 'Orders / Execution', metric_code: 'orders_completed', metric_name: 'Completed orders', value_number: analytics.orderMetrics.completed, source_href: '/orders' }),
-    buildRow({ section: 'Orders / Execution', metric_code: 'orders_total_tracked', metric_name: 'Total tracked orders', value_number: analytics.orderMetrics.totalActive, source_href: '/orders' }),
+    row({ section: 'Orders and Execution', line_item: 'Draft / confirmation stage', count: analytics.orderMetrics.draft, amount_usd: null, rate_percent: null, status: analytics.orderMetrics.draft > 0 ? 'Watch' : 'Clear', business_meaning: 'Orders not yet fully in execution.', recommended_action: 'Confirm missing order details or approvals.', source_link: '/orders' }),
+    row({ section: 'Orders and Execution', line_item: 'Active execution', count: analytics.orderMetrics.active, amount_usd: analytics.orderMetrics.totalValueUsd, rate_percent: null, status: analytics.orderMetrics.active > 0 ? 'Watch' : 'Clear', business_meaning: 'Orders currently moving through operational execution.', recommended_action: 'Review blockers, documents, and dispatch readiness.', source_link: '/orders' }),
+    row({ section: 'Orders and Execution', line_item: 'Dispatched', count: analytics.orderMetrics.dispatched, amount_usd: null, rate_percent: dispatchRate, status: analytics.orderMetrics.dispatched > 0 ? 'Healthy' : 'Watch', business_meaning: 'Orders already dispatched or dispatch-ready.', recommended_action: 'Confirm shipment/customer communication proof.', source_link: '/orders' }),
+    row({ section: 'Orders and Execution', line_item: 'Completed / closed', count: analytics.orderMetrics.completed, amount_usd: null, rate_percent: closeRate, status: analytics.orderMetrics.completed > 0 ? 'Healthy' : 'Watch', business_meaning: 'Orders finished commercially or operationally.', recommended_action: 'Check payment, document archive, and post-order follow-up.', source_link: '/orders' }),
   ];
 
-  const auditRows = [
-    buildRow({ section: 'Audit / Reporting', metric_code: 'audit_events_in_range', metric_name: 'Audit events in range', value_number: filteredAuditEvents.length, source_href: '/admin/audit' }),
-    ...filteredAuditEvents.slice(0, 50).map((event) => buildRow({
-      section: 'Audit / Reporting',
-      row_type: 'record',
-      metric_code: 'audit_event',
-      metric_name: event.event_type,
-      dimension_type: 'audit_event',
-      dimension_key: event.id,
-      dimension_label: event.event_type,
-      value_text: event.created_at,
-      unit: 'timestamp',
-      source_href: '/admin/audit',
-      notes: `actor=${event.actor_name ?? event.actor_email ?? 'System'}`,
-    })),
+  const reportingRows = [
+    row({ section: 'Reporting Notes', line_item: 'Report scope', count: null, amount_usd: null, rate_percent: null, status: 'Info', business_meaning: `${viewLabel(mode)} from ${from} to ${to}.`, recommended_action: 'Use the same filters on Home, Analytics, and Reports when comparing numbers.', source_link: source === 'reports' ? '/reports' : '/dashboard/analytics' }),
+    row({ section: 'Reporting Notes', line_item: 'Export quality', count: null, amount_usd: null, rate_percent: null, status: 'Info', business_meaning: 'This export is summarized for management review, not a raw database dump.', recommended_action: 'Use business rows for meetings; use CRM pages for individual record drill-through.', source_link: '/reports' }),
   ];
 
   const rows = [
-    ...metadataRows,
     ...(dataset === 'executive-summary' || dataset === 'business-pack' ? executiveRows : []),
     ...(dataset === 'pipeline-funnel' || dataset === 'business-pack' ? funnelRows : []),
     ...(dataset === 'markets' || dataset === 'business-pack' ? marketRows : []),
     ...(dataset === 'products' || dataset === 'business-pack' ? productRows : []),
     ...(dataset === 'orders-execution' || dataset === 'business-pack' ? orderRows : []),
-    ...(dataset === 'audit-reporting' || dataset === 'business-pack' ? auditRows : []),
+    ...(dataset === 'audit-reporting' || dataset === 'business-pack' ? reportingRows : []),
   ];
 
   const filename = `setuflow-${dataset}-${mode}-${from}-to-${to}.csv`;
-  return new Response(csv(rows), {
+  return new Response(toCsv(rows), {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
