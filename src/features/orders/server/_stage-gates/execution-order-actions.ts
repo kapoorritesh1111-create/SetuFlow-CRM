@@ -207,6 +207,11 @@ export async function ensureActualOrderLinesAction(formData: FormData) {
     ? await db.from('contract_line_items').select('id, source_quote_version_line_item_id, product_id, product_variant_id, quantity, unit_price, currency, notes, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason').eq('organization_id', organizationId).eq('contract_id', legacyContractId)
     : { data: [] };
 
+  if (legacyContractId && (!Array.isArray(contractLines) || contractLines.length === 0)) {
+    await db.from('orders').delete().eq('organization_id', organizationId).eq('id', orderId);
+    redirect(buildRedirect('contract-lines-required', quoteId));
+  }
+
   let orderLines: any[] = [];
   if (Array.isArray(contractLines) && contractLines.length > 0) {
     const productIds = [...new Set(contractLines.map((line: any) => line.product_id).filter(Boolean))];
