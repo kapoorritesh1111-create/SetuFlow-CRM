@@ -7,6 +7,8 @@ const appShell = readFileSync(new URL('../src/components/layout/app-shell.tsx', 
 const globals = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
 const dashboardPage = readFileSync(new URL('../src/app/(app)/dashboard/page.tsx', import.meta.url), 'utf8');
 const dashboardTabs = readFileSync(new URL('../src/components/dashboard/dashboard-section-tabs.tsx', import.meta.url), 'utf8');
+const profilePage = readFileSync(new URL('../src/app/(app)/profile/page.tsx', import.meta.url), 'utf8');
+const compactAvatarManager = readFileSync(new URL('../src/features/profile/components/profile-compact-avatar-manager.tsx', import.meta.url), 'utf8');
 const { requiredFiles, forbiddenPaths } = manifest.tests;
 const primaryNav = manifest.primaryNav.map((item) => item.href);
 const leadershipSection = manifest.shellSections.find((section) => section.id === 'leadership-watchtower');
@@ -63,4 +65,13 @@ test('desktop account menu keeps profile page discoverable', () => {
   assert.match(appShell, /<DesktopUserMenu[\s\S]*profileName=\{profileName\}/, 'desktop header should render the user account menu');
   assert.match(appShell, /<Link href="\/profile"[\s\S]*Profile[\s\S]*<\/Link>/, 'desktop account menu should link to /profile');
   assert.match(appShell, /<span className="sr-only">Open user menu<\/span>/, 'avatar menu should expose an accessible label');
+});
+
+test('profile page stays compact and keeps vCard as a helper surface', () => {
+  assert.match(profilePage, /ProfileCompactAvatarManager/, 'profile should use the compact avatar manager, not the full avatar gallery');
+  assert.doesNotMatch(profilePage, /MyCardWorkspace/, 'profile should not embed the full vCard workspace');
+  assert.match(profilePage, /vCard helper/, 'profile should include a compact vCard readiness helper');
+  assert.match(profilePage, /Manage vCard details/, 'profile should hand off to the dedicated vCard workspace');
+  assert.match(profilePage, /xl:grid-cols=\{?"?\[1\.1fr_0\.9fr\]/, 'desktop profile should use a two-column layout to reduce scrolling');
+  assert.match(compactAvatarManager, /The full illustrated gallery stays in the vCard workspace/, 'profile avatar manager should not show the full gallery');
 });
