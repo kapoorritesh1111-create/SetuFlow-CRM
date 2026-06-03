@@ -15,6 +15,11 @@ type PreviewPayload = {
   lines?: Row[];
 };
 
+type PreviewRpcResult = {
+  data: PreviewPayload | null;
+  error: { message?: string } | null;
+};
+
 function text(value: unknown, fallback = '') {
   const trimmed = String(value ?? '').trim();
   return trimmed || fallback;
@@ -45,18 +50,14 @@ function filenamePart(value: unknown) {
   return text(value, 'document').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'document';
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ token: string }> | { token: string } },
-) {
+export async function GET(_request: Request, { params }: { params: { token: string } }) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 });
 
-  const resolvedParams = await params;
-  const token = text(resolvedParams.token);
+  const token = text(params.token);
   if (!token) return NextResponse.json({ error: 'Preview token is required.' }, { status: 400 });
 
-  const db = (await createClient()) as { rpc: (name: string, args: Row) => Promise<{ data: PreviewPayload | null; error: { message?: string } | null }> };
-  const { data: preview, error } = await db.rpc('get_order_document_preview_by_token', { p_share_token: token });
+  const db = await createClient();
+  const { data: preview, error } = await db.rpc('get_order_document_preview_by_token', { p_share_token: token }) as unknown as PreviewRpcResult;
   if (error) return NextResponse.json({ error: error.message ?? 'Could not load preview data.' }, { status: 500 });
   if (!preview?.send) return NextResponse.json({ error: 'Tracked document preview not found.' }, { status: 404 });
 
