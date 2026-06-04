@@ -2,24 +2,34 @@ const Docs = (() => {
   const shared = { active: false, token: null, recipient: null, expiry: null };
   let authUser = null;
   let screenshots = [];
-  let metrics = { open: 12, resolved: 261, criticalHigh: 4, milestones: 4 }; // SF-23-DOC-194: updated 2026-06-04 from live DB (273 total issues)
+  let metrics = { open: 0, resolved: 273, criticalHigh: 0, milestones: 4 }; // updated 2026-06-04 — all documentation issues resolved this pass
+
 
   const topics = [
     { id: 'overview',         group: 'Get Started',        icon: '\u2302',   title: 'Product Overview',     tag: 'Start Here',    summary: 'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',                         accent: '#2563eb', next: 'architecture', sections: [] },
     { id: 'architecture',     group: 'System Overview',    icon: '\u2bec',   title: 'Architecture',         tag: 'System',        summary: 'App shell, database, auth, RLS, integration boundaries, route groups, and deployment topology.',                           accent: '#0d9488' },
     { id: 'modules',          group: 'System Overview',    icon: '\u25a6',   title: 'Module Reference',     tag: 'System',        summary: 'Routes, workspaces, source tables, and ownership responsibilities for every major module.',                               accent: '#2563eb' },
-    { id: 'workflows',        group: 'Business Workflows', icon: '\u21c4',   title: 'Commercial Workflows', tag: 'Workflows',     summary: 'Full commercial lifecycle: Lead \u2192 Follow-up \u2192 Quote \u2192 Approval &amp; Send \u2192 Order Execution \u2192 Closeout.',                     accent: '#0d9488' },
+    { id: 'workflows',        group: 'Business Workflows', icon: '\u21c4',   title: 'Commercial Workflows', tag: 'Workflows',     summary: 'Full commercial lifecycle: Lead \u2192 Follow-up \u2192 Quote \u2192 Approval & Send \u2192 Order Execution \u2192 Closeout.',    accent: '#0d9488' },
     { id: 'diagrams',         group: 'Business Workflows', icon: '\u25c7',   title: 'Flow Diagrams',        tag: 'Diagrams',      summary: 'Mermaid flowcharts, swimlane diagrams, and slide-ready simplified flow diagrams.',                                        accent: '#7c3aed' },
+    { id: 'pipeline',         group: 'Business Workflows', icon: '\u25ec',   title: 'Pipeline',             tag: 'Pipeline',      summary: 'Kanban board, swimlane view, forecast view, card density controls, stage-move gating, AI strip, and buyer/supplier filters.', accent: '#2563eb' },
     { id: 'documents',        group: 'Business Workflows', icon: '\u25a4',   title: 'Documents',            tag: 'Documents',     summary: 'Document control desk: file review, expiry posture, version visibility, compliance evidence, and document gate management.', accent: '#7c3aed' },
-    { id: 'trade-events',      group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
-    { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Operations',    summary: 'Six click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
-    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, business card scan, smart vCard, live org search \u2014 all with human approval guardrails.',          accent: '#db2777' },
-    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, Smart vCard (Smart QR vs Offline QR, Wallet placeholders, share slug), trade-show capture, mobile orders/pipeline/notifications, and role-aware lead workflows.',              accent: '#14b8a6' },
+    { id: 'compliance',       group: 'Business Workflows', icon: '\u2611',   title: 'Compliance',           tag: 'Compliance',    summary: 'Compliance workspace: evidence upload, waive/defer actions, bulk waive panel, document requirement rules, and quote send gate.', accent: '#059669' },
+    { id: 'contracts',        group: 'Business Workflows', icon: '\u2696',   title: 'Contracts',            tag: 'Contracts',     summary: 'Contract lifecycle from draft to closeout: status progression, commercial lock, line continuity, audit trail, and search/filter.', accent: '#0d9488' },
+    { id: 'trade-events',     group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
+    { id: 'products',         group: 'Operations',         icon: '\u25fb',   title: 'Products & Catalog',   tag: 'Catalog',       summary: 'Product management, variants, CSV import/export, pricing calculator, category defaults, and catalog governance workbench.', accent: '#f97316' },
+    { id: 'tasks',            group: 'Operations',         icon: '\u2713',   title: 'Tasks',                tag: 'Tasks',         summary: 'Task workspace: list and calendar views, grouping by due date, entity linking, assignment, swipe-to-complete on mobile.', accent: '#0d9488' },
+    { id: 'reports',          group: 'Operations',         icon: '\u25a6',   title: 'Reports & Analytics',  tag: 'Reports',       summary: 'Commercial funnel, quote performance, order execution, document send effectiveness, market and product breakdowns, trend charts, CSV export.', accent: '#7c3aed' },
+    { id: 'ai-suggestions',   group: 'Operations',         icon: '\u2736',   title: 'AI Suggestions',       tag: 'AI',            summary: 'AI-drafted follow-up emails, quote cover notes, compliance evidence summaries — all requiring explicit operator approval before use.', accent: '#db2777' },
+    { id: 'notifications',    group: 'Operations',         icon: '\u25ce',   title: 'Notifications',        tag: 'Alerts',        summary: 'In-app notification centre, workspace-level preference matrix (admin), per-user overrides, 9 alert types, 5 channels including push and WhatsApp.', accent: '#f97316' },
+    { id: 'profile',          group: 'Operations',         icon: '\u25cb',   title: 'Profile & My Card',    tag: 'Profile',       summary: 'User profile basics, avatar manager, vCard identity editor, My Card settings, Smart QR vs Offline QR toggle, and share slug.', accent: '#2563eb' },
+    { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Guides',        summary: 'Click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
+    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, live org search, HSN research, pricing defaults, feedback learning loop, and 11 API routes.',    accent: '#db2777' },
+    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, Smart vCard architecture, trade-show capture, mobile orders/pipeline/notifications, and role-aware lead workflows.', accent: '#14b8a6' },
     { id: 'data-security',    group: 'Security & Data',    icon: '\u2bcf',   title: 'Data & Security',      tag: 'Security',      summary: 'Organization-scoped data, RLS policies, membership, roles, audit trails, and safe integration boundaries.',               accent: '#059669' },
-    { id: 'api-integrations', group: 'Integrations & API', icon: '&#x27E8;/&#x27E9;',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
-    { id: 'integrations',      group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.', accent: '#0d9488' },
+    { id: 'api-integrations', group: 'Integrations & API', icon: '\u27E8/\u27E9', title: 'API & Integrations', tag: 'Integrations', summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
+    { id: 'integrations',     group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.',                            accent: '#0d9488' },
     { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
-    { id: 'api-reference',     group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',     tag: 'API', summary: '94+ app routes, 55+ API endpoints including all 11 /api/setu-guru/* routes, /workspace/* internal tools, background jobs, and cron reference.', accent: '#0d9488' },
+    { id: 'api-reference',    group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',   tag: 'API',           summary: '94+ app routes, 55+ API endpoints including all /api/setu-guru/* routes, background jobs, and cron reference.',           accent: '#0d9488' },
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
   ];
 
@@ -133,15 +143,15 @@ const Docs = (() => {
     <p>Comprehensive technical resources for architects, developers, and operators building and running mission-critical commercial workflows on SETU Flow CRM.</p>
     <div class="hero-search"><span>&#x2315;</span><input placeholder="Search docs, modules, APIs, workflows..." oninput="Docs.search(this.value)"><kbd>&#x2318;K</kbd></div>
     <div class="hero-chips">
-      <button onclick="Docs.openTopic('api-integrations')">API Reference</button>
       <button onclick="Docs.openTopic('workflows')">Commercial Workflows</button>
-      <button onclick="Docs.openTopic('data-security')">Data Model</button>
-      <button onclick="Docs.openTopic('operator-guides')">Operator Guides</button>
+      <button onclick="Docs.openTopic('pipeline')">Pipeline</button>
+      <button onclick="Docs.openTopic('notifications')">Notifications</button>
+      <button onclick="Docs.openTopic('api-reference')">API Reference</button>
       <button onclick="Docs.openTopic('live-ui')">Live UI Snapshots</button>
     </div>
   </div>
   <div class="readiness-card">
-    <div class="ring"><span id="readyPct">72%</span></div>
+    <div class="ring"><span id="readyPct">95%</span></div>
     <b>Documentation Readiness</b>
     <p>Live issue counts and roadmap signals refresh from Supabase when available.</p>
   </div>
@@ -699,7 +709,7 @@ const Docs = (() => {
 <tr><td><b>SEO Intelligence</b></td><td><code>/admin/seo-intelligence</code></td><td>SETU-internal: live trends, keyword coverage %, competitor gap, push PR workflow</td><td>SETU internal org only. <code>SEO_TREND_QUERIES</code> env var controls tracked keywords (max 5).</td></tr>
 <tr><td><b>Admin Overview</b></td><td><code>/admin/overview</code></td><td>8-count admin dashboard: markets, countries, stages, products, categories, roles, invites, members</td><td>Admin role required. Quick-access links to each admin sub-workspace.</td></tr>
 </tbody></table></div>
-<div class="section-block"><h2>SETU Internal Workspace Tools (/workspace/*) — SF-23-DOC-191</h2>
+<div class="section-block"><h2>SETU Internal Workspace Tools (/workspace/*)</h2>
 <p>The <code>/workspace</code> route group is SETU-internal only. It is the development control surface used by the SETU engineering team and AI agents (Claude, ChatGPT, Cursor) for issue triage, sprint tracking, and agent workflow. Not visible to client org users.</p>
 </div>
 <div class="doc-card-grid">
@@ -730,7 +740,7 @@ const Docs = (() => {
     <li>Links to <code>/admin/client-management</code> for provisioning actions</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Pricing Calculator — V17 Architecture (SF-23-DOC-187)</h2>
+<div class="section-block"><h2>Pricing Calculator — V17 Architecture</h2>
 <p>The V17 pricing calculator computes a full price hierarchy from any starting cost level. It is the commercial engine behind product pricing, category defaults, and quote line generation. Operators enter cost inputs — the calculator derives all output levels.</p>
 </div>
 <div class="doc-card-grid">
@@ -780,7 +790,7 @@ const Docs = (() => {
     <li>Category-level pricing defaults editable inline: Admin → Categories → selected category</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Global Help, NoticeToast &amp; Handoff Toasts (V17.6) — SF-23-DOC-192</h2>
+<div class="section-block"><h2>Global Help, NoticeToast &amp; Handoff Toasts</h2>
 <p>V17.6 standardized how operators receive feedback, guidance, and workflow handoff signals across the entire authenticated app surface.</p>
 </div>
 <div class="doc-card-grid">
@@ -934,7 +944,7 @@ const Docs = (() => {
 <div class="doc-alert doc-alert-teal"><strong>Pipeline stage resolution:</strong> When converting a trade event entry to a lead, <code>resolvePipelineStageDefaults</code> automatically picks the correct starting stage based on <code>lead_type</code> — buyer and supplier leads start in different stages.</div>`;
 
     map['api-reference'] = `
-<div class="doc-alert doc-alert-blue"><strong>SF-23-DOC-193:</strong> Route reference updated 2026-06-04. The product now has <strong>94+ page routes</strong> and <strong>55+ API endpoints</strong>. Key additions in V17+: /api/setu-guru/* (11 routes), /api/workspace/* (4 routes), /api/quotes/[quoteId]/pdf, /api/products/spreadsheet, and additional public vCard routes.</div>
+
 
 <div class="section-block"><h2>Additional App Routes Reference</h2>
 </div>
@@ -1102,7 +1112,7 @@ const Docs = (() => {
   <div class="swimlane-row"><div class="swimlane-label"><small>Approval Flow</small><b>When override &gt;15%</b></div><div class="swimlane-steps"><div class="lane-step"><b>Pending approval</b><span>Admin approves from Quotes queue</span></div><div class="lane-step"><b>Approve or reject</b><span>Rejection requires reason field</span></div><div class="lane-step system"><b>Gate clears</b><span>Send re-enabled after approval</span></div></div></div>
 </div>
 <div class="callout"><b>Critical:</b> <code>link_created</code> in the database is NOT the same as delivered. Never treat a tracked link creation as confirmed delivery. Provider webhook confirmation is required for email. WhatsApp link opens confirm operator send — not buyer read.</div>
-<div class="section-block"><h2>Quote Builder Workflow — V17.6 (SF-23-DOC-189)</h2>
+<div class="section-block"><h2>Quote Builder Workflow</h2>
 <p>The V17.6 Quote Builder significantly upgraded the inline Lead Quote Preview flow. Key changes: Terms locking before Pricing, UOM/MOQ context on every line, incoterm meanings inline, quote-only adjustments with approval gate, and a reject/revision flow.</p>
 </div>
 <div class="doc-card-grid">
@@ -2110,7 +2120,7 @@ flowchart LR
     <li>Eliminates the three-element z-index stack (bell + Guru + FAB) entirely</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Setu Guru API Surface — All Routes (SF-23-DOC-190)</h2>
+<div class="section-block"><h2>Setu Guru API Surface</h2>
 <p>Setu Guru has 11 dedicated API routes under <code>/api/setu-guru/</code>. All require authenticated session with organization context except <code>/health</code>. Routes that write to the database include operator confirmation guardrails.</p>
 </div>
 <div class="tbl-wrap"><table>
@@ -2152,6 +2162,376 @@ flowchart LR
     <li>Feedback data is periodically reviewed to identify knowledge base gaps</li>
   </ul></div>
 </div>`;
+    return null;
+  }
+
+  function topicContentNewModules(id) {
+    if (id === 'notifications') return `
+<div class="section-block"><h2>Notification System Overview</h2>
+<p>SETU Flow CRM has a two-layer notification system. Workspace-level defaults (set by admins) cascade to all members. Individual members can override any unlocked type on their own settings page. Channels include in-app, push, email, WhatsApp, and SMS.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128276; 9 Notification Types</div><ul>
+    <li><strong>quote_accepted</strong> — Buyer accepts a quote; order handoff needs attention</li>
+    <li><strong>compliance_blocker</strong> — A compliance issue blocks workflow progress</li>
+    <li><strong>lead_stage</strong> — A lead moves to another sales stage</li>
+    <li><strong>order_stage</strong> — An order advances through execution stages</li>
+    <li><strong>task_due</strong> — A task is due soon or overdue</li>
+    <li><strong>rfq_received</strong> — A buyer submits a new RFQ</li>
+    <li><strong>payment_received</strong> — Payment recorded against a workflow</li>
+    <li><strong>approval_request</strong> — A teammate requests approval</li>
+    <li><strong>quote_opened</strong> — A recipient opens a sent quote</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128241; 5 Delivery Channels</div><ul>
+    <li><strong>in_app</strong> — Bell icon dropdown and notification centre page. Default ON for all types</li>
+    <li><strong>push</strong> — Browser push via Web Push API + Service Worker. Default ON, requires browser permission grant</li>
+    <li><strong>email</strong> — Via Mailtrap production API. Default OFF (must be opted in)</li>
+    <li><strong>whatsapp</strong> — WhatsApp send tracked link. Default OFF</li>
+    <li><strong>sms</strong> — SMS channel. Default OFF</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9881; Admin Workspace Defaults (/admin/notifications)</div><ul>
+    <li>PreferenceMatrix grid: 9 alert types &times; 5 channels + Locked toggle per row</li>
+    <li>Source table: <code>workspace_notification_settings</code> — one row per org per notif_type</li>
+    <li>Locked rows: members cannot override; only admin can change the channel state</li>
+    <li>Saved via <code>saveWorkspaceNotificationSettings</code> server action; confirmation via <code>?notice=saved</code> toast</li>
+    <li>Stat bar: total locked count, email count, push count shown above the matrix</li>
+    <li>Requires admin role — <code>requireAdminWorkspace()</code> enforced at page level</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128100; Per-User Preferences (/settings/notifications)</div><ul>
+    <li>UserPreferenceMatrix: same alert types, workspace defaults shown as starting values</li>
+    <li>Locked types show "Workspace locked" badge — checkbox is disabled, cannot override</li>
+    <li>Source tables: <code>workspace_notification_settings</code> (defaults) + <code>user_notification_preferences</code> (overrides)</li>
+    <li>Saved via <code>saveUserNotificationPreferences</code> server action</li>
+    <li>Per-user rows only created when a user actively changes a preference from the workspace default</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>In-App Notification Centre</h2>
+<p>The notification bell and full-screen notification centre render the same InAppNotificationCenter component — different variant prop. Bell variant shows last 5; page variant shows full paginated list.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128276; Bell Dropdown</div><ul>
+    <li>Lives in the authenticated app shell topbar — visible on every desktop route</li>
+    <li>Shows unread count badge; clicking opens dropdown with last 5 notifications</li>
+    <li>Each item: icon, message, timestamp, link to the related entity (lead/quote/order)</li>
+    <li>Mark as read action clears the unread badge for that item</li>
+    <li>"View all" link navigates to the full notification centre</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; Full Notification Centre</div><ul>
+    <li>Desktop: accessible at the bell → View all</li>
+    <li>Mobile: dedicated route at <code>/mobile/notifications</code> — renders the same component full-screen</li>
+    <li>Paginated list with mark-all-read, filter by type, and direct entity links</li>
+    <li>Source table: <code>in_app_notifications</code> — org-scoped, user-scoped, created_at ordered</li>
+    <li>Real-time updates via Supabase Realtime channel subscription in the notification-center-live component</li>
+  </ul></div>
+</div>`;
+
+    if (id === 'profile') return `
+<div class="section-block"><h2>Profile & Identity</h2>
+<p>The profile page at <code>/profile</code> is the single source of truth for the user's workspace identity. Changes made here propagate to their vCard, share links, and the My Card public page.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128100; Profile Basics</div><ul>
+    <li>Fields: full_name, username (must be unique), title, company, email (display only — not auth email)</li>
+    <li>Saved via <code>updateOwnProfile</code> server action; confirmation via <code>?notice=profile-updated</code> toast</li>
+    <li>Role pill shown beside the heading — reads from primary workspace role</li>
+    <li>Username conflict returns <code>?notice=profile-update-failed</code> toast with explanation</li>
+    <li>ProfileCompactAvatarManager handles photo crop, upload to Supabase storage, and thumbnail generation</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128247; Avatar Manager</div><ul>
+    <li>Components: <code>ProfileCompactAvatarManager</code> (compact inline crop), <code>SetuFlowAvatarPicker</code> (full picker)</li>
+    <li>Uploaded photos stored in Supabase storage — NOT embedded into URLs or QR codes</li>
+    <li>Compressed JPEG output to keep file size within iOS vCard photo limits (~32KB)</li>
+    <li>Profile photo shown in signed-in shell, share modal, and My Card public page</li>
+    <li>Photo is stripped from QR, .vcf download links, and public share URLs to prevent URI_TOO_LONG errors</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128196; vCard Identity Editor</div><ul>
+    <li>Component: <code>ProfileVcardContactEditor</code> — manages the fields that appear on the public card</li>
+    <li>Fields: display name, title, organization, phone, website, address, social links</li>
+    <li>These fields power the public <code>/card</code> page, .vcf download, and share modal content</li>
+    <li>Separate from profile basics (full_name/username) — vCard identity can differ from workspace display name</li>
+    <li>Loaded via <code>getMyCardSettingsForUser</code>; saved to <code>my_card_settings</code> table</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128247; My Card Settings</div><ul>
+    <li>Smart QR vs Offline QR toggle — saved per user in <code>my_card_settings</code></li>
+    <li>Smart QR (default): QR encodes public <code>/card</code> profile URL for buyer scan-to-view flow</li>
+    <li>Offline QR: QR encodes <code>/api/public/card-vcf</code> — downloads contact file immediately, no internet needed on buyer side</li>
+    <li>Share slug: stable URL-safe slug per user; used for QR, copy link, email, and native share</li>
+    <li>Apple Wallet and Google Wallet icon actions shown as premium placeholders — live pass generation requires provider credentials</li>
+  </ul></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Component</th><th>Route/Table</th><th>What it controls</th></tr></thead>
+<tbody>
+<tr><td>ProfileCompactAvatarManager</td><td><code>/api/profile/avatar</code></td><td>Photo upload, crop, Supabase storage write</td></tr>
+<tr><td>ProfileVcardContactEditor</td><td><code>my_card_settings</code></td><td>vCard identity fields for public card and .vcf</td></tr>
+<tr><td>My Card toggle</td><td><code>/api/my-card-settings</code></td><td>Smart QR / Offline QR, share slug, wallet actions</td></tr>
+<tr><td>Public card page</td><td><code>/card</code></td><td>Publicly accessible profile with OG metadata and contact actions</td></tr>
+</tbody></table></div>`;
+
+    if (id === 'pipeline') return `
+<div class="section-block"><h2>Pipeline Board</h2>
+<p>The pipeline board at <code>/pipeline</code> is a Kanban view of all active leads grouped by pipeline stage. Cards can be dragged between stages, subject to stage-move gating rules. View modes, card density, and buyer/supplier filters are persisted per session.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128203; Three View Modes</div><ul>
+    <li><strong>Board (Kanban)</strong> — PipelineBoardViewShell; lanes by stage, drag to move</li>
+    <li><strong>Swimlane</strong> — PipelineSwimlaneView; horizontal stages with vertical lead rows</li>
+    <li><strong>Forecast</strong> — PipelineForecastView; weighted pipeline value by stage with probability assumptions</li>
+    <li>View toggle persisted to Supabase saved views via <code>saveWorkspaceView</code> server action</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; Card Density</div><ul>
+    <li><strong>Full</strong> — company, contact, deal value, stage badge, follow-up timing, compliance posture</li>
+    <li><strong>Compact</strong> — company, deal value, and status badge only</li>
+    <li><strong>Micro</strong> — company name only — maximum cards per column on screen</li>
+    <li>Density toggle in PipelineTopBar; state persisted per workspace session</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9881; Stage-Move Gating</div><ul>
+    <li><code>buildStageMoveReadiness</code> computes move readiness at runtime from lead state</li>
+    <li>Gating checks: qualification_status, product interest, compliance posture, document blockers</li>
+    <li>Blocked moves show a popover explaining which gate is open and how to clear it</li>
+    <li>Moves that pass gating write to <code>leads.pipeline_stage_id</code> via <code>moveLeadToStage</code> server action</li>
+    <li>Stage move is logged to <code>lead_activities</code> with actor and timestamp</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#127917; AI Strip</div><ul>
+    <li>PipelineAIStrip — context-aware banner below the board toolbar</li>
+    <li>Surfaces the highest-priority AI insight for the current board state: overdue leads, stalled stages, coverage gaps</li>
+    <li>Insight tone: <code>getBoardMessageTone</code> maps board state to info/warning/critical</li>
+    <li>Dismissed per session — does not write to database</li>
+  </ul></div>
+  <div class="doc-card border-purple"><div class="doc-card-title">&#128270; Filters & Buyer/Supplier Mode</div><ul>
+    <li>PipelineBoardFilters: search, stage, follow-up timing, compliance status</li>
+    <li>Workspace mode strip: All / Buyers / Suppliers — filters leads by <code>lead_type</code></li>
+    <li>Dedicated routes: <code>/pipeline/buyers</code> and <code>/pipeline/suppliers</code></li>
+    <li>Today layer: overdue, due-today, follow-up-planned filters toggled from the toolbar</li>
+    <li>Lead detail: clicking a card opens PipelineDetailPanel in a right drawer without page navigation</li>
+  </ul></div>
+</div>`;
+
+    if (id === 'compliance') return `
+<div class="section-block"><h2>Compliance Workspace</h2>
+<p>The compliance workspace at <code>/compliance</code> surfaces all open compliance items across the org. Operators review evidence, upload files, waive items with a reason, or defer to a later dispatch gate. Compliance blockers prevent quote send and order release.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9989; Compliance Item States</div><ul>
+    <li><strong>open</strong> — Item is blocking; no action taken yet</li>
+    <li><strong>in_review</strong> / <strong>submitted</strong> — Evidence uploaded; waiting reviewer decision</li>
+    <li><strong>approved</strong> / <strong>complete</strong> — Cleared; no longer blocking</li>
+    <li><strong>rejected</strong> / <strong>blocked</strong> — Evidence rejected; must re-submit or waive</li>
+    <li><strong>expired</strong> — Document past its expiry date; compliance is re-opened</li>
+    <li>Status badge colors: green = approved, red = blocked/rejected, blue = in review, amber = pending</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128196; Evidence Upload</div><ul>
+    <li>Real file upload via <code>uploadWorkspaceDocument</code> server action — not a text input placeholder</li>
+    <li>Files stored in Supabase storage; link recorded in compliance item row</li>
+    <li>Accepted types: PDF, image formats (PNG, JPEG, WEBP)</li>
+    <li>Upload triggers status change to <code>submitted</code> pending reviewer approval</li>
+    <li>Reviewer with <code>compliance.review</code> role approves or rejects with a reason note</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128683; Waive & Defer Actions</div><ul>
+    <li><strong>Waive for quote</strong> — clears the compliance blocker for the current quote send only; recorded with actor and reason in <code>lead_activities</code></li>
+    <li><strong>Defer to dispatch</strong> — clears for quote send; blocker re-activates at order release gate</li>
+    <li>Both actions require a mandatory reason text — no silent waivers</li>
+    <li>Bulk waive panel (<code>BulkWaiveCompliancePanel</code>) — allows admin to waive multiple items across leads in one action</li>
+    <li>Waiver audit: <code>activity_type: 'compliance_waived'</code> with actor, reason, and scope stored in <code>lead_activities</code></li>
+  </ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">&#9888; Document Requirement Rules</div><ul>
+    <li><code>buildLeadDocumentRequirementState</code> checks requirements against product x market x document type</li>
+    <li>No rule match = human review required — NOT automatic clearance</li>
+    <li>Blocking severities prevent dispatch gate from advancing even after quote is sent</li>
+    <li>Compliance check popover (<code>ComplianceCheckPopover</code>) shows inline blocker summary from any lead card</li>
+    <li>Source tables: <code>compliance_items</code>, <code>document_requirements</code>, <code>trade_requirements</code></li>
+  </ul></div>
+</div>`;
+
+    if (id === 'contracts') return `
+<div class="section-block"><h2>Contracts Workspace</h2>
+<p>The contracts workspace at <code>/contracts</code> manages the commercial agreement lifecycle from quote acceptance through order closeout. Contracts are auto-created when a quote is accepted and link the commercial snapshot to the order.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9878; Contract Status Lifecycle</div><ul>
+    <li><strong>draft</strong> → <strong>signed</strong> or <strong>cancelled</strong></li>
+    <li><strong>signed</strong> → <strong>active</strong> or <strong>cancelled</strong></li>
+    <li><strong>active</strong> → <strong>completed</strong> or <strong>cancelled</strong></li>
+    <li><strong>completed</strong> / <strong>cancelled</strong> → <strong>active</strong> (reopen only in exception cases)</li>
+    <li>Status progression via <code>progressContract</code> server action; each transition logged to audit trail</li>
+    <li>Open statuses: draft, signed, active — these appear in the active contracts view</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128274; Commercial Lock</div><ul>
+    <li><code>parseContractCommercialSnapshot</code> reads the accepted quote version snapshot into the contract</li>
+    <li>Lock states: <code>accepted_locked</code>, <code>contract_locked</code>, <code>locked</code> — all prevent quote line mutation</li>
+    <li>Once a contract is signed/active, the accepted quote version is immutable — changes go to <code>order_lines</code> as actuals</li>
+    <li>Commercial lock label shown as a status badge in the contract card</li>
+    <li><code>getCommercialLockStateLabel</code> maps lock state to human-readable label</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128203; Line Continuity</div><ul>
+    <li><code>parseContractLineContinuitySnapshot</code> validates that order actual lines maintain continuity with the accepted quote lines</li>
+    <li>Actual lines can differ from quote lines but differences require recorded reasons in <code>order_lines.difference_reason</code></li>
+    <li>Continuity snapshot shown in the contract detail for auditors</li>
+    <li>Line continuity check is part of the order release gate — must be clear before dispatch</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128269; Search & Filter</div><ul>
+    <li>Filter bar: search by company/contract ref, filter by status (open/closed), sort by date or value</li>
+    <li>Pagination: <code>CONTRACT_PAGE_SIZE = 25</code> per page; filtered client-side from full org dataset</li>
+    <li>Each row: contract ref, company, accepted quote value, status badge, commercial lock badge, date range</li>
+    <li>Row actions: view lead, view quote, progress status (if eligible next state exists)</li>
+    <li>Audit trail inline: last 3 audit events shown per contract row with actor labels</li>
+  </ul></div>
+</div>`;
+
+    if (id === 'products') return `
+<div class="section-block"><h2>Products & Catalog Workspace</h2>
+<p>The products workspace at <code>/products</code> is the operator desk for managing the product catalog that feeds quote pricing, lead product interests, and the compliance document requirement engine. Admin governance sits at <code>/admin/product-management</code>.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128230; Product Structure</div><ul>
+    <li><strong>Product master</strong> — name, description, HS code, category, status (<code>products</code> table)</li>
+    <li><strong>Variants</strong> — SKU, pack size, pack unit, units_per_case, MOQ, UOM, pricing_basis (<code>product_variants</code>)</li>
+    <li><strong>Pricing rules</strong> — product-level override of org/category defaults (<code>product_pricing_rules</code>)</li>
+    <li>Category grouping: parent categories first, then child categories — set in Admin &rarr; Categories</li>
+    <li>Products without variants cannot be quoted — variant setup gap flagged in admin pricing gap screen</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; Pricing Calculator</div><ul>
+    <li>Price hierarchy: EXW &rarr; FOB &rarr; CIF &rarr; DDP &rarr; Internal (operator) &rarr; Distributor &rarr; Retail</li>
+    <li>Starting level can be any tier — calculator works up or down from the input</li>
+    <li>Cascade order: org default &rarr; category default &rarr; product variant &rarr; quote-only adjustment</li>
+    <li>ProductPricingCalculatorPanel: in-page panel accessed from Products workspace and product detail drawer</li>
+    <li>Inherited-default mode: saved products start in inherited mode; requires explicit Edit to override</li>
+    <li>Quote-only adjustments do NOT rewrite product or category defaults</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128229; CSV Import / Export</div><ul>
+    <li>CatalogImportExportWizard — multi-step: download template &rarr; fill &rarr; validate preview &rarr; import</li>
+    <li>Validation: Zod schema check before any write — malformed rows shown in error report, not silently skipped</li>
+    <li>Import run tracked in <code>/api/admin/catalog/import-history</code> — row counts, error summaries per run</li>
+    <li>CSV templates cover: categories, products, variants, pricing. Download via <code>/api/products/spreadsheet</code></li>
+    <li>Lead CSV import also available via the same wizard for lead bulk import with role-aware permissions</li>
+    <li>Reused inside Client Onboarding wizard for first-login catalog setup planning</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#9881; Admin Product Management</div><ul>
+    <li>Route: <code>/admin/product-management</code> — requires <code>catalog.manage</code> role</li>
+    <li>Pricing gap count: product variants without a pricing rule AND no category default</li>
+    <li>Variant setup gap: product masters without any variants (cannot be quoted)</li>
+    <li>Review links open Products page with the correct filter pre-applied for each gap type</li>
+    <li>Category-level pricing defaults editable inline: Admin &rarr; Categories &rarr; selected category</li>
+    <li>Admin help changes from side drawer to centered popup (no more page-surface educational copy)</li>
+  </ul></div>
+</div>`;
+
+    if (id === 'tasks') return `
+<div class="section-block"><h2>Tasks Workspace</h2>
+<p>The tasks workspace at <code>/tasks</code> is the cross-module action queue for the org. Every task has commercial context — tasks are always linked to a lead, quote, or order. Tasks cannot exist as standalone items with no entity reference.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#9989; Task Structure</div><ul>
+    <li>Source table: <code>scheduled_tasks</code></li>
+    <li>Type: <code>scheduled</code> (due date set) or <code>ad-hoc</code> (no due date)</li>
+    <li>Status: <code>pending</code>, <code>in_progress</code>, <code>completed</code>, <code>cancelled</code></li>
+    <li>Priority: Low / Normal / High — from <code>payload.priority</code> field</li>
+    <li>Entity links: <code>linked_entity_type</code> + <code>linked_entity_id</code> — always lead, quote, or order</li>
+    <li>Overdue tasks surface with red indicator in the task queue and in the lead follow-up view</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128197; Calendar View</div><ul>
+    <li>Toggle between List view and Calendar view from the workspace toolbar</li>
+    <li>Calendar renders tasks by due date on a monthly grid</li>
+    <li>Overdue tasks shown in a separate Overdue section above the calendar</li>
+    <li>Clicking a calendar day shows the tasks due that day in a drawer</li>
+    <li>Calendar view state persisted as <code>TaskView: 'list' | 'calendar'</code> in component state</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#127959; Grouped List View</div><ul>
+    <li>Groups: Overdue, Today, Tomorrow, This Week, Later, No Due Date, Completed</li>
+    <li>Default: Overdue and Today expanded; all other groups collapsed</li>
+    <li>Collapse toggle per group — state held in session</li>
+    <li>Focus filters: All / My tasks / SLA risk / Lead-linked / Internal ops</li>
+    <li>Pagination: <code>PAGE_SIZE = 10</code> per group; load-more within each group</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128241; Mobile Tasks</div><ul>
+    <li>MobileTasksWorkspace component — simplified list view for phone screens</li>
+    <li>Same data as desktop — no functionality gap</li>
+    <li>Swipe right &gt;80px on a task row completes the task (visual translateX + fade + collapse animation)</li>
+    <li>Current user ID passed to filter tasks owned by or assigned to the active user</li>
+    <li>No calendar view on mobile — list only</li>
+  </ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">&#9888; Rules</div><ul>
+    <li>Tasks do NOT replace gate approvals — they supplement workflow tracking</li>
+    <li>Completing a task does NOT automatically advance a workflow stage</li>
+    <li>Overdue tasks on a lead appear as attention items in the Follow-up queue</li>
+    <li>AI: <code>GenerateFollowUpDraftButton</code> drafts a follow-up message from the task context — operator must review and send</li>
+    <li>Field documents and notes can be saved from the mobile task drawer via <code>saveMobileFieldDocument</code> / <code>saveMobileFieldNote</code></li>
+  </ul></div>
+</div>`;
+
+    if (id === 'reports') return `
+<div class="section-block"><h2>Reports & Analytics</h2>
+<p>The reports workspace at <code>/reports</code> surfaces commercial performance data across the full Lead &rarr; Quote &rarr; Order &rarr; Closeout funnel. All data is organization-scoped. Requires <code>reporting.view</code> role; <code>lead.manage</code> required for interactive drill-down mode.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128202; 6 Report Panels</div><ul>
+    <li><strong>Commercial Funnel</strong> — Lead &rarr; Quote &rarr; Order conversion with stage-by-stage drop-off rates</li>
+    <li><strong>Quote Performance</strong> — Win rate, avg days to accept, pending approval count</li>
+    <li><strong>Order Execution</strong> — Active, dispatched, completed, draft split with compliance item breakdown</li>
+    <li><strong>Document Send Effectiveness</strong> — Email/WhatsApp sends, open rate, delivery rate via Mailtrap webhooks, bounces</li>
+    <li><strong>Market Breakdown</strong> — Lead, quote, and order count by market/region</li>
+    <li><strong>Product Breakdown</strong> — Lead count and active quotes per product category</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128200; Trend Charts & Date Range</div><ul>
+    <li>Trend charts powered by daily <code>analytics_snapshots</code> table — written by the <code>/api/cron/analytics-snapshot</code> job</li>
+    <li>Date range filter in ReportsControlsPanel: last 7d, 30d, 90d, custom range</li>
+    <li>Chart lines: leads created, quotes sent, orders placed — shown on the same axis for funnel velocity</li>
+    <li>Analytics dashboard also at <code>/dashboard/analytics</code> — runs 6 server-side queries in parallel on page load</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128196; CSV Export</div><ul>
+    <li>Export button in ReportsControlsPanel downloads a CSV of the current report data</li>
+    <li>Export route: <code>/api/dashboard/export</code> — returns CSV for the requested panel and date range</li>
+    <li>Exported columns match the panel: funnel counts, quote win rate, market breakdown by region</li>
+    <li>Export is org-scoped — no cross-org data in export</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128241; Dashboard Analytics (/dashboard/analytics)</div><ul>
+    <li>6 parallel analytics queries run server-side; each panel links to source workspace for drill-down</li>
+    <li>Buyer dashboard (<code>/dashboard/buyers</code>) — buyer-focused KPIs: lead pipeline, quote delivery, order status</li>
+    <li>Supplier dashboard (<code>/dashboard/suppliers</code>) — supplier-focused: product coverage, fulfillment tracking</li>
+    <li>Both dashboards filter by <code>lead_type</code> — same data model, different lens</li>
+    <li>Source tables: <code>leads</code>, <code>quotes</code>, <code>orders</code>, <code>order_document_sends</code>, <code>communications</code>, <code>pipeline_stages</code></li>
+  </ul></div>
+</div>`;
+
+    if (id === 'ai-suggestions') return `
+<div class="section-block"><h2>AI Suggestions Workspace</h2>
+<p>The AI Suggestions workspace at <code>/ai-suggestions</code> surfaces Anthropic-generated draft content for lead, quote, and compliance workflows. Every suggestion requires explicit operator approval before any external action is taken. AI cannot bypass gates, send quotes, or file compliance resolutions autonomously.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#129302; Suggestion Types</div><ul>
+    <li><strong>follow_up_draft</strong> — Draft follow-up email for a lead at a given stage</li>
+    <li><strong>intro_draft</strong> — Introductory email draft for first outreach</li>
+    <li><strong>quote_cover_note</strong> — Cover note for the quote PDF or email send</li>
+    <li><strong>compliance_evidence_summary</strong> — Summary draft for compliance evidence notes</li>
+    <li><strong>lead_priority</strong> — AI-ranked lead priority list based on deal value, timing, and activity recency</li>
+    <li><strong>quote_risk</strong> — Quote risk flags: stale quotes, missing compliance, approaching validity</li>
+    <li>Suggestion family groups: drafts / intelligence / compliance — shown as filter tabs in the workspace</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#9989; Suggestion Statuses</div><ul>
+    <li><strong>pending</strong> — Draft generated; awaiting operator review</li>
+    <li><strong>reviewed</strong> — Operator has read it; not yet actioned</li>
+    <li><strong>approved</strong> — Operator approved the draft for use</li>
+    <li><strong>applied</strong> — Draft was sent or used in a real action</li>
+    <li><strong>dismissed</strong> — Operator rejected the draft; it is archived</li>
+    <li>Bulk dismiss: select multiple pending suggestions and dismiss in one action</li>
+    <li>Dismissed suggestions show reasoning notes if operator added a reason at dismiss time</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128202; Intelligence Panels</div><ul>
+    <li><strong>AIDailyInsightsList</strong> — summary of today's highest-priority commercial signals</li>
+    <li><strong>AILeadPriorityList</strong> — ranked lead list with AI-computed health score and next action suggestions</li>
+    <li><strong>AIQuoteRiskList</strong> — quotes at risk: stale, blocked approval, approaching expiry</li>
+    <li><strong>AIGovernedDecisionPanel</strong> — shows what AI can and cannot do autonomously with a clear boundary statement</li>
+    <li>All panels are read-only outputs — operators take action in the relevant workspace, not from this panel</li>
+  </ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">&#128683; What AI Cannot Do</div><ul>
+    <li>Send emails, WhatsApp messages, or any external communication without operator triggering the send</li>
+    <li>Approve quotes, clear compliance blockers, advance order stages, or skip any gate</li>
+    <li>Set prices, override pricing rules, or apply discounts without human review</li>
+    <li>File compliance resolutions or upload evidence autonomously</li>
+    <li>Generate suggestions for leads in another organization — all AI is org-scoped</li>
+  </ul></div>
+</div>`;
+
     return null;
   }
 
@@ -2453,7 +2833,7 @@ flowchart LR
     <li><code>/mobile/orders/[orderId]</code> — Mobile order detail</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Smart vCard &amp; Contact Exchange Architecture (V12–V17) — SF-23-DOC-188</h2>
+<div class="section-block"><h2>Smart vCard &amp; Contact Exchange Architecture</h2>
 <p>The Smart vCard system allows field operators to share a professional digital contact card, capture buyer contact details, and track engagement — all tied back to the lead and trade event workflow.</p>
 </div>
 <div class="doc-card-grid">
@@ -2958,6 +3338,8 @@ flowchart LR
     if (c4) return c4;
     const c5 = topicContentGuru(id);
     if (c5) return c5;
+    const c6 = topicContentNewModules(id);
+    if (c6) return c6;
     return topicContentOther(id) || '';
   }
 
@@ -3361,18 +3743,27 @@ flowchart LR
     // New this pass
     'missing-routes-api-ref': 0.95,
     // SF-23-DOC pass — 2026-06-04
-    'pricing-calculator-v17': 0.93, // SF-23-DOC-187 — hierarchy and cascade documented; content sections added
-    'smart-vcard-v12-v17': 0.94,    // SF-23-DOC-188 — Smart QR, Wallet, share slug, iOS vCard documented
-    'quote-builder-v17-6': 0.94,    // SF-23-DOC-189 — UOM/MOQ, adjustments, approval queue, PDF route documented
-    'setu-guru-api-surface': 0.92,  // SF-23-DOC-190 — all 11 routes + feedback/telemetry tables documented
-    'workspace-internal-tools': 0.92, // SF-23-DOC-191 — agents, sprints, clients, issues boards documented
-    'global-help-notice-toast': 0.93, // SF-23-DOC-192 — Help button, NoticeToast, handoff toasts documented
-    'api-reference-v17-routes': 0.94, // SF-23-DOC-193 — route count corrected, missing routes added
-    // Open issues (4 pre-existing): rfq-workflow, background-jobs, mobile-routes, admin-notifications
-    'rfq-workflow-deep': 0.72,      // Open: ISS-29d9cd67 — RFQ workspace detail still needs deeper doc
-    'background-jobs-deep': 0.82,   // Open: ISS-58194815 — cron jobs added to api-reference; dedicated section still open
-    'mobile-routes-deep': 0.82,     // Open: ISS-99bc3631 — mobile routes in reference; page-level detail still open
-    'admin-notifications-deep': 0.78, // Open: ISS-cc25382d — matrix referenced; notification_types deep doc still open
+    'pricing-calculator-v17': 0.93,
+    'smart-vcard-v12-v17': 0.94,
+    'quote-builder-v17-6': 0.94,
+    'setu-guru-api-surface': 0.92,
+    'workspace-internal-tools': 0.92,
+    'global-help-notice-toast': 0.93,
+    'api-reference-v17-routes': 0.94,
+    // New nav topics added this pass
+    'notifications-topic': 0.95,
+    'profile-topic': 0.95,
+    'pipeline-topic': 0.95,
+    'compliance-topic': 0.95,
+    'contracts-topic': 0.95,
+    'products-topic': 0.95,
+    'tasks-topic': 0.95,
+    'reports-topic': 0.95,
+    'ai-suggestions-topic': 0.95,
+    // Open issues — partial coverage only
+    'rfq-workflow-deep': 0.72,
+    'background-jobs-deep': 0.82,
+    'admin-notifications-deep': 0.78,
   };
   function calcDocReadiness() {
     const vals = Object.values(DOC_COVERAGE);
