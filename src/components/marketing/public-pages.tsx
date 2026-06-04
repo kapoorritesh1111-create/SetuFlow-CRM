@@ -65,6 +65,18 @@ function GuruAvatar({ size = 44 }: { size?: number }) {
   return <Image src="/logos/setu-guru-icon.svg" alt="Setu Guru" width={size} height={size} className="shrink-0 rounded-2xl object-contain" />;
 }
 
+function GuruBrand({ dark = false }: { dark?: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <GuruAvatar size={48} />
+      <div>
+        <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${dark ? 'text-[#7de2d2]' : 'text-[#108477]'}`}>Setu Guru AI</p>
+        <p className={`mt-1 text-sm font-semibold ${dark ? 'text-white' : 'text-slate-950'}`}>Native trade workflow assistant</p>
+      </div>
+    </div>
+  );
+}
+
 function Eyebrow({ children, light = false }: { children: ReactNode; light?: boolean }) {
   return <p className={`text-[11px] font-bold uppercase tracking-[0.24em] ${light ? 'text-[#7de2d2]' : 'text-[#108477]'}`}>{children}</p>;
 }
@@ -131,18 +143,13 @@ function CTA({ title = 'See how Setu Flow maps to your trade workflow.', body = 
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_0%_50%,rgba(53,159,145,0.20),transparent_55%),radial-gradient(ellipse_at_100%_0%,rgba(12,127,255,0.15),transparent_50%)]" />
           <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="flex items-start gap-5">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#7de2d2]/12">
-                <Icon name="calendar" className="h-7 w-7 text-[#7de2d2]" />
-              </span>
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#7de2d2]/12"><Icon name="calendar" className="h-7 w-7 text-[#7de2d2]" /></span>
               <div>
                 <h2 className="text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl">{title}</h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-white/55">{body}</p>
               </div>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Btn href="/book-demo" v="primary">Book a Demo</Btn>
-              <Btn href="/platform" v="ghost">Explore Platform</Btn>
-            </div>
+            <div className="flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/platform" v="ghost">Explore Platform</Btn></div>
           </div>
         </div>
       </div>
@@ -151,62 +158,35 @@ function CTA({ title = 'See how Setu Flow maps to your trade workflow.', body = 
 }
 
 const proofScreens = [
-  {
-    src: '/marketing/dashboard-command-center.png',
-    label: 'Representative command center view',
-    title: 'Command Center',
-    body: 'Commercial leaders see lead, quote and follow-up visibility in one place so they can spot where momentum needs attention.',
-  },
-  {
-    src: '/marketing/follow-up-queue.png',
-    label: 'Product walkthrough view',
-    title: 'Follow-up Queue',
-    body: 'Sales owners see next actions, aging conversations and ownership cues before promising buyers the next step.',
-  },
-  {
-    src: '/marketing/quote-workflow.png',
-    label: 'Trade workflow view',
-    title: 'Quote Workflow',
-    body: 'Commercial teams review quote readiness, approval posture and buyer terms before sending anything forward.',
-  },
-  {
-    src: '/marketing/orders-execution.png',
-    label: 'Execution desk preview',
-    title: 'Execution Desk',
-    body: 'Operations teams see order handoff, document readiness and dispatch preparation without chasing scattered threads.',
-  },
+  { src: '/marketing/dashboard-command-center.png', label: 'Command center', title: 'Commercial command center', body: 'Leaders see lead, quote, follow-up and execution pressure in one product view.' },
+  { src: '/marketing/trade-events.png', label: 'Trade event capture', title: 'Event-ready lead intake', body: 'Trade-show contacts, source context and follow-up ownership move directly into the CRM.' },
+  { src: '/marketing/quote-workflow.png', label: 'Quote workflow', title: 'Controlled quote readiness', body: 'Quote context, terms and approval posture stay connected before anything is sent.' },
+  { src: '/marketing/orders-execution.png', label: 'Order and dispatch desk', title: 'Execution after the quote', body: 'Operations tracks handoff, document readiness and dispatch preparation without losing context.' },
+];
+
+const uspCards = [
+  { icon: 'vcard' as IconName, title: 'Native digital vCard', body: 'Capture interest from QR sharing, events and relationship-led selling without bolting on a separate vCard product.' },
+  { icon: 'document' as IconName, title: 'Document readiness built in', body: 'Documents are not an afterthought. Teams can see what is needed, missing and ready before dispatch.' },
+  { icon: 'ship' as IconName, title: 'Order dispatch workflow', body: 'Accepted quotes keep moving through order handoff, operations, documents and shipment readiness.' },
+  { icon: 'events' as IconName, title: 'Trade event workflow', body: 'Dedicated event capture turns exhibitions, buyer meetings and field conversations into owned follow-ups.' },
+  { icon: 'message' as IconName, title: 'Native Setu Guru AI', body: 'Setu Guru supports follow-ups, quote review, document gaps and prioritization inside the workflow.' },
+  { icon: 'mobile' as IconName, title: 'Field-ready mobile', body: 'Mobile views help teams capture leads and act while they are at events, buyer visits and market travel.' },
 ];
 
 const compRows: [string, string, string, string][] = [
-  ['Lead capture and qualification', 'Manual entry and scattered notes', 'Captured as generic contacts', 'Structured trade opportunity from the first conversation'],
-  ['Follow-up ownership', 'Email reminders and personal memory', 'Task records disconnected from trade context', 'Owner, next action and buyer context in one queue'],
+  ['Digital vCard lead capture', 'Usually separate from CRM', 'Often add-on or integration', 'Native vCard and QR-led capture tied to lead ownership'],
+  ['Trade event workflow', 'Manual lists after the event', 'Campaign objects need setup', 'Dedicated event intake with follow-up routing'],
   ['Quote preparation', 'Spreadsheet formulas and file versions', 'Custom objects or add-ons', 'Quote workflow built around products, terms and approvals'],
-  ['Approval control', 'Email chains and verbal confirmation', 'Workflow rules that need configuration', 'Operator-ready approval posture tied to the quote'],
-  ['Order execution', 'Separate shipment tracker', 'Deal marked closed while operations continue elsewhere', 'Execution desk for documents, handoff and dispatch readiness'],
-  ['Mobile field work', 'Photos, notes and delayed entry', 'Desktop CRM squeezed onto phone', 'Mobile-ready lead capture and follow-up workflow'],
-  ['AI assistance', 'Separate chatbot tab', 'Generic assistant or add-on', 'Setu Guru suggestions in trade workflow context, operator-approved'],
+  ['Document readiness', 'Folder chasing and email reminders', 'Attachment storage, not readiness workflow', 'Document gaps and readiness visible before handoff'],
+  ['Order dispatch', 'Separate shipment tracker', 'Deal marked closed while ops work elsewhere', 'Execution desk for order handoff, documents and dispatch readiness'],
+  ['AI assistance', 'Separate chatbot tab', 'Generic assistant or add-on', 'Setu Guru suggestions in trade context, operator-approved'],
+  ['Mobile field work', 'Photos, notes and delayed entry', 'Desktop CRM squeezed onto phone', 'Mobile-ready event capture and follow-up workflow'],
 ];
 
 const pricingPlans = [
-  {
-    name: 'Starter',
-    tagline: 'Best for small trade teams moving beyond spreadsheets',
-    focus: 'Lead capture, follow-up discipline and quote workflow foundations.',
-    features: ['Lead and account workspace', 'Follow-up queue and task ownership', 'Quote workflow preview', 'Mobile-ready lead capture', 'Setu Guru follow-up assistance'],
-  },
-  {
-    name: 'Growth',
-    tagline: 'Best for growing teams managing quotes and execution together',
-    focus: 'Connected commercial and operations workflow with stronger controls.',
-    features: ['Everything in Starter', 'Quote review and approval readiness', 'Order execution desk', 'Document readiness workflow', 'Setu Guru quote and document insights'],
-    featured: true,
-  },
-  {
-    name: 'Enterprise',
-    tagline: 'Best for multi-team trade operations',
-    focus: 'Workflow mapping, permissions and rollout support for larger teams.',
-    features: ['Everything in Growth', 'Multi-team workflow design', 'Role and permission alignment', 'Executive review cadence', 'Priority implementation support'],
-  },
+  { name: 'Starter', tagline: 'Best for small trade teams moving beyond spreadsheets', focus: 'Lead capture, vCard, event intake and follow-up discipline.', features: ['Lead and account workspace', 'Native digital vCard', 'Trade event capture', 'Follow-up queue and task ownership', 'Setu Guru follow-up assistance'] },
+  { name: 'Growth', tagline: 'Best for growing teams managing quote-to-dispatch work', focus: 'Connected commercial and operations workflow with stronger controls.', features: ['Everything in Starter', 'Quote review and approval readiness', 'Document readiness workflow', 'Order execution and dispatch desk', 'Setu Guru quote and document insights'], featured: true },
+  { name: 'Enterprise', tagline: 'Best for multi-team trade operations', focus: 'Workflow mapping, permissions and rollout support for larger teams.', features: ['Everything in Growth', 'Multi-team workflow design', 'Role and permission alignment', 'Executive review cadence', 'Priority implementation support'] },
 ];
 
 function PricingSection() {
@@ -223,14 +203,8 @@ function PricingSection() {
               <p className={`mt-3 text-sm leading-6 ${plan.featured ? 'text-white/55' : 'text-slate-500'}`}>{plan.focus}</p>
             </div>
             <div className="flex flex-1 flex-col p-7 pt-5">
-              <ul className="space-y-2.5">
-                {plan.features.map((f) => <li key={f} className="flex items-start gap-3 text-[13px] leading-5 text-slate-700"><Check size="sm" />{f}</li>)}
-              </ul>
-              <div className="mt-auto pt-6">
-                <Link href="/book-demo" className={`flex w-full items-center justify-center rounded-2xl py-3.5 text-sm font-bold transition hover:-translate-y-0.5 ${plan.featured ? 'bg-[#059f90] text-white shadow-[0_12px_32px_rgba(5,159,144,0.28)] hover:bg-[#07897d]' : 'bg-[#f0f6fa] text-[#061c2e] hover:bg-[#e3edf6]'}`}>
-                  Book a pricing walkthrough →
-                </Link>
-              </div>
+              <ul className="space-y-2.5">{plan.features.map((f) => <li key={f} className="flex items-start gap-3 text-[13px] leading-5 text-slate-700"><Check size="sm" />{f}</li>)}</ul>
+              <div className="mt-auto pt-6"><Link href="/book-demo" className={`flex w-full items-center justify-center rounded-2xl py-3.5 text-sm font-bold transition hover:-translate-y-0.5 ${plan.featured ? 'bg-[#059f90] text-white shadow-[0_12px_32px_rgba(5,159,144,0.28)] hover:bg-[#07897d]' : 'bg-[#f0f6fa] text-[#061c2e] hover:bg-[#e3edf6]'}`}>Book a pricing walkthrough →</Link></div>
             </div>
           </div>
         ))}
@@ -244,47 +218,22 @@ function ComparisonSection({ compact = false }: { compact?: boolean }) {
   return (
     <section id="compare" className="bg-[#061c2e] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-7xl">
-        <SectionTitle light eyebrow="Compare" title={compact ? 'Generic CRMs track deals. Setu Flow runs trade execution.' : 'Where generic CRMs stop, trade execution still has work to do.'} body={compact ? 'See why import-export teams need more than a basic pipeline.' : 'Setu Flow connects the operational steps that usually sit outside the CRM: quote control, documents, order handoff and shipment readiness.'} />
+        <SectionTitle light eyebrow="Compare" title={compact ? 'What Setu Flow has natively that most tools do not.' : 'Why Setu Flow is stronger than Excel, email and generic CRM.'} body={compact ? 'Built-in vCard capture, trade event workflow, document readiness, dispatch execution and native AI support.' : 'Generic tools can track activity. Setu Flow connects the work trade teams actually run after the first conversation.'} />
         <div className="mt-10 overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03]">
           <div className="overflow-x-auto">
             <table className="min-w-[760px] w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-bold uppercase tracking-[0.20em]">
-                  <th className="px-5 py-4 text-white/35">Capability</th>
-                  <th className="px-5 py-4 text-white/35">Excel + Email</th>
-                  <th className="px-5 py-4 text-white/35">Generic CRM</th>
-                  <th className="bg-[#7de2d2]/[0.06] px-5 py-4 text-[#7de2d2]">Setu Flow</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(compact ? compRows.slice(0, 4) : compRows).map((row) => (
-                  <tr key={row[0]} className="border-b border-white/[0.06] transition hover:bg-white/[0.04]">
-                    <td className="px-5 py-3.5 font-medium text-white/82">{row[0]}</td>
-                    <td className="px-5 py-3.5 text-white/40">{row[1]}</td>
-                    <td className="px-5 py-3.5 text-white/40">{row[2]}</td>
-                    <td className="bg-[#7de2d2]/[0.04] px-5 py-3.5 font-semibold text-[#b8f5ef]">{row[3]}</td>
-                  </tr>
-                ))}
-              </tbody>
+              <thead><tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-bold uppercase tracking-[0.20em]"><th className="px-5 py-4 text-white/35">Capability</th><th className="px-5 py-4 text-white/35">Excel + Email</th><th className="px-5 py-4 text-white/35">Generic CRM</th><th className="bg-[#7de2d2]/[0.06] px-5 py-4 text-[#7de2d2]">Setu Flow</th></tr></thead>
+              <tbody>{(compact ? compRows.slice(0, 5) : compRows).map((row) => <tr key={row[0]} className="border-b border-white/[0.06] transition hover:bg-white/[0.04]"><td className="px-5 py-3.5 font-medium text-white/82">{row[0]}</td><td className="px-5 py-3.5 text-white/40">{row[1]}</td><td className="px-5 py-3.5 text-white/40">{row[2]}</td><td className="bg-[#7de2d2]/[0.04] px-5 py-3.5 font-semibold text-[#b8f5ef]">{row[3]}</td></tr>)}</tbody>
             </table>
           </div>
         </div>
-        <div className="mt-8 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-center">
-          <Btn href="/book-demo" v="primary">Book a Demo</Btn>
-          {compact && <Btn href="/compare" v="ghost">Open full comparison</Btn>}
-        </div>
+        <div className="mt-8 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-center"><Btn href="/book-demo" v="primary">Book a Demo</Btn>{compact && <Btn href="/compare" v="ghost">Open full comparison</Btn>}</div>
       </div>
     </section>
   );
 }
 
 export function HomeMarketingPage() {
-  const outcomes = [
-    { icon: 'lead' as IconName, title: 'Capture every opportunity', body: 'Bring trade-show, referral and inbound leads into a clean commercial workflow from the first touch.' },
-    { icon: 'quote' as IconName, title: 'Control every quote', body: 'Keep pricing, terms, approval readiness and buyer communication aligned before a quote goes out.' },
-    { icon: 'order' as IconName, title: 'Execute every order', body: 'Move from accepted quote to documents, handoff and shipment readiness without losing context.' },
-  ];
-
   return (
     <PageShell>
       <section className="relative overflow-hidden bg-[#061c2e] px-4 pt-14 pb-10 text-white sm:px-6 lg:px-8 lg:pt-20">
@@ -294,12 +243,9 @@ export function HomeMarketingPage() {
           <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-14">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#7de2d2]/25 bg-[#7de2d2]/8 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-[#7de2d2]">Trade Execution CRM</div>
-              <h1 className="mt-5 text-[2.65rem] font-semibold leading-[0.98] tracking-[-0.055em] sm:text-[3.35rem] lg:text-[4.35rem]">Run your import-export workflow from first contact to final shipment.</h1>
-              <p className="mt-5 max-w-xl text-base leading-7 text-white/64">Setu Flow brings lead capture, quote control, approvals, documents, orders, and shipment readiness into one connected trade execution CRM.</p>
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <Btn href="/book-demo" v="primary">Book a Demo</Btn>
-                <Btn href="/platform" v="ghost">Explore Platform</Btn>
-              </div>
+              <h1 className="mt-5 text-[2.65rem] font-semibold leading-[0.98] tracking-[-0.055em] sm:text-[3.35rem] lg:text-[4.35rem]">Run your import-export workflow from first contact to final dispatch.</h1>
+              <p className="mt-5 max-w-xl text-base leading-7 text-white/64">Setu Flow brings digital vCard capture, trade events, lead follow-up, quote control, document readiness, order dispatch and Setu Guru AI into one connected trade execution CRM.</p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/platform" v="ghost">Explore Platform</Btn></div>
             </div>
             <div className="relative">
               <div className="absolute -inset-6 bg-[radial-gradient(ellipse_at_55%_40%,rgba(53,159,145,0.14),transparent_55%)] blur-2xl" />
@@ -313,56 +259,45 @@ export function HomeMarketingPage() {
       </section>
 
       <section className="bg-white px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
-          {outcomes.map(({ icon, title, body }) => (
-            <article key={title} className="rounded-[1.5rem] border border-[#1F487C]/10 bg-gradient-to-b from-white to-[#f8fbff] p-6 shadow-[0_14px_44px_rgba(31,72,124,0.07)]">
-              <Orb icon={icon} />
-              <h2 className="mt-4 text-xl font-semibold tracking-[-0.03em] text-slate-950">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>
-            </article>
-          ))}
+        <SectionTitle eyebrow="Why Setu Flow" title="The native trade features generic CRMs miss." body="Setu Flow is not only a pipeline. It is built for the specific moments import-export teams handle every day." />
+        <div className="mx-auto mt-9 grid max-w-7xl gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {uspCards.map(({ icon, title, body }) => <article key={title} className="rounded-[1.5rem] border border-[#1F487C]/10 bg-gradient-to-b from-white to-[#f8fbff] p-6 shadow-[0_14px_44px_rgba(31,72,124,0.07)]"><Orb icon={icon} /><h2 className="mt-4 text-xl font-semibold tracking-[-0.03em] text-slate-950">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{body}</p></article>)}
         </div>
       </section>
 
-      <section className="bg-[#f4f9fc] px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[1.75rem] border border-[#1F487C]/10 bg-white p-5 shadow-[0_16px_50px_rgba(31,72,124,0.07)]">
-          <div className="grid gap-3 text-center md:grid-cols-5">
-            {['Capture', 'Qualify', 'Quote', 'Approve', 'Execute'].map((step, index) => (
-              <div key={step} className="rounded-2xl bg-[#f4f9fc] px-4 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.20em] text-[#108477]">0{index + 1}</p>
-                <p className="mt-1 text-sm font-bold text-slate-950">{step}</p>
-              </div>
-            ))}
+      <section className="bg-[#f4f9fc] px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-[1.75rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_16px_50px_rgba(31,72,124,0.07)]">
+          <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div>
+              <Eyebrow>Workflow</Eyebrow>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950">From event lead to dispatch readiness.</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500">The workflow is more than five generic steps. Setu Flow connects acquisition, commercial control and operations execution.</p>
+            </div>
+            <div className="grid gap-3 text-center sm:grid-cols-3 lg:grid-cols-6">
+              {['vCard', 'Event', 'Lead', 'Quote', 'Documents', 'Dispatch'].map((step, index) => <div key={step} className="rounded-2xl bg-[#f4f9fc] px-3 py-4"><p className="text-[10px] font-bold uppercase tracking-[0.20em] text-[#108477]">0{index + 1}</p><p className="mt-1 text-sm font-bold text-slate-950">{step}</p></div>)}
+            </div>
           </div>
         </div>
       </section>
 
       <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
-        <SectionTitle eyebrow="Product proof" title="A clearer operating rhythm for trade teams." body="The homepage stays focused on the views executives and operators need to understand the platform quickly." />
+        <SectionTitle eyebrow="Product proof" title="A visual product tour of Setu Flow's strongest workflows." body="Trade events, commercial control, document readiness, dispatch and Setu Guru support now get the space they deserve." />
         <div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2">
           {proofScreens.map((s) => <ScreenShot key={s.src} src={s.src} label={s.label} title={s.title} body={s.body} />)}
         </div>
         <div className="mt-8 text-center"><Btn href="/platform" v="secondary">See full platform tour</Btn></div>
       </section>
 
-      <ComparisonSection compact />
-
-      <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-10 rounded-[2rem] border border-[#1F487C]/10 bg-[#f4f9fc] p-8 shadow-[0_18px_55px_rgba(31,72,124,0.08)] lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
-          <div className="flex items-center gap-4">
-            <GuruAvatar size={72} />
-            <div>
-              <Eyebrow>Setu Guru AI</Eyebrow>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950">Operator-approved AI for trade workflows.</h2>
-            </div>
-          </div>
-          <div>
-            <p className="text-base leading-7 text-slate-600">Setu Guru helps teams summarize quote status, identify document gaps, draft follow-ups, and review trade workflows — always operator-approved.</p>
-            <div className="mt-5"><Btn href="/setu-guru-ai" v="dark">Explore Setu Guru</Btn></div>
+      <section className="bg-[#f4f9fc] px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-[#1F487C]/10 bg-white p-8 shadow-[0_18px_55px_rgba(31,72,124,0.08)] lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div><GuruBrand /><h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-slate-950">AI that supports every stage, not a separate chatbot.</h2><p className="mt-3 text-base leading-7 text-slate-600">Setu Guru helps summarize lead context, draft follow-ups, review quote status, identify document gaps, prioritize aging work and prepare operator-approved next actions.</p><div className="mt-5"><Btn href="/setu-guru-ai" v="dark">Explore Setu Guru</Btn></div></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {['Capture lead context from events and vCards', 'Draft buyer and supplier follow-ups', 'Review quote readiness and approval posture', 'Flag document gaps before dispatch'].map((item) => <div key={item} className="rounded-2xl bg-[#f4f9fc] p-4 text-sm font-semibold leading-6 text-slate-700"><Check size="sm" /> <span className="ml-2">{item}</span></div>)}
           </div>
         </div>
       </section>
 
+      <ComparisonSection compact />
       <CTA />
     </PageShell>
   );
@@ -370,119 +305,41 @@ export function HomeMarketingPage() {
 
 export function PlatformMarketingPage() {
   const modules = [
-    { src: '/marketing/dashboard-command-center.png', label: 'Command Center', title: 'Executive visibility across trade work', body: 'A representative product view for leaders tracking leads, quotes, ownership and follow-up pressure.' },
+    { src: '/marketing/dashboard-command-center.png', label: 'Command Center', title: 'Executive visibility across trade work', body: 'A representative product view for leaders tracking leads, quotes, ownership and execution pressure.' },
+    { src: '/marketing/trade-events.png', label: 'Trade Events', title: 'Dedicated event capture', body: 'A purpose-built way to turn exhibitions, buyer meetings and field conversations into owned opportunities.' },
     { src: '/marketing/follow-up-queue.png', label: 'Follow-up Queue', title: 'Next actions stay visible', body: 'Commercial owners see who needs attention and what should happen next.' },
     { src: '/marketing/quote-workflow.png', label: 'Quote Workflow', title: 'Quotes move through controlled review', body: 'Prepare quotes with the right context, terms and approval posture.' },
-    { src: '/marketing/orders-execution.png', label: 'Order Execution', title: 'Accepted quotes become operational work', body: 'Execution teams track handoff, documents and dispatch readiness.' },
-    { src: '/marketing/pipeline-commercial-view.png', label: 'Commercial Pipeline', title: 'Pipeline work by stage and ownership', body: 'A visual workflow for buyer and supplier opportunities across the commercial team.' },
+    { src: '/marketing/orders-execution.png', label: 'Order Dispatch', title: 'Accepted quotes become operational work', body: 'Execution teams track handoff, documents and dispatch readiness.' },
     { src: '/marketing/mobile-dashboard.png', label: 'Mobile Workflow', title: 'Field-ready access', body: 'Mobile-ready views keep trade-show and travel work moving.' },
   ];
 
-  return (
-    <PageShell>
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <div>
-            <Eyebrow>Platform</Eyebrow>
-            <h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">One platform. Every stage of the trade.</h1>
-            <p className="mt-5 max-w-xl text-lg leading-7 text-slate-500">A visual product tour of lead capture, follow-up queues, quote workflow, approval readiness, order execution, mobile work and Setu Guru AI.</p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/compare" v="secondary">Compare features</Btn></div>
-          </div>
-          <div className="overflow-hidden rounded-[2rem] border border-[#1F487C]/10 bg-white p-2 shadow-[0_22px_70px_rgba(31,72,124,0.12)]">
-            <Image src="/marketing/dashboard-command-center.png" alt="Setu Flow platform command center" width={1600} height={900} className="w-full rounded-[1.55rem] object-cover object-top" />
-          </div>
-        </div>
-      </section>
-      <section className="px-4 py-14 sm:px-6 lg:px-8">
-        <SectionTitle eyebrow="Product tour" title="Built around the real sequence of trade execution." />
-        <div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((s) => <ScreenShot key={s.src} src={s.src} label={s.label} title={s.title} body={s.body} />)}
-        </div>
-      </section>
-      <CTA />
-    </PageShell>
-  );
+  return <PageShell><section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center"><div><Eyebrow>Platform</Eyebrow><h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">One platform for vCard, events, quotes, documents and dispatch.</h1><p className="mt-5 max-w-xl text-lg leading-7 text-slate-500">A visual product tour of the workflows that make Setu Flow different from a generic CRM.</p><div className="mt-7 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/compare" v="secondary">Compare features</Btn></div></div><div className="overflow-hidden rounded-[2rem] border border-[#1F487C]/10 bg-white p-2 shadow-[0_22px_70px_rgba(31,72,124,0.12)]"><Image src="/marketing/dashboard-command-center.png" alt="Setu Flow platform command center" width={1600} height={900} className="w-full rounded-[1.55rem] object-cover object-top" /></div></div></section><section className="px-4 py-14 sm:px-6 lg:px-8"><SectionTitle eyebrow="Product tour" title="Built around the real sequence of trade execution." /><div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">{modules.map((s) => <ScreenShot key={s.src} src={s.src} label={s.label} title={s.title} body={s.body} />)}</div></section><CTA /></PageShell>;
 }
 
 export function SolutionsMarketingPage() {
   const solutions = [
     { icon: 'globe' as IconName, title: 'Exporters', body: 'Control market follow-ups, buyer qualification, pricing, documentation and shipment readiness from one connected workflow.' },
     { icon: 'package' as IconName, title: 'Importers', body: 'Track suppliers, quotes, handoffs and operational tasks without losing context across inboxes and spreadsheets.' },
-    { icon: 'ship' as IconName, title: 'Trading companies', body: 'Run buyer and supplier motion together, with clear ownership across commercial and operations teams.' },
-    { icon: 'search' as IconName, title: 'Sourcing teams', body: 'Capture trade-show contacts quickly, prioritize follow-ups and move qualified opportunities into quote workflow.' },
+    { icon: 'events' as IconName, title: 'Trade event teams', body: 'Capture exhibition and buyer-meeting leads with source context, QR sharing and owned next actions.' },
+    { icon: 'vcard' as IconName, title: 'Commercial teams using vCard', body: 'Turn digital profile sharing into structured lead capture instead of disconnected contact exchange.' },
     { icon: 'quote' as IconName, title: 'Commercial teams', body: 'Bring quote preparation, approvals, buyer communication and follow-up discipline into one rhythm.' },
-    { icon: 'document' as IconName, title: 'Operations teams', body: 'See the handoff from accepted quote to documents, order readiness and dispatch preparation.' },
+    { icon: 'ship' as IconName, title: 'Operations teams', body: 'See the handoff from accepted quote to documents, order readiness and dispatch preparation.' },
   ];
 
-  return (
-    <PageShell>
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <Eyebrow>Solutions</Eyebrow>
-          <h1 className="mt-4 max-w-3xl text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Built for trade teams that need execution, not just activity tracking.</h1>
-          <p className="mt-5 max-w-xl text-lg leading-7 text-slate-500">Setu Flow supports exporters, importers, trading companies, sourcing teams, commercial teams and operations teams with one connected platform.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/platform" v="secondary">Explore platform</Btn></div>
-        </div>
-      </section>
-      <section className="px-4 py-14 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {solutions.map(({ icon, title, body }) => (
-            <article key={title} className="rounded-[1.7rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_16px_50px_rgba(31,72,124,0.07)]">
-              <Orb icon={icon} />
-              <h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-500">{body}</p>
-              <Link href="/book-demo" className="mt-5 inline-flex text-sm font-bold text-[#108477]">See this workflow →</Link>
-            </article>
-          ))}
-        </div>
-      </section>
-      <CTA title="Book a solution-specific walkthrough" />
-    </PageShell>
-  );
+  return <PageShell><section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto max-w-7xl"><Eyebrow>Solutions</Eyebrow><h1 className="mt-4 max-w-3xl text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Built for trade teams that need execution, not just activity tracking.</h1><p className="mt-5 max-w-xl text-lg leading-7 text-slate-500">Setu Flow supports exporters, importers, event teams, vCard-led commercial teams and operations teams with one connected platform.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/platform" v="secondary">Explore platform</Btn></div></div></section><section className="px-4 py-14 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">{solutions.map(({ icon, title, body }) => <article key={title} className="rounded-[1.7rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_16px_50px_rgba(31,72,124,0.07)]"><Orb icon={icon} /><h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-500">{body}</p><Link href="/book-demo" className="mt-5 inline-flex text-sm font-bold text-[#108477]">See this workflow →</Link></article>)}</div></section><CTA title="Book a solution-specific walkthrough" /></PageShell>;
 }
 
 export function SetuGuruMarketingPage() {
   const caps = [
+    { icon: 'lead' as IconName, title: 'Lead and event context', body: 'Summarize what happened at the event or vCard touchpoint so the next action is clear.' },
     { icon: 'message' as IconName, title: 'Follow-up drafting', body: 'Draft buyer or supplier follow-ups for operator review before any message is sent.' },
     { icon: 'quote' as IconName, title: 'Quote intelligence', body: 'Summarize quote status, stale activity, approval posture and next suggested action.' },
-    { icon: 'search' as IconName, title: 'HSN research', body: 'Research product classification context and prepare suggestions for operator confirmation.' },
-    { icon: 'shield' as IconName, title: 'Risk flags', body: 'Surface gaps in documents, buyer communication or order readiness before they slow the team.' },
     { icon: 'document' as IconName, title: 'Document insights', body: 'Review what appears complete, missing or ready for operational follow-up.' },
+    { icon: 'ship' as IconName, title: 'Dispatch readiness support', body: 'Help operators see what still blocks order handoff and shipment preparation.' },
     { icon: 'chart' as IconName, title: 'Deal prioritization', body: 'Help teams focus on the accounts and quotes that need attention first.' },
   ];
 
-  return (
-    <PageShell>
-      <section className="relative overflow-hidden bg-[#061c2e] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_10%_0%,rgba(53,159,145,0.24),transparent_48%)]" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
-          <div>
-            <div className="mb-6 flex items-center gap-3"><GuruAvatar size={56} /><p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7de2d2]">Setu Guru AI</p></div>
-            <h1 className="text-5xl font-semibold leading-[0.97] tracking-[-0.055em] sm:text-6xl">AI assistance for trade execution, always operator-approved.</h1>
-            <p className="mt-6 max-w-xl text-lg leading-7 text-white/58">Setu Guru helps teams summarize quote status, identify document gaps, draft follow-ups and review trade workflows. It suggests; your team approves.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">See Guru in a walkthrough</Btn><Btn href="/platform" v="ghost">Explore platform</Btn></div>
-          </div>
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur">
-            <div className="flex items-center gap-3 border-b border-white/8 pb-4"><GuruAvatar size={44} /><div><p className="text-sm font-bold">Setu Guru</p><p className="mt-0.5 text-[11px] text-white/38">Suggestive AI · Operator-approved</p></div></div>
-            <div className="mt-4 rounded-2xl bg-white/[0.04] p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-white/30">You</p>
-              <p className="mt-1 text-sm text-white/72">Which quotes need attention this week?</p>
-              <p className="mt-2.5 text-xs font-bold uppercase tracking-wider text-[#7de2d2]">Guru</p>
-              <p className="mt-1 text-sm leading-6 text-white/60">I can summarize quote status, identify aging follow-ups and prepare a buyer-ready note for your review before it is sent.</p>
-              <div className="mt-3 flex flex-wrap gap-2"><button className="rounded-full border border-[#7de2d2]/28 bg-[#7de2d2]/8 px-3 py-1.5 text-[11px] font-bold text-[#7de2d2]">Draft follow-up</button><button className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-white/45">Review quote status</button></div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="px-4 py-16 sm:px-6 lg:px-8">
-        <SectionTitle eyebrow="Capabilities" title="Practical AI where trade teams already work." body="Focused assistance across follow-ups, quotes, HSN research, risk signals, documents and prioritization." />
-        <div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {caps.map(({ icon, title, body }) => <article key={title} className="rounded-[1.7rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_16px_50px_rgba(31,72,124,0.07)]"><Orb icon={icon} /><h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-500">{body}</p></article>)}
-        </div>
-      </section>
-      <CTA title="Experience Setu Guru in your trade workflow" />
-    </PageShell>
-  );
+  return <PageShell><section className="relative overflow-hidden bg-[#061c2e] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-24"><div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_10%_0%,rgba(53,159,145,0.24),transparent_48%)]" /><div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center"><div><div className="mb-6"><GuruBrand dark /></div><h1 className="text-5xl font-semibold leading-[0.97] tracking-[-0.055em] sm:text-6xl">Native AI for the full trade workflow, always operator-approved.</h1><p className="mt-6 max-w-xl text-lg leading-7 text-white/58">Setu Guru supports lead capture, trade events, quote review, document gaps, dispatch readiness and follow-ups. It suggests; your team approves.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">See Guru in a walkthrough</Btn><Btn href="/platform" v="ghost">Explore platform</Btn></div></div><div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur"><div className="flex items-center gap-3 border-b border-white/8 pb-4"><GuruAvatar size={44} /><div><p className="text-sm font-bold">Setu Guru</p><p className="mt-0.5 text-[11px] text-white/38">Suggestive AI · Operator-approved</p></div></div><div className="mt-4 space-y-3">{['Which event leads need a follow-up today?', 'What is missing before this order is dispatch-ready?', 'Draft a buyer update from the quote status.', 'Summarize document gaps for operations.'].map((q) => <div key={q} className="rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-white/66">{q}</div>)}</div></div></div></section><section className="px-4 py-16 sm:px-6 lg:px-8"><SectionTitle eyebrow="Capabilities" title="Practical AI where trade teams already work." body="Focused assistance across event leads, follow-ups, quotes, documents, dispatch and prioritization." /><div className="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 lg:grid-cols-3">{caps.map(({ icon, title, body }) => <article key={title} className="rounded-[1.7rem] border border-[#1F487C]/10 bg-white p-6 shadow-[0_16px_50px_rgba(31,72,124,0.07)]"><Orb icon={icon} /><h3 className="mt-5 text-xl font-semibold tracking-[-0.025em] text-slate-950">{title}</h3><p className="mt-3 text-sm leading-7 text-slate-500">{body}</p></article>)}</div></section><CTA title="Experience Setu Guru across your trade workflow" /></PageShell>;
 }
 
 export function MobileMarketingPage() {
@@ -491,84 +348,17 @@ export function MobileMarketingPage() {
     { src: '/marketing/mobile-leads.png', alt: 'Mobile leads', cap: 'Leads' },
     { src: '/marketing/mobile-quick-lead.png', alt: 'Mobile quick lead', cap: 'Quick lead' },
   ];
-
-  return (
-    <PageShell>
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <div>
-            <Eyebrow>Field Mobile</Eyebrow>
-            <h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Mobile-ready trade workflows for teams in the field.</h1>
-            <p className="mt-5 max-w-xl text-lg leading-7 text-slate-500">Capture leads, review next actions and keep momentum moving from trade shows, buyer meetings and travel days.</p>
-            <div className="mt-6 space-y-2.5">
-              {['Mobile dashboard for priority work', 'Lead views designed for field follow-up', 'Quick lead capture when conversations happen', 'Setu Guru support from the trade workflow'].map((t) => <div key={t} className="flex items-center gap-3 text-[13px] font-medium text-slate-600"><Check size="sm" />{t}</div>)}
-            </div>
-            <div className="mt-7"><Btn href="/book-demo" v="primary">Book a Demo</Btn></div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {shots.map(({ src, alt, cap }) => <div key={src} className="rounded-[1.5rem] border border-[#1F487C]/10 bg-[#061c2e] p-1.5 shadow-[0_16px_50px_rgba(6,28,46,0.16)]"><Image src={src} alt={alt} width={425} height={907} className="w-full rounded-[1.1rem]" /><p className="py-2 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#7de2d2]/60">{cap}</p></div>)}
-          </div>
-        </div>
-      </section>
-      <CTA />
-    </PageShell>
-  );
+  return <PageShell><section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center"><div><Eyebrow>Field Mobile</Eyebrow><h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Mobile-ready trade workflows for teams in the field.</h1><p className="mt-5 max-w-xl text-lg leading-7 text-slate-500">Capture leads, review next actions and keep momentum moving from trade shows, buyer meetings and travel days.</p><div className="mt-6 space-y-2.5">{['Mobile dashboard for priority work', 'Lead views designed for field follow-up', 'Quick lead capture when conversations happen', 'Setu Guru support from the trade workflow'].map((t) => <div key={t} className="flex items-center gap-3 text-[13px] font-medium text-slate-600"><Check size="sm" />{t}</div>)}</div><div className="mt-7"><Btn href="/book-demo" v="primary">Book a Demo</Btn></div></div><div className="grid grid-cols-3 gap-3">{shots.map(({ src, alt, cap }) => <div key={src} className="rounded-[1.5rem] border border-[#1F487C]/10 bg-[#061c2e] p-1.5 shadow-[0_16px_50px_rgba(6,28,46,0.16)]"><Image src={src} alt={alt} width={425} height={907} className="w-full rounded-[1.1rem]" /><p className="py-2 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#7de2d2]/60">{cap}</p></div>)}</div></div></section><CTA /></PageShell>;
 }
 
 export function PricingMarketingPage() {
-  return (
-    <PageShell>
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-4xl text-center">
-          <Eyebrow>Pricing</Eyebrow>
-          <h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Pricing starts with the workflow you need to run.</h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg leading-7 text-slate-500">Choose from Starter, Growth and Enterprise paths. The right fit depends on team size, quote complexity, execution workflow and rollout support.</p>
-        </div>
-      </section>
-      <PricingSection />
-      <CTA title="Book a pricing walkthrough" body="We will map the plan to your trade workflow, team structure and rollout priorities." />
-    </PageShell>
-  );
+  return <PageShell><section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto max-w-4xl text-center"><Eyebrow>Pricing</Eyebrow><h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Pricing starts with the workflow you need to run.</h1><p className="mx-auto mt-5 max-w-xl text-lg leading-7 text-slate-500">Choose from Starter, Growth and Enterprise paths. The right fit depends on team size, quote complexity, execution workflow and rollout support.</p></div></section><PricingSection /><CTA title="Book a pricing walkthrough" body="We will map the plan to your trade workflow, team structure and rollout priorities." /></PageShell>;
 }
 
 export function CompareMarketingPage() {
-  return (
-    <PageShell>
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <div>
-            <Eyebrow>Compare</Eyebrow>
-            <h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Generic CRMs track deals. Setu Flow runs trade execution.</h1>
-            <p className="mt-5 text-lg leading-7 text-slate-500">See how Setu Flow compares to Excel, email and generic CRM workflows when quotes, approvals, documents and execution matter.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/pricing" v="secondary">Pricing walkthrough</Btn></div>
-          </div>
-          <div className="overflow-hidden rounded-[2rem] border border-[#1F487C]/10 bg-white p-2 shadow-[0_22px_70px_rgba(31,72,124,0.12)]"><Image src="/marketing/quote-workflow.png" alt="Setu Flow quote workflow" width={1600} height={900} className="w-full rounded-[1.55rem] object-cover object-top" /></div>
-        </div>
-      </section>
-      <ComparisonSection />
-      <CTA />
-    </PageShell>
-  );
+  return <PageShell><section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center"><div><Eyebrow>Compare</Eyebrow><h1 className="mt-4 text-5xl font-semibold leading-[0.97] tracking-[-0.055em] text-slate-950 sm:text-6xl">Generic CRMs track deals. Setu Flow runs trade execution.</h1><p className="mt-5 text-lg leading-7 text-slate-500">See how Setu Flow compares when vCard capture, trade events, quote control, documents, dispatch and native AI matter.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Btn href="/book-demo" v="primary">Book a Demo</Btn><Btn href="/pricing" v="secondary">Pricing walkthrough</Btn></div></div><div className="overflow-hidden rounded-[2rem] border border-[#1F487C]/10 bg-white p-2 shadow-[0_22px_70px_rgba(31,72,124,0.12)]"><Image src="/marketing/quote-workflow.png" alt="Setu Flow quote workflow" width={1600} height={900} className="w-full rounded-[1.55rem] object-cover object-top" /></div></div></section><ComparisonSection /><CTA /></PageShell>;
 }
 
 export function BookDemoMarketingPage() {
-  return (
-    <PageShell>
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#1F487C]/10 bg-white shadow-[0_28px_80px_rgba(31,72,124,0.10)] lg:grid lg:grid-cols-[0.72fr_1.28fr]">
-          <aside className="border-b border-[#1F487C]/10 bg-[#f4f9fc] p-8 lg:border-b-0 lg:border-r">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#108477] text-white"><Icon name="calendar" className="h-7 w-7" /></span>
-            <h2 className="mt-6 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Setu Flow Product Walkthrough</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-400">30 minutes · Web conferencing</p>
-            <p className="mt-5 text-sm leading-7 text-slate-500">We map the walkthrough around your trade workflow — lead capture, quote control, approvals, execution, mobile work and Setu Guru AI.</p>
-            <ul className="mt-5 space-y-2.5">
-              {['Your current workflow and key friction points', 'Visual product tour of each major stage', 'Setu Guru AI and operator approval model', 'Rollout path and pricing fit for your team'].map((t) => <li key={t} className="flex items-start gap-3 text-sm text-slate-600"><Check size="sm" />{t}</li>)}
-            </ul>
-            <div className="mt-7 overflow-hidden rounded-[1.2rem] border border-[#1F487C]/10 bg-white"><Image src="/marketing/dashboard-command-center.png" alt="Setu Flow product walkthrough" width={900} height={520} className="h-40 w-full object-cover object-top" /><div className="p-4"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Walkthrough promise</p><p className="mt-1.5 text-xs leading-5 text-slate-500">A focused product preview tied to your team’s trade workflow.</p></div></div>
-          </aside>
-          <div className="p-6 sm:p-8"><BookDemoForm /></div>
-        </div>
-      </section>
-    </PageShell>
-  );
+  return <PageShell><section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f9fc_100%)] px-4 py-12 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#1F487C]/10 bg-white shadow-[0_28px_80px_rgba(31,72,124,0.10)] lg:grid lg:grid-cols-[0.72fr_1.28fr]"><aside className="border-b border-[#1F487C]/10 bg-[#f4f9fc] p-8 lg:border-b-0 lg:border-r"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#108477] text-white"><Icon name="calendar" className="h-7 w-7" /></span><h2 className="mt-6 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Setu Flow Product Walkthrough</h2><p className="mt-1 text-sm font-semibold text-slate-400">30 minutes · Web conferencing</p><p className="mt-5 text-sm leading-7 text-slate-500">We map the walkthrough around your trade workflow - vCard, trade events, lead capture, quote control, documents, dispatch, mobile work and Setu Guru AI.</p><ul className="mt-5 space-y-2.5">{['Your current workflow and key friction points', 'Visual product tour of each major stage', 'Setu Guru AI and operator approval model', 'Rollout path and pricing fit for your team'].map((t) => <li key={t} className="flex items-start gap-3 text-sm text-slate-600"><Check size="sm" />{t}</li>)}</ul><div className="mt-7 overflow-hidden rounded-[1.2rem] border border-[#1F487C]/10 bg-white"><Image src="/marketing/dashboard-command-center.png" alt="Setu Flow product walkthrough" width={900} height={520} className="h-40 w-full object-cover object-top" /><div className="p-4"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Walkthrough promise</p><p className="mt-1.5 text-xs leading-5 text-slate-500">A focused product preview tied to your team’s trade workflow.</p></div></div></aside><div className="p-6 sm:p-8"><BookDemoForm /></div></div></section></PageShell>;
 }
