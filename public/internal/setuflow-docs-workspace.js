@@ -12,7 +12,7 @@ const Docs = (() => {
     { id: 'workflows',        group: 'Business Workflows', icon: '\u21c4',   title: 'Commercial Workflows', tag: 'Workflows',     summary: 'Full commercial lifecycle: Lead \u2192 Follow-up \u2192 Quote \u2192 Approval & Send \u2192 Order Execution \u2192 Closeout.',    accent: '#0d9488' },
     { id: 'diagrams',         group: 'Business Workflows', icon: '\u25c7',   title: 'Flow Diagrams',        tag: 'Diagrams',      summary: 'Mermaid flowcharts, swimlane diagrams, and slide-ready simplified flow diagrams.',                                        accent: '#7c3aed' },
     { id: 'pipeline',         group: 'Business Workflows', icon: '\u25ec',   title: 'Pipeline',             tag: 'Pipeline',      summary: 'Kanban board, swimlane view, forecast view, card density controls, stage-move gating, AI strip, and buyer/supplier filters.', accent: '#2563eb' },
-    { id: 'documents',        group: 'Business Workflows', icon: '\u25a4',   title: 'Documents',            tag: 'Documents',     summary: 'Document control desk: file review, expiry posture, version visibility, compliance evidence, and document gate management.', accent: '#7c3aed' },
+    { id: 'documents',        group: 'Business Workflows', icon: '\u25a4',   title: 'Documents',            tag: 'Documents',     summary: 'Document management system: PDF generation (native writer + puppeteer), Supabase storage buckets, versioning, tokenized preview, admin templates (terms, bank details, export declarations), and the two-source document architecture.', accent: '#7c3aed' },
     { id: 'compliance',       group: 'Business Workflows', icon: '\u2611',   title: 'Compliance',           tag: 'Compliance',    summary: 'Compliance workspace: evidence upload, waive/defer actions, bulk waive panel, document requirement rules, and quote send gate.', accent: '#059669' },
     { id: 'contracts',        group: 'Business Workflows', icon: '\u2696',   title: 'Contracts',            tag: 'Contracts',     summary: 'Contract lifecycle from draft to closeout: status progression, commercial lock, line continuity, audit trail, and search/filter.', accent: '#0d9488' },
     { id: 'trade-events',     group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
@@ -838,27 +838,133 @@ const Docs = (() => {
 
     map['documents'] = `
 <div class="section-block"><h2>Documents Workspace (/documents)</h2>
-<p>The Documents workspace is the operator desk for file review, expiry posture, version visibility, reviewer ownership, and document gate management across all active leads, quotes, and orders. Requires <code>compliance.review</code> role to advance document status.</p>
+<p>The Documents workspace is the org-wide desk for every file generated or uploaded through the commercial workflow — commercial quotes, order confirmations, invoices, packing lists, compliance evidence, and freight documents. It surfaces all documents grouped by client, with expiry posture, review status, version number, and a direct PDF link for each record.</p>
 </div>
 <div class="doc-card-grid">
-  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; What It Shows</div><ul>
-    <li>All order and compliance documents across the org</li>
-    <li>Expiry posture — documents with <code>expires_at</code> approaching or past</li>
-    <li>Version visibility — multiple document versions per order</li>
-    <li>Reviewer ownership — who approved, when, linked entity</li>
-    <li>Requirement status: <code>satisfied</code> / <code>pending</code> / <code>missing</code> / <code>expired</code></li>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128200; 4 KPI Tiles</div><ul>
+    <li><strong>Total</strong> — count of all documents and order workflow docs across the org (up to 250 of each type loaded per page)</li>
+    <li><strong>Needs Review</strong> — items with status: pending, review, in_review, needs_review, submitted, uploaded, previewed, or link_created</li>
+    <li><strong>Approved</strong> — items with status: approved, ready, active, or valid</li>
+    <li><strong>PDF Ready</strong> — count of items where a valid PDF href can be resolved; expiring-soon count shown as sub-label</li>
   </ul></div>
-  <div class="doc-card border-teal"><div class="doc-card-title">&#128279; Linked From</div><ul>
-    <li>Compliance workspace links here: "Documents workspace" action button</li>
-    <li>Integrations hub shows "Document evidence" connector linking here</li>
-    <li>Order execution gate checks document requirement satisfaction before dispatch</li>
-    <li>Source tables: <code>order_documents</code>, <code>order_document_sends</code>, <code>compliance_evidence</code></li>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128269; Search & Filter</div><ul>
+    <li>Full-text search across: client name, lead contact name, document title, document subtitle, linked record label, file name, doc type, status, related entity ID, requirement code</li>
+    <li>Status dropdown: dynamically built from unique status values across all org documents</li>
+    <li>Type dropdown: dynamically built from unique doc_type values — labels normalized via <code>documentTypeLabel()</code></li>
+    <li>Sortable columns: Client (default), Document, Linked Record, Status, Date — ascending/descending toggle via URL params</li>
   </ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">&#128683; Gate Integration</div><ul>
-    <li>Open document blockers count toward <code>releaseBlockers</code> in the order execution evaluator</li>
-    <li>Document requirement rules (<code>document_requirements</code> table) define what's needed per document type</li>
-    <li><code>applicableCount</code>, <code>satisfiedCount</code>, <code>blockerCount</code> shown in order dispatch artifact state</li>
-    <li>Read-only mode for non-compliance-reviewer roles</li>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128203; 4 Group Views</div><ul>
+    <li><strong>Client</strong> (default) — one collapsible card per client company; Attention badge if any item needs review or is expired; Healthy badge if all approved</li>
+    <li><strong>Status</strong> — grouped by status label; Approved group collapsed by default, all others expanded</li>
+    <li><strong>Type</strong> — grouped by document type label</li>
+    <li><strong>Timeline</strong> — grouped by uploaded date</li>
+    <li>View state persisted in URL: <code>/documents?view=status</code></li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128279; Two Document Sources</div><ul>
+    <li><strong>documents table</strong> — uploaded evidence files and compliance documents. Fields: id, related_entity, related_id, file_name, file_url, doc_type, uploaded_at, expires_at, version, version_label, requirement_code, status, owner_user_id, reviewer_user_id, reviewed_at, review_notes</li>
+    <li><strong>order_documents table</strong> — system-generated workflow documents (order confirmation, invoice, packing list). Fields: id, order_id, document_type, stage_key, status, version_no, pdf_storage_path, created_at</li>
+    <li>Both are merged into a unified <code>DocumentItem</code> type and rendered in the same list</li>
+    <li>Deduplication: order_documents rows that already have a matching documents row (via document_id foreign key) are not double-counted</li>
+  </ul></div>
+</div>
+
+<div class="section-block"><h2>PDF Generation</h2>
+<p>PDFs are generated by two different methods depending on the document type. No paid PDF API is used anywhere.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; Order Documents — Native PDF Writer</div><ul>
+    <li>Source: <code>src/lib/orders/order-document-pdf.ts</code> — <code>buildOrderDocumentPdf(data)</code></li>
+    <li>Writes raw PDF 1.4 syntax directly as a UTF-8 Buffer — zero external dependencies</li>
+    <li>Generates: Order Confirmation and Invoice (domestic and export proforma variants)</li>
+    <li>Document types rendered: <code>order-confirmation</code>, <code>invoice</code>, <code>proforma_invoice</code>, <code>packing_sheet</code></li>
+    <li>Layout: brand header, org identity block (legal name, address, tax ID, website), buyer block, line items table (product, variant, SKU, quantity, unit price, currency), totals, payment terms, T&amp;C footer from Admin templates</li>
+    <li>Export mode auto-detected: <code>order_type === 'export'</code> or doc type includes proforma/packing/freight</li>
+    <li>Route: <code>GET /api/orders/[contractId]/order-confirmation/pdf</code> and <code>GET /api/orders/[contractId]/invoice/pdf</code></li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128196; Quote PDF — puppeteer-core + @sparticuz/chromium</div><ul>
+    <li>Source: <code>src/features/quotes/pricing/services/quote-document.service.ts</code> + <code>/api/quotes/[quoteId]/pdf</code> route</li>
+    <li>Renders the quote using Chromium headless — browser-print quality output</li>
+    <li>Layout: branded header with org logo, compact product table (SKU, product, pack size, units/case, MOQ, pricing basis, unit price, case price, quote total), category grouping with subtotals when multi-category, quote-only adjustments shown with original catalog price + override reason, short clean footer</li>
+    <li>After generation: PDF stored via <code>DefaultQuoteDocumentService.storeGeneratedPdf()</code> — writes document row to <code>documents</code> table and saves rendered PDF reference on <code>quote_versions</code> row via <code>saveRenderedPdfReference()</code></li>
+    <li>Audit event recorded: <code>action: 'quote_document_stored'</code> with quoteId, quoteVersionId, documentId, fileName, fileUrl</li>
+    <li>Route: <code>GET /api/quotes/[quoteId]/pdf</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#127760; Tokenized Document Preview</div><ul>
+    <li>Order documents are shared via a signed base64url token: <code>encodeOrderDocumentShareToken(payload)</code></li>
+    <li>Token payload: organizationId, contractId, leadId, quoteId, documentKind, recipient, note, createdAt</li>
+    <li>Preview route: <code>/order-documents/preview/[token]</code> — auto-redirects to <code>/order-documents/preview/[token]/pdf</code></li>
+    <li>PDF route resolves org, order, and line items via <code>get_order_document_preview</code> RPC, then calls <code>buildOrderDocumentPdf()</code> and streams the Buffer as <code>application/pdf</code></li>
+    <li>Preview open count tracked via <code>order_document_sends</code> table — every token fetch logs a delivery event</li>
+    <li><code>link_created</code> status does NOT equal delivered — provider webhook confirmation required for delivery proof</li>
+    <li>Signed URLs for Supabase storage paths created at <code>/api/order-documents/pdf</code> — 1-hour signed URL validity</li>
+  </ul></div>
+</div>
+
+<div class="section-block"><h2>Storage Architecture</h2>
+<p>All uploaded and generated documents are stored in Supabase Storage. Each bucket has a distinct purpose and access model.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Bucket</th><th>Contents</th><th>Access</th><th>Path pattern</th></tr></thead>
+<tbody>
+<tr><td><code>order-documents</code></td><td>Uploaded operator files for orders (packing lists, freight docs, delivery notes)</td><td>Service role write; signed URL read (1hr)</td><td><code>org/{orgId}/order/{orderId}/{filename}</code></td></tr>
+<tr><td><code>compliance-docs</code></td><td>Evidence files uploaded via compliance workspace</td><td>Service role write; signed URL read (10min)</td><td><code>{orgId}/{leadId}/{filename}</code></td></tr>
+<tr><td><code>avatars</code></td><td>User profile photos</td><td>Anon read (public URL); service role write</td><td><code>{userId}/{timestamp}.jpg</code></td></tr>
+<tr><td><code>org-logos</code></td><td>Organization logo uploads</td><td>Public read; service role write</td><td><code>{orgId}/logo.png</code></td></tr>
+</tbody></table></div>
+<div class="doc-alert doc-alert-amber"><strong>Storage path rule:</strong> Order document uploads use <code>upsert: false</code> — duplicate uploads to the same path fail. The path must be unique per document version. PDF storage paths are recorded in <code>order_documents.pdf_storage_path</code> for direct retrieval without re-generation.</div>
+
+<div class="section-block"><h2>Document Versioning</h2>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; documents Table Versioning</div><ul>
+    <li><code>version</code> integer — increments on each re-upload of the same document type for the same related entity</li>
+    <li><code>version_label</code> string — human-readable label describing the version context: <code>'quote-review-upload'</code>, <code>'quote-waiver'</code>, <code>'dispatch-deferral'</code></li>
+    <li><code>requirement_code</code> — links the document to the specific compliance requirement it satisfies</li>
+    <li><code>document_versions</code> table — full version history: document_id, version_no, version_label, created_by, file_url, created_at</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; order_documents Table Versioning</div><ul>
+    <li><code>version_no</code> integer — incremented each time an operator prepares or re-prepares a stage document</li>
+    <li><code>stage_key</code> — identifies which dispatch gate stage the document belongs to (e.g., <code>'packing'</code>, <code>'dispatch_invoice'</code>, <code>'completion_packet'</code>)</li>
+    <li>Prepare actions create a new order_documents row; they do not overwrite the previous version</li>
+    <li>Latest version per stage_key is the active document shown in dispatch gate review</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128270; PDF href Resolution Priority</div><ul>
+    <li><strong>1st:</strong> <code>order_document_sends.share_url</code> — latest share URL for the document type (normalized to /pdf suffix)</li>
+    <li><strong>2nd:</strong> <code>order_documents.pdf_storage_path</code> — direct Supabase storage path or signed URL</li>
+    <li><strong>3rd:</strong> Generated PDF API route — <code>/api/quotes/[id]/pdf</code> or <code>/api/orders/[contractId]/invoice/pdf</code></li>
+    <li><strong>4th:</strong> <code>documents.file_url</code> — explicit file URL if uploaded directly</li>
+    <li>Fallback label shown when no href resolves: "PDF pending" for workflow docs, "No PDF" for quote docs, "No file yet" for others</li>
+  </ul></div>
+</div>
+
+<div class="section-block"><h2>Admin Document Templates (/admin/document-templates)</h2>
+<p>Templates control the terms, bank details, and export declarations that appear on every generated PDF for the org. Configured once by admin — used by all document generation routes.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; Terms Profiles</div><ul>
+    <li>Source table: <code>organization_document_terms_profiles</code></li>
+    <li>Fields: region_type, document_type, profile_name, org_country, is_default, is_active</li>
+    <li><strong>page_one_terms</strong> — array of short terms shown on the first page of PDFs (one per line in the editor)</li>
+    <li><strong>annexure_terms</strong> — array of full clause terms for the annexure section</li>
+    <li>Default terms auto-populated by country: Indian export docs get GST/FEMA/DGFT clauses; US docs get UCC/export administration clauses</li>
+    <li>TermsEditor component — textarea with one clause per line, saved via <code>updatePageOneTermsAction</code> / <code>updateAnnexureTermsAction</code> server actions</li>
+    <li>Version history written to audit trail on every terms update</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127968; Bank Details & Export Declarations</div><ul>
+    <li><strong>bank_details</strong> — JSON object: bank name, account number, IFSC/SWIFT/routing, branch address. Rendered in invoice footer</li>
+    <li><strong>export_declarations</strong> — JSON object: declaration text, signatory name, designation. Printed on export packing sheets and proforma invoices</li>
+    <li><strong>identity_fields</strong> — legal name, tax ID, import/export code override for PDF header</li>
+    <li><strong>stamp_settings</strong> — signature stamp placement for export documents</li>
+    <li>BankDetailsEditor and ExportDeclarationsEditor components — JSON-structured form fields</li>
+    <li>Changes saved via <code>updateBankDetailsAction</code> / <code>updateExportDeclarationsAction</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9881; Document Type Coverage</div><ul>
+    <li>Commercial Quote — from <code>/api/quotes/[quoteId]/pdf</code> (puppeteer-core)</li>
+    <li>Order Confirmation — from <code>/api/orders/[contractId]/order-confirmation/pdf</code> (native PDF writer)</li>
+    <li>Invoice / Proforma Invoice — from <code>/api/orders/[contractId]/invoice/pdf</code> (native PDF writer)</li>
+    <li>Packing List, Freight Request, Delivery Note — workflow documents uploaded by operator into <code>order-documents</code> bucket</li>
+    <li>Completion Packet — generated at order closeout stage</li>
+    <li>Compliance Evidence — uploaded by operator into <code>compliance-docs</code> bucket; linked via requirement_code</li>
   </ul></div>
 </div>`;
     map['trade-events'] = `
