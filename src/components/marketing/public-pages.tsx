@@ -628,7 +628,7 @@ export function SetuGuruMarketingPage() {
               <div className="grid gap-2">
                 {[
                   { q: 'Prioritize event leads that need follow-up today.', a: 'Found 4 contacts from Gulfood — 2 overdue. Opening the follow-up queue...' },
-                  { q: 'What is blocking this order's dispatch readiness?', a: 'Certificate of Origin and Packing List not uploaded. Flagged for operations.' },
+                  { q: "What is blocking this order's dispatch readiness?", a: 'Certificate of Origin and Packing List not uploaded. Flagged for operations.' },
                   { q: 'Draft a quote follow-up for Kenya Family Grocers.', a: 'Draft ready — referencing Q-0294 (AUD 3,650). Awaiting your review before sending.' },
                 ].map((item, i) => (
                   <div key={i} className="rounded-xl border border-white/8 bg-white/[0.04] p-4">
