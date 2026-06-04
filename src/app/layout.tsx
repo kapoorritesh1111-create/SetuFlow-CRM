@@ -13,8 +13,6 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-// ─── Structured Data ─────────────────────────────────────────────────────────
-
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
@@ -28,9 +26,7 @@ const organizationSchema = {
     areaServed: ['IN', 'IE', 'GB', 'DE', 'US'],
     availableLanguage: 'English',
   },
-  sameAs: [
-    'https://www.setuflowcrm.com',
-  ],
+  sameAs: ['https://www.setuflowcrm.com'],
 };
 
 const softwareSchema = {
@@ -44,7 +40,7 @@ const softwareSchema = {
   description:
     'Trade execution CRM for import-export teams. Manage leads, quotes, approvals, documents, orders and shipment execution in one connected system.',
   featureList: [
-    'Screenshot-led product walkthroughs',
+    'Visual product walkthroughs',
     'Lead capture and follow-up workflows',
     'Quote workflow and approval readiness',
     'Order execution and shipment readiness',
@@ -53,28 +49,17 @@ const softwareSchema = {
     'Document tracking and workflow visibility',
     'Trade team collaboration',
   ],
-  areaServed: [
-    { '@type': 'Country', name: 'India', sameAs: 'https://www.wikidata.org/wiki/Q668' },
-    { '@type': 'Country', name: 'Ireland', sameAs: 'https://www.wikidata.org/wiki/Q27' },
-    { '@type': 'Country', name: 'United Kingdom', sameAs: 'https://www.wikidata.org/wiki/Q145' },
-    { '@type': 'Country', name: 'Germany', sameAs: 'https://www.wikidata.org/wiki/Q183' },
-    { '@type': 'Country', name: 'United States', sameAs: 'https://www.wikidata.org/wiki/Q30' },
-  ],
+  areaServed: ['India', 'Ireland', 'United Kingdom', 'Germany', 'United States'],
 };
-
-// ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.setuflowcrm.com'),
-
   title: {
     default: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
     template: '%s | Setu Flow',
   },
-
   description:
-    'Setu Flow is the trade execution CRM built for import-export teams. Explore screenshot-led examples for lead capture, quote control, approvals, documents, orders and shipment readiness.',
-
+    'Setu Flow is the trade execution CRM built for import-export teams. Explore visual product walkthroughs for lead capture, quote control, approvals, documents, orders and shipment readiness.',
   keywords: [
     'trade execution CRM',
     'import export CRM',
@@ -82,54 +67,15 @@ export const metadata: Metadata = {
     'CRM for importers',
     'trade operations software',
     'international trade CRM',
-    'export management software',
-    'B2B trade CRM',
     'quote management CRM',
-    'FOB CIF pricing software',
     'trade show lead capture',
     'shipment tracking CRM',
-    'FX rate locked quoting',
-    'export compliance CRM',
     'approval workflow CRM',
-    'trade CRM India',
-    'export CRM India',
-    'import export software India',
-    'CRM for Indian exporters',
-    'EXIM CRM India',
-    'B2B CRM India',
-    'export management India',
-    'trade software for SMEs India',
-    'trade CRM Ireland',
-    'export CRM Ireland',
-    'import export software Ireland',
-    'CRM for Irish exporters',
-    'trade software Ireland',
-    'SME export CRM Ireland',
-    'trade CRM UK',
-    'export management software UK',
-    'import export CRM United Kingdom',
-    'CRM for UK exporters',
-    'trade execution software UK',
-    'B2B CRM UK',
-    'trade CRM Germany',
-    'export management software Germany',
-    'import export CRM Deutschland',
-    'CRM for German exporters',
-    'Handelssoftware exporteur',
-    'B2B CRM Germany',
-    'trade CRM USA',
-    'export management software United States',
-    'import export CRM America',
-    'CRM for US exporters',
-    'trade software United States',
-    'B2B trade software USA',
   ],
-
   authors: [{ name: 'Setu Groups', url: 'https://www.setuflowcrm.com' }],
   creator: 'Setu Groups',
   publisher: 'Setu Groups',
   category: 'technology',
-
   robots: {
     index: true,
     follow: true,
@@ -141,7 +87,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-
   openGraph: {
     type: 'website',
     locale: 'en_GB',
@@ -150,7 +95,7 @@ export const metadata: Metadata = {
     siteName: 'Setu Flow',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
     description:
-      'Explore screenshot-led examples of how trade teams manage leads, quotes, approvals, documents, orders and shipment readiness in one connected system.',
+      'Explore visual product walkthroughs of how trade teams manage leads, quotes, approvals, documents, orders and shipment readiness in one connected system.',
     images: [
       {
         url: '/og-image.png',
@@ -160,18 +105,15 @@ export const metadata: Metadata = {
       },
     ],
   },
-
   twitter: {
     card: 'summary_large_image',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
-    description: 'Screenshot-led examples of trade execution workflows for import-export teams.',
+    description: 'Visual product walkthroughs of trade execution workflows for import-export teams.',
     images: ['/og-image.png'],
   },
-
   alternates: {
     canonical: 'https://www.setuflowcrm.com',
   },
-
   manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent', startupImage: ['/icons/icon-512.png'] },
   icons: {
@@ -200,7 +142,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="SETU Flow" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
-
         <script
           nonce={nonce}
           type="application/ld+json"
