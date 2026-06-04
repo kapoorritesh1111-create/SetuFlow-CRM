@@ -1,3 +1,314 @@
 'use client';
 
-export { InAppNotificationCenter } from './in-app-notification-center';
+import { useEffect, useMemo, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { FaIcon } from '@/components/ui/fa-icon';
+import { cn } from '@/lib/utils';
+
+type Priority = 'normal' | 'high' | 'critical';
+type Source = 'stored' | 'derived';
+type Group = 'Follow-Up' | 'Quotes' | 'Orders' | 'Approvals' | 'Other';
+type PushStatus = 'idle' | 'saving' | 'enabled' | 'unsupported' | 'denied' | 'missing-key' | 'error';
+
+type NotificationRow = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  icon: string | null;
+  priority: Priority;
+  entity_ref: string | null;
+  action_url: string | null;
+  read: boolean;
+  created_at: string;
+  source?: Source;
+};
+
+type LeadSummary = { company_name: string | null; contact_name: string | null };
+type LeadJoin = LeadSummary | LeadSummary[] | null;
+type FollowUpRow = { id: string; lead_id: string | null; scheduled_at: string; status: string; notes: string | null; leads?: LeadJoin };
+type TaskRow = { id: string; lead_id: string | null; task_type: string; scheduled_for: string; status: string; leads?: LeadJoin };
+type QuoteRow = { id: string; lead_id: string | null; quote_number: string | null; status: string | null; valid_until: string | null; updated_at: string; leads?: LeadJoin };
+type OrderRow = { id: string; lead_id: string | null; order_number: string | null; current_stage: string | null; status: string | null; approval_state: string | null; order_lifecycle_status: string | null; updated_at: string; leads?: LeadJoin };
+type PushSubscriptionRow = { id: string; endpoint: string };
+type PushSubscriptionInsert = { organization_id: string; user_id: string; endpoint: string; auth_key: string; p256dh: string; user_agent: string | null };
+type SupabaseError = { message: string };
+
+type SelectQuery<T> = {
+  select(columns: string): SelectQuery<T>;
+  eq(column: string, value: string | boolean): SelectQuery<T>;
+  is(column: string, value: null): SelectQuery<T>;
+  order(column: string, options?: { ascending?: boolean }): SelectQuery<T>;
+  limit(count: number): Promise<{ data: T[] | null; error: SupabaseError | null }>;
+  update?(values: Partial<Pick<NotificationRow, 'read'>> & { read_at?: string }): { eq(column: string, value: string): Promise<{ error: SupabaseError | null }> };
+};
+
+type PushSubscriptionQuery = {
+  select(columns: string): PushSubscriptionQuery;
+  eq(column: string, value: string): PushSubscriptionQuery;
+  limit(count: number): Promise<{ data: PushSubscriptionRow[] | null; error: SupabaseError | null }>;
+  insert(row: PushSubscriptionInsert): Promise<{ error: SupabaseError | null }>;
+  update(row: Omit<PushSubscriptionInsert, 'organization_id' | 'user_id' | 'endpoint'>): { eq(column: string, value: string): Promise<{ error: SupabaseError | null }> };
+};
+
+type NotificationClient = {
+  from(table: 'notifications'): SelectQuery<NotificationRow>;
+  from(table: 'lead_follow_ups'): SelectQuery<FollowUpRow>;
+  from(table: 'scheduled_tasks'): SelectQuery<TaskRow>;
+  from(table: 'quotes'): SelectQuery<QuoteRow>;
+  from(table: 'orders'): SelectQuery<OrderRow>;
+  from(table: 'push_subscriptions'): PushSubscriptionQuery;
+};
+
+type PushSubscriptionJson = { endpoint?: string; keys?: { auth?: string; p256dh?: string } };
+
+const groups: Group[] = ['Follow-Up', 'Quotes', 'Orders', 'Approvals', 'Other'];
+const groupIcons: Record<Group, string> = { 'Follow-Up': 'clock-o', Quotes: 'comments-o', Orders: 'archive', Approvals: 'paper-plane-o', Other: 'bell-o' };
+const priorityCopy: Record<Priority, string> = { normal: 'Normal', high: 'High', critical: 'Critical' };
+const webPushPublicKey = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ?? '';
+const dismissedKey = 'setuflow-dismissed-derived-alerts';
+const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
+
+function leadName(value?: LeadJoin) {
+  const lead = Array.isArray(value) ? value[0] ?? null : value ?? null;
+  return lead?.company_name || lead?.contact_name || 'lead';
+}
+
+function isOpenStatus(status: string | null | undefined) {
+  return !['completed', 'complete', 'done', 'cancelled', 'canceled', 'accepted', 'rejected'].includes(String(status ?? '').toLowerCase());
+}
+
+function formatWhen(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Just now';
+  const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit' }).format(date);
+}
+
+function priorityClasses(priority: Priority) {
+  if (priority === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (priority === 'high') return 'border-amber-200 bg-amber-50 text-amber-700';
+  return 'border-slate-200 bg-slate-50 text-slate-600';
+}
+
+function safeRelativeUrl(value: string | null | undefined) {
+  const next = String(value ?? '').trim();
+  if (!next || !next.startsWith('/') || next.startsWith('//') || next.includes('://')) return null;
+  return next;
+}
+
+function textFor(notification: NotificationRow) {
+  return [notification.type, notification.title, notification.body ?? '', notification.entity_ref ?? ''].join(' ');
+}
+
+function groupFor(notification: NotificationRow): Group {
+  const text = textFor(notification);
+  if (/quote|rfq|pricing/i.test(text)) return 'Quotes';
+  if (/order|shipment|execution/i.test(text)) return 'Orders';
+  if (/approval|send|communication|message|email|opened/i.test(text)) return 'Approvals';
+  if (/lead|follow[-_\s]?up|task|todo|contact/i.test(text)) return 'Follow-Up';
+  return 'Other';
+}
+
+function routeFor(notification: NotificationRow) {
+  const explicit = safeRelativeUrl(notification.action_url);
+  if (explicit) return explicit;
+  const text = textFor(notification);
+  const entityId = notification.entity_ref?.match(uuidPattern)?.[0] ?? null;
+  if (/lead|follow[-_\s]?up|contact/i.test(text)) return entityId ? `/leads/${entityId}?tab=workflow&handoff=notification` : '/leads';
+  if (/quote|rfq|pricing/i.test(text)) return entityId ? `/quotes?focus=${encodeURIComponent(entityId)}` : '/quotes';
+  if (/order|shipment|execution/i.test(text)) return entityId ? `/orders?focus=${encodeURIComponent(entityId)}` : '/orders';
+  if (/approval|send|communication|message|email|opened/i.test(text)) return '/approval-send';
+  if (/task|todo/i.test(text)) return entityId ? `/leads/${entityId}?tab=workflow&handoff=task` : '/tasks';
+  return null;
+}
+
+function labelFor(notification: NotificationRow) {
+  const group = groupFor(notification);
+  if (group === 'Follow-Up') return 'Lead';
+  if (group === 'Quotes') return 'Quote';
+  if (group === 'Orders') return 'Order';
+  if (group === 'Approvals') return 'Approval';
+  return null;
+}
+
+function readDismissed() {
+  if (typeof window === 'undefined') return new Set<string>();
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(dismissedKey) || '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function saveDismissed(values: Set<string>) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(dismissedKey, JSON.stringify([...values].slice(-200)));
+}
+
+function urlBase64ToUint8Array(value: string) {
+  const padding = '='.repeat((4 - (value.length % 4)) % 4);
+  const base64 = `${value}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
+}
+
+function canUseBrowserPush() {
+  return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+}
+
+function isIosDevice() {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandalonePwa() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+}
+
+function followUpAlert(row: FollowUpRow): NotificationRow | null {
+  if (!row.scheduled_at || !isOpenStatus(row.status) || new Date(row.scheduled_at).getTime() > Date.now()) return null;
+  const name = leadName(row.leads);
+  return { id: `derived:follow-up:${row.id}:${row.scheduled_at}`, type: 'overdue_follow_up', title: `Follow-up due: ${name}`, body: row.notes || 'Open the lead record and complete the next follow-up.', icon: 'clock-o', priority: 'high', entity_ref: row.lead_id ? `lead:${row.lead_id}` : 'Follow-up', action_url: row.lead_id ? `/leads/${row.lead_id}?tab=workflow&handoff=follow-up` : '/leads?view=overdue', read: false, created_at: row.scheduled_at, source: 'derived' };
+}
+
+function taskAlert(row: TaskRow): NotificationRow | null {
+  if (!row.scheduled_for || !isOpenStatus(row.status) || new Date(row.scheduled_for).getTime() > Date.now()) return null;
+  const label = row.task_type ? row.task_type.replace(/_/g, ' ') : 'Task';
+  return { id: `derived:task:${row.id}:${row.scheduled_for}`, type: 'overdue_task', title: `${label} due: ${leadName(row.leads)}`, body: 'Open the related lead and complete the task.', icon: 'exclamation-circle', priority: 'high', entity_ref: row.lead_id ? `lead:${row.lead_id}` : 'Task', action_url: row.lead_id ? `/leads/${row.lead_id}?tab=workflow&handoff=task` : '/tasks', read: false, created_at: row.scheduled_for, source: 'derived' };
+}
+
+function quoteAlert(row: QuoteRow): NotificationRow | null {
+  if (!row.valid_until || !isOpenStatus(row.status) || new Date(`${row.valid_until}T23:59:59`).getTime() >= Date.now()) return null;
+  const label = row.quote_number || 'Quote';
+  return { id: `derived:quote:${row.id}:${row.valid_until}`, type: 'expired_quote', title: `Expired quote: ${label}`, body: `${leadName(row.leads)} has a quote past its validity date. Review, resend, or close it.`, icon: 'comments-o', priority: 'high', entity_ref: row.id, action_url: row.lead_id ? `/leads/${row.lead_id}?tab=quotes&quoteId=${row.id}` : `/quotes?focus=${row.id}`, read: false, created_at: row.updated_at, source: 'derived' };
+}
+
+function orderAlert(row: OrderRow): NotificationRow | null {
+  const statusText = [row.current_stage, row.status, row.approval_state, row.order_lifecycle_status].join(' ').toLowerCase();
+  if (/(completed|cancelled|canceled)/.test(statusText) || !/(review|pending|approval|blocked|hold)/.test(statusText)) return null;
+  const label = row.order_number || 'Order';
+  return { id: `derived:order:${row.id}:${row.updated_at}`, type: 'order_review', title: `Order review: ${label}`, body: `${leadName(row.leads)} needs review in ${row.current_stage || row.status || 'the current order stage'}.`, icon: 'archive', priority: 'high', entity_ref: row.id, action_url: `/orders?focus=${row.id}`, read: false, created_at: row.updated_at, source: 'derived' };
+}
+
+export function InAppNotificationCenter({ organizationId, userId, variant = 'floating' }: { organizationId: string; userId: string; variant?: 'floating' | 'inline' | 'page' }) {
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pushStatus, setPushStatus] = useState<PushStatus>('idle');
+  const [iosDevice, setIosDevice] = useState(false);
+  const [standalonePwa, setStandalonePwa] = useState(false);
+  const [dismissedDerived, setDismissedDerived] = useState<Set<string>>(() => new Set());
+  const unread = useMemo(() => notifications.filter((notification) => !notification.read), [notifications]);
+  const grouped = useMemo(() => {
+    return groups.map((group) => ({ group, items: notifications.filter((item) => groupFor(item) === group) })).filter((section) => section.items.length > 0);
+  }, [notifications]);
+
+  useEffect(() => { setDismissedDerived(readDismissed()); }, []);
+
+  useEffect(() => {
+    setIosDevice(isIosDevice());
+    setStandalonePwa(isStandalonePwa());
+    if (!canUseBrowserPush()) { setPushStatus('unsupported'); return; }
+    if (!webPushPublicKey) { setPushStatus('missing-key'); return; }
+    if (Notification.permission === 'denied') { setPushStatus('denied'); return; }
+    navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription()).then((subscription) => { if (subscription) setPushStatus('enabled'); }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadNotifications() {
+      try {
+        const supabase = createClient() as unknown as NotificationClient;
+        const [storedResult, followUpResult, taskResult, quoteResult, orderResult] = await Promise.all([
+          supabase.from('notifications').select('id,type,title,body,icon,priority,entity_ref,action_url,read,created_at').eq('organization_id', organizationId).is('archived_at', null).order('created_at', { ascending: false }).limit(12),
+          supabase.from('lead_follow_ups').select('id,lead_id,scheduled_at,status,notes,leads(company_name,contact_name)').eq('organization_id', organizationId).order('scheduled_at', { ascending: true }).limit(30),
+          supabase.from('scheduled_tasks').select('id,lead_id,task_type,scheduled_for,status,leads(company_name,contact_name)').eq('organization_id', organizationId).order('scheduled_for', { ascending: true }).limit(24),
+          supabase.from('quotes').select('id,lead_id,quote_number,status,valid_until,updated_at,leads(company_name,contact_name)').eq('organization_id', organizationId).order('valid_until', { ascending: true }).limit(30),
+          supabase.from('orders').select('id,lead_id,order_number,current_stage,status,approval_state,order_lifecycle_status,updated_at,leads(company_name,contact_name)').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(30),
+        ]);
+        if (cancelled) return;
+        const stored = (storedResult.error ? [] : storedResult.data ?? []).map((row) => ({ ...row, source: 'stored' as const }));
+        const derived = [
+          ...((followUpResult.error ? [] : followUpResult.data ?? []).map(followUpAlert).filter((row): row is NotificationRow => row !== null)),
+          ...((taskResult.error ? [] : taskResult.data ?? []).map(taskAlert).filter((row): row is NotificationRow => row !== null)),
+          ...((quoteResult.error ? [] : quoteResult.data ?? []).map(quoteAlert).filter((row): row is NotificationRow => row !== null)),
+          ...((orderResult.error ? [] : orderResult.data ?? []).map(orderAlert).filter((row): row is NotificationRow => row !== null)),
+        ].filter((row) => !dismissedDerived.has(row.id));
+        setNotifications([...derived, ...stored].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 30));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadNotifications();
+    const interval = window.setInterval(loadNotifications, 60000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [dismissedDerived, organizationId]);
+
+  const markRead = async (notificationId: string) => {
+    setNotifications((current) => current.filter((item) => item.id !== notificationId));
+    if (notificationId.startsWith('derived:')) {
+      setDismissedDerived((current) => { const next = new Set(current); next.add(notificationId); saveDismissed(next); return next; });
+      return;
+    }
+    const supabase = createClient() as unknown as NotificationClient;
+    await supabase.from('notifications').update?.({ read: true, read_at: new Date().toISOString() }).eq('id', notificationId);
+  };
+
+  const enablePush = async () => {
+    if (!canUseBrowserPush()) { setPushStatus('unsupported'); return; }
+    if (iosDevice && !standalonePwa) { setPushStatus('unsupported'); return; }
+    if (!webPushPublicKey) { setPushStatus('missing-key'); return; }
+    setPushStatus('saving');
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { setPushStatus(permission === 'denied' ? 'denied' : 'idle'); return; }
+      const registration = await navigator.serviceWorker.ready;
+      const existing = await registration.pushManager.getSubscription();
+      const subscription = existing ?? (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(webPushPublicKey) }));
+      const subscriptionJson = subscription.toJSON() as PushSubscriptionJson;
+      const endpoint = subscriptionJson.endpoint ?? subscription.endpoint;
+      const authKey = subscriptionJson.keys?.auth;
+      const p256dh = subscriptionJson.keys?.p256dh;
+      if (!endpoint || !authKey || !p256dh) { setPushStatus('error'); return; }
+      const supabase = createClient() as unknown as NotificationClient;
+      const payload: PushSubscriptionInsert = { organization_id: organizationId, user_id: userId, endpoint, auth_key: authKey, p256dh, user_agent: navigator.userAgent || null };
+      const { data: existingRows } = await supabase.from('push_subscriptions').select('id,endpoint').eq('endpoint', endpoint).limit(1);
+      const existingId = existingRows?.[0]?.id;
+      const { error } = existingId ? await supabase.from('push_subscriptions').update({ auth_key: authKey, p256dh, user_agent: payload.user_agent }).eq('id', existingId) : await supabase.from('push_subscriptions').insert(payload);
+      setPushStatus(error ? 'error' : 'enabled');
+    } catch { setPushStatus('error'); }
+  };
+
+  const pushLabel = pushStatus === 'enabled' ? 'Push on' : pushStatus === 'saving' ? 'Saving...' : pushStatus === 'error' ? 'Retry push' : 'Enable push';
+  const mobilePushHint = iosDevice && !standalonePwa ? 'On iPhone/iPad, add SETU Flow to your Home Screen first, then open the app icon to enable push alerts.' : pushStatus === 'missing-key' ? 'Browser push setup is pending, but in-app alerts are active.' : pushStatus === 'denied' ? 'Push is blocked in this browser. In-app alerts still appear here.' : 'Tap an alert to open the related record. Opening an alert marks it read.';
+  const showPushButton = pushStatus === 'idle' || pushStatus === 'saving' || pushStatus === 'enabled' || pushStatus === 'error';
+
+  function renderCard(notification: NotificationRow, group: Group) {
+    const href = routeFor(notification);
+    const label = labelFor(notification);
+    return (
+      <a key={notification.id} href={href ?? '#'} onClick={(event) => { if (!href) event.preventDefault(); markRead(notification.id); }} className={cn('group block w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-[0_14px_35px_rgba(15,23,42,0.10)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7fff]', notification.read ? 'border-slate-100 bg-white' : 'border-[#0c7fff]/20 bg-[#f4f9ff]')}>
+        <div className="flex items-start gap-3"><div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl border', priorityClasses(notification.priority))}><FaIcon icon={notification.icon || groupIcons[group]} fixedWidth /></div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="line-clamp-2 text-sm font-bold text-slate-950 dark:text-white">{notification.title}</p><span className="shrink-0 text-[11px] font-semibold text-slate-400">{formatWhen(notification.created_at)}</span></div>{notification.body ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600 dark:text-slate-300">{notification.body}</p> : null}<div className="mt-2 flex flex-wrap items-center gap-2"><span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]', priorityClasses(notification.priority))}>{priorityCopy[notification.priority]}</span>{notification.source === 'derived' ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Live signal</span> : null}{label ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{label}</span> : null}<span className="ml-auto text-[11px] font-black text-[#0c7fff]">{href ? 'Open' : 'Dismiss'}</span></div></div></div>
+      </a>
+    );
+  }
+
+  function renderList(page = false) {
+    if (loading) return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading alerts...</div>;
+    if (grouped.length === 0) return <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center"><p className="text-sm font-bold text-slate-900">No active alerts found</p><p className="mt-1 text-xs leading-5 text-slate-500">No generated notifications, overdue follow-ups, quote expirations, or order reviews are visible for this workspace right now.</p></div>;
+    return <div className="space-y-4">{grouped.map(({ group, items }) => <section key={group} className={cn('space-y-2', page ? 'rounded-[1.75rem] bg-white/80 p-3 shadow-xl shadow-blue-950/5 dark:bg-slate-900/85' : undefined)}><div className="flex items-center gap-2 px-1"><span className="grid h-7 w-7 place-items-center rounded-xl bg-slate-100 text-slate-600"><FaIcon icon={groupIcons[group]} fixedWidth /></span><h3 className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{group}</h3><span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{items.length}</span></div>{items.map((item) => renderCard(item, group))}</section>)}</div>;
+  }
+
+  if (variant === 'page') return <div className="space-y-3"><div className="rounded-[1.75rem] bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-xl shadow-emerald-950/10">All mobile work is synced</div><p className="px-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-300">{mobilePushHint}</p>{renderList(true)}</div>;
+
+  const bellAndPanel = <div className="relative"><button type="button" onClick={() => setOpen((value) => !value)} className="relative grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:text-[#0b2e4a]" aria-label="Open notifications" aria-expanded={open}><FaIcon icon="bell-o" fixedWidth />{unread.length > 0 ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#0c7fff] px-1 text-[10px] font-black text-white ring-2 ring-white">{unread.length > 9 ? '9+' : unread.length}</span> : null}</button>{open ? <section className="fixed inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-[1.75rem] border border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-28px_70px_rgba(15,23,42,0.24)] ring-1 ring-slate-950/5 md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:mt-2 md:w-[min(400px,calc(100vw-2rem))] md:rounded-[1.35rem] md:pb-0 md:shadow-[0_28px_70px_rgba(15,23,42,0.22)]"><div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-slate-200 md:hidden" aria-hidden="true" /><div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0c7fff]">Notifications</p><h2 className="text-sm font-bold text-slate-950">{unread.length ? `${unread.length} unread alert${unread.length === 1 ? '' : 's'}` : 'All caught up'}</h2><p className="mt-1 max-w-[18rem] text-[11px] leading-5 text-slate-500 md:hidden">{mobilePushHint}</p></div><div className="flex shrink-0 items-center gap-2">{showPushButton ? <button type="button" onClick={enablePush} disabled={pushStatus === 'saving' || pushStatus === 'enabled'} className={cn('rounded-xl border px-3 py-2 text-[11px] font-bold transition', pushStatus === 'enabled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')} title="Enable browser push notifications">{pushLabel}</button> : null}<button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-white hover:text-slate-700" aria-label="Close notifications">x</button></div></div><div className="max-h-[58vh] overflow-y-auto p-2 md:max-h-[420px]">{renderList()}</div></section> : null}</div>;
+  if (variant === 'inline') return <>{bellAndPanel}</>;
+  return <div className="pointer-events-none fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[340] flex flex-col items-end gap-3 md:hidden"><div className="pointer-events-auto relative flex w-full justify-end" /></div>;
+}
