@@ -4,7 +4,10 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const manifest = JSON.parse(readFileSync(new URL('../src/lib/routes/manifest.json', import.meta.url), 'utf8'));
 const appShell = readFileSync(new URL('../src/components/layout/app-shell.tsx', import.meta.url), 'utf8');
-const notificationCenter = readFileSync(new URL('../src/components/notifications/in-app-notification-center.tsx', import.meta.url), 'utf8');
+const notificationCenter = readFileSync(new URL('../src/components/notifications/notification-center-live.tsx', import.meta.url), 'utf8');
+const authActions = readFileSync(new URL('../src/features/auth/server/actions.ts', import.meta.url), 'utf8');
+const loginForm = readFileSync(new URL('../src/features/auth/components/login-form.tsx', import.meta.url), 'utf8');
+const authValidation = readFileSync(new URL('../src/lib/validation/auth.ts', import.meta.url), 'utf8');
 const globals = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
 const dashboardPage = readFileSync(new URL('../src/app/(app)/dashboard/page.tsx', import.meta.url), 'utf8');
 const dashboardTabs = readFileSync(new URL('../src/components/dashboard/dashboard-section-tabs.tsx', import.meta.url), 'utf8');
@@ -100,10 +103,23 @@ test('persistent desktop shell closes profile and notification popovers across n
   assert.match(appShell, /onOpenMenu=\{closeNotificationCard\}/, 'opening the profile menu should close any open notification card');
 });
 
-test('notification center links alerts to relevant records or model entities', () => {
-  assert.match(notificationCenter, /safeRelativeActionUrl/, 'notification links should only use safe relative action URLs');
-  assert.match(notificationCenter, /routeForNotification/, 'notifications without explicit action URLs should resolve a model route');
-  assert.match(notificationCenter, /lead\|follow\[-_\\s\]\?up\|contact/, 'lead and follow-up notifications should resolve to lead routes');
-  assert.match(notificationCenter, /Open linked record/, 'notification CTA should clearly open the linked record');
-  assert.match(notificationCenter, /entity_ref: row\.lead_id \? `lead:\$\{row\.lead_id\}`/, 'derived lead alerts should keep the lead id in entity_ref for deep-link recovery');
+test('notification center opens grouped alerts without exposing raw record ids', () => {
+  assert.match(notificationCenter, /safeRelativeUrl/, 'notification links should only use safe relative action URLs');
+  assert.match(notificationCenter, /groupFor/, 'active alerts should be grouped by functional area');
+  for (const group of ['Follow-Up', 'Quotes', 'Orders', 'Approvals']) assert.match(notificationCenter, new RegExp(group), `${group} group should be supported`);
+  assert.match(notificationCenter, /role="tab"/, 'notification groups should render as tabs');
+  assert.match(notificationCenter, /markRead\(notification\.id\)/, 'opening a notification should mark it read');
+  assert.doesNotMatch(notificationCenter, /\{notification\.entity_ref\}/, 'raw entity_ref values such as lead uuids should not be rendered');
+});
+
+test('login flow supports Supabase MFA OTP when a verified factor is enrolled', () => {
+  assert.match(authValidation, /loginOtpSchema/, 'OTP validation schema should exist');
+  assert.match(authValidation, /\^\\d\{6\}\$/, 'OTP validation should require a 6-digit code');
+  assert.match(authActions, /auth\.mfa\.listFactors\(\)/, 'login should inspect enrolled MFA factors after password auth');
+  assert.match(authActions, /auth\.mfa\.challenge/, 'login should issue an MFA challenge for verified TOTP factors');
+  assert.match(authActions, /auth\.mfa\.verify/, 'OTP action should verify the MFA challenge before redirect');
+  assert.match(authActions, /login-otp:/, 'OTP verification should be rate limited');
+  assert.match(loginForm, /Two-factor verification/, 'login form should render an OTP step');
+  assert.match(loginForm, /autoComplete="one-time-code"/, 'OTP input should support one-time-code autocomplete');
+  assert.match(loginForm, /verifyLoginOtp/, 'login form should submit the OTP through the verification action');
 });
