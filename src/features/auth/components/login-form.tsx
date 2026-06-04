@@ -3,19 +3,69 @@
 import { useState, useTransition } from "react";
 import { FaIcon } from "@/components/ui/fa-icon";
 import { StateMessage } from "@/components/ui/state-message";
-import { loginWithUsername, requestPasswordReset } from "@/features/auth/server/actions";
+import { loginWithUsername, requestPasswordReset, verifyLoginOtp } from "@/features/auth/server/actions";
+
+type LoginState = {
+  error?: string;
+  success?: string;
+  mfa?: {
+    factorId: string;
+    challengeId: string;
+    next: string;
+  };
+};
 
 function FieldLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
   return <label htmlFor={htmlFor} className="text-sm font-semibold text-slate-800">{label}</label>;
 }
 
 export function LoginForm({ next = "" }: { next?: string }) {
-  const [state, setState] = useState<{ error?: string; success?: string }>({});
+  const [state, setState] = useState<LoginState>({});
   const [resetEmail, setResetEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isOtpPending, startOtpTransition] = useTransition();
   const [isResetPending, startResetTransition] = useTransition();
+
+  if (state.mfa) {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-[1.5rem] border border-[#1F487C]/12 bg-[#f8fbff] p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1F487C]/10 text-[#1F487C]"><FaIcon icon="shield" fixedWidth /></span>
+            <div>
+              <p className="text-sm font-bold text-slate-950">Two-factor verification</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Enter the 6-digit code from your authenticator app to finish signing in.</p>
+            </div>
+          </div>
+        </div>
+        <form className="space-y-4" onSubmit={(event) => {
+          event.preventDefault();
+          const formData = new FormData(event.currentTarget);
+          startOtpTransition(() => { void (async () => setState((await verifyLoginOtp(undefined, formData)) ?? {}))(); });
+        }}>
+          <input type="hidden" name="factorId" value={state.mfa.factorId} />
+          <input type="hidden" name="challengeId" value={state.mfa.challengeId} />
+          <input type="hidden" name="next" value={state.mfa.next} />
+          <div className="space-y-2">
+            <FieldLabel htmlFor="otpCode" label="Authenticator code" />
+            <div className="relative">
+              <FaIcon icon="key" fixedWidth className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
+              <input id="otpCode" name="code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required autoComplete="one-time-code" placeholder="000000" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-center text-lg font-black tracking-[0.4em] text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-300 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+            </div>
+          </div>
+          {state.error ? <StateMessage title="Verification failed" description={state.error} tone="danger" /> : null}
+          <button type="submit" disabled={isOtpPending} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#1F487C_0%,#0c7fff_120%)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_34px_rgba(31,72,124,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60">
+            {isOtpPending ? "Verifying..." : "Verify and enter workspace"}<FaIcon icon="arrow-right" fixedWidth className="text-xs" />
+          </button>
+          <button type="button" onClick={() => setState({})} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#1F487C] transition hover:bg-[#1F487C]/5">
+            Use a different username
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -52,7 +102,7 @@ export function LoginForm({ next = "" }: { next?: string }) {
         <button type="submit" disabled={isPending} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#1F487C_0%,#0c7fff_120%)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_34px_rgba(31,72,124,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60">
           {isPending ? "Signing in..." : "Sign in to workspace"}<FaIcon icon="arrow-right" fixedWidth className="text-xs" />
         </button>
-        <p className="text-center text-xs text-slate-500">Use the username your workspace admin assigned to your profile.</p>
+        <p className="text-center text-xs text-slate-500">Use the username your workspace admin assigned to your profile. Accounts with 2FA enabled will be asked for an authenticator code.</p>
       </form>
       <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_10px_28px_rgba(31,72,124,0.05)]">
         <button type="button" onClick={() => setResetOpen((v) => !v)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded={resetOpen}>
