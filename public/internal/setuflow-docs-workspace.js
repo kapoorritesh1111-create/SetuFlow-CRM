@@ -30,7 +30,8 @@ const Docs = (() => {
     { id: 'integrations',     group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.',                            accent: '#0d9488' },
     { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
     { id: 'api-reference',    group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',   tag: 'API',           summary: '94+ app routes, 55+ API endpoints including all /api/setu-guru/* routes, background jobs, and cron reference.',           accent: '#0d9488' },
-    { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
+    { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Curated screenshot library of every major workspace. Clickable, zoomable, linked to the relevant docs topic.',      accent: '#db2777' },
+    { id: 'glossary',         group: 'Reference',          icon: '\u25ce',   title: 'Glossary',             tag: 'Glossary',      summary: 'Definitions for every term, table name, status code, field name, and acronym used across SETU Flow CRM.',        accent: '#334155' }
   ];
 
   function idx() { const h = (location.hash || '#overview').replace('#', '').split('='); if (h[0] === 'snapshot') return 'live-ui'; return topics.some(t => t.id === h[0]) ? h[0] : 'overview'; }
@@ -2638,6 +2639,128 @@ flowchart LR
   </ul></div>
 </div>`;
 
+    if (id === 'glossary') return `
+<div class="section-block"><h2>Glossary — Terms, Fields & Status Codes</h2>
+<p>Every term used in the product, codebase, and documentation. Sorted alphabetically by group. Use browser search (Ctrl+F / Cmd+F) to jump to a specific term.</p>
+</div>
+
+<div class="section-block"><h2>Commercial Workflow Terms</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Term</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Capture</strong></td><td>Step 1 of the workflow. Converting a trade-show conversation, business card scan, or quick-entry form into a structured lead record. Source: <code>/capture</code>, <code>/mobile/capture</code>, <code>/trade-events/[id]/capture</code></td></tr>
+<tr><td><strong>Follow-up Queue</strong></td><td>The lead management workspace at <code>/leads</code>. Shows all leads grouped by follow-up urgency. Each lead card carries owner, stage, deal value, role, and compliance posture.</td></tr>
+<tr><td><strong>Lead Type</strong></td><td><code>lead_type</code> field on the <code>leads</code> table. Values: <code>buyer</code>, <code>supplier</code>. Determines which pipeline view and filter the lead appears in.</td></tr>
+<tr><td><strong>Pipeline Stage</strong></td><td>The sales stage a lead occupies. Stored in <code>leads.pipeline_stage_id</code>. Stage move is gated by <code>buildStageMoveReadiness()</code> — blocked moves show a popover explaining the required action.</td></tr>
+<tr><td><strong>Qualification Status</strong></td><td><code>leads.qualification_status</code>. Values: <code>new</code>, <code>qualified</code>, <code>disqualified</code>. Leads must be <code>qualified</code> and have a product interest mapped before an RFQ can be created.</td></tr>
+<tr><td><strong>Quote Version</strong></td><td>Each saved edit to a quote creates a new <code>quote_versions</code> row. The most recent version is the active version. Older versions are immutable audit records. Field: <code>version_no</code>.</td></tr>
+<tr><td><strong>Approval Required</strong></td><td><code>quotes.approval_required = true</code> is set when a quote-only adjustment exceeds 15% of the base price. The quote enters <code>pending_approval</code> status and cannot be sent until an admin approves it.</td></tr>
+<tr><td><strong>Incoterm</strong></td><td>International Commercial Term governing which party bears transport costs and risk. Options in SETU Flow: EXW, FOB, CIF, DDP, DAP, FCA, CFR. Set on the Quote Terms step. Determines the pricing basis column the calculator uses as a starting point.</td></tr>
+<tr><td><strong>EXW → DDP Hierarchy</strong></td><td>The pricing calculator hierarchy: Ex-Works → FOB (+ inland + customs + port) → CIF (+ freight + insurance) → DDP (+ import duties + last-mile) → Internal (+ markup) → Distributor → Retail. Any tier can be the starting input.</td></tr>
+<tr><td><strong>RFQ</strong></td><td>Request for Quote. A supplier-side document created at <code>/leads/[leadId]/rfq/new</code>. Distinct from a buyer-facing Quote. Requires lead to be qualified with at least one product mapped. Stored in the <code>rfqs</code> and <code>rfq_line_items</code> tables.</td></tr>
+<tr><td><strong>Commercial Lock</strong></td><td>Once a quote is accepted and a contract signed, the accepted quote version snapshot is locked — no line mutation allowed. States: <code>accepted_locked</code>, <code>contract_locked</code>, <code>locked</code>.</td></tr>
+<tr><td><strong>Order Actual Lines</strong></td><td>The real shipped quantities recorded in <code>order_lines</code>. Can differ from the accepted quote lines but differences require a <code>difference_reason</code>. Line continuity check runs at the dispatch gate.</td></tr>
+<tr><td><strong>Dispatch Gate</strong></td><td>The pre-shipment approval stage in the order lifecycle. Blocked if: compliance items are open, line continuity has unresolved differences, or required dispatch documents (packing list, freight request) are not prepared and approved.</td></tr>
+<tr><td><strong>Closeout</strong></td><td>Final order stage: completion packet generated, final invoice issued, payment confirmed. Sets <code>orders.status = 'completed'</code> and <code>contracts.status = 'completed'</code>.</td></tr>
+<tr><td><strong>Trade Event</strong></td><td>A configured event (trade show, exhibition, sourcing fair) in the <code>trade_events</code> table. Entries captured at an event inherit the event's source label, buyer/supplier type defaults, and pipeline stage defaults.</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Document & Compliance Terms</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Term</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Compliance Item</strong></td><td>A row in <code>compliance_items</code> representing a required document or check for a specific lead + product + destination combination. Has a status, requirement_code, and blocking severity.</td></tr>
+<tr><td><strong>Requirement Code</strong></td><td><code>requirement_code</code> field linking a compliance item to the document that satisfies it. Used to match uploaded evidence to the correct open item.</td></tr>
+<tr><td><strong>Evidence Upload</strong></td><td>A real file uploaded to the <code>compliance-docs</code> Supabase storage bucket to satisfy a compliance item. Changes item status to <code>submitted</code> pending reviewer approval.</td></tr>
+<tr><td><strong>Waive for Quote</strong></td><td>Admin action that clears a compliance blocker for the current quote send only. Requires a mandatory reason text. Recorded as <code>activity_type: 'compliance_waived'</code> in <code>lead_activities</code>.</td></tr>
+<tr><td><strong>Defer to Dispatch</strong></td><td>Clears compliance blocker for quote send but re-activates it at the order dispatch gate.</td></tr>
+<tr><td><strong>order_document_sends</strong></td><td>Supabase table. One row per sent document link. Status: <code>link_created</code> = a tracked URL was generated; does NOT mean the recipient received it. Webhook events from Mailtrap are the only delivery confirmation for email.</td></tr>
+<tr><td><strong>Document Type Labels</strong></td><td>Normalized display labels: <code>order_confirmation</code> → "Order Confirmation"; <code>proforma_invoice</code> / <code>dispatch_invoice</code> / <code>final_invoice</code> → "Invoice"; <code>packing</code> → "Packing List"; <code>freight</code> → "Freight Request"; <code>completion_packet</code> → "Completion Packet"; <code>evidence</code> → "Uploaded Evidence".</td></tr>
+<tr><td><strong>PDF Storage Path</strong></td><td><code>order_documents.pdf_storage_path</code> — Supabase storage path or signed URL for a pre-generated PDF. Checked before falling back to the on-demand PDF API route.</td></tr>
+<tr><td><strong>Share Token</strong></td><td>A base64url-encoded JSON payload used for tokenized document preview at <code>/order-documents/preview/[token]</code>. Contains: organizationId, contractId, leadId, quoteId, documentKind, recipient, note, createdAt.</td></tr>
+<tr><td><strong>Terms Profile</strong></td><td>A row in <code>organization_document_terms_profiles</code>. Defines page_one_terms (short bullet terms on page 1), annexure_terms (full clause set), bank_details (for invoice footer), export_declarations (for packing/proforma), and identity_fields (legal name, tax ID overrides).</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Database Table Reference</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Table</th><th>Purpose</th><th>Key fields</th></tr></thead>
+<tbody>
+<tr><td><code>leads</code></td><td>Core lead/opportunity record</td><td>id, organization_id, lead_type, pipeline_stage_id, qualification_status, company_name, contact_name, deal_value, currency, source_event_id</td></tr>
+<tr><td><code>lead_activities</code></td><td>Immutable activity log per lead</td><td>id, lead_id, activity_type, actor_user_id, payload, created_at</td></tr>
+<tr><td><code>quotes</code></td><td>Quote master record</td><td>id, lead_id, status, approval_required, approved_by, approved_at, rejected_reason</td></tr>
+<tr><td><code>quote_versions</code></td><td>Versioned snapshots of a quote</td><td>id, quote_id, version_no, status, incoterm, currency, total_value, sent_at, approved_at</td></tr>
+<tr><td><code>quote_version_line_items</code></td><td>Line items per quote version</td><td>id, quote_version_id, product_id, variant_id, quantity, unit_price, adjustment_percent, adjustment_amount, adjustment_reason</td></tr>
+<tr><td><code>orders</code></td><td>Execution order record</td><td>id, source_quote_id, source_quote_version_id, legacy_contract_id, order_type, current_stage, status, approval_state, currency, total_order_value</td></tr>
+<tr><td><code>order_lines</code></td><td>Actual shipped line items</td><td>id, order_id, product_id, variant_id, actual_quantity, unit_price, difference_reason</td></tr>
+<tr><td><code>order_documents</code></td><td>System workflow documents per order</td><td>id, order_id, document_type, stage_key, status, version_no, pdf_storage_path, created_at</td></tr>
+<tr><td><code>order_document_sends</code></td><td>Tracked send events for order docs</td><td>id, order_id, order_document_id, document_type, share_url, share_token, status, created_at</td></tr>
+<tr><td><code>contracts</code></td><td>Commercial agreement record</td><td>id, quote_id, lead_id, status, commercial_lock_state, signed_at, completed_at</td></tr>
+<tr><td><code>documents</code></td><td>Uploaded evidence and compliance files</td><td>id, related_entity, related_id, doc_type, file_url, version, version_label, requirement_code, status, expires_at</td></tr>
+<tr><td><code>document_versions</code></td><td>Full version history for uploaded docs</td><td>id, document_id, version_no, version_label, file_url, created_by, created_at</td></tr>
+<tr><td><code>compliance_items</code></td><td>Compliance requirements per lead</td><td>id, lead_id, requirement_code, status, blocking_severity, evidence_document_id, waived_by, waived_reason</td></tr>
+<tr><td><code>products</code></td><td>Product master catalog</td><td>id, organization_id, name, description, hs_code, category_id, status</td></tr>
+<tr><td><code>product_variants</code></td><td>Variant-level SKU and pricing fields</td><td>id, product_id, sku, pack_size, pack_unit, units_per_case, moq, pricing_basis, uom</td></tr>
+<tr><td><code>product_pricing_rules</code></td><td>Product-level pricing overrides</td><td>id, product_id, variant_id, rule_scope, currency, exw_price, fob_price, cif_price, ddp_price, internal_price</td></tr>
+<tr><td><code>pricing_calculator_default_rules</code></td><td>Org/category pricing defaults</td><td>id, organization_id, rule_scope ('org'|'category'), category_id, currency, margin_mode, inland_transport_cost, export_customs_cost, internal_markup_margin, distributor_margin, retail_margin</td></tr>
+<tr><td><code>pipeline_stages</code></td><td>Configurable pipeline stage definitions</td><td>id, pipeline_id, name, position, stage_type — joined through <code>pipelines</code> to get org scope (no org_id directly on this table)</td></tr>
+<tr><td><code>in_app_notifications</code></td><td>Notification inbox items</td><td>id, organization_id, user_id, notif_type, message, entity_type, entity_id, read_at, created_at</td></tr>
+<tr><td><code>workspace_notification_settings</code></td><td>Admin workspace notification defaults</td><td>id, organization_id, notif_type, channel, enabled, locked (locked=true means members cannot override)</td></tr>
+<tr><td><code>user_notification_preferences</code></td><td>Per-user notification overrides</td><td>id, organization_id, user_id, notif_type, channel, enabled</td></tr>
+<tr><td><code>scheduled_tasks</code></td><td>Task records across the org</td><td>id, organization_id, task_type, linked_entity_type, linked_entity_id, due_at, status, priority, assigned_to, payload</td></tr>
+<tr><td><code>my_card_settings</code></td><td>Per-user vCard identity and QR settings</td><td>id, user_id, share_slug, smart_qr_enabled, display_name, title, organization, phone, website, address, social_links</td></tr>
+<tr><td><code>setu_guru_feedback</code></td><td>Guru thumbs-up/down feedback</td><td>id, org_id, user_id, route, label ('helpful'|'missing'), last_message, missing_answer, created_at</td></tr>
+<tr><td><code>setu_guru_telemetry</code></td><td>Guru usage events for budget tracking</td><td>id, org_id, user_id, route, query_type, response_latency_ms, token_count, created_at</td></tr>
+<tr><td><code>analytics_snapshots</code></td><td>Daily funnel metrics written by cron</td><td>id, organization_id, snapshot_date, leads_created, quotes_sent, orders_placed, conversion_rate, avg_days_to_close</td></tr>
+<tr><td><code>audit_logs</code></td><td>System-wide audit trail</td><td>id, organization_id, actor_user_id, entity_type, entity_id, action, payload, created_at</td></tr>
+<tr><td><code>organization_document_terms_profiles</code></td><td>Document PDF terms and bank details</td><td>id, organization_id, region_type, document_type, profile_name, is_default, page_one_terms[], annexure_terms[], bank_details{}, export_declarations{}, identity_fields{}, stamp_settings{}</td></tr>
+<tr><td><code>sprint_issues</code></td><td>SETU internal issue tracker</td><td>id, issue_ref, sprint_number, sprint_name, title, description, status, severity, area, category, how_to_fix, regression_test, fix_applied, files_changed, resolved_at</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Status Codes Reference</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Entity</th><th>Status</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Quote</td><td><code>draft</code></td><td>Being built; not yet sent to buyer</td></tr>
+<tr><td>Quote</td><td><code>pending_approval</code></td><td>Adjustment &gt;15% — waiting admin approval before send is enabled</td></tr>
+<tr><td>Quote</td><td><code>approved</code></td><td>Admin cleared the approval gate; send is now enabled</td></tr>
+<tr><td>Quote</td><td><code>sent</code></td><td>Delivered to buyer (email or WhatsApp tracked link)</td></tr>
+<tr><td>Quote</td><td><code>accepted</code></td><td>Buyer accepted; triggers order and contract creation</td></tr>
+<tr><td>Quote</td><td><code>rejected</code></td><td>Buyer declined; lead remains open for follow-up</td></tr>
+<tr><td>Quote</td><td><code>expired</code></td><td>Validity window passed; must re-quote</td></tr>
+<tr><td>Order</td><td><code>draft</code></td><td>Order created from accepted quote; execution not yet started</td></tr>
+<tr><td>Order</td><td><code>active</code></td><td>Execution in progress; documents being prepared</td></tr>
+<tr><td>Order</td><td><code>dispatched</code></td><td>Shipment sent; awaiting delivery confirmation</td></tr>
+<tr><td>Order</td><td><code>completed</code></td><td>Closeout done; final invoice issued and payment recorded</td></tr>
+<tr><td>Order</td><td><code>cancelled</code></td><td>Order voided before completion</td></tr>
+<tr><td>Contract</td><td><code>draft</code> → <code>signed</code> → <code>active</code> → <code>completed</code></td><td>Lifecycle progression; each transition logged to audit_logs</td></tr>
+<tr><td>Compliance</td><td><code>open</code></td><td>Item is blocking; no action taken</td></tr>
+<tr><td>Compliance</td><td><code>submitted</code></td><td>Evidence uploaded; waiting reviewer decision</td></tr>
+<tr><td>Compliance</td><td><code>approved</code></td><td>Cleared; no longer blocking</td></tr>
+<tr><td>Compliance</td><td><code>rejected</code></td><td>Evidence rejected; must re-submit or waive</td></tr>
+<tr><td>Compliance</td><td><code>expired</code></td><td>Document past its expiry date; compliance re-opens</td></tr>
+<tr><td>Document</td><td><code>needs_review</code></td><td>Requires action — operator must approve, reject, or upload</td></tr>
+<tr><td>Document</td><td><code>link_created</code></td><td>Tracked share URL generated; does NOT confirm delivery</td></tr>
+<tr><td>Document</td><td><code>approved</code></td><td>Reviewer confirmed document is valid and ready to use</td></tr>
+<tr><td>Document</td><td><code>expired</code></td><td>expires_at is in the past; compliance gate re-opens</td></tr>
+<tr><td>Notification</td><td><code>in_app</code> default ON</td><td>All 9 alert types are on by default in-app; email/push/WhatsApp/SMS default OFF</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Environment Variables</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Variable</th><th>Used by</th><th>Required?</th></tr></thead>
+<tbody>
+<tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>All Supabase client calls</td><td>Yes</td></tr>
+<tr><td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td><td>All Supabase client calls</td><td>Yes</td></tr>
+<tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Service-role operations (PDF, admin writes)</td><td>Yes</td></tr>
+<tr><td><code>ANTHROPIC_API_KEY</code></td><td>Setu Guru AI inference via /api/setu-guru/brain</td><td>Yes (Guru goes offline without it)</td></tr>
+<tr><td><code>OPENAI_API_KEY</code></td><td>/api/setu-guru/research — web search via OpenAI Responses API</td><td>Optional (research tab disabled if absent)</td></tr>
+<tr><td><code>CRON_SECRET</code></td><td>Authorization header for /api/cron/* and /api/notifications/email-digest</td><td>Yes (cron jobs reject without it)</td></tr>
+<tr><td><code>MAILTRAP_API_KEY</code></td><td>Email send via Mailtrap production API</td><td>Yes (email sends fail silently without it)</td></tr>
+<tr><td><code>MAILTRAP_WEBHOOK_SECRET</code></td><td>HMAC verification on POST /api/webhooks/mailtrap</td><td>Yes (webhooks rejected without it)</td></tr>
+<tr><td><code>NEXT_PUBLIC_APP_URL</code></td><td>PDF preview origin construction, share URLs</td><td>Yes in production (falls back to x-forwarded-host header)</td></tr>
+<tr><td><code>NEXT_PUBLIC_SETU_GURU_URL</code></td><td>Setu Guru GPT deep-link from widget</td><td>Optional</td></tr>
+</tbody></table></div>`;
+
     return null;
   }
 
@@ -3388,47 +3511,104 @@ flowchart LR
 <tr><td><code>/mobile/notifications</code></td><td>Notification bell dropdown</td><td>Full-screen notification inbox on mobile</td></tr>
 <tr><td><code>/mobile/orders/[orderId]</code></td><td>Order detail slide panel</td><td>Mobile order detail — same execution data, full-width layout</td></tr>
 </tbody></table></div>`;
-    if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Clickable screenshots of key modules and workflows. Upload from this workspace to share with testers and tech leads.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div><div id="screenshotGrid" class="screenshot-grid"></div>
-<div class="section-block"><h2>Email Delivery Pipeline (DOC-001)</h2>
-<p>Every quote send and document send goes through a tracked chain. <code>link_created</code> is the start — not confirmation. Provider webhook confirmation is required before treating as delivered.</p>
-</div>
+    if (id === 'live-ui') return `<div class="screenshot-toolbar"><div><h2>Live UI Screenshot Library</h2><p>Curated screenshots of every major workspace and mobile view. Click any image to zoom. Upload additional screenshots via the button below.</p></div><button class="internal-only" onclick="Docs.openScreenshotModal()">+ Add Screenshot</button></div>
+
+<div class="section-block"><h2>Command & Analytics</h2></div>
 <div class="doc-card-grid">
-  <div class="doc-card border-blue"><div class="doc-card-title">&#128231; email_send_log Table</div><ul>
-    <li>Per-send delivery audit trail — one row per send attempt</li>
-    <li>Key fields: <code>send_id</code>, <code>provider</code>, <code>recipient_email</code>, <code>status</code>, <code>provider_message_id</code>, <code>delivered_at</code>, <code>bounced_at</code></li>
-    <li>Linked to <code>communications</code> via <code>communications_id</code></li>
-  </ul></div>
-  <div class="doc-card border-teal"><div class="doc-card-title">&#127381; Mailtrap Webhook Receiver</div><ul>
-    <li><code>POST /api/webhooks/mailtrap</code> — receives delivery, bounce, open, spam events</li>
-    <li><code>GET /api/webhooks/mailtrap</code> → <code>{"ok":true,"service":"setuflow-mailtrap-webhook"}</code></li>
-    <li>Updates <code>email_send_log</code> + <code>communications.delivery_status</code> on each event</li>
-    <li>Requires <code>MAILTRAP_WEBHOOK_SECRET</code> env var (HMAC verified)</li>
-  </ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">&#128204; Communications Table Extended Fields</div><ul>
-    <li><code>delivery_status</code>: <code>pending</code> | <code>delivered</code> | <code>bounced</code> | <code>opened</code> | <code>failed</code></li>
-    <li><code>provider_message_id</code>: Mailtrap message ID for event correlation</li>
-    <li><code>bounce_reason</code>: populated when delivery fails</li>
-    <li><code>opened_at</code>: timestamp of first open event from provider webhook</li>
-  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#127968; Dashboard — Command Center</div>
+    <a href="docs-screenshots/ss-dashboard.jpg" target="_blank"><img src="docs-screenshots/ss-dashboard.jpg" alt="SETU Flow dashboard command center" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">KPI tiles, pipeline value, market coverage, overdue follow-ups. Route: /dashboard</p>
+  </div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128202; Analytics — Trend View</div>
+    <a href="docs-screenshots/ss-analytics.jpg" target="_blank"><img src="docs-screenshots/ss-analytics.jpg" alt="Analytics dashboard" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">6 parallel server-side analytics panels. Route: /dashboard/analytics</p>
+  </div>
+  <div class="doc-card border-purple"><div class="doc-card-title">&#128200; Reports — Full Funnel</div>
+    <a href="docs-screenshots/ss-reports.jpg" target="_blank"><img src="docs-screenshots/ss-reports.jpg" alt="Reports workspace" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Commercial funnel, quote performance, order execution, send effectiveness. Route: /reports</p>
+  </div>
 </div>
-<div class="callout"><b>Critical:</b> <code>order_document_sends.status = &#39;link_created&#39;</code> means a tracked link was generated and the operator saw the WhatsApp/email surface. It does NOT mean the recipient received or opened anything. Webhook events from Mailtrap are the only reliable delivery confirmation for email.</div>
-<div class="section-block"><h2>WhatsApp Send Flow (DOC-002)</h2>
-</div>
+
+<div class="section-block"><h2>Lead & Pipeline</h2></div>
 <div class="doc-card-grid">
-  <div class="doc-card border-green"><div class="doc-card-title">&#128241; Device-Aware Routing</div><ul>
-    <li><strong>Mobile</strong>: <code>wa.me/[number]?text=[encoded]</code> — opens WhatsApp app natively</li>
-    <li><strong>Desktop</strong>: <code>https://web.whatsapp.com/send?phone=[number]&text=[encoded]</code></li>
-    <li>Detection via <code>navigator.userAgent</code> + screen width at moment of click</li>
-    <li>Fallback to <code>wa.me</code> if device is ambiguous (works on both)</li>
-  </ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">&#9888; No Automatic Delivery Confirmation</div><ul>
-    <li>Clicking Send opens WhatsApp pre-filled — operator sends it manually</li>
-    <li><code>link_created</code> confirms the operator initiated — not buyer receipt</li>
-    <li>WhatsApp has no delivery webhook available to external platforms</li>
-    <li>Operator must confirm receipt manually and update order notes</li>
-  </ul></div>
-</div>`;
-    return '';
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128101; Leads — Follow-up Queue</div>
+    <a href="docs-screenshots/ss-leads.jpg" target="_blank"><img src="docs-screenshots/ss-leads.jpg" alt="Leads follow-up queue" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Urgency-sorted lead cards with owner, stage, deal value, compliance posture. Route: /leads</p>
+  </div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; Leads — Command Center View</div>
+    <a href="docs-screenshots/ss-leads-cmd.jpg" target="_blank"><img src="docs-screenshots/ss-leads-cmd.jpg" alt="Leads command center" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Expanded lead detail with activity timeline and follow-up actions. Route: /leads</p>
+  </div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128200; Pipeline — Kanban Board</div>
+    <a href="docs-screenshots/ss-pipeline.jpg" target="_blank"><img src="docs-screenshots/ss-pipeline.jpg" alt="Pipeline kanban board" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Stage-gated Kanban view with Full/Compact/Micro card density toggle. Route: /pipeline</p>
+  </div>
+</div>
+
+<div class="section-block"><h2>Quote & Order Execution</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128196; Quotes — Workspace</div>
+    <a href="docs-screenshots/ss-quotes.jpg" target="_blank"><img src="docs-screenshots/ss-quotes.jpg" alt="Quotes workspace" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Quote list with status badges, approval queue, and send actions. Route: /quotes</p>
+  </div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128203; Quote Builder — Step View</div>
+    <a href="docs-screenshots/ss-quotebuilder.jpg" target="_blank"><img src="docs-screenshots/ss-quotebuilder.jpg" alt="Quote builder step view" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Terms-before-Pricing step, UOM/MOQ on lines, inline adjustments. Route: /leads/[leadId]/quote</p>
+  </div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128230; Orders — Execution Desk</div>
+    <a href="docs-screenshots/ss-orders.jpg" target="_blank"><img src="docs-screenshots/ss-orders.jpg" alt="Orders execution desk" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Dispatch gates, document status, blockers, payment state. Route: /orders</p>
+  </div>
+</div>
+
+<div class="section-block"><h2>Catalog & Documents</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128230; Product Catalog</div>
+    <a href="docs-screenshots/ss-catalog.jpg" target="_blank"><img src="docs-screenshots/ss-catalog.jpg" alt="Product catalog workspace" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Product master list, variants, pricing rules, CSV import/export. Route: /products</p>
+  </div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128196; Documents — Control Desk</div>
+    <a href="docs-screenshots/ss-documents.jpg" target="_blank"><img src="docs-screenshots/ss-documents.jpg" alt="Documents control desk" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Client-grouped document view with PDF links, expiry posture, status badges. Route: /documents</p>
+  </div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9989; Tasks — Manager</div>
+    <a href="docs-screenshots/ss-tasks.jpg" target="_blank"><img src="docs-screenshots/ss-tasks.jpg" alt="Task manager workspace" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Grouped list and calendar views with overdue/today/later buckets. Route: /tasks</p>
+  </div>
+</div>
+
+<div class="section-block"><h2>Capture & Mobile</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128247; Capture — Desktop</div>
+    <a href="docs-screenshots/ss-capture.jpg" target="_blank"><img src="docs-screenshots/ss-capture.jpg" alt="Capture workspace desktop" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Business card scan + quick lead entry. Route: /capture</p>
+  </div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128247; Capture Lead — Detail</div>
+    <a href="docs-screenshots/ss-capture-lead.jpg" target="_blank"><img src="docs-screenshots/ss-capture-lead.jpg" alt="Capture lead detail" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Parsed lead fields from business card OCR before save. Route: /capture</p>
+  </div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128196; Smart vCard</div>
+    <a href="docs-screenshots/ss-vcard.jpg" target="_blank"><img src="docs-screenshots/ss-vcard.jpg" alt="Smart vCard share view" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Public /card page with Smart QR, save contact, and Wallet actions.</p>
+  </div>
+</div>
+
+<div class="section-block"><h2>Mobile Views</h2></div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128241; Mobile — Leads Queue</div>
+    <a href="docs-screenshots/ss-mobile-leads.jpg" target="_blank"><img src="docs-screenshots/ss-mobile-leads.jpg" alt="Mobile leads queue" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Phone-optimised lead list with urgency context. Route: /mobile/leads</p>
+  </div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128241; Mobile — Capture Lead</div>
+    <a href="docs-screenshots/ss-mobile-capture.jpg" target="_blank"><img src="docs-screenshots/ss-mobile-capture.jpg" alt="Mobile capture lead form" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Business card scan + quick entry on phone. Route: /mobile/capture</p>
+  </div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128241; Mobile — Tasks</div>
+    <a href="docs-screenshots/ss-tasks-mobile.jpg" target="_blank"><img src="docs-screenshots/ss-tasks-mobile.jpg" alt="Mobile task manager" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Swipe-to-complete task list on phone. Route: /mobile (tasks tab)</p>
+  </div>
+</div>
+<div id="screenshotGrid" class="screenshot-grid" style="margin-top:8px"></div>`;
   }
 
   // Central dispatcher - replaces the stub added earlier
@@ -3446,6 +3626,7 @@ flowchart LR
     if (c5) return c5;
     const c6 = topicContentNewModules(id);
     if (c6) return c6;
+    if (id === 'glossary') return topicContentNewModules('glossary') || topicContentOther(id) || '';
     return topicContentOther(id) || '';
   }
 
