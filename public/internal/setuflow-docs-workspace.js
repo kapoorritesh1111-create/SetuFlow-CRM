@@ -2,7 +2,7 @@ const Docs = (() => {
   const shared = { active: false, token: null, recipient: null, expiry: null };
   let authUser = null;
   let screenshots = [];
-  let metrics = { open: 18, resolved: 247, criticalHigh: 9, milestones: 3 }; // updated from live DB
+  let metrics = { open: 12, resolved: 261, criticalHigh: 4, milestones: 4 }; // SF-23-DOC-194: updated 2026-06-04 from live DB (273 total issues)
 
   const topics = [
     { id: 'overview',         group: 'Get Started',        icon: '\u2302',   title: 'Product Overview',     tag: 'Start Here',    summary: 'What SETU Flow CRM is, why it exists, and how a tester or new tech lead should orient themselves.',                         accent: '#2563eb', next: 'architecture', sections: [] },
@@ -14,12 +14,12 @@ const Docs = (() => {
     { id: 'trade-events',      group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
     { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Operations',    summary: 'Six click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
     { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, business card scan, smart vCard, live org search \u2014 all with human approval guardrails.',          accent: '#db2777' },
-    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, smart vCard, trade-show capture, and mobile role-aware lead workflows.',                              accent: '#14b8a6' },
+    { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, Smart vCard (Smart QR vs Offline QR, Wallet placeholders, share slug), trade-show capture, mobile orders/pipeline/notifications, and role-aware lead workflows.',              accent: '#14b8a6' },
     { id: 'data-security',    group: 'Security & Data',    icon: '\u2bcf',   title: 'Data & Security',      tag: 'Security',      summary: 'Organization-scoped data, RLS policies, membership, roles, audit trails, and safe integration boundaries.',               accent: '#059669' },
     { id: 'api-integrations', group: 'Integrations & API', icon: '&#x27E8;/&#x27E9;',      title: 'API & Integrations',   tag: 'Integrations',  summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
     { id: 'integrations',      group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.', accent: '#0d9488' },
     { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
-    { id: 'api-reference',     group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',     tag: 'API', summary: 'All 84 app routes, key API endpoints, mobile routes, and background jobs reference.', accent: '#0d9488' },
+    { id: 'api-reference',     group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',     tag: 'API', summary: '94+ app routes, 55+ API endpoints including all 11 /api/setu-guru/* routes, /workspace/* internal tools, background jobs, and cron reference.', accent: '#0d9488' },
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Clickable screenshot library for testers and tech leads. Internal users can upload screenshots from this workspace.',      accent: '#db2777' }
   ];
 
@@ -141,7 +141,7 @@ const Docs = (() => {
     </div>
   </div>
   <div class="readiness-card">
-    <div class="ring"><span id="readyPct">66%</span></div>
+    <div class="ring"><span id="readyPct">72%</span></div>
     <b>Documentation Readiness</b>
     <p>Live issue counts and roadmap signals refresh from Supabase when available.</p>
   </div>
@@ -699,6 +699,112 @@ const Docs = (() => {
 <tr><td><b>SEO Intelligence</b></td><td><code>/admin/seo-intelligence</code></td><td>SETU-internal: live trends, keyword coverage %, competitor gap, push PR workflow</td><td>SETU internal org only. <code>SEO_TREND_QUERIES</code> env var controls tracked keywords (max 5).</td></tr>
 <tr><td><b>Admin Overview</b></td><td><code>/admin/overview</code></td><td>8-count admin dashboard: markets, countries, stages, products, categories, roles, invites, members</td><td>Admin role required. Quick-access links to each admin sub-workspace.</td></tr>
 </tbody></table></div>
+<div class="section-block"><h2>SETU Internal Workspace Tools (/workspace/*) — SF-23-DOC-191</h2>
+<p>The <code>/workspace</code> route group is SETU-internal only. It is the development control surface used by the SETU engineering team and AI agents (Claude, ChatGPT, Cursor) for issue triage, sprint tracking, and agent workflow. Not visible to client org users.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title"><span class="badge badge-slate">SETU Internal</span> /workspace/agents</div><ul>
+    <li><strong>AgentPromptCopy</strong> component — generates structured PR prompts for Claude/ChatGPT/Cursor agents</li>
+    <li>Issue triage sorted by severity rank (Critical → High → Medium → Low) then priority_rank then created_at</li>
+    <li>Agent labels: claude, openai, cursor, human, system — each with a distinct color token</li>
+    <li>Reads active tracker_prompts protocol text from Supabase to build ChatGPT-ready fix prompts</li>
+    <li>protocolPreview shows first 16 lines of the active protocol for quick agent context review</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title"><span class="badge badge-slate">SETU Internal</span> /workspace/sprints</div><ul>
+    <li>Sprint list from sprint_issues grouped by sprint_number</li>
+    <li>Shows active sprint label, open issue count, resolved count, and milestone progress per sprint</li>
+    <li>Links each sprint to its associated issues in the issues board</li>
+    <li>Source: <code>sprint_issues</code> table with sprint_number and sprint_name grouping</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title"><span class="badge badge-slate">SETU Internal</span> /workspace/issues</div><ul>
+    <li><strong>IssuesBoard</strong> component with SmcShell filter panel</li>
+    <li>filterIssuesForSmc normalizes filter inputs from URL query params (severity, category, status, area)</li>
+    <li>isClosedIssue helper identifies Resolved/Closed/Done statuses for count separation</li>
+    <li>Displays open vs closed metric tiles with counts from live Supabase sprint_issues table</li>
+    <li>Used by the DCC (Development Control Center) as the in-product issue tracking surface</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title"><span class="badge badge-slate">SETU HQ Only</span> /workspace/clients</div><ul>
+    <li>Client organization list for SETU HQ administrators</li>
+    <li>Shows client org name, plan tier, seat usage, module access grants</li>
+    <li>Source: <code>client_entitlements</code> and <code>client_usage_rollups</code> tables</li>
+    <li>Links to <code>/admin/client-management</code> for provisioning actions</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Pricing Calculator — V17 Architecture (SF-23-DOC-187)</h2>
+<p>The V17 pricing calculator computes a full price hierarchy from any starting cost level. It is the commercial engine behind product pricing, category defaults, and quote line generation. Operators enter cost inputs — the calculator derives all output levels.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128200; Price Hierarchy (EXW → Retail)</div><ul>
+    <li><strong>EXW</strong> — Ex-Works: base production cost at factory gate</li>
+    <li><strong>FOB</strong> — EXW + inland transport + export customs + port handling</li>
+    <li><strong>CIF</strong> — FOB + freight + insurance</li>
+    <li><strong>DDP</strong> — CIF + import duties + destination customs + last-mile delivery</li>
+    <li><strong>Internal (Operator) Price</strong> — DDP + internal markup/margin</li>
+    <li><strong>Distributor Price</strong> — Internal price + distributor margin</li>
+    <li><strong>Retail Price</strong> — Distributor price + retail margin</li>
+    <li>Starting level can be any tier — calculator works up or down from the input</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127968; Cascade Override Order</div><ul>
+    <li><strong>Org Default</strong> — stored in <code>pricing_calculator_default_rules</code> with rule_scope = 'org'</li>
+    <li><strong>Category Default</strong> — same table, rule_scope = 'category', linked via category_id</li>
+    <li><strong>Product Override</strong> — product/variant-level pricing in <code>product_pricing_rules</code></li>
+    <li><strong>Quote-Only Adjustment</strong> — discount or markup applied at quote line level only; does NOT rewrite product defaults</li>
+    <li>Calculator starts in <strong>inherited-default mode</strong> for saved products; requires explicit Edit override before changing product-specific pricing</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#9881; pricing_calculator_default_rules Table</div><ul>
+    <li>Columns: rule_scope ('org' or 'category'), category_id (null for org scope), currency, margin_mode ('percent' or 'absolute'), inland_transport_cost, export_customs_cost, port_handling_cost, internal_markup_margin, distributor_margin, retail_margin</li>
+    <li>Migration: <code>20260504_import_export_pricing_calculator.sql</code> + V17.5 additive migration</li>
+    <li>Org admin writes; all org members read for quote calculation context</li>
+    <li>Edited at: Admin → Product Management → Pricing Rules/Defaults</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#127991; Product Variant Pricing Fields</div><ul>
+    <li>Pack size, pack unit, units_per_case live on <code>product_variants</code></li>
+    <li>pricing_basis: how the unit price is quoted (per unit / per case / per kg / etc)</li>
+    <li>UOM: unit of measure (kg, MT, carton, pcs) — set per variant</li>
+    <li>MOQ: minimum order quantity displayed on quote line for buyer context</li>
+    <li>Variant selector in calculator: products with multiple variants select the target variant before editing</li>
+  </ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">&#9888; Quote-Only Adjustments & Approval Gate</div><ul>
+    <li>Quote-only discount/markup applied at quote line level: by percent (%) or currency amount</li>
+    <li>Adjustment > 15% of the base price sets <code>quotes.approval_required = true</code> → status becomes <code>pending_approval</code></li>
+    <li>Admin approval queue: approve clears the gate and re-enables send; reject requires a mandatory reason field</li>
+    <li>Unsaved adjustments must be saved before the approve action is available</li>
+    <li>Approved quote-only adjustments shown on PDF with original catalog price + override reason</li>
+    <li>Product/category/org default pricing rules are NEVER rewritten by a quote-only adjustment</li>
+  </ul></div>
+  <div class="doc-card border-slate"><div class="doc-card-title">&#128203; Admin Pricing-Gap Screen</div><ul>
+    <li>Admin → Product Management → Pricing tab shows pricing-gap counts</li>
+    <li>Gap = product variant that has no product_pricing_rules row and no inherited category default</li>
+    <li>Product masters without variants shown as a separate variant setup gap (not a pricing gap)</li>
+    <li>Review links open Products page with correct filter pre-applied for the gap type</li>
+    <li>Category-level pricing defaults editable inline: Admin → Categories → selected category</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Global Help, NoticeToast &amp; Handoff Toasts (V17.6) — SF-23-DOC-192</h2>
+<p>V17.6 standardized how operators receive feedback, guidance, and workflow handoff signals across the entire authenticated app surface.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#10068; Global Help Button</div><ul>
+    <li>Added to the authenticated app shell — visible from every protected route</li>
+    <li>Opens a centered popup modal with route-aware workflow explanation</li>
+    <li>Replaces inline PageHeader, AdminPageHero, and SectionCard educational copy which were removed from the main page surface</li>
+    <li>Keeps the main workspace surface clean while preserving operator guidance on demand</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127381; NoticeToast — ?notice= Pattern</div><ul>
+    <li>Floating toast notification triggered by <code>?notice=</code> query param on any authenticated route</li>
+    <li>Replaces inline success/error banners that pushed page content down</li>
+    <li>Values: <code>saved</code> (green), <code>save-failed</code> (red), <code>missing-workspace</code> (amber), and workflow-specific codes</li>
+    <li>Dismissal: clicking outside the toast clears it; auto-dismiss after ~4s</li>
+    <li>NoticeToast component is shared across: Product Management, Categories, Invitations, Users, Client Onboarding, Orders, and public onboarding validation</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128257; Workflow Handoff Toasts</div><ul>
+    <li><strong>Dashboard → Follow-up</strong>: overdue lead CTA navigates to leads with a handoff toast</li>
+    <li><strong>Capture → Follow-up</strong>: after business card save, navigates to lead drawer with confirmation toast</li>
+    <li><strong>Quote/Approval → Orders</strong>: after quote accepted and order created, handoff toast confirms transition</li>
+    <li>Handoff toasts use the same NoticeToast component with a workflow-specific message</li>
+    <li>Quick Lead remains a direct quick-entry action — no extra help or confirmation click required</li>
+  </ul></div>
+</div>
 <div class="section-block"><h2>Dashboard Analytics (/dashboard/analytics)</h2>
 <p>6 parallel analytics queries run server-side on every page load. Each panel links to its source workspace for drill-down. Data is always org-scoped — no cross-org leakage.</p>
 </div>
@@ -828,18 +934,48 @@ const Docs = (() => {
 <div class="doc-alert doc-alert-teal"><strong>Pipeline stage resolution:</strong> When converting a trade event entry to a lead, <code>resolvePipelineStageDefaults</code> automatically picks the correct starting stage based on <code>lead_type</code> — buyer and supplier leads start in different stages.</div>`;
 
     map['api-reference'] = `
-<div class="section-block"><h2>Additional Routes Reference</h2>
+<div class="doc-alert doc-alert-blue"><strong>SF-23-DOC-193:</strong> Route reference updated 2026-06-04. The product now has <strong>94+ page routes</strong> and <strong>55+ API endpoints</strong>. Key additions in V17+: /api/setu-guru/* (11 routes), /api/workspace/* (4 routes), /api/quotes/[quoteId]/pdf, /api/products/spreadsheet, and additional public vCard routes.</div>
+
+<div class="section-block"><h2>Additional App Routes Reference</h2>
 </div>
 <div class="tbl-wrap"><table>
 <thead><tr><th>Route</th><th>Name</th><th>What it does</th></tr></thead>
 <tbody>
 <tr><td><code>/admin/notifications</code></td><td>Admin Notification Settings</td><td>Per-workspace notification preference matrix — enable/disable channels (in-app, email) per event type. Requires admin role.</td></tr>
-<tr><td><code>/leads/[leadId]/quote</code></td><td>Lead Quote Surface</td><td>Mobile-safe quote creation from lead context. <code>MobileSafeLeadQuoteSurface</code> detects viewport and renders appropriate quote builder.</td></tr>
+<tr><td><code>/leads/[leadId]/quote</code></td><td>Lead Quote Surface</td><td>Mobile-safe quote creation from lead context. MobileSafeLeadQuoteSurface detects viewport and renders appropriate quote builder.</td></tr>
 <tr><td><code>/leads/[leadId]/rfq/new</code></td><td>New RFQ from Lead</td><td>Create a supplier-side request for quote from a qualified lead. Requires lead to be qualified with at least one product mapped.</td></tr>
 <tr><td><code>/mobile/leads</code></td><td>Mobile Leads</td><td>Phone-optimised leads list. Same data as desktop leads — simplified layout for field operators.</td></tr>
-<tr><td><code>/mobile/pipeline</code></td><td>Mobile Pipeline</td><td>Mobile-optimised pipeline board for field use.</td></tr>
+<tr><td><code>/mobile/pipeline</code></td><td>Mobile Pipeline</td><td>Mobile pipeline board. Fetches per-stage summaries from /api/mobile/pipeline-summary. Shows total value and overdue count per stage.</td></tr>
 <tr><td><code>/mobile/quote</code></td><td>Mobile Quote</td><td>Mobile quote creation surface. Falls back to EmptyState if workspace is unavailable.</td></tr>
-<tr><td><code>/mobile/notifications</code></td><td>Mobile Notifications</td><td>Mobile notification inbox — same underlying data as desktop notification centre.</td></tr>
+<tr><td><code>/mobile/notifications</code></td><td>Mobile Notifications</td><td>Mobile notification inbox using InAppNotificationCenter component — same underlying data as desktop notification centre.</td></tr>
+<tr><td><code>/mobile/orders</code></td><td>Mobile Orders</td><td>Simplified order list view for field operators. Active orders only, phone-optimised layout.</td></tr>
+<tr><td><code>/mobile/orders/[orderId]</code></td><td>Mobile Order Detail</td><td>Order detail with stage status and key actions for field operators.</td></tr>
+<tr><td><code>/mobile/capture</code></td><td>Mobile Capture</td><td>Business card scan entry point for mobile. Invokes OpenAI Vision parse flow.</td></tr>
+<tr><td><code>/workspace</code></td><td>Workspace Overview</td><td>SETU-internal development workspace shell. Entry point to agents, sprints, clients, and issues boards.</td></tr>
+<tr><td><code>/workspace/agents</code></td><td>Agent Workflow</td><td>SETU-internal. AgentPromptCopy panel for Claude/ChatGPT/Cursor issue triage. Shows priority issues by severity rank and generates agent-ready prompts.</td></tr>
+<tr><td><code>/workspace/sprints</code></td><td>Sprint Tracker</td><td>SETU-internal. Sprint list from Supabase sprint_issues table. Tracks active sprint, milestone counts, and open issue velocity.</td></tr>
+<tr><td><code>/workspace/clients</code></td><td>Client Orgs (HQ)</td><td>SETU HQ only. Client organization list with entitlement and module access overview.</td></tr>
+<tr><td><code>/workspace/issues</code></td><td>Issues Board</td><td>SETU-internal. IssuesBoard component with SmcShell filtering by severity, category, status. filterIssuesForSmc normalizes filter inputs from query params.</td></tr>
+<tr><td><code>/internal/tracker-prompt</code></td><td>Tracker Prompt</td><td>SETU-internal. Renders the active ChatGPT fix protocol from tracker_prompts table. Used to generate structured PR prompts.</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Setu Guru API Routes (/api/setu-guru/*)</h2>
+<p>All Guru API routes require a valid authenticated session (organization context). The research route additionally requires OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable. The health route is unauthenticated for monitoring.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>/api/setu-guru/health</code></td><td>GET</td><td>Unauthenticated health check — verifies ANTHROPIC_API_KEY is configured. Returns {ok:true/false}. Used by monitoring and Guru widget on load.</td></tr>
+<tr><td><code>/api/setu-guru/brain</code></td><td>POST</td><td>Core Guru inference endpoint. Accepts {messages, context} and returns streaming AI response with route-aware system prompt injection.</td></tr>
+<tr><td><code>/api/setu-guru/org-search</code></td><td>POST</td><td>Queries live org data (leads, quotes, orders) for Guru context. Returns read-only snapshots — no mutations.</td></tr>
+<tr><td><code>/api/setu-guru/org-search-v2</code></td><td>POST</td><td>Upgraded org search with richer context: blockers, pipeline state, compliance posture. Replaces org-search for new widget versions.</td></tr>
+<tr><td><code>/api/setu-guru/feedback</code></td><td>POST</td><td>Stores thumbs-up/down feedback to setu_guru_feedback table. Body: {label, lastMessage, pathname, missingAnswer?}. Powers the learning loop.</td></tr>
+<tr><td><code>/api/setu-guru/research</code></td><td>POST</td><td>Live industry research via OpenAI Responses API web search. Used for HS/HSN codes, tariffs, margin benchmarks, compliance document requirements. Requires OPENAI_API_KEY.</td></tr>
+<tr><td><code>/api/setu-guru/apply-hsn</code></td><td>POST</td><td>Guarded HSN write-back. Applies a Guru-suggested HSN code to a catalog product only after explicit operator confirmation dialog. Logs action to audit_logs.</td></tr>
+<tr><td><code>/api/setu-guru/action</code></td><td>POST</td><td>Safe copilot actions with preview. Executes a scoped action (e.g., draft follow-up, summarize lead) and returns a preview for operator review before any write.</td></tr>
+<tr><td><code>/api/setu-guru/playbook</code></td><td>POST</td><td>Returns onboarding wizard and lead-conversion playbook content. Context-aware: different playbooks for new org setup vs active lead stage.</td></tr>
+<tr><td><code>/api/setu-guru/pricing-defaults</code></td><td>GET</td><td>Fetches org/category pricing defaults from pricing_calculator_default_rules. Used by Guru pricing suggestions panel.</td></tr>
+<tr><td><code>/api/setu-guru/source-search</code></td><td>POST</td><td>Searches Guru knowledge base sources (industry standards, HS codes, compliance docs) for live research context injection.</td></tr>
 </tbody></table></div>
 
 <div class="section-block"><h2>Key API Endpoints Reference</h2>
@@ -847,21 +983,66 @@ const Docs = (() => {
 <div class="tbl-wrap"><table>
 <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
 <tbody>
-<tr><td><code>/api/webhooks/mailtrap</code></td><td>POST / GET</td><td>Mailtrap delivery webhook receiver. GET returns health JSON. POST updates email_send_log + communications delivery_status.</td></tr>
-<tr><td><code>/api/setu-guru/health</code></td><td>GET</td><td>Guru health check — verifies ANTHROPIC_API_KEY is configured. Returns {ok:true/false}.</td></tr>
-<tr><td><code>/api/setu-guru/feedback</code></td><td>POST</td><td>Persists thumbs-up/down feedback to audit_logs. Body: {label, lastMessage, pathname}.</td></tr>
-<tr><td><code>/api/modules/grants</code></td><td>GET</td><td>Returns module grant permissions for the current org. Used by module-gated routes.</td></tr>
+<tr><td><code>/api/webhooks/mailtrap</code></td><td>POST / GET</td><td>Mailtrap delivery webhook receiver. GET returns health JSON. POST updates email_send_log + communications delivery_status. Requires MAILTRAP_WEBHOOK_SECRET header for POST.</td></tr>
+<tr><td><code>/api/quotes/[quoteId]/pdf</code></td><td>GET</td><td>Generates customer-facing quote PDF using puppeteer-core + @sparticuz/chromium. No paid PDF API. Records quote document pointer. Layout: branded header, compact product table with category subtotals, quote-only adjustments shown with original price + reason.</td></tr>
+<tr><td><code>/api/quotes/[quoteId]/share</code></td><td>POST</td><td>Generates a secure share token for a quote. Token is time-limited and scoped to the quote ID.</td></tr>
+<tr><td><code>/api/modules/grants</code></td><td>GET</td><td>Returns module grant permissions for the current org from org_module_grants table. Used by module-gated routes at server action level.</td></tr>
 <tr><td><code>/api/orders/[contractId]/invoice/pdf</code></td><td>GET</td><td>Generates proforma invoice PDF for an order contract.</td></tr>
 <tr><td><code>/api/orders/[contractId]/order-confirmation/pdf</code></td><td>GET</td><td>Generates order confirmation PDF.</td></tr>
-<tr><td><code>/api/catalog/import-csv</code></td><td>POST</td><td>Bulk CSV import for product catalog. Returns import run ID for progress polling.</td></tr>
-<tr><td><code>/api/public/card-intake</code></td><td>POST</td><td>Receives vCard contact submissions from public /card page. Creates lead draft for review.</td></tr>
-<tr><td><code>/api/public/apple-wallet</code></td><td>GET</td><td>Downloads vCard as Apple Wallet pass (.pkpass).</td></tr>
-<tr><td><code>/api/public/google-wallet</code></td><td>GET</td><td>Downloads vCard as Google Wallet card.</td></tr>
-<tr><td><code>/api/cron/analytics-snapshot</code></td><td>POST</td><td>Scheduled job — takes analytics snapshot for trend charts. Runs daily via Vercel Cron.</td></tr>
-<tr><td><code>/api/notifications/email-digest</code></td><td>POST</td><td>Sends email digest of pending notifications to opted-in users.</td></tr>
-<tr><td><code>/api/offline/leads</code></td><td>POST</td><td>Receives offline lead queue submissions from Service Worker sync.</td></tr>
-<tr><td><code>/api/mobile/contact-scan</code></td><td>POST</td><td>OpenAI Vision (<code>gpt-4.1-mini</code>) business card parse endpoint. Returns structured contact fields.</td></tr>
-</tbody></table></div>`;
+<tr><td><code>/api/catalog/import-csv</code></td><td>POST</td><td>Bulk CSV import for product catalog. Validates rows with Zod before writing. Returns import run ID for progress polling.</td></tr>
+<tr><td><code>/api/public/card-intake</code></td><td>POST</td><td>Receives vCard contact submissions from public /card page. Rate-limited (5/hour per IP). Creates lead draft for review.</td></tr>
+<tr><td><code>/api/public/card-intake/prefill</code></td><td>GET</td><td>Returns prefill data for the public card intake form from a share slug or query params. Used to pre-populate buyer submission form.</td></tr>
+<tr><td><code>/api/public/card-vcf</code></td><td>GET</td><td>Generates a downloadable .vcf contact file. iOS-optimised fields: N: name, org, title, cell, email, website, address. Photo size-guarded for iOS import reliability.</td></tr>
+<tr><td><code>/api/public/apple-wallet</code></td><td>GET</td><td>Apple Wallet pass endpoint (premium placeholder). Returns pass placeholder until Apple .pkpass certificates are provisioned.</td></tr>
+<tr><td><code>/api/public/google-wallet</code></td><td>GET</td><td>Google Wallet card endpoint (premium placeholder). Returns placeholder until Google Wallet issuer credentials are connected.</td></tr>
+<tr><td><code>/api/public/card-analytics</code></td><td>POST</td><td>Records public card view and QR source events to audit_logs when a share slug is available. Powers public card analytics pixel.</td></tr>
+<tr><td><code>/api/public/client-onboarding</code></td><td>POST</td><td>Public client onboarding form submission. Rate-limited (5/hour per IP). Creates onboarding request record for SETU admin review.</td></tr>
+<tr><td><code>/api/my-card-settings</code></td><td>GET / POST</td><td>Manages My Card settings: share slug, Smart QR vs Offline QR toggle, vCard identity fields. POST upserts settings for authenticated user.</td></tr>
+<tr><td><code>/api/products/spreadsheet</code></td><td>GET</td><td>Exports product catalog as Excel spreadsheet. Includes product master, variants, pricing rules, and category grouping.</td></tr>
+<tr><td><code>/api/products/route</code></td><td>GET / POST</td><td>Product list and create API. GET returns paginated products with variant and pricing snapshot. POST creates new product master record.</td></tr>
+<tr><td><code>/api/cron/analytics-snapshot</code></td><td>POST</td><td>Scheduled job — takes analytics snapshot for trend charts. Runs daily via Vercel Cron. Requires CRON_SECRET authorization header. Snapshots leads, quotes, orders, and send conversion metrics.</td></tr>
+<tr><td><code>/api/notifications/email-digest</code></td><td>POST</td><td>Sends email digest of pending notifications to opted-in users via Mailtrap. Triggered by cron or manually.</td></tr>
+<tr><td><code>/api/offline/leads</code></td><td>POST</td><td>Receives offline lead queue submissions from Service Worker sync. Body: array of lead payloads queued while offline.</td></tr>
+<tr><td><code>/api/mobile/contact-scan</code></td><td>POST</td><td>OpenAI Vision (gpt-4.1-mini) business card parse endpoint. Returns structured contact fields for operator review before saving.</td></tr>
+<tr><td><code>/api/contact-exchange/qr</code></td><td>GET</td><td>Generates QR code image for a share URL. Used by My Card QR display and public card page.</td></tr>
+<tr><td><code>/api/admin/catalog/import-history</code></td><td>GET</td><td>Returns catalog import run history for the org. Shows status, row counts, and error summaries per import.</td></tr>
+<tr><td><code>/api/compliance/quote-gate-status</code></td><td>GET</td><td>Returns compliance gate status for a lead — blocking items, evidence status, and send readiness.</td></tr>
+<tr><td><code>/api/compliance/quote-fix</code></td><td>POST</td><td>Applies a compliance fix action (waive, attach evidence, defer) to a lead compliance item.</td></tr>
+<tr><td><code>/api/workspace/issues</code></td><td>GET / POST</td><td>SETU-internal issues API. GET returns filtered issue list. POST creates a new issue. Used by IssuesBoard component.</td></tr>
+<tr><td><code>/api/workspace/issues/[id]</code></td><td>GET / PATCH</td><td>Single issue operations. PATCH updates status, severity, or assigned fields.</td></tr>
+<tr><td><code>/api/workspace/issues/comments</code></td><td>GET / POST</td><td>Issue comment thread operations. POST appends a comment with actor and timestamp.</td></tr>
+<tr><td><code>/api/workspace/sprints</code></td><td>GET</td><td>Returns sprint list from sprint_issues grouped by sprint_number. Used by /workspace/sprints page.</td></tr>
+<tr><td><code>/api/workspace/agent</code></td><td>GET</td><td>Returns agent-triage data: priority issues by severity rank, active tracker prompt text, and agent action labels.</td></tr>
+</tbody></table></div>
+
+<div class="section-block"><h2>Background Jobs &amp; Cron Reference</h2>
+<p>Cron routes are POST endpoints protected by the <code>CRON_SECRET</code> environment variable sent as an Authorization header. They run on a schedule in Vercel Cron or can be triggered manually for testing.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#x1F4CA; Analytics Snapshot Cron</div><ul>
+    <li>Route: <code>POST /api/cron/analytics-snapshot</code></li>
+    <li>Schedule: Daily (configured in vercel.json)</li>
+    <li>Auth: <code>Authorization: Bearer $CRON_SECRET</code> header required</li>
+    <li>Snapshots: leads (by qualification_status), quotes (by status), orders (by stage), send conversion rate, avg days to close</li>
+    <li>Writes to: <code>analytics_snapshots</code> table for trend chart queries</li>
+    <li>Failure: logs to console; no alert (add Vercel monitoring for critical)</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#x1F4E7; Email Digest Cron</div><ul>
+    <li>Route: <code>POST /api/notifications/email-digest</code></li>
+    <li>Schedule: Daily or triggered manually</li>
+    <li>Sends: summary of pending notification items to users who opted in via <code>/settings/notifications</code></li>
+    <li>Provider: Mailtrap production API</li>
+    <li>Skips: users with email digest disabled in notification preferences</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#x1F4F6; Offline Lead Sync</div><ul>
+    <li>Route: <code>POST /api/offline/leads</code></li>
+    <li>Triggered by: Service Worker background sync on reconnect</li>
+    <li>Body: array of lead payloads queued in LocalStorage while offline</li>
+    <li>Process: validates each payload, deduplicates, writes to leads table, returns per-item results</li>
+    <li>Mobile field capture uses this to recover from connectivity drops at trade shows</li>
+  </ul></div>
+</div>`;
+    return map[id] || '';
     return map[id] || '';
   }
 
@@ -921,6 +1102,38 @@ const Docs = (() => {
   <div class="swimlane-row"><div class="swimlane-label"><small>Approval Flow</small><b>When override &gt;15%</b></div><div class="swimlane-steps"><div class="lane-step"><b>Pending approval</b><span>Admin approves from Quotes queue</span></div><div class="lane-step"><b>Approve or reject</b><span>Rejection requires reason field</span></div><div class="lane-step system"><b>Gate clears</b><span>Send re-enabled after approval</span></div></div></div>
 </div>
 <div class="callout"><b>Critical:</b> <code>link_created</code> in the database is NOT the same as delivered. Never treat a tracked link creation as confirmed delivery. Provider webhook confirmation is required for email. WhatsApp link opens confirm operator send — not buyer read.</div>
+<div class="section-block"><h2>Quote Builder Workflow — V17.6 (SF-23-DOC-189)</h2>
+<p>The V17.6 Quote Builder significantly upgraded the inline Lead Quote Preview flow. Key changes: Terms locking before Pricing, UOM/MOQ context on every line, incoterm meanings inline, quote-only adjustments with approval gate, and a reject/revision flow.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128221; Step Order: Terms Before Pricing</div><ul>
+    <li>Commercial Terms (incoterm, currency, payment terms, validity) must be <strong>locked before</strong> pricing step is unlocked</li>
+    <li>Prevents pricing being set in the wrong incoterm basis</li>
+    <li>Incoterm meanings shown inline in the Terms step — no need to look them up externally</li>
+    <li>Lead-country currency candidate auto-populated in currency selector when country maps to a known currency</li>
+    <li>Scroll-to-quote behavior: opening Quote Preview from Follow-up auto-scrolls to the editable workspace</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127991; UOM / Pack / MOQ on Every Quote Line</div><ul>
+    <li>Each quote line shows pricing basis (per unit / per case / per kg) from <code>product_variants.pricing_basis</code></li>
+    <li>Pack size/unit and MOQ displayed before quantity and unit price edits for buyer context</li>
+    <li>Lead-country currency candidate enriches the quote Terms currency selector</li>
+    <li>Variant data enriched from Supabase-backed product_variants: pack_size, pack_unit, pack_label, MOQ, pricing_mode defaults</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128261; Quote-Only Adjustments</div><ul>
+    <li>Discount or markup applied at the quote line level — does NOT rewrite product or category defaults</li>
+    <li>Adjustment modes: by percent (%) or by currency amount</li>
+    <li>Original catalog price always preserved and shown alongside the adjusted price</li>
+    <li>Adjustment reason field: mandatory text explaining the override (shown on PDF)</li>
+    <li>Unsaved adjustments must be saved before the approve action becomes available</li>
+  </ul></div>
+  <div class="doc-card border-red"><div class="doc-card-title">&#9888; 15% Threshold &amp; Approval Queue</div><ul>
+    <li>Adjustment > 15% of base price: sets <code>quotes.approval_required = true</code>, status → <code>pending_approval</code></li>
+    <li>Admin approval queue visible in Quotes workspace — admin sees all pending quotes needing approval</li>
+    <li>Approve: clears gate, re-enables send button for the quote</li>
+    <li>Reject: requires mandatory rejection reason field — displayed to the operator who submitted</li>
+    <li>Adjustments below 15%: no approval required, send directly enabled after save</li>
+  </ul></div>
+</div>
 <div class="section-block"><h2>Customer-Facing Quote PDF (V17.6.10)</h2>
 <p>The quote PDF uses puppeteer-core + @sparticuz/chromium — no paid PDF API. The customer-facing layout was redesigned in V17.6.10 to match commercial export standards.</p>
 </div>
@@ -1896,6 +2109,48 @@ flowchart LR
     <li><strong>Mobile</strong>: dedicated tab in bottom tab bar — replaces the floating FAB that stacked with bell and Quick Lead</li>
     <li>Eliminates the three-element z-index stack (bell + Guru + FAB) entirely</li>
   </ul></div>
+</div>
+<div class="section-block"><h2>Setu Guru API Surface — All Routes (SF-23-DOC-190)</h2>
+<p>Setu Guru has 11 dedicated API routes under <code>/api/setu-guru/</code>. All require authenticated session with organization context except <code>/health</code>. Routes that write to the database include operator confirmation guardrails.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Route</th><th>Method</th><th>Auth</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>/api/setu-guru/health</code></td><td>GET</td><td>None</td><td>Checks ANTHROPIC_API_KEY is set. Returns {ok:true/false}. Used by widget on load for online/offline badge.</td></tr>
+<tr><td><code>/api/setu-guru/brain</code></td><td>POST</td><td>Session</td><td>Core inference. Accepts {messages, context, route} and streams AI response with route-aware system prompt injection.</td></tr>
+<tr><td><code>/api/setu-guru/org-search</code></td><td>POST</td><td>Session</td><td>Queries live org data (leads, quotes, orders) for Guru context. Read-only snapshots — no mutations.</td></tr>
+<tr><td><code>/api/setu-guru/org-search-v2</code></td><td>POST</td><td>Session</td><td>Upgraded search with richer context: blockers, pipeline state, compliance posture, stage history.</td></tr>
+<tr><td><code>/api/setu-guru/feedback</code></td><td>POST</td><td>Session</td><td>Stores thumbs-up/down feedback to setu_guru_feedback table. Body: {label, lastMessage, pathname, missingAnswer?}.</td></tr>
+<tr><td><code>/api/setu-guru/research</code></td><td>POST</td><td>Session</td><td>Live industry research via OpenAI Responses API web search. HS/HSN codes, tariffs, margin benchmarks. Requires OPENAI_API_KEY.</td></tr>
+<tr><td><code>/api/setu-guru/apply-hsn</code></td><td>POST</td><td>Session + Confirm</td><td>Guarded HSN write-back. Only applies after explicit operator confirm dialog. Logs to audit_logs.</td></tr>
+<tr><td><code>/api/setu-guru/action</code></td><td>POST</td><td>Session</td><td>Safe copilot actions with preview. Returns preview for operator review — no writes without approval.</td></tr>
+<tr><td><code>/api/setu-guru/playbook</code></td><td>POST</td><td>Session</td><td>Onboarding wizard and lead-conversion playbook content. Context-aware per stage.</td></tr>
+<tr><td><code>/api/setu-guru/pricing-defaults</code></td><td>GET</td><td>Session</td><td>Fetches org/category pricing defaults from pricing_calculator_default_rules for Guru suggestions panel.</td></tr>
+<tr><td><code>/api/setu-guru/source-search</code></td><td>POST</td><td>Session</td><td>Searches Guru knowledge base sources for live research context injection.</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Setu Guru Learning Loop</h2>
+<p>The learning loop captures operator feedback and missing-answer reports to continuously improve Guru responses. It uses two Supabase tables and a bridge component.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128202; setu_guru_feedback Table</div><ul>
+    <li>Created by Sprint 21 migration: <code>20260529000001_sprint21_setu_guru_feedback.sql</code></li>
+    <li>Columns: id, org_id, user_id, route (page where feedback given), label ('helpful' or 'missing'), last_message (last AI response), missing_answer (what the user expected), created_at</li>
+    <li>RLS: org members insert own rows; SETU admin reads all for analysis</li>
+    <li>Thumbs-up → label='helpful'; Thumbs-down → label='missing' + missingAnswer prompt</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128202; setu_guru_telemetry Table</div><ul>
+    <li>Created by Sprint 21 migration: <code>20260529000002_sprint21_setu_guru_telemetry.sql</code></li>
+    <li>Records usage events: route visited, Guru opened, query type, response latency, token count</li>
+    <li>Used for usage monitoring in <code>/admin/guru-config</code> monthly usage bar</li>
+    <li>Powers daily budget enforcement and per-org rate limit tracking</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128101; SetuGuruFeedbackBridge Component</div><ul>
+    <li>File: <code>src/features/setu-guru/setu-guru-feedback-bridge.tsx</code></li>
+    <li>Thin bridge between the Guru widget thumbs buttons and the <code>/api/setu-guru/feedback</code> POST route</li>
+    <li>Handles optimistic LocalStorage write (offline cache) + async Supabase persist</li>
+    <li>Shows inline "Thank you" or "Missing answer" prompt depending on button pressed</li>
+    <li>Feedback data is periodically reviewed to identify knowledge base gaps</li>
+  </ul></div>
 </div>`;
     return null;
   }
@@ -2196,6 +2451,44 @@ flowchart LR
     <li><code>/mobile/quote</code> — Mobile quote creation surface</li>
     <li><code>/mobile/notifications</code> — Mobile notification inbox</li>
     <li><code>/mobile/orders/[orderId]</code> — Mobile order detail</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Smart vCard &amp; Contact Exchange Architecture (V12–V17) — SF-23-DOC-188</h2>
+<p>The Smart vCard system allows field operators to share a professional digital contact card, capture buyer contact details, and track engagement — all tied back to the lead and trade event workflow.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">&#128247; Smart QR vs Offline QR</div><ul>
+    <li><strong>Smart QR</strong> (default): QR encodes the public <code>/card</code> profile page URL. Buyer scans → sees profile → can submit contact details or save .vcf</li>
+    <li><strong>Offline QR</strong>: QR points directly to <code>/api/public/card-vcf</code> — downloads contact file immediately. Works without internet on the buyer's side</li>
+    <li>Toggle available in My Card settings — saved per user as a preference</li>
+    <li>Share slug: a stable URL-safe slug stored per user; QR and share links use slug when available for cleaner URLs</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127758; /card — Public Profile Page</div><ul>
+    <li>Publicly accessible — no auth required</li>
+    <li>Open Graph metadata (og:title, og:description, og:image) so mobile share previews show card/profile context</li>
+    <li>Actions: Request a Quote, Save Contact (.vcf download), Share Card</li>
+    <li>View tracking: <code>/api/public/card-analytics</code> POST fires a pixel when share slug is available; records source in audit_logs</li>
+    <li>Rate-limited contact intake: <code>/api/public/card-intake</code> (5 submissions/hour per IP)</li>
+    <li>Prefill form: <code>/api/public/card-intake/prefill</code> returns form defaults from share slug</li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128197; vCard (.vcf) iOS Optimizations</div><ul>
+    <li>N: structured name field added so iOS displays full contact name instead of falling back to phone number</li>
+    <li>iOS-friendly field set: name, org, title, cell phone, email, website, address, note, revision timestamp</li>
+    <li>Public card URL kept out of visible contact fields (not shown as a work field in iPhone contacts)</li>
+    <li>Profile photo size-guarded: compressed JPEG at reduced dimensions; iOS silently rejects photos above ~32KB in vCards</li>
+    <li>Data URL photos stripped from QR, .vcf, and share links to prevent URI_TOO_LONG errors</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128179; Apple &amp; Google Wallet (Premium Placeholders)</div><ul>
+    <li>Apple Wallet icon and Google Wallet icon shown in desktop modal, mobile share sheet, My Card settings, and public card</li>
+    <li>Routes: <code>/api/public/apple-wallet</code> and <code>/api/public/google-wallet</code></li>
+    <li>Currently return pass placeholder responses — live pass generation requires Apple .pkpass certificates and Google Wallet issuer credentials</li>
+    <li>UI treatment: same icon placement as production-ready actions; tooltip or label marks as "Coming Soon" for buyer-facing surfaces</li>
+  </ul></div>
+  <div class="doc-card border-slate"><div class="doc-card-title">&#128279; Share Architecture</div><ul>
+    <li>Share slug: stable per-user slug stored in My Card settings; used for QR, copy, email, and native share links</li>
+    <li>Fallback: when no slug exists, compact query params (no large image payloads) are used</li>
+    <li>Uploaded profile photos shown in signed-in product and share modal; NOT embedded into public URLs</li>
+    <li>V16 homepage: Contact Exchange section added after product showcase to present vCard as a core product feature</li>
   </ul></div>
 </div>`;
     if (id === 'quick-reference') return `<div class="quick-ref-grid">
@@ -3067,6 +3360,19 @@ flowchart LR
     'data-integrity-enums': 0.97,
     // New this pass
     'missing-routes-api-ref': 0.95,
+    // SF-23-DOC pass — 2026-06-04
+    'pricing-calculator-v17': 0.93, // SF-23-DOC-187 — hierarchy and cascade documented; content sections added
+    'smart-vcard-v12-v17': 0.94,    // SF-23-DOC-188 — Smart QR, Wallet, share slug, iOS vCard documented
+    'quote-builder-v17-6': 0.94,    // SF-23-DOC-189 — UOM/MOQ, adjustments, approval queue, PDF route documented
+    'setu-guru-api-surface': 0.92,  // SF-23-DOC-190 — all 11 routes + feedback/telemetry tables documented
+    'workspace-internal-tools': 0.92, // SF-23-DOC-191 — agents, sprints, clients, issues boards documented
+    'global-help-notice-toast': 0.93, // SF-23-DOC-192 — Help button, NoticeToast, handoff toasts documented
+    'api-reference-v17-routes': 0.94, // SF-23-DOC-193 — route count corrected, missing routes added
+    // Open issues (4 pre-existing): rfq-workflow, background-jobs, mobile-routes, admin-notifications
+    'rfq-workflow-deep': 0.72,      // Open: ISS-29d9cd67 — RFQ workspace detail still needs deeper doc
+    'background-jobs-deep': 0.82,   // Open: ISS-58194815 — cron jobs added to api-reference; dedicated section still open
+    'mobile-routes-deep': 0.82,     // Open: ISS-99bc3631 — mobile routes in reference; page-level detail still open
+    'admin-notifications-deep': 0.78, // Open: ISS-cc25382d — matrix referenced; notification_types deep doc still open
   };
   function calcDocReadiness() {
     const vals = Object.values(DOC_COVERAGE);
