@@ -90,7 +90,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <div>
               <Link href="/"><Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={150} height={46} className="h-10 w-auto" /></Link>
               <p className="mt-4 max-w-[22rem] text-sm leading-7 text-slate-500">
-                Trade execution software for import-export teams. The public website uses screenshot-led examples, not live workspace data.
+                Trade execution software for import-export teams, built around leads, quotes, documents, orders and shipment readiness.
               </p>
               <a href="mailto:help@setugroups.com" className="mt-4 inline-flex text-sm font-semibold text-[#108477] underline-offset-4 hover:underline">help@setugroups.com</a>
             </div>
