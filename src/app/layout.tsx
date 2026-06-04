@@ -42,17 +42,16 @@ const softwareSchema = {
   operatingSystem: 'Web, iOS, Android',
   url: 'https://www.setuflowcrm.com',
   description:
-    'Trade execution CRM for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system.',
+    'Trade execution CRM for import-export teams. Manage leads, quotes, approvals, documents, orders and shipment execution in one connected system.',
   featureList: [
-    'FOB/CIF/Ex-Factory pricing basis',
-    'Live FX locked-rate quoting',
-    'Quote versioning with approval gate',
-    'Business card OCR lead capture',
-    'Trade show batch capture',
+    'Screenshot-led product walkthroughs',
+    'Lead capture and follow-up workflows',
+    'Quote workflow and approval readiness',
+    'Order execution and shipment readiness',
     'Mobile-ready field workflow',
-    'WhatsApp quote delivery',
-    'Country compliance checklist',
-    'Digital vCard with QR code',
+    'Setu Guru AI assistant with operator approval',
+    'Document tracking and workflow visibility',
+    'Trade team collaboration',
   ],
   areaServed: [
     { '@type': 'Country', name: 'India', sameAs: 'https://www.wikidata.org/wiki/Q668' },
@@ -60,32 +59,6 @@ const softwareSchema = {
     { '@type': 'Country', name: 'United Kingdom', sameAs: 'https://www.wikidata.org/wiki/Q145' },
     { '@type': 'Country', name: 'Germany', sameAs: 'https://www.wikidata.org/wiki/Q183' },
     { '@type': 'Country', name: 'United States', sameAs: 'https://www.wikidata.org/wiki/Q30' },
-  ],
-  offers: [
-    {
-      '@type': 'Offer',
-      name: 'Starter',
-      price: '199',
-      priceCurrency: 'USD',
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '199',
-        priceCurrency: 'USD',
-        unitText: 'MONTH',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Growth',
-      price: '499',
-      priceCurrency: 'USD',
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '499',
-        priceCurrency: 'USD',
-        unitText: 'MONTH',
-      },
-    },
   ],
 };
 
@@ -100,7 +73,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    'Setu Flow is the trade execution CRM built for import-export teams in India, Ireland, UK, Germany and the US. Manage leads, quotes, approvals, orders and shipment execution in one connected system. Operational in under 5 days.',
+    'Setu Flow is the trade execution CRM built for import-export teams. Explore screenshot-led examples for lead capture, quote control, approvals, documents, orders and shipment readiness.',
 
   keywords: [
     'trade execution CRM',
@@ -177,7 +150,7 @@ export const metadata: Metadata = {
     siteName: 'Setu Flow',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
     description:
-      'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system. Built for teams in India, Ireland, UK, Germany and the US. Operational in days — not months.',
+      'Explore screenshot-led examples of how trade teams manage leads, quotes, approvals, documents, orders and shipment readiness in one connected system.',
     images: [
       {
         url: '/og-image.png',
@@ -191,7 +164,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
-    description: 'From first contact to final shipment, Setu Flow runs your entire trade operation in one connected system.',
+    description: 'Screenshot-led examples of trade execution workflows for import-export teams.',
     images: ['/og-image.png'],
   },
 
