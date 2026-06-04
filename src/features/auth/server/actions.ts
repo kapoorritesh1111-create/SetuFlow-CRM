@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { loginSchema, requestPasswordResetSchema } from '@/lib/validation/auth';
+import { loginOtpSchema, loginSchema, requestPasswordResetSchema } from '@/lib/validation/auth';
 import { checkRateLimit } from '@/lib/rate-limit/simple';
 import { env } from '@/lib/env';
 import { safeAppUrl } from '@/lib/security/url';
@@ -12,6 +12,16 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 type ProfileLoginCandidate = {
   email: string | null;
   username: string | null;
+};
+
+type LoginActionState = {
+  error?: string;
+  success?: string;
+  mfa?: {
+    factorId: string;
+    challengeId: string;
+    next: string;
+  };
 };
 
 function normalizeUsername(value: string) {
@@ -58,10 +68,30 @@ function resolveNextPath(raw: string | null) {
   return value;
 }
 
+async function createMfaChallenge(next: string): Promise<LoginActionState | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) return { error: error.message };
+
+  const verifiedFactor = data.totp.find((factor) => factor.status === 'verified');
+  if (!verifiedFactor) return null;
+
+  const challenge = await supabase.auth.mfa.challenge({ factorId: verifiedFactor.id });
+  if (challenge.error) return { error: challenge.error.message };
+
+  return {
+    mfa: {
+      factorId: verifiedFactor.id,
+      challengeId: challenge.data.id,
+      next,
+    },
+  };
+}
+
 export async function loginWithUsername(
-  _: { error?: string } | undefined,
+  _: LoginActionState | undefined,
   formData: FormData,
-) {
+): Promise<LoginActionState | void> {
   const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const next = resolveNextPath(String(formData.get('next') ?? ''));
@@ -93,6 +123,41 @@ export async function loginWithUsername(
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword({ email: matchedEmail, password });
+  if (error) return { error: error.message };
+
+  const mfaState = await createMfaChallenge(next);
+  if (mfaState) return mfaState;
+
+  redirect(next);
+}
+
+export async function verifyLoginOtp(
+  _: LoginActionState | undefined,
+  formData: FormData,
+): Promise<LoginActionState | void> {
+  const next = resolveNextPath(String(formData.get('next') ?? ''));
+  const parsed = loginOtpSchema.safeParse({
+    factorId: String(formData.get('factorId') ?? ''),
+    challengeId: String(formData.get('challengeId') ?? ''),
+    code: String(formData.get('code') ?? ''),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Enter the 6-digit authenticator code.' };
+  }
+
+  const rateLimit = await checkRateLimit(`login-otp:${parsed.data.factorId}`, 6, 60_000);
+  if (!rateLimit.allowed) {
+    return { error: 'Too many 2FA attempts. Please wait a minute and try again.' };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.mfa.verify({
+    factorId: parsed.data.factorId,
+    challengeId: parsed.data.challengeId,
+    code: parsed.data.code,
+  });
+
   if (error) return { error: error.message };
 
   redirect(next);
