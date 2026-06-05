@@ -762,71 +762,261 @@ function RoleTag({ role }: { role: Role }) {
   );
 }
 
-// ─── Tab: Start Here ──────────────────────────────────────────────────────────
 
-function TabStartHere({ role, onRoleSelect }: { role: Role | null; onRoleSelect: (r: Role) => void }) {
-  const roles: Role[] = ['sales', 'operations', 'dispatch', 'manager'];
-  const roleIcons: Record<Role, string> = { sales: '🎯', operations: '⚙️', dispatch: '🚚', manager: '📊' };
+// ─── Operating Path Icons ─────────────────────────────────────────────────────
+
+type ModuleIconProps = { id: string; className?: string };
+
+function ModuleIcon({ id, className = 'h-7 w-7' }: ModuleIconProps) {
+  if (id === 'setu-guru') {
+    return (
+      <Image
+        src="/setu-guru/guru-avatar-128.png"
+        alt="Setu Guru"
+        width={40}
+        height={40}
+        className="h-9 w-9 rounded-full object-contain"
+      />
+    );
+  }
+
+  const iconClass = className;
+  switch (id) {
+    case 'dashboard':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <rect x="3" y="3" width="7" height="7" rx="1.6" /><rect x="14" y="3" width="7" height="7" rx="1.6" />
+          <rect x="3" y="14" width="7" height="7" rx="1.6" /><path d="M14 15h7M14 19h5" />
+        </svg>
+      );
+    case 'lead-capture':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="M15 19.5c0-3-2.7-5.5-6-5.5s-6 2.5-6 5.5" /><circle cx="9" cy="7" r="4" />
+          <path d="M18 8v6M15 11h6" />
+        </svg>
+      );
+    case 'trade-show':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="M4 9h16l-1.2-4H5.2L4 9Z" /><path d="M5 9v10h14V9" />
+          <path d="M8 19v-5h8v5" /><path d="M9 5V3h6v2" />
+        </svg>
+      );
+    case 'mobile-vcard':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <rect x="7" y="2.5" width="10" height="19" rx="2.2" /><path d="M10 18h4" />
+          <rect x="9.4" y="7" width="5.2" height="4" rx=".8" /><path d="M9.5 14h5" />
+        </svg>
+      );
+    case 'tasks':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="m5 7 1.5 1.5L9 5" /><path d="M12 7h7" />
+          <path d="m5 13 1.5 1.5L9 11" /><path d="M12 13h7" />
+          <path d="m5 19 1.5 1.5L9 17" /><path d="M12 19h7" />
+        </svg>
+      );
+    case 'quote':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="M7 3h7l4 4v14H7z" /><path d="M14 3v5h5" />
+          <path d="M9 10h6" /><path d="M9 13h5" /><path d="M10 17h3.5a1.8 1.8 0 0 0 0-3.6H11a1.8 1.8 0 0 1 0-3.6h3" />
+          <path d="M12 8.8v10.4" />
+        </svg>
+      );
+    case 'documents':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="M3 7h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M6 13h12" /><path d="M6 17h8" />
+        </svg>
+      );
+    case 'dispatch':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+          <path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" />
+          <circle cx="7" cy="18" r="2" /><circle cx="18" cy="18" r="2" />
+          <path d="M6 10h5" />
+        </svg>
+      );
+    default:
+      return <span className="text-lg font-bold">{id.slice(0, 2).toUpperCase()}</span>;
+  }
+}
+
+function RoleIcon({ role }: { role: Role }) {
+  const base = 'h-5 w-5';
+  if (role === 'sales') {
+    return <ModuleIcon id="lead-capture" className={base} />;
+  }
+  if (role === 'operations') {
+    return <ModuleIcon id="documents" className={base} />;
+  }
+  if (role === 'dispatch') {
+    return <ModuleIcon id="dispatch" className={base} />;
+  }
+  return <ModuleIcon id="dashboard" className={base} />;
+}
+
+const moduleLanes = [
+  { key: 'capture', label: 'Capture', helper: 'Find and qualify the right opportunities', ids: ['dashboard', 'lead-capture', 'trade-show', 'mobile-vcard', 'tasks'] },
+  { key: 'convert', label: 'Convert', helper: 'Create winning offers and get ready', ids: ['setu-guru', 'quote', 'documents'] },
+  { key: 'execute', label: 'Execute', helper: 'Deliver and track with confidence', ids: ['dispatch'] },
+] as const;
+
+function OperatingPathCard({ module, role, onOpenLesson }: { module: TrainingModule; role: Role | null; onOpenLesson: (id: string) => void }) {
+  const highlighted = !role || ROLE_MODULES[role].includes(module.id);
+  const accent: Record<string, string> = {
+    dashboard: 'text-teal-700 bg-teal-50 border-teal-100',
+    'lead-capture': 'text-emerald-700 bg-emerald-50 border-emerald-100',
+    'trade-show': 'text-cyan-700 bg-cyan-50 border-cyan-100',
+    'mobile-vcard': 'text-sky-700 bg-sky-50 border-sky-100',
+    tasks: 'text-slate-700 bg-slate-50 border-slate-200',
+    'setu-guru': 'text-blue-700 bg-blue-50 border-blue-100',
+    quote: 'text-violet-700 bg-violet-50 border-violet-100',
+    documents: 'text-indigo-700 bg-indigo-50 border-indigo-100',
+    dispatch: 'text-orange-700 bg-orange-50 border-orange-100',
+  };
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Step 1 — start here</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-        Learn Setu Flow from dashboard to dispatch.
-      </h2>
-      <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
-        Pick your role below to get a personalised training path — only the screens that matter to your job. You can change it any time.
-      </p>
+    <button
+      type="button"
+      onClick={() => onOpenLesson(module.id)}
+      className={`group relative flex min-h-[13rem] flex-col rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${highlighted ? 'border-slate-200' : 'border-slate-100 opacity-55'}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="rounded-full bg-slate-950 px-2 py-1 text-[10px] font-bold text-white">{module.number}</span>
+        {role && highlighted && <span className="rounded-full bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700">Your path</span>}
+      </div>
+      <div className="mt-4 flex flex-1 flex-col items-center text-center">
+        <div className={`flex h-16 w-16 items-center justify-center rounded-2xl border ${accent[module.id] ?? 'border-slate-100 bg-slate-50 text-slate-700'}`}>
+          <ModuleIcon id={module.id} />
+        </div>
+        <h3 className="mt-4 text-sm font-semibold leading-5 text-slate-950">{module.shortTitle}</h3>
+        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{module.outcome}</p>
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">First action</p>
+        <p className="mt-1 text-xs font-semibold text-slate-700">
+          {module.id === 'dashboard' ? 'Open Dashboard'
+          : module.id === 'lead-capture' ? 'Add / Capture Lead'
+          : module.id === 'trade-show' ? 'Open Event / Pipeline'
+          : module.id === 'mobile-vcard' ? 'Quick Lead / Scan'
+          : module.id === 'tasks' ? 'New Task / Open Task'
+          : module.id === 'setu-guru' ? 'Ask Setu Guru'
+          : module.id === 'quote' ? 'Create / Send Quote'
+          : module.id === 'documents' ? 'Open Documents'
+          : 'Update Dispatch'}
+        </p>
+      </div>
+      <p className="mt-3 text-xs font-bold text-teal-700 transition group-hover:translate-x-0.5">Open this lesson →</p>
+    </button>
+  );
+}
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {roles.map((r) => (
-          <button
-            key={r}
-            onClick={() => onRoleSelect(r)}
-            className={`group rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 ${
-              role === r ? 'border-teal-400 bg-teal-50 shadow-md' : 'border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50/40'
-            }`}
-          >
-            <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg ${role === r ? 'bg-teal-100' : 'bg-slate-100'}`}>
-              {roleIcons[r]}
-            </div>
-            <p className="text-sm font-semibold text-slate-950">{ROLE_LABELS[r]}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">{ROLE_DESCRIPTIONS[r]}</p>
-            <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              {ROLE_MODULES[r].length} modules
-            </p>
-            {role === r && <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-teal-600">✓ Selected</p>}
-          </button>
-        ))}
+function OperatingPath({ role, onOpenLesson }: { role: Role | null; onOpenLesson: (id: string) => void }) {
+  return (
+    <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-7">
+      <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Setu Flow operating path</p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Capture → Convert → Execute → Dispatch</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+            Start with the complete workflow first. Then pick your role below to highlight the lessons that matter most for your daily work.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">End-to-end success</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-emerald-800">
+            {['Inquiry captured', 'Follow-up assigned', 'Quote approved', 'Documents ready', 'Dispatch tracked'].map((item) => (
+              <span key={item} className="rounded-full bg-white px-3 py-1.5 shadow-sm">✓ {item}</span>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">End-to-end workflow — 9 stages</p>
-        <p className="mt-2 text-sm text-slate-500">
-          Every Setu Flow user operates along this path. Highlighted stages are part of your role.
-        </p>
-        <div className="mt-5 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {trainingModules.slice(0, 5).map((m) => (
-            <div key={m.id} className={`rounded-xl border p-3 ${role && ROLE_MODULES[role].includes(m.id) ? 'border-teal-200 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
-              <p className="text-base">{m.icon}</p>
-              <p className="mt-1.5 text-xs font-semibold text-slate-800">{m.shortTitle}</p>
-              <p className="text-[10px] font-bold text-slate-400">{m.number}</p>
+      <div className="mt-8 space-y-8">
+        {moduleLanes.map((lane) => (
+          <section key={lane.key}>
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3">
+                <span className="h-px w-10 bg-teal-500" />
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-900">{lane.label}</p>
+              </div>
+              <p className="text-sm text-slate-500 sm:ml-2">{lane.helper}</p>
             </div>
-          ))}
-        </div>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {trainingModules.slice(5).map((m) => (
-            <div key={m.id} className={`rounded-xl border p-3 ${role && ROLE_MODULES[role].includes(m.id) ? 'border-teal-200 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
-              <p className="text-base">{m.icon}</p>
-              <p className="mt-1.5 text-xs font-semibold text-slate-800">{m.shortTitle}</p>
-              <p className="text-[10px] font-bold text-slate-400">{m.number}</p>
+            <div className={`grid gap-4 ${lane.ids.length === 1 ? 'md:grid-cols-1 lg:max-w-xs' : lane.ids.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2 xl:grid-cols-5'}`}>
+              {lane.ids.map((id) => {
+                const module = trainingModules.find((m) => m.id === id)!;
+                return <OperatingPathCard key={id} module={module} role={role} onOpenLesson={onOpenLesson} />;
+              })}
             </div>
-          ))}
-        </div>
-        {role && (
-          <p className="mt-4 text-xs font-semibold text-teal-700">
-            Your path: {ROLE_LABELS[role]} — {ROLE_MODULES[role].length} modules highlighted above.
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab: Start Here ──────────────────────────────────────────────────────────
+
+function TabStartHere({ role, onRoleSelect, onOpenLesson }: { role: Role | null; onRoleSelect: (r: Role) => void; onOpenLesson: (id: string) => void }) {
+  const roles: Role[] = ['sales', 'operations', 'dispatch', 'manager'];
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Start here</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+            Learn the full Setu Flow trading workflow.
+          </h2>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-500">
+            First get the quick-glance operating path from inquiry to dispatch. Then select your role to focus the lessons, screenshots, checks, and quizzes around your daily responsibilities.
           </p>
-        )}
+        </div>
+        <button type="button" onClick={() => onOpenLesson('dashboard')} className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-teal-50 px-5 py-3 text-sm font-semibold text-teal-800 transition hover:-translate-y-0.5 hover:bg-teal-100">
+          Start detailed walkthrough →
+        </button>
+      </div>
+
+      <OperatingPath role={role} onOpenLesson={onOpenLesson} />
+
+      <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">View this path as</p>
+            <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Choose the role lens after seeing the full workflow</h3>
+          </div>
+          {role && (
+            <p className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700">
+              {ROLE_LABELS[role]} · {ROLE_MODULES[role].length} focused lessons
+            </p>
+          )}
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {roles.map((r) => (
+            <button
+              key={r}
+              onClick={() => onRoleSelect(r)}
+              className={`group rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 ${
+                role === r ? 'border-teal-400 bg-teal-50 shadow-md' : 'border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50/40'
+              }`}
+            >
+              <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${role === r ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-600'}`}>
+                <RoleIcon role={r} />
+              </div>
+              <p className="text-sm font-semibold text-slate-950">{ROLE_LABELS[r]}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{ROLE_DESCRIPTIONS[r]}</p>
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{ROLE_MODULES[r].length} lessons</p>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.14em] ${role === r ? 'text-teal-700' : 'text-slate-300 group-hover:text-teal-600'}`}>
+                  {role === r ? '✓ Selected' : 'Select'}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -835,19 +1025,25 @@ function TabStartHere({ role, onRoleSelect }: { role: Role | null; onRoleSelect:
 // ─── Tab: Workflow Lessons ────────────────────────────────────────────────────
 
 function TabLessons({
-  role, completed, quizAnswers, onComplete, onQuizAnswer, onGoToStart,
+  role, completed, quizAnswers, onComplete, onQuizAnswer, onGoToStart, initialActiveId,
 }: {
   role: Role | null; completed: string[]; quizAnswers: Record<string, number>;
   onComplete: (id: string) => void; onQuizAnswer: (id: string, idx: number) => void;
   onGoToStart: () => void;
+  initialActiveId?: string | null;
 }) {
   const [activeId, setActiveId] = useState<string>('');
 
   const modules = role ? trainingModules.filter((m) => ROLE_MODULES[role].includes(m.id)) : trainingModules;
 
   useEffect(() => {
-    if (modules.length && !activeId) setActiveId(modules[0].id);
-  }, [role]);
+    if (!modules.length) return;
+    if (initialActiveId && modules.some((m) => m.id === initialActiveId)) {
+      setActiveId(initialActiveId);
+      return;
+    }
+    if (!activeId || !modules.some((m) => m.id === activeId)) setActiveId(modules[0].id);
+  }, [role, initialActiveId, modules.length]);
 
   const activeIdx = modules.findIndex((m) => m.id === activeId);
   const active = modules[activeIdx] ?? modules[0];
@@ -1173,6 +1369,7 @@ type Tab = 'start' | 'lessons' | 'videos' | 'progress';
 
 export default function TrainingWorkspacePage() {
   const [tab, setTab] = useState<Tab>('start');
+  const [initialLessonId, setInitialLessonId] = useState<string | null>(null);
   const [progress, setProgress] = useState<StoredProgress>({ role: null, completed: [], quizAnswers: {} });
   const [hydrated, setHydrated] = useState(false);
 
@@ -1189,6 +1386,7 @@ export default function TrainingWorkspacePage() {
     update({ ...progress, quizAnswers: { ...progress.quizAnswers, [moduleId]: idx } });
   };
   const handleReset = () => update({ role: progress.role, completed: [], quizAnswers: {} });
+  const openLesson = (id: string) => { setInitialLessonId(id); setTab('lessons'); };
 
   const modules = progress.role ? trainingModules.filter((m) => ROLE_MODULES[progress.role!].includes(m.id)) : trainingModules;
   const doneCount = modules.filter((m) => progress.completed.includes(m.id)).length;
@@ -1240,7 +1438,7 @@ export default function TrainingWorkspacePage() {
 
         {/* Tab content */}
         {tab === 'start' && (
-          <TabStartHere role={progress.role} onRoleSelect={(r) => { handleRoleSelect(r); setTab('lessons'); }} />
+          <TabStartHere role={progress.role} onRoleSelect={(r) => { handleRoleSelect(r); setTab('lessons'); }} onOpenLesson={openLesson} />
         )}
         {tab === 'lessons' && (
           <TabLessons
@@ -1250,6 +1448,7 @@ export default function TrainingWorkspacePage() {
             onComplete={handleComplete}
             onQuizAnswer={handleQuizAnswer}
             onGoToStart={() => setTab('start')}
+            initialActiveId={initialLessonId}
           />
         )}
         {tab === 'videos' && <TabVideos />}
