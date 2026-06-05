@@ -11,7 +11,6 @@ const navItems: [string, string][] = [
   ['/solutions', 'Solutions'],
   ['/setu-guru-ai', 'Setu Guru AI'],
   ['/field-mobile', 'Mobile'],
-  ['/training', 'Training'],
   ['/pricing', 'Pricing'],
   ['/compare', 'Compare'],
 ];
@@ -197,7 +196,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.20em] text-slate-400">Company</p>
               <ul className="mt-4 space-y-3">
-                <li><Link href="/training" className={`text-sm font-medium transition hover:text-[#108477] ${isActive('/training') ? 'text-[#108477] font-semibold' : 'text-slate-600'}`}>Training</Link></li>
+                <li><Link href="/training" className={`text-sm font-medium transition hover:text-[#108477] ${isActive('/training') ? 'text-[#108477] font-semibold' : 'text-slate-600'}`}>Product Overview</Link></li>
                 <li><Link href="/pricing" className={`text-sm font-medium transition hover:text-[#108477] ${isActive('/pricing') ? 'text-[#108477] font-semibold' : 'text-slate-600'}`}>Pricing</Link></li>
                 <li><Link href="/compare" className={`text-sm font-medium transition hover:text-[#108477] ${isActive('/compare') ? 'text-[#108477] font-semibold' : 'text-slate-600'}`}>Compare</Link></li>
                 <li><Link href="/book-demo" className={`text-sm font-medium transition hover:text-[#108477] ${isActive('/book-demo') ? 'text-[#108477] font-semibold' : 'text-slate-600'}`}>Book a demo</Link></li>
