@@ -6,7 +6,7 @@ import { SiteShell } from '@/components/marketing/site-shell';
 export const metadata = {
   title: 'Training Workspace',
   description:
-    'Guided Setu Flow training workspace for new users learning the capture-to-dispatch trade execution workflow.',
+    'Guided Setu Flow training workspace for new users learning the dashboard-to-dispatch trade execution workflow.',
 };
 
 type TrainingScreen = {
@@ -25,6 +25,11 @@ type TrainingStage = {
   id: string;
   number: string;
   title: string;
+  shortTitle: string;
+  icon: string;
+  accent: string;
+  action: string;
+  quickResult: string;
   audience: string;
   outcome: string;
   screens: TrainingScreen[];
@@ -32,23 +37,16 @@ type TrainingStage = {
 
 const screenshotBase = '/internal/docs-screenshots';
 
-const journey = [
-  'Dashboard',
-  'Lead capture',
-  'Trade show',
-  'Mobile vCard',
-  'Tasks',
-  'Setu Guru',
-  'Quote',
-  'Documents',
-  'Dispatch',
-];
-
 const trainingStages: TrainingStage[] = [
   {
     id: 'dashboard',
     number: '01',
     title: 'Dashboard command view',
+    shortTitle: 'Dashboard',
+    icon: '▦',
+    accent: 'from-blue-500 to-indigo-500',
+    action: 'Open Dashboard',
+    quickResult: 'Know what needs attention today.',
     audience: 'Every user, manager, sales owner, operations owner',
     outcome: 'Start the day by understanding queue health, activity, market visibility, and where attention is needed first.',
     screens: [
@@ -57,7 +55,7 @@ const trainingStages: TrainingStage[] = [
         file: 'ss-dashboard.jpg',
         alt: 'Setu Flow dashboard overview',
         firstClick: 'Open Dashboard from the main navigation.',
-        check: 'Review today\'s open queues, priority cards, overdue activity, and records needing intervention.',
+        check: "Review today's open queues, priority cards, overdue activity, and records needing intervention.",
         doneWhen: 'You know which record or queue should be opened first and which owner is responsible.',
         tip: 'Use Dashboard as the daily starting point before opening individual leads, quotes, documents, or orders.',
         focus: 'Queue health, priority cards, owner visibility, next action areas',
@@ -88,6 +86,11 @@ const trainingStages: TrainingStage[] = [
     id: 'lead-capture',
     number: '02',
     title: 'Lead capture and qualification',
+    shortTitle: 'Lead Capture',
+    icon: '👤+',
+    accent: 'from-emerald-500 to-teal-500',
+    action: 'Add / Capture Lead',
+    quickResult: 'Save owner, source, notes, and follow-up.',
     audience: 'Sales owners, field teams, trade-show teams',
     outcome: 'Create a clean lead, confirm buyer context, and make sure the lead has owner, status, notes, and next action.',
     screens: [
@@ -137,6 +140,11 @@ const trainingStages: TrainingStage[] = [
     id: 'trade-show',
     number: '03',
     title: 'Trade show and event capture',
+    shortTitle: 'Trade Show / Event',
+    icon: '▣',
+    accent: 'from-violet-500 to-purple-500',
+    action: 'Open Event / Pipeline',
+    quickResult: 'Turn booth conversations into follow-ups.',
     audience: 'Event teams, sales owners, managers',
     outcome: 'Convert event conversations into clean, assigned, follow-up-ready CRM records.',
     screens: [
@@ -166,6 +174,11 @@ const trainingStages: TrainingStage[] = [
     id: 'mobile-vcard',
     number: '04',
     title: 'Mobile field capture and vCard',
+    shortTitle: 'Mobile vCard',
+    icon: '▤',
+    accent: 'from-orange-500 to-amber-500',
+    action: 'Quick Lead / Scan',
+    quickResult: 'Capture contacts on the go.',
     audience: 'Field teams, event teams, sales users away from desk',
     outcome: 'Capture contact and buyer interest quickly from phone, then clean it up from desktop later.',
     screens: [
@@ -205,6 +218,11 @@ const trainingStages: TrainingStage[] = [
     id: 'tasks',
     number: '05',
     title: 'Tasks and follow-up discipline',
+    shortTitle: 'Tasks',
+    icon: '✓',
+    accent: 'from-cyan-500 to-sky-500',
+    action: 'New Task / Open Task',
+    quickResult: 'Keep follow-ups from going cold.',
     audience: 'Every user who owns follow-up work',
     outcome: 'Prevent leads, quotes, documents, and dispatch items from going cold by giving each action an owner and due date.',
     screens: [
@@ -234,6 +252,11 @@ const trainingStages: TrainingStage[] = [
     id: 'setu-guru',
     number: '06',
     title: 'Setu Guru help and AI guidance',
+    shortTitle: 'Setu Guru',
+    icon: '🧘',
+    accent: 'from-blue-600 to-teal-500',
+    action: 'Ask Setu Guru',
+    quickResult: 'Get help for blockers and next steps.',
     audience: 'All users, with manager approval for sensitive actions',
     outcome: 'Use Setu Guru to understand the current page, blockers, missing data, pricing defaults, HS codes, compliance, and next steps.',
     screens: [
@@ -253,6 +276,11 @@ const trainingStages: TrainingStage[] = [
     id: 'quote',
     number: '07',
     title: 'Quote workflow',
+    shortTitle: 'Quote',
+    icon: '₹',
+    accent: 'from-emerald-500 to-green-600',
+    action: 'Create / Send Quote',
+    quickResult: 'Build, approve, send, and follow up.',
     audience: 'Sales, operations, approvers',
     outcome: 'Move from quote draft to approval, approved send, outcome update, and order creation without losing assumptions.',
     screens: [
@@ -322,6 +350,11 @@ const trainingStages: TrainingStage[] = [
     id: 'documents',
     number: '08',
     title: 'Documents and order readiness',
+    shortTitle: 'Documents',
+    icon: '▤',
+    accent: 'from-violet-500 to-indigo-500',
+    action: 'Open Documents',
+    quickResult: 'Complete readiness before dispatch.',
     audience: 'Operations, order coordinators, dispatch owners',
     outcome: 'Confirm documents, product, packing, freight, and order stage readiness before dispatch.',
     screens: [
@@ -371,6 +404,11 @@ const trainingStages: TrainingStage[] = [
     id: 'dispatch',
     number: '09',
     title: 'Dispatch tracking',
+    shortTitle: 'Dispatch',
+    icon: '▸',
+    accent: 'from-orange-500 to-red-500',
+    action: 'Update Dispatch',
+    quickResult: 'Track shipment movement and handoff.',
     audience: 'Dispatch owners, operations, sales owners',
     outcome: 'Complete the handoff from order readiness to shipment movement, tracking, and post-dispatch follow-up.',
     screens: [
@@ -458,6 +496,92 @@ function SetuGuruPlaceholder() {
   );
 }
 
+function WorkflowCard({ stage, index }: { stage: TrainingStage; index: number }) {
+  const isLastTop = index === 4;
+  const isLast = index === trainingStages.length - 1;
+  return (
+    <div className="relative">
+      <a href={`#${stage.id}`} className="group block h-full rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:border-teal-200 hover:shadow-[0_24px_65px_rgba(15,23,42,.1)]">
+        <div className="flex items-start gap-4">
+          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${stage.accent} text-xl font-black text-white shadow-lg`}>
+            {stage.icon}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-slate-950 px-2 py-1 text-[10px] font-bold text-white">{stage.number}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Step</span>
+            </div>
+            <h3 className="mt-2 text-base font-semibold tracking-[-0.03em] text-slate-950">{stage.shortTitle}</h3>
+            <p className="mt-2 text-xs leading-5 text-slate-500">{stage.quickResult}</p>
+          </div>
+        </div>
+        <div className="mt-5 rounded-2xl bg-slate-50 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Action</p>
+          <p className="mt-1 text-sm font-semibold text-slate-800">{stage.action}</p>
+        </div>
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold text-teal-700">
+          <span>Jump to screenshots</span>
+          <span className="transition group-hover:translate-x-1">→</span>
+        </div>
+      </a>
+      {!isLast && !isLastTop && (
+        <div className="pointer-events-none absolute -right-5 top-1/2 hidden -translate-y-1/2 text-2xl text-slate-300 xl:block">→</div>
+      )}
+    </div>
+  );
+}
+
+function TrainingWorkflowMap() {
+  const firstRow = trainingStages.slice(0, 5);
+  const secondRow = trainingStages.slice(5);
+  return (
+    <section id="workflow-map" className="px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_22px_75px_rgba(15,23,42,.08)]">
+        <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-r from-white via-slate-50 to-teal-50 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-700">Setu Flow workflow map</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-3xl">Quick glance before the screenshots</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">Follow the end-to-end operating path. Click any step to jump into the detailed screen cards and learn what to press, check, and complete.</p>
+          </div>
+          <a href="#screen-walkthrough" className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-800 transition hover:-translate-y-0.5 hover:bg-teal-50">
+            Open screenshot guide
+          </a>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          <div className="grid gap-5 xl:grid-cols-5">
+            {firstRow.map((stage, index) => (
+              <WorkflowCard key={stage.id} stage={stage} index={index} />
+            ))}
+          </div>
+          <div className="mx-auto my-4 hidden max-w-[92%] rounded-full border border-dashed border-slate-300 xl:block" />
+          <div className="grid gap-5 xl:grid-cols-4">
+            {secondRow.map((stage, index) => (
+              <WorkflowCard key={stage.id} stage={stage} index={index + 5} />
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.72fr]">
+            <div className="rounded-[1.5rem] border border-teal-100 bg-teal-50 p-5">
+              <p className="text-sm font-bold text-teal-900">How to use this map</p>
+              <p className="mt-2 text-sm leading-6 text-teal-800/80">Start at Dashboard for daily queue health, then move through capture, qualification, tasks, guidance, quote, order readiness, and dispatch. The screenshot cards below show the exact buttons and checks.</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-5">
+              <p className="text-sm font-bold text-emerald-900">End-to-end success</p>
+              <ul className="mt-2 space-y-1 text-sm leading-6 text-emerald-800/85">
+                <li>✓ Capture quality leads</li>
+                <li>✓ Follow up with discipline</li>
+                <li>✓ Send winning quotes</li>
+                <li>✓ Execute and deliver orders</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ScreenCard({ screen }: { screen: TrainingScreen }) {
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,.08)]">
@@ -511,13 +635,16 @@ export default function TrainingWorkspacePage() {
                 Learn Setu Flow from dashboard to dispatch.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                A true training workspace for new users: each screen explains what button to press, what to check, and what the record should look like before moving forward.
+                A true training workspace for new users: first understand the workflow map, then learn each screen with practical button, check, and completion guidance.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href="#screen-walkthrough" className="inline-flex items-center justify-center rounded-full bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(13,148,136,.24)] transition hover:-translate-y-0.5 hover:bg-teal-700">
-                  Start screen walkthrough
+                <a href="#workflow-map" className="inline-flex items-center justify-center rounded-full bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(13,148,136,.24)] transition hover:-translate-y-0.5 hover:bg-teal-700">
+                  Start workflow map
                 </a>
-                <Link href="/field-mobile" className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-white px-5 py-3 text-sm font-semibold text-teal-800 transition hover:-translate-y-0.5 hover:bg-teal-50">
+                <a href="#screen-walkthrough" className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-white px-5 py-3 text-sm font-semibold text-teal-800 transition hover:-translate-y-0.5 hover:bg-teal-50">
+                  Jump to screenshots
+                </a>
+                <Link href="/field-mobile" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50">
                   See mobile capture
                 </Link>
               </div>
@@ -535,17 +662,7 @@ export default function TrainingWorkspacePage() {
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl rounded-[2rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)] sm:p-7">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {journey.map((item, index) => (
-                <a key={item} href={`#${trainingStages[index]?.id ?? 'screen-walkthrough'}`} className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/15 sm:text-sm">
-                  {index + 1}. {item}
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TrainingWorkflowMap />
 
         <section className="px-4 py-14 sm:px-6 lg:px-8">
           <SectionHeader
@@ -565,7 +682,7 @@ export default function TrainingWorkspacePage() {
 
         <section id="screen-walkthrough" className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8">
           <SectionHeader
-            eyebrow="Screen walkthrough"
+            eyebrow="Step-by-step screenshot walkthrough"
             title="Use the right screen at the right moment"
             body="Follow the sections in order for a complete dashboard-to-dispatch training path. Each screen includes the practical CTA, checks, and completion rule."
           />
@@ -598,7 +715,7 @@ export default function TrainingWorkspacePage() {
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-200">Trainer notes</p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">This is now ready for guided onboarding and future video narration.</h2>
                 <p className="mt-4 text-sm leading-7 text-white/65">
-                  Trainers can use each screenshot card as a talk track: press this first, check this before saving, and only move forward when the done condition is true.
+                  Trainers can start with the workflow map for orientation, then use each screenshot card as a talk track: press this first, check this before saving, and only move forward when the done condition is true.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
