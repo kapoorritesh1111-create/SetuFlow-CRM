@@ -1,12 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
 import { SiteShell } from '@/components/marketing/site-shell';
-
-export const metadata = undefined; // client component — set in layout if needed
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -288,8 +284,8 @@ const trainingModules: TrainingModule[] = [
     screens: [
       {
         title: 'Setu Guru interface',
-        placeholder: true,
-        alt: 'Setu Guru mobile dashboard help',
+        file: 'ss-setu_guru.jpg',
+        alt: 'Setu Guru AI guidance panel',
         firstClick: 'Tap Dashboard help or type a question in the Setu Guru input box.',
         check: 'Review the response, then use Helpful or Missing detail to give feedback.',
         doneWhen: 'You understand the recommended next step and a human has approved any price, compliance, send, or write-back action.',
