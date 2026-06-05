@@ -9,162 +9,381 @@ export const metadata = {
     'Guided Setu Flow training workspace for new users learning the capture-to-dispatch trade execution workflow.',
 };
 
-type ModuleStatus = 'Start here' | 'Practice' | 'Checklist' | 'Future video';
-
-type TrainingModule = {
-  id: string;
-  status: ModuleStatus;
+type TrainingScreen = {
   title: string;
-  audience: string;
-  goal: string;
-  image: string;
-  imageAlt: string;
-  steps: string[];
-  checks: string[];
+  file?: string;
+  alt?: string;
+  firstClick: string;
+  check: string;
+  doneWhen: string;
+  tip: string;
+  focus: string;
+  placeholder?: boolean;
 };
 
+type TrainingStage = {
+  id: string;
+  number: string;
+  title: string;
+  audience: string;
+  outcome: string;
+  screens: TrainingScreen[];
+};
+
+const screenshotBase = '/internal/docs-screenshots';
+
 const journey = [
-  'Capture inquiry',
-  'Review lead',
-  'Qualify request',
-  'Prepare quote',
-  'Confirm documents',
-  'Ready for dispatch',
-  'Complete handoff',
+  'Dashboard',
+  'Lead capture',
+  'Trade show',
+  'Mobile vCard',
+  'Tasks',
+  'Setu Guru',
+  'Quote',
+  'Documents',
+  'Dispatch',
 ];
 
-const modules: TrainingModule[] = [
+const trainingStages: TrainingStage[] = [
   {
-    id: 'orientation',
-    status: 'Start here',
-    title: 'Understand the workspace',
-    audience: 'Every new user',
-    goal: 'Learn where the day begins, what the command view means, and how to decide the next action without searching across tools.',
-    image: '/marketing/dashboard-command-center.png',
-    imageAlt: 'Setu Flow command center overview',
-    steps: [
-      'Open Setu Flow and begin from the main workspace view.',
-      'Review the visible queues, recent activity, and priority cards before opening records.',
-      'Use the workspace as the operating source for the day: leads, quote work, documents, order readiness, and dispatch follow-up.',
-    ],
-    checks: [
-      'You know which records need action today.',
-      'You can identify whether the record belongs to sales, operations, or dispatch.',
-      'You avoid changing records that are owned by another team unless assigned.',
+    id: 'dashboard',
+    number: '01',
+    title: 'Dashboard command view',
+    audience: 'Every user, manager, sales owner, operations owner',
+    outcome: 'Start the day by understanding queue health, activity, market visibility, and where attention is needed first.',
+    screens: [
+      {
+        title: 'Dashboard overview',
+        file: 'ss-dashboard.jpg',
+        alt: 'Setu Flow dashboard overview',
+        firstClick: 'Open Dashboard from the main navigation.',
+        check: 'Review today\'s open queues, priority cards, overdue activity, and records needing intervention.',
+        doneWhen: 'You know which record or queue should be opened first and which owner is responsible.',
+        tip: 'Use Dashboard as the daily starting point before opening individual leads, quotes, documents, or orders.',
+        focus: 'Queue health, priority cards, owner visibility, next action areas',
+      },
+      {
+        title: 'Analytics view',
+        file: 'ss-analytics.jpg',
+        alt: 'Setu Flow analytics screen',
+        firstClick: 'Open the analytics/reporting view from Dashboard or Reports.',
+        check: 'Look for bottlenecks, stale records, conversion movement, and areas where follow-up quality is dropping.',
+        doneWhen: 'You can explain what is healthy, what is stuck, and what needs manager attention.',
+        tip: 'Use analytics for coaching and pipeline review, not for editing day-to-day records.',
+        focus: 'Performance trend, bottleneck insight, management review CTA',
+      },
+      {
+        title: 'Reports view',
+        file: 'ss-reports.jpg',
+        alt: 'Setu Flow reports screen',
+        firstClick: 'Open Reports when you need a structured view across teams or workflow stages.',
+        check: 'Confirm the selected filters, date range, owner, and stage before reading the result.',
+        doneWhen: 'The report explains which workflow needs follow-up, cleanup, or handoff attention.',
+        tip: 'Always confirm filters before using reports in a meeting or training session.',
+        focus: 'Filter controls, report summary, export/review action if available',
+      },
     ],
   },
   {
-    id: 'capture',
-    status: 'Practice',
-    title: 'Capture a new inquiry',
-    audience: 'Sales, field teams, trade-show teams',
-    goal: 'Create a clean starting record from a buyer inquiry, event conversation, business card, WhatsApp follow-up, or product request.',
-    image: '/marketing/trade-events.png',
-    imageAlt: 'Trade event capture workflow',
-    steps: [
-      'Capture the company, contact, product interest, country, source, and conversation notes while the context is fresh.',
-      'Attach or reference supporting details such as card scans, event notes, product photos, catalogue requests, or buyer requirements.',
-      'Assign an owner and set the next follow-up so the record does not remain unworked.',
-    ],
-    checks: [
-      'Company and contact details are usable for follow-up.',
-      'Product interest is specific enough for operations to understand.',
-      'Source and owner are set before moving forward.',
+    id: 'lead-capture',
+    number: '02',
+    title: 'Lead capture and qualification',
+    audience: 'Sales owners, field teams, trade-show teams',
+    outcome: 'Create a clean lead, confirm buyer context, and make sure the lead has owner, status, notes, and next action.',
+    screens: [
+      {
+        title: 'Capture workspace',
+        file: 'ss-capture.jpg',
+        alt: 'Setu Flow capture workspace',
+        firstClick: 'Press Add Lead, Capture Lead, or the primary capture action on the screen.',
+        check: 'Enter company, contact, country, source, product interest, and conversation notes while context is fresh.',
+        doneWhen: 'The record is saved with source, owner, status, and next follow-up visible.',
+        tip: 'Do not leave a captured inquiry without a next action. A lead without follow-up becomes stale quickly.',
+        focus: 'Primary capture button, source field, owner field, save action',
+      },
+      {
+        title: 'Capture lead form',
+        file: 'ss-capture-lead.jpg',
+        alt: 'Setu Flow capture lead form',
+        firstClick: 'Start in the first required field, then complete contact and requirement details before saving.',
+        check: 'Verify email or phone, product category, expected quantity, buyer need, source, and owner.',
+        doneWhen: 'The saved lead is complete enough for another user to understand the buyer request without asking you again.',
+        tip: 'Use notes to capture the exact buyer ask, not just a generic summary.',
+        focus: 'Required fields, product interest, notes, Save Lead CTA',
+      },
+      {
+        title: 'Leads list',
+        file: 'ss-leads.jpg',
+        alt: 'Setu Flow leads list',
+        firstClick: 'Open the lead row that needs review or follow-up.',
+        check: 'Look at status, owner, source, last activity, and next action before changing anything.',
+        doneWhen: 'You know whether the lead should be contacted, qualified, assigned, quoted, held, or closed.',
+        tip: 'Read the most recent note before changing status.',
+        focus: 'Lead row, status column, owner column, next action indicator',
+      },
+      {
+        title: 'Lead command view',
+        file: 'ss-leads-cmd.jpg',
+        alt: 'Setu Flow lead command screen',
+        firstClick: 'Use the lead command controls to update status, assign owner, or add the next follow-up.',
+        check: 'Confirm the reason for the status change and whether another team needs to take over.',
+        doneWhen: 'Owner, status, notes, and next follow-up are aligned with the real business situation.',
+        tip: 'This is where training should emphasize discipline: every movement needs context.',
+        focus: 'Status control, owner control, add note, create task/follow-up CTA',
+      },
     ],
   },
   {
-    id: 'qualification',
-    status: 'Checklist',
-    title: 'Review and qualify the lead',
-    audience: 'Sales owners and managers',
-    goal: 'Move from raw inquiry to a qualified opportunity by confirming fit, urgency, ownership, and next commercial action.',
-    image: '/marketing/follow-up-queue.png',
-    imageAlt: 'Follow-up queue for lead qualification',
-    steps: [
-      'Open the lead record and read the latest notes before changing status.',
-      'Confirm buyer requirement, destination, product category, expected quantity, timeline, and decision-maker details.',
-      'Update status only after the next action is clear: follow up, request pricing, prepare quote, hold, or close out.',
+    id: 'trade-show',
+    number: '03',
+    title: 'Trade show and event capture',
+    audience: 'Event teams, sales owners, managers',
+    outcome: 'Convert event conversations into clean, assigned, follow-up-ready CRM records.',
+    screens: [
+      {
+        title: 'Pipeline/event view',
+        file: 'ss-pipeline.jpg',
+        alt: 'Setu Flow pipeline screen',
+        firstClick: 'Open the event, campaign, or pipeline bucket that contains new conversations.',
+        check: 'Review source, lead stage, buyer interest, and whether the event record has a next follow-up.',
+        doneWhen: 'Each event lead has a clear stage, owner, and follow-up action.',
+        tip: 'Trade show leads should be cleaned up quickly after the event while memory is fresh.',
+        focus: 'Pipeline stage, event source, lead movement CTA',
+      },
+      {
+        title: 'Catalog/product context',
+        file: 'ss-catalog.jpg',
+        alt: 'Setu Flow catalog screen',
+        firstClick: 'Open Catalog or product reference when the buyer asks about product options.',
+        check: 'Confirm product category, pack size, expected quantity, and any special requirement.',
+        doneWhen: 'The lead or quote record references the right product interest and required product detail.',
+        tip: 'Use catalog context to avoid vague entries like interested in snacks or interested in powder.',
+        focus: 'Product card, category detail, add/select product CTA',
+      },
     ],
-    checks: [
-      'Status reflects the actual business stage.',
-      'Notes explain why the lead is moving forward or stopping.',
-      'Next action has an owner and a realistic date.',
+  },
+  {
+    id: 'mobile-vcard',
+    number: '04',
+    title: 'Mobile field capture and vCard',
+    audience: 'Field teams, event teams, sales users away from desk',
+    outcome: 'Capture contact and buyer interest quickly from phone, then clean it up from desktop later.',
+    screens: [
+      {
+        title: 'Mobile capture',
+        file: 'ss-mobile-capture.jpg',
+        alt: 'Setu Flow mobile capture screen',
+        firstClick: 'Tap Quick Lead, Capture, or the mobile capture CTA.',
+        check: 'Capture name, company, phone/email, source, product interest, and notes before leaving the conversation.',
+        doneWhen: 'The mobile record is saved and ready for desktop review.',
+        tip: 'Mobile capture should be fast. Clean and qualify the record later from the full workspace.',
+        focus: 'Quick lead CTA, mobile save button, source and notes fields',
+      },
+      {
+        title: 'Mobile leads',
+        file: 'ss-mobile-leads.jpg',
+        alt: 'Setu Flow mobile leads screen',
+        firstClick: 'Open the newly captured lead from the mobile leads list.',
+        check: 'Confirm the captured contact details and whether the record needs cleanup.',
+        doneWhen: 'The record is either ready for follow-up or flagged for desktop cleanup.',
+        tip: 'Do not assume card scan data is perfect. Always verify extracted fields.',
+        focus: 'Lead card, open detail action, cleanup indicator',
+      },
+      {
+        title: 'vCard capture',
+        file: 'ss-vcard.jpg',
+        alt: 'Setu Flow vCard capture screen',
+        firstClick: 'Tap scan/import vCard or use the business card capture action.',
+        check: 'Verify name, company, title, phone, email, and source after extraction.',
+        doneWhen: 'The contact is converted into a usable lead with notes and next follow-up.',
+        tip: 'The most important training point is verification before save.',
+        focus: 'Scan/import CTA, extracted fields, confirm/save CTA',
+      },
+    ],
+  },
+  {
+    id: 'tasks',
+    number: '05',
+    title: 'Tasks and follow-up discipline',
+    audience: 'Every user who owns follow-up work',
+    outcome: 'Prevent leads, quotes, documents, and dispatch items from going cold by giving each action an owner and due date.',
+    screens: [
+      {
+        title: 'Tasks workspace',
+        file: 'ss-tasks.jpg',
+        alt: 'Setu Flow tasks screen',
+        firstClick: 'Press New Task, Add Task, or open the due task from the task list.',
+        check: 'Confirm owner, due date, priority, linked record, and task note.',
+        doneWhen: 'The task clearly explains what needs to happen next and who owns it.',
+        tip: 'A good task should be understandable even if another teammate opens it tomorrow.',
+        focus: 'New task CTA, due date, owner, linked lead/order',
+      },
+      {
+        title: 'Mobile tasks',
+        file: 'ss-tasks-mobile.jpg',
+        alt: 'Setu Flow mobile tasks screen',
+        firstClick: 'Tap the task card or completion action after the follow-up is done.',
+        check: 'Add a completion note or next-step note before marking complete.',
+        doneWhen: 'The task is closed with a clear outcome or converted into the next follow-up.',
+        tip: 'Never close a task without recording the outcome.',
+        focus: 'Task card, complete CTA, follow-up note field',
+      },
+    ],
+  },
+  {
+    id: 'setu-guru',
+    number: '06',
+    title: 'Setu Guru help and AI guidance',
+    audience: 'All users, with manager approval for sensitive actions',
+    outcome: 'Use Setu Guru to understand the current page, blockers, missing data, pricing defaults, HS codes, compliance, and next steps.',
+    screens: [
+      {
+        title: 'Setu Guru mobile dashboard help',
+        placeholder: true,
+        alt: 'Setu Guru mobile dashboard help placeholder',
+        firstClick: 'Tap Dashboard help or type a question in the Setu Guru input box.',
+        check: 'Review the response, then use Helpful or Missing detail to give feedback.',
+        doneWhen: 'You understand the recommended next step and a human has approved any price, compliance, send, or write-back action.',
+        tip: 'Setu Guru checks page context and live organization data, but humans still approve important actions.',
+        focus: 'Dashboard help, response policy help, send button, Helpful/Missing detail feedback',
+      },
     ],
   },
   {
     id: 'quote',
-    status: 'Practice',
-    title: 'Prepare quote and commercial details',
-    audience: 'Sales and operations',
-    goal: 'Translate a qualified request into quote-ready information with enough detail for price, product, document, and logistics review.',
-    image: '/marketing/quote-workflow.png',
-    imageAlt: 'Quote workflow screen',
-    steps: [
-      'Confirm products, pack size, quantity, shipment terms, destination, and currency before preparing quote work.',
-      'Check whether pricing, freight, documentation, and approval inputs are complete.',
-      'Record assumptions clearly so the next team can understand what was quoted and what still needs confirmation.',
-    ],
-    checks: [
-      'Products and quantities are not vague.',
-      'Commercial assumptions are visible in the record.',
-      'Any approval dependency is marked before the quote is shared.',
+    number: '07',
+    title: 'Quote workflow',
+    audience: 'Sales, operations, approvers',
+    outcome: 'Move from quote draft to approval, approved send, outcome update, and order creation without losing assumptions.',
+    screens: [
+      {
+        title: 'Quote builder',
+        file: 'ss-quotebuilder.jpg',
+        alt: 'Setu Flow quote builder screen',
+        firstClick: 'Press New Quote, Build Quote, or open the quote builder from the qualified lead.',
+        check: 'Confirm product, quantity, pack size, currency, freight, pricing assumptions, and destination.',
+        doneWhen: 'The quote draft contains enough detail for approval or buyer review.',
+        tip: 'Do not send a quote until assumptions and approvals are visible.',
+        focus: 'Build quote CTA, product line items, pricing/freight fields',
+      },
+      {
+        title: 'Quotes list',
+        file: 'ss-quotes.jpg',
+        alt: 'Setu Flow quotes list screen',
+        firstClick: 'Open the quote that is draft, awaiting approval, ready to send, or awaiting outcome.',
+        check: 'Check status, owner, approval state, buyer, amount, and last activity.',
+        doneWhen: 'You know whether to edit, approve, send, follow up, or create order.',
+        tip: 'Quote status should match the real buyer conversation.',
+        focus: 'Quote row, status, approval state, open action',
+      },
+      {
+        title: 'Operator quote draft',
+        file: 'operator-04-quote-builder-draft.png',
+        alt: 'Operator quote builder draft screen',
+        firstClick: 'Use the draft controls to add or adjust line items before approval.',
+        check: 'Validate product detail, price, freight, notes, and internal assumptions.',
+        doneWhen: 'The draft is ready to move to approval gate.',
+        tip: 'Draft is the safe stage for correction. Approval should not be used for cleanup.',
+        focus: 'Line item edit, draft save, submit for approval CTA',
+      },
+      {
+        title: 'Quote approval gate',
+        file: 'operator-05-quote-approval-gate.png',
+        alt: 'Operator quote approval gate screen',
+        firstClick: 'Press Submit for Approval or review the approval gate panel.',
+        check: 'Confirm margin, freight, terms, documentation, compliance, and approval notes.',
+        doneWhen: 'The quote is either approved, returned with notes, or held for missing inputs.',
+        tip: 'Approval gate protects the team from sending incomplete commercial terms.',
+        focus: 'Approval gate, approve/return action, missing input warnings',
+      },
+      {
+        title: 'Approved quote send',
+        file: 'operator-06-approved-quote-send.png',
+        alt: 'Operator approved quote send screen',
+        firstClick: 'Press Send Quote only after approval and final review.',
+        check: 'Confirm recipient, buyer-facing terms, attachments, and message before sending.',
+        doneWhen: 'The quote is sent and the follow-up task is created or scheduled.',
+        tip: 'Sending is a business action. Review before pressing the final CTA.',
+        focus: 'Send quote CTA, recipient review, follow-up task action',
+      },
+      {
+        title: 'Quote outcome and create order',
+        file: 'operator-07-quote-outcome-create-order.png',
+        alt: 'Operator quote outcome create order screen',
+        firstClick: 'Press Mark Accepted, Update Outcome, or Create Order when the buyer confirms.',
+        check: 'Confirm accepted terms, quantity, buyer confirmation, and order readiness.',
+        doneWhen: 'The accepted quote becomes an order-ready record with the right handoff details.',
+        tip: 'Only create order from a real accepted outcome, not from a hopeful follow-up.',
+        focus: 'Outcome action, accepted status, create order CTA',
+      },
     ],
   },
   {
     id: 'documents',
-    status: 'Checklist',
-    title: 'Confirm documents and order readiness',
-    audience: 'Operations and order coordinators',
-    goal: 'Make sure the record is ready for execution before it reaches dispatch, with required order and document information in place.',
-    image: '/marketing/ss-documents.jpg',
-    imageAlt: 'Document tracking screen',
-    steps: [
-      'Open the order or execution record and verify buyer, seller, product, quantity, commercial terms, and document requirements.',
-      'Check whether contract, invoice, packing, product, shipment, and compliance inputs are complete enough for processing.',
-      'Flag missing information before dispatch work starts so the team avoids rework later.',
-    ],
-    checks: [
-      'Required fields are complete before handoff.',
-      'Documents are attached, tracked, or clearly requested.',
-      'The record shows what is pending and who owns it.',
+    number: '08',
+    title: 'Documents and order readiness',
+    audience: 'Operations, order coordinators, dispatch owners',
+    outcome: 'Confirm documents, product, packing, freight, and order stage readiness before dispatch.',
+    screens: [
+      {
+        title: 'Documents workspace',
+        file: 'ss-documents.jpg',
+        alt: 'Setu Flow documents screen',
+        firstClick: 'Open the document checklist or document record connected to the order.',
+        check: 'Confirm contract, invoice, packing list, product documents, compliance files, and owner for missing items.',
+        doneWhen: 'Every required document is attached, tracked, or clearly assigned as pending.',
+        tip: 'Document readiness should be visible in the system, not hidden in chat messages.',
+        focus: 'Document checklist, upload/request CTA, pending owner',
+      },
+      {
+        title: 'Orders workspace',
+        file: 'ss-orders.jpg',
+        alt: 'Setu Flow orders screen',
+        firstClick: 'Open the order that needs execution review or readiness update.',
+        check: 'Review order status, buyer/seller, product, quantity, terms, documents, and dispatch readiness.',
+        doneWhen: 'The order clearly shows what is ready, what is pending, and who owns the next action.',
+        tip: 'Order status must reflect real readiness, not expected readiness.',
+        focus: 'Order row/detail, status, readiness panel, owner field',
+      },
+      {
+        title: 'Order execution stage panel',
+        file: 'operator-08-order-execution-stage-panel.png',
+        alt: 'Operator order execution stage panel screen',
+        firstClick: 'Use the execution stage panel to move the order through the correct stage.',
+        check: 'Confirm stage, blockers, notes, document readiness, and next owner.',
+        doneWhen: 'The order stage reflects the real operational position.',
+        tip: 'Stage changes should always include enough context for the next owner.',
+        focus: 'Stage selector, blocker note, next owner CTA',
+      },
+      {
+        title: 'Packing and freight',
+        file: 'operator-10-packing-freight.png',
+        alt: 'Operator packing and freight screen',
+        firstClick: 'Open packing/freight details before marking the order dispatch-ready.',
+        check: 'Confirm pack count, weight, dimensions, freight mode, pickup/dispatch timing, and freight notes.',
+        doneWhen: 'Packing and freight information is complete enough for dispatch to act.',
+        tip: 'Dispatch cannot move cleanly if packing and freight are guessed.',
+        focus: 'Packing fields, freight mode, dispatch timing, save CTA',
+      },
     ],
   },
   {
     id: 'dispatch',
-    status: 'Practice',
-    title: 'Move from ready state to dispatch',
-    audience: 'Dispatch and operations',
-    goal: 'Complete the operational handoff from order readiness to shipment action with clear status, tracking, and follow-up ownership.',
-    image: '/marketing/ss-orders.jpg',
-    imageAlt: 'Order execution and dispatch readiness screen',
-    steps: [
-      'Confirm that the order is approved, documentation is ready, product details are final, and dispatch timing is agreed.',
-      'Update the dispatch-related status only when the shipment action is actually ready or completed.',
-      'Add tracking, shipment note, or follow-up instruction so sales and operations can see the current truth without separate messages.',
-    ],
-    checks: [
-      'No missing commercial or document requirement remains hidden.',
-      'Dispatch status matches the real-world movement.',
-      'The next follow-up after dispatch is visible to the right owner.',
-    ],
-  },
-  {
-    id: 'mobile',
-    status: 'Future video',
-    title: 'Use mobile capture in the field',
-    audience: 'Field users and event teams',
-    goal: 'Capture buyer interest quickly from a phone while keeping enough structure for the office team to qualify and follow up.',
-    image: '/marketing/mobile-quick-lead.png',
-    imageAlt: 'Mobile quick lead capture screen',
-    steps: [
-      'Use the field mobile flow for quick lead capture when working at events, factories, buyer meetings, or supplier visits.',
-      'Prioritize accurate contact details, product interest, notes, and follow-up timing over long descriptions.',
-      'Review captured mobile records from the desktop workspace after the event to clean up and qualify them.',
-    ],
-    checks: [
-      'Contact details are good enough to reach the person again.',
-      'The source is clear for reporting and follow-up quality.',
-      'The record is reviewed after capture, not left as a raw entry.',
+    number: '09',
+    title: 'Dispatch tracking',
+    audience: 'Dispatch owners, operations, sales owners',
+    outcome: 'Complete the handoff from order readiness to shipment movement, tracking, and post-dispatch follow-up.',
+    screens: [
+      {
+        title: 'Dispatch tracking',
+        file: 'operator-11-dispatch-tracking.png',
+        alt: 'Operator dispatch tracking screen',
+        firstClick: 'Press Update Dispatch, Add Tracking, or the dispatch status action when shipment movement is confirmed.',
+        check: 'Confirm dispatch status, tracking number, carrier, date, document handoff, and buyer follow-up owner.',
+        doneWhen: 'Dispatch status matches the real-world shipment and the post-dispatch follow-up is visible.',
+        tip: 'Do not mark dispatch complete until the real shipment action has happened.',
+        focus: 'Dispatch status, tracking field, carrier/date, buyer follow-up task',
+      },
     ],
   },
 ];
@@ -176,15 +395,15 @@ const roles = [
   },
   {
     title: 'Operations owner',
-    body: 'Checks product, quote, document, order, approval, and readiness details before the record moves toward execution.',
+    body: 'Checks product, quote, document, order, approval, packing, freight, and readiness details before the record moves toward execution.',
   },
   {
     title: 'Dispatch owner',
-    body: 'Confirms the shipment handoff, updates dispatch status, records movement details, and keeps the post-dispatch follow-up visible.',
+    body: 'Confirms shipment handoff, updates dispatch status, records movement details, and keeps post-dispatch follow-up visible.',
   },
   {
     title: 'Manager',
-    body: 'Reviews bottlenecks, stuck records, overdue follow-ups, and handoff quality across the full capture-to-dispatch path.',
+    body: 'Reviews queue health, bottlenecks, overdue tasks, stuck records, and handoff quality across the full workflow.',
   },
 ];
 
@@ -202,8 +421,82 @@ function SectionHeader({ eyebrow, title, body }: { eyebrow: string; title: strin
   );
 }
 
-function CheckIcon() {
-  return <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-bold text-teal-700">✓</span>;
+function MiniLabel({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function SetuGuruPlaceholder() {
+  return (
+    <div className="flex h-full min-h-[360px] items-center justify-center bg-gradient-to-b from-sky-50 to-white p-6">
+      <div className="mx-auto w-full max-w-[18rem] rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_22px_60px_rgba(15,23,42,.12)]">
+        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-xl">🧘</div>
+          <div>
+            <p className="text-lg font-bold tracking-[-0.03em] text-slate-950">Setu Guru</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600">Online</p>
+          </div>
+        </div>
+        <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-700">Quick starts</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Dashboard help, response policy help, blockers, missing data, pricing defaults, HS codes, compliance, and next steps.</p>
+        </div>
+        <div className="mt-4 rounded-2xl border border-slate-200 p-4 text-sm leading-6 text-slate-700">
+          Ask about this page, products, pricing defaults, buyers, HS codes...
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Helpful</span>
+          <span className="rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">Missing detail</span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white">➤</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScreenCard({ screen }: { screen: TrainingScreen }) {
+  return (
+    <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,.08)]">
+      <div className="grid gap-0 lg:grid-cols-[1.12fr_0.88fr]">
+        <div className="bg-slate-100 p-3">
+          <div className="relative overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white">
+            {screen.placeholder ? (
+              <SetuGuruPlaceholder />
+            ) : (
+              <Image
+                src={`${screenshotBase}/${screen.file}`}
+                alt={screen.alt ?? screen.title}
+                width={1600}
+                height={1000}
+                className="h-[360px] w-full object-contain object-top"
+              />
+            )}
+          </div>
+        </div>
+        <div className="p-6 sm:p-7">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-teal-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-700">Training screen</span>
+            <span className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-semibold text-slate-500">{screen.file ?? 'Placeholder'}</span>
+          </div>
+          <h3 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-slate-950">{screen.title}</h3>
+          <p className="mt-3 text-sm leading-6 text-slate-500">{screen.tip}</p>
+          <div className="mt-5 grid gap-3">
+            <MiniLabel label="Press this first" value={screen.firstClick} />
+            <MiniLabel label="Check before saving" value={screen.check} />
+            <MiniLabel label="Done when" value={screen.doneWhen} />
+          </div>
+          <div className="mt-5 rounded-2xl bg-slate-950 p-4 text-white">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-200">Zoom / CTA focus</p>
+            <p className="mt-2 text-sm leading-6 text-white/75">{screen.focus}</p>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export default function TrainingWorkspacePage() {
@@ -215,14 +508,14 @@ export default function TrainingWorkspacePage() {
             <div>
               <Badge>Training workspace</Badge>
               <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] tracking-[-0.055em] text-slate-950 sm:text-6xl lg:text-7xl">
-                Learn Setu Flow from capture to dispatch.
+                Learn Setu Flow from dashboard to dispatch.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                A guided workspace for new users to understand the operating rhythm: capture a clean inquiry, qualify the record, prepare commercial details, verify order readiness, and complete dispatch handoff with confidence.
+                A true training workspace for new users: each screen explains what button to press, what to check, and what the record should look like before moving forward.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href="#modules" className="inline-flex items-center justify-center rounded-full bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(13,148,136,.24)] transition hover:-translate-y-0.5 hover:bg-teal-700">
-                  Start training
+                <a href="#screen-walkthrough" className="inline-flex items-center justify-center rounded-full bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(13,148,136,.24)] transition hover:-translate-y-0.5 hover:bg-teal-700">
+                  Start screen walkthrough
                 </a>
                 <Link href="/field-mobile" className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-white px-5 py-3 text-sm font-semibold text-teal-800 transition hover:-translate-y-0.5 hover:bg-teal-50">
                   See mobile capture
@@ -231,11 +524,11 @@ export default function TrainingWorkspacePage() {
             </div>
             <div className="rounded-[2rem] border border-white/70 bg-white/85 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
               <Image
-                src="/marketing/dashboard-command-center.png"
-                alt="Setu Flow training workspace overview"
+                src={`${screenshotBase}/ss-dashboard.jpg`}
+                alt="Setu Flow dashboard training overview"
                 width={1600}
                 height={1000}
-                className="rounded-[1.55rem] object-cover object-top"
+                className="rounded-[1.55rem] object-contain object-top"
                 priority
               />
             </div>
@@ -246,10 +539,9 @@ export default function TrainingWorkspacePage() {
           <div className="mx-auto max-w-7xl rounded-[2rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)] sm:p-7">
             <div className="flex flex-wrap items-center justify-center gap-2">
               {journey.map((item, index) => (
-                <div key={item} className="flex items-center gap-2">
-                  <span className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white/85 sm:text-sm">{item}</span>
-                  {index < journey.length - 1 && <span className="hidden text-white/35 sm:inline">→</span>}
-                </div>
+                <a key={item} href={`#${trainingStages[index]?.id ?? 'screen-walkthrough'}`} className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/15 sm:text-sm">
+                  {index + 1}. {item}
+                </a>
               ))}
             </div>
           </div>
@@ -259,7 +551,7 @@ export default function TrainingWorkspacePage() {
           <SectionHeader
             eyebrow="Role clarity"
             title="Know who owns each step"
-            body="Setu Flow works best when every user understands what they update, when they hand off, and what must be visible before the next team continues."
+            body="Every screen in this guide tells users what to press, what to verify, and when the handoff is ready. This keeps sales, operations, dispatch, and managers aligned."
           />
           <div className="mx-auto mt-10 grid max-w-7xl gap-4 md:grid-cols-2 lg:grid-cols-4">
             {roles.map((role) => (
@@ -271,59 +563,30 @@ export default function TrainingWorkspacePage() {
           </div>
         </section>
 
-        <section id="modules" className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8">
+        <section id="screen-walkthrough" className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8">
           <SectionHeader
-            eyebrow="Guided modules"
-            title="Step-by-step training path"
-            body="Use each module as a live walkthrough card. Read the goal, follow the steps, complete the checks, then move to the next module."
+            eyebrow="Screen walkthrough"
+            title="Use the right screen at the right moment"
+            body="Follow the sections in order for a complete dashboard-to-dispatch training path. Each screen includes the practical CTA, checks, and completion rule."
           />
-          <div className="mx-auto mt-12 max-w-7xl space-y-8">
-            {modules.map((module, index) => (
-              <article key={module.id} className="grid overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_22px_70px_rgba(15,23,42,.08)] lg:grid-cols-[0.92fr_1fr]">
-                <div className="bg-slate-100 p-3">
-                  <Image
-                    src={module.image}
-                    alt={module.imageAlt}
-                    width={1600}
-                    height={1000}
-                    className="h-full min-h-[320px] w-full rounded-[1.4rem] object-cover object-top"
-                  />
-                </div>
-                <div className="p-7 sm:p-9">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-50 text-sm font-bold text-teal-700">{index + 1}</span>
-                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{module.status}</span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{module.audience}</span>
-                  </div>
-                  <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-3xl">{module.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-500">{module.goal}</p>
 
-                  <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Walkthrough steps</p>
-                      <ol className="mt-3 space-y-3">
-                        {module.steps.map((step) => (
-                          <li key={step} className="flex gap-3 text-sm leading-6 text-slate-600">
-                            <CheckIcon />
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Before moving forward</p>
-                      <ul className="mt-3 space-y-3">
-                        {module.checks.map((check) => (
-                          <li key={check} className="flex gap-3 text-sm leading-6 text-slate-600">
-                            <CheckIcon />
-                            <span>{check}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+          <div className="mx-auto mt-12 max-w-7xl space-y-12">
+            {trainingStages.map((stage) => (
+              <section key={stage.id} id={stage.id} className="scroll-mt-28">
+                <div className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_16px_45px_rgba(15,23,42,.06)] sm:p-7">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-sm font-bold text-teal-700">{stage.number}</span>
+                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{stage.audience}</span>
                   </div>
+                  <h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">{stage.title}</h2>
+                  <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-500">{stage.outcome}</p>
                 </div>
-              </article>
+                <div className="space-y-6">
+                  {stage.screens.map((screen) => (
+                    <ScreenCard key={`${stage.id}-${screen.title}`} screen={screen} />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </section>
@@ -333,19 +596,19 @@ export default function TrainingWorkspacePage() {
             <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-200">Trainer notes</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Use this page as the base for live demos and future videos.</h2>
+                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">This is now ready for guided onboarding and future video narration.</h2>
                 <p className="mt-4 text-sm leading-7 text-white/65">
-                  Each module is intentionally written as a short teaching block. Trainers can record one short video per module, then attach those videos beside the same steps without changing the learning path.
+                  Trainers can use each screenshot card as a talk track: press this first, check this before saving, and only move forward when the done condition is true.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
-                <p className="text-sm font-semibold text-white">Recommended video sequence</p>
+                <p className="text-sm font-semibold text-white">Future video sequence</p>
                 <ol className="mt-4 space-y-3 text-sm leading-6 text-white/70">
-                  <li>1. Workspace orientation and daily queues</li>
-                  <li>2. Capture a new inquiry from event or field source</li>
-                  <li>3. Qualify, assign, and set follow-up</li>
-                  <li>4. Prepare quote/order readiness</li>
-                  <li>5. Complete dispatch handoff and follow-up</li>
+                  <li>1. Dashboard and queue health</li>
+                  <li>2. Lead capture and trade show/event intake</li>
+                  <li>3. Mobile capture, vCard, and tasks</li>
+                  <li>4. Setu Guru guidance and human approval</li>
+                  <li>5. Quote approval, documents, order readiness, and dispatch tracking</li>
                 </ol>
               </div>
             </div>
