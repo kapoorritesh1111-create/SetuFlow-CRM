@@ -18,6 +18,13 @@ html {
   scrollbar-gutter: stable both-edges;
 }
 
+html.drawer-open,
+body.drawer-open {
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 body {
   @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
   min-height: 100vh;
@@ -36,10 +43,32 @@ body.drawer-open {
   overflow: hidden;
 }
 
+body.drawer-open > div[role="presentation"] {
+  height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 body.drawer-open > div[role="presentation"] > div[role="dialog"] {
   background: #ffffff !important;
   filter: none !important;
   opacity: 1 !important;
+  overflow: hidden !important;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:nth-last-child(2) {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] form > div[class*="space-y-5"][class*="px-5"] > div:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  margin-top: 0;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -152,6 +181,10 @@ button[aria-haspopup="menu"] + [role="menu"] {
 }
 
 @media (max-width: 639px) {
+  body.drawer-open {
+    padding-bottom: 0 !important;
+  }
+
   body.drawer-open > div[role="presentation"] > button[aria-label="Close drawer"] {
     display: none !important;
   }
