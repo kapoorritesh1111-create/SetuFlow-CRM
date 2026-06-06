@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { type MarketingLang, useMarketingLanguage } from './language-selector';
 import { additionalTranslations } from './translation-pack';
+import { supplementalTranslations } from './translation-supplemental';
 
 type TranslationMap = Partial<Record<MarketingLang, string>>;
 
@@ -28,7 +29,6 @@ const coreTranslations: Record<string, TranslationMap> = {
   'Trade execution software for import-export teams, built around leads, quotes, documents, orders and shipment readiness.': { de: 'Trade-Execution-Software für Import-Export-Teams, aufgebaut rund um Leads, Angebote, Dokumente, Aufträge und Versandbereitschaft.', fr: 'Logiciel d’exécution commerciale pour équipes import-export, centré sur les prospects, devis, documents, commandes et la préparation des expéditions.', es: 'Software de ejecución comercial para equipos de importación y exportación, basado en leads, cotizaciones, documentos, pedidos y preparación de envíos.', zh: '面向进出口团队的贸易执行软件，围绕线索、报价、文件、订单和发运准备构建。', hi: 'इंपोर्ट-एक्सपोर्ट टीमों के लिए ट्रेड एक्ज़ीक्यूशन सॉफ्टवेयर, जो लीड, कोटेशन, दस्तावेज़, ऑर्डर और शिपमेंट तैयारी पर आधारित है।', ar: 'برنامج تنفيذ تجاري لفرق الاستيراد والتصدير، مبني حول العملاء المحتملين والعروض والمستندات والطلبات وجاهزية الشحن.' },
   'Trade execution software for global import-export teams.': { de: 'Trade-Execution-Software für globale Import-Export-Teams.', fr: 'Logiciel d’exécution commerciale pour équipes import-export mondiales.', es: 'Software de ejecución comercial para equipos globales de importación y exportación.', zh: '面向全球进出口团队的贸易执行软件。', hi: 'वैश्विक इंपोर्ट-एक्सपोर्ट टीमों के लिए ट्रेड एक्ज़ीक्यूशन सॉफ्टवेयर।', ar: 'برنامج تنفيذ تجاري لفرق الاستيراد والتصدير العالمية.' },
   'All rights reserved.': { de: 'Alle Rechte vorbehalten.', fr: 'Tous droits réservés.', es: 'Todos los derechos reservados.', zh: '保留所有权利。', hi: 'सर्वाधिकार सुरक्षित।', ar: 'جميع الحقوق محفوظة.' },
-
   'Trade Execution CRM': { de: 'Trade Execution CRM', fr: 'CRM d’exécution commerciale', es: 'CRM de ejecución comercial', zh: '贸易执行 CRM', hi: 'ट्रेड एक्ज़ीक्यूशन CRM', ar: 'CRM لتنفيذ التجارة' },
   'From first contact to final dispatch.': { de: 'Vom ersten Kontakt bis zum finalen Versand.', fr: 'Du premier contact à l’expédition finale.', es: 'Del primer contacto al despacho final.', zh: '从首次联系到最终发运。', hi: 'पहले संपर्क से अंतिम डिस्पैच तक।', ar: 'من أول تواصل إلى آخر شحنة.' },
   'Most import-export teams carry deals across spreadsheets, email threads, and disconnected tools — until something falls between them. Setu Flow keeps the whole workflow connected.': { de: 'Die meisten Import-Export-Teams führen Geschäfte über Tabellen, E-Mail-Threads und getrennte Tools — bis etwas dazwischen verloren geht. Setu Flow hält den gesamten Workflow verbunden.', fr: 'La plupart des équipes import-export gèrent les affaires dans des tableurs, des fils d’e-mails et des outils séparés — jusqu’à ce qu’une étape se perde. Setu Flow garde tout le workflow connecté.', es: 'La mayoría de los equipos de importación y exportación gestionan acuerdos entre hojas de cálculo, correos y herramientas desconectadas, hasta que algo se pierde. Setu Flow mantiene todo el flujo conectado.', zh: '大多数进出口团队在表格、邮件和分散工具之间推进交易，直到关键事项被遗漏。Setu Flow 让整个流程保持连接。', hi: 'अधिकांश इंपोर्ट-एक्सपोर्ट टीमें डील को स्प्रेडशीट, ईमेल थ्रेड और अलग-अलग टूल्स में चलाती हैं — जब तक कोई चीज़ बीच में छूट न जाए। Setu Flow पूरे वर्कफ़्लो को जोड़कर रखता है।', ar: 'تدير معظم فرق الاستيراد والتصدير الصفقات عبر الجداول ورسائل البريد والأدوات المنفصلة، إلى أن تضيع خطوة مهمة. يحافظ Setu Flow على اتصال سير العمل بالكامل.' },
@@ -40,11 +40,9 @@ const coreTranslations: Record<string, TranslationMap> = {
   'Product proof': { de: 'Produktbeweis', fr: 'Preuve produit', es: 'Prueba del producto', zh: '产品证明', hi: 'उत्पाद प्रमाण', ar: 'دليل المنتج' },
   'The moments where most teams lose deals.': { de: 'Die Momente, in denen die meisten Teams Geschäfte verlieren.', fr: 'Les moments où la plupart des équipes perdent des affaires.', es: 'Los momentos donde la mayoría de los equipos pierde acuerdos.', zh: '大多数团队丢失交易的关键时刻。', hi: 'वे पल जहाँ अधिकांश टीमें डील खो देती हैं।', ar: 'اللحظات التي تخسر فيها معظم الفرق الصفقات.' },
   'Not from lack of effort — from lack of system. Setu Flow is built around exactly these moments.': { de: 'Nicht wegen fehlender Mühe — sondern wegen fehlender Struktur. Setu Flow ist genau für diese Momente gebaut.', fr: 'Pas par manque d’effort — par manque de système. Setu Flow est conçu précisément pour ces moments.', es: 'No por falta de esfuerzo, sino por falta de sistema. Setu Flow está diseñado para esos momentos.', zh: '不是因为不努力，而是因为缺少系统。Setu Flow 正是围绕这些时刻构建。', hi: 'मेहनत की कमी से नहीं — सिस्टम की कमी से। Setu Flow इन्हीं पलों के लिए बना है।', ar: 'ليس بسبب قلة الجهد، بل بسبب غياب النظام. صُمم Setu Flow لهذه اللحظات تحديدا.' },
-
   'One operating system for trade execution.': { de: 'Ein Betriebssystem für Trade Execution.', fr: 'Un système opérationnel pour l’exécution commerciale.', es: 'Un sistema operativo para la ejecución comercial.', zh: '一个用于贸易执行的操作系统。', hi: 'ट्रेड एक्ज़ीक्यूशन के लिए एक ऑपरेटिंग सिस्टम।', ar: 'نظام تشغيل واحد لتنفيذ التجارة.' },
   'vCard capture, trade events, lead follow-up, quote control, document readiness, order dispatch and Setu Guru AI — in the sequence trade teams actually work.': { de: 'vCard-Erfassung, Messen, Lead-Follow-up, Angebotskontrolle, Dokumentenbereitschaft, Auftragsversand und Setu Guru KI — in der Reihenfolge, in der Handelsteams wirklich arbeiten.', fr: 'Capture vCard, salons, suivi des leads, contrôle des devis, préparation documentaire, expédition des commandes et IA Setu Guru — dans l’ordre réel du travail des équipes commerciales.', es: 'Captura vCard, eventos comerciales, seguimiento de leads, control de cotizaciones, preparación documental, despacho de pedidos y Setu Guru AI — en la secuencia real de trabajo.', zh: 'vCard 采集、贸易活动、线索跟进、报价控制、文件准备、订单发运和 Setu Guru AI —— 按贸易团队实际工作的顺序排列。', hi: 'vCard कैप्चर, ट्रेड इवेंट्स, लीड फॉलो-अप, कोट नियंत्रण, दस्तावेज़ तैयारी, ऑर्डर डिस्पैच और Setu Guru AI — उसी क्रम में जिसमें ट्रेड टीमें काम करती हैं।', ar: 'التقاط vCard، المعارض التجارية، متابعة العملاء المحتملين، التحكم بالعروض، جاهزية المستندات، شحن الطلبات وذكاء Setu Guru — بالترتيب الذي تعمل به فرق التجارة فعليا.' },
   'Trade Command Center — pipeline, market map and Guru action zone': { de: 'Trade Command Center — Pipeline, Marktkarte und Guru-Aktionszone', fr: 'Centre de commande — pipeline, carte marché et zone d’action Guru', es: 'Centro de comando — pipeline, mapa de mercado y zona de acción Guru', zh: '贸易指挥中心 — 管道、市场地图和 Guru 操作区', hi: 'ट्रेड कमांड सेंटर — पाइपलाइन, मार्केट मैप और Guru एक्शन ज़ोन', ar: 'مركز قيادة التجارة — المسار وخريطة السوق ومنطقة إجراءات Guru' },
-
   'Product overview': { de: 'Produktübersicht', fr: 'Vue produit', es: 'Resumen del producto', zh: '产品概览', hi: 'उत्पाद अवलोकन', ar: 'نظرة على المنتج' },
   'Setu Flow - learn the system': { de: 'Setu Flow - das System lernen', fr: 'Setu Flow - apprendre le système', es: 'Setu Flow - aprender el sistema', zh: 'Setu Flow - 学习系统', hi: 'Setu Flow - सिस्टम सीखें', ar: 'Setu Flow - تعلّم النظام' },
   'SETU Workflow': { de: 'SETU Workflow', fr: 'Workflow SETU', es: 'Flujo SETU', zh: 'SETU 工作流', hi: 'SETU वर्कफ़्लो', ar: 'سير عمل SETU' },
@@ -72,8 +70,12 @@ const coreTranslations: Record<string, TranslationMap> = {
   'One connected flow. One source of truth.': { de: 'Ein verbundener Ablauf. Eine verlässliche Quelle.', fr: 'Un flux connecté. Une seule source de vérité.', es: 'Un flujo conectado. Una sola fuente de verdad.', zh: '一个连接的流程。一个事实来源。', hi: 'एक जुड़ा हुआ फ्लो। एक ही सत्य स्रोत।', ar: 'تدفق واحد متصل. مصدر واحد للحقيقة.' },
 };
 
-const translations: Record<string, TranslationMap> = { ...coreTranslations, ...additionalTranslations };
+const translations: Record<string, TranslationMap> = { ...coreTranslations, ...additionalTranslations, ...supplementalTranslations };
 const allTranslations = new Map<string, string>();
+
+function normalizeText(text: string) {
+  return text.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 Object.entries(translations).forEach(([english, byLang]) => {
   allTranslations.set(normalizeText(english), english);
@@ -81,10 +83,6 @@ Object.entries(translations).forEach(([english, byLang]) => {
     if (value) allTranslations.set(normalizeText(value), english);
   });
 });
-
-function normalizeText(text: string) {
-  return text.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
-}
 
 function translateText(text: string, language: MarketingLang) {
   const prefix = text.match(/^\s*/)?.[0] ?? '';
