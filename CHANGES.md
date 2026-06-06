@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-06 — Reverted public marketing View Transition pass
+
+- Removed the experimental View Transition navigation handler from the public marketing shell after live testing showed poor transition quality and language picker/dropdown interference.
+- Deleted the marketing motion CSS module and removed global `::view-transition-*` timing rules.
+- Restored standard Next.js link navigation for public marketing pages, preserving header, language selector, workspace entry, and Setu Guru lite behavior.
+
 ## 2026-06-06 — Public marketing motion polish
 
 - Added a scoped View Transition API polish layer for the public marketing shell so supported browsers get a calm page-to-page fade/lift between public pages.
