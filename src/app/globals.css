@@ -108,6 +108,14 @@ button[aria-haspopup="menu"] + [role="menu"] {
   z-index: 810 !important;
 }
 
+@media (min-width: 640px) {
+  body.drawer-open > div[role="presentation"] > div[role="dialog"].max-w-\[540px\] {
+    flex: 0 0 min(540px, calc(100vw - 24px)) !important;
+    width: min(540px, calc(100vw - 24px)) !important;
+    max-width: min(540px, calc(100vw - 24px)) !important;
+  }
+}
+
 @media (min-width: 768px) {
   button[aria-label="Toggle Setu Guru"] {
     right: 1.5rem !important;
