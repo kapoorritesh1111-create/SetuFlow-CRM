@@ -95,6 +95,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
     if (!open) return;
 
     previouslyFocusedRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.documentElement.classList.add('drawer-open');
     document.body.classList.add('drawer-open');
 
     const focusFirst = window.setTimeout(() => {
@@ -153,6 +154,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
+      document.documentElement.classList.remove('drawer-open');
       document.body.classList.remove('drawer-open');
       previouslyFocusedRef.current?.focus();
     };
@@ -161,12 +163,12 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   if (!open) return null;
 
   const drawer = (
-    <div className="fixed inset-0 z-[920] flex justify-end" role="presentation">
+    <div className="fixed inset-0 z-[920] flex h-[100dvh] overflow-hidden overscroll-none" role="presentation">
       <button type="button" className="flex-1 bg-slate-950/55 transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
       <div
         ref={panelRef}
         className={[
-          'flex h-[100dvh] w-full max-w-none flex-col overflow-hidden border-l border-white/60 bg-white shadow-2xl',
+          'flex h-[100dvh] w-full flex-col overflow-hidden border-l border-white/60 bg-white shadow-2xl overscroll-contain',
           'sm:my-3 sm:mr-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-[2rem] sm:ring-1 sm:ring-slate-950/8',
           widthClassName,
         ].join(' ')}
@@ -176,7 +178,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
         aria-describedby={description ? descriptionId : undefined}
       >
         {!hideHeader ? (
-          <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-white px-4 py-4 sm:px-5">
+          <div className="sticky top-0 z-10 shrink-0 border-b border-slate-200/80 bg-white px-4 py-4 sm:px-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 {title ? <h2 id={titleId} className="truncate text-lg font-semibold text-slate-900 sm:text-xl">{title}</h2> : null}
@@ -187,8 +189,8 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
             </div>
           </div>
         ) : null}
-        <div className={['flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5', bodyClassName].join(' ')}>{children}</div>
-        {footer ? <div className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(15,23,42,.12)] sm:px-5 sm:pb-4">{footer}</div> : null}
+        <div className={['flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5', bodyClassName].join(' ')}>{children}</div>
+        {footer ? <div className="sticky bottom-0 z-20 shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(15,23,42,.12)] sm:px-5 sm:pb-3">{footer}</div> : null}
       </div>
     </div>
   );
