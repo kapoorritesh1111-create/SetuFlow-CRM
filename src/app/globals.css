@@ -100,7 +100,7 @@ button[aria-label="Toggle Setu Guru"] {
 }
 
 #app-content > header.sticky {
-  z-index: 800 !important;
+  z-index: 500 !important;
 }
 
 button[aria-label="Open notifications"] + section,
