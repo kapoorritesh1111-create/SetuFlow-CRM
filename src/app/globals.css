@@ -36,6 +36,12 @@ body.drawer-open {
   overflow: hidden;
 }
 
+body.drawer-open > div[role="presentation"] > div[role="dialog"] {
+  background: #ffffff !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -142,6 +148,18 @@ button[aria-haspopup="menu"] + [role="menu"] {
 @media (max-width: 640px) {
   html {
     -webkit-text-size-adjust: 100%;
+  }
+}
+
+@media (max-width: 639px) {
+  body.drawer-open > div[role="presentation"] > button[aria-label="Close drawer"] {
+    display: none !important;
+  }
+
+  body.drawer-open > div[role="presentation"] > div[role="dialog"] {
+    flex: 0 0 100vw !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
   }
 }
 
