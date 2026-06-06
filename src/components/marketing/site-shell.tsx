@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import type { MouseEvent, ReactNode } from 'react';
 import { LanguageSelector } from './language-selector';
 import { GlobalTranslator } from './global-translator';
 import { SetuGuruLiteWidget } from '@/features/setu-guru/setu-guru-lite-widget';
+import styles from './site-shell-motion.module.css';
 
 const navItems: [string, string][] = [
   ['/platform', 'Platform'],
@@ -17,6 +18,27 @@ const navItems: [string, string][] = [
   ['/pricing', 'Pricing'],
   ['/compare', 'Compare'],
 ];
+
+const publicMotionRoutes = new Set([
+  '/',
+  '/platform',
+  '/solutions',
+  '/setu-guru-ai',
+  '/field-mobile',
+  '/pricing',
+  '/compare',
+  '/training',
+  '/book-demo',
+]);
+
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void | Promise<void>) => {
+    finished: Promise<void>;
+    ready: Promise<void>;
+    updateCallbackDone: Promise<void>;
+    skipTransition: () => void;
+  };
+};
 
 function MenuIcon() {
   return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>;
@@ -31,16 +53,50 @@ function HomeIcon() {
 export function SiteShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = (href: string) => pathname === href;
   const isHome = pathname === '/';
 
+  const handlePublicNavigation = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const target = event.target as HTMLElement | null;
+    const anchor = target?.closest('a');
+    if (!anchor || !event.currentTarget.contains(anchor)) return;
+    if (anchor.target || anchor.hasAttribute('download')) return;
+
+    const href = anchor.getAttribute('href');
+    if (!href || !href.startsWith('/') || href.startsWith('//')) return;
+
+    const destination = new URL(anchor.href);
+    if (destination.origin !== window.location.origin) return;
+    if (!publicMotionRoutes.has(pathname) || !publicMotionRoutes.has(destination.pathname)) return;
+    if (destination.pathname === pathname && destination.hash) return;
+    if (destination.pathname === pathname && destination.search === window.location.search && destination.hash === window.location.hash) return;
+
+    const doc = document as ViewTransitionDocument;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!doc.startViewTransition || prefersReducedMotion) {
+      setMobileOpen(false);
+      return;
+    }
+
+    event.preventDefault();
+    setMobileOpen(false);
+
+    doc.startViewTransition(async () => {
+      router.push(`${destination.pathname}${destination.search}${destination.hash}`);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className={`min-h-screen bg-white text-slate-900 ${styles.motionShell}`} onClickCapture={handlePublicNavigation}>
       <GlobalTranslator />
-      <header className="sticky top-0 z-40 border-b border-[#1F487C]/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl">
+      <header className={`sticky top-0 z-40 border-b border-[#1F487C]/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl ${styles.motionHeader}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-            <Image src="/logos/setu-flow-logo.png" alt="Setu Flow — Trade Execution CRM" width={200} height={60} className="h-[48px] w-auto" />
+            <Image src="/logos/setu-flow-logo.png" alt="Setu Flow — Trade Execution CRM" width={200} height={60} className={`h-[48px] w-auto ${styles.motionLogo}`} />
             {!isHome && <span className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 sm:inline-flex"><HomeIcon />Home</span>}
           </Link>
 
@@ -80,7 +136,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       {children}
       <SetuGuruLiteWidget />
 
-      <footer className="border-t border-[#1F487C]/10 bg-white">
+      <footer className={`border-t border-[#1F487C]/10 bg-white ${styles.motionFooter}`}>
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
             <div>
