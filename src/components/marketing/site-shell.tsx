@@ -61,7 +61,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
     const target = event.target as HTMLElement | null;
-    const anchor = target?.closest('a');
+    const anchor = target?.closest('a') as HTMLAnchorElement | null;
     if (!anchor || !event.currentTarget.contains(anchor)) return;
     if (anchor.target || anchor.hasAttribute('download')) return;
 
