@@ -1,0 +1,102 @@
+.motionShell {
+  isolation: isolate;
+}
+
+.motionHeader,
+.motionFooter {
+  contain: paint;
+}
+
+.motionLogo {
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (view-transition-name: root) {
+    .motionHeader {
+      view-transition-name: setu-public-header;
+    }
+
+    .motionLogo {
+      view-transition-name: setu-public-logo;
+    }
+
+    .motionFooter {
+      view-transition-name: setu-public-footer;
+    }
+
+    :global(::view-transition-group(root)) {
+      animation-duration: 260ms;
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    :global(::view-transition-old(root)) {
+      animation: setuPublicRootOut 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    :global(::view-transition-new(root)) {
+      animation: setuPublicRootIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    :global(::view-transition-old(setu-public-header)),
+    :global(::view-transition-new(setu-public-header)),
+    :global(::view-transition-old(setu-public-logo)),
+    :global(::view-transition-new(setu-public-logo)) {
+      animation-duration: 220ms;
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+      mix-blend-mode: normal;
+    }
+
+    :global(::view-transition-old(setu-public-footer)) {
+      animation: setuPublicFadeOut 150ms ease-out both;
+    }
+
+    :global(::view-transition-new(setu-public-footer)) {
+      animation: setuPublicFadeIn 240ms ease-out both;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motionHeader,
+  .motionLogo,
+  .motionFooter {
+    view-transition-name: none;
+  }
+}
+
+@keyframes setuPublicRootOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.995);
+    filter: blur(1px);
+  }
+}
+
+@keyframes setuPublicRootIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes setuPublicFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes setuPublicFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
