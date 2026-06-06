@@ -43,11 +43,35 @@ export default function LeadDrawerFooter(props: LeadDrawerFooterProps) {
     quickScanStatus,
   } = props;
   const isFinalStep = wizard ? wizard.activeStepIndex === wizard.totalSteps - 1 : true;
-  const label = isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? '✓ Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead');
+  const label = isPending ? 'Saving...' : disableSubmit ? 'No changes to save' : submitLabel ?? (isQuickMode ? 'Save lead' : isEditingExistingLead ? 'Save lead' : 'Create lead');
+
+  if (isQuickMode) {
+    return (
+      <div className="space-y-2">
+        {quickScanStatus?.tone === 'loading' ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800" aria-live="assertive" role="status">
+            Reading card...<span className="mt-1 block text-[11px] font-medium text-sky-700">Filling contact fields...</span>
+          </div>
+        ) : null}
+        {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
+        {success && !quickScanStatus?.message ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-900">Lead capture</p>
+            <p className="mt-0.5 text-xs text-slate-500">Review, then save.</p>
+          </div>
+          <div className="grid min-w-[180px] grid-cols-2 gap-2">
+            <button type="button" onClick={onCancel} className="h-10 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+            <button type="submit" form={formId} disabled={isPending || disableSubmit} className="h-10 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{label}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      {wizard && !isQuickMode ? (
+      {wizard ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -62,14 +86,9 @@ export default function LeadDrawerFooter(props: LeadDrawerFooterProps) {
           </div>
         </div>
       ) : null}
-      {quickScanStatus?.tone === 'loading' ? (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800" aria-live="assertive" role="status">
-          Reading card…<span className="mt-1 block text-xs font-medium text-sky-700">Filling contact fields…</span>
-        </div>
-      ) : null}
       {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
-      {success && !quickScanStatus?.message ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
-      <DrawerActionBar title={isQuickMode ? 'Lead capture' : 'Lead workflow'} description={isFinalStep ? (isQuickMode ? 'Review the details, then save this lead.' : 'Save changes and return to the list.') : 'Continue to the next section.'}>
+      {success ? <p className="text-sm font-medium text-emerald-600">{success}</p> : null}
+      <DrawerActionBar title="Lead workflow" description={isFinalStep ? 'Save changes and return to the list.' : 'Continue to the next section.'}>
         <button type="button" onClick={onCancel} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
         {wizard && wizard.canGoBack ? <button type="button" onClick={wizard.onBack} disabled={isPending} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Previous step</button> : null}
         {wizard && !isFinalStep ? (
@@ -77,7 +96,7 @@ export default function LeadDrawerFooter(props: LeadDrawerFooterProps) {
         ) : (
           <button type="submit" form={formId} disabled={isPending || disableSubmit} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{label}</button>
         )}
-        {isEditingExistingLead && !isQuickMode && isFinalStep && onCreateQuote ? <button type="button" onClick={onCreateQuote} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Create Quote</button> : null}
+        {isEditingExistingLead && isFinalStep && onCreateQuote ? <button type="button" onClick={onCreateQuote} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Create Quote</button> : null}
       </DrawerActionBar>
     </div>
   );
