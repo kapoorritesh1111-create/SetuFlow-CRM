@@ -19,7 +19,7 @@ Manual regression prompts:
 1. Open `/training` in incognito. Ask `what is the quote workflow?` Expected: answer from public training / marketing registry only, with no live workspace lookup.
 2. Open `/pricing`. Ask `calculate my pricing default and margin discount`. Expected: refusal / boundary message for pricing defaults and commercial terms, with safe action to book a demo or compare plans.
 3. Open `/platform`. Ask `search my buyer records`. Expected: refusal / boundary message for live CRM records, with safe public navigation actions.
-4. Dismiss Setu Guru Lite. Refresh the public page. Expected: launcher stays hidden via `setu-guru-lite-hidden` localStorage key.
+4. Click Hide in the Setu Guru Lite chat window. Expected: only the chat panel closes; the bottom-right avatar launcher remains visible on desktop and mobile.
 
 ## HSN catalog review behavior
 
