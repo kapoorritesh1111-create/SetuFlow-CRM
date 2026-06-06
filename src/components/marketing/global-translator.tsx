@@ -2,27 +2,28 @@
 
 import { useEffect } from 'react';
 import { type MarketingLang, useMarketingLanguage } from './language-selector';
+import { additionalTranslations } from './translation-pack';
 
 type TranslationMap = Partial<Record<MarketingLang, string>>;
 
-const translations: Record<string, TranslationMap> = {
-  'Home': { de: 'Startseite', fr: 'Accueil', es: 'Inicio', zh: '首页', hi: 'होम', ar: 'الرئيسية' },
-  'Platform': { de: 'Plattform', fr: 'Plateforme', es: 'Plataforma', zh: '平台', hi: 'प्लेटफ़ॉर्म', ar: 'المنصة' },
-  'Solutions': { de: 'Lösungen', fr: 'Solutions', es: 'Soluciones', zh: '解决方案', hi: 'समाधान', ar: 'الحلول' },
+const coreTranslations: Record<string, TranslationMap> = {
+  Home: { de: 'Startseite', fr: 'Accueil', es: 'Inicio', zh: '首页', hi: 'होम', ar: 'الرئيسية' },
+  Platform: { de: 'Plattform', fr: 'Plateforme', es: 'Plataforma', zh: '平台', hi: 'प्लेटफ़ॉर्म', ar: 'المنصة' },
+  Solutions: { de: 'Lösungen', fr: 'Solutions', es: 'Soluciones', zh: '解决方案', hi: 'समाधान', ar: 'الحلول' },
   'Setu Guru AI': { de: 'Setu Guru KI', fr: 'IA Setu Guru', es: 'IA Setu Guru', zh: 'Setu Guru AI', hi: 'Setu Guru AI', ar: 'ذكاء Setu Guru' },
-  'Mobile': { de: 'Mobil', fr: 'Mobile', es: 'Móvil', zh: '移动端', hi: 'मोबाइल', ar: 'الجوال' },
-  'Pricing': { de: 'Preise', fr: 'Tarifs', es: 'Precios', zh: '价格', hi: 'मूल्य', ar: 'الأسعار' },
-  'Compare': { de: 'Vergleichen', fr: 'Comparer', es: 'Comparar', zh: '对比', hi: 'तुलना', ar: 'قارن' },
+  Mobile: { de: 'Mobil', fr: 'Mobile', es: 'Móvil', zh: '移动端', hi: 'मोबाइल', ar: 'الجوال' },
+  Pricing: { de: 'Preise', fr: 'Tarifs', es: 'Precios', zh: '价格', hi: 'मूल्य', ar: 'الأسعار' },
+  Compare: { de: 'Vergleichen', fr: 'Comparer', es: 'Comparar', zh: '对比', hi: 'तुलना', ar: 'قارن' },
   'Book Demo': { de: 'Demo buchen', fr: 'Réserver une démo', es: 'Reservar demo', zh: '预约演示', hi: 'डेमो बुक करें', ar: 'احجز عرضا' },
   'Book a Demo': { de: 'Demo buchen', fr: 'Réserver une démo', es: 'Reservar una demo', zh: '预约演示', hi: 'डेमो बुक करें', ar: 'احجز عرضا' },
   'Book a demo': { de: 'Demo buchen', fr: 'Réserver une démo', es: 'Reservar una demo', zh: '预约演示', hi: 'डेमो बुक करें', ar: 'احجز عرضا' },
   'Enter workspace': { de: 'Workspace öffnen', fr: 'Entrer dans l’espace', es: 'Entrar al espacio', zh: '进入工作区', hi: 'वर्कस्पेस खोलें', ar: 'ادخل مساحة العمل' },
-  'Enter': { de: 'Öffnen', fr: 'Entrer', es: 'Entrar', zh: '进入', hi: 'खोलें', ar: 'دخول' },
+  Enter: { de: 'Öffnen', fr: 'Entrer', es: 'Entrar', zh: '进入', hi: 'खोलें', ar: 'دخول' },
   'Product Overview': { de: 'Produktübersicht', fr: 'Vue produit', es: 'Resumen del producto', zh: '产品概览', hi: 'उत्पाद अवलोकन', ar: 'نظرة على المنتج' },
   'Contact support': { de: 'Support kontaktieren', fr: 'Contacter le support', es: 'Contactar soporte', zh: '联系支持', hi: 'सहायता से संपर्क करें', ar: 'اتصل بالدعم' },
   'Sales & demos': { de: 'Vertrieb & Demos', fr: 'Ventes et démos', es: 'Ventas y demos', zh: '销售与演示', hi: 'सेल्स और डेमो', ar: 'المبيعات والعروض' },
-  'Access': { de: 'Zugang', fr: 'Accès', es: 'Acceso', zh: '访问', hi: 'एक्सेस', ar: 'الوصول' },
-  'Company': { de: 'Unternehmen', fr: 'Entreprise', es: 'Empresa', zh: '公司', hi: 'कंपनी', ar: 'الشركة' },
+  Access: { de: 'Zugang', fr: 'Accès', es: 'Acceso', zh: '访问', hi: 'एक्सेस', ar: 'الوصول' },
+  Company: { de: 'Unternehmen', fr: 'Entreprise', es: 'Empresa', zh: '公司', hi: 'कंपनी', ar: 'الشركة' },
   'Trade execution software for import-export teams, built around leads, quotes, documents, orders and shipment readiness.': { de: 'Trade-Execution-Software für Import-Export-Teams, aufgebaut rund um Leads, Angebote, Dokumente, Aufträge und Versandbereitschaft.', fr: 'Logiciel d’exécution commerciale pour équipes import-export, centré sur les prospects, devis, documents, commandes et la préparation des expéditions.', es: 'Software de ejecución comercial para equipos de importación y exportación, basado en leads, cotizaciones, documentos, pedidos y preparación de envíos.', zh: '面向进出口团队的贸易执行软件，围绕线索、报价、文件、订单和发运准备构建。', hi: 'इंपोर्ट-एक्सपोर्ट टीमों के लिए ट्रेड एक्ज़ीक्यूशन सॉफ्टवेयर, जो लीड, कोटेशन, दस्तावेज़, ऑर्डर और शिपमेंट तैयारी पर आधारित है।', ar: 'برنامج تنفيذ تجاري لفرق الاستيراد والتصدير، مبني حول العملاء المحتملين والعروض والمستندات والطلبات وجاهزية الشحن.' },
   'Trade execution software for global import-export teams.': { de: 'Trade-Execution-Software für globale Import-Export-Teams.', fr: 'Logiciel d’exécution commerciale pour équipes import-export mondiales.', es: 'Software de ejecución comercial para equipos globales de importación y exportación.', zh: '面向全球进出口团队的贸易执行软件。', hi: 'वैश्विक इंपोर्ट-एक्सपोर्ट टीमों के लिए ट्रेड एक्ज़ीक्यूशन सॉफ्टवेयर।', ar: 'برنامج تنفيذ تجاري لفرق الاستيراد والتصدير العالمية.' },
   'All rights reserved.': { de: 'Alle Rechte vorbehalten.', fr: 'Tous droits réservés.', es: 'Todos los derechos reservados.', zh: '保留所有权利。', hi: 'सर्वाधिकार सुरक्षित।', ar: 'جميع الحقوق محفوظة.' },
@@ -34,6 +35,7 @@ const translations: Record<string, TranslationMap> = {
   'vCard capture': { de: 'vCard-Erfassung', fr: 'Capture vCard', es: 'Captura vCard', zh: 'vCard 采集', hi: 'vCard कैप्चर', ar: 'التقاط vCard' },
   'Quote control': { de: 'Angebotskontrolle', fr: 'Contrôle des devis', es: 'Control de cotizaciones', zh: '报价控制', hi: 'कोट नियंत्रण', ar: 'التحكم بالعروض' },
   'Document readiness': { de: 'Dokumentenbereitschaft', fr: 'Préparation des documents', es: 'Preparación documental', zh: '文件准备', hi: 'दस्तावेज़ तैयारी', ar: 'جاهزية المستندات' },
+  'Setu Guru AI': { de: 'Setu Guru KI', fr: 'IA Setu Guru', es: 'IA Setu Guru', zh: 'Setu Guru AI', hi: 'Setu Guru AI', ar: 'ذكاء Setu Guru' },
   'Trusted by trade teams': { de: 'Vertraut von Handelsteams', fr: 'Approuvé par les équipes commerciales', es: 'Confiado por equipos de comercio', zh: '受贸易团队信任', hi: 'ट्रेड टीमों का भरोसा', ar: 'موثوق به من فرق التجارة' },
   'Product proof': { de: 'Produktbeweis', fr: 'Preuve produit', es: 'Prueba del producto', zh: '产品证明', hi: 'उत्पाद प्रमाण', ar: 'دليل المنتج' },
   'The moments where most teams lose deals.': { de: 'Die Momente, in denen die meisten Teams Geschäfte verlieren.', fr: 'Les moments où la plupart des équipes perdent des affaires.', es: 'Los momentos donde la mayoría de los equipos pierde acuerdos.', zh: '大多数团队丢失交易的关键时刻。', hi: 'वे पल जहाँ अधिकांश टीमें डील खो देती हैं।', ar: 'اللحظات التي تخسر فيها معظم الفرق الصفقات.' },
@@ -53,18 +55,20 @@ const translations: Record<string, TranslationMap> = {
   'All Users': { de: 'Alle Nutzer', fr: 'Tous les utilisateurs', es: 'Todos los usuarios', zh: '所有用户', hi: 'सभी उपयोगकर्ता', ar: 'كل المستخدمين' },
   'Sales Owner': { de: 'Sales Owner', fr: 'Responsable commercial', es: 'Responsable de ventas', zh: '销售负责人', hi: 'सेल्स ओनर', ar: 'مسؤول المبيعات' },
   'Sales Executive': { de: 'Sales Executive', fr: 'Commercial terrain', es: 'Ejecutivo de ventas', zh: '销售专员', hi: 'सेल्स एग्जीक्यूटिव', ar: 'تنفيذي المبيعات' },
-  'Operations': { de: 'Operations', fr: 'Opérations', es: 'Operaciones', zh: '运营', hi: 'ऑपरेशंस', ar: 'العمليات' },
-  'Dispatch': { de: 'Versand', fr: 'Expédition', es: 'Despacho', zh: '发运', hi: 'डिस्पैच', ar: 'الشحن' },
-  'Manager': { de: 'Manager', fr: 'Manager', es: 'Gerente', zh: '经理', hi: 'मैनेजर', ar: 'المدير' },
-  'Capture': { de: 'Erfassen', fr: 'Capturer', es: 'Capturar', zh: '采集', hi: 'कैप्चर', ar: 'التقاط' },
-  'Convert': { de: 'Konvertieren', fr: 'Convertir', es: 'Convertir', zh: '转化', hi: 'कन्वर्ट', ar: 'التحويل' },
-  'Execute': { de: 'Ausführen', fr: 'Exécuter', es: 'Ejecutar', zh: '执行', hi: 'एक्ज़ीक्यूट', ar: 'التنفيذ' },
+  Operations: { de: 'Operations', fr: 'Opérations', es: 'Operaciones', zh: '运营', hi: 'ऑपरेशंस', ar: 'العمليات' },
+  Dispatch: { de: 'Versand', fr: 'Expédition', es: 'Despacho', zh: '发运', hi: 'डिस्पैच', ar: 'الشحن' },
+  Manager: { de: 'Manager', fr: 'Manager', es: 'Gerente', zh: '经理', hi: 'मैनेजर', ar: 'المدير' },
+  Capture: { de: 'Erfassen', fr: 'Capturer', es: 'Capturar', zh: '采集', hi: 'कैप्चर', ar: 'التقاط' },
+  Convert: { de: 'Konvertieren', fr: 'Convertir', es: 'Convertir', zh: '转化', hi: 'कन्वर्ट', ar: 'التحويل' },
+  Execute: { de: 'Ausführen', fr: 'Exécuter', es: 'Ejecutar', zh: '执行', hi: 'एक्ज़ीक्यूट', ar: 'التنفيذ' },
   'Find and qualify the right opportunities': { de: 'Die richtigen Chancen finden und qualifizieren', fr: 'Trouver et qualifier les bonnes opportunités', es: 'Encontrar y calificar las oportunidades correctas', zh: '发现并筛选正确机会', hi: 'सही अवसर ढूंढें और क्वालिफाई करें', ar: 'العثور على الفرص المناسبة وتأهيلها' },
   'Create winning offers and get ready': { de: 'Gewinnende Angebote erstellen und vorbereiten', fr: 'Créer des offres gagnantes et se préparer', es: 'Crear ofertas ganadoras y prepararse', zh: '创建有竞争力的报价并做好准备', hi: 'बेहतर ऑफर बनाएं और तैयार रहें', ar: 'إنشاء عروض رابحة والاستعداد' },
   'Deliver and track with confidence': { de: 'Sicher liefern und verfolgen', fr: 'Livrer et suivre en confiance', es: 'Entregar y rastrear con confianza', zh: '自信交付并跟踪', hi: 'विश्वास के साथ डिलीवर और ट्रैक करें', ar: 'التسليم والتتبع بثقة' },
   'Open lesson ->': { de: 'Lektion öffnen ->', fr: 'Ouvrir la leçon ->', es: 'Abrir lección ->', zh: '打开课程 ->', hi: 'पाठ खोलें ->', ar: 'افتح الدرس ->' },
   'One connected flow. One source of truth.': { de: 'Ein verbundener Ablauf. Eine verlässliche Quelle.', fr: 'Un flux connecté. Une seule source de vérité.', es: 'Un flujo conectado. Una sola fuente de verdad.', zh: '一个连接的流程。一个事实来源。', hi: 'एक जुड़ा हुआ फ्लो। एक ही सत्य स्रोत।', ar: 'تدفق واحد متصل. مصدر واحد للحقيقة.' },
 };
+
+const translations: Record<string, TranslationMap> = { ...coreTranslations, ...additionalTranslations };
 
 const allTranslations = new Map<string, string>();
 Object.entries(translations).forEach(([english, byLang]) => {
@@ -74,10 +78,14 @@ Object.entries(translations).forEach(([english, byLang]) => {
   });
 });
 
+function normalizeText(text: string) {
+  return text.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function translateText(text: string, language: MarketingLang) {
   const prefix = text.match(/^\s*/)?.[0] ?? '';
   const suffix = text.match(/\s*$/)?.[0] ?? '';
-  const trimmed = text.trim();
+  const trimmed = normalizeText(text);
   const key = allTranslations.get(trimmed);
   if (!key) return text;
   const replacement = language === 'en' ? key : translations[key]?.[language] || key;
@@ -112,7 +120,7 @@ export function GlobalTranslator() {
   useEffect(() => {
     const run = () => applyTranslations(language);
     run();
-    const timeout = window.setTimeout(run, 80);
+    const timeout = window.setTimeout(run, 100);
     return () => window.clearTimeout(timeout);
   }, [language]);
 
