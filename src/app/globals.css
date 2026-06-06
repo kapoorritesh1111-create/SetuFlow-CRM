@@ -52,12 +52,24 @@ body.drawer-open > div[role="presentation"] {
 body.drawer-open > div[role="presentation"] > div[role="dialog"] {
   background: #ffffff !important;
   filter: none !important;
+  min-height: 0 !important;
   opacity: 1 !important;
   overflow: hidden !important;
 }
 
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:first-child {
+  z-index: 60 !important;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:first-child button[aria-label="Close drawer"] {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 70 !important;
+}
+
 body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:nth-last-child(2) {
   -webkit-overflow-scrolling: touch;
+  min-height: 0 !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
   touch-action: pan-y;
