@@ -161,12 +161,12 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   if (!open) return null;
 
   const drawer = (
-    <div className="fixed inset-0 z-[920] isolate flex justify-end" role="presentation">
-      <button type="button" className="absolute inset-0 z-0 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
+    <div className="fixed inset-0 z-[920] flex justify-end" role="presentation">
+      <button type="button" className="flex-1 bg-slate-950/55 transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
       <div
         ref={panelRef}
         className={[
-          'relative z-10 flex h-[100dvh] w-full max-w-none flex-col overflow-hidden border-l border-white/60 bg-white/95 shadow-2xl backdrop-blur-xl',
+          'flex h-[100dvh] w-full max-w-none flex-col overflow-hidden border-l border-white/60 bg-white shadow-2xl',
           'sm:my-3 sm:mr-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-[2rem] sm:ring-1 sm:ring-slate-950/8',
           widthClassName,
         ].join(' ')}
@@ -176,7 +176,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
         aria-describedby={description ? descriptionId : undefined}
       >
         {!hideHeader ? (
-          <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur sm:px-5">
+          <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-white px-4 py-4 sm:px-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 {title ? <h2 id={titleId} className="truncate text-lg font-semibold text-slate-900 sm:text-xl">{title}</h2> : null}
@@ -188,7 +188,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
           </div>
         ) : null}
         <div className={['flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5', bodyClassName].join(' ')}>{children}</div>
-        {footer ? <div className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white/95 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(15,23,42,.12)] backdrop-blur sm:px-5 sm:pb-4">{footer}</div> : null}
+        {footer ? <div className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(15,23,42,.12)] sm:px-5 sm:pb-4">{footer}</div> : null}
       </div>
     </div>
   );
