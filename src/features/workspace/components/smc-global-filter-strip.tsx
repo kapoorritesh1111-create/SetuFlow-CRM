@@ -75,7 +75,7 @@ function SelectField({
           <option key={`${ariaLabel}-${option.value || 'all'}`} value={option.value}>{option.label}</option>
         ))}
       </select>
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400">v</span>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400">{'\u25BE'}</span>
     </label>
   );
 }
@@ -193,7 +193,7 @@ export function SmcGlobalFilterStrip({
             </button>
           ) : null}
           <label className="ml-auto flex h-11 min-w-[220px] shrink-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-slate-400 shadow-sm focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-100 sm:min-w-[280px]">
-            <span className="text-[13px]">Search</span>
+            <span className="text-[13px]">{'\u2315'}</span>
             <input
               value={localSearch}
               onChange={(event) => setLocalSearch(event.target.value)}
@@ -207,7 +207,7 @@ export function SmcGlobalFilterStrip({
               className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400"
             />
             {localSearch ? (
-              <button type="button" onClick={() => { setLocalSearch(''); apply({ q: null }); }} className="rounded-full px-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-slate-700">x</button>
+              <button type="button" onClick={() => { setLocalSearch(''); apply({ q: null }); }} className="rounded-full px-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-slate-700">{'\u00D7'}</button>
             ) : null}
           </label>
         </div>
@@ -229,7 +229,7 @@ export function SmcGlobalFilterStrip({
           <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Start<input name="start" type="date" defaultValue={searchParams.get('start') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none" /></label>
           <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">End<input name="end" type="date" defaultValue={searchParams.get('end') ?? ''} className="mt-1 block rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none" /></label>
           <button type="submit" className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-600">Apply range</button>
-          <span className="text-xs text-slate-500">{compactValue(searchParams.get('start'), 'Start')} to {compactValue(searchParams.get('end'), 'Today')}</span>
+          <span className="text-xs text-slate-500">{compactValue(searchParams.get('start'), 'Start')} {'\u2192'} {compactValue(searchParams.get('end'), 'Today')}</span>
         </form>
       ) : null}
     </div>
