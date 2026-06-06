@@ -10,7 +10,6 @@ type LiteAction = { label: string; href: string };
 type LiteMessage = { id: string; role: 'assistant' | 'user'; content: string; actions?: LiteAction[]; tone?: 'normal' | 'loading' | 'error' };
 type LiteResponse = { answer?: string; actions?: LiteAction[]; pageTitle?: string; policy?: string; answered?: boolean };
 
-const STORAGE_KEY = 'setu-guru-lite-hidden';
 const SESSION_KEY = 'setu-guru-lite-session';
 
 function createSessionId() {
@@ -31,7 +30,6 @@ export function SetuGuruLiteWidget() {
   const pathname = usePathname() || '/';
   const allowed = isSetuGuruLiteAllowedPath(pathname);
   const page = useMemo(() => getSetuGuruLitePage(pathname), [pathname]);
-  const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -40,7 +38,6 @@ export function SetuGuruLiteWidget() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setHidden(window.localStorage.getItem(STORAGE_KEY) === 'true');
     setSessionId(getSessionId());
   }, []);
 
@@ -61,11 +58,9 @@ export function SetuGuruLiteWidget() {
     requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' }));
   }, [messages, thinking, open]);
 
-  if (!allowed || hidden) return null;
+  if (!allowed) return null;
 
-  function dismiss() {
-    window.localStorage.setItem(STORAGE_KEY, 'true');
-    setHidden(true);
+  function hideChatWindow() {
     setOpen(false);
   }
 
@@ -121,8 +116,8 @@ export function SetuGuruLiteWidget() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => setOpen(false)} className="rounded-full px-2 py-1 text-xs font-bold text-white/65 transition hover:bg-white/10 hover:text-white">Minimize</button>
-              <button type="button" onClick={dismiss} className="rounded-full px-2 py-1 text-xs font-bold text-white/65 transition hover:bg-white/10 hover:text-white" aria-label="Dismiss Setu Guru Lite">Hide</button>
+              <button type="button" onClick={hideChatWindow} className="rounded-full px-2 py-1 text-xs font-bold text-white/65 transition hover:bg-white/10 hover:text-white">Minimize</button>
+              <button type="button" onClick={hideChatWindow} className="rounded-full px-2 py-1 text-xs font-bold text-white/65 transition hover:bg-white/10 hover:text-white" aria-label="Hide Setu Guru Lite chat window">Hide</button>
             </div>
           </div>
 
