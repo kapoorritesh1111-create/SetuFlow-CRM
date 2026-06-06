@@ -161,12 +161,12 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   if (!open) return null;
 
   const drawer = (
-    <div className="fixed inset-0 z-[520] flex justify-end" role="presentation">
-      <button type="button" className="flex-1 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
+    <div className="fixed inset-0 z-[920] isolate flex justify-end" role="presentation">
+      <button type="button" className="absolute inset-0 z-0 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200" onClick={onClose} aria-label="Close drawer" />
       <div
         ref={panelRef}
         className={[
-          'flex h-[100dvh] w-full max-w-none flex-col overflow-hidden border-l border-white/60 bg-white/95 shadow-2xl backdrop-blur-xl',
+          'relative z-10 flex h-[100dvh] w-full max-w-none flex-col overflow-hidden border-l border-white/60 bg-white/95 shadow-2xl backdrop-blur-xl',
           'sm:my-3 sm:mr-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-[2rem] sm:ring-1 sm:ring-slate-950/8',
           widthClassName,
         ].join(' ')}
@@ -183,7 +183,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
                 {description ? <p id={descriptionId} className="mt-1 max-w-2xl text-sm text-slate-600">{description}</p> : null}
                 {headerActions ? <div className="mt-3">{headerActions}</div> : null}
               </div>
-              <button type="button" onClick={onClose} aria-label="Close drawer" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true">×</span></button>
+              <button type="button" onClick={onClose} aria-label="Close drawer" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true">X</span></button>
             </div>
           </div>
         ) : null}
