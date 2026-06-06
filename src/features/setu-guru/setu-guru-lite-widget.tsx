@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { usePathname } from 'next/navigation';
 import { getSetuGuruLitePage, isSetuGuruLiteAllowedPath } from '@/lib/setu-guru/public-site-registry';
+import { SetuGuruFab } from '@/features/setu-guru/setu-guru-fab';
 
 type LiteAction = { label: string; href: string };
 type LiteMessage = { id: string; role: 'assistant' | 'user'; content: string; actions?: LiteAction[]; tone?: 'normal' | 'loading' | 'error' };
@@ -36,6 +37,8 @@ export function SetuGuruLiteWidget() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<LiteMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setSessionId(getSessionId());
@@ -57,6 +60,17 @@ export function SetuGuruLiteWidget() {
     if (!target) return;
     requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' }));
   }, [messages, thinking, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target || rootRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [open]);
 
   if (!allowed) return null;
 
@@ -101,9 +115,9 @@ export function SetuGuruLiteWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 print:hidden" data-no-translate="true">
+    <div ref={rootRef} className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 print:hidden" data-no-translate="true">
       {open ? (
-        <section className="w-[min(calc(100vw-2rem),24rem)] overflow-hidden rounded-[1.7rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.20)]" aria-label="Setu Guru Lite public assistant">
+        <section ref={panelRef} className="w-[min(calc(100vw-2rem),24rem)] overflow-hidden rounded-[1.7rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.20)]" aria-label="Setu Guru Lite public assistant">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-950 px-4 py-3 text-white">
             <div className="flex items-center gap-3">
               <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
@@ -158,12 +172,7 @@ export function SetuGuruLiteWidget() {
         </section>
       ) : null}
 
-      <button type="button" onClick={() => setOpen(true)} className="group relative flex h-16 w-16 items-center justify-center rounded-full border border-white/80 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:scale-105 hover:ring-teal-200 sm:h-[4.5rem] sm:w-[4.5rem]" aria-label="Open Setu Guru Lite">
-        <span className="absolute inset-1 rounded-full bg-slate-950/95 shadow-inner" />
-        <Image src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" width={64} height={64} className="relative z-10 h-12 w-12 rounded-full object-contain sm:h-14 sm:w-14" priority />
-        <span className="absolute right-1 top-1 z-20 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-400 sm:h-4 sm:w-4" />
-        <span className="sr-only">Ask Setu Guru — site and training help</span>
-      </button>
+      <SetuGuruFab label="Open Setu Guru Lite" onClick={() => setOpen((current) => !current)} />
     </div>
   );
 }
