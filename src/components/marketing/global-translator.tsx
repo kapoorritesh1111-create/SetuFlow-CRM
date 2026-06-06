@@ -14,6 +14,20 @@ const GOOGLE_LANGUAGE: Record<MarketingLang, string> = {
   ar: 'ar',
 };
 
+const PROTECTED_BRAND_REPLACEMENTS: [RegExp, string][] = [
+  [/Here's the AI Guru/gi, 'Setu Guru AI'],
+  [/Teacher's Set/gi, 'Setu Guru'],
+  [/Teacher Set/gi, 'Setu Guru'],
+  [/Teacher's Guru/gi, 'Setu Guru'],
+  [/सेतु\s*गुरु/g, 'Setu Guru'],
+  [/सेटु\s*गुरु/g, 'Setu Guru'],
+  [/सेतु\s*प्रवाह/g, 'SETU Flow'],
+  [/सेटु\s*फ्लो/g, 'SETU Flow'],
+  [/Setu\s+flow/gi, 'SETU Flow'],
+  [/SETU\s+flow/g, 'SETU Flow'],
+  [/Setu\s+Flow/g, 'SETU Flow'],
+];
+
 type WindowWithTranslate = Window & {
   google?: {
     translate?: {
@@ -42,6 +56,28 @@ function applyGoogleTranslate(language: MarketingLang) {
     select.value = target;
     select.dispatchEvent(new Event('change'));
   }
+  window.setTimeout(restoreProtectedBrands, 150);
+}
+
+function restoreProtectedBrands() {
+  if (typeof document === 'undefined' || !document.body) return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    const parent = node.parentElement;
+    if (!parent || parent.closest('[data-no-translate]') || parent.closest('.notranslate')) continue;
+    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT', 'SELECT', 'OPTION', 'SVG'].includes(parent.tagName)) continue;
+    if (node.textContent?.trim()) nodes.push(node);
+  }
+
+  nodes.forEach((node) => {
+    let next = node.textContent || '';
+    PROTECTED_BRAND_REPLACEMENTS.forEach(([pattern, replacement]) => {
+      next = next.replace(pattern, replacement);
+    });
+    if (next !== node.textContent) node.textContent = next;
+  });
 }
 
 function loadGoogleTranslate(language: MarketingLang) {
@@ -67,6 +103,7 @@ function loadGoogleTranslate(language: MarketingLang) {
       'setuflow-google-translate',
     );
     window.setTimeout(() => applyGoogleTranslate(language), 250);
+    window.setTimeout(restoreProtectedBrands, 500);
   };
 
   if (scopedWindow.google?.translate?.TranslateElement) {
@@ -90,8 +127,16 @@ export function GlobalTranslator() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     loadGoogleTranslate(language);
-    const timers = [100, 350, 900].map((delay) => window.setTimeout(() => applyGoogleTranslate(language), delay));
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
+    const timers = [100, 350, 900, 1600].map((delay) => window.setTimeout(() => {
+      applyGoogleTranslate(language);
+      restoreProtectedBrands();
+    }, delay));
+    const observer = new MutationObserver(() => restoreProtectedBrands());
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      observer.disconnect();
+    };
   }, [language, pathname]);
 
   return (
@@ -116,6 +161,11 @@ export function GlobalTranslator() {
       }
       font > font {
         background: transparent !important;
+      }
+      .notranslate,
+      [translate='no'],
+      [data-no-translate='true'] {
+        unicode-bidi: isolate;
       }
     `}</style>
   );
