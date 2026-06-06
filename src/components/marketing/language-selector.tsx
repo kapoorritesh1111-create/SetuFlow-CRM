@@ -16,7 +16,7 @@ export const LANGUAGES: {
   region: string;
   dir?: 'rtl' | 'ltr';
 }[] = [
-  { code: 'en', flagSrc: '/flags/gb.svg', label: 'English', native: 'English', short: 'EN', region: 'Global / UK' },
+  { code: 'en', flagSrc: '/flags/us.svg', label: 'English', native: 'English', short: 'EN', region: 'Global / US' },
   { code: 'de', flagSrc: '/flags/de.svg', label: 'German', native: 'Deutsch', short: 'DE', region: 'Germany / DACH' },
   { code: 'fr', flagSrc: '/flags/fr.svg', label: 'French', native: 'Francais', short: 'FR', region: 'France / EU' },
   { code: 'es', flagSrc: '/flags/es.svg', label: 'Spanish', native: 'Espanol', short: 'ES', region: 'Spain / LATAM' },
@@ -87,21 +87,22 @@ export function LanguageSelector({ compact = false }: { compact?: boolean }) {
   }, []);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative notranslate" data-no-translate="true" translate="no">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         className={`group inline-flex items-center rounded-full border bg-white font-black text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-teal-200 hover:bg-teal-50/70 ${open ? 'border-slate-950 ring-2 ring-slate-950/5' : 'border-slate-200'} ${compact ? 'gap-1.5 px-2.5 py-1.5 text-[11px]' : 'gap-2 px-3 py-2 text-[12px]'}`}
         aria-label="Change language"
         aria-expanded={open}
+        translate="no"
       >
         <Flag src={active.flagSrc} label={active.label} />
-        <span className="tracking-[0.14em]">{active.short}</span>
+        <span className="tracking-[0.14em] notranslate" translate="no">{active.short}</span>
         <ChevronIcon open={open} />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-3 w-[270px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+        <div className="absolute right-0 z-50 mt-3 w-[270px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.18)] notranslate" data-no-translate="true" translate="no">
           <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-teal-50/70 px-4 py-3">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-700">Global language</p>
             <p className="mt-1 text-xs font-medium text-slate-500">Choose display language</p>
@@ -118,6 +119,7 @@ export function LanguageSelector({ compact = false }: { compact?: boolean }) {
                     setOpen(false);
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${selected ? 'bg-teal-50 text-teal-950' : 'text-slate-700 hover:bg-slate-50'}`}
+                  translate="no"
                 >
                   <Flag src={item.flagSrc} label={item.label} size="md" />
                   <span className="min-w-0 flex-1">
