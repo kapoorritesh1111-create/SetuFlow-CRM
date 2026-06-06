@@ -99,6 +99,15 @@ button[aria-label="Toggle Setu Guru"] {
   z-index: 610 !important;
 }
 
+#app-content > header.sticky {
+  z-index: 800 !important;
+}
+
+button[aria-label="Open notifications"] + section,
+button[aria-haspopup="menu"] + [role="menu"] {
+  z-index: 810 !important;
+}
+
 @media (min-width: 768px) {
   button[aria-label="Toggle Setu Guru"] {
     right: 1.5rem !important;
