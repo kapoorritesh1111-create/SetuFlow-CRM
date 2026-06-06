@@ -92,7 +92,19 @@ button {
   display: none;
 }
 
+button[aria-label="Toggle Setu Guru"] {
+  position: fixed !important;
+  right: 1rem !important;
+  bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  z-index: 610 !important;
+}
+
 @media (min-width: 768px) {
+  button[aria-label="Toggle Setu Guru"] {
+    right: 1.5rem !important;
+    bottom: 1.5rem !important;
+  }
+
   aside nav a[href^="/dashboard/analytics"],
   aside nav a[href^="/reports"] {
     display: none;
@@ -115,7 +127,6 @@ button {
     -webkit-text-size-adjust: 100%;
   }
 }
-
 
 @media (max-width: 767px) {
   body {
