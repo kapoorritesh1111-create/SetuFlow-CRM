@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { type MarketingLang, useMarketingLanguage } from './language-selector';
 import { additionalTranslations } from './translation-pack';
 
@@ -35,11 +36,14 @@ const coreTranslations: Record<string, TranslationMap> = {
   'vCard capture': { de: 'vCard-Erfassung', fr: 'Capture vCard', es: 'Captura vCard', zh: 'vCard 采集', hi: 'vCard कैप्चर', ar: 'التقاط vCard' },
   'Quote control': { de: 'Angebotskontrolle', fr: 'Contrôle des devis', es: 'Control de cotizaciones', zh: '报价控制', hi: 'कोट नियंत्रण', ar: 'التحكم بالعروض' },
   'Document readiness': { de: 'Dokumentenbereitschaft', fr: 'Préparation des documents', es: 'Preparación documental', zh: '文件准备', hi: 'दस्तावेज़ तैयारी', ar: 'جاهزية المستندات' },
-  'Setu Guru AI': { de: 'Setu Guru KI', fr: 'IA Setu Guru', es: 'IA Setu Guru', zh: 'Setu Guru AI', hi: 'Setu Guru AI', ar: 'ذكاء Setu Guru' },
   'Trusted by trade teams': { de: 'Vertraut von Handelsteams', fr: 'Approuvé par les équipes commerciales', es: 'Confiado por equipos de comercio', zh: '受贸易团队信任', hi: 'ट्रेड टीमों का भरोसा', ar: 'موثوق به من فرق التجارة' },
   'Product proof': { de: 'Produktbeweis', fr: 'Preuve produit', es: 'Prueba del producto', zh: '产品证明', hi: 'उत्पाद प्रमाण', ar: 'دليل المنتج' },
   'The moments where most teams lose deals.': { de: 'Die Momente, in denen die meisten Teams Geschäfte verlieren.', fr: 'Les moments où la plupart des équipes perdent des affaires.', es: 'Los momentos donde la mayoría de los equipos pierde acuerdos.', zh: '大多数团队丢失交易的关键时刻。', hi: 'वे पल जहाँ अधिकांश टीमें डील खो देती हैं।', ar: 'اللحظات التي تخسر فيها معظم الفرق الصفقات.' },
   'Not from lack of effort — from lack of system. Setu Flow is built around exactly these moments.': { de: 'Nicht wegen fehlender Mühe — sondern wegen fehlender Struktur. Setu Flow ist genau für diese Momente gebaut.', fr: 'Pas par manque d’effort — par manque de système. Setu Flow est conçu précisément pour ces moments.', es: 'No por falta de esfuerzo, sino por falta de sistema. Setu Flow está diseñado para esos momentos.', zh: '不是因为不努力，而是因为缺少系统。Setu Flow 正是围绕这些时刻构建。', hi: 'मेहनत की कमी से नहीं — सिस्टम की कमी से। Setu Flow इन्हीं पलों के लिए बना है।', ar: 'ليس بسبب قلة الجهد، بل بسبب غياب النظام. صُمم Setu Flow لهذه اللحظات تحديدا.' },
+
+  'One operating system for trade execution.': { de: 'Ein Betriebssystem für Trade Execution.', fr: 'Un système opérationnel pour l’exécution commerciale.', es: 'Un sistema operativo para la ejecución comercial.', zh: '一个用于贸易执行的操作系统。', hi: 'ट्रेड एक्ज़ीक्यूशन के लिए एक ऑपरेटिंग सिस्टम।', ar: 'نظام تشغيل واحد لتنفيذ التجارة.' },
+  'vCard capture, trade events, lead follow-up, quote control, document readiness, order dispatch and Setu Guru AI — in the sequence trade teams actually work.': { de: 'vCard-Erfassung, Messen, Lead-Follow-up, Angebotskontrolle, Dokumentenbereitschaft, Auftragsversand und Setu Guru KI — in der Reihenfolge, in der Handelsteams wirklich arbeiten.', fr: 'Capture vCard, salons, suivi des leads, contrôle des devis, préparation documentaire, expédition des commandes et IA Setu Guru — dans l’ordre réel du travail des équipes commerciales.', es: 'Captura vCard, eventos comerciales, seguimiento de leads, control de cotizaciones, preparación documental, despacho de pedidos y Setu Guru AI — en la secuencia real de trabajo.', zh: 'vCard 采集、贸易活动、线索跟进、报价控制、文件准备、订单发运和 Setu Guru AI —— 按贸易团队实际工作的顺序排列。', hi: 'vCard कैप्चर, ट्रेड इवेंट्स, लीड फॉलो-अप, कोट नियंत्रण, दस्तावेज़ तैयारी, ऑर्डर डिस्पैच और Setu Guru AI — उसी क्रम में जिसमें ट्रेड टीमें काम करती हैं।', ar: 'التقاط vCard، المعارض التجارية، متابعة العملاء المحتملين، التحكم بالعروض، جاهزية المستندات، شحن الطلبات وذكاء Setu Guru — بالترتيب الذي تعمل به فرق التجارة فعليا.' },
+  'Trade Command Center — pipeline, market map and Guru action zone': { de: 'Trade Command Center — Pipeline, Marktkarte und Guru-Aktionszone', fr: 'Centre de commande — pipeline, carte marché et zone d’action Guru', es: 'Centro de comando — pipeline, mapa de mercado y zona de acción Guru', zh: '贸易指挥中心 — 管道、市场地图和 Guru 操作区', hi: 'ट्रेड कमांड सेंटर — पाइपलाइन, मार्केट मैप और Guru एक्शन ज़ोन', ar: 'مركز قيادة التجارة — المسار وخريطة السوق ومنطقة إجراءات Guru' },
 
   'Product overview': { de: 'Produktübersicht', fr: 'Vue produit', es: 'Resumen del producto', zh: '产品概览', hi: 'उत्पाद अवलोकन', ar: 'نظرة على المنتج' },
   'Setu Flow - learn the system': { de: 'Setu Flow - das System lernen', fr: 'Setu Flow - apprendre le système', es: 'Setu Flow - aprender el sistema', zh: 'Setu Flow - 学习系统', hi: 'Setu Flow - सिस्टम सीखें', ar: 'Setu Flow - تعلّم النظام' },
@@ -69,12 +73,12 @@ const coreTranslations: Record<string, TranslationMap> = {
 };
 
 const translations: Record<string, TranslationMap> = { ...coreTranslations, ...additionalTranslations };
-
 const allTranslations = new Map<string, string>();
+
 Object.entries(translations).forEach(([english, byLang]) => {
-  allTranslations.set(english, english);
+  allTranslations.set(normalizeText(english), english);
   Object.values(byLang).forEach((value) => {
-    if (value) allTranslations.set(value, english);
+    if (value) allTranslations.set(normalizeText(value), english);
   });
 });
 
@@ -101,7 +105,7 @@ function shouldSkip(node: Node) {
 }
 
 function applyTranslations(language: MarketingLang) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined' || !document.body) return;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const nodes: Text[] = [];
   while (walker.nextNode()) {
@@ -116,13 +120,29 @@ function applyTranslations(language: MarketingLang) {
 
 export function GlobalTranslator() {
   const language = useMarketingLanguage();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const run = () => applyTranslations(language);
+    if (typeof window === 'undefined') return;
+    let frame = 0;
+    const run = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => applyTranslations(language));
+    };
+
     run();
-    const timeout = window.setTimeout(run, 100);
-    return () => window.clearTimeout(timeout);
-  }, [language]);
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
+    const observer = new MutationObserver(() => run());
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      observer.disconnect();
+    };
+  }, [language, pathname]);
 
   return null;
 }
