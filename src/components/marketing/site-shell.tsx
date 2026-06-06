@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { LanguageSelector } from './language-selector';
+import { GlobalTranslator } from './global-translator';
 
 const navItems: [string, string][] = [
   ['/platform', 'Platform'],
@@ -34,6 +35,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
+      <GlobalTranslator />
       <header className="sticky top-0 z-40 border-b border-[#1F487C]/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
