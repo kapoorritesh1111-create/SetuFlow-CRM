@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { LanguageSelector } from './language-selector';
 import { GlobalTranslator } from './global-translator';
+import { SetuGuruLiteWidget } from '@/features/setu-guru/setu-guru-lite-widget';
 
 const navItems: [string, string][] = [
   ['/platform', 'Platform'],
@@ -77,6 +78,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       </header>
 
       {children}
+      <SetuGuruLiteWidget />
 
       <footer className="border-t border-[#1F487C]/10 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
