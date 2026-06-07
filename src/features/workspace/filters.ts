@@ -127,6 +127,13 @@ export function issueMatchesRange(issue: SprintIssue, filters: SmcFilters, issue
     || isBetween(safeDate(issue.resolved_at), start, end);
 }
 
+function displayIssueStatus(status?: string | null) {
+  const normalized = String(status ?? '').trim().toLowerCase();
+  if (normalized === 'in_review' || normalized === 'in-review' || normalized === 'review') return 'In Review';
+  if (!status) return 'Open';
+  return status;
+}
+
 function issueMatchesSearch(issue: SprintIssue, query?: string) {
   if (!query) return true;
   const q = query.toLowerCase();
@@ -150,7 +157,7 @@ function issueMatchesSearch(issue: SprintIssue, query?: string) {
 export function issueMatchesSmcFilters(issue: SprintIssue, filters: SmcFilters, issues: SprintIssue[]) {
   if (filters.sprint && issue.sprint_number !== filters.sprint) return false;
   if (filters.severity && issue.severity !== filters.severity) return false;
-  if (filters.status && issue.status !== filters.status) return false;
+  if (filters.status && displayIssueStatus(issue.status) !== filters.status) return false;
   if (filters.area) {
     const area = issue.area ?? issue.workflow_area ?? '';
     if (area !== filters.area) return false;

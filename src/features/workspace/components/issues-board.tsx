@@ -18,18 +18,19 @@ type ViewMode = 'table' | 'kanban' | 'backlog';
 type SortField = 'priority_rank' | 'issue_ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint_number' | 'assigned_to' | 'reporter_name' | 'effort' | 'created_at' | 'updated_at' | 'resolved_at' | 'age';
 type ColumnKey = 'priority' | 'ref' | 'title' | 'severity' | 'area' | 'status' | 'sprint' | 'assignee' | 'reporter' | 'effort' | 'added' | 'fixed' | 'updated';
 
-const STATUSES = ['Open', 'In Progress', 'Resolved', "Won't Fix", 'Deferred'] as const;
+const STATUSES = ['Open', 'In Progress', 'In Review', 'Resolved', "Won't Fix", 'Deferred'] as const;
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'] as const;
 const AREAS = ['Navigation', 'Authentication / Shell', 'Dashboard', 'Leads', 'Quotes', 'Orders / PDF', 'Orders', 'Documents', 'Admin', 'Mobile', 'Setu Guru', 'Engineering', 'UI/UX', 'Security', 'Integrations', 'Other'];
 const CATEGORIES = ['Bug', 'Enhancement', 'Testing', 'UX', 'Task', 'Docs'];
 const EFFORTS = ['XS', 'S', 'M', 'L', 'XL'];
 
 const SEV_ORDER: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
-const STATUS_ORDER: Record<string, number> = { Open: 0, 'In Progress': 1, Resolved: 2, Deferred: 3, "Won't Fix": 4 };
+const STATUS_ORDER: Record<string, number> = { Open: 0, 'In Progress': 1, 'In Review': 2, Resolved: 3, Deferred: 4, "Won't Fix": 5 };
 const EFFORT_ORDER: Record<string, number> = { XS: 0, S: 1, M: 2, L: 3, XL: 4 };
 const STATUS_COLORS: Record<string, string> = {
   Open: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   'In Progress': 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+  'In Review': 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
   Resolved: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
   Deferred: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
   "Won't Fix": 'bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400',
@@ -69,9 +70,17 @@ function fmtDateCell(isoString: string | null | undefined): { date: string; ago:
 const KANBAN_COLS = [
   { id: 'Open', label: 'Open', color: 'bg-slate-500' },
   { id: 'In Progress', label: 'In Progress', color: 'bg-blue-500' },
+  { id: 'In Review', label: 'In Review', color: 'bg-violet-500' },
   { id: 'Resolved', label: 'Resolved', color: 'bg-green-500' },
   { id: 'Deferred', label: 'Deferred', color: 'bg-amber-500' },
 ] as const;
+
+function displayIssueStatus(status?: string | null) {
+  const normalized = String(status ?? '').trim().toLowerCase();
+  if (normalized === 'in_review' || normalized === 'in-review' || normalized === 'review') return 'In Review';
+  if (!status) return 'Open';
+  return status;
+}
 
 // ── API helper ────────────────────────────────────────────────────────────────
 async function patchIssue(id: string, payload: Partial<SprintIssue>) {
@@ -454,7 +463,7 @@ function KanbanBoard({ issues, sprints, onUpdate, onSelect }: {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {KANBAN_COLS.map((col) => {
-        const colIssues = issues.filter((i) => i.status === col.id);
+        const colIssues = issues.filter((i) => displayIssueStatus(i.status) === col.id);
         return (
           <div
             key={col.id}
@@ -665,7 +674,7 @@ export function IssuesBoard({
       if (hideResolved && (i.status === 'Resolved' || i.status === "Won't Fix")) return false;
       if (hideDeferred && i.status === 'Deferred') return false;
       if (filterSeverity && i.severity !== filterSeverity) return false;
-      if (filterStatus && i.status !== filterStatus) return false;
+      if (filterStatus && displayIssueStatus(i.status) !== filterStatus) return false;
       if (filterSprint && String(i.sprint_number) !== filterSprint) return false;
       if (filterArea && i.area !== filterArea) return false;
       if (filterCategory && i.issue_category !== filterCategory) return false;
@@ -686,7 +695,7 @@ export function IssuesBoard({
       else if (sortField === 'title') { av = a.title ?? ''; bv = b.title ?? ''; }
       else if (sortField === 'severity') { av = SEV_ORDER[a.severity] ?? 4; bv = SEV_ORDER[b.severity] ?? 4; }
       else if (sortField === 'area') { av = a.area ?? a.workflow_area ?? ''; bv = b.area ?? b.workflow_area ?? ''; }
-      else if (sortField === 'status') { av = STATUS_ORDER[a.status] ?? 99; bv = STATUS_ORDER[b.status] ?? 99; }
+      else if (sortField === 'status') { av = STATUS_ORDER[displayIssueStatus(a.status)] ?? 99; bv = STATUS_ORDER[displayIssueStatus(b.status)] ?? 99; }
       else if (sortField === 'sprint_number') { av = a.sprint_number; bv = b.sprint_number; }
       else if (sortField === 'assigned_to') { av = a.assigned_to ?? ''; bv = b.assigned_to ?? ''; }
       else if (sortField === 'reporter_name') { av = a.reporter_name ?? ''; bv = b.reporter_name ?? ''; }
@@ -883,10 +892,10 @@ export function IssuesBoard({
                     </td>}
                     {showColumn('status') && <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <InlineSelect
-                        value={issue.status ?? 'Open'}
+                        value={displayIssueStatus(issue.status)}
                         options={[...STATUSES]}
                         onChange={(v) => updateIssue(issue.id, { status: v } as any)}
-                        className={STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open}
+                        className={STATUS_COLORS[displayIssueStatus(issue.status)] ?? STATUS_COLORS.Open}
                       />
                     </td>}
                     {showColumn('sprint') && <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
@@ -996,8 +1005,8 @@ function BacklogView({ issues, sprints, onUpdate, onSelect, activeSprint }: {
                 <span className="font-mono text-[10px] text-slate-400 mr-2">{issue.issue_ref}</span>
                 <span className="text-sm text-slate-700 dark:text-slate-200 line-clamp-1">{issue.title}</span>
               </button>
-              <span className={cn('flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold', STATUS_COLORS[issue.status] ?? STATUS_COLORS.Open)}>
-                {issue.status}
+              <span className={cn('flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold', STATUS_COLORS[displayIssueStatus(issue.status)] ?? STATUS_COLORS.Open)}>
+                {displayIssueStatus(issue.status)}
               </span>
             </div>
           ))}

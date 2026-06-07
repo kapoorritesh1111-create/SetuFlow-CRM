@@ -72,8 +72,15 @@ export type WorkspaceStats = {
   sprintMeta: SprintMeta | null;
 };
 
+function displayIssueStatus(status?: string | null) {
+  const normalized = String(status ?? '').trim().toLowerCase();
+  if (normalized === 'in_review' || normalized === 'in-review' || normalized === 'review') return 'In Review';
+  if (!status) return 'Open';
+  return status;
+}
+
 function isOpenIssue(issue: Pick<SprintIssue, 'status'>) {
-  return !CLOSED_STATUSES.includes((issue.status ?? '') as (typeof CLOSED_STATUSES)[number]);
+  return !CLOSED_STATUSES.includes(displayIssueStatus(issue.status) as (typeof CLOSED_STATUSES)[number]);
 }
 
 export async function getWorkspaceIssues(sprintNumber?: number): Promise<SprintIssue[]> {
@@ -103,7 +110,7 @@ export async function getWorkspaceStats(): Promise<WorkspaceStats> {
 
   const openIssues = issues.filter(isOpenIssue);
   const open = openIssues.length;
-  const inProgress = issues.filter((i) => i.status === 'In Progress').length;
+  const inProgress = issues.filter((i) => ['In Progress', 'In Review'].includes(displayIssueStatus(i.status))).length;
   const resolved = issues.filter((i) => ['Resolved', "Won't Fix"].includes(i.status ?? '')).length;
   const deferred = issues.filter((i) => i.status === 'Deferred').length;
   const critical = openIssues.filter((i) => i.severity?.toLowerCase() === 'critical').length;

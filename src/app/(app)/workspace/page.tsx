@@ -10,6 +10,7 @@ const panelClass = 'rounded-[1.5rem] border border-white/10 bg-slate-950/58 shad
 const STATUS_COLORS: Record<string, string> = {
   Open: 'border-slate-500/30 bg-slate-500/10 text-slate-300',
   'In Progress': 'border-blue-400/30 bg-blue-500/10 text-blue-200',
+  'In Review': 'border-violet-400/30 bg-violet-500/10 text-violet-200',
   Resolved: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200',
   Deferred: 'border-amber-400/30 bg-amber-500/10 text-amber-200',
   "Won't Fix": 'border-red-400/30 bg-red-500/10 text-red-200',
@@ -36,7 +37,7 @@ function severityWeight(issue: SprintIssue) {
   return 1;
 }
 function scoreIssueRisk(issue: SprintIssue) {
-  return severityWeight(issue) * 10 + Math.min(daysOld(issue.created_at), 21) + (issue.depends_on?.length ?? 0) * 2 + (issue.client_org_id ? 4 : 0) + (issue.status === 'In Progress' ? 1 : 3);
+  return severityWeight(issue) * 10 + Math.min(daysOld(issue.created_at), 21) + (issue.depends_on?.length ?? 0) * 2 + (issue.client_org_id ? 4 : 0) + (issue.status === 'In Progress' || issue.status === 'In Review' || issue.status === 'in_review' ? 1 : 3);
 }
 function computeDemoReadiness(total: number, resolved: number, activeOpen: number, critical: number, high: number) {
   const completion = pct(resolved, total);
