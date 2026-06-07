@@ -1,5 +1,3 @@
-import { FilterBar, FilterSearch, FilterSelect, ActiveChip, ClearAllButton, FilterMeta } from '@/components/ui/premium-filter-bar';
-import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -23,20 +21,27 @@ type QuoteWorkspaceItem = ReturnType<typeof buildQuotesPageViewModel>['items'][n
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
-function labelizeStatus(value: string) { return value.replaceAll('_', ' '); }
+
+function labelizeStatus(value: string) {
+  return value.replaceAll('_', ' ');
+}
+
 function readIsoDate(value: string) {
-  const trimmed = value.trim(); if (!trimmed) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
   const parsed = Date.parse(`${trimmed}T00:00:00.000Z`);
   return Number.isFinite(parsed) ? parsed : null;
 }
+
 function getQuoteActionLabel(item: QuoteWorkspaceItem) {
   if (item.status === 'pending_approval') return 'Review';
   if (item.status === 'approved') return 'Send';
-  if (item.status === 'accepted' || item.hasAcceptedContract) return 'Create order';
+  if (item.status === 'accepted' || item.hasAcceptedContract) return 'Order';
   if (['draft','revised','internal_review'].includes(item.status)) return 'Continue';
   if (item.status === 'sent') return 'Follow up';
   return 'Open';
 }
+
 function getValidityLabel(item: QuoteWorkspaceItem) {
   if (item.status === 'accepted' || item.hasAcceptedContract) return { label: 'Order ready', rose: false, amber: false, emerald: true };
   if (item.status === 'draft') return { label: 'Not sent', rose: false, amber: false, emerald: false };
@@ -49,9 +54,12 @@ function getValidityLabel(item: QuoteWorkspaceItem) {
   if (daysLeft <= 4) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
   return { label: `${daysLeft} days left`, rose: false, amber: false, emerald: false };
 }
+
 function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items'], f: {q:string;status:string;company:string;from:string;to:string;mode:string}) {
-  const q = f.q.trim().toLowerCase(); const company = f.company.trim().toLowerCase();
-  const from = readIsoDate(f.from); const to = readIsoDate(f.to);
+  const q = f.q.trim().toLowerCase();
+  const company = f.company.trim().toLowerCase();
+  const from = readIsoDate(f.from);
+  const to = readIsoDate(f.to);
   const toEnd = to == null ? null : to + 24*60*60*1000 - 1;
   const status = f.status === 'all' ? '' : f.status;
   const mode = f.mode === 'buyers' ? 'buyer' : f.mode === 'suppliers' ? 'supplier' : '';
@@ -69,13 +77,29 @@ function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items']
   });
 }
 
+function getStatusStyle(status: string) {
+  const statusColors: Record<string,{bg:string;border:string;color:string}> = {
+    draft:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
+    internal_review:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
+    pending_approval:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
+    approved:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'},
+    sent:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
+    revised:{bg:'#f0f9ff',border:'#bae6fd',color:'#0284c7'},
+    accepted:{bg:'#ede9fe',border:'#c4b5fd',color:'#5b21b6'},
+    rejected:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
+    expired:{bg:'#f1f5f9',border:'#e2e8f0',color:'#64748b'},
+  };
+  return statusColors[status] ?? statusColors.draft;
+}
+
 export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>>|null = null;
   try { workspace = await getWorkspaceAccess(); } catch { return <EmptyState title="Workspace unavailable" description="Could not load workspace." />; }
   if (!hasSupabaseEnv || workspace?.missingEnv) return <EmptyState title="Configuration required" description="SETU Flow needs Supabase environment values." />;
   if (!workspace?.organization) return <EmptyState title="Workspace membership needed" description="No active organization membership." />;
 
-  const supabase = await createClient(); const db = supabase as any;
+  const supabase = await createClient();
+  const db = supabase as any;
   const organizationId = workspace.organization.id;
   const selectedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
   const requestedMode = readSearchParam(searchParams?.mode);
@@ -150,12 +174,14 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   });
 
   const baseViewModelInput = {
-    quotes, leads: Array.isArray(leadsResult.data) ? leadsResult.data : [],
+    quotes,
+    leads: Array.isArray(leadsResult.data) ? leadsResult.data : [],
     versions: Array.isArray(versionsResult.data) ? versionsResult.data : [],
     negotiations: Array.isArray(negotiationsResult.data) ? negotiationsResult.data : [],
     communications: Array.isArray(communicationsResult.data) ? communicationsResult.data : [],
     contracts: Array.isArray(contractsResult.data) ? contractsResult.data : [],
-    lineItems, products: pricedProducts,
+    lineItems,
+    products: pricedProducts,
   };
 
   const viewModel = buildQuotesPageViewModel({ ...baseViewModelInput, selectedQuoteId });
@@ -165,7 +191,6 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selectedApprovalHref = selected ? buildApprovalSendHref({queue:'approvals',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-approval-status'}, selectedMode) : PRODUCT_ROUTES.app.integrations;
   const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders',sourceQuoteId:selected.id}, selectedMode) : PRODUCT_ROUTES.app.orders;
   const selectedSendHref = selected ? `/approval-send?quoteId=${encodeURIComponent(selected.id)}` : '/approval-send';
-  const closeHref = filters.mode !== 'all' ? `/quotes?mode=${encodeURIComponent(filters.mode)}` : '/quotes';
   const selectedHistory = selected ? (selected.id === viewModel.selectedItem?.id ? viewModel.selectedHistory : buildQuotesPageViewModel({...baseViewModelInput, selectedQuoteId:selected.id}).selectedHistory) : [];
 
   async function approveSelectedQuoteAction(formData: FormData) {
@@ -187,12 +212,9 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     redirect(`/quotes?quoteId=${quoteId}&notice=quote-rejected`);
   }
 
-
-
   async function createOrderHandoffAction(formData: FormData) {
     'use server';
     const quoteId = String(formData.get('quote_id') ?? '').trim();
-    const notes = String(formData.get('notes') ?? '').trim() || 'Order handoff created from Quotes workspace.';
     if (!quoteId) redirect('/quotes?notice=quote-order-missing');
     const result = await markQuoteAsDirectOrder(undefined, formData);
     if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-order-error`);
@@ -210,7 +232,8 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const draftCount = viewModel.items.filter(i => ['draft','internal_review','revised'].includes(i.status)).length;
   const acceptedCount = viewModel.items.filter(i => i.status === 'accepted' || i.hasAcceptedContract).length;
   const totalValue = viewModel.items.reduce((s, i) => s + i.subtotal, 0);
-  const firstApproval = approvalQueue[0]; const secondApproval = approvalQueue[1];
+  const firstApproval = approvalQueue[0];
+  const secondApproval = approvalQueue[1];
   const filterHref = (patch: Partial<typeof filters>) => {
     const next = { ...filters, ...patch };
     const params = new URLSearchParams();
@@ -227,12 +250,16 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     filters.status !== 'all' ? { key: 'status', label: `Status: ${labelizeStatus(filters.status)}`, href: filterHref({ status: 'all' }), tone: 'amber' as const } : null,
     filters.mode !== 'all' ? { key: 'mode', label: `Global mode: ${filters.mode}`, href: filterHref({ mode: 'all' }), tone: 'violet' as const } : null,
   ].filter(Boolean) as Array<{ key: string; label: string; href: string; tone: 'blue' | 'amber' | 'violet' }>;
+  const selectedIsAccepted = Boolean(selected && (selected.status === 'accepted' || selected.hasAcceptedContract));
+  const selectedIsPending = Boolean(selected && selected.status === 'pending_approval');
+  const selectedIsSent = Boolean(selected && selected.status === 'sent');
+  const selectedIsDraftLike = Boolean(selected && ['draft','internal_review','revised'].includes(selected.status));
+  const selectedStatusStyle = selected ? getStatusStyle(selected.status) : getStatusStyle('draft');
+  const queueItems = filteredItems.slice(0, 18);
+  const selectedProducts = selected?.lineItems.slice(0, 4) ?? [];
 
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
-
-      {/* Quotes route uses the shared AppShell header; no nested workspace topbar. */}
-      {/* Shared premium filter command bar */}
       <form action="/quotes" style={{padding:'14px 24px 0'}}>
         {filters.mode !== 'all' ? <input type="hidden" name="mode" value={filters.mode} /> : null}
         <PremiumCommandBar
@@ -241,10 +268,10 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
           activeChips={activeQuoteFilterChips.length ? <>{activeQuoteFilterChips.map((chip) => <PremiumActiveChip key={chip.key} label={chip.label} href={chip.href} tone={chip.tone} />)}</> : null}
           reset={activeQuoteFilterChips.length ? <Link href="/quotes" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Clear all</Link> : null}
         >
-          <PremiumField label="Search" icon="🔍" className="md:min-w-[320px]">
+          <PremiumField label="Search" icon="Search" className="md:min-w-[320px]">
             <PremiumInput name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." />
           </PremiumField>
-          <PremiumField label="Status" icon="⚡" className="md:min-w-[210px]">
+          <PremiumField label="Status" icon="Status" className="md:min-w-[210px]">
             <PremiumSelect name="status" defaultValue={filters.status}>
               {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
             </PremiumSelect>
@@ -253,267 +280,177 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
         </PremiumCommandBar>
       </form>
 
-      {/* ── STATS STRIP ────────────────────────────────── */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px',padding:'16px 24px 0'}}>
-        {[
-          {label:'Pending approval',value:approvalQueueCount,meta:'Waiting for review',accent:'#d97706'},
-          {label:'Expiring soon',value:expiringSoonCount,meta:'Within 3 days',accent:'#dc2626'},
-          {label:'Sent & active',value:sentActiveCount,meta:'Awaiting buyer response',accent:'#0c7fff'},
-          {label:'Accepted',value:acceptedCount,meta:'Order creation available',accent:'#059669'},
-          {label:'Drafts',value:draftCount,meta:'Not yet sent',accent:'#cbd5e1'},
-          {label:'Total value',value:formatQuoteMoney(totalValue,'USD'),meta:'All active quotes',accent:'#7c3aed'},
-        ].map(sc => (
-          <div key={sc.label} className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,0.06)] cursor-pointer hover:shadow-[0_8px_28px_rgba(15,23,42,0.10)] transition">
-            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{background:sc.accent}}/>
-            <div className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400 mb-1.5">{sc.label}</div>
-            <div className="text-[22px] font-black tracking-tight text-slate-900 leading-none">{sc.value}</div>
-            <div className="text-[10px] text-slate-400 mt-1 font-semibold">{sc.meta}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── CONTENT ────────────────────────────────────── */}
       <div className="px-5 pb-10 pt-3 flex flex-col gap-4">
+        {selected ? (
+          <section style={{background:'linear-gradient(135deg,#ffffff,#f8fbff)',border:'1px solid #dbe4ef',borderRadius:'26px',boxShadow:'0 18px 55px rgba(15,23,42,.10)',overflow:'hidden'}}>
+            <div style={{padding:'18px 22px',display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:'18px',alignItems:'stretch'}}>
+              <div>
+                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'14px',flexWrap:'wrap'}}>
+                  <div>
+                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Focused quote</div>
+                    <h2 style={{margin:'4px 0 0',fontSize:'26px',fontWeight:950,letterSpacing:'-.04em',color:'#0f172a'}}>{selected.companyName}</h2>
+                    <div style={{marginTop:'4px',fontSize:'12px',color:'#64748b'}}>{selected.quoteNumber ?? selected.id.slice(0,8)} · v{selected.totalVersions || 1} · {selected.contactName ?? 'No contact set'}</div>
+                  </div>
+                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                    <span style={{display:'inline-flex',alignItems:'center',border:'1px solid',borderColor:selectedStatusStyle.border,background:selectedStatusStyle.bg,color:selectedStatusStyle.color,borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:900,textTransform:'capitalize'}}>{labelizeStatus(selected.status)}</span>
+                    {selectedQuoteId ? <Link href={filterHref({})} style={{border:'1px solid #e2e8f0',background:'white',borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:850,color:'#475569',textDecoration:'none'}}>Close focus</Link> : null}
+                  </div>
+                </div>
 
-        {/* Approval banner */}
+                <div style={{marginTop:'16px',display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:'10px'}}>
+                  {[
+                    ['Total', formatQuoteMoney(selected.subtotal, selected.currency)],
+                    ['Line items', String(selected.lineItems.length)],
+                    ['Version', `v${selected.totalVersions || 1}`],
+                    ['Validity', getValidityLabel(selected).label],
+                  ].map(([label,value]) => (
+                    <div key={label} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'11px 12px'}}>
+                      <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
+                      <div style={{marginTop:'4px',fontSize:'14px',fontWeight:900,color:'#0f172a'}}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{marginTop:'14px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                  <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
+                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Commercial lines</div>
+                    <div style={{marginTop:'8px',display:'grid',gap:'8px'}}>
+                      {selectedProducts.length ? selectedProducts.map(line => (
+                        <div key={line.id} style={{display:'flex',justifyContent:'space-between',gap:'12px',borderBottom:'1px solid #f1f5f9',paddingBottom:'8px'}}>
+                          <div style={{minWidth:0}}>
+                            <div style={{fontSize:'12px',fontWeight:850,color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{line.productName}</div>
+                            <div style={{fontSize:'10px',color:'#64748b'}}>Qty {line.quantity}{line.isPriceOverridden ? ' · adjusted' : ''}</div>
+                          </div>
+                          <div style={{fontSize:'12px',fontWeight:900,color:'#0b2e4a',whiteSpace:'nowrap'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</div>
+                        </div>
+                      )) : <div style={{fontSize:'12px',color:'#64748b'}}>No quote lines are attached yet.</div>}
+                      {selected.lineItems.length > selectedProducts.length ? <div style={{fontSize:'11px',fontWeight:800,color:'#64748b'}}>+ {selected.lineItems.length - selectedProducts.length} more lines in quote detail</div> : null}
+                    </div>
+                  </div>
+                  <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
+                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Recent history</div>
+                    {selectedHistory.length ? <div style={{marginTop:'8px',maxHeight:'150px',overflow:'auto'}}><QuoteHistoryList items={selectedHistory.slice(0,4)} /></div> : <p style={{fontSize:'12px',color:'#64748b'}}>No visible history yet.</p>}
+                  </div>
+                </div>
+              </div>
+
+              <aside style={{border:'1px solid #dbe4ef',borderRadius:'22px',background:selectedIsAccepted ? '#ecfdf5' : selectedIsPending ? '#fffbeb' : '#ffffff',padding:'16px',display:'grid',gap:'12px',alignContent:'start'}}>
+                <div>
+                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:selectedIsAccepted ? '#047857' : selectedIsPending ? '#92400e' : '#64748b'}}>Next best action</div>
+                  <h3 style={{margin:'6px 0 0',fontSize:'20px',fontWeight:950,color:'#0f172a'}}>
+                    {selectedIsAccepted ? 'Order handoff ready' : selectedIsPending ? 'Approval required' : selectedIsSent ? 'Customer follow-up' : selectedIsDraftLike ? 'Continue quote' : 'Review quote'}
+                  </h3>
+                  <p style={{margin:'6px 0 0',fontSize:'12px',lineHeight:1.6,color:'#64748b'}}>
+                    {selectedIsAccepted ? 'This quote is accepted. Keep order creation as the primary action and use PDF/send history only as supporting context.' : selectedIsPending ? 'Review quote-only adjustments before the quote can be sent.' : selectedIsSent ? 'The quote is customer-facing. Track response or move into accepted handoff when the buyer confirms.' : selectedIsDraftLike ? 'Finish the quote structure, pricing, and readiness before customer send.' : 'Use the focused actions below before moving to the next quote.'}
+                  </p>
+                </div>
+
+                {selectedIsAccepted ? (
+                  <form action={createOrderHandoffAction} style={{display:'grid',gap:'8px'}}>
+                    <input type="hidden" name="quote_id" value={selected.id}/>
+                    <input type="hidden" name="notes" value="Order handoff created from Quotes workspace."/>
+                    <button type="submit" style={{border:0,textAlign:'center',padding:'12px 14px',borderRadius:'14px',background:'#059669',color:'white',fontWeight:950}}>Create order handoff</button>
+                    <Link href={selectedOrderHref} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #a7f3d0',background:'white',color:'#047857',fontWeight:900,textDecoration:'none'}}>Open order workspace</Link>
+                  </form>
+                ) : selectedIsPending ? (
+                  <div style={{display:'grid',gap:'8px'}}>
+                    <form action={approveSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
+                      <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
+                      <button type="submit" style={{border:0,borderRadius:'14px',background:'#059669',color:'white',fontWeight:950,padding:'12px 14px'}}>Approve quote adjustment</button>
+                    </form>
+                    <form action={rejectSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
+                      <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
+                      <textarea name="rejection_reason" required placeholder="Rejection reason required" rows={3} style={{border:'1px solid #fecaca',borderRadius:'12px',padding:'10px',fontSize:'12px'}} />
+                      <button type="submit" style={{border:'1px solid #fecaca',borderRadius:'14px',background:'white',color:'#dc2626',fontWeight:900,padding:'10px 12px'}}>Reject / request revision</button>
+                    </form>
+                  </div>
+                ) : (
+                  <div style={{display:'grid',gap:'8px'}}>
+                    <Link href={selectedIsSent ? selectedSendHref : buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{textAlign:'center',padding:'12px 14px',borderRadius:'14px',background:'#0b2e4a',color:'white',fontWeight:950,textDecoration:'none'}}>{selectedIsSent ? 'Open send / response workflow' : 'Continue quote'}</Link>
+                    <Link href={selectedApprovalHref} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Review readiness</Link>
+                  </div>
+                )}
+
+                <div style={{display:'grid',gap:'8px',borderTop:'1px solid rgba(15,23,42,.08)',paddingTop:'10px'}}>
+                  <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Open customer PDF</Link>
+                  {!selectedIsAccepted ? <Link href={selectedSendHref} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Send by email / WhatsApp</Link> : null}
+                  <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Edit / revise quote</Link>
+                </div>
+              </aside>
+            </div>
+          </section>
+        ) : null}
+
+        <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px'}}>
+          {[
+            {label:'Pending approval',value:approvalQueueCount,meta:'Waiting for review',accent:'#d97706'},
+            {label:'Expiring soon',value:expiringSoonCount,meta:'Within 3 days',accent:'#dc2626'},
+            {label:'Sent & active',value:sentActiveCount,meta:'Awaiting response',accent:'#0c7fff'},
+            {label:'Accepted',value:acceptedCount,meta:'Order ready',accent:'#059669'},
+            {label:'Drafts',value:draftCount,meta:'Not yet sent',accent:'#cbd5e1'},
+            {label:'Total value',value:formatQuoteMoney(totalValue,'USD'),meta:'All active quotes',accent:'#7c3aed'},
+          ].map(sc => (
+            <div key={sc.label} className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+              <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{background:sc.accent}}/>
+              <div className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400 mb-1">{sc.label}</div>
+              <div className="text-[18px] font-black tracking-tight text-slate-900 leading-none">{sc.value}</div>
+              <div className="text-[10px] text-slate-400 mt-1 font-semibold">{sc.meta}</div>
+            </div>
+          ))}
+        </div>
+
         {approvalQueueCount>0 && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>{approvalQueueCount} quote{approvalQueueCount>1?'s':''} pending your approval — pricing override review required</div>
+            <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>{approvalQueueCount} quote{approvalQueueCount>1?'s':''} pending approval</div>
             <div style={{fontSize:'11px',color:'#92400e',lineHeight:'1.55'}}>Review overrides, approve or reject, and keep the send gate blocked until approval is logged.</div>
             <div style={{display:'flex',gap:'8px',marginTop:'10px'}}>
-              {firstApproval && <Link href={`/quotes?quoteId=${firstApproval.id}`} style={{padding:'7px 16px',borderRadius:'6px',background:'#059669',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Review {firstApproval.quoteNumber??firstApproval.id.slice(0,8)} ({firstApproval.companyName})</Link>}
-              {secondApproval && <Link href={`/quotes?quoteId=${secondApproval.id}`} style={{padding:'7px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Review {secondApproval.quoteNumber??secondApproval.id.slice(0,8)} ({secondApproval.companyName})</Link>}
+              {firstApproval && <Link href={`/quotes?quoteId=${firstApproval.id}`} style={{padding:'7px 16px',borderRadius:'6px',background:'#059669',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Review {firstApproval.quoteNumber??firstApproval.id.slice(0,8)}</Link>}
+              {secondApproval && <Link href={`/quotes?quoteId=${secondApproval.id}`} style={{padding:'7px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Review {secondApproval.quoteNumber??secondApproval.id.slice(0,8)}</Link>}
             </div>
           </div>
         )}
 
-        {/* Quotes table card */}
         <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
           <div style={{padding:'14px 18px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <div><div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff',marginBottom:'2px'}}>Quote workspace</div><div style={{fontSize:'14px',fontWeight:700,color:'#0f172a'}}>All quotes</div></div>
-            <Link href="/quotes?bulk=1" style={{padding:'4px 10px',borderRadius:'6px',border:'1px solid #e2e8f0',background:'white',fontSize:'11px',fontWeight:700,color:'#475569',textDecoration:'none'}}>Bulk action</Link>
+            <div><div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#64748b',marginBottom:'2px'}}>Secondary quote queue</div><div style={{fontSize:'14px',fontWeight:850,color:'#0f172a'}}>{filteredItems.length} matching quotes</div></div>
+            <span style={{fontSize:'11px',fontWeight:800,color:'#64748b'}}>Select one quote to move focus above</span>
           </div>
-          {/* Header */}
           <div style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'9px 18px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'9px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>
             <div/><div>Company / ref</div><div>Status</div><div>Version</div><div style={{textAlign:'right'}}>Total value</div><div>Validity</div><div>Owner</div><div style={{textAlign:'right'}}>Action</div>
           </div>
-          {/* Rows */}
-          {filteredItems.length===0 ? (
-            <div style={{padding:'32px',textAlign:'center',fontSize:'13px',color:'#64748b'}}><strong>No quotes match the active filters.</strong><br/>{activeQuoteFilterChips.length ? activeQuoteFilterChips.map((chip) => chip.label).join(' · ') : 'No active filters'}<br/><Link href="/quotes" style={{display:'inline-block',marginTop:'12px',padding:'7px 14px',borderRadius:'999px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:800,textDecoration:'none'}}>Clear filters</Link></div>
-          ) : filteredItems.map(item => {
-            const validity = getValidityLabel(item);
-            const isPending = item.status==='pending_approval';
-            const isExpiring = validity.rose && item.status!=='expired';
-            const isAccepted = item.status==='accepted'||item.hasAcceptedContract;
-            const isSelected = selected?.id===item.id;
-            const borderLeft = isPending?'3px solid #d97706':isExpiring?'3px solid #dc2626':undefined;
-            const actionLabel = getQuoteActionLabel(item);
-            const actionPrimary = isPending||isAccepted||item.status==='approved';
-            const statusColors: Record<string,{bg:string,border:string,color:string}> = {
-              draft:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
-              internal_review:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
-              pending_approval:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
-              approved:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'},
-              sent:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
-              revised:{bg:'#f0f9ff',border:'#bae6fd',color:'#0284c7'},
-              accepted:{bg:'#ede9fe',border:'#c4b5fd',color:'#5b21b6'},
-              rejected:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
-              expired:{bg:'#f1f5f9',border:'#e2e8f0',color:'#64748b'},
-            };
-            const sc = statusColors[item.status]??statusColors.draft;
-            return (
-              <Link key={item.id} href={`/quotes?quoteId=${item.id}&mode=${encodeURIComponent(filters.mode)}&q=${encodeURIComponent(filters.q)}&status=${encodeURIComponent(filters.status)}`}
-                style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'12px 18px',borderBottom:'1px solid #e2e8f0',alignItems:'center',cursor:'pointer',textDecoration:'none',background:isSelected?'rgba(12,127,255,.04)':isAccepted?'rgba(5,150,105,.02)':'white',borderLeft,transition:'background .1s'}}>
-                <div><input type="checkbox" style={{width:'16px',height:'16px',borderRadius:'3px'}} readOnly checked={false}/></div>
-                <div>
-                  <div style={{fontSize:'12px',fontWeight:700,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{item.companyName}</div>
-                  <div style={{fontSize:'10px',color:'#94a3b8',fontFamily:'monospace',marginTop:'1px'}}>{item.quoteNumber??item.id.slice(0,8)} · {item.lineItems[0]?.productName??'No product'}{item.lineItems.length>1?` + ${item.lineItems.length-1}`:''}</div>
-                  <div style={{display:'flex',alignItems:'center',gap:'4px',flexWrap:'wrap',marginTop:'4px'}}>
-                    {Array.from({length:Math.min(item.totalVersions||1,3)},(_,idx)=>item.totalVersions-idx).map((v,idx)=>(
-                      <span key={v} style={{fontSize:'9px',fontWeight:700,padding:'2px 8px',borderRadius:'999px',background:idx===0?(isAccepted?'#ecfdf5':'#0c7fff'):undefined,border:idx===0?'1px solid '+(isAccepted?'#a7f3d0':'#0c7fff'):'1px solid #e2e8f0',color:idx===0?(isAccepted?'#059669':'white'):'#475569'}}>{`v${v}${idx===0?' current':''}`}</span>
-                    ))}
+          <div style={{maxHeight:'520px',overflowY:'auto'}}>
+            {filteredItems.length===0 ? (
+              <div style={{padding:'32px',textAlign:'center',fontSize:'13px',color:'#64748b'}}><strong>No quotes match the active filters.</strong><br/>{activeQuoteFilterChips.length ? activeQuoteFilterChips.map((chip) => chip.label).join(' · ') : 'No active filters'}<br/><Link href="/quotes" style={{display:'inline-block',marginTop:'12px',padding:'7px 14px',borderRadius:'999px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:800,textDecoration:'none'}}>Clear filters</Link></div>
+            ) : queueItems.map(item => {
+              const validity = getValidityLabel(item);
+              const isPending = item.status==='pending_approval';
+              const isExpiring = validity.rose && item.status!=='expired';
+              const isAccepted = item.status==='accepted'||item.hasAcceptedContract;
+              const isSelected = selected?.id===item.id;
+              const borderLeft = isSelected ? '4px solid #0c7fff' : isPending?'3px solid #d97706':isExpiring?'3px solid #dc2626':undefined;
+              const actionLabel = getQuoteActionLabel(item);
+              const actionPrimary = isPending||isAccepted||item.status==='approved';
+              const sc = getStatusStyle(item.status);
+              return (
+                <Link key={item.id} href={`/quotes?quoteId=${item.id}&mode=${encodeURIComponent(filters.mode)}&q=${encodeURIComponent(filters.q)}&status=${encodeURIComponent(filters.status)}`}
+                  style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'12px 18px',borderBottom:'1px solid #e2e8f0',alignItems:'center',cursor:'pointer',textDecoration:'none',background:isSelected?'rgba(12,127,255,.065)':isAccepted?'rgba(5,150,105,.02)':'white',borderLeft,transition:'background .1s'}}>
+                  <div><input type="checkbox" style={{width:'16px',height:'16px',borderRadius:'3px'}} readOnly checked={false}/></div>
+                  <div>
+                    <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{item.companyName}</div>
+                    <div style={{fontSize:'10px',color:'#94a3b8',fontFamily:'monospace',marginTop:'1px'}}>{item.quoteNumber??item.id.slice(0,8)} · {item.lineItems[0]?.productName??'No product'}{item.lineItems.length>1?` + ${item.lineItems.length-1}`:''}</div>
                   </div>
-                </div>
-                <div><span style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:sc.bg,borderColor:sc.border,color:sc.color,whiteSpace:'nowrap'}}>{labelizeStatus(item.status)}</span></div>
-                <div style={{fontSize:'11px',fontWeight:600,color:'#334155'}}>v{item.totalVersions||1}</div>
-                <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b'}}>{formatQuoteMoney(item.subtotal,item.currency)}</div>
-                  <div style={{fontSize:'10px',color:'#94a3b8'}}>{item.currency??'USD'} · Quote</div>
-                </div>
-                <div style={{fontSize:'11px',fontWeight:validity.rose||validity.amber?700:400,color:validity.rose?'#dc2626':validity.amber?'#d97706':validity.emerald?'#059669':'#64748b'}}>{validity.label}</div>
-                <div style={{fontSize:'11px',color:'#475569'}}>{item.contactName??'—'}</div>
-                <div style={{textAlign:'right'}}>
-                  <span style={{padding:'4px 10px',borderRadius:'6px',border:'1px solid',fontSize:'10px',fontWeight:700,background:actionPrimary?'#0b2e4a':'white',borderColor:actionPrimary?'#0b2e4a':'#e2e8f0',color:actionPrimary?'white':'#475569'}}>{actionLabel}</span>
-                </div>
-              </Link>
-            );
-          })}
-          {filteredItems.length>0&&<div style={{textAlign:'center',padding:'14px',color:'#94a3b8',fontSize:'12px',fontWeight:600}}>+ {Math.max(0,viewModel.items.length-filteredItems.length)} more quotes · <span style={{color:'#0c7fff',cursor:'pointer'}}>Load all</span></div>}
-        </div>
-
-        {/* Selected detail panel */}
-        {selected && !selectedQuoteId && (
-          <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
-            <div style={{padding:'16px 20px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
-              <div>
-                <div style={{fontSize:'17px',fontWeight:800,color:'#0f172a',marginBottom:'3px'}}>{selected.companyName}</div>
-                <div style={{fontSize:'11px',color:'#64748b'}}>{selected.quoteNumber??selected.id.slice(0,8)} · v{selected.totalVersions||1} · {labelizeStatus(selected.status)}</div>
-              </div>
-              <div style={{display:'flex',gap:'8px'}}>
-                <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Edit quote</Link>
-                <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{padding:'9px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',fontSize:'12px',fontWeight:600,color:'#475569',textDecoration:'none'}}>Export PDF</Link>
-                <Link href={selected.status==='accepted'||selected.hasAcceptedContract?selectedOrderHref:selectedApprovalHref} style={{flex:1,padding:'9px 16px',borderRadius:'6px',background:'#0b2e4a',color:'white',border:'none',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>
-                  {selected.status==='accepted'||selected.hasAcceptedContract?'Create order':selected.status==='pending_approval'?'Approve & allow send':'Open lead'}
+                  <div><span style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:sc.bg,borderColor:sc.border,color:sc.color,whiteSpace:'nowrap'}}>{labelizeStatus(item.status)}</span></div>
+                  <div style={{fontSize:'11px',fontWeight:600,color:'#334155'}}>v{item.totalVersions||1}</div>
+                  <div style={{textAlign:'right'}}><div style={{fontSize:'12px',fontWeight:800,color:'#1e293b'}}>{formatQuoteMoney(item.subtotal,item.currency)}</div><div style={{fontSize:'10px',color:'#94a3b8'}}>{item.currency??'USD'} · Quote</div></div>
+                  <div style={{fontSize:'11px',fontWeight:validity.rose||validity.amber?700:400,color:validity.rose?'#dc2626':validity.amber?'#d97706':validity.emerald?'#059669':'#64748b'}}>{validity.label}</div>
+                  <div style={{fontSize:'11px',color:'#475569'}}>{item.contactName??'--'}</div>
+                  <div style={{textAlign:'right'}}><span style={{padding:'4px 10px',borderRadius:'6px',border:'1px solid',fontSize:'10px',fontWeight:700,background:actionPrimary?'#0b2e4a':'white',borderColor:actionPrimary?'#0b2e4a':'#e2e8f0',color:actionPrimary?'white':'#475569'}}>{actionLabel}</span></div>
                 </Link>
-              </div>
-            </div>
-            <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:'12px'}}>
-              {/* Approval alert */}
-              {selected.status==='pending_approval'&&(
-                <div style={{padding:'12px 14px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'12px'}}>
-                  <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>Approval required — pricing override</div>
-                  <div style={{fontSize:'11px',color:'#92400e',marginBottom:'10px'}}>One or more lines have manually overridden pricing. Approve or reject before sending.</div>
-                  <div style={{display:'flex',gap:'8px'}}>
-                    <Link href={selectedApprovalHref} style={{padding:'7px 16px',borderRadius:'6px',background:'#059669',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none',flex:1,textAlign:'center'}}>Approve & allow send</Link>
-                    <Link href={selectedApprovalHref} style={{padding:'7px 14px',borderRadius:'6px',background:'white',border:'1px solid #fecaca',color:'#dc2626',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Reject override</Link>
-                  </div>
-                </div>
-              )}
-              {/* Details */}
-              <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
-                <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Quote details</div>
-                {[['Company',selected.companyName],['Contact',selected.contactName??'Not set'],['Currency',selected.currency??'USD'],['FX',selected.currency == null || selected.currency === 'USD' ? 'No conversion — catalog currency (USD)' : `${selected.currency} quote · FX applied at version send time`],['Subtotal',formatQuoteMoney(selected.subtotal,selected.currency)]].map(([k,v])=>(
-                  <div key={k as string} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',padding:'3px 0',borderBottom:'1px solid rgba(0,0,0,.03)'}}>
-                    <span style={{color:'#64748b'}}>{k}</span><span style={{fontWeight:700,color:'#1e293b'}}>{v}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Line items */}
-              {selected.lineItems.length>0&&(
-                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
-                  <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Line items</div>
-                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
-                    <thead><tr style={{background:'#f8fafc'}}>
-                      <th style={{textAlign:'left',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Product</th>
-                      <th style={{textAlign:'right',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Catalog</th>
-                      <th style={{textAlign:'right',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Quoted</th>
-                      <th style={{textAlign:'right',padding:'5px 8px',fontSize:'9px',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>Total</th>
-                    </tr></thead>
-                    <tbody>
-                      {selected.lineItems.map(line=>(
-                        <tr key={line.id}>
-                          <td style={{padding:'8px',borderBottom:'1px solid #e2e8f0'}}>
-                            <div style={{fontWeight:700,color:'#1e293b'}}>{line.productName}</div>
-                            <div style={{fontSize:'10px',color:'#94a3b8'}}>QTY {line.quantity}</div>
-                            {line.isPriceOverridden&&<span style={{fontSize:'9px',fontWeight:700,padding:'1px 5px',borderRadius:'4px',background:'#fef3c7',color:'#92400e'}}>-{Math.round(Math.abs(((line.unitPrice??0)-(line.catalogPriceAmount??0))/(line.catalogPriceAmount||1)*100))}% override</span>}
-                          </td>
-                          <td style={{textAlign:'right',padding:'8px',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}>{line.catalogPriceAmount!=null?formatQuoteMoney(line.catalogPriceAmount,line.catalogPriceCurrency):'—'}</td>
-                          <td style={{textAlign:'right',padding:'8px',fontSize:'11px',fontWeight:700,color:line.isPriceOverridden?'#d97706':'#1e293b',borderBottom:'1px solid #e2e8f0'}}>{formatQuoteMoney(line.unitPrice,line.currency)}</td>
-                          <td style={{textAlign:'right',padding:'8px',fontSize:'11px',fontWeight:700,borderBottom:'1px solid #e2e8f0'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'13px',fontWeight:800,borderTop:'1px solid #e2e8f0',marginTop:'6px'}}>
-                    <span style={{color:'#1e293b'}}>Quote total</span><span style={{color:'#0b2e4a'}}>{formatQuoteMoney(selected.subtotal,selected.currency)}</span>
-                  </div>
-                </div>
-              )}
-              {/* History */}
-              {selectedHistory.length>0&&(
-                <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'12px 14px'}}>
-                  <div style={{fontSize:'9px',fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>Quote history</div>
-                  <QuoteHistoryList items={selectedHistory}/>
-                </div>
-              )}
-            </div>
+              );
+            })}
           </div>
-        )}
-
-        {selected && selectedQuoteId ? (
-          <div style={{position:'fixed',inset:0,zIndex:90,background:'rgba(15,23,42,.42)',backdropFilter:'blur(4px)',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'56px 24px',overflowY:'auto'}}>
-            <div style={{width:'min(1040px,calc(100vw - 48px))',background:'white',border:'1px solid #dbe4ef',borderRadius:'28px',boxShadow:'0 28px 80px rgba(15,23,42,.28)',overflow:'hidden'}}>
-              <div style={{padding:'18px 22px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px',background:'linear-gradient(135deg,#ffffff,#f8fbff)'}}>
-                <div>
-                  <div style={{fontSize:'10px',fontWeight:800,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Quote workspace</div>
-                  <div style={{fontSize:'22px',fontWeight:900,color:'#0f172a',letterSpacing:'-.03em'}}>{selected.companyName}</div>
-                  <div style={{fontSize:'12px',color:'#64748b'}}>{selected.quoteNumber ?? selected.id.slice(0,8)} · v{selected.totalVersions || 1} · {labelizeStatus(selected.status)}</div>
-                </div>
-                <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
-                  <a href={closeHref} style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>Close</a>
-                  <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>Edit quote</Link>
-                  <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{padding:'9px 14px',borderRadius:'14px',border:'1px solid #e2e8f0',background:'white',fontSize:'12px',fontWeight:800,color:'#334155',textDecoration:'none'}}>PDF preview</Link>
-                  <Link href={selectedSendHref} style={{padding:'9px 16px',borderRadius:'14px',background:'#0b2e4a',color:'white',fontSize:'12px',fontWeight:900,textDecoration:'none'}}>Send workflow</Link>
-                </div>
-              </div>
-              <div style={{padding:'18px 22px',display:'grid',gridTemplateColumns:'1fr 310px',gap:'18px'}}>
-                <div style={{display:'grid',gap:'14px'}}>
-                  <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',overflow:'hidden'}}>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 90px 120px 120px',gap:'8px',padding:'10px 12px',background:'#f8fafc',fontSize:'10px',fontWeight:900,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>
-                      <div>Product</div><div style={{textAlign:'right'}}>Qty</div><div style={{textAlign:'right'}}>Unit</div><div style={{textAlign:'right'}}>Total</div>
-                    </div>
-                    {selected.lineItems.map((line) => (
-                      <div key={line.id} style={{display:'grid',gridTemplateColumns:'1fr 90px 120px 120px',gap:'8px',padding:'12px',borderTop:'1px solid #edf2f7',alignItems:'center'}}>
-                        <div>
-                          <div style={{fontSize:'13px',fontWeight:800,color:'#0f172a'}}>{line.productName}</div>
-                          <div style={{fontSize:'11px',color:'#64748b'}}>{line.notes ?? 'Quote line'}{line.isPriceOverridden ? ' · quote-only adjusted' : ''}</div>
-                          {line.isPriceOverridden ? <div style={{marginTop:'4px',fontSize:'10px',fontWeight:800,color:'#92400e'}}>Reason: {line.overrideReason ?? 'Adjustment reason not provided'}</div> : null}
-                        </div>
-                        <div style={{textAlign:'right',fontWeight:700}}>{line.quantity}</div>
-                        <div style={{textAlign:'right',fontWeight:700}}>{formatQuoteMoney(line.unitPrice,line.currency)}</div>
-                        <div style={{textAlign:'right',fontWeight:900,color:'#0b2e4a'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</div>
-                      </div>
-                    ))}
-                    <div style={{display:'flex',justifyContent:'space-between',padding:'14px 12px',borderTop:'1px solid #e2e8f0',background:'#fbfdff',fontWeight:900}}>
-                      <span>Quote total</span><span>{formatQuoteMoney(selected.subtotal,selected.currency)}</span>
-                    </div>
-                  </div>
-                  {selectedHistory.length > 0 ? <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',padding:'14px'}}><div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8',marginBottom:'8px'}}>History</div><QuoteHistoryList items={selectedHistory}/></div> : null}
-                </div>
-                <aside style={{display:'grid',gap:'12px',alignContent:'start'}}>
-                  <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',padding:'14px',background:'#f8fafc'}}>
-                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Status</div>
-                    <div style={{marginTop:'6px',fontSize:'18px',fontWeight:900,color:'#0f172a'}}>{labelizeStatus(selected.status)}</div>
-                    <div style={{marginTop:'6px',fontSize:'12px',color:'#64748b'}}>Currency: {selected.currency ?? 'USD'} · Total: {formatQuoteMoney(selected.subtotal,selected.currency)}</div>
-                  </div>
-                  {selected.status === 'pending_approval' ? (
-                    <div style={{border:'1px solid #fde68a',borderRadius:'18px',padding:'14px',background:'#fffbeb'}}>
-                      <div style={{fontSize:'14px',fontWeight:900,color:'#92400e'}}>Approval review</div>
-                      <p style={{fontSize:'12px',lineHeight:1.6,color:'#92400e'}}>Review quote-only adjustments before allowing this quote to be sent.</p>
-                      <form action={approveSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
-                        <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
-                        <button type="submit" style={{border:0,borderRadius:'12px',background:'#059669',color:'white',fontWeight:900,padding:'10px 12px'}}>Approve quote adjustment</button>
-                      </form>
-                      <form action={rejectSelectedQuoteAction} style={{display:'grid',gap:'8px',marginTop:'8px'}}>
-                        <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
-                        <textarea name="rejection_reason" required placeholder="Rejection reason required" rows={3} style={{border:'1px solid #fecaca',borderRadius:'12px',padding:'10px',fontSize:'12px'}} />
-                        <button type="submit" style={{border:'1px solid #fecaca',borderRadius:'12px',background:'white',color:'#dc2626',fontWeight:900,padding:'10px 12px'}}>Reject / request revision</button>
-                      </form>
-                    </div>
-                  ) : selected.hasPriceOverride ? (
-                    <div style={{border:'1px solid #a7f3d0',borderRadius:'18px',padding:'14px',background:'#ecfdf5'}}>
-                      <div style={{fontSize:'14px',fontWeight:900,color:'#047857'}}>Approval cleared</div>
-                      <p style={{fontSize:'12px',lineHeight:1.6,color:'#047857'}}>Quote-only adjustment was approved. The send gate can continue.</p>
-                    </div>
-                  ) : null}
-                  <div style={{border:'1px solid #dbe4ef',borderRadius:'18px',padding:'14px',background:'#ffffff'}}>
-                    <div style={{fontSize:'13px',fontWeight:900,color:'#0f172a'}}>Send and handoff</div>
-                    <p style={{fontSize:'12px',lineHeight:1.6,color:'#64748b'}}>Preview the customer PDF, then open the send workflow for email or WhatsApp. Use order handoff when the buyer accepted and you need an execution record.</p>
-                    <div style={{display:'grid',gap:'8px'}}>
-                      <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'12px',background:'#0b2e4a',color:'white',fontWeight:900,textDecoration:'none'}}>Open customer PDF</Link>
-                      <Link href={selectedSendHref} style={{display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'12px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Send by email / WhatsApp</Link>
-                      <form action={createOrderHandoffAction} style={{display:'grid',gap:'8px'}}>
-                        <input type="hidden" name="quote_id" value={selected.id}/>
-                        <input type="hidden" name="notes" value="Order handoff created from Quotes workspace."/>
-                        <button type="submit" style={{border:0,textAlign:'center',padding:'10px 12px',borderRadius:'12px',background:'#059669',color:'white',fontWeight:900}}>Create order handoff</button>
-                      </form>
-                    </div>
-                  </div>
-                </aside>
-              </div>
-            </div>
-          </div>
-        ) : null}
+          {filteredItems.length>queueItems.length&&<div style={{textAlign:'center',padding:'12px',color:'#94a3b8',fontSize:'12px',fontWeight:700}}>Showing first {queueItems.length} matching quotes in the secondary queue. Refine filters to narrow the list.</div>}
+        </div>
       </div>
     </div>
   );
