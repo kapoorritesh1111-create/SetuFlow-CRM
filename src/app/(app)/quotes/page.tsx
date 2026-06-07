@@ -13,8 +13,9 @@ import { buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
 import { approveLeadQuoteAdjustment, rejectLeadQuoteAdjustment } from '@/features/leads/server/actions';
 import { logQuoteNegotiationResponse, markQuoteAsDirectOrder, recordQuoteOutcomeWorkflow } from '@/features/quotes/server/actions';
 
-const FILTER_STATUSES = ['all','active','sent','accepted','revision_requested','pending_approval','draft','risk','archive','rejected','expired'];
+const FILTER_STATUSES = ['all','active','sent','accepted','revision_requested','pending_approval','draft','cleanup','archive','rejected','expired'];
 const FILTER_MODES = ['all','buyers','suppliers'];
+const GROUP_MODES = ['priority','lifecycle','value','customer','product'] as const;
 
 type QuoteWorkspaceItem = ReturnType<typeof buildQuotesPageViewModel>['items'][number];
 type QuoteLifecycleRow = {
@@ -42,13 +43,13 @@ type CustomerGroup = {
   proposedValue: number;
   acceptedValue: number;
   orderValue: number;
-  riskValue: number;
+  cleanupValue: number;
   archiveValue: number;
   quoteCount: number;
   sentCount: number;
   revisionCount: number;
   acceptedCount: number;
-  riskCount: number;
+  cleanupCount: number;
   archiveCount: number;
   latestUpdatedAt: string;
   recommended: ReturnType<typeof getRecommendedAction>;
@@ -89,7 +90,11 @@ function getQuoteLifecycle(item: EnhancedQuoteItem) {
   const lifecycle = String(item.lifecycle_outcome ?? '').toLowerCase();
   const lineCount = item.lineItems?.length ?? 0;
   const subtotal = Number(item.subtotal ?? 0);
-  if ((status === 'accepted' || lifecycle === 'accepted_handoff') && (lineCount === 0 || subtotal <= 0)) return 'risk';
+
+  // Zero-line / zero-value accepted records are cleanup candidates, not customer-level risk.
+  // They should not dominate the customer story once a valid sent/accepted quote exists.
+  if (lifecycle === 'cleanup_void_candidate') return 'cleanup';
+  if ((status === 'accepted' || lifecycle === 'accepted_handoff' || lifecycle === 'data_risk_review') && (lineCount === 0 || subtotal <= 0)) return 'cleanup';
   if (lifecycle === 'revision_requested') return 'revision_requested';
   if (status === 'expired' || lifecycle === 'expired_archived') return 'expired';
   if (status === 'rejected' || lifecycle === 'rejected_archived') return 'rejected';
@@ -101,7 +106,7 @@ function getQuoteLifecycle(item: EnhancedQuoteItem) {
 
 function getQuoteActionLabel(item: EnhancedQuoteItem) {
   switch (getQuoteLifecycle(item)) {
-    case 'risk': return 'Review data risk';
+    case 'cleanup': return 'Archive / void cleanup';
     case 'revision_requested': return 'Create revised quote';
     case 'accepted': return item.hasAcceptedContract ? 'Open order' : 'Move to Orders';
     case 'sent': return 'Log outcome';
@@ -113,7 +118,7 @@ function getQuoteActionLabel(item: EnhancedQuoteItem) {
 }
 
 function getStatusStyle(status: string, lifecycle?: string) {
-  const resolved = lifecycle === 'risk' ? 'risk' : lifecycle === 'revision_requested' ? 'revision_requested' : status;
+  const resolved = lifecycle === 'cleanup' ? 'cleanup' : lifecycle === 'revision_requested' ? 'revision_requested' : status;
   const statusColors: Record<string,{bg:string;border:string;color:string}> = {
     draft:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
     internal_review:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
@@ -125,7 +130,7 @@ function getStatusStyle(status: string, lifecycle?: string) {
     accepted:{bg:'#ede9fe',border:'#c4b5fd',color:'#5b21b6'},
     rejected:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
     expired:{bg:'#f8fafc',border:'#cbd5e1',color:'#334155'},
-    risk:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
+    cleanup:{bg:'#f8fafc',border:'#cbd5e1',color:'#334155'},
   };
   return statusColors[resolved] ?? statusColors.draft;
 }
@@ -136,7 +141,7 @@ function isArchiveLifecycle(lifecycle: string) {
 
 function getQuoteValueBucket(item: EnhancedQuoteItem) {
   const lifecycle = getQuoteLifecycle(item);
-  if (lifecycle === 'risk') return 'risk';
+  if (lifecycle === 'cleanup') return 'cleanup';
   if (isArchiveLifecycle(lifecycle)) return 'archive';
   if (lifecycle === 'accepted' && item.hasAcceptedContract) return 'order';
   if (lifecycle === 'accepted') return 'accepted';
@@ -150,10 +155,10 @@ function getValueBreakdown(quotes: EnhancedQuoteItem[]) {
     if (bucket === 'proposed') acc.proposedValue += amount;
     if (bucket === 'accepted') acc.acceptedValue += amount;
     if (bucket === 'order') acc.orderValue += amount;
-    if (bucket === 'risk') acc.riskValue += amount;
+    if (bucket === 'cleanup') acc.cleanupValue += amount;
     if (bucket === 'archive') acc.archiveValue += amount;
     return acc;
-  }, { proposedValue: 0, acceptedValue: 0, orderValue: 0, riskValue: 0, archiveValue: 0 });
+  }, { proposedValue: 0, acceptedValue: 0, orderValue: 0, cleanupValue: 0, archiveValue: 0 });
 }
 
 function getCustomerExposure(group: Pick<CustomerGroup, 'proposedValue' | 'acceptedValue' | 'orderValue'>) {
@@ -162,14 +167,14 @@ function getCustomerExposure(group: Pick<CustomerGroup, 'proposedValue' | 'accep
 
 
 function getRecommendedAction(quotes: EnhancedQuoteItem[]) {
-  const risk = quotes.find((quote) => getQuoteLifecycle(quote) === 'risk');
-  if (risk) return { tone: 'rose' as const, title: 'Resolve quote data risk', body: 'Accepted quote has no commercial value or line items. Review before order handoff.', quote: risk };
   const revision = quotes.find((quote) => getQuoteLifecycle(quote) === 'revision_requested');
   if (revision) return { tone: 'amber' as const, title: 'Create governed revision', body: 'Buyer requested a better quote. Keep the sent record locked and create a new version.', quote: revision };
   const accepted = quotes.find((quote) => getQuoteLifecycle(quote) === 'accepted');
   if (accepted) return { tone: 'green' as const, title: 'Move to Orders', body: 'Accepted quote is live revenue intent. Continue execution in Orders.', quote: accepted };
   const sent = quotes.find((quote) => getQuoteLifecycle(quote) === 'sent');
   if (sent) return { tone: getValidityLabel(sent).tone === 'rose' ? 'rose' as const : 'blue' as const, title: 'Follow up and log outcome', body: 'Record accepted, rejected, revision requested, no response, or expiry.', quote: sent };
+  const cleanup = quotes.find((quote) => getQuoteLifecycle(quote) === 'cleanup');
+  if (cleanup) return { tone: 'slate' as const, title: 'Cleanup zero-value record', body: 'Zero-line quote is not active value. Archive, void, or clone only if needed.', quote: cleanup };
   const pending = quotes.find((quote) => getQuoteLifecycle(quote) === 'pending_approval');
   if (pending) return { tone: 'amber' as const, title: 'Review approval blocker', body: 'Quote cannot be sent until approval is complete.', quote: pending };
   const draft = quotes.find((quote) => getQuoteLifecycle(quote) === 'draft');
@@ -225,13 +230,13 @@ function groupQuotesByCustomer(items: EnhancedQuoteItem[]): CustomerGroup[] {
       proposedValue: values.proposedValue,
       acceptedValue: values.acceptedValue,
       orderValue: values.orderValue,
-      riskValue: values.riskValue,
+      cleanupValue: values.cleanupValue,
       archiveValue: values.archiveValue,
       quoteCount: sorted.length,
       sentCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'sent').length,
       revisionCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'revision_requested').length,
       acceptedCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'accepted').length,
-      riskCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'risk').length,
+      cleanupCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'cleanup').length,
       archiveCount: sorted.filter((quote) => isArchiveLifecycle(getQuoteLifecycle(quote))).length,
       latestUpdatedAt: sorted.map((quote) => quote.updatedAt).sort().reverse()[0] ?? '',
       recommended,
@@ -246,7 +251,7 @@ function groupQuotesByCustomer(items: EnhancedQuoteItem[]): CustomerGroup[] {
 
 function priorityForLifecycle(lifecycle: string) {
   switch (lifecycle) {
-    case 'risk': return 0;
+    case 'cleanup': return 7;
     case 'revision_requested': return 1;
     case 'accepted': return 2;
     case 'sent': return 3;
@@ -262,6 +267,62 @@ function formatDate(value?: string | null) {
   if (!value) return 'No date';
   try { return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value)); }
   catch { return value; }
+}
+
+
+type CustomerSection = {
+  title: string;
+  caption: string;
+  groups: CustomerGroup[];
+  tone: string;
+  openByDefault: boolean;
+};
+
+function buildCustomerSections(customerGroups: CustomerGroup[], groupMode: string): CustomerSection[] {
+  const makeSection = (title: string, caption: string, groups: CustomerGroup[], tone: string, openByDefault = true): CustomerSection => ({ title, caption, groups, tone, openByDefault });
+
+  if (groupMode === 'customer') {
+    return [makeSection('All Customers', 'Alphabetical customer stories', [...customerGroups].sort((a, b) => a.companyName.localeCompare(b.companyName)), '#0c7fff', true)]
+      .filter((section) => section.groups.length > 0);
+  }
+
+  if (groupMode === 'lifecycle') {
+    return [
+      makeSection('Follow-up Due', 'Sent quotes need outcomes', customerGroups.filter((group) => group.sentCount > 0), '#0c7fff', true),
+      makeSection('Revision Requested', 'Buyer asked for a better quote', customerGroups.filter((group) => group.revisionCount > 0), '#d97706', true),
+      makeSection('Order Handoff', 'Accepted value ready for Orders', customerGroups.filter((group) => group.acceptedCount > 0), '#059669', true),
+      makeSection('Cleanup / Void', 'Zero-value stale records', customerGroups.filter((group) => group.cleanupCount > 0), '#64748b', false),
+      makeSection('Archive / Closed', 'Expired or rejected history', customerGroups.filter((group) => group.archiveCount > 0), '#64748b', false),
+    ].filter((section) => section.groups.length > 0);
+  }
+
+  if (groupMode === 'value') {
+    return [
+      makeSection('High Value', 'Exposure above USD 1,000', customerGroups.filter((group) => getCustomerExposure(group) >= 1000), '#059669', true),
+      makeSection('Standard Value', 'Exposure below USD 1,000', customerGroups.filter((group) => getCustomerExposure(group) > 0 && getCustomerExposure(group) < 1000), '#0c7fff', true),
+      makeSection('No Active Value', 'Cleanup, archive, or draft records', customerGroups.filter((group) => getCustomerExposure(group) <= 0), '#64748b', false),
+    ].filter((section) => section.groups.length > 0);
+  }
+
+  if (groupMode === 'product') {
+    const productMap = new Map<string, CustomerGroup[]>();
+    for (const group of customerGroups) {
+      const product = group.recommended.quote.lineItems[0]?.productName ?? 'No product / cleanup';
+      productMap.set(product, [...(productMap.get(product) ?? []), group]);
+    }
+    return [...productMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([product, groups]) => makeSection(product, 'Grouped by primary selected quote product', groups, '#0c7fff', groups.length <= 8));
+  }
+
+  return [
+    makeSection('Revision Requested', 'Buyer asked for a better quote', customerGroups.filter((group) => group.revisionCount > 0), '#d97706', true),
+    makeSection('Order Handoff', 'Accepted value ready for Orders', customerGroups.filter((group) => group.revisionCount === 0 && group.acceptedCount > 0), '#059669', true),
+    makeSection('Follow-up Due', 'Sent quotes need outcomes', customerGroups.filter((group) => group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount > 0), '#0c7fff', true),
+    makeSection('Cleanup / Void', 'Zero-value records are not active risk', customerGroups.filter((group) => group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.cleanupCount > 0), '#64748b', false),
+    makeSection('Archive / Closed', 'Expired or rejected history', customerGroups.filter((group) => group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.cleanupCount === 0 && group.archiveCount > 0), '#64748b', false),
+    makeSection('Draft / Other', 'Quotes still being prepared', customerGroups.filter((group) => group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.cleanupCount === 0 && group.archiveCount === 0), '#64748b', true),
+  ].filter((section) => section.groups.length > 0);
 }
 
 async function insertLifecycleEvent(db: any, payload: {
@@ -287,7 +348,7 @@ async function insertLifecycleEvent(db: any, payload: {
   });
 }
 
-export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[] } }) {
+export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[]; group?: string|string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>>|null = null;
   try { workspace = await getWorkspaceAccess(); } catch { return <EmptyState title="Workspace unavailable" description="Could not load workspace." />; }
   if (!hasSupabaseEnv || workspace?.missingEnv) return <EmptyState title="Configuration required" description="SETU Flow needs Supabase environment values." />;
@@ -299,6 +360,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selectedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
   const requestedMode = readSearchParam(searchParams?.mode);
   const requestedStatus = readSearchParam(searchParams?.status);
+  const requestedGroup = readSearchParam(searchParams?.group);
   const filters = {
     q: readSearchParam(searchParams?.q),
     status: FILTER_STATUSES.includes(requestedStatus as (typeof FILTER_STATUSES)[number]) ? requestedStatus : 'active',
@@ -306,6 +368,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     from: readSearchParam(searchParams?.from),
     to: readSearchParam(searchParams?.to),
     mode: FILTER_MODES.includes(requestedMode as (typeof FILTER_MODES)[number]) ? requestedMode : 'all',
+    group: GROUP_MODES.includes(requestedGroup as (typeof GROUP_MODES)[number]) ? requestedGroup : 'priority',
   };
 
   const quotesResult = await db
@@ -514,7 +577,9 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
       message,
       metadata: { source: 'quotes_page_lifecycle_outcome', previous_status: existing.status },
     });
-    if (lifecycleError) redirect(`/quotes?quoteId=${quoteId}&notice=quote-lifecycle-log-error`);
+    if (lifecycleError) {
+      console.warn('quote lifecycle event log failed after outcome update', lifecycleError);
+    }
     revalidatePath('/quotes');
     revalidatePath('/orders');
     redirect(`/quotes?quoteId=${quoteId}&notice=${nextNotice}`);
@@ -525,7 +590,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const sentActiveCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'sent').length;
   const revisionCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'revision_requested').length;
   const acceptedCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'accepted').length;
-  const riskCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'risk').length;
+  const cleanupCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'cleanup').length;
   const expiringSoonCount = activeItems.filter((quote) => ['amber','rose'].includes(getValidityLabel(quote).tone) && getQuoteLifecycle(quote) === 'sent').length;
   const archiveCount = enhancedItems.filter((quote) => isArchiveLifecycle(getQuoteLifecycle(quote))).length;
   const filteredValues = getValueBreakdown(filteredActiveItems);
@@ -533,10 +598,9 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     proposedValue: selectedGroup.proposedValue,
     acceptedValue: selectedGroup.acceptedValue,
     orderValue: selectedGroup.orderValue,
-    riskValue: selectedGroup.riskValue,
+    cleanupValue: selectedGroup.cleanupValue,
     archiveValue: selectedGroup.archiveValue,
   } : getValueBreakdown(selected ? [selected] : []);
-  const topGroup = customerGroups[0];
   const filterHref = (patch: Partial<typeof filters>) => {
     const next = { ...filters, ...patch };
     const params = new URLSearchParams();
@@ -546,30 +610,25 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     if (next.from.trim()) params.set('from', next.from.trim());
     if (next.to.trim()) params.set('to', next.to.trim());
     if (next.mode !== 'all') params.set('mode', next.mode);
+    if (next.group !== 'priority') params.set('group', next.group);
     return params.toString() ? `/quotes?${params.toString()}` : '/quotes';
   };
   const activeQuoteFilterChips = [
     filters.q.trim() ? { key: 'q', label: `Search: ${filters.q.trim()}`, href: filterHref({ q: '' }), tone: 'blue' as const } : null,
     filters.status !== 'active' ? { key: 'status', label: `Lifecycle: ${labelizeStatus(filters.status)}`, href: filterHref({ status: 'active' }), tone: 'amber' as const } : null,
     filters.mode !== 'all' ? { key: 'mode', label: `Global mode: ${filters.mode}`, href: filterHref({ mode: 'all' }), tone: 'violet' as const } : null,
+    filters.group !== 'priority' ? { key: 'group', label: `Group: ${labelizeStatus(filters.group)}`, href: filterHref({ group: 'priority' }), tone: 'violet' as const } : null,
   ].filter(Boolean) as Array<{ key: string; label: string; href: string; tone: 'blue' | 'amber' | 'violet' }>;
   const selectedLifecycle = selected ? getQuoteLifecycle(selected) : 'draft';
   const selectedIsAccepted = selectedLifecycle === 'accepted';
   const selectedIsPending = selectedLifecycle === 'pending_approval';
   const selectedIsSent = selectedLifecycle === 'sent';
   const selectedIsRevision = selectedLifecycle === 'revision_requested';
-  const selectedIsRisk = selectedLifecycle === 'risk';
+  const selectedIsCleanup = selectedLifecycle === 'cleanup';
   const selectedIsArchive = isArchiveLifecycle(selectedLifecycle);
   const selectedStatusStyle = selected ? getStatusStyle(selected.status, selectedLifecycle) : getStatusStyle('draft');
   const selectedProducts = selected?.lineItems.slice(0, 4) ?? [];
-  const customerSections = [
-    { title: 'Needs Review', caption: 'Data risk and invalid commercial records', groups: customerGroups.filter((group) => group.riskCount > 0), tone: '#dc2626' },
-    { title: 'Revision Requested', caption: 'Buyer asked for a better quote', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount > 0), tone: '#d97706' },
-    { title: 'Order Handoff', caption: 'Accepted value ready for Orders', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount > 0), tone: '#059669' },
-    { title: 'Follow-up Due', caption: 'Sent quotes need outcomes', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount > 0), tone: '#0c7fff' },
-    { title: 'Archive / Closed', caption: 'Expired or rejected history', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.archiveCount > 0), tone: '#64748b' },
-    { title: 'Draft / Other', caption: 'Quotes still being prepared', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.archiveCount === 0), tone: '#64748b' },
-  ].filter((section) => section.groups.length > 0);
+  const customerSections = buildCustomerSections(customerGroups, filters.group);
 
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
@@ -580,7 +639,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
               ['Follow-up', sentActiveCount, 'Sent outcomes', 'blue', 'sent'],
               ['Revisions', revisionCount, 'Better quote', 'amber', 'revision_requested'],
               ['Order handoff', acceptedCount, 'Accepted value', 'green', 'accepted'],
-              ['Data risk', riskCount, 'Review first', 'rose', 'risk'],
+              ['Cleanup', cleanupCount, 'Zero-value records', 'slate', 'cleanup'],
               ['Expiring', expiringSoonCount, 'Guru prompt', 'amber', 'sent'],
               ['Archive', archiveCount, 'Closed history', 'slate', 'archive'],
             ].map(([label,value,meta,tone,status]) => (
@@ -590,13 +649,14 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
               </Link>
             ))}
           </div>
-          <form action="/quotes" style={{display:'grid',gridTemplateColumns:'minmax(260px,1.4fr) repeat(5,minmax(120px,.75fr)) auto',gap:'8px',alignItems:'end'}}>
+          <form action="/quotes" style={{display:'grid',gridTemplateColumns:'minmax(240px,1.25fr) repeat(6,minmax(112px,.7fr)) auto',gap:'8px',alignItems:'end'}}>
             <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Search</span><input name="q" defaultValue={filters.q} placeholder="Customer, quote, product, contact..." style={filterInputStyle()} /></label>
             <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Lifecycle</span><select name="status" defaultValue={filters.status} style={filterInputStyle()}>{FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All quotes':s==='active'?'Active':labelizeStatus(s)}</option>)}</select></label>
             <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Customer</span><input name="company" defaultValue={filters.company} placeholder="Any" style={filterInputStyle()} /></label>
             <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>From</span><input name="from" type="date" defaultValue={filters.from} style={filterInputStyle()} /></label>
             <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>To</span><input name="to" type="date" defaultValue={filters.to} style={filterInputStyle()} /></label>
             <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Mode</span><select name="mode" defaultValue={filters.mode} style={filterInputStyle()}>{FILTER_MODES.map(mode => <option key={mode} value={mode}>{mode}</option>)}</select></label>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Group</span><select name="group" defaultValue={filters.group} style={filterInputStyle()}>{GROUP_MODES.map(mode => <option key={mode} value={mode}>{labelizeStatus(mode)}</option>)}</select></label>
             <button type="submit" style={{height:'38px',border:0,borderRadius:'12px',background:'#0b1020',color:'white',fontSize:'12px',fontWeight:900,padding:'0 14px',boxShadow:'0 8px 22px rgba(15,23,42,.14)'}}>Apply</button>
           </form>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',borderTop:'1px solid #edf2f7',marginTop:'10px',paddingTop:'8px',flexWrap:'wrap'}}>
@@ -604,7 +664,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
               {activeQuoteFilterChips.length ? activeQuoteFilterChips.map((chip) => <Link key={chip.key} href={chip.href} style={activeChipStyle(chip.tone)}>{chip.label}</Link>) : <span style={{fontSize:'11px',fontWeight:800,color:'#64748b'}}>Active lifecycle view</span>}
               {activeQuoteFilterChips.length ? <Link href="/quotes" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Clear all</Link> : null}
             </div>
-            <div style={{fontSize:'11px',fontWeight:850,color:'#64748b'}}>Proposed {formatQuoteMoney(filteredValues.proposedValue,'USD')} · Accepted {formatQuoteMoney(filteredValues.acceptedValue,'USD')} · Order {formatQuoteMoney(filteredValues.orderValue,'USD')} · Risk {formatQuoteMoney(filteredValues.riskValue,'USD')}</div>
+            <div style={{fontSize:'11px',fontWeight:850,color:'#64748b'}}>Proposed {formatQuoteMoney(filteredValues.proposedValue,'USD')} · Accepted {formatQuoteMoney(filteredValues.acceptedValue,'USD')} · Order {formatQuoteMoney(filteredValues.orderValue,'USD')} · Cleanup {formatQuoteMoney(filteredValues.cleanupValue,'USD')}</div>
           </div>
         </section>
       </div>
@@ -621,20 +681,20 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                 const visibleGroups = section.groups.slice(0, 6);
                 const hiddenCount = Math.max(0, section.groups.length - visibleGroups.length);
                 return (
-                  <div key={section.title} style={{border:'1px solid #edf2f7',borderRadius:'18px',background:'#fbfdff',padding:'10px'}}>
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',marginBottom:'8px'}}>
+                  <details key={section.title} open={section.openByDefault} style={{border:'1px solid #edf2f7',borderRadius:'18px',background:'#fbfdff',padding:'10px'}}>
+                    <summary style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',marginBottom:'8px',cursor:'pointer',listStyle:'none'}}>
                       <div>
                         <div style={{fontSize:'10px',fontWeight:950,color:section.tone,textTransform:'uppercase',letterSpacing:'.14em'}}>{section.title}</div>
                         <div style={{fontSize:'10px',fontWeight:750,color:'#64748b'}}>{section.caption}</div>
                       </div>
-                      <span style={{fontSize:'10px',fontWeight:950,color:'#64748b'}}>{section.groups.length}</span>
-                    </div>
+                      <span style={{fontSize:'10px',fontWeight:950,color:'#64748b'}}>{section.groups.length} · collapse</span>
+                    </summary>
                     <div style={{display:'grid',gap:'8px'}}>
                       {visibleGroups.map((group) => {
-                        const tone = group.riskCount ? '#dc2626' : group.revisionCount ? '#d97706' : group.acceptedCount ? '#059669' : group.sentCount ? '#0c7fff' : '#64748b';
+                        const tone = group.cleanupCount ? '#64748b' : group.revisionCount ? '#d97706' : group.acceptedCount ? '#059669' : group.sentCount ? '#0c7fff' : '#64748b';
                         const active = selectedGroup?.key === group.key;
                         return (
-                          <Link key={group.key} href={`/quotes?quoteId=${group.recommended.quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}`} style={{display:'block',position:'relative',overflow:'hidden',border:'1px solid',borderColor:active ? '#0c7fff' : '#dbe4ef',boxShadow:active ? '0 0 0 3px rgba(12,127,255,.10)' : 'none',borderRadius:'16px',background:'white',padding:'11px 11px 11px 14px',textDecoration:'none',color:'#0f172a'}}>
+                          <Link key={group.key} href={`/quotes?quoteId=${group.recommended.quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}${filters.group !== 'priority' ? `&group=${encodeURIComponent(filters.group)}` : ''}`} style={{display:'block',position:'relative',overflow:'hidden',border:'1px solid',borderColor:active ? '#0c7fff' : '#dbe4ef',boxShadow:active ? '0 0 0 3px rgba(12,127,255,.10)' : 'none',borderRadius:'16px',background:'white',padding:'11px 11px 11px 14px',textDecoration:'none',color:'#0f172a'}}>
                             <span style={{position:'absolute',left:0,top:0,bottom:0,width:'4px',background:tone}} />
                             <div style={{display:'flex',justifyContent:'space-between',gap:'10px'}}>
                               <div style={{minWidth:0}}>
@@ -647,13 +707,13 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                               <span style={{fontSize:'10px',fontWeight:850,color:'#334155'}}>Proposed {formatQuoteMoney(group.proposedValue, group.quotes[0]?.currency)}</span>
                               <span style={{fontSize:'10px',fontWeight:850,color:'#047857'}}>Accepted {formatQuoteMoney(group.acceptedValue, group.quotes[0]?.currency)}</span>
                               {group.orderValue ? <span style={{fontSize:'10px',fontWeight:850,color:'#0c7fff'}}>Order {formatQuoteMoney(group.orderValue, group.quotes[0]?.currency)}</span> : null}
-                              {group.riskCount ? <span style={{fontSize:'10px',fontWeight:850,color:'#dc2626'}}>Risk {formatQuoteMoney(group.riskValue, group.quotes[0]?.currency)}</span> : null}
+                              {group.cleanupCount ? <span style={{fontSize:'10px',fontWeight:850,color:'#334155'}}>Cleanup {formatQuoteMoney(group.cleanupValue, group.quotes[0]?.currency)}</span> : null}
                             </div>
                             <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginTop:'8px'}}>
                               {group.sentCount ? <span style={badgeStyle('#eff6ff','#bfdbfe','#1d4ed8')}>{group.sentCount} sent</span> : null}
                               {group.revisionCount ? <span style={badgeStyle('#fff7ed','#fed7aa','#9a3412')}>{group.revisionCount} revision</span> : null}
                               {group.acceptedCount ? <span style={badgeStyle('#ecfdf5','#a7f3d0','#047857')}>{group.acceptedCount} accepted</span> : null}
-                              {group.riskCount ? <span style={badgeStyle('#fff1f2','#fecaca','#dc2626')}>{group.riskCount} risk</span> : null}
+                              {group.cleanupCount ? <span style={badgeStyle('#f8fafc','#cbd5e1','#334155')}>{group.cleanupCount} cleanup</span> : null}
                               {group.archiveCount ? <span style={badgeStyle('#f8fafc','#cbd5e1','#334155')}>{group.archiveCount} archive</span> : null}
                             </div>
                           </Link>
@@ -661,7 +721,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                       })}
                     </div>
                     {hiddenCount ? <Link href={filterHref({ status: section.title === 'Archive / Closed' ? 'archive' : filters.status })} style={{display:'block',marginTop:'8px',fontSize:'11px',fontWeight:900,color:'#0c7fff',textDecoration:'none'}}>View {hiddenCount} more</Link> : null}
-                  </div>
+                  </details>
                 );
               }) : <p style={{fontSize:'13px',color:'#64748b'}}>No customer groups match the active filters.</p>}
             </div>
@@ -676,7 +736,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                   <p style={{margin:'4px 0 0',fontSize:'12px',color:'#64748b'}}>{selectedGroup?.contactName ?? selected.contactName ?? 'No contact'} · {selectedGroup?.quoteCount ?? 1} quote records · selected {selected.quoteNumber ?? selected.id.slice(0,8)}</p>
                 </div>
                 <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                  <span style={{display:'inline-flex',alignItems:'center',border:'1px solid',borderColor:selectedStatusStyle.border,background:selectedStatusStyle.bg,color:selectedStatusStyle.color,borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:900,textTransform:'capitalize'}}>{selectedLifecycle === 'risk' ? 'data risk' : labelizeStatus(selected.lifecycle_outcome || selected.status)}</span>
+                  <span style={{display:'inline-flex',alignItems:'center',border:'1px solid',borderColor:selectedStatusStyle.border,background:selectedStatusStyle.bg,color:selectedStatusStyle.color,borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:900,textTransform:'capitalize'}}>{selectedLifecycle === 'cleanup' ? 'cleanup' : labelizeStatus(selected.lifecycle_outcome || selected.status)}</span>
                   {selectedQuoteId ? <Link href={filterHref({})} style={{border:'1px solid #e2e8f0',background:'white',borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:850,color:'#475569',textDecoration:'none'}}>Close focus</Link> : null}
                 </div>
               </div>
@@ -686,7 +746,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                   ['Proposed', formatQuoteMoney(selectedValues.proposedValue, selected.currency), '#0b2e4a'],
                   ['Accepted', formatQuoteMoney(selectedValues.acceptedValue, selected.currency), '#047857'],
                   ['Order value', formatQuoteMoney(selectedValues.orderValue, selected.currency), '#0c7fff'],
-                  ['Risk value', formatQuoteMoney(selectedValues.riskValue, selected.currency), '#dc2626'],
+                  ['Cleanup', formatQuoteMoney(selectedValues.cleanupValue, selected.currency), '#334155'],
                   ['Exposure', formatQuoteMoney(Math.max(selectedValues.proposedValue, selectedValues.acceptedValue, selectedValues.orderValue), selected.currency), '#0f172a'],
                 ].map(([label,value,color]) => (
                   <div key={label} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'11px 12px'}}>
@@ -710,14 +770,14 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                 ))}
               </div>
 
-              <div style={{marginTop:'14px',border:'1px solid',borderColor:selectedIsRisk ? '#fecaca' : selectedIsAccepted ? '#a7f3d0' : selectedIsRevision ? '#fed7aa' : '#dbe4ef',borderRadius:'20px',background:selectedIsRisk ? '#fff1f2' : selectedIsAccepted ? '#ecfdf5' : selectedIsRevision ? '#fff7ed' : '#f8fbff',padding:'14px',display:'grid',gridTemplateColumns:'minmax(0,1fr) 280px',gap:'14px',alignItems:'start'}}>
+              <div style={{marginTop:'14px',border:'1px solid',borderColor:selectedIsCleanup ? '#cbd5e1' : selectedIsAccepted ? '#a7f3d0' : selectedIsRevision ? '#fed7aa' : '#dbe4ef',borderRadius:'20px',background:selectedIsCleanup ? '#f8fafc' : selectedIsAccepted ? '#ecfdf5' : selectedIsRevision ? '#fff7ed' : '#f8fbff',padding:'14px',display:'grid',gridTemplateColumns:'minmax(0,1fr) 280px',gap:'14px',alignItems:'start'}}>
                 <div>
-                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:selectedIsRisk ? '#dc2626' : selectedIsAccepted ? '#047857' : selectedIsRevision ? '#9a3412' : '#1d4ed8'}}>Recommended next action</div>
+                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:selectedIsCleanup ? '#334155' : selectedIsAccepted ? '#047857' : selectedIsRevision ? '#9a3412' : '#1d4ed8'}}>Recommended next action</div>
                   <h3 style={{margin:'4px 0 0',fontSize:'20px',fontWeight:950,color:'#0f172a'}}>
-                    {selectedIsRisk ? 'Review quote data risk' : selectedIsRevision ? 'Create governed revision' : selectedIsAccepted ? 'Move revenue work to Orders' : selectedIsPending ? 'Approval required' : selectedIsSent ? 'Follow up and log outcome' : selectedIsArchive ? 'Archive or clone' : 'Continue quote'}
+                    {selectedIsCleanup ? 'Review quote cleanup' : selectedIsRevision ? 'Create governed revision' : selectedIsAccepted ? 'Move revenue work to Orders' : selectedIsPending ? 'Approval required' : selectedIsSent ? 'Follow up and log outcome' : selectedIsArchive ? 'Archive or clone' : 'Continue quote'}
                   </h3>
                   <p style={{margin:'6px 0 0',fontSize:'12px',lineHeight:1.6,color:'#64748b'}}>
-                    {selectedIsRisk ? 'This quote looks accepted but has no commercial lines or value. Block order handoff until reviewed.' : selectedIsRevision ? 'Buyer requested a better quote. Keep the sent record locked and create a governed new version.' : selectedIsAccepted ? 'Accepted quote is live revenue intent. The quote stays locked while Orders owns execution.' : selectedIsPending ? 'Review quote-only adjustments before the quote can be sent.' : selectedIsSent ? 'Follow-up means capture the outcome: accepted, rejected, revision requested, no response, or expired.' : selectedIsArchive ? 'Expired/rejected quotes leave active work but stay searchable and cloneable.' : 'Finish quote lines and readiness before sending.'}
+                    {selectedIsCleanup ? 'This stale quote has no commercial lines or value. It should be archived or voided, not treated as customer-level risk.' : selectedIsRevision ? 'Buyer requested a better quote. Keep the sent record locked and create a governed new version.' : selectedIsAccepted ? 'Accepted quote is live revenue intent. The quote stays locked while Orders owns execution.' : selectedIsPending ? 'Review quote-only adjustments before the quote can be sent.' : selectedIsSent ? 'Follow-up means capture the outcome: accepted, rejected, revision requested, no response, or expired.' : selectedIsArchive ? 'Expired/rejected quotes leave active work but stay searchable and cloneable.' : 'Finish quote lines and readiness before sending.'}
                   </p>
                 </div>
                 <div style={{display:'grid',gap:'8px'}}>
@@ -797,13 +857,13 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                         </div>
                         <div style={{fontSize:'12px',fontWeight:900,color:'#0b2e4a',whiteSpace:'nowrap'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</div>
                       </div>
-                    )) : <div style={{fontSize:'12px',color:selectedIsRisk ? '#dc2626' : '#64748b',fontWeight:selectedIsRisk ? 850 : 500}}>No quote lines are attached. {selectedIsRisk ? 'Review before any order handoff.' : ''}</div>}
+                    )) : <div style={{fontSize:'12px',color:selectedIsCleanup ? '#334155' : '#64748b',fontWeight:selectedIsCleanup ? 850 : 500}}>No quote lines are attached. {selectedIsCleanup ? 'Archive or void this cleanup record.' : ''}</div>}
                   </div>
                 </div>
                 <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
                   <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Setu Guru guidance</div>
                   <p style={{fontSize:'12px',lineHeight:1.6,color:'#64748b',margin:'8px 0 0'}}>
-                    {selectedIsRisk ? 'Guru blocks order handoff and recommends review, void, archive, or clone correctly.' : selectedIsAccepted ? 'Guru sends this to Orders because the quote is now live revenue intent.' : selectedIsRevision ? 'Guru keeps the original quote locked and starts a governed revised version.' : selectedIsSent ? 'Guru asks the rep to log a real outcome instead of leaving follow-up ambiguous.' : selectedIsArchive ? 'Guru keeps this searchable in Archive and offers clone-new-version.' : 'Guru checks readiness and suggests the next lifecycle step.'}
+                    {selectedIsCleanup ? 'Guru keeps this zero-value record out of active value and recommends archive, void, or clone only if needed.' : selectedIsAccepted ? 'Guru sends this to Orders because the quote is now live revenue intent.' : selectedIsRevision ? 'Guru keeps the original quote locked and starts a governed revised version.' : selectedIsSent ? 'Guru asks the rep to log a real outcome instead of leaving follow-up ambiguous.' : selectedIsArchive ? 'Guru keeps this searchable in Archive and offers clone-new-version.' : 'Guru checks readiness and suggests the next lifecycle step.'}
                   </p>
                   {selected?.lifecycleEvents?.length ? <div style={{marginTop:'8px',fontSize:'11px',color:'#64748b'}}>Latest lifecycle: {selected.lifecycleEvents[0]?.outcome ?? selected.lifecycleEvents[0]?.event_type} · {formatDate(selected.lifecycleEvents[0]?.created_at)}</div> : null}
                 </div>
@@ -821,8 +881,8 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                       const sc = getStatusStyle(quote.status, lifecycle);
                       const archived = isArchiveLifecycle(lifecycle);
                       return (
-                        <Link key={quote.id} href={`/quotes?quoteId=${quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}`} style={{display:'grid',gridTemplateColumns:'130px minmax(0,1fr) 120px 150px',gap:'12px',border:'1px solid',borderColor:quote.id === selected.id ? '#93c5fd' : archived ? '#cbd5e1' : '#dbe4ef',borderRadius:'18px',background:archived ? '#f8fafc' : quote.id === selected.id ? '#f8fbff' : 'white',padding:'12px',alignItems:'center',textDecoration:'none',color:'#0f172a',opacity:archived ? .78 : 1}}>
-                          <div><span style={{display:'inline-flex',border:'1px solid',borderColor:sc.border,background:sc.bg,color:sc.color,borderRadius:'999px',padding:'4px 9px',fontSize:'10px',fontWeight:950,textTransform:'capitalize'}}>{lifecycle === 'risk' ? 'data risk' : labelizeStatus(lifecycle)}</span><div style={{marginTop:'6px',fontSize:'11px',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',color:'#64748b'}}>{quote.quoteNumber ?? quote.id.slice(0,8)}</div></div>
+                        <Link key={quote.id} href={`/quotes?quoteId=${quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}${filters.group !== 'priority' ? `&group=${encodeURIComponent(filters.group)}` : ''}`} style={{display:'grid',gridTemplateColumns:'130px minmax(0,1fr) 120px 150px',gap:'12px',border:'1px solid',borderColor:quote.id === selected.id ? '#93c5fd' : archived ? '#cbd5e1' : '#dbe4ef',borderRadius:'18px',background:archived ? '#f8fafc' : quote.id === selected.id ? '#f8fbff' : 'white',padding:'12px',alignItems:'center',textDecoration:'none',color:'#0f172a',opacity:archived ? .78 : 1}}>
+                          <div><span style={{display:'inline-flex',border:'1px solid',borderColor:sc.border,background:sc.bg,color:sc.color,borderRadius:'999px',padding:'4px 9px',fontSize:'10px',fontWeight:950,textTransform:'capitalize'}}>{lifecycle === 'cleanup' ? 'cleanup' : labelizeStatus(lifecycle)}</span><div style={{marginTop:'6px',fontSize:'11px',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',color:'#64748b'}}>{quote.quoteNumber ?? quote.id.slice(0,8)}</div></div>
                           <div style={{minWidth:0}}><div style={{fontSize:'13px',fontWeight:950,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{quote.lineItems[0]?.productName ?? 'No product'}</div><div style={{fontSize:'11px',color:'#64748b'}}>{quote.lineItems.length} lines · updated {formatDate(quote.updatedAt)} · {quote.archive_reason ?? quote.lifecycle_outcome ?? quote.status}</div></div>
                           <div style={{fontSize:'12px',fontWeight:950}}>{formatQuoteMoney(quote.subtotal, quote.currency)}</div>
                           <div style={{fontSize:'11px',fontWeight:900,color:sc.color,textAlign:'right'}}>{getQuoteActionLabel(quote)}</div>

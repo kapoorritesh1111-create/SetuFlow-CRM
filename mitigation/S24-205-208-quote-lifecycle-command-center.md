@@ -22,11 +22,11 @@ This pass refines the first lifecycle implementation after live screenshot revie
   - Proposed value
   - Accepted value
   - Order value
-  - Risk value
+  - Cleanup value
   - Archive value
 - Claude sample behavior corrected:
   - Q21 sent = proposed USD 35
-  - Q22 accepted zero-line = data risk USD 0
+  - Q22 accepted zero-line = cleanup / void candidate USD 0
   - Q23 accepted = accepted/order-ready USD 35
   - The customer panel must not display USD 70 as one active value.
 
@@ -48,8 +48,8 @@ No destructive data migration is required for this UI/value correction pass. The
 1. Open `/quotes?quoteId=9ed66c7c-b44d-4496-9188-4835de55b44c&mode=buyers`.
 2. Confirm the top filter/KPI area is compact and no longer consumes excessive vertical space.
 3. Confirm the customer worklist is sectioned by priority instead of one undifferentiated scroll wall.
-4. Confirm Claude shows separated values: proposed, accepted, order, risk, and exposure.
+4. Confirm Claude shows separated values: proposed, accepted, order, cleanup, and exposure.
 5. Confirm Claude does not show USD 70 as a single active value.
-6. Confirm Q21 is sent/proposed, Q22 is data risk, and Q23 is accepted/order-ready.
+6. Confirm Q21 is sent/proposed, Q22 is cleanup/void candidate, and Q23 is accepted/order-ready.
 7. Confirm archive mode still exposes expired/rejected records.
 8. Confirm mobile layout still stacks cards and keeps actions usable.

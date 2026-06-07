@@ -1166,7 +1166,9 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     created_by: currentUser.id,
     metadata: { source: 'recordQuoteOutcomeWorkflow', outcome: requestedOutcome, lifecycle_outcome: lifecycleOutcome, quote_version_id: outcomeVersionId, contract_id: handoffContractId, order_id: handoffOrderId },
   });
-  if (communicationError?.message) return { error: quoteActionError('recordQuoteOutcomeWorkflow.communication', communicationError, 'Quote outcome was saved, but the timeline note could not be recorded.') };
+  if (communicationError?.message) {
+    logServerError('recordQuoteOutcomeWorkflow.communication-nonblocking', communicationError);
+  }
 
   const { error: lifecycleEventError } = await db.from('quote_lifecycle_events').insert({
     organization_id: organization.id,
@@ -1179,7 +1181,9 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     message: body,
     metadata: { source: 'recordQuoteOutcomeWorkflow', requested_outcome: requestedOutcome, previous_status: previousStatus, next_status: nextStatus, quote_version_id: outcomeVersionId, contract_id: handoffContractId, order_id: handoffOrderId },
   });
-  if (lifecycleEventError?.message) return { error: quoteActionError('recordQuoteOutcomeWorkflow.lifecycle-event', lifecycleEventError, 'Quote outcome was saved, but the lifecycle event could not be recorded.') };
+  if (lifecycleEventError?.message) {
+    logServerError('recordQuoteOutcomeWorkflow.lifecycle-event-nonblocking', lifecycleEventError);
+  }
 
   const { error: negotiationError } = await insertNegotiationEvent(db, {
     quote_id: quoteId,
@@ -1190,7 +1194,9 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     message: body,
     payload: { source: 'recordQuoteOutcomeWorkflow', outcome: requestedOutcome, lifecycle_outcome: lifecycleOutcome, contract_id: handoffContractId, order_id: handoffOrderId },
   });
-  if (negotiationError?.message) return { error: quoteActionError('recordQuoteOutcomeWorkflow.negotiation-event', negotiationError, 'Quote outcome was saved, but the negotiation event could not be recorded.') };
+  if (negotiationError?.message) {
+    logServerError('recordQuoteOutcomeWorkflow.negotiation-event-nonblocking', negotiationError);
+  }
 
   await writeQuoteAuditLog({
     organizationId: organization.id,
