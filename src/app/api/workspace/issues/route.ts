@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { SETU_FLOW_ORG_ID } from '@/lib/queries/workspace';
 
+function normalizeStoredIssueStatus(status: unknown) {
+  const value = String(status ?? '').trim();
+  const normalized = value.toLowerCase();
+  if (normalized === 'in_review' || normalized === 'in-review' || normalized === 'review' || normalized === 'in review') return 'in_review';
+  return value || 'Open';
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sprint = searchParams.get('sprint');
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest) {
     issue_number: nextNum,
     issue_ref,
     sprint_name: body.sprint_name ?? `Sprint ${body.sprint_number}`,
-    status: body.status ?? 'Open',
+    status: normalizeStoredIssueStatus(body.status ?? 'Open'),
     severity: body.severity ?? 'Medium',
     category: (body.issue_category ?? body.category ?? 'Bug').toLowerCase(),
     reporter_name: body.reporter_name ?? 'Ritesh Kapoor',
