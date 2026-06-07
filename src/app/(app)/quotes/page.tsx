@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PremiumActiveChip, PremiumCommandBar, PremiumField, PremiumInput, PremiumSelect } from '@/components/ui/premium-command-bar';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -40,7 +39,11 @@ type CustomerGroup = {
   contactName: string | null;
   leadType: string | null;
   quotes: EnhancedQuoteItem[];
-  activeValue: number;
+  proposedValue: number;
+  acceptedValue: number;
+  orderValue: number;
+  riskValue: number;
+  archiveValue: number;
   quoteCount: number;
   sentCount: number;
   revisionCount: number;
@@ -131,6 +134,33 @@ function isArchiveLifecycle(lifecycle: string) {
   return ['expired','rejected'].includes(lifecycle);
 }
 
+function getQuoteValueBucket(item: EnhancedQuoteItem) {
+  const lifecycle = getQuoteLifecycle(item);
+  if (lifecycle === 'risk') return 'risk';
+  if (isArchiveLifecycle(lifecycle)) return 'archive';
+  if (lifecycle === 'accepted' && item.hasAcceptedContract) return 'order';
+  if (lifecycle === 'accepted') return 'accepted';
+  return 'proposed';
+}
+
+function getValueBreakdown(quotes: EnhancedQuoteItem[]) {
+  return quotes.reduce((acc, quote) => {
+    const amount = Number(quote.subtotal ?? 0);
+    const bucket = getQuoteValueBucket(quote);
+    if (bucket === 'proposed') acc.proposedValue += amount;
+    if (bucket === 'accepted') acc.acceptedValue += amount;
+    if (bucket === 'order') acc.orderValue += amount;
+    if (bucket === 'risk') acc.riskValue += amount;
+    if (bucket === 'archive') acc.archiveValue += amount;
+    return acc;
+  }, { proposedValue: 0, acceptedValue: 0, orderValue: 0, riskValue: 0, archiveValue: 0 });
+}
+
+function getCustomerExposure(group: Pick<CustomerGroup, 'proposedValue' | 'acceptedValue' | 'orderValue'>) {
+  return Math.max(group.proposedValue, group.acceptedValue, group.orderValue);
+}
+
+
 function getRecommendedAction(quotes: EnhancedQuoteItem[]) {
   const risk = quotes.find((quote) => getQuoteLifecycle(quote) === 'risk');
   if (risk) return { tone: 'rose' as const, title: 'Resolve quote data risk', body: 'Accepted quote has no commercial value or line items. Review before order handoff.', quote: risk };
@@ -184,15 +214,19 @@ function groupQuotesByCustomer(items: EnhancedQuoteItem[]): CustomerGroup[] {
       if (pa !== pb) return pa - pb;
       return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
     });
-    const activeQuotes = sorted.filter((quote) => !isArchiveLifecycle(getQuoteLifecycle(quote)));
     const recommended = getRecommendedAction(sorted);
+    const values = getValueBreakdown(sorted);
     return {
       key,
       companyName: sorted[0]?.companyName ?? 'Unknown customer',
       contactName: sorted[0]?.contactName ?? null,
       leadType: sorted[0]?.leadType ?? null,
       quotes: sorted,
-      activeValue: activeQuotes.reduce((sum, quote) => sum + Number(quote.subtotal ?? 0), 0),
+      proposedValue: values.proposedValue,
+      acceptedValue: values.acceptedValue,
+      orderValue: values.orderValue,
+      riskValue: values.riskValue,
+      archiveValue: values.archiveValue,
       quoteCount: sorted.length,
       sentCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'sent').length,
       revisionCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'revision_requested').length,
@@ -427,8 +461,8 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
 
     const workspace = await getWorkspaceAccess();
     if (!workspace.user || !workspace.organization) redirect('/quotes?notice=quote-auth-required');
-    const currentUser = workspace.user;
-    const organization = workspace.organization;
+    const currentUser = workspace.user!;
+    const organization = workspace.organization!;
     const supabase: any = await createClient();
     const db: any = supabase;
     const { data: existing, error } = await db
@@ -487,13 +521,21 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   }
 
   const activeItems = enhancedItems.filter((quote) => !isArchiveLifecycle(getQuoteLifecycle(quote)));
+  const filteredActiveItems = filteredItems.filter((quote) => !isArchiveLifecycle(getQuoteLifecycle(quote)));
   const sentActiveCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'sent').length;
   const revisionCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'revision_requested').length;
   const acceptedCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'accepted').length;
   const riskCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'risk').length;
   const expiringSoonCount = activeItems.filter((quote) => ['amber','rose'].includes(getValidityLabel(quote).tone) && getQuoteLifecycle(quote) === 'sent').length;
   const archiveCount = enhancedItems.filter((quote) => isArchiveLifecycle(getQuoteLifecycle(quote))).length;
-  const activeValue = activeItems.reduce((sum, quote) => sum + Number(quote.subtotal ?? 0), 0);
+  const filteredValues = getValueBreakdown(filteredActiveItems);
+  const selectedValues = selectedGroup ? {
+    proposedValue: selectedGroup.proposedValue,
+    acceptedValue: selectedGroup.acceptedValue,
+    orderValue: selectedGroup.orderValue,
+    riskValue: selectedGroup.riskValue,
+    archiveValue: selectedGroup.archiveValue,
+  } : getValueBreakdown(selected ? [selected] : []);
   const topGroup = customerGroups[0];
   const filterHref = (patch: Partial<typeof filters>) => {
     const next = { ...filters, ...patch };
@@ -520,87 +562,106 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selectedIsArchive = isArchiveLifecycle(selectedLifecycle);
   const selectedStatusStyle = selected ? getStatusStyle(selected.status, selectedLifecycle) : getStatusStyle('draft');
   const selectedProducts = selected?.lineItems.slice(0, 4) ?? [];
+  const customerSections = [
+    { title: 'Needs Review', caption: 'Data risk and invalid commercial records', groups: customerGroups.filter((group) => group.riskCount > 0), tone: '#dc2626' },
+    { title: 'Revision Requested', caption: 'Buyer asked for a better quote', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount > 0), tone: '#d97706' },
+    { title: 'Order Handoff', caption: 'Accepted value ready for Orders', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount > 0), tone: '#059669' },
+    { title: 'Follow-up Due', caption: 'Sent quotes need outcomes', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount > 0), tone: '#0c7fff' },
+    { title: 'Archive / Closed', caption: 'Expired or rejected history', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.archiveCount > 0), tone: '#64748b' },
+    { title: 'Draft / Other', caption: 'Quotes still being prepared', groups: customerGroups.filter((group) => group.riskCount === 0 && group.revisionCount === 0 && group.acceptedCount === 0 && group.sentCount === 0 && group.archiveCount === 0), tone: '#64748b' },
+  ].filter((section) => section.groups.length > 0);
 
   return (
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
-      <form action="/quotes" style={{padding:'14px 24px 0'}}>
-        {filters.mode !== 'all' ? <input type="hidden" name="mode" value={filters.mode} /> : null}
-        <PremiumCommandBar
-          label="Quote lifecycle filters"
-          summary={<>{customerGroups.length} customers · {formatQuoteMoney(activeValue,'USD')} active value · {archiveCount} archived</>}
-          activeChips={activeQuoteFilterChips.length ? <>{activeQuoteFilterChips.map((chip) => <PremiumActiveChip key={chip.key} label={chip.label} href={chip.href} tone={chip.tone} />)}</> : null}
-          reset={activeQuoteFilterChips.length ? <Link href="/quotes" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Clear all</Link> : null}
-        >
-          <PremiumField label="Search" icon="Search" className="md:min-w-[320px]">
-            <PremiumInput name="q" defaultValue={filters.q} placeholder="Customer, quote ref, product, contact..." />
-          </PremiumField>
-          <PremiumField label="Lifecycle" icon="Status" className="md:min-w-[230px]">
-            <PremiumSelect name="status" defaultValue={filters.status}>
-              {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All quotes':s==='active'?'Active lifecycle':labelizeStatus(s)}</option>)}
-            </PremiumSelect>
-          </PremiumField>
-          <button type="submit" className="h-9 rounded-xl bg-slate-950 px-4 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(15,23,42,.14)] transition hover:bg-slate-800">Apply</button>
-        </PremiumCommandBar>
-      </form>
-
-      <div className="px-5 pb-10 pt-3 flex flex-col gap-4">
-        <section style={{background:'linear-gradient(135deg,#ffffff,#f8fbff)',border:'1px solid #dbe4ef',borderRadius:'26px',boxShadow:'0 18px 55px rgba(15,23,42,.10)',overflow:'hidden'}}>
-          <div style={{padding:'18px 22px'}}>
-            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'14px',flexWrap:'wrap'}}>
-              <div>
-                <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Quote Command Center</div>
-                <h2 style={{margin:'4px 0 0',fontSize:'26px',fontWeight:950,letterSpacing:'-.04em',color:'#0f172a'}}>Customer quote lifecycle</h2>
-                <p style={{margin:'6px 0 0',maxWidth:'760px',fontSize:'13px',lineHeight:1.6,color:'#64748b'}}>Work from customer stories, not quote rows. Sent quotes need explicit outcomes. Accepted quotes move to Orders. Expired and rejected records leave active work but remain searchable in Archive.</p>
-              </div>
-              {topGroup ? <Link href={`/quotes?quoteId=${topGroup.recommended.quote.id}`} style={{alignSelf:'center',border:'1px solid #dbe4ef',background:'#0b2e4a',color:'white',borderRadius:'14px',padding:'10px 14px',fontSize:'12px',fontWeight:900,textDecoration:'none'}}>Open top priority</Link> : null}
+      <div style={{padding:'10px 24px 0'}}>
+        <section style={{background:'white',border:'1px solid #dbe4ef',borderRadius:'20px',boxShadow:'0 10px 28px rgba(15,23,42,.06)',padding:'10px 12px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(6,minmax(0,1fr))',gap:'8px',marginBottom:'10px'}}>
+            {[
+              ['Follow-up', sentActiveCount, 'Sent outcomes', 'blue', 'sent'],
+              ['Revisions', revisionCount, 'Better quote', 'amber', 'revision_requested'],
+              ['Order handoff', acceptedCount, 'Accepted value', 'green', 'accepted'],
+              ['Data risk', riskCount, 'Review first', 'rose', 'risk'],
+              ['Expiring', expiringSoonCount, 'Guru prompt', 'amber', 'sent'],
+              ['Archive', archiveCount, 'Closed history', 'slate', 'archive'],
+            ].map(([label,value,meta,tone,status]) => (
+              <Link key={String(label)} href={filterHref({ status: String(status) })} style={{border:'1px solid #e2e8f0',borderRadius:'14px',background:'white',padding:'9px 10px',textDecoration:'none',color:'#0f172a',borderTop:`3px solid ${tone==='green'?'#059669':tone==='blue'?'#0c7fff':tone==='rose'?'#dc2626':tone==='amber'?'#d97706':'#64748b'}`}}>
+                <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
+                <div style={{display:'flex',alignItems:'baseline',gap:'6px',marginTop:'2px'}}><span style={{fontSize:'18px',fontWeight:950}}>{value}</span><span style={{fontSize:'10px',color:'#64748b',fontWeight:750}}>{meta}</span></div>
+              </Link>
+            ))}
+          </div>
+          <form action="/quotes" style={{display:'grid',gridTemplateColumns:'minmax(260px,1.4fr) repeat(5,minmax(120px,.75fr)) auto',gap:'8px',alignItems:'end'}}>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Search</span><input name="q" defaultValue={filters.q} placeholder="Customer, quote, product, contact..." style={filterInputStyle()} /></label>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Lifecycle</span><select name="status" defaultValue={filters.status} style={filterInputStyle()}>{FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All quotes':s==='active'?'Active':labelizeStatus(s)}</option>)}</select></label>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Customer</span><input name="company" defaultValue={filters.company} placeholder="Any" style={filterInputStyle()} /></label>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>From</span><input name="from" type="date" defaultValue={filters.from} style={filterInputStyle()} /></label>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>To</span><input name="to" type="date" defaultValue={filters.to} style={filterInputStyle()} /></label>
+            <label style={{display:'grid',gap:'4px'}}><span style={filterLabelStyle()}>Mode</span><select name="mode" defaultValue={filters.mode} style={filterInputStyle()}>{FILTER_MODES.map(mode => <option key={mode} value={mode}>{mode}</option>)}</select></label>
+            <button type="submit" style={{height:'38px',border:0,borderRadius:'12px',background:'#0b1020',color:'white',fontSize:'12px',fontWeight:900,padding:'0 14px',boxShadow:'0 8px 22px rgba(15,23,42,.14)'}}>Apply</button>
+          </form>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',borderTop:'1px solid #edf2f7',marginTop:'10px',paddingTop:'8px',flexWrap:'wrap'}}>
+            <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+              {activeQuoteFilterChips.length ? activeQuoteFilterChips.map((chip) => <Link key={chip.key} href={chip.href} style={activeChipStyle(chip.tone)}>{chip.label}</Link>) : <span style={{fontSize:'11px',fontWeight:800,color:'#64748b'}}>Active lifecycle view</span>}
+              {activeQuoteFilterChips.length ? <Link href="/quotes" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Clear all</Link> : null}
             </div>
-            <div style={{marginTop:'16px',display:'grid',gridTemplateColumns:'repeat(6,minmax(0,1fr))',gap:'10px'}}>
-              {[
-                ['Follow-up', sentActiveCount, 'Sent quotes need outcomes', 'blue', 'sent'],
-                ['Revision requested', revisionCount, 'Create governed versions', 'amber', 'revision_requested'],
-                ['Order handoff', acceptedCount, 'Accepted quotes move to Orders', 'green', 'accepted'],
-                ['Data risk', riskCount, 'Accepted zero-line review', 'rose', 'risk'],
-                ['Expiring soon', expiringSoonCount, 'Guru should prompt action', 'amber', 'sent'],
-                ['Archive', archiveCount, 'Rejected / expired records', 'slate', 'archive'],
-              ].map(([label,value,meta,tone,status]) => (
-                <Link key={String(label)} href={filterHref({ status: String(status) })} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'12px',textDecoration:'none',color:'#0f172a',borderTop:`4px solid ${tone==='green'?'#059669':tone==='blue'?'#0c7fff':tone==='rose'?'#dc2626':tone==='amber'?'#d97706':'#64748b'}`}}>
-                  <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.13em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
-                  <div style={{fontSize:'22px',fontWeight:950,marginTop:'3px'}}>{value}</div>
-                  <div style={{fontSize:'10px',color:'#64748b',fontWeight:750}}>{meta}</div>
-                </Link>
-              ))}
-            </div>
+            <div style={{fontSize:'11px',fontWeight:850,color:'#64748b'}}>Proposed {formatQuoteMoney(filteredValues.proposedValue,'USD')} · Accepted {formatQuoteMoney(filteredValues.acceptedValue,'USD')} · Order {formatQuoteMoney(filteredValues.orderValue,'USD')} · Risk {formatQuoteMoney(filteredValues.riskValue,'USD')}</div>
           </div>
         </section>
+      </div>
 
+      <div className="px-5 pb-10 pt-3 flex flex-col gap-4">
         <div style={{display:'grid',gridTemplateColumns:'410px minmax(0,1fr)',gap:'16px',alignItems:'start'}}>
           <section style={{background:'white',border:'1px solid #dbe4ef',borderRadius:'24px',boxShadow:'0 10px 28px rgba(15,23,42,.06)',padding:'14px'}}>
             <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px',marginBottom:'10px'}}>
               <div><div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Customers</div><h3 style={{fontSize:'18px',fontWeight:950,margin:'2px 0 0'}}>Grouped lifecycle worklist</h3></div>
               <span style={{fontSize:'11px',color:'#64748b',fontWeight:850}}>{customerGroups.length} groups</span>
             </div>
-            <div style={{display:'grid',gap:'10px'}}>
-              {customerGroups.length ? customerGroups.map((group) => {
-                const tone = group.riskCount ? '#dc2626' : group.revisionCount ? '#d97706' : group.acceptedCount ? '#059669' : group.sentCount ? '#0c7fff' : '#64748b';
-                const active = selectedGroup?.key === group.key;
+            <div style={{display:'grid',gap:'12px',maxHeight:'calc(100vh - 250px)',overflowY:'auto',paddingRight:'2px'}}>
+              {customerSections.length ? customerSections.map((section) => {
+                const visibleGroups = section.groups.slice(0, 6);
+                const hiddenCount = Math.max(0, section.groups.length - visibleGroups.length);
                 return (
-                  <Link key={group.key} href={`/quotes?quoteId=${group.recommended.quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}`} style={{display:'block',position:'relative',overflow:'hidden',border:'1px solid',borderColor:active ? '#0c7fff' : '#dbe4ef',boxShadow:active ? '0 0 0 3px rgba(12,127,255,.10)' : 'none',borderRadius:'18px',background:'white',padding:'13px 13px 13px 16px',textDecoration:'none',color:'#0f172a'}}>
-                    <span style={{position:'absolute',left:0,top:0,bottom:0,width:'4px',background:tone}} />
-                    <div style={{display:'flex',justifyContent:'space-between',gap:'10px'}}>
-                      <div style={{minWidth:0}}>
-                        <div style={{fontSize:'14px',fontWeight:950,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{group.companyName}</div>
-                        <div style={{fontSize:'11px',color:'#64748b',fontWeight:750}}>{group.contactName ?? 'No contact'} · {group.quoteCount} quotes · active {formatQuoteMoney(group.activeValue, group.quotes[0]?.currency)}</div>
+                  <div key={section.title} style={{border:'1px solid #edf2f7',borderRadius:'18px',background:'#fbfdff',padding:'10px'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',marginBottom:'8px'}}>
+                      <div>
+                        <div style={{fontSize:'10px',fontWeight:950,color:section.tone,textTransform:'uppercase',letterSpacing:'.14em'}}>{section.title}</div>
+                        <div style={{fontSize:'10px',fontWeight:750,color:'#64748b'}}>{section.caption}</div>
                       </div>
-                      <div style={{fontSize:'10px',fontWeight:950,color:tone,whiteSpace:'nowrap'}}>{group.recommended.title.split(' ').slice(0,2).join(' ')}</div>
+                      <span style={{fontSize:'10px',fontWeight:950,color:'#64748b'}}>{section.groups.length}</span>
                     </div>
-                    <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginTop:'9px'}}>
-                      {group.sentCount ? <span style={badgeStyle('#eff6ff','#bfdbfe','#1d4ed8')}>{group.sentCount} sent</span> : null}
-                      {group.revisionCount ? <span style={badgeStyle('#fff7ed','#fed7aa','#9a3412')}>{group.revisionCount} revision</span> : null}
-                      {group.acceptedCount ? <span style={badgeStyle('#ecfdf5','#a7f3d0','#047857')}>{group.acceptedCount} accepted</span> : null}
-                      {group.riskCount ? <span style={badgeStyle('#fff1f2','#fecaca','#dc2626')}>{group.riskCount} risk</span> : null}
-                      {group.archiveCount ? <span style={badgeStyle('#f8fafc','#cbd5e1','#334155')}>{group.archiveCount} archive</span> : null}
+                    <div style={{display:'grid',gap:'8px'}}>
+                      {visibleGroups.map((group) => {
+                        const tone = group.riskCount ? '#dc2626' : group.revisionCount ? '#d97706' : group.acceptedCount ? '#059669' : group.sentCount ? '#0c7fff' : '#64748b';
+                        const active = selectedGroup?.key === group.key;
+                        return (
+                          <Link key={group.key} href={`/quotes?quoteId=${group.recommended.quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}`} style={{display:'block',position:'relative',overflow:'hidden',border:'1px solid',borderColor:active ? '#0c7fff' : '#dbe4ef',boxShadow:active ? '0 0 0 3px rgba(12,127,255,.10)' : 'none',borderRadius:'16px',background:'white',padding:'11px 11px 11px 14px',textDecoration:'none',color:'#0f172a'}}>
+                            <span style={{position:'absolute',left:0,top:0,bottom:0,width:'4px',background:tone}} />
+                            <div style={{display:'flex',justifyContent:'space-between',gap:'10px'}}>
+                              <div style={{minWidth:0}}>
+                                <div style={{fontSize:'13px',fontWeight:950,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{group.companyName}</div>
+                                <div style={{fontSize:'10px',color:'#64748b',fontWeight:750}}>{group.contactName ?? 'No contact'} · {group.quoteCount} quotes</div>
+                              </div>
+                              <div style={{fontSize:'10px',fontWeight:950,color:tone,whiteSpace:'nowrap'}}>{group.recommended.title.split(' ').slice(0,2).join(' ')}</div>
+                            </div>
+                            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px',marginTop:'8px'}}>
+                              <span style={{fontSize:'10px',fontWeight:850,color:'#334155'}}>Proposed {formatQuoteMoney(group.proposedValue, group.quotes[0]?.currency)}</span>
+                              <span style={{fontSize:'10px',fontWeight:850,color:'#047857'}}>Accepted {formatQuoteMoney(group.acceptedValue, group.quotes[0]?.currency)}</span>
+                              {group.orderValue ? <span style={{fontSize:'10px',fontWeight:850,color:'#0c7fff'}}>Order {formatQuoteMoney(group.orderValue, group.quotes[0]?.currency)}</span> : null}
+                              {group.riskCount ? <span style={{fontSize:'10px',fontWeight:850,color:'#dc2626'}}>Risk {formatQuoteMoney(group.riskValue, group.quotes[0]?.currency)}</span> : null}
+                            </div>
+                            <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginTop:'8px'}}>
+                              {group.sentCount ? <span style={badgeStyle('#eff6ff','#bfdbfe','#1d4ed8')}>{group.sentCount} sent</span> : null}
+                              {group.revisionCount ? <span style={badgeStyle('#fff7ed','#fed7aa','#9a3412')}>{group.revisionCount} revision</span> : null}
+                              {group.acceptedCount ? <span style={badgeStyle('#ecfdf5','#a7f3d0','#047857')}>{group.acceptedCount} accepted</span> : null}
+                              {group.riskCount ? <span style={badgeStyle('#fff1f2','#fecaca','#dc2626')}>{group.riskCount} risk</span> : null}
+                              {group.archiveCount ? <span style={badgeStyle('#f8fafc','#cbd5e1','#334155')}>{group.archiveCount} archive</span> : null}
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
-                  </Link>
+                    {hiddenCount ? <Link href={filterHref({ status: section.title === 'Archive / Closed' ? 'archive' : filters.status })} style={{display:'block',marginTop:'8px',fontSize:'11px',fontWeight:900,color:'#0c7fff',textDecoration:'none'}}>View {hiddenCount} more</Link> : null}
+                  </div>
                 );
               }) : <p style={{fontSize:'13px',color:'#64748b'}}>No customer groups match the active filters.</p>}
             </div>
@@ -620,16 +681,31 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                 </div>
               </div>
 
-              <div style={{marginTop:'14px',display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:'10px'}}>
+              <div style={{marginTop:'14px',display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:'10px'}}>
                 {[
-                  ['Active value', formatQuoteMoney(selectedGroup?.activeValue ?? selected.subtotal, selected.currency)],
-                  ['Line items', String(selected.lineItems.length)],
-                  ['Version', `v${selected.totalVersions || 1}`],
-                  ['Validity', getValidityLabel(selected).label],
-                ].map(([label,value]) => (
+                  ['Proposed', formatQuoteMoney(selectedValues.proposedValue, selected.currency), '#0b2e4a'],
+                  ['Accepted', formatQuoteMoney(selectedValues.acceptedValue, selected.currency), '#047857'],
+                  ['Order value', formatQuoteMoney(selectedValues.orderValue, selected.currency), '#0c7fff'],
+                  ['Risk value', formatQuoteMoney(selectedValues.riskValue, selected.currency), '#dc2626'],
+                  ['Exposure', formatQuoteMoney(Math.max(selectedValues.proposedValue, selectedValues.acceptedValue, selectedValues.orderValue), selected.currency), '#0f172a'],
+                ].map(([label,value,color]) => (
                   <div key={label} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'11px 12px'}}>
                     <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
-                    <div style={{marginTop:'4px',fontSize:'14px',fontWeight:900,color:'#0f172a'}}>{value}</div>
+                    <div style={{marginTop:'4px',fontSize:'14px',fontWeight:900,color:String(color)}}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{marginTop:'8px',display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:'8px'}}>
+                {[
+                  ['Selected lines', String(selected.lineItems.length)],
+                  ['Version', `v${selected.totalVersions || 1}`],
+                  ['Validity', getValidityLabel(selected).label],
+                  ['Selected quote', formatQuoteMoney(selected.subtotal, selected.currency)],
+                ].map(([label,value]) => (
+                  <div key={label} style={{border:'1px solid #edf2f7',borderRadius:'14px',background:'#fbfdff',padding:'9px 10px'}}>
+                    <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
+                    <div style={{marginTop:'3px',fontSize:'12px',fontWeight:900,color:'#0f172a'}}>{value}</div>
                   </div>
                 ))}
               </div>
@@ -778,4 +854,20 @@ function primaryLink(background: string): CSSProperties {
 }
 function secondaryLink(color: string, borderColor: string): CSSProperties {
   return { display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid',borderColor,background:'white',color,fontWeight:900,textDecoration:'none' };
+}
+
+function filterLabelStyle(): CSSProperties {
+  return { fontSize:'9px', fontWeight:950, letterSpacing:'.14em', color:'#94a3b8', textTransform:'uppercase' };
+}
+function filterInputStyle(): CSSProperties {
+  return { height:'38px', border:'1px solid #dbe4ef', borderRadius:'12px', padding:'0 11px', fontSize:'12px', fontWeight:800, color:'#0f172a', background:'white', minWidth:0 };
+}
+
+function activeChipStyle(tone: 'blue' | 'amber' | 'violet'): CSSProperties {
+  const tones = {
+    blue: { background:'#eff6ff', border:'#bfdbfe', color:'#1d4ed8' },
+    amber: { background:'#fffbeb', border:'#fde68a', color:'#92400e' },
+    violet: { background:'#f5f3ff', border:'#ddd6fe', color:'#6d28d9' },
+  }[tone];
+  return { display:'inline-flex', alignItems:'center', border:'1px solid', borderColor:tones.border, background:tones.background, color:tones.color, borderRadius:'999px', padding:'4px 9px', fontSize:'11px', fontWeight:900, textDecoration:'none' };
 }

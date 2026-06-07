@@ -1,28 +1,55 @@
-# Sprint 24 S24-205 through S24-208 mitigation
+# S24-205 through S24-208 Quote Lifecycle Command Center Mitigation
 
-This mitigation documents the additive live Supabase changes and repo fallback for the Quote Lifecycle Command Center enhancements.
+## Current follow-up pass
 
-## Live DB additions
+This pass refines the first lifecycle implementation after live screenshot review.
 
-- `public.quotes.archived_at`
-- `public.quotes.archive_reason`
-- `public.quotes.lifecycle_outcome`
-- `public.quotes.follow_up_at`
-- `public.quotes.last_customer_response_at`
-- `public.quote_lifecycle_events`
+### Key corrections
 
-All changes are additive. Existing quote history is not destructively mutated. Current sent/accepted/rejected/expired records receive lifecycle classification metadata only.
+- Replaced the tall filter/dashboard block with a compact premium control strip closer to Orders.
+- Added denser KPI tiles above filters so managers reach the work area faster.
+- Added additional filters in one row: search, lifecycle, customer, from date, to date, and mode.
+- Replaced the single endless grouped customer scroll with priority sections:
+  - Needs Review
+  - Revision Requested
+  - Order Handoff
+  - Follow-up Due
+  - Archive / Closed
+  - Draft / Other
+- Added per-section limiting to reduce the side-scroll wall and keep priority groups readable.
+- Corrected customer value logic so sent and accepted quotes are not double-counted as one active value.
+- Added separate value buckets:
+  - Proposed value
+  - Accepted value
+  - Order value
+  - Risk value
+  - Archive value
+- Claude sample behavior corrected:
+  - Q21 sent = proposed USD 35
+  - Q22 accepted zero-line = data risk USD 0
+  - Q23 accepted = accepted/order-ready USD 35
+  - The customer panel must not display USD 70 as one active value.
 
-## Product rules implemented in repo
+## Database mitigation
 
-- Customer-grouped quote worklist replaces quote-row-first mental model.
-- Default quote view hides expired/rejected records from active work and exposes them under Archive.
-- Sent quotes expose explicit outcome buttons: accepted, rejected, revision requested, no response, expired.
-- Accepted quotes route execution to Orders; quote remains locked/read-only context.
-- Accepted zero-line quotes are flagged as data-risk and blocked from normal order-handoff hierarchy.
-- Revision-requested outcome keeps sent quote locked and logs lifecycle intent for governed revision.
-- Setu Guru guidance appears in the selected customer quote story and explains the next lifecycle step.
+Live Supabase already received additive lifecycle metadata:
 
-## Rollback
+- `quotes.archived_at`
+- `quotes.archive_reason`
+- `quotes.lifecycle_outcome`
+- `quotes.follow_up_at`
+- `quotes.last_customer_response_at`
+- `quote_lifecycle_events`
 
-The repo change can be reverted independently. The live DB additions are additive and can remain without affecting older code. If rollback is required, hide the new route UI and keep `quote_lifecycle_events` as harmless audit data.
+No destructive data migration is required for this UI/value correction pass. The repo migration remains additive and idempotent.
+
+## Regression checklist
+
+1. Open `/quotes?quoteId=9ed66c7c-b44d-4496-9188-4835de55b44c&mode=buyers`.
+2. Confirm the top filter/KPI area is compact and no longer consumes excessive vertical space.
+3. Confirm the customer worklist is sectioned by priority instead of one undifferentiated scroll wall.
+4. Confirm Claude shows separated values: proposed, accepted, order, risk, and exposure.
+5. Confirm Claude does not show USD 70 as a single active value.
+6. Confirm Q21 is sent/proposed, Q22 is data risk, and Q23 is accepted/order-ready.
+7. Confirm archive mode still exposes expired/rejected records.
+8. Confirm mobile layout still stacks cards and keeps actions usable.
