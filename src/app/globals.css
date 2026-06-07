@@ -18,6 +18,13 @@ html {
   scrollbar-gutter: stable both-edges;
 }
 
+html.drawer-open,
+body.drawer-open {
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 body {
   @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
   min-height: 100vh;
@@ -34,6 +41,47 @@ body {
 
 body.drawer-open {
   overflow: hidden;
+}
+
+body.drawer-open > div[role="presentation"] {
+  height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] {
+  background: #ffffff !important;
+  display: flex !important;
+  filter: none !important;
+  min-height: 0 !important;
+  opacity: 1 !important;
+  overflow: hidden !important;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:first-child {
+  flex: 0 0 auto !important;
+  z-index: 60 !important;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:first-child button[aria-label="Close drawer"] {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 70 !important;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:nth-last-child(2) {
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow-y: scroll !important;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:last-child {
+  flex: 0 0 auto !important;
+  z-index: 50 !important;
 }
 
 * {
@@ -92,7 +140,36 @@ button {
   display: none;
 }
 
+button[aria-label="Toggle Setu Guru"] {
+  position: fixed !important;
+  right: 1rem !important;
+  bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  z-index: 610 !important;
+}
+
+#app-content > header.sticky {
+  z-index: 500 !important;
+}
+
+button[aria-label="Open notifications"] + section,
+button[aria-haspopup="menu"] + [role="menu"] {
+  z-index: 810 !important;
+}
+
+@media (min-width: 640px) {
+  body.drawer-open > div[role="presentation"] > div[role="dialog"].max-w-\[540px\] {
+    flex: 0 0 min(540px, calc(100vw - 24px)) !important;
+    width: min(540px, calc(100vw - 24px)) !important;
+    max-width: min(540px, calc(100vw - 24px)) !important;
+  }
+}
+
 @media (min-width: 768px) {
+  button[aria-label="Toggle Setu Guru"] {
+    right: 1.5rem !important;
+    bottom: 1.5rem !important;
+  }
+
   aside nav a[href^="/dashboard/analytics"],
   aside nav a[href^="/reports"] {
     display: none;
@@ -116,6 +193,21 @@ button {
   }
 }
 
+@media (max-width: 639px) {
+  body.drawer-open {
+    padding-bottom: 0 !important;
+  }
+
+  body.drawer-open > div[role="presentation"] > button[aria-label="Close drawer"] {
+    display: none !important;
+  }
+
+  body.drawer-open > div[role="presentation"] > div[role="dialog"] {
+    flex: 0 0 100vw !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+}
 
 @media (max-width: 767px) {
   body {

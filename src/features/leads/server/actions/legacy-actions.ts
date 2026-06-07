@@ -3404,3 +3404,197 @@ export async function saveLeadCommunicationDraft(_: ActionState | undefined, for
   revalidateLeadSurfaces(leadId);
   return { success: scheduledAt ? 'Communication scheduled.' : 'Communication draft saved.' };
 }
+
+
+async function createLeadQuoteDraftFromSource(input: {
+  leadId: string;
+  sourceQuoteId?: string | null;
+  mode: 'new' | 'revision' | 'repeat';
+}): Promise<QuoteDraftActionState & { quote?: any; version?: any }> {
+  if (!hasSupabaseEnv) return { error: 'Missing Supabase environment variables.' };
+
+  const workspace = await requireWorkspace();
+  const currentUser = workspace.user;
+  const organization = workspace.organization;
+
+  if (!currentUser || !organization) return { error: 'Not authenticated.' };
+  if (!input.leadId) return { error: 'Lead ID is required.' };
+
+  const supabase: any = await createClient();
+  const db: any = supabase;
+
+  const { data: leadRecord, error: leadError } = await db
+    .from('leads')
+    .select('id, organization_id, company_name, deal_currency')
+    .eq('organization_id', organization.id)
+    .eq('id', input.leadId)
+    .maybeSingle();
+
+  if (leadError) return { error: leadError.message };
+  if (!leadRecord?.id) return { error: 'Lead not found in the active workspace.' };
+
+  const quoteGate = await getLeadQuoteGate(db, organization.id, input.leadId);
+  if (!quoteGate.ok) return { error: quoteGate.error };
+
+  let sourceQuote: any = null;
+  let sourceLineItems: any[] = [];
+  if (input.sourceQuoteId) {
+    const { data: source, error: sourceError } = await db
+      .from('quotes')
+      .select('id, lead_id, rfq_id, status, currency, display_currency, pricing_basis, notes, current_version_id, quote_number')
+      .eq('organization_id', organization.id)
+      .eq('lead_id', input.leadId)
+      .eq('id', input.sourceQuoteId)
+      .maybeSingle();
+    if (sourceError) return { error: sourceError.message };
+    if (!source?.id) return { error: 'Source quote was not found for this lead.' };
+    sourceQuote = source;
+
+    const { data: lines, error: lineError } = await db
+      .from('quote_line_items')
+      .select('product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes')
+      .eq('quote_id', source.id);
+    if (lineError) return { error: lineError.message };
+    sourceLineItems = Array.isArray(lines) ? lines : [];
+  }
+
+  const modeLabel = input.mode === 'revision'
+    ? 'governed revision'
+    : input.mode === 'repeat'
+      ? 'repeat-business clone'
+      : 'separate new quote';
+
+  const { data: quote, error: insertError } = await db
+    .from('quotes')
+    .insert({
+      organization_id: organization.id,
+      lead_id: input.leadId,
+      rfq_id: input.mode === 'new' ? null : sourceQuote?.rfq_id ?? null,
+      created_by: currentUser.id,
+      currency: sourceQuote?.currency ?? (String(leadRecord.deal_currency ?? 'USD').trim() || 'USD'),
+      display_currency: sourceQuote?.display_currency ?? normalizeQuoteDisplayCurrency(sourceQuote?.currency ?? leadRecord.deal_currency ?? 'USD'),
+      pricing_basis: sourceQuote?.pricing_basis ?? 'fob',
+      status: 'draft',
+      notes: sourceQuote?.id
+        ? `${modeLabel} created from locked quote ${sourceQuote.quote_number ?? sourceQuote.id.slice(0, 8)}. Original quote history was not mutated.`
+        : null,
+      source_type: 'lead',
+    })
+    .select('id, lead_id, status, currency, notes, created_at, updated_at, quote_number, current_version_id')
+    .single();
+
+  if (insertError) return { error: insertError.message };
+  if (!quote?.id) return { error: 'Failed to create quote draft.' };
+
+  if (sourceLineItems.length) {
+    const { error: copyLineError } = await db.from('quote_line_items').insert(sourceLineItems.map((line) => ({
+      ...line,
+      quote_id: quote.id,
+      notes: line.notes ?? `${modeLabel} copied from ${sourceQuote?.quote_number ?? sourceQuote?.id?.slice(0, 8) ?? 'source quote'}`,
+    })));
+    if (copyLineError) return { error: copyLineError.message };
+  }
+
+  const ensured = await ensureDraftQuoteVersion(db, quote, currentUser.id);
+  if (ensured.error) return { error: ensured.error };
+
+  const seeded = await ensureQuoteLineItemsFromLeadCoverage(db, organization.id, quote, ensured.version?.id ?? quote.current_version_id ?? null, input.leadId);
+  if (seeded.error) return { error: seeded.error };
+
+  const newVersionId = ensured.version?.id ?? quote.current_version_id ?? null;
+  if (newVersionId && seeded.lineItems.length) {
+    const { data: existingVersionLines, error: versionLineCheckError } = await db
+      .from('quote_version_line_items')
+      .select('id')
+      .eq('quote_version_id', newVersionId)
+      .limit(1);
+    if (versionLineCheckError) return { error: versionLineCheckError.message };
+    if (!Array.isArray(existingVersionLines) || existingVersionLines.length === 0) {
+      const versionLineRows = seeded.lineItems.map((line: any, index: number) => ({
+        quote_version_id: newVersionId,
+        product_id: line.product_id,
+        product_variant_id: line.product_variant_id,
+        sku_code: `CLONE-${index + 1}`,
+        product_name: line.notes || `Line ${index + 1}`,
+        category_type: '',
+        basis_applied: sourceQuote?.pricing_basis ?? 'fob',
+        pricing_mode: 'case',
+        moq: line.quantity ?? 1,
+        final_unit_price: line.unit_price ?? 0,
+        display_currency: normalizeQuoteDisplayCurrency(line.currency ?? quote.currency),
+        is_overridden: Boolean(line.is_price_overridden),
+        override_reason: line.override_reason,
+        overridden_by: line.overridden_by,
+        overridden_at: line.overridden_at,
+        line_notes: line.notes,
+        sort_order: index,
+      }));
+      const { error: versionLineInsertError } = await db.from('quote_version_line_items').insert(versionLineRows);
+      if (versionLineInsertError) return { error: versionLineInsertError.message };
+    }
+    const { error: versionCountError } = await db
+      .from('quote_versions')
+      .update({ total_line_count: seeded.lineItems.length, updated_at: new Date().toISOString() })
+      .eq('id', newVersionId);
+    if (versionCountError) return { error: versionCountError.message };
+  }
+
+  await insertActivity(db, {
+    organization_id: organization.id,
+    lead_id: input.leadId,
+    actor_user_id: currentUser.id,
+    kind: 'quote_created',
+    message: sourceQuote?.id
+      ? `Quote ${quote.id.slice(0, 8)} created as ${modeLabel} from ${sourceQuote.quote_number ?? sourceQuote.id.slice(0, 8)}.`
+      : `Separate quote draft created for ${leadRecord.company_name ?? 'lead'}.`,
+  });
+
+  const { error: communicationError } = await insertCommunication(db, {
+    organization_id: organization.id,
+    lead_id: input.leadId,
+    related_entity: 'quote',
+    related_id: quote.id,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: sourceQuote?.id ? 'Quote draft cloned' : 'Separate quote draft created',
+    body: sourceQuote?.id
+      ? `A ${modeLabel} draft was created from locked quote ${sourceQuote.quote_number ?? sourceQuote.id.slice(0, 8)} without changing the original quote.`
+      : 'A separate quote draft was created for this lead.',
+    summary: sourceQuote?.id ? 'Quote cloned into editable draft' : 'Separate quote draft created',
+    created_by: currentUser.id,
+    metadata: { source: 'quoteLauncher', mode: input.mode, source_quote_id: sourceQuote?.id ?? null },
+  });
+  if (communicationError?.message) return { error: communicationError.message };
+
+  await writeLeadAuditLog({
+    organizationId: organization.id,
+    actorUserId: currentUser.id,
+    action: 'quote_created',
+    entityType: 'quote',
+    entityId: quote.id,
+    next: { status: 'draft', currency: quote.currency },
+    metadata: { lead_id: input.leadId, source: 'quoteLauncher', mode: input.mode, source_quote_id: sourceQuote?.id ?? null },
+  });
+
+  revalidatePath(`/leads`);
+  revalidateLeadSurfaces(input.leadId);
+  return {
+    success: sourceQuote?.id ? 'Editable quote draft created from locked quote history.' : 'Separate quote draft created.',
+    quoteId: quote.id,
+    quote: { ...quote, current_version_id: ensured.version?.id ?? quote.current_version_id ?? null, lineItems: seeded.lineItems },
+    version: ensured.version ?? undefined,
+  };
+}
+
+export async function createNewLeadQuoteDraft(leadId: string): Promise<QuoteDraftActionState & { quote?: any; version?: any }> {
+  return createLeadQuoteDraftFromSource({ leadId, mode: 'new' });
+}
+
+export async function createQuoteRevisionFromQuote(leadId: string, quoteId: string): Promise<QuoteDraftActionState & { quote?: any; version?: any }> {
+  return createLeadQuoteDraftFromSource({ leadId, sourceQuoteId: quoteId, mode: 'revision' });
+}
+
+export async function cloneQuoteForRepeatBusiness(leadId: string, quoteId: string): Promise<QuoteDraftActionState & { quote?: any; version?: any }> {
+  return createLeadQuoteDraftFromSource({ leadId, sourceQuoteId: quoteId, mode: 'repeat' });
+}

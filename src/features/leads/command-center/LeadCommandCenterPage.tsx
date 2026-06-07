@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import { normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-basis-contract'
-import { openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions'
+import { cloneQuoteForRepeatBusiness, createNewLeadQuoteDraft, createQuoteRevisionFromQuote, openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions'
 import { moveLeadToStage } from '@/features/pipeline/server/actions'
 import type { LeadQualificationStatus } from '@/lib/lead-workflow'
 import type { LeadCommandCenterTabKey, LeadProfileSnapshot, PipelineStageItem, WorkflowActionKey } from './types'
@@ -185,6 +185,7 @@ export default function LeadCommandCenterPage({
   const [opsHistory, setOpsHistory] = useState<OperationItem[]>(initialOpsHistory)
   const [quoteBusy, setQuoteBusy] = useState(false)
   const [quoteMessage, setQuoteMessage] = useState<string | null>(null)
+  const [quoteLauncherOpen, setQuoteLauncherOpen] = useState(false)
 
   useEffect(() => {
     setLeadState(snapshot.lead)
@@ -214,6 +215,7 @@ export default function LeadCommandCenterPage({
     })
     setOpsHistory(initialOpsHistory)
     setQuoteMessage(null)
+    setQuoteLauncherOpen(false)
     setStageChangeTarget(null)
     setActiveTab(initialTab)
     setActiveWorkflowPanel(null)
@@ -320,17 +322,50 @@ export default function LeadCommandCenterPage({
     setOpsHistory((current) => [{ id: `${item.kind}-${item.happenedAt}-${current.length}`, ...item }, ...current].slice(0, 10))
   }
 
-  async function handleOpenQuoteWorkspace() {
+  async function runQuoteLauncherAction(mode: 'continue' | 'new' | 'revision' | 'repeat' | 'history' | 'response') {
     setQuoteBusy(true)
     setQuoteMessage(null)
 
     try {
-      if (commercialState.latestQuoteId) {
-        window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${commercialState.latestQuoteId}`)
+      if (mode === 'history') {
+        setActiveTab('quotes')
+        setQuoteLauncherOpen(false)
         return
       }
 
-      const result = await openOrCreateLeadQuoteDraft(leadState.id)
+      if (mode === 'response') {
+        setActiveTab('activity')
+        setQuoteLauncherOpen(false)
+        return
+      }
+
+      if (mode === 'continue') {
+        if (commercialState.latestQuoteId) {
+          window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${commercialState.latestQuoteId}`)
+          return
+        }
+        const result = await openOrCreateLeadQuoteDraft(leadState.id)
+        if (result.error) {
+          setQuoteMessage(result.error)
+          return
+        }
+        const nextQuoteId = result.quoteId ?? result.quote?.id ?? null
+        if (nextQuoteId) {
+          window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${nextQuoteId}`)
+          return
+        }
+        setQuoteMessage(result.success ?? 'Quote workspace is ready.')
+        return
+      }
+
+      const result: any = mode === 'new'
+        ? await createNewLeadQuoteDraft(leadState.id)
+        : mode === 'revision' && commercialState.latestQuoteId
+          ? await createQuoteRevisionFromQuote(leadState.id, commercialState.latestQuoteId)
+          : mode === 'repeat' && commercialState.latestQuoteId
+            ? await cloneQuoteForRepeatBusiness(leadState.id, commercialState.latestQuoteId)
+            : { error: 'Select a source quote before creating this draft.' }
+
       if (result.error) {
         setQuoteMessage(result.error)
         return
@@ -341,21 +376,27 @@ export default function LeadCommandCenterPage({
       const nextBasis = result.quote?.pricing_basis ? normalizePricingBasis(result.quote.pricing_basis) : null
       if (nextQuoteId) {
         setCommercialState((current) => ({
-          quoteCount: current.quoteCount > 0 ? current.quoteCount : 1,
+          quoteCount: current.quoteCount + 1,
           latestQuoteId: nextQuoteId,
           latestQuoteNumber: nextQuoteNumber,
           activePricingBasis: nextBasis ?? current.activePricingBasis,
         }))
+        setQuoteLauncherOpen(false)
         window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${nextQuoteId}`)
         return
       }
 
-      setQuoteMessage(result.success ?? 'Quote workspace is ready.')
+      setQuoteMessage(result.success ?? 'Quote launcher action completed.')
     } catch {
       setQuoteMessage('We could not open the quote workspace. Please try again.')
     } finally {
       setQuoteBusy(false)
     }
+  }
+
+  function handleOpenQuoteWorkspace() {
+    setQuoteMessage(null)
+    setQuoteLauncherOpen(true)
   }
 
   async function handleConfirmStageChange(stageId: string) {
@@ -391,7 +432,7 @@ export default function LeadCommandCenterPage({
           nextFollowUpAt={workflowState.nextFollowUpAt}
           quoteFocus={liveSnapshot.quoteFocus}
           nextActionSummary={liveSnapshot.nextAction.summary}
-          onOpenQuote={() => void handleOpenQuoteWorkspace()}
+          onOpenQuote={handleOpenQuoteWorkspace}
           onQuickEdit={() => openDrawer('details')}
           onEditCoverage={() => openDrawer('coverage')}
           onOpenActivity={openActivityTab}
@@ -436,7 +477,7 @@ export default function LeadCommandCenterPage({
                 activePanel={activeWorkflowPanel}
                 onPanelChange={setActiveWorkflowPanel}
                 onEditCoverage={() => openDrawer('coverage')}
-                onOpenQuote={() => void handleOpenQuoteWorkspace()}
+                onOpenQuote={handleOpenQuoteWorkspace}
                 onFollowUpSaved={(payload) => {
                   setWorkflowState((current) => ({
                     ...current,
@@ -453,7 +494,7 @@ export default function LeadCommandCenterPage({
                 quoteFocus={liveSnapshot.quoteFocus}
                 commercial={liveSnapshot.commercial}
                 activity={liveSnapshot.activity}
-                onOpenQuote={() => void handleOpenQuoteWorkspace()}
+                onOpenQuote={handleOpenQuoteWorkspace}
               />
             ) : activeTab === 'activity' ? (
               <ActivityTab
@@ -485,7 +526,8 @@ export default function LeadCommandCenterPage({
         currentStageLabel={liveSnapshot.lead.currentStage}
         hasActiveQuote={liveSnapshot.quoteFocus.hasActiveQuote}
         quoteBusy={quoteBusy}
-        onOpenQuote={() => void handleOpenQuoteWorkspace()}
+        lead={liveSnapshot.lead}
+        onOpenQuote={handleOpenQuoteWorkspace}
         onScheduleFollowUp={() => {
           setActiveTab('workflow')
           setActiveWorkflowPanel('follow_up')
@@ -495,6 +537,97 @@ export default function LeadCommandCenterPage({
         lostStageId={lostStageId}
         onMarkTerminalStage={(stageId) => void handleConfirmStageChange(stageId)}
       />
+
+      {quoteLauncherOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 sm:items-center">
+          <div className="w-full max-w-2xl rounded-[22px] border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-dark">Quote launcher</p>
+                <h2 className="mt-2 text-xl font-semibold text-slate-950">Choose the right quote path</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Existing quote history remains locked. New revisions and repeat quotes are created as separate editable drafts.
+                </p>
+              </div>
+              <button type="button" onClick={() => setQuoteLauncherOpen(false)} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600">Close</button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {commercialState.quoteCount === 0 ? (
+                <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('continue')} className="rounded-2xl border border-brand-primary/20 bg-brand-primary/5 p-4 text-left transition hover:border-brand-primary/40">
+                  <span className="text-sm font-semibold text-slate-950">Create first quote</span>
+                  <span className="mt-1 block text-sm text-slate-600">Start the first governed quote draft for this lead.</span>
+                </button>
+              ) : null}
+
+              {commercialState.latestQuoteId && ['draft', 'in_review', 'review', 'pending_approval'].includes(String(liveSnapshot.quoteFocus.status ?? '').toLowerCase()) ? (
+                <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('continue')} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+                  <span className="text-sm font-semibold text-slate-950">Continue latest draft</span>
+                  <span className="mt-1 block text-sm text-slate-600">Open the latest editable quote without creating a duplicate.</span>
+                </button>
+              ) : null}
+
+              {commercialState.quoteCount > 0 ? (
+                <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('new')} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+                  <span className="text-sm font-semibold text-slate-950">Create separate new quote</span>
+                  <span className="mt-1 block text-sm text-slate-600">Use for a second quote or separate commercial opportunity.</span>
+                </button>
+              ) : null}
+
+              {commercialState.latestQuoteId && String(liveSnapshot.quoteFocus.status ?? '').toLowerCase() === 'sent' ? (
+                <>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('continue')} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+                    <span className="text-sm font-semibold text-slate-950">View sent quote</span>
+                    <span className="mt-1 block text-sm text-slate-600">Review the locked customer-facing quote.</span>
+                  </button>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('revision')} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:border-amber-300">
+                    <span className="text-sm font-semibold text-amber-950">Create governed revision</span>
+                    <span className="mt-1 block text-sm text-amber-800">Copy sent quote into a new editable draft.</span>
+                  </button>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('response')} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+                    <span className="text-sm font-semibold text-slate-950">Log customer response</span>
+                    <span className="mt-1 block text-sm text-slate-600">Jump to the lead log for response notes.</span>
+                  </button>
+                </>
+              ) : null}
+
+              {commercialState.latestQuoteId && ['accepted', 'approved'].includes(String(liveSnapshot.quoteFocus.status ?? '').toLowerCase()) ? (
+                <>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('continue')} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+                    <span className="text-sm font-semibold text-slate-950">View accepted quote / order handoff</span>
+                    <span className="mt-1 block text-sm text-slate-600">Open the locked accepted quote and handoff context.</span>
+                  </button>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('repeat')} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left transition hover:border-emerald-300">
+                    <span className="text-sm font-semibold text-emerald-950">Clone accepted quote</span>
+                    <span className="mt-1 block text-sm text-emerald-800">Create a new repeat-business draft without changing history.</span>
+                  </button>
+                </>
+              ) : null}
+
+              {commercialState.latestQuoteId && ['rejected', 'expired'].includes(String(liveSnapshot.quoteFocus.status ?? '').toLowerCase()) ? (
+                <>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('continue')} className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+                    <span className="text-sm font-semibold text-slate-950">View locked quote</span>
+                    <span className="mt-1 block text-sm text-slate-600">Review the closed commercial record.</span>
+                  </button>
+                  <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('revision')} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:border-amber-300">
+                    <span className="text-sm font-semibold text-amber-950">Clone to new draft</span>
+                    <span className="mt-1 block text-sm text-amber-800">Use when the customer reopens the discussion.</span>
+                  </button>
+                </>
+              ) : null}
+
+              {commercialState.quoteCount > 0 ? (
+                <button type="button" disabled={quoteBusy} onClick={() => void runQuoteLauncherAction('history')} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-slate-300">
+                  <span className="text-sm font-semibold text-slate-950">View quote history</span>
+                  <span className="mt-1 block text-sm text-slate-600">Switch to the quote record and activity trail.</span>
+                </button>
+              ) : null}
+            </div>
+            {quoteBusy ? <p className="mt-4 text-sm font-semibold text-slate-600">Working on quote action…</p> : null}
+          </div>
+        </div>
+      ) : null}
 
       <LeadQuickEditDrawer
         open={editOpen}

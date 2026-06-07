@@ -88,6 +88,9 @@ export type LeadIdentity = {
   jobTitle?: string | null
   email?: string | null
   phone?: string | null
+  phoneSecondary?: string | null
+  phoneCountryCode?: string | null
+  phoneSecondaryCountryCode?: string | null
   whatsappNumber?: string | null
   country?: string | null
 }

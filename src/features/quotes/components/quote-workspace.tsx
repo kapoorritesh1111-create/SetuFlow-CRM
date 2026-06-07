@@ -79,6 +79,11 @@ type QuoteRecord = {
   created_at: string;
   updated_at: string;
   notes?: string | null;
+  quote_number?: string | null;
+  companyName?: string | null;
+  contactName?: string | null;
+  nextStep?: { label?: string | null; href?: string | null } | null;
+  contract?: { id: string; status?: string | null } | null;
   current_version_id?: string | null;
   lineItems?: Array<{
     id: string;
@@ -395,6 +400,106 @@ function getCompactProgressLabel(steps: BuilderFocusStep[] | undefined) {
   if (!builderSteps.length) return "No builder progress yet";
   const completed = builderSteps.filter((step) => step.state === "done").length;
   return `${completed}/${builderSteps.length} steps complete`;
+}
+
+
+function getOrderDiagnostic(input: {
+  quote: QuoteRecord
+  status: string
+  lineCount: number
+  canManageQuotes: boolean
+  hasContract: boolean
+  currentVersionNo: number | null
+  nextStepHref?: string | null
+}) {
+  if (!input.canManageQuotes) {
+    return {
+      tone: 'blocked',
+      label: 'No permission',
+      title: 'Role/capability required',
+      detail: 'Your current role does not include quote.send / quote management capability for order handoff actions.',
+      cta: 'Review permissions',
+      href: null,
+    }
+  }
+  if (!input.quote.current_version_id) {
+    return {
+      tone: 'blocked',
+      label: 'Version sync required',
+      title: 'Version sync required',
+      detail: 'This quote is missing current_version_id. Run the quote integrity audit/backfill before sending or accepting.',
+      cta: 'Fix version sync',
+      href: null,
+    }
+  }
+  if (input.lineCount <= 0) {
+    return {
+      tone: 'blocked',
+      label: 'Missing line items',
+      title: 'Add quote line items',
+      detail: 'A quote cannot safely move to customer send or order handoff without line items.',
+      cta: 'Add line items',
+      href: null,
+    }
+  }
+  if (input.hasContract) {
+    return {
+      tone: 'ready',
+      label: 'Existing handoff',
+      title: 'View order handoff',
+      detail: 'An order/contract handoff already exists for this quote.',
+      cta: 'View handoff',
+      href: input.nextStepHref ?? '/orders',
+    }
+  }
+  if (input.status === 'draft' || input.status === 'in_review' || input.status === 'review' || input.status === 'internal_review') {
+    return {
+      tone: 'blocked',
+      label: 'Send quote first',
+      title: 'Send quote first',
+      detail: 'Draft/in-review quotes must be sent before the accepted-to-order workflow can run.',
+      cta: 'Prepare send',
+      href: null,
+    }
+  }
+  if (input.status === 'pending_approval' || input.status === 'approval_pending') {
+    return {
+      tone: 'blocked',
+      label: 'Approval required',
+      title: 'Approval required before send',
+      detail: 'Approval must clear before this quote can be sent to the customer.',
+      cta: 'Review approval',
+      href: null,
+    }
+  }
+  if (input.status === 'sent') {
+    return {
+      tone: 'ready',
+      label: 'Ready for outcome',
+      title: 'Mark accepted & create order',
+      detail: 'This quote is sent. Use the outcome action to run the governed acceptance and order handoff flow.',
+      cta: 'Mark accepted',
+      href: null,
+    }
+  }
+  if (input.status === 'accepted' || input.status === 'approved') {
+    return {
+      tone: 'ready',
+      label: 'Accepted',
+      title: 'View order handoff',
+      detail: 'Quote is accepted. If the handoff is not visible, run the integrity audit before editing history.',
+      cta: 'View handoff',
+      href: input.nextStepHref ?? '/orders',
+    }
+  }
+  return {
+    tone: 'blocked',
+    label: 'Locked quote',
+    title: 'View locked quote',
+    detail: 'This quote status is not eligible for direct order handoff. Create a governed revision if the customer reopens.',
+    cta: 'View quote',
+    href: null,
+  }
 }
 
 function getPrimaryBlockerLabel(
@@ -1800,6 +1905,17 @@ export function QuoteWorkspace({
   const focusCompactProgressLabel = getCompactProgressLabel(
     focusBuilderGuidance?.steps,
   );
+  const focusOrderDiagnostic = focusQuote
+    ? getOrderDiagnostic({
+        quote: focusQuote,
+        status: focusQuoteStatus,
+        lineCount: focusQuoteTotals?.lineItemCount ?? 0,
+        canManageQuotes,
+        hasContract: Boolean((focusQuote as any).contract),
+        currentVersionNo: currentFocusedVersionNo ?? null,
+        nextStepHref: (focusQuote as any).nextStep?.href ?? null,
+      })
+    : null;
 
   return (
     <div className="space-y-4">
@@ -1834,11 +1950,10 @@ export function QuoteWorkspace({
                     Quote fast lane
                   </p>
                   <h3 className="mt-2 text-2xl font-semibold text-slate-900">
-                    Focus quote {focusQuote.id.slice(0, 8)}
+                    {focusQuote.quote_number ?? `Quote ${focusQuote.id.slice(0, 8)}`}
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                    Keep the next commercial move obvious from one quote surface
-                    instead of scanning a separate review dashboard.
+                    {focusQuote.companyName ?? 'Unknown customer'}{focusQuote.contactName ? ` · ${focusQuote.contactName}` : ''} · next action: {focusOrderDiagnostic?.title ?? focusQuote.nextStep?.label ?? 'Review quote'}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1860,6 +1975,42 @@ export function QuoteWorkspace({
                   Current version {currentFocusedVersionNo ? `v${currentFocusedVersionNo}` : "pending sync"}
                 </span>
               </div>
+              {focusOrderDiagnostic ? (
+                <div className={`mt-5 rounded-2xl border p-4 ${focusOrderDiagnostic.tone === 'ready' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${focusOrderDiagnostic.tone === 'ready' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                          {focusOrderDiagnostic.label}
+                        </span>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                          Status {String(focusQuoteStatus).replaceAll('_', ' ')}
+                        </span>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                          Version {currentFocusedVersionNo ? `v${currentFocusedVersionNo}` : 'missing'}
+                        </span>
+                      </div>
+                      <h4 className="mt-3 text-lg font-semibold text-slate-950">{focusOrderDiagnostic.title}</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">{focusOrderDiagnostic.detail}</p>
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Primary blocker: {focusPrimaryBlocker}</p>
+                    </div>
+                    {focusOrderDiagnostic.href ? (
+                      <Link href={focusOrderDiagnostic.href} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white">
+                        {focusOrderDiagnostic.cta}
+                      </Link>
+                    ) : focusQuoteStatus === 'sent' && focusAcceptRun ? (
+                      <button type="button" onClick={() => runQuickAction(focusQuote, focusAcceptRun)} disabled={isWorkflowPending && quickActionQuoteId === focusQuote.id} className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
+                        {focusOrderDiagnostic.cta}
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => openQuoteEditor(focusQuote)} disabled={!canManageQuotes} className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50">
+                        {focusOrderDiagnostic.cta}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="mt-3">
                 <CollapsiblePanel
                   title="Quote context"
@@ -2744,7 +2895,7 @@ export function QuoteWorkspace({
 
             <div className="border-t border-slate-200 bg-white/80 p-5 sm:p-6 xl:border-l xl:border-t-0">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Quotes needing attention
+                Secondary quote queue
               </p>
               <div className="mt-4 space-y-3">
                 {focusableQuotes.slice(0, 5).map((quote) => {
@@ -2797,9 +2948,7 @@ export function QuoteWorkspace({
               <div className="mt-4 rounded-[1rem] bg-slate-50 p-4 text-sm text-slate-600">
                 <p className="font-semibold text-slate-900">Daily sales rule</p>
                 <p className="mt-2">
-                  Keep one quote in focus, clear approval or sending blockers
-                  first, then move to the next quote instead of bouncing through
-                  every card on the page.
+                  Keep one quote in focus first. Use this secondary queue only after the focused quote blocker and next action are clear.
                 </p>
               </div>
             </div>

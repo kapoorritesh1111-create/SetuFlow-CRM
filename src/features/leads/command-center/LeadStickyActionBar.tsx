@@ -1,6 +1,7 @@
 'use client';
 
-import type { LeadCommandCenterTabKey } from './types'
+import type { LeadCommandCenterTabKey, LeadIdentity } from './types'
+import { getLeadContactActions } from './contact-actions'
 import { ICON_CONTAINER_CLASS, getActionIcon } from './ui-system'
 
 function activeViewLabel(tab: LeadCommandCenterTabKey) {
@@ -14,6 +15,7 @@ export function LeadStickyActionBar({
   currentStageLabel,
   hasActiveQuote,
   quoteBusy,
+  lead,
   onOpenQuote,
   onScheduleFollowUp,
   onQuickEdit,
@@ -25,6 +27,7 @@ export function LeadStickyActionBar({
   currentStageLabel?: string
   hasActiveQuote: boolean
   quoteBusy?: boolean
+  lead: LeadIdentity
   onOpenQuote: () => void
   onScheduleFollowUp: () => void
   onQuickEdit: () => void
@@ -35,6 +38,7 @@ export function LeadStickyActionBar({
   const QuoteIcon = getActionIcon('open')
   const NoteIcon = getActionIcon('add_note')
   const canCloseLead = Boolean(onMarkTerminalStage && (wonStageId || lostStageId))
+  const contactActions = getLeadContactActions(lead)
 
   return (
     <section className="sticky bottom-0 z-30 -mx-4 rounded-t-[20px] border border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur supports-[backdrop-filter]:bg-white/85 md:-mx-6">
@@ -53,6 +57,24 @@ export function LeadStickyActionBar({
               Edit lead
             </button>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 md:hidden">
+          {contactActions.callHref ? (
+            <a href={contactActions.callHref} className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-emerald-600 px-4 text-sm font-semibold text-white">Call</a>
+          ) : (
+            <button type="button" onClick={onQuickEdit} className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800">Missing phone</button>
+          )}
+          {contactActions.whatsappHref ? (
+            <a href={contactActions.whatsappHref} target="_blank" rel="noreferrer" className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-green-600 px-4 text-sm font-semibold text-white">WhatsApp</a>
+          ) : (
+            <button type="button" onClick={onQuickEdit} className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800">Add WhatsApp</button>
+          )}
+          {contactActions.emailHref ? (
+            <a href={contactActions.emailHref} className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white">Email</a>
+          ) : (
+            <button type="button" onClick={onQuickEdit} className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800">Missing email</button>
+          )}
         </div>
 
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">

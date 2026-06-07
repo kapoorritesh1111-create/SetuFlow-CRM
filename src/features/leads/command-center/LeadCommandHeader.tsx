@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
 import { formatDate } from '@/lib/utils'
+import { getLeadContactActions } from './contact-actions'
 import type { GateStatus, LeadProfileSnapshot, PricingReadiness, QuoteFocusSummary } from './types'
 
 /**
@@ -60,6 +61,7 @@ export function LeadCommandHeader({
 }) {
   const avatarGradient = getAvatarGradient(lead.companyName);
   const initials = getLeadInitials(lead.companyName);
+  const contactActions = getLeadContactActions(lead);
 
   const runToolAction = (event: MouseEvent<HTMLButtonElement>, action: () => void) => {
     event.preventDefault();
@@ -133,13 +135,49 @@ export function LeadCommandHeader({
                 {lead.ownerName ? ` · Owner: ${lead.ownerName}` : ''}
                 {lead.sourceLabel ? ` · Source: ${lead.sourceLabel}` : ''}
                 {lead.country ? ` · ${lead.country}` : ''}
-                {lead.email ? ` · ${lead.email}` : ''}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px', fontSize: '12px' }}>
+                <span style={{ border: '1px solid #e2e8f0', background: '#f8fafc', color: '#334155', borderRadius: '999px', padding: '4px 9px', fontWeight: 700 }}>
+                  👤 {lead.contactName || 'Missing contact name'}
+                </span>
+                {lead.email ? (
+                  <a href={contactActions.emailHref ?? undefined} style={{ border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', borderRadius: '999px', padding: '4px 9px', fontWeight: 700, textDecoration: 'none' }}>
+                    ✉ {lead.email}
+                  </a>
+                ) : (
+                  <button type="button" onClick={onQuickEdit} style={{ border: '1px solid #fed7aa', background: '#fff7ed', color: '#9a3412', borderRadius: '999px', padding: '4px 9px', fontWeight: 700, cursor: 'pointer' }}>
+                    Missing email · Quick edit
+                  </button>
+                )}
+                {contactActions.primaryPhoneDisplay ? (
+                  <a href={contactActions.callHref ?? undefined} style={{ border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', borderRadius: '999px', padding: '4px 9px', fontWeight: 700, textDecoration: 'none' }}>
+                    ☎ {contactActions.primaryPhoneDisplay}
+                  </a>
+                ) : (
+                  <button type="button" onClick={onQuickEdit} style={{ border: '1px solid #fed7aa', background: '#fff7ed', color: '#9a3412', borderRadius: '999px', padding: '4px 9px', fontWeight: 700, cursor: 'pointer' }}>
+                    Missing phone · Quick edit
+                  </button>
+                )}
+                {contactActions.whatsappHref ? (
+                  <a href={contactActions.whatsappHref} target="_blank" rel="noreferrer" style={{ border: '1px solid #a7f3d0', background: '#ecfdf5', color: '#047857', borderRadius: '999px', padding: '4px 9px', fontWeight: 700, textDecoration: 'none' }}>
+                    WhatsApp {contactActions.whatsappDisplay ? `· ${contactActions.whatsappDisplay}` : ''}
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>
 
           {/* CTA buttons — .lhc-actions */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {contactActions.emailHref ? (
+              <a href={contactActions.emailHref} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #bfdbfe', background: '#eff6ff', fontSize: '12px', fontWeight: 700, color: '#1d4ed8', textDecoration: 'none' }}>Email</a>
+            ) : null}
+            {contactActions.whatsappHref ? (
+              <a href={contactActions.whatsappHref} target="_blank" rel="noreferrer" style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #bbf7d0', background: '#f0fdf4', fontSize: '12px', fontWeight: 700, color: '#15803d', textDecoration: 'none' }}>WhatsApp</a>
+            ) : null}
+            {contactActions.callHref ? (
+              <a href={contactActions.callHref} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: 700, color: '#334155', textDecoration: 'none' }}>Call</a>
+            ) : null}
             {/* Primary: Create quote */}
             <button type="button" onClick={onOpenQuote}
               style={{ padding: '9px 18px', borderRadius: '6px', background: '#0b2e4a', color: 'white', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
