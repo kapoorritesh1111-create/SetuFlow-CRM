@@ -32,7 +32,7 @@ const SMC_NAV: NavItem[] = [
 ];
 
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'];
-const STATUSES = ['Open', 'In Progress', 'Resolved', "Won't Fix", 'Deferred'];
+const STATUSES = ['Open', 'In Progress', 'In Review', 'Resolved', "Won't Fix", 'Deferred'];
 
 function nextParams(searchParams: URLSearchParams, patch: Record<string, string | null>) {
   const params = new URLSearchParams(searchParams.toString());
