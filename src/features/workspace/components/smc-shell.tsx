@@ -26,6 +26,13 @@ const iconPaths: Record<SmcIconName, string[]> = {
   deploy: ['M12 3v12', 'm7 8 5-5 5 5', 'M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3'],
 };
 
+export function displayIssueStatus(status?: string | null) {
+  const normalized = String(status ?? '').trim().toLowerCase();
+  if (normalized === 'in_review' || normalized === 'in-review' || normalized === 'review' || normalized === 'in review') return 'In Review';
+  if (!status) return 'Open';
+  return status;
+}
+
 export function SmcIcon({ name, className }: { name: SmcIconName; className?: string }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={cn('h-4 w-4 shrink-0', className)}>
@@ -95,7 +102,7 @@ export function SmcProofLinks() {
 }
 
 export function isClosedIssue(status?: string | null) {
-  return ['Resolved', "Won't Fix", 'Deferred'].includes(status ?? '');
+  return ['Resolved', "Won't Fix", 'Deferred'].includes(displayIssueStatus(status));
 }
 
 export function daysOld(value?: string | null) {
