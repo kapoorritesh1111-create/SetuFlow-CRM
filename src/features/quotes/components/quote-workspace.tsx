@@ -1998,8 +1998,8 @@ export function QuoteWorkspace({
                       <Link href={focusOrderDiagnostic.href} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white">
                         {focusOrderDiagnostic.cta}
                       </Link>
-                    ) : focusQuoteStatus === 'sent' && focusAcceptRun ? (
-                      <button type="button" onClick={() => runQuickAction(focusQuote, focusAcceptRun)} disabled={isWorkflowPending && quickActionQuoteId === focusQuote.id} className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
+                    ) : focusQuoteStatus === 'sent' && focusAcceptAction && focusAcceptRun ? (
+                      <button type="button" onClick={() => runQuickAction(focusQuote, focusAcceptActionView)} disabled={isWorkflowPending && quickActionQuoteId === focusQuote.id} className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
                         {focusOrderDiagnostic.cta}
                       </button>
                     ) : (
