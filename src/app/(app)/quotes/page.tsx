@@ -1,5 +1,7 @@
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PremiumActiveChip, PremiumCommandBar, PremiumField, PremiumInput, PremiumSelect } from '@/components/ui/premium-command-bar';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -7,23 +9,54 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildQuotesPageViewModel } from '@/features/quotes/logic/build-quotes-page-view-model';
-import { QuoteHistoryList } from '@/features/quotes/ui/quote-history-list';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
-import { buildApprovalSendHref, buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
+import { buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
 import { approveLeadQuoteAdjustment, rejectLeadQuoteAdjustment } from '@/features/leads/server/actions';
-import { markQuoteAsDirectOrder } from '@/features/quotes/server/actions';
+import { logQuoteNegotiationResponse, markQuoteAsDirectOrder, recordQuoteOutcomeWorkflow } from '@/features/quotes/server/actions';
 
-const FILTER_STATUSES = ['all','draft','internal_review','pending_approval','approved','sent','revised','accepted','rejected','expired'];
+const FILTER_STATUSES = ['all','active','sent','accepted','revision_requested','pending_approval','draft','risk','archive','rejected','expired'];
 const FILTER_MODES = ['all','buyers','suppliers'];
 
 type QuoteWorkspaceItem = ReturnType<typeof buildQuotesPageViewModel>['items'][number];
+type QuoteLifecycleRow = {
+  id: string;
+  quote_id: string;
+  event_type: string;
+  outcome: string | null;
+  message: string | null;
+  created_at: string;
+};
+type QuoteEnhancementMeta = {
+  archived_at?: string | null;
+  archive_reason?: string | null;
+  lifecycle_outcome?: string | null;
+  follow_up_at?: string | null;
+  last_customer_response_at?: string | null;
+};
+type EnhancedQuoteItem = QuoteWorkspaceItem & QuoteEnhancementMeta & { lifecycleEvents?: QuoteLifecycleRow[] };
+type CustomerGroup = {
+  key: string;
+  companyName: string;
+  contactName: string | null;
+  leadType: string | null;
+  quotes: EnhancedQuoteItem[];
+  activeValue: number;
+  quoteCount: number;
+  sentCount: number;
+  revisionCount: number;
+  acceptedCount: number;
+  riskCount: number;
+  archiveCount: number;
+  latestUpdatedAt: string;
+  recommended: ReturnType<typeof getRecommendedAction>;
+};
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
 
 function labelizeStatus(value: string) {
-  return value.replaceAll('_', ' ');
+  return value.replaceAll('_', ' ').replaceAll('-', ' ');
 }
 
 function readIsoDate(value: string) {
@@ -33,51 +66,51 @@ function readIsoDate(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getQuoteActionLabel(item: QuoteWorkspaceItem) {
-  if (item.status === 'pending_approval') return 'Review';
-  if (item.status === 'approved') return 'Send';
-  if (item.status === 'accepted' || item.hasAcceptedContract) return 'Order';
-  if (['draft','revised','internal_review'].includes(item.status)) return 'Continue';
-  if (item.status === 'sent') return 'Follow up';
-  return 'Open';
-}
-
-function getValidityLabel(item: QuoteWorkspaceItem) {
-  if (item.status === 'accepted' || item.hasAcceptedContract) return { label: 'Order ready', rose: false, amber: false, emerald: true };
-  if (item.status === 'draft') return { label: 'Not sent', rose: false, amber: false, emerald: false };
-  if (item.status === 'expired') return { label: 'Expired', rose: true, amber: false, emerald: false };
+function getValidityLabel(item: EnhancedQuoteItem) {
+  const status = String(item.status ?? '').toLowerCase();
+  if (status === 'accepted' || item.hasAcceptedContract) return { label: 'Order handoff', tone: 'green' as const, daysLeft: null as number | null };
+  if (status === 'expired') return { label: 'Archived expiry', tone: 'slate' as const, daysLeft: 0 };
+  if (status === 'rejected') return { label: 'Archived loss', tone: 'slate' as const, daysLeft: null as number | null };
+  if (status === 'draft') return { label: 'Not sent', tone: 'slate' as const, daysLeft: null as number | null };
   const updatedAt = Date.parse(item.updatedAt);
-  if (!Number.isFinite(updatedAt)) return { label: 'Validity unknown', rose: false, amber: false, emerald: false };
-  const daysSinceUpdate = Math.floor((Date.now() - updatedAt) / (24*60*60*1000));
+  if (!Number.isFinite(updatedAt)) return { label: 'Validity unknown', tone: 'slate' as const, daysLeft: null as number | null };
+  const daysSinceUpdate = Math.floor((Date.now() - updatedAt) / 86_400_000);
   const daysLeft = Math.max(0, 7 - daysSinceUpdate);
-  if (daysLeft <= 1) return { label: `${daysLeft} days left!`, rose: true, amber: false, emerald: false };
-  if (daysLeft <= 4) return { label: `${daysLeft} days left`, rose: false, amber: true, emerald: false };
-  return { label: `${daysLeft} days left`, rose: false, amber: false, emerald: false };
+  if (daysLeft <= 1) return { label: `${daysLeft} days left`, tone: 'rose' as const, daysLeft };
+  if (daysLeft <= 4) return { label: `${daysLeft} days left`, tone: 'amber' as const, daysLeft };
+  return { label: `${daysLeft} days left`, tone: 'slate' as const, daysLeft };
 }
 
-function filterItems(items: ReturnType<typeof buildQuotesPageViewModel>['items'], f: {q:string;status:string;company:string;from:string;to:string;mode:string}) {
-  const q = f.q.trim().toLowerCase();
-  const company = f.company.trim().toLowerCase();
-  const from = readIsoDate(f.from);
-  const to = readIsoDate(f.to);
-  const toEnd = to == null ? null : to + 24*60*60*1000 - 1;
-  const status = f.status === 'all' ? '' : f.status;
-  const mode = f.mode === 'buyers' ? 'buyer' : f.mode === 'suppliers' ? 'supplier' : '';
-  return items.filter(item => {
-    const productNames = item.lineItems.map(l => l.productName).join(' ');
-    const haystack = `${item.quoteNumber??''} ${item.id} ${item.companyName} ${productNames}`.toLowerCase();
-    if (q && !haystack.includes(q)) return false;
-    if (company && !item.companyName.toLowerCase().includes(company)) return false;
-    if (status && item.status !== status) return false;
-    if (mode && item.leadType !== mode) return false;
-    const updatedAt = Date.parse(item.updatedAt);
-    if (from != null && Number.isFinite(updatedAt) && updatedAt < from) return false;
-    if (toEnd != null && Number.isFinite(updatedAt) && updatedAt > toEnd) return false;
-    return true;
-  });
+function getQuoteLifecycle(item: EnhancedQuoteItem) {
+  const status = String(item.status ?? '').toLowerCase();
+  const lifecycle = String(item.lifecycle_outcome ?? '').toLowerCase();
+  const lineCount = item.lineItems?.length ?? 0;
+  const subtotal = Number(item.subtotal ?? 0);
+  if ((status === 'accepted' || lifecycle === 'accepted_handoff') && (lineCount === 0 || subtotal <= 0)) return 'risk';
+  if (lifecycle === 'revision_requested') return 'revision_requested';
+  if (status === 'expired' || lifecycle === 'expired_archived') return 'expired';
+  if (status === 'rejected' || lifecycle === 'rejected_archived') return 'rejected';
+  if (status === 'accepted' || item.hasAcceptedContract || lifecycle === 'accepted_handoff') return 'accepted';
+  if (status === 'sent' || status === 'approved' || lifecycle === 'sent_follow_up') return 'sent';
+  if (status === 'pending_approval') return 'pending_approval';
+  return 'draft';
 }
 
-function getStatusStyle(status: string) {
+function getQuoteActionLabel(item: EnhancedQuoteItem) {
+  switch (getQuoteLifecycle(item)) {
+    case 'risk': return 'Review data risk';
+    case 'revision_requested': return 'Create revised quote';
+    case 'accepted': return item.hasAcceptedContract ? 'Open order' : 'Move to Orders';
+    case 'sent': return 'Log outcome';
+    case 'expired': return 'Clone new version';
+    case 'rejected': return 'Review archive';
+    case 'pending_approval': return 'Review approval';
+    default: return 'Continue quote';
+  }
+}
+
+function getStatusStyle(status: string, lifecycle?: string) {
+  const resolved = lifecycle === 'risk' ? 'risk' : lifecycle === 'revision_requested' ? 'revision_requested' : status;
   const statusColors: Record<string,{bg:string;border:string;color:string}> = {
     draft:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
     internal_review:{bg:'#f1f5f9',border:'#e2e8f0',color:'#475569'},
@@ -85,11 +118,139 @@ function getStatusStyle(status: string) {
     approved:{bg:'#ecfdf5',border:'#a7f3d0',color:'#059669'},
     sent:{bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
     revised:{bg:'#f0f9ff',border:'#bae6fd',color:'#0284c7'},
+    revision_requested:{bg:'#fff7ed',border:'#fed7aa',color:'#9a3412'},
     accepted:{bg:'#ede9fe',border:'#c4b5fd',color:'#5b21b6'},
     rejected:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
-    expired:{bg:'#f1f5f9',border:'#e2e8f0',color:'#64748b'},
+    expired:{bg:'#f8fafc',border:'#cbd5e1',color:'#334155'},
+    risk:{bg:'#fff1f2',border:'#fecaca',color:'#dc2626'},
   };
-  return statusColors[status] ?? statusColors.draft;
+  return statusColors[resolved] ?? statusColors.draft;
+}
+
+function isArchiveLifecycle(lifecycle: string) {
+  return ['expired','rejected'].includes(lifecycle);
+}
+
+function getRecommendedAction(quotes: EnhancedQuoteItem[]) {
+  const risk = quotes.find((quote) => getQuoteLifecycle(quote) === 'risk');
+  if (risk) return { tone: 'rose' as const, title: 'Resolve quote data risk', body: 'Accepted quote has no commercial value or line items. Review before order handoff.', quote: risk };
+  const revision = quotes.find((quote) => getQuoteLifecycle(quote) === 'revision_requested');
+  if (revision) return { tone: 'amber' as const, title: 'Create governed revision', body: 'Buyer requested a better quote. Keep the sent record locked and create a new version.', quote: revision };
+  const accepted = quotes.find((quote) => getQuoteLifecycle(quote) === 'accepted');
+  if (accepted) return { tone: 'green' as const, title: 'Move to Orders', body: 'Accepted quote is live revenue intent. Continue execution in Orders.', quote: accepted };
+  const sent = quotes.find((quote) => getQuoteLifecycle(quote) === 'sent');
+  if (sent) return { tone: getValidityLabel(sent).tone === 'rose' ? 'rose' as const : 'blue' as const, title: 'Follow up and log outcome', body: 'Record accepted, rejected, revision requested, no response, or expiry.', quote: sent };
+  const pending = quotes.find((quote) => getQuoteLifecycle(quote) === 'pending_approval');
+  if (pending) return { tone: 'amber' as const, title: 'Review approval blocker', body: 'Quote cannot be sent until approval is complete.', quote: pending };
+  const draft = quotes.find((quote) => getQuoteLifecycle(quote) === 'draft');
+  if (draft) return { tone: 'slate' as const, title: 'Continue quote', body: 'Finish quote lines and readiness before sending.', quote: draft };
+  return { tone: 'slate' as const, title: 'Review archive', body: 'No active quote decision remains. Use archive or clone a new version.', quote: quotes[0] };
+}
+
+function filterItems(items: EnhancedQuoteItem[], f: {q:string;status:string;company:string;from:string;to:string;mode:string}) {
+  const q = f.q.trim().toLowerCase();
+  const company = f.company.trim().toLowerCase();
+  const from = readIsoDate(f.from);
+  const to = readIsoDate(f.to);
+  const toEnd = to == null ? null : to + 86_400_000 - 1;
+  const mode = f.mode === 'buyers' ? 'buyer' : f.mode === 'suppliers' ? 'supplier' : '';
+  return items.filter(item => {
+    const lifecycle = getQuoteLifecycle(item);
+    const productNames = item.lineItems.map(l => l.productName).join(' ');
+    const haystack = `${item.quoteNumber??''} ${item.id} ${item.companyName} ${item.contactName ?? ''} ${productNames} ${item.status} ${item.lifecycle_outcome ?? ''}`.toLowerCase();
+    if (q && !haystack.includes(q)) return false;
+    if (company && !item.companyName.toLowerCase().includes(company)) return false;
+    if (mode && item.leadType !== mode) return false;
+    if (f.status === 'active' && isArchiveLifecycle(lifecycle)) return false;
+    if (f.status === 'archive' && !isArchiveLifecycle(lifecycle)) return false;
+    if (!['all','active','archive'].includes(f.status) && lifecycle !== f.status && item.status !== f.status) return false;
+    const updatedAt = Date.parse(item.updatedAt);
+    if (from != null && Number.isFinite(updatedAt) && updatedAt < from) return false;
+    if (toEnd != null && Number.isFinite(updatedAt) && updatedAt > toEnd) return false;
+    return true;
+  });
+}
+
+function groupQuotesByCustomer(items: EnhancedQuoteItem[]): CustomerGroup[] {
+  const groups = new Map<string, EnhancedQuoteItem[]>();
+  for (const item of items) {
+    const key = item.leadId ?? item.companyName;
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+  return [...groups.entries()].map(([key, quotes]) => {
+    const sorted = [...quotes].sort((a, b) => {
+      const pa = priorityForLifecycle(getQuoteLifecycle(a));
+      const pb = priorityForLifecycle(getQuoteLifecycle(b));
+      if (pa !== pb) return pa - pb;
+      return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+    });
+    const activeQuotes = sorted.filter((quote) => !isArchiveLifecycle(getQuoteLifecycle(quote)));
+    const recommended = getRecommendedAction(sorted);
+    return {
+      key,
+      companyName: sorted[0]?.companyName ?? 'Unknown customer',
+      contactName: sorted[0]?.contactName ?? null,
+      leadType: sorted[0]?.leadType ?? null,
+      quotes: sorted,
+      activeValue: activeQuotes.reduce((sum, quote) => sum + Number(quote.subtotal ?? 0), 0),
+      quoteCount: sorted.length,
+      sentCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'sent').length,
+      revisionCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'revision_requested').length,
+      acceptedCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'accepted').length,
+      riskCount: sorted.filter((quote) => getQuoteLifecycle(quote) === 'risk').length,
+      archiveCount: sorted.filter((quote) => isArchiveLifecycle(getQuoteLifecycle(quote))).length,
+      latestUpdatedAt: sorted.map((quote) => quote.updatedAt).sort().reverse()[0] ?? '',
+      recommended,
+    };
+  }).sort((a, b) => {
+    const pa = priorityForLifecycle(getQuoteLifecycle(a.recommended.quote));
+    const pb = priorityForLifecycle(getQuoteLifecycle(b.recommended.quote));
+    if (pa !== pb) return pa - pb;
+    return Date.parse(b.latestUpdatedAt) - Date.parse(a.latestUpdatedAt);
+  });
+}
+
+function priorityForLifecycle(lifecycle: string) {
+  switch (lifecycle) {
+    case 'risk': return 0;
+    case 'revision_requested': return 1;
+    case 'accepted': return 2;
+    case 'sent': return 3;
+    case 'pending_approval': return 4;
+    case 'draft': return 5;
+    case 'expired': return 8;
+    case 'rejected': return 9;
+    default: return 6;
+  }
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'No date';
+  try { return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value)); }
+  catch { return value; }
+}
+
+async function insertLifecycleEvent(db: any, payload: {
+  organizationId: string;
+  quoteId: string;
+  leadId?: string | null;
+  eventType: string;
+  outcome: string;
+  actorName?: string | null;
+  message: string;
+  metadata?: Record<string, unknown>;
+}) {
+  return db.from('quote_lifecycle_events').insert({
+    organization_id: payload.organizationId,
+    quote_id: payload.quoteId,
+    lead_id: payload.leadId ?? null,
+    event_type: payload.eventType,
+    outcome: payload.outcome,
+    actor_name: payload.actorName ?? 'Setu Flow',
+    actor_type: 'user',
+    message: payload.message,
+    metadata: payload.metadata ?? {},
+  });
 }
 
 export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[] } }) {
@@ -103,16 +264,22 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const organizationId = workspace.organization.id;
   const selectedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
   const requestedMode = readSearchParam(searchParams?.mode);
+  const requestedStatus = readSearchParam(searchParams?.status);
   const filters = {
     q: readSearchParam(searchParams?.q),
-    status: FILTER_STATUSES.includes(readSearchParam(searchParams?.status)) ? readSearchParam(searchParams?.status) : 'all',
+    status: FILTER_STATUSES.includes(requestedStatus as (typeof FILTER_STATUSES)[number]) ? requestedStatus : 'active',
     company: readSearchParam(searchParams?.company),
     from: readSearchParam(searchParams?.from),
     to: readSearchParam(searchParams?.to),
-    mode: FILTER_MODES.includes(requestedMode) ? requestedMode : 'all',
+    mode: FILTER_MODES.includes(requestedMode as (typeof FILTER_MODES)[number]) ? requestedMode : 'all',
   };
 
-  const quotesResult = await db.from('quotes').select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id, approval_required, approved_at, approved_by, notes_internal').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(200);
+  const quotesResult = await db
+    .from('quotes')
+    .select('id, lead_id, status, currency, notes, quote_number, created_at, updated_at, current_version_id, approval_required, approved_at, approved_by, notes_internal, archived_at, archive_reason, lifecycle_outcome, follow_up_at, last_customer_response_at')
+    .eq('organization_id', organizationId)
+    .order('updated_at', { ascending: false })
+    .limit(500);
   if (quotesResult.error) return <EmptyState title="Could not load quotes" description={String(quotesResult.error.message ?? 'Unknown error')} />;
   const quotes = Array.isArray(quotesResult.data) ? quotesResult.data : [];
 
@@ -130,13 +297,14 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const leadIds = [...new Set(quotes.map((q: any) => q.lead_id).filter(Boolean))];
   const quoteIds = quotes.map((q: any) => q.id);
 
-  const [leadsResult, versionsResult, negotiationsResult, communicationsResult, contractsResult, lineItemsResult] = await Promise.all([
+  const [leadsResult, versionsResult, negotiationsResult, communicationsResult, contractsResult, lineItemsResult, lifecycleEventsResult] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, lead_type').eq('organization_id', organizationId).in('id', leadIds),
     db.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('quote_negotiation_events').select('id, quote_id, event_type, message, created_at, actor_name').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('communications').select('id, quote_id, subject, summary, status, created_at').in('quote_id', quoteIds).order('created_at', {ascending: false}),
     db.from('contracts').select('id, quote_id, status, signed_at, starts_on, commercial_lock_state, commercial_snapshot').eq('organization_id', organizationId).in('quote_id', quoteIds),
     db.from('quote_line_items').select('id, quote_id, product_id, quantity, unit_price, currency, catalog_price_amount, catalog_price_currency, is_price_overridden, override_reason, notes').in('quote_id', quoteIds),
+    db.from('quote_lifecycle_events').select('id, quote_id, event_type, outcome, message, created_at').eq('organization_id', organizationId).in('quote_id', quoteIds).order('created_at', { ascending: false }),
   ]);
 
   const lineItems = Array.isArray(lineItemsResult.data) ? lineItemsResult.data : [];
@@ -173,6 +341,11 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     return price ? { ...product, catalogPriceAmount: price.amount, catalogPriceCurrency: price.currency } : product;
   });
 
+  const lifecycleEventsByQuoteId = new Map<string, QuoteLifecycleRow[]>();
+  for (const event of Array.isArray(lifecycleEventsResult.data) ? lifecycleEventsResult.data : []) {
+    lifecycleEventsByQuoteId.set(event.quote_id, [...(lifecycleEventsByQuoteId.get(event.quote_id) ?? []), event]);
+  }
+
   const baseViewModelInput = {
     quotes,
     leads: Array.isArray(leadsResult.data) ? leadsResult.data : [],
@@ -185,13 +358,25 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   };
 
   const viewModel = buildQuotesPageViewModel({ ...baseViewModelInput, selectedQuoteId });
-  const filteredItems = filterItems(viewModel.items, filters);
-  const selected = (selectedQuoteId ? viewModel.items.find(i => i.id === selectedQuoteId) : null) ?? filteredItems[0] ?? viewModel.selectedItem;
+  const metaByQuoteId = new Map<string, QuoteEnhancementMeta>(quotes.map((quote: any) => [quote.id, {
+    archived_at: quote.archived_at ?? null,
+    archive_reason: quote.archive_reason ?? null,
+    lifecycle_outcome: quote.lifecycle_outcome ?? null,
+    follow_up_at: quote.follow_up_at ?? null,
+    last_customer_response_at: quote.last_customer_response_at ?? null,
+  }]));
+  const enhancedItems: EnhancedQuoteItem[] = viewModel.items.map((item: QuoteWorkspaceItem) => ({
+    ...item,
+    ...(metaByQuoteId.get(item.id) ?? {}),
+    lifecycleEvents: lifecycleEventsByQuoteId.get(item.id) ?? [],
+  }));
+  const filteredItems = filterItems(enhancedItems, filters);
+  const customerGroups = groupQuotesByCustomer(filteredItems);
+  const selected = (selectedQuoteId ? enhancedItems.find(i => i.id === selectedQuoteId) : null) ?? customerGroups[0]?.recommended.quote ?? filteredItems[0] ?? enhancedItems[0];
+  const selectedGroup = customerGroups.find((group) => group.quotes.some((quote) => quote.id === selected?.id)) ?? groupQuotesByCustomer(selected ? [selected] : [])[0];
   const selectedMode = selected?.leadType === 'buyer' ? 'buyers' : selected?.leadType === 'supplier' ? 'suppliers' : null;
-  const selectedApprovalHref = selected ? buildApprovalSendHref({queue:'approvals',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-approval-status'}, selectedMode) : PRODUCT_ROUTES.app.integrations;
   const selectedOrderHref = selected ? buildOrdersHref({notice:'quote-accepted',quoteId:selected.id,leadId:selected.leadId,handoff:'quote-to-orders',sourceQuoteId:selected.id}, selectedMode) : PRODUCT_ROUTES.app.orders;
   const selectedSendHref = selected ? `/approval-send?quoteId=${encodeURIComponent(selected.id)}` : '/approval-send';
-  const selectedHistory = selected ? (selected.id === viewModel.selectedItem?.id ? viewModel.selectedHistory : buildQuotesPageViewModel({...baseViewModelInput, selectedQuoteId:selected.id}).selectedHistory) : [];
 
   async function approveSelectedQuoteAction(formData: FormData) {
     'use server';
@@ -225,20 +410,96 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     redirect(`/orders?${params.toString()}`);
   }
 
-  const approvalQueue = viewModel.items.filter(i => i.status === 'pending_approval');
-  const approvalQueueCount = approvalQueue.length;
-  const expiringSoonCount = viewModel.items.filter(i => { const v = getValidityLabel(i); return v.rose && i.status !== 'expired'; }).length;
-  const sentActiveCount = viewModel.items.filter(i => ['sent','approved','negotiating'].includes(i.status)).length;
-  const draftCount = viewModel.items.filter(i => ['draft','internal_review','revised'].includes(i.status)).length;
-  const acceptedCount = viewModel.items.filter(i => i.status === 'accepted' || i.hasAcceptedContract).length;
-  const totalValue = viewModel.items.reduce((s, i) => s + i.subtotal, 0);
-  const firstApproval = approvalQueue[0];
-  const secondApproval = approvalQueue[1];
+  async function recordOutcomeAction(formData: FormData) {
+    'use server';
+    const quoteId = String(formData.get('quote_id') ?? '').trim();
+    const outcome = String(formData.get('outcome') ?? '').trim().toLowerCase();
+    const leadId = String(formData.get('lead_id') ?? '').trim();
+    const notes = String(formData.get('notes') ?? '').trim();
+    if (!quoteId) redirect('/quotes?notice=quote-outcome-missing');
+    if (outcome === 'accepted' || outcome === 'rejected') {
+      formData.set('status', outcome);
+      const result = await recordQuoteOutcomeWorkflow(undefined, formData);
+      if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-outcome-error`);
+      if (outcome === 'accepted') redirect(`/orders?notice=quote-accepted&quoteId=${encodeURIComponent(quoteId)}&sourceQuoteId=${encodeURIComponent(quoteId)}`);
+      redirect(`/quotes?status=archive&quoteId=${quoteId}&notice=quote-rejected`);
+    }
+
+    const workspace = await getWorkspaceAccess();
+    if (!workspace.user || !workspace.organization) redirect('/quotes?notice=quote-auth-required');
+    const currentUser = workspace.user;
+    const organization = workspace.organization;
+    const supabase: any = await createClient();
+    const db: any = supabase;
+    const { data: existing, error } = await db
+      .from('quotes')
+      .select('id, lead_id, status, organization_id, current_version_id')
+      .eq('organization_id', organization.id)
+      .eq('id', quoteId)
+      .maybeSingle();
+    if (error || !existing) redirect(`/quotes?quoteId=${quoteId}&notice=quote-outcome-error`);
+
+    const now = new Date().toISOString();
+    let updatePayload: Record<string, unknown> = { updated_at: now, last_customer_response_at: now };
+    let eventType = 'quote_follow_up';
+    let nextNotice = 'quote-follow-up-logged';
+    let message = notes || 'Customer follow-up logged.';
+
+    if (outcome === 'revision_requested') {
+      updatePayload = { ...updatePayload, lifecycle_outcome: 'revision_requested' };
+      eventType = 'revision_requested';
+      nextNotice = 'quote-revision-requested';
+      message = notes || 'Buyer requested a better quote. Create a governed new version; do not mutate the sent record.';
+      const negotiationForm = new FormData();
+      negotiationForm.set('quote_id', quoteId);
+      negotiationForm.set('response_type', 'revision_requested');
+      negotiationForm.set('note', message);
+      await logQuoteNegotiationResponse(undefined, negotiationForm);
+    } else if (outcome === 'no_response') {
+      const followUpAt = new Date(Date.now() + 3 * 86_400_000).toISOString();
+      updatePayload = { ...updatePayload, lifecycle_outcome: 'sent_follow_up', follow_up_at: followUpAt };
+      eventType = 'no_response';
+      nextNotice = 'quote-follow-up-scheduled';
+      message = notes || 'No response logged. Follow-up scheduled in three days.';
+    } else if (outcome === 'expired') {
+      updatePayload = { ...updatePayload, status: 'expired', lifecycle_outcome: 'expired_archived', archived_at: now, archive_reason: notes || 'Quote expired and moved out of active Quote Workspace.' };
+      eventType = 'expired_archived';
+      nextNotice = 'quote-expired-archived';
+      message = notes || 'Quote expired and moved to archive. Clone a new version if the customer re-engages.';
+    }
+
+    const { error: updateError } = await db.from('quotes').update(updatePayload).eq('organization_id', organization.id).eq('id', quoteId);
+    if (updateError) redirect(`/quotes?quoteId=${quoteId}&notice=quote-outcome-error`);
+    const { error: lifecycleError } = await insertLifecycleEvent(db, {
+      organizationId: organization.id,
+      quoteId,
+      leadId: leadId || existing.lead_id,
+      eventType,
+      outcome,
+      actorName: currentUser.email ?? currentUser.id,
+      message,
+      metadata: { source: 'quotes_page_lifecycle_outcome', previous_status: existing.status },
+    });
+    if (lifecycleError) redirect(`/quotes?quoteId=${quoteId}&notice=quote-lifecycle-log-error`);
+    revalidatePath('/quotes');
+    revalidatePath('/orders');
+    redirect(`/quotes?quoteId=${quoteId}&notice=${nextNotice}`);
+  }
+
+  const activeItems = enhancedItems.filter((quote) => !isArchiveLifecycle(getQuoteLifecycle(quote)));
+  const sentActiveCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'sent').length;
+  const revisionCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'revision_requested').length;
+  const acceptedCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'accepted').length;
+  const riskCount = activeItems.filter((quote) => getQuoteLifecycle(quote) === 'risk').length;
+  const expiringSoonCount = activeItems.filter((quote) => ['amber','rose'].includes(getValidityLabel(quote).tone) && getQuoteLifecycle(quote) === 'sent').length;
+  const archiveCount = enhancedItems.filter((quote) => isArchiveLifecycle(getQuoteLifecycle(quote))).length;
+  const activeValue = activeItems.reduce((sum, quote) => sum + Number(quote.subtotal ?? 0), 0);
+  const topGroup = customerGroups[0];
   const filterHref = (patch: Partial<typeof filters>) => {
     const next = { ...filters, ...patch };
     const params = new URLSearchParams();
     if (next.q.trim()) params.set('q', next.q.trim());
-    if (next.status !== 'all') params.set('status', next.status);
+    if (next.status !== 'active') params.set('status', next.status);
     if (next.company.trim()) params.set('company', next.company.trim());
     if (next.from.trim()) params.set('from', next.from.trim());
     if (next.to.trim()) params.set('to', next.to.trim());
@@ -247,15 +508,17 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   };
   const activeQuoteFilterChips = [
     filters.q.trim() ? { key: 'q', label: `Search: ${filters.q.trim()}`, href: filterHref({ q: '' }), tone: 'blue' as const } : null,
-    filters.status !== 'all' ? { key: 'status', label: `Status: ${labelizeStatus(filters.status)}`, href: filterHref({ status: 'all' }), tone: 'amber' as const } : null,
+    filters.status !== 'active' ? { key: 'status', label: `Lifecycle: ${labelizeStatus(filters.status)}`, href: filterHref({ status: 'active' }), tone: 'amber' as const } : null,
     filters.mode !== 'all' ? { key: 'mode', label: `Global mode: ${filters.mode}`, href: filterHref({ mode: 'all' }), tone: 'violet' as const } : null,
   ].filter(Boolean) as Array<{ key: string; label: string; href: string; tone: 'blue' | 'amber' | 'violet' }>;
-  const selectedIsAccepted = Boolean(selected && (selected.status === 'accepted' || selected.hasAcceptedContract));
-  const selectedIsPending = Boolean(selected && selected.status === 'pending_approval');
-  const selectedIsSent = Boolean(selected && selected.status === 'sent');
-  const selectedIsDraftLike = Boolean(selected && ['draft','internal_review','revised'].includes(selected.status));
-  const selectedStatusStyle = selected ? getStatusStyle(selected.status) : getStatusStyle('draft');
-  const queueItems = filteredItems.slice(0, 18);
+  const selectedLifecycle = selected ? getQuoteLifecycle(selected) : 'draft';
+  const selectedIsAccepted = selectedLifecycle === 'accepted';
+  const selectedIsPending = selectedLifecycle === 'pending_approval';
+  const selectedIsSent = selectedLifecycle === 'sent';
+  const selectedIsRevision = selectedLifecycle === 'revision_requested';
+  const selectedIsRisk = selectedLifecycle === 'risk';
+  const selectedIsArchive = isArchiveLifecycle(selectedLifecycle);
+  const selectedStatusStyle = selected ? getStatusStyle(selected.status, selectedLifecycle) : getStatusStyle('draft');
   const selectedProducts = selected?.lineItems.slice(0, 4) ?? [];
 
   return (
@@ -263,17 +526,17 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
       <form action="/quotes" style={{padding:'14px 24px 0'}}>
         {filters.mode !== 'all' ? <input type="hidden" name="mode" value={filters.mode} /> : null}
         <PremiumCommandBar
-          label="Quote filters"
-          summary={<>{filteredItems.length} quotes · {formatQuoteMoney(totalValue,'USD')} total value</>}
+          label="Quote lifecycle filters"
+          summary={<>{customerGroups.length} customers · {formatQuoteMoney(activeValue,'USD')} active value · {archiveCount} archived</>}
           activeChips={activeQuoteFilterChips.length ? <>{activeQuoteFilterChips.map((chip) => <PremiumActiveChip key={chip.key} label={chip.label} href={chip.href} tone={chip.tone} />)}</> : null}
           reset={activeQuoteFilterChips.length ? <Link href="/quotes" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50">Clear all</Link> : null}
         >
           <PremiumField label="Search" icon="Search" className="md:min-w-[320px]">
-            <PremiumInput name="q" defaultValue={filters.q} placeholder="Search company, quote ref, product..." />
+            <PremiumInput name="q" defaultValue={filters.q} placeholder="Customer, quote ref, product, contact..." />
           </PremiumField>
-          <PremiumField label="Status" icon="Status" className="md:min-w-[210px]">
+          <PremiumField label="Lifecycle" icon="Status" className="md:min-w-[230px]">
             <PremiumSelect name="status" defaultValue={filters.status}>
-              {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All statuses':labelizeStatus(s)}</option>)}
+              {FILTER_STATUSES.map(s => <option key={s} value={s}>{s==='all'?'All quotes':s==='active'?'Active lifecycle':labelizeStatus(s)}</option>)}
             </PremiumSelect>
           </PremiumField>
           <button type="submit" className="h-9 rounded-xl bg-slate-950 px-4 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(15,23,42,.14)] transition hover:bg-slate-800">Apply</button>
@@ -281,177 +544,238 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
       </form>
 
       <div className="px-5 pb-10 pt-3 flex flex-col gap-4">
-        {selected ? (
-          <section style={{background:'linear-gradient(135deg,#ffffff,#f8fbff)',border:'1px solid #dbe4ef',borderRadius:'26px',boxShadow:'0 18px 55px rgba(15,23,42,.10)',overflow:'hidden'}}>
-            <div style={{padding:'18px 22px',display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:'18px',alignItems:'stretch'}}>
+        <section style={{background:'linear-gradient(135deg,#ffffff,#f8fbff)',border:'1px solid #dbe4ef',borderRadius:'26px',boxShadow:'0 18px 55px rgba(15,23,42,.10)',overflow:'hidden'}}>
+          <div style={{padding:'18px 22px'}}>
+            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'14px',flexWrap:'wrap'}}>
               <div>
-                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'14px',flexWrap:'wrap'}}>
-                  <div>
-                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Focused quote</div>
-                    <h2 style={{margin:'4px 0 0',fontSize:'26px',fontWeight:950,letterSpacing:'-.04em',color:'#0f172a'}}>{selected.companyName}</h2>
-                    <div style={{marginTop:'4px',fontSize:'12px',color:'#64748b'}}>{selected.quoteNumber ?? selected.id.slice(0,8)} · v{selected.totalVersions || 1} · {selected.contactName ?? 'No contact set'}</div>
-                  </div>
-                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                    <span style={{display:'inline-flex',alignItems:'center',border:'1px solid',borderColor:selectedStatusStyle.border,background:selectedStatusStyle.bg,color:selectedStatusStyle.color,borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:900,textTransform:'capitalize'}}>{labelizeStatus(selected.status)}</span>
-                    {selectedQuoteId ? <Link href={filterHref({})} style={{border:'1px solid #e2e8f0',background:'white',borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:850,color:'#475569',textDecoration:'none'}}>Close focus</Link> : null}
-                  </div>
-                </div>
+                <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Quote Command Center</div>
+                <h2 style={{margin:'4px 0 0',fontSize:'26px',fontWeight:950,letterSpacing:'-.04em',color:'#0f172a'}}>Customer quote lifecycle</h2>
+                <p style={{margin:'6px 0 0',maxWidth:'760px',fontSize:'13px',lineHeight:1.6,color:'#64748b'}}>Work from customer stories, not quote rows. Sent quotes need explicit outcomes. Accepted quotes move to Orders. Expired and rejected records leave active work but remain searchable in Archive.</p>
+              </div>
+              {topGroup ? <Link href={`/quotes?quoteId=${topGroup.recommended.quote.id}`} style={{alignSelf:'center',border:'1px solid #dbe4ef',background:'#0b2e4a',color:'white',borderRadius:'14px',padding:'10px 14px',fontSize:'12px',fontWeight:900,textDecoration:'none'}}>Open top priority</Link> : null}
+            </div>
+            <div style={{marginTop:'16px',display:'grid',gridTemplateColumns:'repeat(6,minmax(0,1fr))',gap:'10px'}}>
+              {[
+                ['Follow-up', sentActiveCount, 'Sent quotes need outcomes', 'blue', 'sent'],
+                ['Revision requested', revisionCount, 'Create governed versions', 'amber', 'revision_requested'],
+                ['Order handoff', acceptedCount, 'Accepted quotes move to Orders', 'green', 'accepted'],
+                ['Data risk', riskCount, 'Accepted zero-line review', 'rose', 'risk'],
+                ['Expiring soon', expiringSoonCount, 'Guru should prompt action', 'amber', 'sent'],
+                ['Archive', archiveCount, 'Rejected / expired records', 'slate', 'archive'],
+              ].map(([label,value,meta,tone,status]) => (
+                <Link key={String(label)} href={filterHref({ status: String(status) })} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'12px',textDecoration:'none',color:'#0f172a',borderTop:`4px solid ${tone==='green'?'#059669':tone==='blue'?'#0c7fff':tone==='rose'?'#dc2626':tone==='amber'?'#d97706':'#64748b'}`}}>
+                  <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.13em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
+                  <div style={{fontSize:'22px',fontWeight:950,marginTop:'3px'}}>{value}</div>
+                  <div style={{fontSize:'10px',color:'#64748b',fontWeight:750}}>{meta}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
-                <div style={{marginTop:'16px',display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:'10px'}}>
-                  {[
-                    ['Total', formatQuoteMoney(selected.subtotal, selected.currency)],
-                    ['Line items', String(selected.lineItems.length)],
-                    ['Version', `v${selected.totalVersions || 1}`],
-                    ['Validity', getValidityLabel(selected).label],
-                  ].map(([label,value]) => (
-                    <div key={label} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'11px 12px'}}>
-                      <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
-                      <div style={{marginTop:'4px',fontSize:'14px',fontWeight:900,color:'#0f172a'}}>{value}</div>
+        <div style={{display:'grid',gridTemplateColumns:'410px minmax(0,1fr)',gap:'16px',alignItems:'start'}}>
+          <section style={{background:'white',border:'1px solid #dbe4ef',borderRadius:'24px',boxShadow:'0 10px 28px rgba(15,23,42,.06)',padding:'14px'}}>
+            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px',marginBottom:'10px'}}>
+              <div><div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Customers</div><h3 style={{fontSize:'18px',fontWeight:950,margin:'2px 0 0'}}>Grouped lifecycle worklist</h3></div>
+              <span style={{fontSize:'11px',color:'#64748b',fontWeight:850}}>{customerGroups.length} groups</span>
+            </div>
+            <div style={{display:'grid',gap:'10px'}}>
+              {customerGroups.length ? customerGroups.map((group) => {
+                const tone = group.riskCount ? '#dc2626' : group.revisionCount ? '#d97706' : group.acceptedCount ? '#059669' : group.sentCount ? '#0c7fff' : '#64748b';
+                const active = selectedGroup?.key === group.key;
+                return (
+                  <Link key={group.key} href={`/quotes?quoteId=${group.recommended.quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}`} style={{display:'block',position:'relative',overflow:'hidden',border:'1px solid',borderColor:active ? '#0c7fff' : '#dbe4ef',boxShadow:active ? '0 0 0 3px rgba(12,127,255,.10)' : 'none',borderRadius:'18px',background:'white',padding:'13px 13px 13px 16px',textDecoration:'none',color:'#0f172a'}}>
+                    <span style={{position:'absolute',left:0,top:0,bottom:0,width:'4px',background:tone}} />
+                    <div style={{display:'flex',justifyContent:'space-between',gap:'10px'}}>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:'14px',fontWeight:950,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{group.companyName}</div>
+                        <div style={{fontSize:'11px',color:'#64748b',fontWeight:750}}>{group.contactName ?? 'No contact'} · {group.quoteCount} quotes · active {formatQuoteMoney(group.activeValue, group.quotes[0]?.currency)}</div>
+                      </div>
+                      <div style={{fontSize:'10px',fontWeight:950,color:tone,whiteSpace:'nowrap'}}>{group.recommended.title.split(' ').slice(0,2).join(' ')}</div>
                     </div>
-                  ))}
-                </div>
+                    <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginTop:'9px'}}>
+                      {group.sentCount ? <span style={badgeStyle('#eff6ff','#bfdbfe','#1d4ed8')}>{group.sentCount} sent</span> : null}
+                      {group.revisionCount ? <span style={badgeStyle('#fff7ed','#fed7aa','#9a3412')}>{group.revisionCount} revision</span> : null}
+                      {group.acceptedCount ? <span style={badgeStyle('#ecfdf5','#a7f3d0','#047857')}>{group.acceptedCount} accepted</span> : null}
+                      {group.riskCount ? <span style={badgeStyle('#fff1f2','#fecaca','#dc2626')}>{group.riskCount} risk</span> : null}
+                      {group.archiveCount ? <span style={badgeStyle('#f8fafc','#cbd5e1','#334155')}>{group.archiveCount} archive</span> : null}
+                    </div>
+                  </Link>
+                );
+              }) : <p style={{fontSize:'13px',color:'#64748b'}}>No customer groups match the active filters.</p>}
+            </div>
+          </section>
 
-                <div style={{marginTop:'14px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
-                  <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
-                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Commercial lines</div>
-                    <div style={{marginTop:'8px',display:'grid',gap:'8px'}}>
-                      {selectedProducts.length ? selectedProducts.map(line => (
-                        <div key={line.id} style={{display:'flex',justifyContent:'space-between',gap:'12px',borderBottom:'1px solid #f1f5f9',paddingBottom:'8px'}}>
-                          <div style={{minWidth:0}}>
-                            <div style={{fontSize:'12px',fontWeight:850,color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{line.productName}</div>
-                            <div style={{fontSize:'10px',color:'#64748b'}}>Qty {line.quantity}{line.isPriceOverridden ? ' · adjusted' : ''}</div>
-                          </div>
-                          <div style={{fontSize:'12px',fontWeight:900,color:'#0b2e4a',whiteSpace:'nowrap'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</div>
-                        </div>
-                      )) : <div style={{fontSize:'12px',color:'#64748b'}}>No quote lines are attached yet.</div>}
-                      {selected.lineItems.length > selectedProducts.length ? <div style={{fontSize:'11px',fontWeight:800,color:'#64748b'}}>+ {selected.lineItems.length - selectedProducts.length} more lines in quote detail</div> : null}
-                    </div>
-                  </div>
-                  <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
-                    <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Recent history</div>
-                    {selectedHistory.length ? <div style={{marginTop:'8px',maxHeight:'150px',overflow:'auto'}}><QuoteHistoryList items={selectedHistory.slice(0,4)} /></div> : <p style={{fontSize:'12px',color:'#64748b'}}>No visible history yet.</p>}
-                  </div>
+          {selected ? (
+            <section style={{background:'white',border:'1px solid #dbe4ef',borderRadius:'24px',boxShadow:'0 10px 28px rgba(15,23,42,.06)',padding:'18px'}}>
+              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'14px',borderBottom:'1px solid #e7eef6',paddingBottom:'14px',flexWrap:'wrap'}}>
+                <div>
+                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Customer quote story</div>
+                  <h2 style={{margin:'2px 0 0',fontSize:'24px',fontWeight:950,letterSpacing:'-.035em'}}>{selectedGroup?.companyName ?? selected.companyName}</h2>
+                  <p style={{margin:'4px 0 0',fontSize:'12px',color:'#64748b'}}>{selectedGroup?.contactName ?? selected.contactName ?? 'No contact'} · {selectedGroup?.quoteCount ?? 1} quote records · selected {selected.quoteNumber ?? selected.id.slice(0,8)}</p>
+                </div>
+                <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                  <span style={{display:'inline-flex',alignItems:'center',border:'1px solid',borderColor:selectedStatusStyle.border,background:selectedStatusStyle.bg,color:selectedStatusStyle.color,borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:900,textTransform:'capitalize'}}>{selectedLifecycle === 'risk' ? 'data risk' : labelizeStatus(selected.lifecycle_outcome || selected.status)}</span>
+                  {selectedQuoteId ? <Link href={filterHref({})} style={{border:'1px solid #e2e8f0',background:'white',borderRadius:'999px',padding:'6px 11px',fontSize:'11px',fontWeight:850,color:'#475569',textDecoration:'none'}}>Close focus</Link> : null}
                 </div>
               </div>
 
-              <aside style={{border:'1px solid #dbe4ef',borderRadius:'22px',background:selectedIsAccepted ? '#ecfdf5' : selectedIsPending ? '#fffbeb' : '#ffffff',padding:'16px',display:'grid',gap:'12px',alignContent:'start'}}>
+              <div style={{marginTop:'14px',display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:'10px'}}>
+                {[
+                  ['Active value', formatQuoteMoney(selectedGroup?.activeValue ?? selected.subtotal, selected.currency)],
+                  ['Line items', String(selected.lineItems.length)],
+                  ['Version', `v${selected.totalVersions || 1}`],
+                  ['Validity', getValidityLabel(selected).label],
+                ].map(([label,value]) => (
+                  <div key={label} style={{border:'1px solid #e2e8f0',borderRadius:'16px',background:'white',padding:'11px 12px'}}>
+                    <div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>{label}</div>
+                    <div style={{marginTop:'4px',fontSize:'14px',fontWeight:900,color:'#0f172a'}}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{marginTop:'14px',border:'1px solid',borderColor:selectedIsRisk ? '#fecaca' : selectedIsAccepted ? '#a7f3d0' : selectedIsRevision ? '#fed7aa' : '#dbe4ef',borderRadius:'20px',background:selectedIsRisk ? '#fff1f2' : selectedIsAccepted ? '#ecfdf5' : selectedIsRevision ? '#fff7ed' : '#f8fbff',padding:'14px',display:'grid',gridTemplateColumns:'minmax(0,1fr) 280px',gap:'14px',alignItems:'start'}}>
                 <div>
-                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:selectedIsAccepted ? '#047857' : selectedIsPending ? '#92400e' : '#64748b'}}>Next best action</div>
-                  <h3 style={{margin:'6px 0 0',fontSize:'20px',fontWeight:950,color:'#0f172a'}}>
-                    {selectedIsAccepted ? 'Order handoff ready' : selectedIsPending ? 'Approval required' : selectedIsSent ? 'Customer follow-up' : selectedIsDraftLike ? 'Continue quote' : 'Review quote'}
+                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:selectedIsRisk ? '#dc2626' : selectedIsAccepted ? '#047857' : selectedIsRevision ? '#9a3412' : '#1d4ed8'}}>Recommended next action</div>
+                  <h3 style={{margin:'4px 0 0',fontSize:'20px',fontWeight:950,color:'#0f172a'}}>
+                    {selectedIsRisk ? 'Review quote data risk' : selectedIsRevision ? 'Create governed revision' : selectedIsAccepted ? 'Move revenue work to Orders' : selectedIsPending ? 'Approval required' : selectedIsSent ? 'Follow up and log outcome' : selectedIsArchive ? 'Archive or clone' : 'Continue quote'}
                   </h3>
                   <p style={{margin:'6px 0 0',fontSize:'12px',lineHeight:1.6,color:'#64748b'}}>
-                    {selectedIsAccepted ? 'This quote is accepted. Keep order creation as the primary action and use PDF/send history only as supporting context.' : selectedIsPending ? 'Review quote-only adjustments before the quote can be sent.' : selectedIsSent ? 'The quote is customer-facing. Track response or move into accepted handoff when the buyer confirms.' : selectedIsDraftLike ? 'Finish the quote structure, pricing, and readiness before customer send.' : 'Use the focused actions below before moving to the next quote.'}
+                    {selectedIsRisk ? 'This quote looks accepted but has no commercial lines or value. Block order handoff until reviewed.' : selectedIsRevision ? 'Buyer requested a better quote. Keep the sent record locked and create a governed new version.' : selectedIsAccepted ? 'Accepted quote is live revenue intent. The quote stays locked while Orders owns execution.' : selectedIsPending ? 'Review quote-only adjustments before the quote can be sent.' : selectedIsSent ? 'Follow-up means capture the outcome: accepted, rejected, revision requested, no response, or expired.' : selectedIsArchive ? 'Expired/rejected quotes leave active work but stay searchable and cloneable.' : 'Finish quote lines and readiness before sending.'}
                   </p>
                 </div>
-
-                {selectedIsAccepted ? (
-                  <form action={createOrderHandoffAction} style={{display:'grid',gap:'8px'}}>
-                    <input type="hidden" name="quote_id" value={selected.id}/>
-                    <input type="hidden" name="notes" value="Order handoff created from Quotes workspace."/>
-                    <button type="submit" style={{border:0,textAlign:'center',padding:'12px 14px',borderRadius:'14px',background:'#059669',color:'white',fontWeight:950}}>Create order handoff</button>
-                    <Link href={selectedOrderHref} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #a7f3d0',background:'white',color:'#047857',fontWeight:900,textDecoration:'none'}}>Open order workspace</Link>
-                  </form>
-                ) : selectedIsPending ? (
-                  <div style={{display:'grid',gap:'8px'}}>
-                    <form action={approveSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
-                      <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
-                      <button type="submit" style={{border:0,borderRadius:'14px',background:'#059669',color:'white',fontWeight:950,padding:'12px 14px'}}>Approve quote adjustment</button>
+                <div style={{display:'grid',gap:'8px'}}>
+                  {selectedIsAccepted ? (
+                    <form action={createOrderHandoffAction} style={{display:'grid',gap:'8px'}}>
+                      <input type="hidden" name="quote_id" value={selected.id}/>
+                      <input type="hidden" name="notes" value="Order handoff created from Quotes lifecycle command center."/>
+                      <button type="submit" style={primaryButton('#059669')}>Create / open order handoff</button>
+                      <Link href={selectedOrderHref} style={secondaryLink('#047857','#a7f3d0')}>Open order workspace</Link>
                     </form>
-                    <form action={rejectSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
-                      <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
-                      <textarea name="rejection_reason" required placeholder="Rejection reason required" rows={3} style={{border:'1px solid #fecaca',borderRadius:'12px',padding:'10px',fontSize:'12px'}} />
-                      <button type="submit" style={{border:'1px solid #fecaca',borderRadius:'14px',background:'white',color:'#dc2626',fontWeight:900,padding:'10px 12px'}}>Reject / request revision</button>
-                    </form>
-                  </div>
-                ) : (
-                  <div style={{display:'grid',gap:'8px'}}>
-                    <Link href={selectedIsSent ? selectedSendHref : buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{textAlign:'center',padding:'12px 14px',borderRadius:'14px',background:'#0b2e4a',color:'white',fontWeight:950,textDecoration:'none'}}>{selectedIsSent ? 'Open send / response workflow' : 'Continue quote'}</Link>
-                    <Link href={selectedApprovalHref} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Review readiness</Link>
-                  </div>
-                )}
-
-                <div style={{display:'grid',gap:'8px',borderTop:'1px solid rgba(15,23,42,.08)',paddingTop:'10px'}}>
-                  <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Open customer PDF</Link>
-                  {!selectedIsAccepted ? <Link href={selectedSendHref} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Send by email / WhatsApp</Link> : null}
-                  <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={{textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid #dbe4ef',background:'white',color:'#334155',fontWeight:900,textDecoration:'none'}}>Edit / revise quote</Link>
+                  ) : selectedIsPending ? (
+                    <>
+                      <form action={approveSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
+                        <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
+                        <button type="submit" style={primaryButton('#059669')}>Approve quote adjustment</button>
+                      </form>
+                      <form action={rejectSelectedQuoteAction} style={{display:'grid',gap:'8px'}}>
+                        <input type="hidden" name="quote_id" value={selected.id}/><input type="hidden" name="lead_id" value={selected.leadId}/>
+                        <textarea name="rejection_reason" required placeholder="Rejection reason required" rows={3} style={{border:'1px solid #fecaca',borderRadius:'12px',padding:'10px',fontSize:'12px'}} />
+                        <button type="submit" style={secondaryButton('#dc2626','#fecaca')}>Reject / request revision</button>
+                      </form>
+                    </>
+                  ) : selectedIsArchive ? (
+                    <>
+                      <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={primaryLink('#334155')}>Clone / create new version</Link>
+                      <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={secondaryLink('#334155','#dbe4ef')}>Open archived PDF</Link>
+                    </>
+                  ) : (
+                    <>
+                      <form action={recordOutcomeAction} style={{display:'grid',gap:'8px'}}>
+                        <input type="hidden" name="quote_id" value={selected.id}/>
+                        <input type="hidden" name="lead_id" value={selected.leadId}/>
+                        <input type="hidden" name="outcome" value={selectedIsRevision ? 'revision_requested' : 'no_response'}/>
+                        <input type="hidden" name="notes" value={selectedIsRevision ? 'Buyer requested a better quote. Create a governed revision.' : 'No response yet. Follow-up scheduled.'}/>
+                        <button type="submit" style={primaryButton(selectedIsRevision ? '#d97706' : '#0b2e4a')}>{selectedIsRevision ? 'Keep locked and create revision' : 'Log no response / schedule follow-up'}</button>
+                      </form>
+                      <Link href={selectedSendHref} style={secondaryLink('#334155','#dbe4ef')}>Open send / response workflow</Link>
+                    </>
+                  )}
+                  <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={secondaryLink('#334155','#dbe4ef')}>Customer PDF</Link>
+                  <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={secondaryLink('#334155','#dbe4ef')}>Edit / revise quote</Link>
                 </div>
-              </aside>
-            </div>
-          </section>
-        ) : null}
+              </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:'10px'}}>
-          {[
-            {label:'Pending approval',value:approvalQueueCount,meta:'Waiting for review',accent:'#d97706'},
-            {label:'Expiring soon',value:expiringSoonCount,meta:'Within 3 days',accent:'#dc2626'},
-            {label:'Sent & active',value:sentActiveCount,meta:'Awaiting response',accent:'#0c7fff'},
-            {label:'Accepted',value:acceptedCount,meta:'Order ready',accent:'#059669'},
-            {label:'Drafts',value:draftCount,meta:'Not yet sent',accent:'#cbd5e1'},
-            {label:'Total value',value:formatQuoteMoney(totalValue,'USD'),meta:'All active quotes',accent:'#7c3aed'},
-          ].map(sc => (
-            <div key={sc.label} className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
-              <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{background:sc.accent}}/>
-              <div className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400 mb-1">{sc.label}</div>
-              <div className="text-[18px] font-black tracking-tight text-slate-900 leading-none">{sc.value}</div>
-              <div className="text-[10px] text-slate-400 mt-1 font-semibold">{sc.meta}</div>
-            </div>
-          ))}
-        </div>
+              {!selectedIsArchive ? (
+                <div style={{marginTop:'12px',display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:'8px'}}>
+                  {[
+                    ['accepted','Mark accepted','Lock quote and move to Orders'],
+                    ['rejected','Mark rejected','Capture reason and archive'],
+                    ['revision_requested','Revision requested','Create governed version'],
+                    ['no_response','No response','Schedule follow-up'],
+                    ['expired','Expire quote','Archive and allow clone'],
+                  ].map(([outcome,label,help]) => (
+                    <form key={outcome} action={recordOutcomeAction} style={{display:'grid'}}>
+                      <input type="hidden" name="quote_id" value={selected.id}/>
+                      <input type="hidden" name="lead_id" value={selected.leadId}/>
+                      <input type="hidden" name="outcome" value={outcome}/>
+                      <input type="hidden" name="notes" value={help}/>
+                      <button type="submit" style={{border:'1px solid #e2e8f0',background:'white',borderRadius:'14px',padding:'10px',textAlign:'left',cursor:'pointer'}}>
+                        <strong style={{display:'block',fontSize:'12px',color:'#0f172a'}}>{label}</strong>
+                        <span style={{display:'block',fontSize:'10px',color:'#64748b',marginTop:'2px'}}>{help}</span>
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              ) : null}
 
-        {approvalQueueCount>0 && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <div style={{fontSize:'12px',fontWeight:800,color:'#92400e',marginBottom:'4px'}}>{approvalQueueCount} quote{approvalQueueCount>1?'s':''} pending approval</div>
-            <div style={{fontSize:'11px',color:'#92400e',lineHeight:'1.55'}}>Review overrides, approve or reject, and keep the send gate blocked until approval is logged.</div>
-            <div style={{display:'flex',gap:'8px',marginTop:'10px'}}>
-              {firstApproval && <Link href={`/quotes?quoteId=${firstApproval.id}`} style={{padding:'7px 16px',borderRadius:'6px',background:'#059669',color:'white',fontSize:'12px',fontWeight:700,textDecoration:'none'}}>Review {firstApproval.quoteNumber??firstApproval.id.slice(0,8)}</Link>}
-              {secondApproval && <Link href={`/quotes?quoteId=${secondApproval.id}`} style={{padding:'7px 14px',borderRadius:'6px',background:'white',border:'1px solid #e2e8f0',color:'#334155',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>Review {secondApproval.quoteNumber??secondApproval.id.slice(0,8)}</Link>}
-            </div>
-          </div>
-        )}
-
-        <div style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'22px',overflow:'hidden',boxShadow:'0 1px 3px rgba(15,23,42,.06)'}}>
-          <div style={{padding:'14px 18px',borderBottom:'1px solid #e2e8f0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <div><div style={{fontSize:'9px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#64748b',marginBottom:'2px'}}>Secondary quote queue</div><div style={{fontSize:'14px',fontWeight:850,color:'#0f172a'}}>{filteredItems.length} matching quotes</div></div>
-            <span style={{fontSize:'11px',fontWeight:800,color:'#64748b'}}>Select one quote to move focus above</span>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'9px 18px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:'9px',fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'#94a3b8'}}>
-            <div/><div>Company / ref</div><div>Status</div><div>Version</div><div style={{textAlign:'right'}}>Total value</div><div>Validity</div><div>Owner</div><div style={{textAlign:'right'}}>Action</div>
-          </div>
-          <div style={{maxHeight:'520px',overflowY:'auto'}}>
-            {filteredItems.length===0 ? (
-              <div style={{padding:'32px',textAlign:'center',fontSize:'13px',color:'#64748b'}}><strong>No quotes match the active filters.</strong><br/>{activeQuoteFilterChips.length ? activeQuoteFilterChips.map((chip) => chip.label).join(' · ') : 'No active filters'}<br/><Link href="/quotes" style={{display:'inline-block',marginTop:'12px',padding:'7px 14px',borderRadius:'999px',background:'#0b2e4a',color:'white',fontSize:'11px',fontWeight:800,textDecoration:'none'}}>Clear filters</Link></div>
-            ) : queueItems.map(item => {
-              const validity = getValidityLabel(item);
-              const isPending = item.status==='pending_approval';
-              const isExpiring = validity.rose && item.status!=='expired';
-              const isAccepted = item.status==='accepted'||item.hasAcceptedContract;
-              const isSelected = selected?.id===item.id;
-              const borderLeft = isSelected ? '4px solid #0c7fff' : isPending?'3px solid #d97706':isExpiring?'3px solid #dc2626':undefined;
-              const actionLabel = getQuoteActionLabel(item);
-              const actionPrimary = isPending||isAccepted||item.status==='approved';
-              const sc = getStatusStyle(item.status);
-              return (
-                <Link key={item.id} href={`/quotes?quoteId=${item.id}&mode=${encodeURIComponent(filters.mode)}&q=${encodeURIComponent(filters.q)}&status=${encodeURIComponent(filters.status)}`}
-                  style={{display:'grid',gridTemplateColumns:'30px 1fr 120px 100px 110px 110px 90px 90px',gap:'8px',padding:'12px 18px',borderBottom:'1px solid #e2e8f0',alignItems:'center',cursor:'pointer',textDecoration:'none',background:isSelected?'rgba(12,127,255,.065)':isAccepted?'rgba(5,150,105,.02)':'white',borderLeft,transition:'background .1s'}}>
-                  <div><input type="checkbox" style={{width:'16px',height:'16px',borderRadius:'3px'}} readOnly checked={false}/></div>
-                  <div>
-                    <div style={{fontSize:'12px',fontWeight:800,color:'#1e293b',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{item.companyName}</div>
-                    <div style={{fontSize:'10px',color:'#94a3b8',fontFamily:'monospace',marginTop:'1px'}}>{item.quoteNumber??item.id.slice(0,8)} · {item.lineItems[0]?.productName??'No product'}{item.lineItems.length>1?` + ${item.lineItems.length-1}`:''}</div>
+              <div style={{marginTop:'14px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
+                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Commercial lines</div>
+                  <div style={{marginTop:'8px',display:'grid',gap:'8px'}}>
+                    {selectedProducts.length ? selectedProducts.map(line => (
+                      <div key={line.id} style={{display:'flex',justifyContent:'space-between',gap:'12px',borderBottom:'1px solid #f1f5f9',paddingBottom:'8px'}}>
+                        <div style={{minWidth:0}}>
+                          <div style={{fontSize:'12px',fontWeight:850,color:'#0f172a',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{line.productName}</div>
+                          <div style={{fontSize:'10px',color:'#64748b'}}>Qty {line.quantity}{line.isPriceOverridden ? ' · adjusted' : ''}</div>
+                        </div>
+                        <div style={{fontSize:'12px',fontWeight:900,color:'#0b2e4a',whiteSpace:'nowrap'}}>{formatQuoteMoney(line.quantity*(line.unitPrice??0),line.currency)}</div>
+                      </div>
+                    )) : <div style={{fontSize:'12px',color:selectedIsRisk ? '#dc2626' : '#64748b',fontWeight:selectedIsRisk ? 850 : 500}}>No quote lines are attached. {selectedIsRisk ? 'Review before any order handoff.' : ''}</div>}
                   </div>
-                  <div><span style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:'999px',fontSize:'9px',fontWeight:700,border:'1px solid',background:sc.bg,borderColor:sc.border,color:sc.color,whiteSpace:'nowrap'}}>{labelizeStatus(item.status)}</span></div>
-                  <div style={{fontSize:'11px',fontWeight:600,color:'#334155'}}>v{item.totalVersions||1}</div>
-                  <div style={{textAlign:'right'}}><div style={{fontSize:'12px',fontWeight:800,color:'#1e293b'}}>{formatQuoteMoney(item.subtotal,item.currency)}</div><div style={{fontSize:'10px',color:'#94a3b8'}}>{item.currency??'USD'} · Quote</div></div>
-                  <div style={{fontSize:'11px',fontWeight:validity.rose||validity.amber?700:400,color:validity.rose?'#dc2626':validity.amber?'#d97706':validity.emerald?'#059669':'#64748b'}}>{validity.label}</div>
-                  <div style={{fontSize:'11px',color:'#475569'}}>{item.contactName??'--'}</div>
-                  <div style={{textAlign:'right'}}><span style={{padding:'4px 10px',borderRadius:'6px',border:'1px solid',fontSize:'10px',fontWeight:700,background:actionPrimary?'#0b2e4a':'white',borderColor:actionPrimary?'#0b2e4a':'#e2e8f0',color:actionPrimary?'white':'#475569'}}>{actionLabel}</span></div>
-                </Link>
-              );
-            })}
-          </div>
-          {filteredItems.length>queueItems.length&&<div style={{textAlign:'center',padding:'12px',color:'#94a3b8',fontSize:'12px',fontWeight:700}}>Showing first {queueItems.length} matching quotes in the secondary queue. Refine filters to narrow the list.</div>}
+                </div>
+                <div style={{border:'1px solid #e2e8f0',borderRadius:'18px',background:'white',padding:'14px'}}>
+                  <div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.14em',textTransform:'uppercase',color:'#94a3b8'}}>Setu Guru guidance</div>
+                  <p style={{fontSize:'12px',lineHeight:1.6,color:'#64748b',margin:'8px 0 0'}}>
+                    {selectedIsRisk ? 'Guru blocks order handoff and recommends review, void, archive, or clone correctly.' : selectedIsAccepted ? 'Guru sends this to Orders because the quote is now live revenue intent.' : selectedIsRevision ? 'Guru keeps the original quote locked and starts a governed revised version.' : selectedIsSent ? 'Guru asks the rep to log a real outcome instead of leaving follow-up ambiguous.' : selectedIsArchive ? 'Guru keeps this searchable in Archive and offers clone-new-version.' : 'Guru checks readiness and suggests the next lifecycle step.'}
+                  </p>
+                  {selected?.lifecycleEvents?.length ? <div style={{marginTop:'8px',fontSize:'11px',color:'#64748b'}}>Latest lifecycle: {selected.lifecycleEvents[0]?.outcome ?? selected.lifecycleEvents[0]?.event_type} · {formatDate(selected.lifecycleEvents[0]?.created_at)}</div> : null}
+                </div>
+              </div>
+
+              {selectedGroup?.quotes?.length ? (
+                <div style={{marginTop:'18px'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',marginBottom:'10px'}}>
+                    <div><div style={{fontSize:'10px',fontWeight:900,letterSpacing:'.18em',textTransform:'uppercase',color:'#0c7fff'}}>Lifecycle timeline</div><h3 style={{fontSize:'18px',fontWeight:950,margin:'2px 0 0'}}>Quotes for this customer</h3></div>
+                    <span style={{fontSize:'11px',color:'#64748b',fontWeight:850}}>Outcomes are explicit</span>
+                  </div>
+                  <div style={{display:'grid',gap:'10px'}}>
+                    {selectedGroup.quotes.map((quote) => {
+                      const lifecycle = getQuoteLifecycle(quote);
+                      const sc = getStatusStyle(quote.status, lifecycle);
+                      const archived = isArchiveLifecycle(lifecycle);
+                      return (
+                        <Link key={quote.id} href={`/quotes?quoteId=${quote.id}${filters.mode !== 'all' ? `&mode=${encodeURIComponent(filters.mode)}` : ''}`} style={{display:'grid',gridTemplateColumns:'130px minmax(0,1fr) 120px 150px',gap:'12px',border:'1px solid',borderColor:quote.id === selected.id ? '#93c5fd' : archived ? '#cbd5e1' : '#dbe4ef',borderRadius:'18px',background:archived ? '#f8fafc' : quote.id === selected.id ? '#f8fbff' : 'white',padding:'12px',alignItems:'center',textDecoration:'none',color:'#0f172a',opacity:archived ? .78 : 1}}>
+                          <div><span style={{display:'inline-flex',border:'1px solid',borderColor:sc.border,background:sc.bg,color:sc.color,borderRadius:'999px',padding:'4px 9px',fontSize:'10px',fontWeight:950,textTransform:'capitalize'}}>{lifecycle === 'risk' ? 'data risk' : labelizeStatus(lifecycle)}</span><div style={{marginTop:'6px',fontSize:'11px',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',color:'#64748b'}}>{quote.quoteNumber ?? quote.id.slice(0,8)}</div></div>
+                          <div style={{minWidth:0}}><div style={{fontSize:'13px',fontWeight:950,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{quote.lineItems[0]?.productName ?? 'No product'}</div><div style={{fontSize:'11px',color:'#64748b'}}>{quote.lineItems.length} lines · updated {formatDate(quote.updatedAt)} · {quote.archive_reason ?? quote.lifecycle_outcome ?? quote.status}</div></div>
+                          <div style={{fontSize:'12px',fontWeight:950}}>{formatQuoteMoney(quote.subtotal, quote.currency)}</div>
+                          <div style={{fontSize:'11px',fontWeight:900,color:sc.color,textAlign:'right'}}>{getQuoteActionLabel(quote)}</div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
         </div>
       </div>
     </div>
   );
+}
+
+function badgeStyle(bg: string, border: string, color: string): CSSProperties {
+  return { display:'inline-flex',border:'1px solid',borderColor:border,background:bg,color,borderRadius:'999px',padding:'4px 8px',fontSize:'10px',fontWeight:950 };
+}
+function primaryButton(background: string): CSSProperties {
+  return { border:0,textAlign:'center',padding:'12px 14px',borderRadius:'14px',background,color:'white',fontWeight:950,cursor:'pointer' };
+}
+function secondaryButton(color: string, borderColor: string): CSSProperties {
+  return { border:'1px solid',borderColor,textAlign:'center',padding:'10px 12px',borderRadius:'14px',background:'white',color,fontWeight:900,cursor:'pointer' };
+}
+function primaryLink(background: string): CSSProperties {
+  return { display:'block',textAlign:'center',padding:'12px 14px',borderRadius:'14px',background,color:'white',fontWeight:950,textDecoration:'none' };
+}
+function secondaryLink(color: string, borderColor: string): CSSProperties {
+  return { display:'block',textAlign:'center',padding:'10px 12px',borderRadius:'14px',border:'1px solid',borderColor,background:'white',color,fontWeight:900,textDecoration:'none' };
 }
