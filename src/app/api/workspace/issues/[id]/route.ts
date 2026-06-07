@@ -4,13 +4,26 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { SETU_FLOW_ORG_ID } from '@/lib/queries/workspace';
 
+function normalizeStoredIssueStatus(status: unknown) {
+  const value = String(status ?? '').trim();
+  const normalized = value.toLowerCase();
+  if (normalized === 'in_review' || normalized === 'in-review' || normalized === 'review' || normalized === 'in review') return 'in_review';
+  return value;
+}
+
+function isResolvedStatus(status: unknown) {
+  const value = String(status ?? '').trim();
+  return value === 'Resolved' || value === "Won't Fix";
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
   const body = await req.json();
 
   // Auto-manage resolved_at
   if (body.status !== undefined) {
-    const nowResolved = body.status === 'Resolved' || body.status === "Won't Fix";
+    body.status = normalizeStoredIssueStatus(body.status);
+    const nowResolved = isResolvedStatus(body.status);
     const admin = createAdminSupabaseClient();
     const supabase = admin ?? await createClient();
 
