@@ -33,10 +33,28 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const issueId = searchParams.get('issue_id');
-  if (!issueId) return NextResponse.json({ error: 'issue_id required' }, { status: 400 });
+  const counts = searchParams.get('counts') === '1';
 
   const admin = createAdminSupabaseClient();
   const supabase = admin ?? await createClient();
+
+  if (counts) {
+    const { data, error } = await (supabase as any)
+      .from('issue_comments')
+      .select('issue_id')
+      .eq('organization_id', SETU_FLOW_ORG_ID);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const grouped = (data ?? []).reduce((acc: Record<string, number>, row: { issue_id: string }) => {
+      if (row.issue_id) acc[row.issue_id] = (acc[row.issue_id] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return NextResponse.json(grouped);
+  }
+
+  if (!issueId) return NextResponse.json({ error: 'issue_id required' }, { status: 400 });
 
   const { data, error } = await (supabase as any)
     .from('issue_comments')
