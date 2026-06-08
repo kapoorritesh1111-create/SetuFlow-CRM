@@ -84,7 +84,6 @@ function getStableDayDiff(scheduledAt?: string | null, nowIso?: string | null) {
   return Math.round((start(target) - start(now)) / dayMs);
 }
 
-// ── SF-18-093: Priority Score Ring ─────────────────────────────────────────
 function computePriorityScore(
   dealValue: number | null,
   overdueDays: number | null,
@@ -102,7 +101,6 @@ function computePriorityScore(
 }
 
 function PriorityRing({ score }: { score: number }) {
-  const dash = (score / 100) * 125.66;
   const [stroke, textClass] =
     score >= 75 ? ['#e11d48', 'text-rose-600'] :
     score >= 50 ? ['#d97706', 'text-amber-600'] :
@@ -121,8 +119,6 @@ function PriorityRing({ score }: { score: number }) {
     </div>
   );
 }
-// ─────────────────────────────────────────────────────────────────────────────
-
 
 export function LeadTableRow({
   lead,
@@ -196,7 +192,6 @@ export function LeadTableRow({
   const stageOrder = stageMeta.sortOrder ?? 0;
   const stageCount = stageMeta.stageCount ?? 1;
   const progress = stageCount > 0 ? Math.max(0.08, Math.min(1, stageOrder / stageCount)) : 0.08;
-  // SF-18-093: Priority score — must be after progress is declared
   const priorityScore = computePriorityScore(lead.deal_value, overdueDays, maxDealValue, blockerCount, progress, followUpState);
   const progressBarColour = blockerCount > 0 || followUpState === 'overdue' ? 'bg-rose-400' : followUpState === 'today' ? 'bg-amber-400' : 'bg-emerald-500';
 
@@ -212,6 +207,13 @@ export function LeadTableRow({
   const hasDueDate = Boolean(lead.next_follow_up_at);
   const dueLabel = hasDueDate ? safeFormatDateTime(lead.next_follow_up_at) : '—';
   const formattedDealValue = dealValue ? new Intl.NumberFormat('en-US', { style: 'currency', currency: dealCurrency, maximumFractionDigits: 0 }).format(dealValue) : '—';
+  const leadContact = lead as LeadRow & { email?: string | null; phone?: string | null; whatsapp_number?: string | null };
+  const emailAddress = leadContact.email?.trim() || '';
+  const phoneNumber = leadContact.phone?.trim() || '';
+  const whatsappSource = leadContact.whatsapp_number?.trim() || phoneNumber;
+  const telHref = phoneNumber ? `tel:${phoneNumber.replace(/[^+0-9]/g, '')}` : '';
+  const mailHref = emailAddress ? `mailto:${encodeURIComponent(emailAddress)}?subject=${encodeURIComponent(`SETU Flow follow-up: ${lead.company_name}`)}` : '';
+  const whatsappHref = whatsappSource ? `https://wa.me/${whatsappSource.replace(/[^0-9]/g, '')}` : '';
 
   return (
     <article
@@ -222,11 +224,10 @@ export function LeadTableRow({
         severityBorderClass,
         selected || isSpotlight ? 'bg-blue-50/40' : '',
       ].join(' ')}
-      style={{ gridTemplateColumns: '28px 1fr 130px 110px 88px 110px 100px 146px' }}
+      style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 146px' }}
       onClick={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; openLeadCommandCenter(router, commandCenterHref); }}
       onKeyDown={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; handleLeadCommandCenterKeyDown(event, router, commandCenterHref); }}
     >
-      {/* SF-18-095: Left urgency rail */}
       <div className={[
         'absolute left-0 top-2 bottom-2 w-[3px] rounded-r-[2px] transition-opacity',
         followUpState === 'overdue'  ? 'bg-rose-500 opacity-100' :
@@ -250,6 +251,12 @@ export function LeadTableRow({
         </div>
       </div>
 
+      <div className="hidden lg:flex items-center justify-center gap-2" aria-label={`Contact ${lead.company_name}`}>
+        {emailAddress ? <a href={mailHref} onClick={(event) => event.stopPropagation()} title={`Email ${lead.company_name}`} aria-label={`Email ${lead.company_name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[13px] font-black text-[#0b2e4a] shadow-sm hover:bg-blue-100">✉</a> : null}
+        {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} title={`WhatsApp ${lead.company_name}`} aria-label={`WhatsApp ${lead.company_name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-[13px] font-black text-white shadow-sm hover:bg-emerald-700">☘</a> : null}
+        {phoneNumber ? <a href={telHref} onClick={(event) => event.stopPropagation()} title={`Call ${lead.company_name}`} aria-label={`Call ${lead.company_name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#0b2e4a] text-[13px] font-black text-white shadow-sm hover:bg-[#061c2e]">☎</a> : null}
+      </div>
+
       <div className="hidden lg:block">
         <div className="text-[11px] font-semibold text-slate-700">{stageName}</div>
         <div className="mt-[4px] h-[3px] w-full rounded-full bg-slate-100"><div className={`h-full rounded-full ${progressBarColour}`} style={{ width: `${progress * 100}%` }} /></div>
@@ -264,7 +271,6 @@ export function LeadTableRow({
                 : <span className="text-[10px] text-slate-400">No date set</span>}
       </div>
 
-      {/* SF-18-093: Priority Score Ring */}
       <div className="hidden lg:flex items-center justify-center">
         <PriorityRing score={priorityScore} />
       </div>
@@ -279,20 +285,16 @@ export function LeadTableRow({
         <div className="mt-0.5 text-[10px] text-slate-400">{lead.source_label ?? lead.source_type ?? '—'}</div>
       </div>
 
-      {/* Hover quick actions — visible on group-hover, replaces static Open/More */}
       <div className="relative flex items-center justify-end gap-1.5">
-        {/* Default state: Open → + More (always visible) */}
         <div className="flex items-center gap-1.5 group-hover:opacity-0 group-hover:pointer-events-none transition-opacity duration-100">
           <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
           <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:bg-slate-50">More</button>
         </div>
-        {/* Hover overlay: Follow up / Note / Open → */}
         <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
           {openQuickEdit && <button type="button" onClick={(event) => { event.stopPropagation(); openQuickEdit?.(lead.id); }} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 transition whitespace-nowrap">📅 Follow up</button>}
           <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition whitespace-nowrap">✏ Note</button>
           <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90 whitespace-nowrap">Open →</button>
         </div>
-        {/* More dropdown (kept functional, opened from default More button) */}
         {actionsOpen ? (
           <div className="absolute right-0 top-full z-20 mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg" onClick={(event) => event.stopPropagation()}>
             <button type="button" disabled={!openQuoteBuilder} onClick={() => { setActionsOpen(false); openQuoteBuilder?.(lead.id); }} className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Continue quote</button>
@@ -330,9 +332,10 @@ export function LeadTableHeader({
     );
   }
   return (
-    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px 1fr 130px 110px 88px 110px 100px 146px' }}>
+    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 146px' }}>
       <div className="flex justify-center"><input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} className="h-[18px] w-[18px] rounded-[4px] border-slate-300" /></div>
       <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Company / Contact</div>
+      <div className="hidden lg:block text-center text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Contact</div>
       <SortableHeader field="stage" label="Stage progress" />
       <SortableHeader field="follow_up" label="Follow-up" />
       <SortableHeader field="priority_score" label="Priority" className="justify-center" />
