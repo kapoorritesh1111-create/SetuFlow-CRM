@@ -1,107 +1,154 @@
-# Follow-up help
+# Follow-up (Leads) help
 
 Route: `/leads` and `/leads/[leadId]`
-Owner: Setu Guru knowledge base
-Last updated: 2026-05-10
+Last updated: 2026-06-08 (S24-200 resolved — contact CTAs live)
 
 ## Purpose
 
-Follow-up is the command center for buyers, suppliers, qualification, next actions, product interest, and quote readiness. It should show what to do next and what is blocking the record.
+The Follow-up workspace is the command centre for buyers and suppliers. It shows the full lead queue with status, pipeline stage, follow-up timing, pipeline value, owner, and — as of Sprint 24 — one-tap contact actions directly on every lead row.
 
-## Sprint 7 Lead Command Center action hierarchy
+---
 
-The Lead Command Center should keep one clear action hierarchy:
+## Lead list — what's new in Sprint 24 (S24-200)
 
-1. **Continue quote / Create quote** is the primary commercial action.
-2. **Plan follow-up** is the next operational action.
-3. **Edit lead** is the supporting data-correction action.
-4. **Close lead outcome** is an intentional terminal action area for Won/Lost, not a competing primary CTA.
+### Contact CTAs on every lead row
 
-When a user asks how to continue a quote from a lead, route them through:
+Each lead row now shows inline contact action buttons alongside the company name and contact details:
 
-`/leads` → open lead → **Continue quote** → Step 4 Review when compliance/document blockers need fixing.
+| Button | Action |
+|---|---|
+| 📧 Email icon | Opens `mailto:` with pre-filled subject: "SETU Flow follow-up: [Company]" |
+| 💬 WhatsApp icon (green) | Opens `https://wa.me/[number]` in a new tab; uses `whatsapp_number` field first, falls back to `phone` |
+| 📞 Phone icon | Opens `tel:` link for direct dial |
 
-## Sprint 7 lead list/table action policy
+These buttons are visible directly in the lead list without opening the Lead Command Center. On mobile, they appear as tappable circular icons. On desktop, they appear inline on hover.
 
-The lead list should stay fast to scan and should not repeat the same actions in multiple places.
+The data behind the CTAs comes from: `contact_name`, `email`, `phone`, `whatsapp_number`, `phone_secondary`, `phone_country_code`, `phone_secondary_country_code`.
 
-Current row behavior:
+If a phone or email field is empty, the corresponding button is hidden — it does not show a disabled state that confuses users.
 
-- The row itself opens the Lead Command Center.
-- The visible row CTA is **Open**.
-- The secondary action control is labeled **More**.
-- Secondary actions live in **More**:
-  - Continue quote;
-  - Edit lead;
-  - Lead removal action.
-- Removal remains a deliberate secondary action and should not appear as a competing inline CTA.
-- The action column header is **Open / More** so users understand the row model quickly.
+### Lead list structure (unchanged)
 
-Setu Guru should tell users to click the lead row or **Open** for the full Lead Command Center. Use **More → Continue quote** only when the user wants to jump straight from the list into quote work.
+- The row itself opens the Lead Command Center
+- **Open** button — primary CTA to open the full Command Center
+- **More** — secondary dropdown: Continue quote · Edit lead · Remove lead
+- **Action column header**: Open / More
 
-## Sprint 7 filter policy
+Filters: Journey · Pipeline · Commercial scope groupings in the advanced panel. Source Event filter narrows owner, stage, country, market, and product to values present in that event's leads.
 
-Filters should help users narrow the queue without competing with lead-row actions.
+---
 
-Current filter behavior:
+## Lead Command Center — current structure
 
-- Filters are grouped into **Journey**, **Pipeline**, and **Commercial scope** in the advanced panel.
-- Route-locked buyer/supplier pages show one route-lock note instead of repeated helper text under every field.
-- **Clear filters** stays visible in the panel header.
-- Country and market filters stay connected:
-  - selecting a country also selects that country's market;
-  - selecting a market narrows the country list to countries in that market.
-- Top inline filters are connected to **Source Event**:
-  - selecting a source event narrows owner, stage, country, market, and product options to values actually present in leads captured from that event;
-  - clearing the source event restores the full option list;
-  - if a selected owner/stage/country/market/product is not present in the chosen event, the selection is cleared.
-- Filtering does not change quote, compliance, product cleanup, or lead workflow behavior.
+The Lead Command Center (`/leads/[leadId]`) is a one-page workspace. It does not use nested routes.
 
-Setu Guru should tell users to use filters only when they need to narrow the lead queue by event, owner, pipeline, stage, country, market, or product. For normal lead work, open the lead row first.
+### Header bar
 
-## Country and market data policy
+- Back to Lead Queue · Command Center · Quote Preview tabs
+- Top-right badge: ONE PAGE WORKSPACE · NO NESTED ROUTE
 
-Countries must map to the correct workspace market. Ireland, Austria, and other European countries should map to Europe, not North America. When a new workspace is provisioned, copied country rows should preserve the source country market by matching the market name in the new workspace.
+### Context bar (below header)
 
-If a country appears under the wrong market, Setu Guru should recommend checking the country master row and the organization default country/default market pairing before changing lead data.
+Status pills showing live readiness at a glance:
+- ✓ Pricing ready — catalog pricing is set
+- ✓ Compliance clear — no active gate blockers
+- Next follow-up: date and time
+- Buyer / Supplier badge
 
-## Setu Guru answer policy
+### Lead hero
 
-When a user asks about a lead, Setu Guru should use the active route, visible lead text, organization data, and the lead record before falling back to this topic.
+- Initials avatar + Company name + buyer/owner/source/country line
+- Three contact CTAs inline: Email · WhatsApp (green) · Phone
+- View quote button (dark) · Schedule follow-up · Quick edit
+
+### Pipeline stage strip
+
+Horizontal stage progress: New Lead → Qualified → Contacted → Samples Sent → Negotiation → Won → Lost
+
+Current stage highlighted in teal/green. Completed stages in green. Upcoming stages greyed out.
+
+### Four workflow action cards
+
+| Card | Shows |
+|---|---|
+| FOLLOW-UP | Next follow-up date; OVERDUE badge if past; Reschedule now prompt |
+| QUALIFICATION | qualification status; product count |
+| COVERAGE | Product · Market count; coverage readiness |
+| COMMERCIAL | Quote active status; create or review quote |
+
+Each card has an **Inspect →** link.
+
+### Priority action panel (right rail)
+
+- Priority action label + description
+- **Open follow-up lane** button (dark) — primary CTA
+- Lead queue Hot list showing adjacent leads
+
+### Quote prep checklist
+
+Below the four cards:
+- Buyer qualification status
+- Pricing ready status
+- Quote draft status (with accepted date if accepted)
+- Compliance clear status
+
+**Continue quote →** button top-right of checklist.
+
+### Sticky action bar (bottom)
+
+- ✏ Continue quote (dark) · 📅 Schedule follow-up · 🖊 Quick edit
+- Right: COMMAND CENTER · WORKFLOW PILLARS · [stage label]
+
+### Compliance gate panel (bottom-right)
+
+- Gate status heading
+- Live compliance result: "Compliance is currently clear" or active blockers
+
+---
+
+## Setu Guru answer policy for leads
+
+When a user asks about a lead, Setu Guru uses the active route, visible lead text, and the lead record before generic answers.
 
 Setu Guru should help answer:
-
 1. Is this buyer or supplier qualified enough to quote?
-2. What product interest is missing?
+2. What product interest or coverage is missing?
 3. What next action should be taken?
 4. What quote, compliance, document, or pricing blocker exists?
 5. Does a human need to approve a decision?
+6. How do I contact this lead? (Route to email, WhatsApp, or phone CTA)
+
+---
 
 ## Common blockers
 
-- Lead has no product interest.
-- Buyer country or market is missing.
-- Quote currency or incoterm is not set.
-- Compliance status is unclear.
-- Required evidence is missing for quote-send rules.
-- Advisory dispatch documents are being mistaken for quote blockers.
-- Follow-up date is overdue or missing.
-- Supplier or buyer type is unclear.
+- Lead has no product interest mapped
+- Buyer country or market is missing
+- Quote currency or incoterm is not set
+- Compliance gate is open (shown in Gate status panel)
+- Follow-up date is overdue
+- Contact fields (phone, email, whatsapp_number) are blank — CTAs will be hidden
+- Supplier or buyer type is unclear
+
+---
 
 ## Allowed guidance
 
-Setu Guru may suggest opening the lead, adding product interest, reviewing quote prep, checking compliance evidence, opening the active quote Review workflow, or creating a task. It may explain blockers and routes.
+Setu Guru may suggest: opening the lead, adding product interest, reviewing quote prep checklist, checking compliance gate status, using the contact CTAs, opening the follow-up lane, creating a task, or opening the Quote Launcher for a new or revised quote.
 
 ## Human approval rules
 
-Setu Guru must not change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, remove lead records, or write back field changes without explicit user approval and app permission.
+Setu Guru must not: change lead status, approve price changes, waive compliance, send quotes, mark leads won/lost, remove lead records, or write back field changes without explicit operator approval.
+
+---
 
 ## Suggested prompts
 
 - Can I quote this lead now?
-- How do I continue a quote from this lead?
+- How do I contact this lead on WhatsApp?
 - What is blocking this lead?
 - Which products or country details are missing?
 - What evidence do I need before quote send?
 - Which leads came from this trade event?
 - When should I mark a lead won or lost?
+- How do I schedule a follow-up?

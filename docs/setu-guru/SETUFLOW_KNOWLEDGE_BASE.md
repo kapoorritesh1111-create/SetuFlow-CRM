@@ -8,57 +8,82 @@ _For chatbot knowledge base upload — June 2026_
 This is the primary commercial workflow in SetuFlow. Every deal follows this path.
 
 ```text
-Capture Lead -> Qualify -> Map Products -> Move Pipeline -> Create Quote -> Approve Quote -> Send Quote -> Accept Quote -> Create Order -> Execute Order
+Capture Lead -> Qualify -> Map Products -> Move Pipeline -> Create/Launch Quote -> Approve Quote -> Send Quote -> Log Outcome -> [Accept -> Move to Orders] -> Execute Order
 ```
+
+_Updated June 2026: Quote workspace is now a customer-grouped lifecycle command centre. Lead rows now have inline contact CTAs. See Sprint 24 notes below._
 
 ### Step-by-step
 
 **1. Capture the Lead**
-- Desktop: Leads -> "+ New Lead" full form or "Quick Lead" fast entry
+- Desktop: Leads (`/leads`) -> "+ New Lead" full form or "+ Quick Lead" fast entry
 - Mobile: `/mobile/capture` for field capture
 - Trade Show: Trade Events -> Capture at event
 - Business Card: Mobile scan -> AI extracts details -> lead auto-created
 
-**2. Qualify the Lead**
-- Open lead -> Qualification section
+**2. Contact the Lead (Sprint 24 — S24-200)**
+- From the lead list, use the inline contact buttons on each row (no need to open the full Command Center):
+  - **Email** icon → opens `mailto:` with pre-filled subject
+  - **WhatsApp** icon (green) → opens `https://wa.me/[number]`; uses `whatsapp_number` field first, falls back to `phone`
+  - **Phone** icon → opens `tel:` link
+- From the Lead Command Center, the same three icons appear in the lead hero section alongside the company name
+
+**3. Qualify the Lead**
+- Open lead Command Center -> Qualification card -> Inspect
 - Set status: `In Review` -> assess fit -> `Qualified` or `Disqualified`
 - Add qualification notes: product categories, deal potential, timeline
+- Quote prep checklist in the Command Center shows live readiness: Pricing ready · Quote draft · Compliance clear
 
-**3. Map Products**
-- Inside lead detail -> Product Interests tab
+**4. Map Products**
+- Inside lead Command Center -> Coverage card -> Inspect
 - Select product categories and specific products the lead is interested in
-- Set mapping status to `Ready` when complete
+- Coverage card shows: product count · market count · readiness status
 
-**4. Move Through Pipeline**
-- Pipeline board (`/pipeline`) -> drag lead card to next stage
-- Or: Lead detail -> change stage in the sidebar
-- Watch for stage gate blockers: compliance/document requirements at certain stages
+**5. Move Through Pipeline**
+- Pipeline stage strip in the Lead Command Center shows current stage
+- Click a stage to advance or drag on Pipeline board (`/pipeline`)
+- Watch for compliance gate status (shown in the Gate status panel, bottom-right of the Command Center)
 
-**5. Create Quote**
-- Open lead -> Click "Create Quote"
-- Terms step: select Incoterm, set currency, set payment terms, lock terms
-- Pricing step: add line items, select product/variant, confirm quantity and unit price
-- Review step: check totals, FX, approval, and compliance/document gates
+**6. Create or Launch a Quote (Sprint 24 — S24-201)**
+- Lead Command Center -> Commercial card -> "Continue quote →" or "Create quote"
+- **Quote Launcher** provides explicit choices:
+  - Continue latest draft
+  - Create new quote (new opportunity for the same customer)
+  - Create revision from a sent quote (creates a new version; original stays locked and immutable)
+  - Clone an accepted quote into a new opportunity quote
+  - View quote history
+- Terms: Incoterm, currency, payment terms
+- Lines: products, quantities, unit prices
+- Review: totals, FX, approval, compliance gate
 
-**6. Quote Approval if required**
+**7. Quote Approval if required**
 - If adjustment exceeds the threshold, quote enters `pending_approval`
 - Owner/Admin/Manager reviews from Quotes approval queue
 - Approve moves quote to `approved`; reject returns it for revision
 
-**7. Send Quote**
-- Quotes workspace -> open quote -> send by the governed send flow
-- Route through approval-send workflow when applicable
-- Quote status moves to `sent`
+**8. Send Quote**
+- Quotes workspace (`/quotes`) -> find customer in the worklist -> open quote -> send via governed send flow
+- After sending, the `/send` page confirms: "Quote [ref] sent to [buyer]" with the full tracked quote link
+- Copy or share the tracked link; use "Open WhatsApp" to send via WhatsApp with buyer-safe wording
+- Status moves to `sent`; the quote moves into the Needs Review / Follow-up Due section of the worklist
 
-**8. Customer Accepts**
-- Update quote status to `accepted`, or accept through the supported acceptance flow
-- Accepted quote becomes the source of order execution truth
+**9. Log the Outcome (Sprint 24 — S24-206)**
+- Sent quotes require an explicit outcome. Five choices:
+  1. **Mark accepted** — locks the quote; creates order handoff; quote exits the Quote workspace
+  2. **Mark rejected** — captures reason; quote moves to archive with clone option
+  3. **Revision requested** — creates a governed new version; original stays immutable
+  4. **No response** — schedules a follow-up task; quote stays in Needs Review
+  5. **Expire quote** — archives the quote; shows clone-to-new-version option
+- Outcome persistence rule: the main quote/order transition is authoritative. Optional timeline/lifecycle logging failures must not undo a successful outcome.
 
-**9. Create Order**
-- Quotes workspace -> accepted quote -> "Create Order"
-- Order appears in Orders workspace
+**10. Accepted Quote — Move to Orders (Sprint 24 — S24-207)**
+- Once accepted and order handoff is created, the quote **exits the Quote workspace worklist**
+- It no longer appears as active quote work in `/quotes`
+- Orders workspace (`/orders`) is now the primary workspace for this deal
+- The quote remains readable in the customer's lifecycle timeline in the Quote workspace
+- Setu Guru should route the user to Orders, not back to the Quote workspace
 
-**10. Execute Order**
+**11. Execute Order**
 - Operations opens `/orders`, the Orders Execution Cockpit
 - Stages: Actual Lines -> Buyer Doc -> Packing -> Freight Queue -> Processing -> Delivery Note -> Final Invoice -> Paid & Closed
 - Each governed step requires explicit human action. Setu Guru can explain blockers and draft checklists, but must not approve, send, waive, sync finance, book freight, or close the order.
@@ -72,6 +97,19 @@ Orders is an execution cockpit, not a Quote clone.
 - WhatsApp is manual tracked-link only. SetuFlow opens WhatsApp or WhatsApp Web with prefilled text; the operator manually sends.
 - PDFs use server rendering where available and browser print fallback from tracked preview pages.
 - Order confirmation and invoice PDFs require actual line items. Empty `contract_line_items` should return a clear error, not a placeholder PDF.
+
+### Quote value bucket rules (critical — Setu Guru must follow these)
+
+**Proposed** = sent quotes awaiting buyer outcome.
+**Accepted** = buyer confirmed; quote locked; no order yet.
+**Order** = accepted quote with confirmed order handoff.
+**Cleanup** = zero-line or zero-value accepted records; stale/historical; void candidates. NOT active value.
+**Archive** = expired or rejected quotes.
+**Exposure** = max of Proposed/Accepted/Order per customer — not the sum.
+
+Do NOT add Proposed + Accepted values together. A customer with one sent quote ($35 proposed) and one accepted quote ($35 accepted) has $35 in exposure, not $70.
+
+Do NOT label a zero-value cleanup record as customer-level Risk. Cleanup means archive/void it. Risk means a bad record is about to be treated as operationally valid (e.g. order handoff from a zero-line quote).
 
 ---
 

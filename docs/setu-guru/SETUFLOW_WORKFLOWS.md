@@ -5,21 +5,68 @@ _For chatbot knowledge base upload — June 2026_
 
 ## QUOTE ISSUES
 
+_Updated June 2026 — Quote workspace is now a customer-grouped lifecycle command centre (S24-205/206/207/208)._
+
+### Problem: Where do I find my quotes now?
+
+**Cause:** The Quotes page is now a customer-grouped lifecycle workspace, not a flat table.
+**Fix:** Go to `/quotes`. The left panel shows customers grouped by section (Needs Review, Revision Requested, Order Handoff, Follow-up Due, Archive, Draft). Click a customer card to open their Quote Story on the right. Use the search/filter bar to find a specific quote by number, product, or customer name.
+
+### Problem: My sent quote is not showing as active — where did it go?
+
+**Cause:** Sent quotes move into the "Needs Review / Follow-up Due" sections. If the quote was accepted and an order was created, it has exited the Quote workspace entirely.
+**Fix:**
+- If sent but no outcome logged → look in the "Needs Review" or "Follow-up Due" section
+- If accepted → it moved to Orders (`/orders`); it is no longer in the active Quote worklist
+- If expired or rejected → it is in the Archive section (use the archive filter or grouping mode)
+- Quote history is always readable in the customer's Lifecycle Timeline panel on the right
+
 ### Problem: Quote stuck in "Pending Approval"
+
 **Cause:** A discount or markup greater than 15% was applied to the quote.
 **Fix:**
 1. An **owner** or **admin** needs to review the quote.
-2. Go to Quotes (`/quotes`).
-3. The quote appears in the approval queue at the top.
-4. Open the quote and review the approval panel.
-5. Approve to move the quote to `approved`, or reject with a reason so the operator can revise.
+2. Go to Quotes (`/quotes`) → find the customer → the quote shows in their card with a "pending_approval" state.
+3. Open the quote and review the approval panel.
+4. Approve to move the quote to `approved`, or reject with a reason so the operator can revise.
+
+### Problem: How do I log an outcome for a sent quote?
+
+**Cause:** Sent quotes require explicit outcome logging before they can progress or close.
+**Fix:** Open the customer's quote story in the Quote workspace → find the sent quote → choose one of five outcomes:
+1. **Mark accepted** → locks quote; creates order handoff; quote exits Quote workspace; go to Orders
+2. **Mark rejected** → captures reason; moves to archive; shows clone option
+3. **Revision requested** → creates a governed new version; original stays locked
+4. **No response** → schedules follow-up task; quote stays in Needs Review
+5. **Expire quote** → archives the quote; shows clone option
+
+### Problem: Outcome action returns an error even though the quote moved
+
+**Cause:** Optional lifecycle event logging (timeline records) failed after the main quote/order transition succeeded.
+**Fix:** This is a known outcome persistence rule. The main transition is authoritative. If the quote shows as accepted/moved to Orders, the outcome succeeded. Optional logging failures are server-side logged and do not invalidate the outcome. Do not retry the main action.
+
+### Problem: The customer shows double the expected value
+
+**Cause:** Proposed and accepted values are being added together incorrectly.
+**Fix:** Value buckets are separate — they must NOT be summed together. A customer with a sent quote (Proposed $35) and an accepted quote (Accepted $35) has **$35 in Exposure**, not $70. The Exposure bucket shows the max of Proposed/Accepted/Order, not the sum.
+
+### Problem: A zero-value accepted record is showing as customer Risk
+
+**Cause:** A stale zero-line or zero-value accepted quote is being treated as active value.
+**Fix:** Zero-line / zero-value accepted records are **Cleanup** candidates, not Risk. Cleanup means archive or void it — it is not an active deal. Only use Risk when the system is about to treat a bad record as operationally valid (e.g. an order handoff pending from an invalid quote).
+
+### Problem: I need a second quote for the same customer
+
+**Cause:** The previous model only allowed one active quote per lead.
+**Fix (Sprint 24 — Quote Launcher):** From the Lead Command Center, use the Quote Launcher. Explicit choices: Continue latest draft · Create new quote · Create revision from sent quote · Clone accepted quote into new opportunity · View quote history. Do not edit a sent quote in place — always create a revision.
 
 ### Problem: Quote Review shows a compliance/document blocker
+
 **Cause:** The active quote is missing required quote-review evidence, or the reviewer has not yet waived/deferred that quote-send blocker.
 **Correct workflow:**
 1. Go to Leads (`/leads`).
 2. Open the lead from the lead queue.
-3. Click **Continue quote** in the Lead Command Center.
+3. Click **Continue quote →** in the Lead Command Center (via the Quote prep checklist).
 4. Complete Product, Terms, and Pricing.
 5. On **Step 4 — Review**, use the red **Resolve compliance/document blocker** card inside the quote Review panel.
 6. Choose Attach evidence, Waive for quote, or Defer to dispatch.
@@ -29,13 +76,20 @@ _For chatbot knowledge base upload — June 2026_
 
 **Important:** Do not route users to a global compliance overlay or unrelated helper as the primary fix. The fix belongs inside the active quote Review workflow.
 
-### Problem: Quote Review says clear but Send Gate still says blocked
-**Cause:** One read path may still be seeing stale blocker state.
-**Fix:** Refresh the governed draft first. If the red blocker remains, escalate as a shared read-path issue.
+### Problem: Accepted quote is still visible in the Quote workspace
+
+**Cause:** The accepted quote and order handoff were created but the quote has not been removed from the active worklist view.
+**Fix (Sprint 24 — S24-207):** Once accepted and an order handoff is created, the quote should exit the active Quote worklist automatically. If it still appears, check that the order handoff was successfully created (`orders` table entry with `source_quote_id` set). Route the user to Orders (`/orders`) — that is now the primary workspace for this deal.
 
 ### Problem: Quote PDF is blank or missing products
+
 **Cause:** Product data may not have loaded correctly, or the quote has no line items.
-**Fix:** Check the quote has line items, product/variant name, and price, then regenerate the PDF from Quotes.
+**Fix:** Check the quote has line items, product/variant name, and price, then regenerate the PDF from Quotes. Zero-line quotes cannot generate a buyer-ready PDF — they should be treated as Cleanup.
+
+### Problem: Quote approaching expiry — what should I do?
+
+**Cause:** Quote validity date is near or passed.
+**Fix (Sprint 24 — S24-208):** For expiring quotes: follow up, revise, or send a reminder to the buyer before validity passes. For expired quotes: the quote moves to archive automatically. Use "Clone to new version" to restart the commercial conversation without losing history. Setu Guru will prompt you when a quote is approaching expiry.
 
 ---
 
@@ -146,17 +200,42 @@ Expected answer: Guru should describe Orders as the Execution Cockpit, explain q
 
 ## LEAD ISSUES
 
+_Updated June 2026 — Lead rows now have inline contact CTAs (S24-200). Lead Command Center is a one-page workspace._
+
+### Problem: How do I call, WhatsApp, or email a lead quickly?
+
+**Cause (Sprint 24 — S24-200):** Inline contact CTAs are now live on every lead row.
+**Fix:** From the lead list (`/leads`), look for the contact action buttons on each row — no need to open the full Command Center:
+- **Email icon** → opens `mailto:` with pre-filled subject "SETU Flow follow-up: [Company]"
+- **WhatsApp icon** (green) → opens `https://wa.me/[number]`; uses `whatsapp_number` field first, falls back to `phone`
+- **Phone icon** → opens `tel:` link
+
+From the Lead Command Center, the same three icons appear in the lead hero section next to the company name. If a field is empty, the button is hidden.
+
+### Problem: Contact CTA buttons are not visible on a lead row
+
+**Cause:** The contact fields (`email`, `phone`, `whatsapp_number`) may be empty for that lead.
+**Fix:** Open the lead Command Center → Quick edit → fill in email, phone, or WhatsApp number. Save, then return to the lead list — the CTAs will appear once the fields are populated.
+
 ### Problem: Lead does not appear in the pipeline
+
 **Cause:** Lead may not have a pipeline stage assigned, or workspace mode is filtering it out.
-**Fix:** Switch to All mode, open the lead, and check pipeline/stage.
+**Fix:** Switch to All mode, open the lead, and check pipeline/stage in the pipeline stage strip.
 
 ### Problem: Lead shows as "Dispatch blocked" but Quote Review is clear
+
 **Cause:** Dispatch/order readiness is separate from Quote Review.
 **Fix:** Continue the quote/send workflow if Step 4 and Step 5 are clear. Treat dispatch badges as execution reminders unless a quote-send rule makes that document mandatory.
 
 ### Problem: Lead shows as "Blocked" in TodayBar
+
 **Cause:** The lead has a compliance or document blocker preventing progression.
-**Fix:** Open the lead and identify the blocker. If it is a quote Review blocker, use the inline Step 4 Review card inside Continue quote.
+**Fix:** Open the lead Command Center and check the Gate status panel (bottom-right). If it is a quote Review blocker, use the inline Step 4 Review card inside "Continue quote →".
+
+### Problem: I want to create a second quote for the same lead
+
+**Cause:** The old model returned the latest existing quote. The Quote Launcher is now the correct entry point.
+**Fix:** Open the Lead Command Center → Commercial card → "Continue quote →" or use the Quote Launcher for: Continue latest draft / Create new quote / Revision from sent / Clone from accepted / View history.
 
 ---
 

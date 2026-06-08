@@ -1,145 +1,190 @@
 # Quotes help
 
-Purpose: Use Quotes to assemble commercial lines, confirm terms, check approvals, revise safely, and send only when quote-stage blockers are resolved.
+Route: `/quotes`
+Last updated: 2026-06-08 (S24-205, S24-206, S24-207, S24-208 resolved)
 
-## Best for
+Purpose: The Quote workspace is a customer-grouped lifecycle command center. Every active quote is organised by customer, lifecycle section, and value bucket. The primary job of this workspace is to help sales teams log outcomes, move accepted quotes to Orders, create governed revisions, and keep the commercial pipeline clean.
 
-- Reviewing quote lines, prices, currency, incoterms, payment terms, and validity.
-- Separating quote currency from catalog/reference currency.
-- Checking approval status and quote-send readiness.
-- Preparing a professional quote PDF that includes SKU, product, pack, units per case, MOQ cases, basis, unit price, case price, line total, origin, shelf life, lead time, seller address, tax ID, and clear tax/incoterm wording.
-- Sharing buyer-facing quote links through production-domain quote share pages.
-- Reviewing quote revision history without overwriting earlier buyer-facing versions.
+## What changed in Sprint 24
+
+The quotes page is a complete overhaul from a flat quote-row table to a customer-grouped Quote Command Center.
+
+### Left panel — Grouped lifecycle worklist
+
+Quotes are grouped by customer. Each customer card shows:
+- Proposed value · Accepted value · Order value · Cleanup value
+- Status pills: sent count, accepted count, cleanup count, revision count
+- Recommended next action for that customer
+
+The left worklist is organised by these priority sections (collapsed individually by managers):
+- **Needs Review** — sent quotes needing an outcome decision
+- **Revision Requested** — buyer asked for a better quote; create a governed new version
+- **Order Handoff** — accepted quotes ready to move to Orders execution
+- **Follow-up Due** — sent quotes past their follow-up date
+- **Archive / Closed** — expired, rejected, or voided records
+- **Draft / Other** — quotes not yet sent
+
+Managers can switch the grouping mode between: Priority · Lifecycle · Value · Customer · Product.
+
+### Right panel — Customer Quote Story
+
+Clicking a customer opens their full quote story:
+- Value buckets: Proposed, Accepted, Order, Cleanup, Exposure
+- Recommended next action (green = move to Orders, amber = revision/follow-up, slate = cleanup)
+- Commercial line items for the selected quote
+- Setu Guru guidance panel (read-only)
+- Lifecycle timeline: all quotes for that customer with explicit outcome labels
+
+### Top KPI strip
+
+Six compact tiles: Follow-up count · Revisions · Order Handoff count · Cleanup count · Expiring · Archive.
+
+### Filters
+
+One filter row: Search (customer/quote/product) · Lifecycle · Customer · From date · To date · Mode (buyers/suppliers) · Group · Apply.
+
+---
+
+## Value bucket definitions
+
+| Bucket | Meaning |
+|---|---|
+| **Proposed** | Sent quotes awaiting buyer outcome |
+| **Accepted** | Buyer confirmed; quote is locked; order not yet created |
+| **Order** | Accepted quote with a confirmed order handoff |
+| **Cleanup** | Zero-line or zero-value accepted records that are stale; void candidates; not active value |
+| **Archive** | Expired or rejected quotes; closed history |
+| **Exposure** | Max of Proposed, Accepted, or Order per customer — the real risk at stake |
+
+**Critical rule:** Cleanup and Risk are not the same thing.
+- **Cleanup** = a zero-value or zero-line accepted record that should be voided or archived. It is not an active deal.
+- **Risk** = a record that the system is about to treat as operationally valid for order handoff when it is not.
+- Setu Guru must never label a zero-value cleanup quote as a customer-level Risk unless an order handoff is actively pending from that invalid record.
+
+**Do not double-count:** A customer with one sent quote (Proposed $35) and one accepted quote (Accepted $35) does NOT have $70 in active value. The Exposure bucket shows the maximum of the two buckets, not the sum.
+
+---
+
+## Quote lifecycle states
+
+| State | Meaning | Next step |
+|---|---|---|
+| `draft` | Editable working version | Finish lines → send |
+| `pending_approval` | Over approval threshold | Owner/admin reviews approval queue |
+| `approved` | Approved; ready to send | Send quote |
+| `sent` | Customer-facing; immutable | Log outcome: accepted / rejected / revision requested / no response / expire |
+| `revision_requested` | Buyer wants a better quote | Create governed new version — do NOT edit the sent record |
+| `accepted` | Buyer accepted; locked | Move to Orders; quote exits the active worklist |
+| `accepted_handoff` | Accepted + order created | Lives in Orders workspace; quote is closed history |
+| `expired` | Passed validity date | Clone into new version if the buyer is still active |
+| `rejected` | Buyer declined | Archive; available for clone if needed |
+| `cleanup` | Zero-value / zero-line stale record | Archive or void; never treat as active value |
+
+---
+
+## Sending a quote — new flow (Sprint 24)
+
+After a quote is sent, the Send page (`/send`) shows:
+- Large green OK badge with "Quote sent" status
+- The full tracked quote link for copy or open
+- "Buyer not opened yet" status indicator
+- Quick actions: Open WhatsApp · View quote · Back to quotes · Open orders
+
+The tracked quote link uses the production domain (`www.setuflowcrm.com`). Do not share Vercel preview URLs.
+
+---
+
+## Quote outcome actions (Sprint 24)
+
+For any sent quote, the operator must log an explicit outcome. The five outcomes are:
+
+1. **Mark accepted** — locks the quote; creates order handoff; quote moves out of the active workspace into Orders.
+2. **Mark rejected** — captures reason; quote moves to archive and shows clone option.
+3. **Revision requested** — creates a governed new version from the sent quote; original stays immutable.
+4. **No response** — schedules a follow-up task; quote stays in Needs Review.
+5. **Expire quote** — archives the quote and shows clone-to-new-version option.
+
+**Outcome persistence rule:** The main quote/order transition is authoritative. Optional lifecycle event logging (timeline, negotiation log) must not block or reverse the main transition if it succeeds. If the main transition succeeds and the optional logging fails, Setu Guru should not show "quote-outcome-error" — the outcome stands.
+
+---
+
+## Accepted quote → Orders handoff (Sprint 24, S24-207)
+
+Once a quote is accepted and the order handoff is created:
+- The quote **exits** the active Quote workspace worklist
+- It no longer appears as normal active quote work
+- The Orders workspace becomes the primary workspace for execution
+- The quote remains readable in the customer's quote history and lifecycle timeline
+- Setu Guru should direct the user to Orders, not back to the Quote workspace
+
+---
+
+## Repeat customer and governed revisions (Sprint 24, S24-201)
+
+The Quote Launcher (accessed from the Lead Command Center) gives explicit choices:
+- Continue latest draft
+- Create new quote (new opportunity)
+- Create revision from a sent quote (creates new version; original stays locked)
+- Clone an accepted quote into a new opportunity quote
+- View quote history
+
+For a revision from a sent quote: the sent record is immutable. Setu Guru must always route to "Create revision" not "Edit quote".
+
+---
+
+## Expiry and Setu Guru automation (Sprint 24, S24-208)
+
+- Quotes approaching expiry: Setu Guru should prompt the operator to follow up, revise, or remind the buyer before the validity date passes.
+- Expired quotes: leave the active display automatically; move to archive; remain available for review or clone-into-new-version.
+- Setu Guru must not auto-expire or auto-archive quotes without operator confirmation.
+
+---
 
 ## Common questions Setu Guru should answer
 
-- Why is this quote blocked?
-- Can I send this quote now?
-- Which price changes need approval?
-- Which documents matter at quote stage versus dispatch stage?
-- Why does quote currency differ from catalog currency?
-- Why does the quote PDF show unit price, case price, and MOQ total?
-- Which quote builder step should I use next?
-- Why should quote share links use the production domain?
-- What happens if I edit a sent quote?
-- Which quote version became the order source?
+- Why is this quote in the Needs Review section?
+- How do I log an outcome for a sent quote?
+- What is the difference between Cleanup and Risk?
+- Why does this customer show zero active value?
+- How do I create a revision when the buyer wants a better quote?
+- Why did my accepted quote disappear from the quote workspace?
+- How do I move this to Orders?
+- Why does the customer show Proposed $35 and Accepted $35 but not $70 total?
+- What does "Buyer not opened yet" mean on the Send page?
+- How do I use the grouped worklist vs the lifecycle view?
+
+---
 
 ## Common blockers
 
-- Missing buyer, country, currency, incoterm, validity, or payment terms.
-- Quote line missing product, quantity, unit, pack, MOQ, or price.
-- Price deviation exceeds approval threshold.
-- Mandatory quote-send compliance rule is open.
-- Advisory dispatch document is being mistaken for a quote-send blocker.
-- Quote share link is still a preview/dev URL or raw JSON placeholder instead of a buyer-facing page.
-- Quote share page lacks organization branding/logo when organization profile has a logo.
-- Attempting to edit a sent, approved, accepted, rejected, expired, or order-source quote version in place.
+- Sent quote needs an outcome logged before it leaves Needs Review
+- Zero-line accepted record dominating a customer's story (treat as Cleanup, not Risk)
+- Accepted quote still visible in the quote worklist after order handoff (should have moved to Orders)
+- Double-counting proposed and accepted value as one combined active value
+- Trying to edit a sent quote instead of creating a governed revision
+- Quote outcome action returning an error when optional lifecycle logging fails (the outcome itself should still persist)
+
+---
 
 ## Data sources
 
-- Quote header and quote versions.
-- `quote_version_line_items` as the commercial line-item source of truth.
-- Lead and lead product interests.
-- Product catalog rows and variants.
-- Organization profile fields: legal name, registered address, city, postal code, country, website, contact email, logo URL, and tax ID.
-- Organization pricing defaults, category defaults, and approval rules.
-- Documents, document rules, and compliance items.
-- Order source lineage: `orders.source_quote_id` and `orders.source_quote_version_id`.
+- `quotes` table — workflow shell; lifecycle fields: `archived_at`, `archive_reason`, `lifecycle_outcome`, `follow_up_at`, `last_customer_response_at`
+- `quote_versions` + `quote_version_line_items` — commercial source of truth
+- `quote_lifecycle_events` — timeline and negotiation history (optional; must not block main outcome transitions)
+- Lead and lead product interests
+- `orders` — created from accepted_version_id after handoff
 
-## Quote builder action clarity
-
-Keep one primary quote builder sequence instead of adding duplicate quote action panels. The sequence is:
-
-**Product & currency → Price lines → Terms & approval → Review totals → Send & approval checkpoint**
-
-Use each step for a clear business decision:
-
-- **Product & currency** anchors buyer context, product scope, pricing basis, and selected quote currency.
-- **Price lines** reviews pack, MOQ, units/case, basis price, quote price, and line total in one table.
-- **Terms & approval** records workflow status, approval posture, and internal notes. Approval posture must be explicit before customer movement.
-- **Review totals** confirms selected currency, quote-only overrides, totals, approval state, and PDF readiness before generating or sending.
-- **Send & approval checkpoint** handles blockers, approval status, revisions, and customer-send decisions through the existing send controls.
-
-Do not add duplicate quote action panels when an action already exists inside the builder sequence, send checkpoint, PDF route, or approval controls. Setu Guru should point the user to the next builder step rather than creating parallel actions.
-
-## Quote version and revision policy
-
-`quote_versions` and `quote_version_line_items` are the commercial source of truth. Parent `quotes` is the workflow shell and summary.
-
-Rules:
-
-- `current_version_id` points to the active/latest working version.
-- `accepted_version_id` points only to the buyer-accepted/order-source version.
-- Sending a quote does **not** mean acceptance.
-- A sent quote version is customer-facing and must stay reproducible with the same line items and PDF context.
-- Editing a sent, approved, accepted, rejected, expired, or order-source quote must create a new quote version with new `quote_version_line_items`.
-- Earlier versions remain readable for audit, PDF reproduction, buyer conversations, and order lineage.
-- Orders must start from `accepted_version_id`; they must not start from an unsent or merely current draft version.
-
-Recommended UI language:
-
-- **Draft** — editable working version.
-- **Needs approval** — approval required before send.
-- **Sent** — customer-facing version; revise instead of editing in place.
-- **Accepted** — buyer accepted this version.
-- **Order source** — execution order was created from this version.
-- **Superseded by vN** — an older sent/revised version has a newer working/customer-facing version.
-
-## Send and approval policy
-
-Send only when approval is approved or not required, the quote has no active send blockers, and the operator intentionally chooses the existing send checkpoint. If approval is pending, route to the approval action first. If blockers are active, explain the blocker and route to the matching builder step or Compliance Assist. Do not create parallel send buttons, quick-send shortcuts, or hidden write-back actions.
-
-Sending a quote may update the current version status to `sent`, create sent communication records, and create buyer-facing PDF/share artifacts. It must not update `accepted_version_id`. Acceptance is a separate explicit buyer/internal outcome.
-
-## Quote share policy
-
-Quote share links must be buyer-facing and professional:
-
-- Use production-domain quote share links from `https://www.setuflowcrm.com`.
-- Do not expose Vercel preview URLs in WhatsApp/customer messages.
-- Do not show raw JSON to the buyer.
-- The share route should open a branded quote summary with organization logo when available and a clear **Open quote PDF** action.
-- The authenticated share URL should carry safe org branding fields (`org`, `logo`, `website`) so the public buyer page can render branding without requiring buyer authentication.
-- If organization logo is missing or unsafe, show a clean fallback mark rather than broken image UI.
-- WhatsApp messages should use polished buyer wording: quote number, product summary, selected-currency total, validity, and production quote link.
-- Keep share flow inside the existing send/checkpoint flow; do not add duplicate quote action surfaces.
-
-## Quote PDF policy
-
-Quote PDFs should look buyer-ready and professional. Use a light white/slate layout with restrained navy accents, not large saturated color blocks. The quote line table should show:
-
-- SKU
-- Product
-- Pack (g)
-- Units/Case
-- MOQ cases
-- Basis
-- Selected quote currency per unit
-- Selected quote currency per case
-- Line total in selected quote currency, calculated as MOQ cases × case price
-
-The selected quote currency comes from the quote builder display currency/currency. Do not hardcode USD when the quote is in AUD, EUR, GBP, INR, or another supported display currency.
-
-For price-list style exports, treat the quote line price as the case price when the commercial quote is built per case, derive unit price from case price ÷ units per case, and use MOQ cases × case price for the line total. Use catalog pack, units-per-case, and MOQ values first. If older quote/catalog records are sparse, use safe catalog/SKU fallback values rather than leaving buyer-facing pack and case fields blank.
-
-Seller information should include legal name, registered address, city/postal code/country, contact email, website when space allows, and tax ID. Keep the PDF compact enough to avoid large whitespace gaps between commercial sections.
+---
 
 ## Allowed actions
 
-- Explain quote readiness and exact blockers.
-- Route to the right quote builder step, existing send checkpoint, Approvals & Sending, Compliance Assist, Products, or lead documents.
-- Suggest wording for buyer-facing quote explanations.
-- Explain quote-only adjustments without writing back to defaults.
-- Explain quote PDF columns and currency calculations.
-- Explain quote share links, organization-logo branding, and why production-domain buyer pages are required.
-- Explain quote revision lineage and why sent/accepted versions are immutable.
+- Explain which lifecycle section a quote belongs to and why
+- Route to Log outcome, Create revision, Move to Orders, or Clone
+- Explain value bucket definitions and the difference between Cleanup and Risk
+- Explain why an accepted quote exits the quote worklist and lives in Orders
+- Explain how to use grouping modes and collapsible sections
+- Explain the tracked link on the Send page and how to share it via WhatsApp
 
 ## Approval rules
 
-Human approval is required for quote send, quote acceptance, price deviation approval, compliance waiver, write-back, and any change that alters product/category/organization defaults.
-
-## Response policy
-
-Quote blocker answers must use live quote or lead context first. Never require RFQ or dispatch documents for quote send unless an active organization rule explicitly makes them mandatory at quote stage. For quote-builder questions, answer with the next step in the builder sequence and avoid recommending duplicate action surfaces. For send questions, state whether approval is approved/not required, pending, or blocked, then route through the existing send checkpoint. For share-link questions, require production-domain buyer-facing pages with organization branding where available and reject raw JSON/preview-link behavior.
-
-For revision questions, Setu Guru must state: sent/approved/accepted/rejected/expired versions are immutable; use **Revise quote** to create a new version. Setu Guru must not recommend editing earlier sent quote lines, deleting accepted versions, or using an order from a merely sent/current version.
+Human approval is required for: quote send, quote acceptance, price deviation approval, compliance waiver, write-back, and any change that alters product/category/organisation defaults. Setu Guru must not auto-log outcomes, auto-archive, auto-expire, create revisions, or advance orders without operator confirmation.

@@ -127,10 +127,12 @@ Translate a qualified request into quote-ready information.
 ### Walkthrough
 
 1. Confirm product, pack size, quantity, shipment terms, destination, and currency.
-2. Check whether pricing, freight, documentation, and approval inputs are complete.
-3. Record commercial assumptions clearly.
-4. Mark any approval or missing input before the quote is shared.
-5. Confirm that the buyer-facing details match the internal record.
+2. Use the Quote Launcher (from the Lead Command Center) to choose the right action: new quote, continuation of existing draft, governed revision of a sent quote, or clone of an accepted quote.
+3. Check whether pricing, freight, documentation, and approval inputs are complete.
+4. Record commercial assumptions clearly.
+5. Mark any approval or missing input before the quote is shared.
+6. After sending, log the outcome explicitly: Mark accepted, Mark rejected, Revision requested, No response, or Expire quote. Do not leave a sent quote without a logged outcome.
+7. When marked accepted, confirm the order handoff is created — the quote exits the Quote workspace and execution moves to Orders.
 
 ### Before moving forward
 
@@ -138,6 +140,7 @@ Translate a qualified request into quote-ready information.
 - Commercial assumptions are visible.
 - Any approval dependency is marked.
 - The record explains what was quoted and what still needs confirmation.
+- A sent quote has an explicit outcome logged (accepted, rejected, revision, no response, or expired).
 
 ## Module 5: Confirm documents and order readiness
 
@@ -222,6 +225,9 @@ Capture buyer interest quickly while keeping enough structure for office teams t
 | Missing follow-up date | Leads go stale | Always set the next action date |
 | Dispatch update before readiness | Creates confusion between system status and real shipment status | Update dispatch only when real-world status matches |
 | Private records in training | Exposes sensitive information | Use representative workflow examples only |
+| Editing a sent quote directly | Overwrites immutable buyer-facing data and breaks version lineage | Use the Quote Launcher → Revision requested to create a governed new version |
+| Leaving a sent quote without logging an outcome | Quote stays in Needs Review indefinitely; no order or archive is created | Always log: accepted, rejected, revision requested, no response, or expire |
+| Adding Proposed and Accepted values together | Overstates the customer's pipeline value | Proposed and Accepted are separate buckets; Exposure = the max of the two, not the sum |
 
 ## Trainer checklist
 
