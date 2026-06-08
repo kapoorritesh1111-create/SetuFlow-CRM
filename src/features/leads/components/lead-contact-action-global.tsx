@@ -19,25 +19,113 @@ function normalizeWhatsApp(value?: string | null) {
   return (value ?? '').replace(/[^0-9]/g, '');
 }
 
-function resolveVisibleLead(leads: LeadContact[]) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return null;
-  if (!window.location.pathname.startsWith('/leads')) return null;
+function contactLinks(lead: LeadContact) {
+  const phone = lead.phone?.trim() || '';
+  const email = lead.email?.trim() || '';
+  const whatsappSource = lead.whatsapp_number?.trim() || phone;
+  const whatsappNumber = normalizeWhatsApp(whatsappSource);
 
-  const params = new URLSearchParams(window.location.search);
-  const leadId = params.get('leadId');
-  if (leadId) {
-    const match = leads.find((lead) => lead.id === leadId);
-    if (match) return match;
+  return {
+    phoneHref: phone ? `tel:${normalizePhone(phone)}` : '',
+    emailHref: email ? `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`SETU Flow follow-up: ${lead.company_name}`)}` : '',
+    whatsappHref: whatsappNumber ? `https://wa.me/${whatsappNumber}` : '',
+  };
+}
+
+function iconLink(href: string, label: string, icon: string, tone: 'dark' | 'green' | 'blue') {
+  const link = document.createElement('a');
+  link.href = href;
+  link.title = label;
+  link.setAttribute('aria-label', label);
+  link.textContent = icon;
+  if (href.startsWith('https://wa.me/')) {
+    link.target = '_blank';
+    link.rel = 'noreferrer';
   }
 
-  const workspace = document.getElementById('inline-lead-workspace') ?? document.body;
-  const visibleText = workspace.textContent ?? '';
-  return leads.find((lead) => lead.company_name && visibleText.includes(lead.company_name)) ?? null;
+  const bg = tone === 'green' ? '#059669' : tone === 'blue' ? '#eff6ff' : '#0b2e4a';
+  const color = tone === 'blue' ? '#0b2e4a' : '#ffffff';
+  const border = tone === 'blue' ? '1px solid #bfdbfe' : '1px solid transparent';
+
+  link.style.cssText = [
+    'width:30px',
+    'height:30px',
+    'border-radius:999px',
+    `background:${bg}`,
+    `color:${color}`,
+    `border:${border}`,
+    'display:inline-flex',
+    'align-items:center',
+    'justify-content:center',
+    'font-size:13px',
+    'font-weight:900',
+    'line-height:1',
+    'text-decoration:none',
+    'box-shadow:0 6px 16px rgba(15,23,42,.10)',
+  ].join(';');
+
+  return link;
+}
+
+function findLeadRows(lead: LeadContact) {
+  const nodes = Array.from(document.querySelectorAll<HTMLElement>('button, div'));
+  return nodes.filter((node) => {
+    if (node.dataset.setuContactRow === lead.id) return true;
+    if (node.querySelector('[data-setu-contact-actions]')) return false;
+    const text = node.textContent ?? '';
+    const rect = node.getBoundingClientRect();
+    return text.includes(lead.company_name) && rect.width > 700 && rect.height >= 52 && rect.height <= 130;
+  });
+}
+
+function injectRowActions(leads: LeadContact[]) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (!window.location.pathname.startsWith('/leads')) return;
+
+  document.querySelectorAll('[data-setu-contact-actions]').forEach((node) => node.remove());
+
+  const isDetailView = Boolean(document.getElementById('inline-lead-workspace'));
+
+  leads.forEach((lead) => {
+    const { phoneHref, whatsappHref, emailHref } = contactLinks(lead);
+    if (!phoneHref && !whatsappHref && !emailHref) return;
+
+    const row = findLeadRows(lead)[0];
+    if (!row) return;
+
+    row.dataset.setuContactRow = lead.id;
+    const computed = window.getComputedStyle(row);
+    if (computed.position === 'static') {
+      row.style.position = 'relative';
+    }
+
+    const dock = document.createElement('div');
+    dock.dataset.setuContactActions = lead.id;
+    dock.setAttribute('aria-label', `Contact actions for ${lead.company_name}`);
+    dock.style.cssText = [
+      'position:absolute',
+      'left:34%',
+      'top:50%',
+      'transform:translateY(-50%)',
+      'display:flex',
+      'align-items:center',
+      'gap:7px',
+      'z-index:5',
+      'pointer-events:auto',
+    ].join(';');
+
+    if (emailHref) dock.appendChild(iconLink(emailHref, `Email ${lead.company_name}`, '✉', 'blue'));
+    if (whatsappHref) dock.appendChild(iconLink(whatsappHref, `WhatsApp ${lead.company_name}`, '☘', 'green'));
+    if (phoneHref) dock.appendChild(iconLink(phoneHref, `Call ${lead.company_name}`, '☎', 'dark'));
+
+    if (!isDetailView || row.id === 'inline-lead-workspace') {
+      row.appendChild(dock);
+    }
+  });
 }
 
 export function LeadContactActionGlobal() {
   const [leads, setLeads] = React.useState<LeadContact[]>([]);
-  const [activeLead, setActiveLead] = React.useState<LeadContact | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -60,65 +148,22 @@ export function LeadContactActionGlobal() {
   }, []);
 
   React.useEffect(() => {
-    const update = () => setActiveLead(resolveVisibleLead(leads));
+    const update = () => injectRowActions(leads);
     update();
 
     const observer = new MutationObserver(update);
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     window.addEventListener('popstate', update);
-    const interval = window.setInterval(update, 1000);
+    const interval = window.setInterval(update, 1400);
 
     return () => {
       observer.disconnect();
       window.removeEventListener('popstate', update);
       window.clearInterval(interval);
+      document.querySelectorAll('[data-setu-contact-actions]').forEach((node) => node.remove());
     };
   }, [leads]);
 
-  if (!activeLead) return null;
-
-  const contactName = activeLead.contact_name?.trim() || 'Primary contact';
-  const email = activeLead.email?.trim() || '';
-  const phone = activeLead.phone?.trim() || '';
-  const whatsappSource = activeLead.whatsapp_number?.trim() || phone;
-  const telHref = phone ? `tel:${normalizePhone(phone)}` : '';
-  const mailHref = email ? `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`SETU Flow follow-up: ${activeLead.company_name}`)}` : '';
-  const whatsappNumber = normalizeWhatsApp(whatsappSource);
-  const whatsappHref = whatsappNumber ? `https://wa.me/${whatsappNumber}` : '';
-
-  return (
-    <div className="pointer-events-none fixed bottom-5 left-[112px] right-6 z-40 hidden md:block">
-      <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-2 rounded-2xl border border-blue-100 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,.18)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="text-[9px] font-black uppercase tracking-[0.18em] text-[#0c7fff]">Lead contact actions</div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-slate-600">
-            <span className="max-w-[260px] truncate text-[13px] font-extrabold text-slate-950">{activeLead.company_name}</span>
-            <span>{contactName}</span>
-            <span>{email || 'Missing email'}</span>
-            <span>{phone || 'Missing phone'}</span>
-            {activeLead.whatsapp_number ? <span>WhatsApp: {activeLead.whatsapp_number}</span> : null}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-          {phone ? (
-            <a href={telHref} className="rounded-xl bg-[#0b2e4a] px-4 py-2 text-center text-xs font-extrabold text-white shadow-sm hover:bg-[#061c2e]">Call</a>
-          ) : (
-            <a href={`/leads?leadId=${activeLead.id}`} className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-center text-xs font-extrabold text-orange-800">Missing phone</a>
-          )}
-          {whatsappHref ? (
-            <a href={whatsappHref} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-600 px-4 py-2 text-center text-xs font-extrabold text-white shadow-sm hover:bg-emerald-700">WhatsApp</a>
-          ) : (
-            <a href={`/leads?leadId=${activeLead.id}`} className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-center text-xs font-extrabold text-orange-800">Missing phone</a>
-          )}
-          {email ? (
-            <a href={mailHref} className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-center text-xs font-extrabold text-[#0b2e4a] hover:bg-blue-50">Email</a>
-          ) : (
-            <a href={`/leads?leadId=${activeLead.id}`} className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-center text-xs font-extrabold text-orange-800">Missing email</a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }
