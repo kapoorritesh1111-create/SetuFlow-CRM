@@ -41,17 +41,7 @@ export function SmcIcon({ name, className }: { name: SmcIconName; className?: st
   );
 }
 
-export function SmcHeader({
-  eyebrow = 'Setu Mission Control',
-  title,
-  description,
-  actions,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  actions?: ReactNode;
-}) {
+export function SmcHeader({ eyebrow = 'Setu Mission Control', title, description, actions }: { eyebrow?: string; title: string; description?: string; actions?: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(30,64,175,0.10)] ring-1 ring-slate-950/[0.03] backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_24px_80px_rgba(2,6,23,0.28)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -83,12 +73,12 @@ export function SmcMetricCard({ icon, label, value, sub, tone = 'text-slate-950 
 }
 
 export function SmcActionLink({ href, icon, label, external = false }: { href: string; icon: SmcIconName; label: string; external?: boolean }) {
-  return (
-    <Link href={href} target={external ? '_blank' : undefined} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-[#0c7fff]/30 hover:text-[#0c7fff] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-violet-300/40 dark:hover:text-white">
-      <span className="grid h-7 w-7 place-items-center rounded-xl bg-[#0c7fff]/10 text-[#0c7fff] dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name={icon} /></span>
-      {label}
-    </Link>
-  );
+  const className = "inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-[#0c7fff]/30 hover:text-[#0c7fff] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-violet-300/40 dark:hover:text-white";
+  const inner = <><span className="grid h-7 w-7 place-items-center rounded-xl bg-[#0c7fff]/10 text-[#0c7fff] dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name={icon} /></span>{label}</>;
+  if (external) {
+    return <a href={href} target="_blank" rel="noreferrer" className={className}>{inner}</a>;
+  }
+  return <Link href={href} className={className}>{inner}</Link>;
 }
 
 export function SmcProofLinks() {
