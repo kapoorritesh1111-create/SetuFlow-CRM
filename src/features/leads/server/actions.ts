@@ -1,3 +1,5 @@
+"use server";
+
 // SF-18-007: Small public server-action entrypoint.
 // Keep existing imports stable while the legacy action implementation is split by domain.
 import { createClient } from '@/lib/supabase/server';
