@@ -38,8 +38,11 @@ test('workflow answer names customer and includes evidence summary', () => {
   assert.doesNotMatch(formatter, /No live blocker/);
 });
 
-test('org-search-v2 delegates all calls to org-search route', () => {
-  assert.match(wrapper, /legacyOrgSearchPost/);
+test('org-search-v2 upgrades order-status calls before delegating to org-search route', () => {
+  assert.match(wrapper, /buildWorkflowStatusRequest/);
+  assert.match(wrapper, /mode: 'workflow_status'/);
+  assert.match(wrapper, /legacyOrgSearchPost\(buildWorkflowStatusRequest\(request, body\)\)/);
+  assert.match(wrapper, /legacyOrgSearchPost\(request\)/);
   assert.doesNotMatch(wrapper, /answerOrderStatus/);
   assert.doesNotMatch(wrapper, /findOrder/);
   assert.doesNotMatch(wrapper, /createClient/);
