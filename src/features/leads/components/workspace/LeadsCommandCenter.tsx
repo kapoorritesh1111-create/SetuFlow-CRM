@@ -292,6 +292,13 @@ function InlineCommandCenter({
   const blockerCount = readiness?.blockerCount ?? complianceItems.length;
   const pricingReady = readiness?.pricingReadiness === 'ready';
   const canContinueQuote = Boolean(latestQuote || selectedProductNames.length || rfqs.length);
+  const leadContact = lead as LeadRow & { email?: string | null; phone?: string | null; whatsapp_number?: string | null };
+  const emailAddress = leadContact.email?.trim() || '';
+  const phoneNumber = leadContact.phone?.trim() || '';
+  const whatsappSource = leadContact.whatsapp_number?.trim() || phoneNumber;
+  const telHref = phoneNumber ? `tel:${phoneNumber.replace(/[^+0-9]/g, '')}` : '';
+  const mailHref = emailAddress ? `mailto:${encodeURIComponent(emailAddress)}?subject=${encodeURIComponent(`SETU Flow follow-up: ${lead.company_name}`)}` : '';
+  const whatsappHref = whatsappSource ? `https://wa.me/${whatsappSource.replace(/[^0-9]/g, '')}` : '';
 
   // Status chips data
   const chips = [
@@ -400,6 +407,22 @@ function InlineCommandCenter({
             </div>
             {/* CTA buttons — spec .lhc-actions */}
             <div className="flex flex-wrap items-center gap-2">
+              {/* S24-LEADS-200 inline command contact CTAs */}
+              {emailAddress ? (
+                <a href={mailHref} onClick={(event) => event.stopPropagation()} title={`Email ${lead.company_name}`} aria-label={`Email ${lead.company_name}`} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-700 shadow-[0_8px_20px_rgba(15,23,42,.08)] transition hover:border-blue-300 hover:bg-blue-50">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></svg>
+                </a>
+              ) : null}
+              {whatsappHref ? (
+                <a href={whatsappHref} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} title={`WhatsApp ${lead.company_name}`} aria-label={`WhatsApp ${lead.company_name}`} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 shadow-[0_8px_20px_rgba(15,23,42,.08)] transition hover:border-emerald-300 hover:bg-emerald-50">
+                  <svg viewBox="0 0 32 32" className="h-5 w-5" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#25D366" /><path fill="#fff" d="M23.1 18.8c-.4-.2-2.4-1.2-2.8-1.3-.4-.1-.7-.2-1 .2-.3.4-1.1 1.3-1.4 1.6-.3.3-.5.3-.9.1-.4-.2-1.7-.6-3.2-2-1.2-1.1-2-2.4-2.2-2.8-.2-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.2.3-.4.4-.7.1-.3.1-.5 0-.7-.1-.2-1-2.4-1.3-3.2-.3-.8-.7-.7-1-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.5 1.5-1.5 3.6s1.6 4.2 1.8 4.5c.2.3 3.1 4.8 7.6 6.7 1.1.5 1.9.7 2.5.9 1.1.3 2 .3 2.8.2.9-.1 2.4-1 2.8-2 .3-1 .3-1.8.2-2-.1-.2-.4-.3-.8-.5Z" /><path fill="#fff" d="M8.2 26.5 9.4 22A10.9 10.9 0 1 1 13.9 24l-5.7 2.5Zm5.9-4.5.3.1a8.9 8.9 0 1 0-3.1-2.3l.2.3-.7 2.7 3.3-.8Z" /></svg>
+                </a>
+              ) : null}
+              {phoneNumber ? (
+                <a href={telHref} onClick={(event) => event.stopPropagation()} title={`Call ${lead.company_name}`} aria-label={`Call ${lead.company_name}`} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#0b2e4a]/15 bg-white text-[#0b2e4a] shadow-[0_8px_20px_rgba(15,23,42,.08)] transition hover:border-[#0b2e4a]/30 hover:bg-slate-50">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v2a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 3.18 2 2 0 0 1 4.11 1h2a2 2 0 0 1 2 1.72c.13.96.35 1.9.66 2.8a2 2 0 0 1-.45 2.11L7.1 8.85a16 16 0 0 0 6 6l1.22-1.22a2 2 0 0 1 2.11-.45c.9.31 1.84.53 2.8.66A2 2 0 0 1 22 16.92Z" /></svg>
+                </a>
+              ) : null}
               <button type="button" onClick={() => onOpenOrCreateQuote(lead.id)}
                 className="rounded-[6px] bg-[#0b2e4a] px-[18px] py-[9px] text-[13px] font-bold text-white hover:bg-[#061c2e]">
                 🖊 {canContinueQuote ? 'View quote' : 'Create quote'}
