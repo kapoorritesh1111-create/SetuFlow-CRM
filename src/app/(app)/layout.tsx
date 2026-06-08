@@ -2,6 +2,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { StateMessage } from '@/components/ui/state-message';
+import { LeadContactActionGlobal } from '@/features/leads/components/lead-contact-action-global';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -64,6 +65,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       {/* InAppNotificationCenter is now rendered inline in the AppShell header — no floating duplicate */}
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
+      <LeadContactActionGlobal />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
     </AppShell>
   );
