@@ -87,6 +87,9 @@ export function buildMobileLeadCardsFromAppData(data: {
       productInterest: productNames[0] ?? 'Product interest pending',
       lastActivity: formatDate(lead.updated_at ?? lead.created_at),
       leadType: asLeadType(lead.lead_type),
+      email: asString(lead.email) || null,
+      phone: asString(lead.phone) || null,
+      whatsappNumber: asString(lead.whatsapp_number) || asString(lead.phone) || null,
     } satisfies MobileLead;
   });
 }
