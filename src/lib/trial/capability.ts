@@ -35,12 +35,36 @@ export type TrialCapability = {
   overage_policy: string | null;
 };
 
+type TrialRpcError = {
+  message: string;
+};
+
+type TrialRpcClient = {
+  rpc(
+    functionName: 'get_trial_capability',
+    args: { p_organization_id: string },
+  ): Promise<{ data: TrialCapability[] | null; error: TrialRpcError | null }>;
+  rpc(
+    functionName: 'is_trial_org',
+    args: { p_organization_id: string },
+  ): Promise<{ data: boolean | null; error: TrialRpcError | null }>;
+};
+
 export type TrialCapabilityResult = {
   capability: TrialCapability | null;
   error: string | null;
 };
 
+export type TrialStatusResult = {
+  isTrial: boolean;
+  error: string | null;
+};
+
 export type TrialCapabilityClient = Awaited<ReturnType<typeof createClient>>;
+
+function asTrialRpcClient(client: TrialCapabilityClient): TrialRpcClient {
+  return client as unknown as TrialRpcClient;
+}
 
 export function isTrialTemplateKey(value: string | null | undefined): value is TrialTemplateKey {
   return TRIAL_TEMPLATE_KEYS.includes(value as TrialTemplateKey);
@@ -68,7 +92,7 @@ export async function getTrialCapability(
   organizationId: string,
   client?: TrialCapabilityClient,
 ): Promise<TrialCapabilityResult> {
-  const supabase = client ?? (await createClient());
+  const supabase = asTrialRpcClient(client ?? (await createClient()));
   const { data, error } = await supabase.rpc('get_trial_capability', {
     p_organization_id: organizationId,
   });
@@ -80,8 +104,11 @@ export async function getTrialCapability(
   return { capability: data?.[0] ?? null, error: null };
 }
 
-export async function isTrialOrg(organizationId: string, client?: TrialCapabilityClient) {
-  const supabase = client ?? (await createClient());
+export async function isTrialOrg(
+  organizationId: string,
+  client?: TrialCapabilityClient,
+): Promise<TrialStatusResult> {
+  const supabase = asTrialRpcClient(client ?? (await createClient()));
   const { data, error } = await supabase.rpc('is_trial_org', {
     p_organization_id: organizationId,
   });
