@@ -33,6 +33,10 @@ export type SprintIssue = {
   parent_ref: string | null;
   pr_link: string | null;
   fix_applied: string | null;
+  files_changed: string[] | null;
+  db_migrations: string[] | null;
+  regression_test: string | null;
+  attachments: unknown[] | Record<string, unknown> | null;
   how_to_fix: string | null;
   gpt_prompt?: string | null;
   resolved_at: string | null;
@@ -119,7 +123,6 @@ export async function getWorkspaceStats(): Promise<WorkspaceStats> {
   const critical = openIssues.filter((i) => i.severity?.toLowerCase() === 'critical').length;
   const high = openIssues.filter((i) => i.severity?.toLowerCase() === 'high').length;
 
-  // Get sprint meta
   const admin = createAdminSupabaseClient();
   const supabase = admin ?? await createClient();
   const { data: sprintMetaData } = await (supabase as any)
