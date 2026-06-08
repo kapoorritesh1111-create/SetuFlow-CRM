@@ -186,6 +186,10 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)), nonce);
   }
 
+  if (pathname === '/trail') {
+    return applySecurityHeaders(NextResponse.redirect(new URL('/trial', request.url)), nonce);
+  }
+
   const workspaceDestination = workspaceRedirects[pathname];
   if (workspaceDestination) {
     return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)), nonce);
