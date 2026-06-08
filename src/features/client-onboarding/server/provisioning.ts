@@ -1,6 +1,7 @@
 import { createInvitationToken, hashInvitationToken } from '@/lib/invitationTokens';
 import { DEFAULT_SETU_FLOW_LOGO, ROOT_DOMAIN, defaultMarkets, defaultNextSteps, defaultPipelineStages, defaultPipelines, slugifyCompanyName } from '@/features/client-onboarding/shared';
 import { MODULE_DEFINITIONS, normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
+import { getTrialTemplateConfig, resolveTrialTemplateKeyForRequest } from '@/lib/trial/templates';
 
 type SupabaseAdmin = any;
 
@@ -103,9 +104,100 @@ async function seedPricingSettings(admin: SupabaseAdmin, organizationId: string,
   if (Number(count ?? 0) === 0) await admin.from('pricing_engine_settings').insert({ organization_id: organizationId, default_display_currency: 'USD', default_validity_days: 30, default_fx_base_currency: 'USD', allow_manual_fx: true, require_approval_for_override: true, approval_threshold_percent: 15 });
   if (request.pricing_rules_notes) await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: null, entity_type: 'pricing_engine_settings', entity_id: organizationId, action: 'client_pricing_notes_captured', payload: { notes: request.pricing_rules_notes } });
 }
+
+async function seedTrialTemplateData(admin: SupabaseAdmin, organizationId: string, request: OnboardingRequest) {
+  if (!request.is_trial_request && request.requested_plan !== 'trial') return { templateKey: null, productsSeeded: 0 };
+
+  const templateKey = resolveTrialTemplateKeyForRequest({
+    requestedPlan: request.requested_plan,
+    isTrialRequest: request.is_trial_request,
+    pricingNotes: request.pricing_rules_notes,
+    productNotes: request.product_category_notes,
+    companyName: request.company_name,
+  });
+  const template = getTrialTemplateConfig(templateKey);
+
+  const { error: guidedTrialError } = await admin.rpc('create_guided_trial_entitlement', {
+    p_organization_id: organizationId,
+    p_trial_template_key: templateKey,
+    p_trial_ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString().slice(0, 10),
+  });
+  if (guidedTrialError) throw guidedTrialError;
+
+  const { data: categoryRows } = await admin
+    .from('product_categories')
+    .select('id, name')
+    .eq('organization_id', organizationId)
+    .ilike('name', template.label)
+    .limit(1);
+
+  let categoryId = categoryRows?.[0]?.id ?? null;
+  if (!categoryId) {
+    const { data: insertedCategory } = await admin
+      .from('product_categories')
+      .insert({ organization_id: organizationId, name: template.label, sort_order: 10, is_active: true })
+      .select('id')
+      .maybeSingle();
+    categoryId = insertedCategory?.id ?? null;
+  }
+
+  const { count } = await admin
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .in('sku', template.sampleProducts.map((product) => product.sku));
+
+  if (Number(count ?? 0) === 0) {
+    await admin.from('products').insert(template.sampleProducts.map((product, index) => ({
+      organization_id: organizationId,
+      category_id: categoryId,
+      name: product.name,
+      sku: product.sku,
+      sku_code: product.sku,
+      description: product.description,
+      pack_size: product.packSize,
+      product_family_code: product.family,
+      pricing_type: product.pricingType,
+      is_active: true,
+      sort_order: index + 1,
+      exw_price: product.exwPrice,
+      fob_price: product.fobPrice,
+      pricing_currency: product.currency,
+      lifecycle_status: 'active',
+      hsn_review_status: 'pending',
+    }))).throwOnError();
+  }
+
+  await admin.from('audit_logs').insert({
+    organization_id: organizationId,
+    actor_user_id: null,
+    entity_type: 'guided_trial',
+    entity_id: organizationId,
+    action: 'guided_trial_template_seeded',
+    payload: {
+      template_key: templateKey,
+      template_label: template.label,
+      pricing_scenario: template.pricingScenario,
+      stark_packmate_ready: templateKey === 'packaging_converter',
+    },
+  });
+
+  return { templateKey, productsSeeded: template.sampleProducts.length };
+}
+
 async function seedEntitlements(admin: SupabaseAdmin, organizationId: string, request: OnboardingRequest, platformOrganizationId: string, actorUserId: string | null) {
   const requestedModules = cleanModuleKeys(request.requested_modules);
-  await admin.from('client_entitlement_profiles').upsert({ organization_id: organizationId, managed_by_organization_id: platformOrganizationId, plan_key: normalizePlan(request.requested_plan, request.is_trial_request), billing_status: request.is_trial_request || request.requested_plan === 'trial' ? 'trial' : 'active', seat_limit: Number(request.requested_seat_count ?? 25), onboarding_stage: 'entitlements', guru_monthly_request_limit: 25000, guru_monthly_spend_limit: 2500, overage_policy: 'warn_then_block' }, { onConflict: 'organization_id' }).throwOnError();
+  await admin.from('client_entitlement_profiles').upsert({
+    organization_id: organizationId,
+    managed_by_organization_id: platformOrganizationId,
+    plan_key: normalizePlan(request.requested_plan, request.is_trial_request),
+    billing_status: request.is_trial_request || request.requested_plan === 'trial' ? 'trial' : 'active',
+    seat_limit: request.is_trial_request || request.requested_plan === 'trial' ? 1 : Number(request.requested_seat_count ?? 25),
+    onboarding_stage: request.is_trial_request || request.requested_plan === 'trial' ? 'guided_trial' : 'entitlements',
+    guru_monthly_request_limit: 25000,
+    guru_monthly_spend_limit: 2500,
+    overage_policy: request.is_trial_request || request.requested_plan === 'trial' ? 'block_at_limit' : 'warn_then_block',
+  }, { onConflict: 'organization_id' }).throwOnError();
   if (requestedModules.length > 0) {
     await admin.from('org_module_grants').upsert(MODULE_DEFINITIONS.map((moduleDef) => ({ organization_id: organizationId, module_key: moduleDef.key, enabled: requestedModules.includes(moduleDef.key), granted_by: actorUserId })), { onConflict: 'organization_id,module_key' }).throwOnError();
   }
@@ -141,7 +233,8 @@ export async function provisionWorkspaceFromOnboardingRequest(input: Provisionin
   const { ownerRoleId, inserted: rolesSeeded } = await seedRoles(admin, organizationId);
   await seedPricingSettings(admin, organizationId, request);
   await seedEntitlements(admin, organizationId, request, platformOrganizationId, actorUserId);
+  const trialSeed = await seedTrialTemplateData(admin, organizationId, request);
   const { invitationId, invitationAcceptUrl } = await createFirstAdminInvitation(admin, { organizationId, email: request.primary_admin_email, roleId: ownerRoleId, actorMembershipId, requestId: request.id, workspaceDomain });
-  await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: actorUserId, entity_type: 'client_onboarding_request', entity_id: request.id, action: 'workspace_provisioned_from_client_onboarding', payload: { workspace_domain: workspaceDomain, countries_seeded: countriesSeeded, markets_seeded: marketsSeeded, pipelines_seeded: pipelinesSeeded, stages_seeded: stagesSeeded, next_steps_seeded: nextStepsSeeded, roles_seeded: rolesSeeded, invitation_id: invitationId, product_categories_created: 0, product_category_notes: request.product_category_notes, requested_focus_countries: request.requested_countries ?? [] } });
+  await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: actorUserId, entity_type: 'client_onboarding_request', entity_id: request.id, action: 'workspace_provisioned_from_client_onboarding', payload: { workspace_domain: workspaceDomain, countries_seeded: countriesSeeded, markets_seeded: marketsSeeded, pipelines_seeded: pipelinesSeeded, stages_seeded: stagesSeeded, next_steps_seeded: nextStepsSeeded, roles_seeded: rolesSeeded, invitation_id: invitationId, product_categories_created: trialSeed.productsSeeded > 0 ? 1 : 0, trial_template_key: trialSeed.templateKey, trial_products_seeded: trialSeed.productsSeeded, product_category_notes: request.product_category_notes, requested_focus_countries: request.requested_countries ?? [] } });
   return { organizationId, workspaceDomain, countriesSeeded, marketsSeeded, pipelinesSeeded, stagesSeeded, nextStepsSeeded, rolesSeeded, invitationId, invitationAcceptUrl };
 }

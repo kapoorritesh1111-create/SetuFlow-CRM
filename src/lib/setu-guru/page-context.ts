@@ -1,4 +1,4 @@
-export type SetuGuruRouteKey = 'dashboard' | 'leads' | 'pipeline' | 'products' | 'quotes' | 'orders' | 'compliance' | 'trade-events' | 'admin-organization' | 'pricing-calculator' | 'setu-guru';
+export type SetuGuruRouteKey = 'dashboard' | 'leads' | 'pipeline' | 'products' | 'quotes' | 'orders' | 'compliance' | 'trade-events' | 'admin-organization' | 'pricing-calculator' | 'trial' | 'setu-guru';
 export type SetuGuruLiveSearchMode = 'page_help' | 'catalog_search' | 'buyer_search' | 'supplier_search' | 'lead_search' | 'quote_compliance' | 'pricing_defaults' | 'hsn_enrichment' | 'document_requirements' | 'margin_benchmark';
 
 export type SetuGuruPageContext = {
@@ -58,6 +58,7 @@ export const SETU_GURU_PAGE_CONTEXTS: SetuGuruPageContext[] = [
   makeContext('trade-events', 'Trade events', ['/trade-events', '/capture'], 'Trade event capture workflow.', ['page_help', 'lead_search', 'buyer_search', 'supplier_search'], ['Is this capture ready?', 'What field should I clean first?']),
   makeContext('admin-organization', 'Admin organization', ['/admin', '/settings/lists'], 'Organization setup and governance workspace.', ['page_help', 'pricing_defaults', 'document_requirements'], ['What setup is missing?', 'Who can confirm this action?']),
   makeContext('pricing-calculator', 'Pricing calculator', ['/products', '/quotes', '/admin/product-management'], 'Pricing hierarchy and landed-cost guidance.', ['page_help', 'pricing_defaults', 'margin_benchmark'], ['Which pricing default is active?', 'Should this be quote-only?']),
+  makeContext('trial', 'Guided Trial', ['/trial'], 'Guided trial workspace for two-lead capture-to-dispatch validation and Stark Packmate pricing onboarding.', ['page_help', 'pricing_defaults', 'catalog_search'], ['How do I test this trial workspace?', 'How do I validate Stark Packmate dimensional pricing?']),
   makeContext('setu-guru', 'Setu Guru', ['/setu-guru'], 'Assistant policy and source guidance.', ['page_help', 'catalog_search', 'lead_search', 'quote_compliance', 'document_requirements', 'margin_benchmark'], ['What can you help with?', 'What source should you use?']),
 ];
 

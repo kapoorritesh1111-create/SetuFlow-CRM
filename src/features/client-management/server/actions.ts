@@ -34,6 +34,17 @@ function optionalDate(value: FormDataEntryValue | null) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
+function checkedValue(value: FormDataEntryValue | null) {
+  return value === 'true' || value === 'on';
+}
+
+function trialTemplateValue(value: FormDataEntryValue | null) {
+  const text = textValue(value);
+  return ['export_foods_basic', 'ingredient_trader', 'distributor_importer', 'packaging_converter'].includes(text)
+    ? text
+    : 'export_foods_basic';
+}
+
 function redirectBack(notice: string, client?: string): never {
   const params = new URLSearchParams({ notice });
   if (client) params.set('client', client);
@@ -64,9 +75,19 @@ export async function updateClientEntitlement(formData: FormData): Promise<void>
       onboarding_stage: textValue(formData.get('onboarding_stage')) || 'entitlements',
       guru_monthly_request_limit: numberValue(formData.get('guru_monthly_request_limit'), 25000),
       guru_monthly_spend_limit: decimalValue(formData.get('guru_monthly_spend_limit'), 2500),
-      overage_policy: textValue(formData.get('overage_policy')) || 'warn_then_block',
+      overage_policy: textValue(formData.get('overage_policy')) || (textValue(formData.get('billing_status')) === 'trial' ? 'block_at_limit' : 'warn_then_block'),
       trial_ends_at: optionalDate(formData.get('trial_ends_at')),
       renews_at: optionalDate(formData.get('renews_at')),
+      trial_template_key: trialTemplateValue(formData.get('trial_template_key')),
+      guided_mode_enabled: checkedValue(formData.get('guided_mode_enabled')),
+      max_leads: numberValue(formData.get('max_leads'), 2),
+      max_quotes: numberValue(formData.get('max_quotes'), 1),
+      max_orders: numberValue(formData.get('max_orders'), 1),
+      max_users: numberValue(formData.get('max_users'), 1),
+      allow_exports: checkedValue(formData.get('allow_exports')),
+      allow_invites: checkedValue(formData.get('allow_invites')),
+      allow_settings_edit: checkedValue(formData.get('allow_settings_edit')),
+      allow_dispatch: checkedValue(formData.get('allow_dispatch')),
     },
     { onConflict: 'organization_id' },
   );

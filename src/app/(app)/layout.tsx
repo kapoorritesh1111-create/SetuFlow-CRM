@@ -3,6 +3,7 @@ import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRec
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
+import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
@@ -61,6 +62,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       organizationId={workspace.organization.id}
       userId={workspace.user.id}
     >
+      <TrialWorkspaceBanner organizationId={workspace.organization.id} />
       {/* InAppNotificationCenter is now rendered inline in the AppShell header — no floating duplicate */}
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
