@@ -120,6 +120,54 @@ function PriorityRing({ score }: { score: number }) {
   );
 }
 
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <path d="m4 7 8 6 8-6" />
+    </svg>
+  );
+}
+
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v2a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 3.18 2 2 0 0 1 4.11 1h2a2 2 0 0 1 2 1.72c.13.96.35 1.9.66 2.8a2 2 0 0 1-.45 2.11L7.1 8.85a16 16 0 0 0 6 6l1.22-1.22a2 2 0 0 1 2.11-.45c.9.31 1.84.53 2.8.66A2 2 0 0 1 22 16.92Z" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 32 32" className="h-[17px] w-[17px]" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" fill="#25D366" />
+      <path fill="#fff" d="M23.1 18.8c-.4-.2-2.4-1.2-2.8-1.3-.4-.1-.7-.2-1 .2-.3.4-1.1 1.3-1.4 1.6-.3.3-.5.3-.9.1-.4-.2-1.7-.6-3.2-2-1.2-1.1-2-2.4-2.2-2.8-.2-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.2.3-.4.4-.7.1-.3.1-.5 0-.7-.1-.2-1-2.4-1.3-3.2-.3-.8-.7-.7-1-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.5 1.5-1.5 3.6s1.6 4.2 1.8 4.5c.2.3 3.1 4.8 7.6 6.7 1.1.5 1.9.7 2.5.9 1.1.3 2 .3 2.8.2.9-.1 2.4-1 2.8-2 .3-1 .3-1.8.2-2-.1-.2-.4-.3-.8-.5Z" />
+      <path fill="#fff" d="M8.2 26.5 9.4 22A10.9 10.9 0 1 1 13.9 24l-5.7 2.5Zm5.9-4.5.3.1a8.9 8.9 0 1 0-3.1-2.3l.2.3-.7 2.7 3.3-.8Z" />
+    </svg>
+  );
+}
+
+function ContactIconButton({ href, label, tone, children }: { href: string; label: string; tone: 'mail' | 'whatsapp' | 'phone'; children: React.ReactNode }) {
+  const toneClass = tone === 'whatsapp'
+    ? 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50'
+    : tone === 'phone'
+      ? 'border-[#0b2e4a]/15 bg-white text-[#0b2e4a] hover:border-[#0b2e4a]/30 hover:bg-slate-50'
+      : 'border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50';
+  return (
+    <a
+      href={href}
+      target={href.startsWith('https://wa.me/') ? '_blank' : undefined}
+      rel={href.startsWith('https://wa.me/') ? 'noreferrer' : undefined}
+      onClick={(event) => event.stopPropagation()}
+      title={label}
+      aria-label={label}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_20px_rgba(15,23,42,.08)] transition ${toneClass}`}
+    >
+      {children}
+    </a>
+  );
+}
+
 export function LeadTableRow({
   lead,
   selected,
@@ -252,9 +300,9 @@ export function LeadTableRow({
       </div>
 
       <div className="hidden lg:flex items-center justify-center gap-2" aria-label={`Contact ${lead.company_name}`}>
-        {emailAddress ? <a href={mailHref} onClick={(event) => event.stopPropagation()} title={`Email ${lead.company_name}`} aria-label={`Email ${lead.company_name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[13px] font-black text-[#0b2e4a] shadow-sm hover:bg-blue-100">✉</a> : null}
-        {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} title={`WhatsApp ${lead.company_name}`} aria-label={`WhatsApp ${lead.company_name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-[13px] font-black text-white shadow-sm hover:bg-emerald-700">☘</a> : null}
-        {phoneNumber ? <a href={telHref} onClick={(event) => event.stopPropagation()} title={`Call ${lead.company_name}`} aria-label={`Call ${lead.company_name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#0b2e4a] text-[13px] font-black text-white shadow-sm hover:bg-[#061c2e]">☎</a> : null}
+        {emailAddress ? <ContactIconButton href={mailHref} label={`Email ${lead.company_name}`} tone="mail"><MailIcon /></ContactIconButton> : null}
+        {whatsappHref ? <ContactIconButton href={whatsappHref} label={`WhatsApp ${lead.company_name}`} tone="whatsapp"><WhatsAppIcon /></ContactIconButton> : null}
+        {phoneNumber ? <ContactIconButton href={telHref} label={`Call ${lead.company_name}`} tone="phone"><PhoneIcon /></ContactIconButton> : null}
       </div>
 
       <div className="hidden lg:block">
