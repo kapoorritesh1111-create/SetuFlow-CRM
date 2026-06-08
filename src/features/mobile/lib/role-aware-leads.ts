@@ -18,6 +18,9 @@ export type MobileLead = {
   productInterest: string;
   lastActivity: string;
   leadType?: MobileLeadType;
+  email?: string | null;
+  phone?: string | null;
+  whatsappNumber?: string | null;
   // SF-18-118: Premium UX fields
   nextFollowUpAt?: string | null;
   dealValue?: number | null;
@@ -38,7 +41,7 @@ export type LeadFilter = {
 };
 
 export const mobileLeadDemoData: MobileLead[] = [
-  { id: 'L-MOB-001', company: 'Aster Retail LLC', contact: 'Maya Khan', ownerName: 'Ritesh Kapoor', assignedUserId: 'u-owner', teamId: 't-gulf', teamName: 'Gulf Growth', status: 'Quoted', nextAction: 'Review quote terms', valueUsd: 3720, market: 'UAE', productInterest: 'Vacuum Mango Chips', lastActivity: '12m ago', leadType: 'buyer' },
+  { id: 'L-MOB-001', company: 'Aster Retail LLC', contact: 'Maya Khan', ownerName: 'Ritesh Kapoor', assignedUserId: 'u-owner', teamId: 't-gulf', teamName: 'Gulf Growth', status: 'Quoted', nextAction: 'Review quote terms', valueUsd: 3720, market: 'UAE', productInterest: 'Vacuum Mango Chips', lastActivity: '12m ago', leadType: 'buyer', email: 'maya@example.com', phone: '+9715550101', whatsappNumber: '+9715550101' },
   { id: 'L-MOB-002', company: 'Nova Foods', contact: 'Aarav Menon', ownerName: 'Priya Mehta', assignedUserId: 'u-priya', managerUserId: 'u-manager', teamId: 't-gulf', teamName: 'Gulf Growth', status: 'Follow-up', nextAction: 'Send samples', valueUsd: 5400, market: 'Saudi Arabia', productInterest: 'Premium fruit chips', lastActivity: '1h ago', leadType: 'buyer' },
   { id: 'L-MOB-003', company: 'Global Source Partners', contact: 'Rohan Shah', ownerName: 'Omar Saleh', assignedUserId: 'u-omar', managerUserId: 'u-manager', teamId: 't-sourcing', teamName: 'Sourcing', status: 'Qualified', nextAction: 'Confirm MOQ', valueUsd: 9200, market: 'India', productInterest: 'Freeze-dried fruit lines', lastActivity: '2h ago', leadType: 'supplier' },
   { id: 'L-MOB-004', company: 'Blue Harbor Imports', contact: 'Elena Park', ownerName: 'Nina Patel', assignedUserId: 'u-nina', managerUserId: 'u-other-manager', teamId: 't-europe', teamName: 'Europe', status: 'At risk', nextAction: 'Escalate pricing', valueUsd: 12800, market: 'UK', productInterest: 'Private label snacks', lastActivity: 'Yesterday', leadType: 'buyer' },
