@@ -164,7 +164,7 @@ async function seedTrialTemplateData(admin: SupabaseAdmin, organizationId: strin
       fob_price: product.fobPrice,
       pricing_currency: product.currency,
       lifecycle_status: 'active',
-      hsn_review_status: 'pending',
+      hsn_review_status: 'pending_review',
     }))).throwOnError();
   }
 
@@ -193,7 +193,7 @@ async function seedEntitlements(admin: SupabaseAdmin, organizationId: string, re
     plan_key: normalizePlan(request.requested_plan, request.is_trial_request),
     billing_status: request.is_trial_request || request.requested_plan === 'trial' ? 'trial' : 'active',
     seat_limit: request.is_trial_request || request.requested_plan === 'trial' ? 1 : Number(request.requested_seat_count ?? 25),
-    onboarding_stage: request.is_trial_request || request.requested_plan === 'trial' ? 'guided_trial' : 'entitlements',
+    onboarding_stage: request.is_trial_request || request.requested_plan === 'trial' ? 'provision' : 'entitlements',
     guru_monthly_request_limit: 25000,
     guru_monthly_spend_limit: 2500,
     overage_policy: request.is_trial_request || request.requested_plan === 'trial' ? 'block_at_limit' : 'warn_then_block',
