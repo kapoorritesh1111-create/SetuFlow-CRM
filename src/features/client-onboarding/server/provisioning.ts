@@ -233,8 +233,8 @@ export async function provisionWorkspaceFromOnboardingRequest(input: Provisionin
   const { ownerRoleId, inserted: rolesSeeded } = await seedRoles(admin, organizationId);
   await seedPricingSettings(admin, organizationId, request);
   await seedEntitlements(admin, organizationId, request, platformOrganizationId, actorUserId);
-  const trialSeed = await seedTrialTemplateData(admin, organizationId, request);
   const { invitationId, invitationAcceptUrl } = await createFirstAdminInvitation(admin, { organizationId, email: request.primary_admin_email, roleId: ownerRoleId, actorMembershipId, requestId: request.id, workspaceDomain });
+  const trialSeed = await seedTrialTemplateData(admin, organizationId, request);
   await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: actorUserId, entity_type: 'client_onboarding_request', entity_id: request.id, action: 'workspace_provisioned_from_client_onboarding', payload: { workspace_domain: workspaceDomain, countries_seeded: countriesSeeded, markets_seeded: marketsSeeded, pipelines_seeded: pipelinesSeeded, stages_seeded: stagesSeeded, next_steps_seeded: nextStepsSeeded, roles_seeded: rolesSeeded, invitation_id: invitationId, product_categories_created: trialSeed.productsSeeded > 0 ? 1 : 0, trial_template_key: trialSeed.templateKey, trial_products_seeded: trialSeed.productsSeeded, product_category_notes: request.product_category_notes, requested_focus_countries: request.requested_countries ?? [] } });
   return { organizationId, workspaceDomain, countriesSeeded, marketsSeeded, pipelinesSeeded, stagesSeeded, nextStepsSeeded, rolesSeeded, invitationId, invitationAcceptUrl };
 }
