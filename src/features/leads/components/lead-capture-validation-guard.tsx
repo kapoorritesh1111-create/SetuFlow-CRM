@@ -25,11 +25,14 @@ function hasContactChannel(form: HTMLFormElement) {
 }
 
 function closestDrawerRoot(form: HTMLFormElement) {
+  const dialog = form.closest('[role="dialog"]') as HTMLElement | null;
   return (
-    form.closest('[role="dialog"]') ||
-    form.closest('.inset-0') ||
+    (dialog?.closest('[role="presentation"]') as HTMLElement | null) ||
+    (dialog?.parentElement as HTMLElement | null) ||
+    (form.closest('[role="presentation"]') as HTMLElement | null) ||
+    (form.closest('.inset-0') as HTMLElement | null) ||
     form.parentElement
-  ) as HTMLElement | null;
+  );
 }
 
 function leadFormScore(form: HTMLFormElement) {
@@ -49,8 +52,11 @@ function enforceSingleLeadDrawer() {
   const forms = Array.from(document.querySelectorAll<HTMLFormElement>('form#lead-drawer-form')).filter(isLeadCaptureForm);
   if (forms.length <= 1) {
     forms.forEach((form) => {
+      form.setAttribute("data-lead-drawer-singleton", "active");
       form.removeAttribute("aria-hidden");
-      closestDrawerRoot(form)?.style.removeProperty("display");
+      const root = closestDrawerRoot(form);
+      root?.style.removeProperty("display");
+      root?.removeAttribute("aria-hidden");
       form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
         field.removeAttribute("tabindex");
       });
@@ -67,6 +73,7 @@ function enforceSingleLeadDrawer() {
     if (isWinner) {
       form.removeAttribute("aria-hidden");
       root?.style.removeProperty("display");
+      root?.removeAttribute("aria-hidden");
       form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
         field.removeAttribute("tabindex");
       });
@@ -74,6 +81,7 @@ function enforceSingleLeadDrawer() {
     }
 
     form.setAttribute("aria-hidden", "true");
+    root?.setAttribute("aria-hidden", "true");
     form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
       field.setAttribute("tabindex", "-1");
     });
