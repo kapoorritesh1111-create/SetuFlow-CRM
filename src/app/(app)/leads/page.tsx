@@ -73,6 +73,8 @@ export default async function LeadsPage({
   const eventId = readParam(searchParams?.eventId).trim();
   const initialFastField = quickLeadEnabled && Boolean(eventId);
   const modeLeadType = readModeLeadType(searchParams?.mode);
+  const showQuickLeadGuide = viewModel.isWorkspaceEmpty && viewModel.canManageLeads;
+  const quickLeadHref = `${PRODUCT_ROUTES.app.leads}?quickLead=1`;
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -105,6 +107,29 @@ export default async function LeadsPage({
 
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
+        {showQuickLeadGuide ? (
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#f8fafc_55%,#ecfeff_100%)] p-5 shadow-[0_18px_45px_rgba(12,127,255,0.12)]">
+            <div className="absolute right-6 top-6 h-16 w-16 rounded-full bg-sky-300/20 blur-2xl" />
+            <div className="relative flex flex-wrap items-center justify-between gap-4">
+              <div className="max-w-3xl">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-700">Guided trial step 1</p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950">Start by creating your first lead with Quick Lead</h2>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                  Use Quick Lead to scan a card, upload an inquiry file, or enter a buyer/supplier manually. After the first lead is saved, continue the trial path into quote and order.
+                </p>
+              </div>
+              <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                <a
+                  href={quickLeadHref}
+                  className="inline-flex animate-pulse items-center justify-center rounded-2xl bg-[#0b2e4a] px-5 py-3 text-sm font-black text-white shadow-[0_14px_32px_rgba(11,46,74,0.25)] transition hover:-translate-y-0.5 hover:bg-[#0c7fff]"
+                >
+                  + Quick Lead
+                </a>
+                <p className="text-xs font-semibold text-slate-500">Camera, upload, or manual entry</p>
+              </div>
+            </div>
+          </section>
+        ) : null}
         <LeadEventFilterNarrower
           leads={data.leads.map((lead) => ({
             id: lead.id,
