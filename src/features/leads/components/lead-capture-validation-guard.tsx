@@ -27,9 +27,10 @@ function hasContactChannel(form: HTMLFormElement) {
 function closestDrawerRoot(form: HTMLFormElement) {
   const dialog = form.closest('[role="dialog"]') as HTMLElement | null;
   return (
+    (dialog?.parentElement?.matches('[role="presentation"]') ? dialog.parentElement : null) ||
     (dialog?.closest('[role="presentation"]') as HTMLElement | null) ||
-    (dialog?.parentElement as HTMLElement | null) ||
     (form.closest('[role="presentation"]') as HTMLElement | null) ||
+    (form.closest('.fixed.inset-0') as HTMLElement | null) ||
     (form.closest('.inset-0') as HTMLElement | null) ||
     form.parentElement
   );
@@ -48,15 +49,33 @@ function leadFormScore(form: HTMLFormElement) {
   return score;
 }
 
+function showDrawerRoot(root: HTMLElement | null) {
+  if (!root) return;
+  root.style.removeProperty("display");
+  root.style.removeProperty("visibility");
+  root.style.removeProperty("pointer-events");
+  root.style.removeProperty("opacity");
+  root.removeAttribute("aria-hidden");
+  root.removeAttribute("data-lead-drawer-suppressed");
+}
+
+function suppressDrawerRoot(root: HTMLElement | null) {
+  if (!root) return;
+  root.setAttribute("aria-hidden", "true");
+  root.setAttribute("data-lead-drawer-suppressed", "true");
+  root.style.setProperty("display", "none", "important");
+  root.style.setProperty("visibility", "hidden", "important");
+  root.style.setProperty("pointer-events", "none", "important");
+  root.style.setProperty("opacity", "0", "important");
+}
+
 function enforceSingleLeadDrawer() {
   const forms = Array.from(document.querySelectorAll<HTMLFormElement>('form#lead-drawer-form')).filter(isLeadCaptureForm);
   if (forms.length <= 1) {
     forms.forEach((form) => {
       form.setAttribute("data-lead-drawer-singleton", "active");
       form.removeAttribute("aria-hidden");
-      const root = closestDrawerRoot(form);
-      root?.style.removeProperty("display");
-      root?.removeAttribute("aria-hidden");
+      showDrawerRoot(closestDrawerRoot(form));
       form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
         field.removeAttribute("tabindex");
       });
@@ -64,6 +83,8 @@ function enforceSingleLeadDrawer() {
     return;
   }
 
+  // Keep the most complete/oldest form. In the observed bug the top duplicate can
+  // block submit, while the underlying original drawer saves correctly.
   const winner = [...forms].sort((a, b) => leadFormScore(b) - leadFormScore(a))[0];
 
   forms.forEach((form) => {
@@ -72,8 +93,7 @@ function enforceSingleLeadDrawer() {
     form.setAttribute("data-lead-drawer-singleton", isWinner ? "active" : "suppressed");
     if (isWinner) {
       form.removeAttribute("aria-hidden");
-      root?.style.removeProperty("display");
-      root?.removeAttribute("aria-hidden");
+      showDrawerRoot(root);
       form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
         field.removeAttribute("tabindex");
       });
@@ -81,11 +101,10 @@ function enforceSingleLeadDrawer() {
     }
 
     form.setAttribute("aria-hidden", "true");
-    root?.setAttribute("aria-hidden", "true");
     form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
       field.setAttribute("tabindex", "-1");
     });
-    if (root) root.style.display = "none";
+    suppressDrawerRoot(root);
   });
 }
 
@@ -132,17 +151,20 @@ export function LeadCaptureValidationGuard() {
             shouldSync = true;
           }
         });
+        if (mutation.type === "attributes") shouldSync = true;
       }
       if (shouldSync) window.requestAnimationFrame(enforceSingleLeadDrawer);
     });
 
     document.addEventListener("input", onInput, true);
     document.addEventListener("change", onInput, true);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "aria-hidden"] });
+    const intervalId = window.setInterval(enforceSingleLeadDrawer, 300);
 
     return () => {
       document.removeEventListener("input", onInput, true);
       document.removeEventListener("change", onInput, true);
+      window.clearInterval(intervalId);
       observer.disconnect();
     };
   }, []);
