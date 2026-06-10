@@ -69,6 +69,93 @@ function suppressDrawerRoot(root: HTMLElement | null) {
   root.style.setProperty("opacity", "0", "important");
 }
 
+function styleCoachCard(card: HTMLElement) {
+  card.style.cssText = [
+    "position:sticky",
+    "top:0",
+    "z-index:40",
+    "margin:14px 20px 0",
+    "border:1px solid #bfdbfe",
+    "border-radius:18px",
+    "background:linear-gradient(135deg,#eff6ff 0%,#f8fafc 58%,#ecfeff 100%)",
+    "box-shadow:0 18px 45px rgba(12,127,255,.16)",
+    "padding:14px 16px",
+    "color:#0f172a",
+  ].join(";");
+}
+
+function appendTextBlock(parent: HTMLElement, text: string, style: string) {
+  const item = document.createElement("div");
+  item.textContent = text;
+  item.style.cssText = style;
+  parent.appendChild(item);
+}
+
+function appendBadge(parent: HTMLElement, label: string, tone: "blue" | "green") {
+  const badge = document.createElement("span");
+  badge.textContent = label;
+  badge.style.cssText = [
+    `border:1px solid ${tone === "green" ? "#bbf7d0" : "#bae6fd"}`,
+    `background:${tone === "green" ? "#f0fdf4" : "#fff"}`,
+    `color:${tone === "green" ? "#047857" : "#0369a1"}`,
+    "border-radius:999px",
+    "padding:5px 8px",
+    "font-size:10px",
+    "font-weight:900",
+    "white-space:nowrap",
+  ].join(";");
+  parent.appendChild(badge);
+}
+
+function syncQuickLeadCoach(form: HTMLFormElement) {
+  const isNewLead = !String((form.querySelector('[name="lead_id"]') as HTMLInputElement | null)?.value ?? "").trim();
+  if (!isNewLead) return;
+
+  const saved = /lead saved|saved/i.test(form.textContent ?? "");
+  let card = form.querySelector<HTMLElement>('[data-quick-lead-coach="true"]');
+  if (!card) {
+    card = document.createElement("aside");
+    card.setAttribute("data-quick-lead-coach", "true");
+    card.setAttribute("role", "status");
+    card.setAttribute("aria-live", "polite");
+    styleCoachCard(card);
+    form.insertBefore(card, form.firstElementChild ?? null);
+  }
+
+  const nextState = saved ? "saved" : "start";
+  if (card.getAttribute("data-quick-lead-coach-state") === nextState) return;
+  card.setAttribute("data-quick-lead-coach-state", nextState);
+  card.replaceChildren();
+
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap";
+  const copy = document.createElement("div");
+  copy.style.cssText = "max-width:780px";
+  row.appendChild(copy);
+
+  if (saved) {
+    appendTextBlock(copy, "Lead saved", "font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#047857");
+    appendTextBlock(copy, "Close this drawer to continue the trial path", "margin-top:5px;font-size:15px;font-weight:900;color:#0f172a");
+    appendTextBlock(copy, "Your lead is now in the queue. Close the drawer, open the saved lead, then continue with the next guided step: review details, add product interest, and create a quote when ready.", "margin-top:6px;font-size:12px;line-height:1.55;color:#475569;font-weight:600");
+    const badges = document.createElement("div");
+    badges.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end";
+    appendBadge(badges, "Next: close drawer", "green");
+    row.appendChild(badges);
+  } else {
+    appendTextBlock(copy, "Guided trial step 1", "font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#0369a1");
+    appendTextBlock(copy, "Add your first lead", "margin-top:5px;font-size:15px;font-weight:900;color:#0f172a");
+    appendTextBlock(copy, "Use camera scan, upload a PDF/image, or type manually. Choose Buyer or Supplier, add company, country, contact, email/phone/WhatsApp, then select Product, Category, or New request. Save the lead when ready.", "margin-top:6px;font-size:12px;line-height:1.55;color:#475569;font-weight:600");
+    const badges = document.createElement("div");
+    badges.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end";
+    appendBadge(badges, "Camera", "blue");
+    appendBadge(badges, "Upload", "blue");
+    appendBadge(badges, "Manual", "blue");
+    row.appendChild(badges);
+  }
+
+  card.appendChild(row);
+}
+
 function enforceSingleLeadDrawer() {
   const forms = Array.from(document.querySelectorAll<HTMLFormElement>('form#lead-drawer-form')).filter(isLeadCaptureForm);
   if (forms.length <= 1) {
@@ -76,6 +163,7 @@ function enforceSingleLeadDrawer() {
       form.setAttribute("data-lead-drawer-singleton", "active");
       form.removeAttribute("aria-hidden");
       showDrawerRoot(closestDrawerRoot(form));
+      syncQuickLeadCoach(form);
       form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
         field.removeAttribute("tabindex");
       });
@@ -94,6 +182,7 @@ function enforceSingleLeadDrawer() {
     if (isWinner) {
       form.removeAttribute("aria-hidden");
       showDrawerRoot(root);
+      syncQuickLeadCoach(form);
       form.querySelectorAll<HTMLElement>("input, select, textarea, button").forEach((field) => {
         field.removeAttribute("tabindex");
       });
@@ -118,6 +207,7 @@ function relaxNativeLeadValidation(root: ParentNode = document) {
     // hidden/alternate contact field is still marked required.
     form.noValidate = true;
     form.setAttribute("data-lead-contact-validation", "app-owned");
+    syncQuickLeadCoach(form);
 
     if (!hasContactChannel(form)) return;
 
@@ -151,14 +241,14 @@ export function LeadCaptureValidationGuard() {
             shouldSync = true;
           }
         });
-        if (mutation.type === "attributes") shouldSync = true;
+        if (mutation.type === "attributes" || mutation.type === "characterData") shouldSync = true;
       }
       if (shouldSync) window.requestAnimationFrame(enforceSingleLeadDrawer);
     });
 
     document.addEventListener("input", onInput, true);
     document.addEventListener("change", onInput, true);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "aria-hidden"] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true, attributeFilter: ["style", "class", "aria-hidden"] });
     const intervalId = window.setInterval(enforceSingleLeadDrawer, 300);
 
     return () => {
