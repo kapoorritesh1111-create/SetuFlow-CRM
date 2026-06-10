@@ -62,12 +62,21 @@ export function LeadCaptureValidationGuard() {
       const quickLeadLink = target?.closest?.('a[href*="quickLead=1"]') as HTMLAnchorElement | null;
       if (!quickLeadLink) return;
 
-      const openLeadForm = document.querySelector<HTMLFormElement>('form#lead-drawer-form');
-      if (!openLeadForm) return;
-
+      // On /leads, client-side routing to the same page with quickLead=1 has been
+      // mounting a second drawer layer during the route transition. Own the click
+      // here: if the drawer already exists, focus it; otherwise use a full document
+      // navigation so the page boots once with the quickLead param and opens one drawer.
       event.preventDefault();
       event.stopPropagation();
-      openLeadForm.querySelector<HTMLInputElement>('input[name="company_name"]')?.focus();
+      event.stopImmediatePropagation();
+
+      const openLeadForm = document.querySelector<HTMLFormElement>('form#lead-drawer-form');
+      if (openLeadForm) {
+        openLeadForm.querySelector<HTMLInputElement>('input[name="company_name"]')?.focus();
+        return;
+      }
+
+      window.location.assign(quickLeadLink.href);
     };
 
     const observer = new MutationObserver((mutations) => {
