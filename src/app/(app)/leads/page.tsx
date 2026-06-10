@@ -1,4 +1,3 @@
-// UPDATED FILE
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
@@ -74,7 +73,6 @@ export default async function LeadsPage({
   const initialFastField = quickLeadEnabled && Boolean(eventId);
   const modeLeadType = readModeLeadType(searchParams?.mode);
   const showQuickLeadGuide = viewModel.isWorkspaceEmpty && viewModel.canManageLeads;
-  const quickLeadHref = `${PRODUCT_ROUTES.app.leads}?quickLead=1`;
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -108,24 +106,17 @@ export default async function LeadsPage({
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
         {showQuickLeadGuide ? (
-          <section className="relative overflow-hidden rounded-[1.75rem] border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#f8fafc_55%,#ecfeff_100%)] p-5 shadow-[0_18px_45px_rgba(12,127,255,0.12)]">
-            <div className="absolute right-6 top-6 h-16 w-16 rounded-full bg-sky-300/20 blur-2xl" />
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-              <div className="max-w-3xl">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-700">Guided trial step 1</p>
-                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950">Start by creating your first lead with Quick Lead</h2>
-                <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
-                  Use Quick Lead to scan a card, upload an inquiry file, or enter a buyer/supplier manually. After the first lead is saved, continue the trial path into quote and order.
+          <section className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Guided trial workspace</p>
+                <p className="mt-1 text-sm font-bold text-slate-900">Start with the top-right + Quick Lead button.</p>
+                <p className="mt-1 text-xs font-medium leading-5 text-slate-600">
+                  The helper appears inside the Quick Lead drawer after it opens, so the user learns camera scan, upload, manual entry, and save in the active workflow.
                 </p>
               </div>
-              <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                <a
-                  href={quickLeadHref}
-                  className="inline-flex animate-pulse items-center justify-center rounded-2xl bg-[#0b2e4a] px-5 py-3 text-sm font-black text-white shadow-[0_14px_32px_rgba(11,46,74,0.25)] transition hover:-translate-y-0.5 hover:bg-[#0c7fff]"
-                >
-                  + Quick Lead
-                </a>
-                <p className="text-xs font-semibold text-slate-500">Camera, upload, or manual entry</p>
+              <div className="rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-amber-700">
+                Step 1: capture lead
               </div>
             </div>
           </section>
@@ -143,40 +134,41 @@ export default async function LeadsPage({
           countries={data.countries.map((country) => ({ id: country.id, market_id: country.market_id ?? null }))}
         />
         <LeadsWorkspace
-        currentUserId={viewModel.currentUserId}
-        canManageLeads={viewModel.canManageLeads}
-        readOnlyMessage={viewModel.readOnlyMessage}
-        isWorkspaceEmpty={viewModel.isWorkspaceEmpty}
-        leads={data.leads.map((lead) => ({ ...lead, whatsapp_number: (lead as any).whatsapp_number ?? null, intro_sent: lead.intro_sent ?? false }))}
-        stages={data.stages}
-        pipelines={data.pipelines}
-        nextSteps={data.nextSteps}
-        tradeEvents={data.tradeEvents}
-        productCategories={data.productCategories}
-        products={data.products}
-        markets={data.markets}
-        profiles={data.profiles}
-        countries={data.countries}
-        leadMarkets={data.leadMarkets}
-        leadProductInterests={data.leadProductInterests}
-        followUps={data.followUps}
-        activities={data.activities}
-        stageHistory={data.stageHistory}
-        rfqs={data.rfqs}
-        quotes={viewModel.normalizedQuotes}
-        quoteVersions={data.quoteVersions}
-        complianceItems={data.complianceItems}
-        complianceDefinitions={data.complianceDefinitions}
-        documents={data.documents}
-        documentRequirementRules={data.documentRequirementRules}
-        variants={data.variants}
-        prices={data.prices} pricingRules={data.pricingRules}
-        initialMode={viewModel.workspaceMode}
-        initialLeadType={viewModel.initialLeadType}
-        initialTodayState={viewModel.todayState}
-        initialQuickCapture={initialQuickCapture}
-        initialEventId={eventId || null}
-        initialFastField={initialFastField}
+          currentUserId={viewModel.currentUserId}
+          canManageLeads={viewModel.canManageLeads}
+          readOnlyMessage={viewModel.readOnlyMessage}
+          isWorkspaceEmpty={viewModel.isWorkspaceEmpty}
+          leads={data.leads.map((lead) => ({ ...lead, whatsapp_number: (lead as any).whatsapp_number ?? null, intro_sent: lead.intro_sent ?? false }))}
+          stages={data.stages}
+          pipelines={data.pipelines}
+          nextSteps={data.nextSteps}
+          tradeEvents={data.tradeEvents}
+          productCategories={data.productCategories}
+          products={data.products}
+          markets={data.markets}
+          profiles={data.profiles}
+          countries={data.countries}
+          leadMarkets={data.leadMarkets}
+          leadProductInterests={data.leadProductInterests}
+          followUps={data.followUps}
+          activities={data.activities}
+          stageHistory={data.stageHistory}
+          rfqs={data.rfqs}
+          quotes={viewModel.normalizedQuotes}
+          quoteVersions={data.quoteVersions}
+          complianceItems={data.complianceItems}
+          complianceDefinitions={data.complianceDefinitions}
+          documents={data.documents}
+          documentRequirementRules={data.documentRequirementRules}
+          variants={data.variants}
+          prices={data.prices}
+          pricingRules={data.pricingRules}
+          initialMode={viewModel.workspaceMode}
+          initialLeadType={viewModel.initialLeadType}
+          initialTodayState={viewModel.todayState}
+          initialQuickCapture={initialQuickCapture}
+          initialEventId={eventId || null}
+          initialFastField={initialFastField}
         />
         <QuoteReviewInlineComplianceFix />
       </div>
