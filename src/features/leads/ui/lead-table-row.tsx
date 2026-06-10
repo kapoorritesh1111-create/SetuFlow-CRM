@@ -1,7 +1,6 @@
 'use client';
 
-import { type KeyboardEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { LeadCommercialReadiness } from '@/lib/catalog-pricing-model';
 import { computeLeadHealth } from '@/lib/lead-health';
@@ -92,10 +91,10 @@ function computePriorityScore(
   progress: number,
   followUpState: string,
 ): number {
-  const urgency    = Math.min((overdueDays ?? 0) / 14, 1) * 45;
-  const value      = maxDealValue > 0 ? Math.min((dealValue ?? 0) / maxDealValue, 1) * 25 : 0;
-  const blocker    = blockerCount > 0 ? 15 : 0;
-  const entry      = progress < 0.2 ? 10 : 0;
+  const urgency = Math.min((overdueDays ?? 0) / 14, 1) * 45;
+  const value = maxDealValue > 0 ? Math.min((dealValue ?? 0) / maxDealValue, 1) * 25 : 0;
+  const blocker = blockerCount > 0 ? 15 : 0;
+  const entry = progress < 0.2 ? 10 : 0;
   const unscheduled = followUpState === 'unscheduled' ? 5 : 0;
   return Math.round(Math.min(Math.max(urgency + value + blocker + entry + unscheduled, 0), 99));
 }
@@ -147,7 +146,7 @@ function WhatsAppIcon() {
   );
 }
 
-function ContactIconButton({ href, label, tone, children }: { href: string; label: string; tone: 'mail' | 'whatsapp' | 'phone'; children: React.ReactNode }) {
+function ContactIconButton({ href, label, tone, children }: { href: string; label: string; tone: 'mail' | 'whatsapp' | 'phone'; children: ReactNode }) {
   const toneClass = tone === 'whatsapp'
     ? 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50'
     : tone === 'phone'
@@ -272,7 +271,7 @@ export function LeadTableRow({
         severityBorderClass,
         selected || isSpotlight ? 'bg-blue-50/40' : '',
       ].join(' ')}
-      style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 146px' }}
+      style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 170px' }}
       onClick={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; openLeadCommandCenter(router, commandCenterHref); }}
       onKeyDown={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; handleLeadCommandCenterKeyDown(event, router, commandCenterHref); }}
     >
@@ -334,20 +333,23 @@ export function LeadTableRow({
       </div>
 
       <div className="relative flex items-center justify-end gap-1.5">
-        <div className="flex items-center gap-1.5 group-hover:opacity-0 group-hover:pointer-events-none transition-opacity duration-100">
-          <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:bg-slate-50">More</button>
-        </div>
-        <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
-          {openQuickEdit && <button type="button" onClick={(event) => { event.stopPropagation(); openQuickEdit?.(lead.id); }} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 transition whitespace-nowrap">📅 Follow up</button>}
-          <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition whitespace-nowrap">✏ Note</button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90 whitespace-nowrap">Open →</button>
-        </div>
+        <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
+        {onDeleteLead ? (
+          <button
+            type="button"
+            onClick={(event) => { event.stopPropagation(); onDeleteLead(lead.id, lead.company_name); }}
+            className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50"
+            title="Remove invalid or test lead from the active queue"
+          >
+            Remove
+          </button>
+        ) : null}
+        <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:bg-slate-50">More</button>
         {actionsOpen ? (
-          <div className="absolute right-0 top-full z-20 mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg" onClick={(event) => event.stopPropagation()}>
+          <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg" onClick={(event) => event.stopPropagation()}>
             <button type="button" disabled={!openQuoteBuilder} onClick={() => { setActionsOpen(false); openQuoteBuilder?.(lead.id); }} className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Continue quote</button>
             <button type="button" disabled={!openQuickEdit} onClick={() => { setActionsOpen(false); openQuickEdit?.(lead.id); }} className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Edit lead</button>
-            <button type="button" disabled={!onDeleteLead} onClick={() => { setActionsOpen(false); onDeleteLead?.(lead.id, lead.company_name); }} className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">Delete lead</button>
+            <button type="button" disabled={!onDeleteLead} onClick={() => { setActionsOpen(false); onDeleteLead?.(lead.id, lead.company_name); }} className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">Remove from queue</button>
           </div>
         ) : null}
       </div>
@@ -380,16 +382,16 @@ export function LeadTableHeader({
     );
   }
   return (
-    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-white px-4 py-2" style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 146px' }}>
-      <div className="flex justify-center"><input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} className="h-[18px] w-[18px] rounded-[4px] border-slate-300" /></div>
-      <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Company / Contact</div>
+    <div className="grid items-center gap-x-4 border-b border-slate-200 bg-slate-50 px-4 py-2" style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 170px' }}>
+      <input type="checkbox" checked={allSelected} onChange={(event) => onSelectAll(event.target.checked)} aria-label="Select all visible leads" className="h-[18px] w-[18px] rounded-[4px] border-slate-300" />
+      <SortableHeader field="company_name" label="Lead" />
       <div className="hidden lg:block text-center text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Contact</div>
-      <SortableHeader field="stage" label="Stage progress" />
-      <SortableHeader field="follow_up" label="Follow-up" />
-      <SortableHeader field="priority_score" label="Priority" className="justify-center" />
+      <SortableHeader field="stage" label="Stage" />
+      <SortableHeader field="follow_up" label="Follow up" />
+      <SortableHeader field="priority_score" label="Score" />
       <SortableHeader field="deal_value" label="Deal value" />
       <SortableHeader field="owner" label="Owner" />
-      <div className="hidden lg:block text-right text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Open / More</div>
+      <div className="hidden lg:block text-right text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Actions</div>
     </div>
   );
 }
