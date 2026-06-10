@@ -12,6 +12,10 @@ type Market = { id: string; name: string };
 
 interface LeadBasicInfoSectionProps {
   currentLeadId?: string;
+  /** S24-TRIAL-203: render trial coaching only for guided-trial orgs. */
+  guidedTrialCoach?: boolean;
+  /** S24-TRIAL-203: flips coach card to the post-save close-and-continue state. */
+  trialLeadSaved?: boolean;
   leadType: 'buyer' | 'supplier';
   setLeadType: (value: 'buyer' | 'supplier') => void;
   tradeEvents: TradeEvent[];
@@ -162,6 +166,8 @@ function AssistCard({ assist }: { assist: ContactPostApplyAssistResult }) {
 
 export default function LeadBasicInfoSection({
   currentLeadId,
+  guidedTrialCoach = false,
+  trialLeadSaved = false,
   leadType,
   setLeadType,
   tradeEvents,
@@ -210,24 +216,28 @@ export default function LeadBasicInfoSection({
 }: LeadBasicInfoSectionProps) {
   return (
     <section className="space-y-4 rounded-3xl border border-slate-200 p-4">
-      <div className="rounded-[1.5rem] border border-sky-100 bg-[linear-gradient(135deg,rgba(239,246,255,0.98),rgba(248,250,252,0.98))] p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-700">Guided trial step 1</p>
-            <h3 className="mt-2 text-lg font-semibold tracking-tight text-slate-900">Add the first lead</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Start with a camera scan, upload a card/PDF, or type manually. Choose Buyer or Supplier, add company and country, add one contact channel, then save the lead.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {['Camera scan', 'Upload PDF/image', 'Manual entry', 'Buyer/Supplier', 'Product or category'].map((item) => (
-                <span key={item} className="inline-flex rounded-full border border-sky-200 bg-white px-3 py-1 text-[11px] font-bold text-sky-700">{item}</span>
-              ))}
-            </div>
-            <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold leading-5 text-emerald-800">
-              After saving, close this drawer to return to the queue. Open the saved lead next to review details, add product interest, and continue toward quote.
-            </p>
-          </div>
-          <ContactScanTrigger
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          {guidedTrialCoach ? (
+            trialLeadSaved ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">Lead saved</p>
+                <p className="mt-1 text-sm font-semibold leading-5 text-emerald-900">
+                  Close this drawer to return to the queue, then open the lead to review details and continue to quote.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-500">Guided trial · Step 1</p>
+                <p className="mt-1 text-sm font-semibold leading-5 text-slate-800">Create your first lead</p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  Scan a card, upload a file, or enter details manually. Choose Buyer or Supplier, add company and country, add one contact method, then save.
+                </p>
+              </div>
+            )
+          ) : null}
+        </div>
+        <ContactScanTrigger
             currentLeadId={currentLeadId}
             companyName={companyName}
             contactName={contactName}
@@ -252,7 +262,6 @@ export default function LeadBasicInfoSection({
               clearAfterSaveGuidance();
             }}
           />
-        </div>
       </div>
 
       {postApplyAssist ? (

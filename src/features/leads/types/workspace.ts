@@ -74,6 +74,8 @@ export type LeadsWorkspaceProps = {
   canManageLeads?: boolean;
   readOnlyMessage?: string | null;
   isWorkspaceEmpty?: boolean;
+  /** S24-TRIAL-203: true only for guided-trial orgs; gates trial coaching UI in the lead drawer. */
+  guidedTrialCoach?: boolean;
   leads: LeadRow[];
   stages: Stage[];
   pipelines: Pipeline[];
@@ -163,4 +165,6 @@ export type LeadDrawerProps = {
   initialStepId?: LeadWizardStepId;
   prefill?: LeadQuickCapturePrefill | null;
   fastFieldMode?: boolean;
+  /** S24-TRIAL-203: true only for guided-trial orgs; gates trial coaching UI inside the drawer. */
+  guidedTrialCoach?: boolean;
 };

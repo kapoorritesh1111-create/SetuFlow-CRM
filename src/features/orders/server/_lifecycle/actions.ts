@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { buildOrderExecutionSnapshot, evaluateOrderExecution, normalizeOrderExecutionState } from '@/lib/order-execution';
+import { enforceTrialAction } from '@/lib/trial/enforcement';
 import { buildOrderOperationalControlState } from '@/lib/order-operations';
 import type { Database } from '@/types/database';
 
@@ -89,6 +90,15 @@ export async function progressOrderExecution(formData: FormData) {
   const contractId = String(formData.get('contract_id') ?? '').trim();
   const nextState = normalizeOrderExecutionState(String(formData.get('next_state') ?? ''));
   if (!contractId || !nextState) redirect(buildRedirect('order-action-invalid'));
+
+  // S24-TRIAL-203 Pass A: guided trials with allow_dispatch=false cannot move
+  // an order into the dispatched state.
+  if (nextState === 'dispatched') {
+    const trialDecision = await enforceTrialAction({ organizationId: workspace.organization.id, action: 'dispatch_order' });
+    if (!trialDecision.allowed) {
+      redirect(buildRedirect(`order-readonly:${trialDecision.reason ?? 'Dispatch is not available on this guided trial plan.'}`));
+    }
+  }
 
   const db = await createOrderActionDb();
   const { data: contractData, error: contractError } = await db

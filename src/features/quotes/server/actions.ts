@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { safeUserError, logServerError } from '@/lib/safe-error';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { enforceTrialAction } from '@/lib/trial/enforcement';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { APPROVAL_STATES, type ApprovalState } from '@/lib/approvalRouting';
 import { QUOTE_STATUSES, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
@@ -777,6 +778,13 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   const supabase: any = await createClient();
   const db: any = supabase;
 
+  // S24-TRIAL-203 Pass A: friendly guided-trial quote limit check before insert.
+  // DB trigger s24_trial_194_enforce_quote_limit remains the hard backstop.
+  const trialDecision = await enforceTrialAction({ organizationId: organization.id, action: 'create_quote', client: supabase });
+  if (!trialDecision.allowed) {
+    return { error: trialDecision.reason ?? 'Guided trial quote limit reached. Convert the workspace before creating more quotes.' };
+  }
+
   const normalizedResult = await normalizeLineItemsForSave(db, organization.id, lineItems);
   if (normalizedResult.error) return { error: normalizedResult.error };
   lineItems = normalizedResult.lineItems;
@@ -1072,6 +1080,13 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
       });
       return { error: `Only sent quotes can be marked accepted. Current status is ${previousStatus || 'unknown'}.` };
     }
+    // S24-TRIAL-203 Pass A: acceptance creates the order inside the RPC, so check
+    // the guided-trial order limit first for a friendly message. The DB trigger
+    // s24_trial_194_enforce_order_limit remains the hard backstop inside the tx.
+    const orderTrialDecision = await enforceTrialAction({ organizationId: organization.id, action: 'create_order', client: db });
+    if (!orderTrialDecision.allowed) {
+      return { error: orderTrialDecision.reason ?? 'Guided trial order limit reached. Convert the workspace before accepting more quotes.' };
+    }
     const { data: acceptanceResult, error: acceptanceError } = await db.rpc('app_safe_accept_sent_quote_tx', {
       p_organization_id: organization.id,
       p_quote_id: quoteId,
@@ -1079,6 +1094,10 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
       p_notes: plainNotes || 'Quote accepted; order execution handoff created from quote outcome action.',
     });
     if (acceptanceError) {
+      const triggerMessage = String(acceptanceError?.message ?? '');
+      if (triggerMessage.includes('Guided trial')) {
+        return { error: triggerMessage };
+      }
       return { error: quoteActionError('recordQuoteOutcomeWorkflow.safe-accept', acceptanceError, 'Quote acceptance could not be completed. Please refresh and try again.') };
     }
     const acceptanceRow = Array.isArray(acceptanceResult) ? acceptanceResult[0] : acceptanceResult;

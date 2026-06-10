@@ -27,6 +27,7 @@ function Notice({ notice }: { notice: string }) {
     'invite-revoked': { title: 'Invitation revoked', description: 'The invitation was revoked and can no longer be accepted.', tone: 'success' },
     'role-invalid': { title: 'Role invalid', description: 'Choose a role available to this organization.', tone: 'danger' },
     'owner-role-requires-owner': { title: 'Owner role blocked', description: 'Only an owner can invite another owner.', tone: 'danger' },
+    'trial-invite-blocked': { title: 'Guided trial invite limit', description: 'This guided trial workspace cannot invite more users. Raise Max users in Client Management or convert the workspace to an active plan.', tone: 'warning' },
   };
   const item = copy[notice];
   return item ? <StateMessage title={item.title} description={item.description} tone={item.tone ?? 'neutral'} /> : null;

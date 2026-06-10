@@ -129,6 +129,7 @@ export function LeadDrawer({
   initialStepId,
   prefill = null,
   fastFieldMode = false,
+  guidedTrialCoach = false,
 }: LeadDrawerProps) {
   const router = useRouter();
   const isQuickMode = mode === "quick";
@@ -213,6 +214,9 @@ export function LeadDrawer({
     useState<ContactPostApplyAssistResult | null>(null);
   const [afterSaveGuidance, setAfterSaveGuidance] =
     useState<ContactAfterSaveGuidanceResult | null>(null);
+  // S24-TRIAL-203 Pass A: state-aware trial coach — flips the drawer coach card
+  // from "create your first lead" to the close-and-continue prompt after a save.
+  const [trialLeadSaved, setTrialLeadSaved] = useState(false);
   const [lastSavedCompany, setLastSavedCompany] = useState<string | null>(null);
   const [defaultFollowUpLocal, setDefaultFollowUpLocal] = useState("");
   const [quoteActionError, setQuoteActionError] = useState<string | null>(null);
@@ -379,6 +383,7 @@ export function LeadDrawer({
     setQuickScanStatus({ tone: "idle", message: "" });
     setPostApplyAssist(null);
     setAfterSaveGuidance(null);
+    setTrialLeadSaved(false);
 
     const groupedSelections = new Map<string, string[]>();
     for (const productId of selectedProductIds) {
@@ -1252,6 +1257,7 @@ export function LeadDrawer({
             })
           : null;
         setAfterSaveGuidance(nextAfterSaveGuidance);
+        if (!isEditingExistingLead) setTrialLeadSaved(true);
 
         const resetForNextLead =
           !isEditingExistingLead &&
@@ -3461,6 +3467,8 @@ export function LeadDrawer({
                 </div>
                 <LeadBasicInfoSection
                   currentLeadId={lead?.id ?? ""}
+                  guidedTrialCoach={guidedTrialCoach}
+                  trialLeadSaved={trialLeadSaved}
                   leadType={leadType}
                   setLeadType={setLeadType}
                   tradeEvents={tradeEvents}

@@ -8,6 +8,7 @@ import { normalizeImportComparableText, normalizeImportText } from '@/lib/import
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { parseBoolean, parseInteger } from '@/lib/utils';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';
+import { enforceTrialAction } from '@/lib/trial/enforcement';
 
 type ActionState = {
   error?: string;
@@ -423,6 +424,13 @@ export async function saveSettingsListItem(_: ActionState | undefined, formData:
   const supabase = await createClient();
   const db = supabase as any;
   const organization_id = workspace.organization.id;
+
+  // S24-TRIAL-203 Pass A: guided trials with allow_settings_edit=false cannot
+  // modify workspace settings lists.
+  const trialDecision = await enforceTrialAction({ organizationId: organization_id, action: 'edit_settings', client: supabase });
+  if (!trialDecision.allowed) {
+    return { error: trialDecision.reason ?? 'Workspace settings edits are disabled during guided trials.' };
+  }
   const table = String(formData.get('table') ?? '').trim();
   const id = String(formData.get('id') ?? '').trim() || null;
   if (!table) return { error: 'Table is required.' };
@@ -640,6 +648,13 @@ export async function deleteSettingsListItem(_: ActionState | undefined, formDat
   const supabase = await createClient();
   const db = supabase as any;
   const organization_id = workspace.organization.id;
+
+  // S24-TRIAL-203 Pass A: guided trials with allow_settings_edit=false cannot
+  // modify workspace settings lists.
+  const trialDecision = await enforceTrialAction({ organizationId: organization_id, action: 'edit_settings', client: supabase });
+  if (!trialDecision.allowed) {
+    return { error: trialDecision.reason ?? 'Workspace settings edits are disabled during guided trials.' };
+  }
   const table = String(formData.get('table') ?? '').trim();
   const id = String(formData.get('id') ?? '').trim();
   if (!table || !id) return { error: 'Table and ID are required.' };

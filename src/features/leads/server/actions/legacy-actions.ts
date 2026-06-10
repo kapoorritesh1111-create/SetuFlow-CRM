@@ -10,6 +10,7 @@ import { leadSchema } from '@/features/leads/schemas/lead';
 import { parseNullableNumber, uniqueTrimmed } from '@/lib/utils';
 import { deriveProductMappingStatus, parseLeadWorkflow, serializeLeadWorkflow, type LeadQualificationStatus, type LeadCoverageSelection } from '@/lib/lead-workflow';
 import { createImportIssuePayload } from '@/lib/import-issues';
+import { enforceTrialAction } from '@/lib/trial/enforcement';
 import { type ActionState, type LeadRecord, type QuoteDraftActionState, normalizeLeadEmail, normalizeLeadInputText, normalizeLeadOptionalText } from '@/features/leads/server/shared';
 import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
 import { parseQuoteWorkflow, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
@@ -1494,6 +1495,15 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
 
   const supabase: any = await createClient();
   const db: any = supabase;
+
+  // S24-TRIAL-203 Pass A: friendly guided-trial limit check before insert.
+  // The DB trigger s24_trial_194_enforce_lead_limit remains the hard backstop.
+  if (!parsed.data.lead_id) {
+    const trialDecision = await enforceTrialAction({ organizationId: organization.id, action: 'create_lead', client: supabase });
+    if (!trialDecision.allowed) {
+      return { error: trialDecision.reason ?? 'Guided trial lead limit reached. Convert the workspace before adding more leads.' };
+    }
+  }
 
   const requestedMarketIds = uniqueTrimmed(formData.getAll('market_ids').map(String));
   const requestedProductIds = uniqueTrimmed(formData.getAll('product_ids').map(String));

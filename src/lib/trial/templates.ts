@@ -72,7 +72,7 @@ export const TRIAL_TEMPLATE_CONFIGS: Record<TrialTemplateKey, TrialTemplateConfi
   },
   packaging_converter: {
     key: 'packaging_converter',
-    label: 'Packaging converter',
+    label: 'Packaging converter / Stark Packmate',
     audience: 'Stark Packmate and packaging clients',
     summary: 'Stark Packmate-ready catalog and dimensional pricing trial for cartons, mailers, and custom packaging.',
     workflowSteps: ['Capture packaging buyer lead', 'Select dimensional packaging SKU', 'Calculate price from size, material, and quantity', 'Quote and convert to first order'],

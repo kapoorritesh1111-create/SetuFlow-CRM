@@ -10,6 +10,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { buildInvitationAcceptUrl, createInvitationToken, hashInvitationToken } from '@/lib/invitationTokens';
 import { env } from '@/lib/env';
 import { sendInvitationEmail } from '@/features/admin/server/invitation-email';
+import { enforceTrialAction } from '@/lib/trial/enforcement';
 
 async function logAdminAuditAction(input: {
   organizationId: string;
@@ -499,6 +500,11 @@ export async function inviteMember(formData: FormData): Promise<void> {
   const context = await getAdminContext();
   if (!context) return;
   const { supabase, membership: currentMembership, organization, isOwner } = context;
+
+  // S24-TRIAL-203 Pass A: friendly guided-trial invite check before creating the
+  // invitation. DB trigger s24_trial_194_enforce_invite_limit remains the backstop.
+  const trialDecision = await enforceTrialAction({ organizationId: organization.id, action: 'invite_user', client: supabase });
+  if (!trialDecision.allowed) redirectWithNotice(returnPath, 'trial-invite-blocked');
 
   const nextRole = await getAssignableRole(supabase, organization.id, roleId);
   if (roleId && !nextRole) redirectWithNotice(returnPath, 'role-invalid');

@@ -7,6 +7,8 @@ import { LeadsMobileSurface } from '@/features/leads/components/leads-mobile-sur
 import { QuoteReviewInlineComplianceFix } from '@/features/leads/components/quote-review-inline-compliance-fix';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { getTrialCapability } from '@/lib/trial/capability';
+import { TrialBlockedNotice } from '@/components/ui/trial-blocked-notice';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
@@ -52,6 +54,13 @@ export default async function LeadsPage({
   }
 
   const data = await getLeadsPageData(workspace.organization.id);
+
+  // S24-TRIAL-203 Pass A: trial coaching renders ONLY for guided-trial orgs.
+  const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
+  const guidedTrialCoach = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
+  const trialLeadLimitReached = Boolean(
+    guidedTrialCoach && trialCapability && trialCapability.remaining_leads !== null && trialCapability.remaining_leads <= 0,
+  );
 
   if (!data) {
     return (
@@ -104,6 +113,9 @@ export default async function LeadsPage({
 
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
+        {trialLeadLimitReached ? (
+          <TrialBlockedNotice message={`Guided trial lead limit reached (${trialCapability?.max_leads}). Remove a test lead or convert the workspace to add more.`} />
+        ) : null}
         <LeadEventFilterNarrower
           leads={data.leads.map((lead) => ({
             id: lead.id,
@@ -119,6 +131,7 @@ export default async function LeadsPage({
         <LeadsWorkspace
           currentUserId={viewModel.currentUserId}
           canManageLeads={viewModel.canManageLeads}
+          guidedTrialCoach={guidedTrialCoach}
           readOnlyMessage={viewModel.readOnlyMessage}
           isWorkspaceEmpty={viewModel.isWorkspaceEmpty}
           leads={data.leads.map((lead) => ({ ...lead, whatsapp_number: (lead as any).whatsapp_number ?? null, intro_sent: lead.intro_sent ?? false }))}

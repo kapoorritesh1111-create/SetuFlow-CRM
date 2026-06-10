@@ -232,6 +232,7 @@ export function LeadsWorkspace({
   initialQuickCapture = null,
   initialEventId = null,
   initialFastField = false,
+  guidedTrialCoach = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -1961,6 +1962,7 @@ export function LeadsWorkspace({
         navigationMeta={drawerState.leadId ? 'Editing selected lead in the inline Leads workspace.' : 'Create a new lead from the inline Leads workspace.'}
         prefill={drawerState.open && !drawerState.leadId ? initialQuickCapture : null}
         fastFieldMode={Boolean(initialFastField && initialEventId && !drawerState.leadId)}
+        guidedTrialCoach={guidedTrialCoach}
       />
     </div>
   );

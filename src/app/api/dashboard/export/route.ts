@@ -3,6 +3,7 @@ import { getAnalyticsData } from '@/lib/queries/analytics';
 import { parseWorkspaceMode } from '@/features/workspace/mode';
 import type { WorkspaceMode } from '@/features/workspace/types';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { enforceTrialAction } from '@/lib/trial/enforcement';
 
 type ExportDataset = 'executive-summary' | 'pipeline-funnel' | 'markets' | 'products' | 'orders-execution' | 'audit-reporting' | 'business-pack';
 type ExportSource = 'home' | 'analytics' | 'reports';
@@ -115,6 +116,12 @@ function toCsv(rows: BusinessReportRow[]) {
 export async function GET(request: NextRequest) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) return new Response('Workspace membership required', { status: 401 });
+
+  // S24-TRIAL-203 Pass A: guided trials with allow_exports=false cannot download CSV exports.
+  const trialDecision = await enforceTrialAction({ organizationId: workspace.organization.id, action: 'export_data' });
+  if (!trialDecision.allowed) {
+    return new Response(trialDecision.reason ?? 'Exports are disabled during guided trials.', { status: 403 });
+  }
 
   const searchParams = request.nextUrl.searchParams;
   const source = normalizeSource(searchParams.get('source'));
