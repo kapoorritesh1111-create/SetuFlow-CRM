@@ -72,7 +72,6 @@ export default async function LeadsPage({
   const eventId = readParam(searchParams?.eventId).trim();
   const initialFastField = quickLeadEnabled && Boolean(eventId);
   const modeLeadType = readModeLeadType(searchParams?.mode);
-  const showQuickLeadGuide = viewModel.isWorkspaceEmpty && viewModel.canManageLeads;
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -105,22 +104,6 @@ export default async function LeadsPage({
 
       <div className="hidden space-y-4 md:block">
         <QueryIssuesAlert issues={data.queryIssues} />
-        {showQuickLeadGuide ? (
-          <section className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Guided trial workspace</p>
-                <p className="mt-1 text-sm font-bold text-slate-900">Start with the top-right + Quick Lead button.</p>
-                <p className="mt-1 text-xs font-medium leading-5 text-slate-600">
-                  The helper appears inside the Quick Lead drawer after it opens, so the user learns camera scan, upload, manual entry, and save in the active workflow.
-                </p>
-              </div>
-              <div className="rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-amber-700">
-                Step 1: capture lead
-              </div>
-            </div>
-          </section>
-        ) : null}
         <LeadEventFilterNarrower
           leads={data.leads.map((lead) => ({
             id: lead.id,
