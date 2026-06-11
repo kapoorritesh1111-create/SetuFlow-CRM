@@ -219,7 +219,7 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
             <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>⬇ Export</a>
             <button type="button" onClick={() => setCatalogMode('pricing')} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Pricing calculator</button>
             <Link href={tradeShowReadyHref} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspaceSecondaryButtonClass}`}>Quote handoff</Link>
-            <button type="button" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`} onClick={openAddProduct}>＋ Add product</button>
+            <button type="button" data-tour="add-product" className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${workspacePrimaryButtonClass}`} onClick={openAddProduct}>＋ Add product</button>
           </div>
         </div>
       </div>

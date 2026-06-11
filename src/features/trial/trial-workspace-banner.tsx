@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTrialCapability } from '@/lib/trial/capability';
 import { getTrialTemplateConfig } from '@/lib/trial/templates';
+import { TrialTourRelaunchButton } from '@/features/trial/tour-provider';
 
 function remainingLabel(value: number | null | undefined) {
   return value === null || typeof value === 'undefined' ? 'Unlimited' : String(value);
@@ -21,9 +22,12 @@ export async function TrialWorkspaceBanner({ organizationId }: { organizationId:
             {template.label}: {remainingLabel(capability.remaining_leads)} leads, {remainingLabel(capability.remaining_quotes)} quote, and {remainingLabel(capability.remaining_orders)} order remaining.
           </p>
         </div>
-        <Link href="/trial" className="inline-flex w-fit items-center rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-extrabold text-amber-800 shadow-sm hover:bg-amber-50">
-          Open trial guide
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <TrialTourRelaunchButton />
+          <Link href="/trial" className="inline-flex w-fit items-center rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-extrabold text-amber-800 shadow-sm hover:bg-amber-50">
+            Open trial guide
+          </Link>
+        </div>
       </div>
     </div>
   );

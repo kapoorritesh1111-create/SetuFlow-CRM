@@ -11,6 +11,7 @@ import { getRouteMeta } from '@/components/shell/route-meta';
 import { cn, getInitials } from '@/lib/utils';
 import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { SetuGuruWidget } from '@/features/setu-guru/setu-guru-widget';
+import { openQuickLeadDrawer } from '@/features/leads/lib/quick-lead-channel';
 import { InAppNotificationCenter } from '@/components/notifications/in-app-notification-center';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -453,9 +454,17 @@ export function AppShell({ children, profile, organization, membership, currentR
                   <a href={shareHref} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)]">
                     <FaIcon icon="address-card-o" fixedWidth />Share vCard
                   </a>
-                  <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
+                  {pathname.startsWith('/leads') ? (
+                    /* S24-TRIAL-206: on /leads, signal the single drawer owner (LeadsWorkspace)
+                       instead of re-navigating — the root fix for the duplicate-drawer bug. */
+                    <button type="button" onClick={openQuickLeadDrawer} data-tour="quick-lead-button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
+                      ＋ Quick Lead
+                    </button>
+                  ) : (
+                    <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} data-tour="quick-lead-button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
                     ＋ Quick Lead
                   </Link>
+                  )}
                   {pathname.startsWith('/dashboard') ? (
                     <button
                       type="button"

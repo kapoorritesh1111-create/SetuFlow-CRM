@@ -438,7 +438,7 @@ export function buildSetuGuruLiteAnswer(question: string, pathname: string) {
     return {
       answer: [
         'I can help with Setu Flow public pages, product overview, and training content.',
-        'I cannot access live CRM records, customer data, pricing defaults, HSN research, compliance decisions, or external searches from Setu Guru Lite.',
+        'I cannot access private CRM records. I cannot access live CRM records, customer data, pricing defaults, HSN research, compliance decisions, or external searches from Setu Guru Lite.',
         `For this page: ${match.page.summary}`,
         'Try asking about the platform workflow, mobile capture, pricing page, comparison page, Setu Guru AI, or training modules.',
       ].join('\n\n'),

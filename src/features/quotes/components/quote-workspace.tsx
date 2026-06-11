@@ -1999,7 +1999,7 @@ export function QuoteWorkspace({
                         {focusOrderDiagnostic.cta}
                       </Link>
                     ) : focusQuoteStatus === 'sent' && focusAcceptAction && focusAcceptRun ? (
-                      <button type="button" onClick={() => runQuickAction(focusQuote, focusAcceptActionView)} disabled={isWorkflowPending && quickActionQuoteId === focusQuote.id} className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
+                      <button type="button" data-tour="convert-order" onClick={() => runQuickAction(focusQuote, focusAcceptActionView)} disabled={isWorkflowPending && quickActionQuoteId === focusQuote.id} className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
                         {focusOrderDiagnostic.cta}
                       </button>
                     ) : (
@@ -2960,6 +2960,7 @@ export function QuoteWorkspace({
           {canManageQuotes ? (
             <button
               type="button"
+              data-tour="create-quote"
               onClick={() => setCreateOpen(true)}
               className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
             >

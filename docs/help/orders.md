@@ -4,6 +4,8 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-20
 
+Setu Guru behavior on this route is guidance and routing only — it must not advance order states, approve, send, waive, or sync.
+
 ## Purpose
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.

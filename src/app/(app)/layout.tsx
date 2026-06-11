@@ -4,6 +4,8 @@ import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
 import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
+import { TrialTourProvider } from '@/features/trial/tour-provider';
+import { getTrialCapability } from '@/lib/trial/capability';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
@@ -51,7 +53,25 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const myCardSettingsRow = await getMyCardSettingsForUser(workspace.user.id);
   const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
 
-  return (
+  // S24-TRIAL-204 Pass B: tour provider mounts ONLY for guided-trial orgs —
+  // non-trial orgs render the exact same tree as before, with no tour code.
+  const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
+  const guidedTourEnabled = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
+
+  const inner = (
+    <>
+      <TrialWorkspaceBanner organizationId={workspace.organization.id} />
+      {/* InAppNotificationCenter is now rendered inline in the AppShell header — no floating duplicate */}
+      <SetuGuruFeedbackBridge />
+      <LeadCoverageRecoveryBoundary />
+      <ModuleAccessGuard>{children}</ModuleAccessGuard>
+    </>
+  );
+
+  // S24-TRIAL-205 Pass C: the provider wraps AppShell (not just the page body)
+  // because SetuGuruWidget mounts inside AppShell and needs useTrialTour() for
+  // "Show me" actions. Non-trial orgs still render the identical tree.
+  const shell = (
     <AppShell
       profile={workspace.profile}
       organization={workspace.organization}
@@ -62,11 +82,19 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       organizationId={workspace.organization.id}
       userId={workspace.user.id}
     >
-      <TrialWorkspaceBanner organizationId={workspace.organization.id} />
-      {/* InAppNotificationCenter is now rendered inline in the AppShell header — no floating duplicate */}
-      <SetuGuruFeedbackBridge />
-      <LeadCoverageRecoveryBoundary />
-      <ModuleAccessGuard>{children}</ModuleAccessGuard>
+      {inner}
     </AppShell>
+  );
+
+  return guidedTourEnabled ? (
+    <TrialTourProvider
+      organizationId={workspace.organization.id}
+      userId={workspace.user.id}
+      templateKey={trialCapability?.trial_template_key ?? null}
+    >
+      {shell}
+    </TrialTourProvider>
+  ) : (
+    shell
   );
 }

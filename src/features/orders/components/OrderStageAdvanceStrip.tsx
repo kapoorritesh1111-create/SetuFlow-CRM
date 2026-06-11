@@ -38,7 +38,7 @@ export function OrderStageAdvanceStrip({
   const prevDone = WORKFLOW_STEPS.filter((_, i) => i <= currentIdx);
 
   return (
-    <div style={{ padding: '0 20px 16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+    <div data-tour="dispatch-strip" style={{ padding: '0 20px 16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
       {/* Stage progress track */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto', paddingTop: 14, paddingBottom: 10, scrollbarWidth: 'none' }}>
         {WORKFLOW_STEPS.map((step, i) => {

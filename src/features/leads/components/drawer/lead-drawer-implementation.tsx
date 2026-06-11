@@ -1636,6 +1636,11 @@ export function LeadDrawer({
     <form
       ref={formRef}
       id="lead-drawer-form"
+      // S24-TRIAL-206: app/server owns lead validation (Email OR Phone OR
+      // WhatsApp). noValidate replaces the deleted DOM-patching guard that
+      // previously stripped native required flags from outside React.
+      noValidate
+      data-lead-contact-validation="app-owned"
       className="flex min-h-full flex-col"
       onSubmit={handleFormSubmit}
     >

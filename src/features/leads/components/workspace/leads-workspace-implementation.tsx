@@ -8,6 +8,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LeadDrawer } from '@/features/leads/components/lead-drawer';
+import { subscribeQuickLeadDrawer } from '@/features/leads/lib/quick-lead-channel';
 import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
 import { SavedViewsBar, ToolbarActionButton, ToolbarSearchInput, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
@@ -1264,6 +1265,16 @@ export function LeadsWorkspace({
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
+
+  // S24-TRIAL-206 Pass D: LeadsWorkspace is the SOLE owner of the Quick Lead
+  // drawer. The header button on /leads signals through this channel instead
+  // of navigating, which removes the second open path that caused duplicates.
+  useEffect(() => {
+    return subscribeQuickLeadDrawer(() => {
+      if (!canManageLeads) return;
+      setDrawerState((current) => (current.open ? current : { open: true, mode: 'quick', leadId: null, initialStepId: 'basics' }));
+    });
+  }, [canManageLeads]);
 
   useEffect(() => {
     if ((!initialQuickCapture && !initialFastField) || !canManageLeads) return;

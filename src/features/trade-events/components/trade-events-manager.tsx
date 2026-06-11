@@ -69,6 +69,7 @@ export function TradeEventsManager({ events }: { events: TradeEvent[] }) {
 
       <button
         type="button"
+        data-tour="add-trade-event"
         onClick={() => {
           setEditingEvent(undefined);
           setDrawerOpen(true);

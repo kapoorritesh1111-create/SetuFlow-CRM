@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import RightDrawer from '@/components/RightDrawer';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
 import { collectSetuGuruPageContext } from '@/lib/setu-guru/page-context';
+import { useTrialTour } from '@/features/trial/tour-provider';
 import { getBestSetuGuruHelpTopic, getRouteHelpSummary, getSetuGuruActionHref, getSetuGuruRouteTopics, type SetuGuruHelpTopic } from '@/lib/setu-guru/help-registry';
 import { isSetuGuruComplianceQuestion, isSetuGuruOrgSearchQuestion, isSetuGuruPricingDefaultQuestion } from '@/lib/setu-guru/guru-response-policy';
 import { SetuGuruFab } from '@/features/setu-guru/setu-guru-fab';
@@ -19,6 +21,8 @@ type HsnCatalogReview = {
   needsApproval?: boolean;
 };
 
+type TrialShowStepAction = { type: 'show_step'; stepId: string; route: string; title: string };
+
 type ChatMessage = {
   id: string;
   role: 'assistant' | 'user';
@@ -30,6 +34,8 @@ type ChatMessage = {
   hsnCatalogReview?: HsnCatalogReview | null;
   sourceQuestion?: string;
   tone?: 'normal' | 'loading' | 'error' | 'success';
+  /** S24-TRIAL-205: registry-validated guided-tour step suggested by the trial coach. */
+  trialAction?: TrialShowStepAction | null;
 };
 
 function isPageHelpQuestion(question: string) {
@@ -151,6 +157,22 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
 
 export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLabel }: { pathname: string; routeTitle: string; organizationName?: string | null; roleLabel: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
+  // S24-TRIAL-205: null for non-trial orgs (no provider mounted) — hides "Show me".
+  const trialTour = useTrialTour();
+
+  const handleShowStep = useCallback((action: TrialShowStepAction) => {
+    void fetch('/api/setu-guru/trial-step', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stepId: action.stepId, route: pathname }),
+    }).catch(() => undefined);
+    setDrawerOpen(false);
+    const onStepRoute = pathname === action.route || pathname.startsWith(`${action.route}/`);
+    if (onStepRoute && trialTour?.showStep(action.stepId)) return;
+    router.push(`${action.route}?guruStep=${encodeURIComponent(action.stepId)}`);
+  }, [pathname, router, trialTour]);
+
   const [inputValue, setInputValue] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -193,6 +215,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
         actionHrefs: data.actionHrefs && typeof data.actionHrefs === 'object' ? data.actionHrefs as Record<string, string | null> : undefined,
         rows: Array.isArray(data.rows) ? data.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === 'object' && !Array.isArray(row))) : [],
         hsnCatalogReview: data.hsnCatalogReview && typeof data.hsnCatalogReview === 'object' ? data.hsnCatalogReview as HsnCatalogReview : null,
+        trialAction:
+          data.trialAction && typeof data.trialAction === 'object' && (data.trialAction as Record<string, unknown>).type === 'show_step' && typeof (data.trialAction as Record<string, unknown>).stepId === 'string'
+            ? (data.trialAction as TrialShowStepAction)
+            : null,
         sourceQuestion: question,
         tone: response.ok ? 'normal' : 'error',
       }));
@@ -334,6 +360,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                     <div className={cn('rounded-[22px] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : message.tone === 'success' ? 'rounded-bl-md border border-emerald-200 bg-emerald-50 text-emerald-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
                       {message.content.split('\n\n').map((paragraph) => <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>)}
                       <ResultRows rows={message.rows ?? []} />
+                      {message.trialAction && trialTour ? <div className="mt-3 border-t border-slate-100 pt-3"><button type="button" onClick={() => handleShowStep(message.trialAction!)} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700"><FaIcon icon="hand-o-right" fixedWidth />Show me: {message.trialAction.title}</button></div> : null}
                       {message.actions?.length ? <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action) => <button key={action} type="button" onClick={() => handleAction(message, action)} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-sky-700">{action}</button>)}</div> : null}
                     </div>
                   </div>

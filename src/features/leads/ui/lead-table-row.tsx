@@ -266,6 +266,7 @@ export function LeadTableRow({
     <article
       role="link"
       tabIndex={0}
+      data-tour="lead-row"
       className={[
         'group relative grid cursor-pointer items-center gap-x-4 rounded-2xl border border-slate-200 bg-white px-4 py-[11px] mb-[5px] transition hover:shadow-md hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
         severityBorderClass,

@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { StateMessage } from '@/components/ui/state-message';
 import { getTrialCapability } from '@/lib/trial/capability';
+import { deriveTrialJourney } from '@/lib/trial/tour-registry';
 import { calculatePackmateDimensionalPrice, getTrialTemplateConfig } from '@/lib/trial/templates';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,8 +41,39 @@ export default async function TrialWorkspacePage() {
   const template = getTrialTemplateConfig(capability.trial_template_key);
   const packmateEstimate = calculatePackmateDimensionalPrice({ widthIn: 10, heightIn: 6, depthIn: 4, quantity: 1000, material: 'corrugated' });
 
+  // S24-TRIAL-204 Pass B: journey derived from live capability counts; only the
+  // dispatch milestone needs one targeted query since capability has no
+  // dispatched count.
+  const db: any = await createClient();
+  const { count: dispatchedCount } = await db
+    .from('contracts')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', workspace.organization.id)
+    .in('execution_state', ['dispatched', 'completed']);
+  const journey = deriveTrialJourney(capability, { hasDispatchedOrder: Boolean(dispatchedCount && dispatchedCount > 0) });
+  const journeyDone = journey.filter((item) => item.done).length;
+
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-6">
+      <section data-tour-journey className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">Your trial journey</p>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-extrabold text-slate-700">{journeyDone} of {journey.length} complete</span>
+        </div>
+        <ol className="mt-4 grid gap-3 md:grid-cols-4">
+          {journey.map((milestone, index) => (
+            <li key={milestone.id} className={`rounded-2xl border p-3 ${milestone.done ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-slate-50/70'}`}>
+              <div className="flex items-center gap-2">
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white ${milestone.done ? 'bg-emerald-600' : 'bg-slate-400'}`}>
+                  {milestone.done ? '✓' : index + 1}
+                </span>
+                <p className={`text-sm font-bold ${milestone.done ? 'text-emerald-900' : 'text-slate-800'}`}>{milestone.label}</p>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-600">{milestone.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
         <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">Guided Trial</p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
