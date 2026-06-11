@@ -8,6 +8,11 @@ import type {
   LeadWizardStepId,
 } from "@/features/leads/types/workspace";
 import RightDrawer from "@/components/RightDrawer";
+import {
+  claimLeadDrawerPrimacy,
+  onLeadDrawerPrimacyReleased,
+  releaseLeadDrawerPrimacy,
+} from "@/features/leads/lib/lead-drawer-singleton";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Database } from "@/types/database";
@@ -132,6 +137,39 @@ export function LeadDrawer({
   guidedTrialCoach = false,
 }: LeadDrawerProps) {
   const router = useRouter();
+
+  // S24-TRIAL-206 hotfix: singleton claim — at most one lead drawer renders
+  // its portal, regardless of how many instances are mounted by any code path
+  // (duplicate mounts, route-transition tree retention, hidden trees). A
+  // suppressed instance renders null (portal never created) and self-heals by
+  // re-claiming when the primary releases.
+  const singletonOwnerRef = useRef<symbol | null>(null);
+  if (singletonOwnerRef.current === null) singletonOwnerRef.current = Symbol("lead-drawer-instance");
+  const [isPrimaryDrawer, setIsPrimaryDrawer] = useState(true);
+  useEffect(() => {
+    const owner = singletonOwnerRef.current as symbol;
+    if (!open) {
+      releaseLeadDrawerPrimacy(owner);
+      setIsPrimaryDrawer(true);
+      return;
+    }
+    const claimed = claimLeadDrawerPrimacy(owner);
+    setIsPrimaryDrawer(claimed);
+    if (!claimed && process.env.NODE_ENV !== "production") {
+      // Diagnostic for finding any future duplicate mount source.
+      console.warn("[LeadDrawer] duplicate open instance suppressed by singleton claim");
+    }
+    const unsubscribe = claimed
+      ? undefined
+      : onLeadDrawerPrimacyReleased(() => {
+          if (claimLeadDrawerPrimacy(owner)) setIsPrimaryDrawer(true);
+        });
+    return () => {
+      unsubscribe?.();
+      releaseLeadDrawerPrimacy(owner);
+    };
+  }, [open]);
+
   const isQuickMode = mode === "quick";
   const isEditingExistingLead = Boolean(lead?.id);
   const isFastFieldMode = Boolean(
@@ -4092,6 +4130,10 @@ export function LeadDrawer({
         </div>
       </div>
     ) : undefined;
+
+  // S24-TRIAL-206 hotfix: a suppressed duplicate renders nothing — its portal
+  // is never created. Placed after all hooks to respect the rules of hooks.
+  if (open && !isPrimaryDrawer) return null;
 
   return (
     <RightDrawer

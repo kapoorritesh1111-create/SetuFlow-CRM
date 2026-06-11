@@ -88,3 +88,17 @@ test('setu-guru contract content restored (the 4 pre-existing failures)', () => 
   assert.ok(helpRegistry.includes('Review order approval boundary'));
   assert.ok(ordersHelp.includes('guidance and routing only'));
 });
+
+test('singleton claim guarantees at most one rendered lead drawer (hotfix)', () => {
+  const singleton = read('src/features/leads/lib/lead-drawer-singleton.ts');
+  assert.ok(singleton.includes('claimLeadDrawerPrimacy'));
+  assert.ok(singleton.includes('releaseLeadDrawerPrimacy'));
+  assert.ok(singleton.includes('onLeadDrawerPrimacyReleased'), 'self-healing handoff must exist');
+  assert.ok(!singleton.includes('document'), 'registry must be DOM-free');
+  assert.ok(!singleton.includes('querySelector'), 'registry must be DOM-free');
+  // Drawer wiring: claim on open, render-null guard after hooks, release on close/unmount.
+  assert.ok(drawer.includes('claimLeadDrawerPrimacy(owner)'));
+  assert.ok(drawer.includes('if (open && !isPrimaryDrawer) return null;'));
+  assert.ok(drawer.includes('releaseLeadDrawerPrimacy(owner)'));
+  assert.ok(drawer.includes('onLeadDrawerPrimacyReleased'), 'suppressed instances must retry on release');
+});
