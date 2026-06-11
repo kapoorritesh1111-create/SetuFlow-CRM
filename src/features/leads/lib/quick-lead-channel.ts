@@ -31,3 +31,32 @@ export function subscribeQuickLeadDrawer(listener: QuickLeadListener): () => voi
     listeners.delete(listener);
   };
 }
+
+// ---------------------------------------------------------------------------
+// S24-TRIAL-206 (critical fix): drawer-opened broadcast.
+// The lead drawer announces the moment it actually opens (after winning the
+// singleton claim). The trial tour subscribes and closes itself immediately —
+// the guide popover and the drawer can never be on screen together, which is
+// what read as "two open Quick Lead drawers" in production.
+// ---------------------------------------------------------------------------
+
+const drawerOpenedListeners = new Set<QuickLeadListener>();
+
+/** Called by LeadDrawer when it opens as the primary instance. */
+export function notifyLeadDrawerOpened() {
+  drawerOpenedListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // One bad listener must never block the others.
+    }
+  });
+}
+
+/** Subscribed by surfaces that must yield to the drawer (e.g., the trial tour). */
+export function subscribeLeadDrawerOpened(listener: QuickLeadListener): () => void {
+  drawerOpenedListeners.add(listener);
+  return () => {
+    drawerOpenedListeners.delete(listener);
+  };
+}

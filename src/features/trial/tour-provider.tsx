@@ -27,6 +27,8 @@ import {
   type TourStep,
 } from '@/lib/trial/tour-registry';
 import type { TrialTemplateKey } from '@/lib/trial/capability';
+import { subscribeLeadDrawerOpened } from '@/features/leads/lib/quick-lead-channel';
+import { hasActiveLeadDrawerClaim } from '@/features/leads/lib/lead-drawer-singleton';
 
 type AnchorBox = { top: number; left: number; width: number; height: number };
 
@@ -117,16 +119,26 @@ export function TrialTourProvider({
     return true;
   }, [pathname, templateKey]);
 
+  // S24-TRIAL-206 critical fix: the tour and the lead drawer are mutually
+  // exclusive. The instant any lead drawer opens, the tour popover closes —
+  // two simultaneous floating panels read as "two open drawers" in production.
+  useEffect(() => {
+    return subscribeLeadDrawerOpened(() => {
+      setOpen(false);
+    });
+  }, []);
+
   // Auto-run on first visit per route. requestAnimationFrame (single, not a
   // loop) lets the page paint once so anchors are measurable.
   // S24-TRIAL-205: a guruStep param (cross-route Setu Guru "Show me") takes
   // priority — it opens that single step, then the param is stripped so
   // reload/back behaves normally.
+  // S24-TRIAL-206: never auto-run while a lead drawer is already open.
   useEffect(() => {
     setOpen(false);
     if (guruStepParam) {
       const frame = window.requestAnimationFrame(() => {
-        showStep(guruStepParam);
+        if (!hasActiveLeadDrawerClaim()) showStep(guruStepParam);
         router.replace(pathname, { scroll: false });
       });
       return () => window.cancelAnimationFrame(frame);
@@ -135,7 +147,7 @@ export function TrialTourProvider({
     const dismissed = readDismissed(organizationId, userId);
     if (dismissed.includes(routeKey)) return;
     const frame = window.requestAnimationFrame(() => {
-      startTour();
+      if (!hasActiveLeadDrawerClaim()) startTour();
     });
     return () => window.cancelAnimationFrame(frame);
   }, [routeKey, guruStepParam, pathname, router, organizationId, userId, startTour, showStep]);
@@ -174,7 +186,8 @@ export function TrialTourProvider({
       const dismissed = readDismissed(organizationId, userId).filter((item) => item !== routeKey);
       writeDismissed(organizationId, userId, dismissed);
     }
-    startTour();
+    // S24-TRIAL-206: replay yields to an open drawer (no popover underneath it).
+    if (!hasActiveLeadDrawerClaim()) startTour();
   }, [routeKey, organizationId, userId, startTour]);
 
   const contextValue = useMemo<TourContextValue>(() => ({ relaunch, showStep, active: open }), [relaunch, showStep, open]);

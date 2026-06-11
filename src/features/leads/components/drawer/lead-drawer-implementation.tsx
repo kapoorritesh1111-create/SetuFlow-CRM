@@ -13,6 +13,7 @@ import {
   onLeadDrawerPrimacyReleased,
   releaseLeadDrawerPrimacy,
 } from "@/features/leads/lib/lead-drawer-singleton";
+import { notifyLeadDrawerOpened } from "@/features/leads/lib/quick-lead-channel";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Database } from "@/types/database";
@@ -155,8 +156,14 @@ export function LeadDrawer({
     }
     const claimed = claimLeadDrawerPrimacy(owner);
     setIsPrimaryDrawer(claimed);
-    if (!claimed && process.env.NODE_ENV !== "production") {
-      // Diagnostic for finding any future duplicate mount source.
+    if (claimed) {
+      // S24-TRIAL-206 critical fix: announce so overlapping guidance surfaces
+      // (trial tour popover) close immediately — drawer and tour are mutually
+      // exclusive on screen.
+      notifyLeadDrawerOpened();
+    } else {
+      // Production-visible on purpose: if a duplicate ever mounts again, the
+      // live console names the moment so the root source can be identified.
       console.warn("[LeadDrawer] duplicate open instance suppressed by singleton claim");
     }
     const unsubscribe = claimed

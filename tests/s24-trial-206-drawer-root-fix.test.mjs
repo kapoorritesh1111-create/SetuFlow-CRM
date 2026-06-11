@@ -102,3 +102,19 @@ test('singleton claim guarantees at most one rendered lead drawer (hotfix)', () 
   assert.ok(drawer.includes('releaseLeadDrawerPrimacy(owner)'));
   assert.ok(drawer.includes('onLeadDrawerPrimacyReleased'), 'suppressed instances must retry on release');
 });
+
+test('tour and lead drawer are mutually exclusive on screen (critical fix)', () => {
+  const provider = read('src/features/trial/tour-provider.tsx');
+  const channel = read('src/features/leads/lib/quick-lead-channel.ts');
+  // Drawer announces opening after winning the claim; tour closes on it.
+  assert.ok(channel.includes('notifyLeadDrawerOpened'));
+  assert.ok(channel.includes('subscribeLeadDrawerOpened'));
+  assert.ok(drawer.includes('notifyLeadDrawerOpened()'));
+  assert.ok(provider.includes('subscribeLeadDrawerOpened'));
+  // Tour never auto-runs, replays, or guru-steps over an open drawer.
+  assert.ok(provider.includes('hasActiveLeadDrawerClaim'));
+  assert.equal((provider.match(/hasActiveLeadDrawerClaim\(\)/g) || []).length, 3, 'guard auto-run, guruStep, and relaunch paths');
+  // Suppression diagnostic must be production-visible.
+  assert.ok(drawer.includes('console.warn("[LeadDrawer] duplicate open instance suppressed'));
+  assert.ok(!drawer.includes("process.env.NODE_ENV !== \"production\""), 'suppression warn must not be dev-only');
+});
