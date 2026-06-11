@@ -1,10 +1,11 @@
 import { GuruAvatar } from '@/components/ui/guru-avatar';
+import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
-import { requireAdminWorkspace } from '@/lib/workspace/auth';
+import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -21,7 +22,7 @@ type GuruSettings = {
 async function saveGuruConfig(formData: FormData): Promise<void> {
   'use server';
   const { createClient: mkClient } = await import('@/lib/supabase/server');
-  const { requireAdminWorkspace: requireWs } = await import('@/lib/workspace/auth');
+  const { requireSetuInternalAdminWorkspace: requireWs } = await import('@/lib/workspace/auth');
   const { membership, organization } = await requireWs();
   if (!organization || !membership) return;
   const supabase = await mkClient();
@@ -41,16 +42,16 @@ async function saveGuruConfig(formData: FormData): Promise<void> {
   redirect('/admin/guru-config?notice=guru-config-saved');
 }
 
-const inputClass = 'min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800';
+const inputClass = 'min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]';
 
 function ToggleRow({ name, label, description, defaultChecked }: { name: string; label: string; description: string; defaultChecked: boolean }) {
   return (
-    <label className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 cursor-pointer hover:bg-slate-50 transition">
-      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="mt-0.5 h-4 w-4 rounded accent-slate-900" />
+    <label className="flex items-start gap-2.5 rounded-[9px] border border-slate-200 bg-white px-3 py-2 cursor-pointer hover:bg-slate-50 transition">
+      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="mt-0.5 h-4 w-4 rounded accent-teal-600" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900">{label}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+        <p className="text-xs font-bold text-slate-900">{label}</p>
+        <p className="text-[10.5px] text-slate-500 mt-0.5">{description}</p>
       </div>
     </label>
   );
@@ -58,7 +59,8 @@ function ToggleRow({ name, label, description, defaultChecked }: { name: string;
 
 export default async function GuruConfigPage() {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning" />;
-  const { missingEnv, organization, membership } = await requireAdminWorkspace();
+  // S24-ADMUX-26: hard HQ-only route guard — client orgs get 404.
+  const { missingEnv, organization, membership } = await requireSetuInternalAdminWorkspace();
   if (missingEnv || !organization || !membership) return null;
 
   const supabase = await createClient();
@@ -88,9 +90,14 @@ export default async function GuruConfigPage() {
   const usagePct = Math.min(100, Math.round(((monthlySearches ?? 0) / (settings.daily_search_budget * 30)) * 100));
 
   return (
-    <AdminSettingsShell active="guru-config" organizationName={organization.name} sectionTitle="Setu Guru Config">
-      {/* SETU internal banner */}
-      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><GuruAvatar size="md" /><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
+    <AdminSettingsShell active="guru-config" organizationName={organization.name} internalTools sectionTitle="Setu Guru Config">
+      <KitInternalHeader
+        icon="🤖"
+        title="Setu Guru Config"
+        description="Platform-wide AI copilot controls: model selection, writeback, daily budget, and live search. Changes take effect immediately — no Vercel deploys needed."
+        gradientClass="from-[#0f2027] via-[#203a43] to-[#2c5364]"
+      />
+      <div className="flex items-center gap-2.5 rounded-[11px] border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><GuruAvatar size="md" /><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
 
       <AdminPageHero
         title="Setu Guru Configuration"

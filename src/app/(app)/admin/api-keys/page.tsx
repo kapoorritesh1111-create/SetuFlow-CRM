@@ -1,4 +1,5 @@
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StateMessage } from '@/components/ui/state-message';
@@ -75,7 +76,8 @@ export default async function ApiKeysPage({ searchParams }: { searchParams?: { n
   const revokedKeys = (keys ?? []).filter((k: { is_active: boolean }) => !k.is_active);
 
   return (
-    <AdminSettingsShell active="api-keys" organizationName={organization.name} sectionTitle="API & Webhooks">
+    <AdminSettingsShell active="api-keys" organizationName={organization.name} internalTools sectionTitle="API & Webhooks">
+      <KitInternalHeader icon="🔑" title="API & Webhooks" description="Programmatic credentials and webhook configuration. Keys are scoped, revocable, and logged." gradientClass="from-[#164e63] to-[#155e75]" />
       {/* SETU internal banner */}
       <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🔑</span><div><strong>SETU Flow internal only.</strong> API key management is not available to customer orgs in the current phase.</div></div>
 

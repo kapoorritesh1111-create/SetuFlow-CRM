@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { AdminAiAnalyticsWorkspace } from '@/features/admin/components/admin-ai-analytics-workspace';
-import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { getAiAnalyticsData } from '@/lib/queries/ai-analytics';
 import { canViewAuditLogs } from '@/lib/permissionGuards';
-import { requireAdminWorkspace } from '@/lib/workspace/auth';
+import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 
 const SETU_FLOW_INTERNAL_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
 
@@ -24,7 +25,7 @@ export default async function AdminAiAnalyticsPage({
 }: {
   searchParams?: { window?: string | string[] };
 }) {
-  const { membership, organization, currentRoles, missingEnv } = await requireAdminWorkspace();
+  const { membership, organization, currentRoles, missingEnv } = await requireSetuInternalAdminWorkspace();
   if (missingEnv) {
     return <WorkspaceState eyebrow="AI analytics" title="AI analytics unavailable" description="Supabase environment variables are missing in this environment." primaryActionHref="/dashboard" primaryActionLabel="Return to dashboard" />;
   }
@@ -39,5 +40,5 @@ export default async function AdminAiAnalyticsPage({
     return <WorkspaceState eyebrow="AI analytics" title="AI analytics unavailable" description="The AI analytics dashboard could not load because the data layer is unavailable in this environment." primaryActionHref="/dashboard" primaryActionLabel="Return to dashboard" />;
   }
 
-  return <AdminSettingsShell active="ai-analytics" organizationName={organization.name} missingCount={0} sectionTitle="AI analytics"><AdminPageHero title="AI analytics" description="Review AI suggestion generation, review, approval, dismissal, and applied-action performance in the admin shell." badge={organization.name} stats={[{ label: 'Window', value: `${parseWindow(searchParams?.window)} days`, tone: 'info' }] as any} /><AdminAiAnalyticsWorkspace data={data} /></AdminSettingsShell>;
+  return <AdminSettingsShell active="ai-analytics" organizationName={organization.name} internalTools missingCount={0} sectionTitle="AI analytics"><KitInternalHeader icon="📈" title="AI Analytics" description="Setu Guru suggestion generation, acceptance, dismissal, and applied-action rates across the whole platform." gradientClass="from-[#0c4a6e] to-[#075985]" /><AdminAiAnalyticsWorkspace data={data} /></AdminSettingsShell>;
 }

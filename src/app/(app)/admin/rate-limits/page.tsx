@@ -1,4 +1,5 @@
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StateMessage } from '@/components/ui/state-message';
@@ -73,7 +74,8 @@ export default async function RateLimitsPage() {
   );
 
   return (
-    <AdminSettingsShell active="rate-limits" organizationName={organization.name} sectionTitle="Rate Limits">
+    <AdminSettingsShell active="rate-limits" organizationName={organization.name} internalTools sectionTitle="Rate Limits">
+      <KitInternalHeader icon="⚡" title="Rate Limits" description="System-wide safety dials. Override defaults for specific endpoints. All overrides are logged to the audit trail with a mandatory reason field." gradientClass="from-[#1e1b4b] to-[#312e81]" />
       {/* SETU internal banner */}
       <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span className="text-lg flex-shrink-0">🔒</span><div><strong>SETU Flow internal only.</strong> Customer orgs cannot see or change their own rate limits. Only SETU Flow operators can grant exceptions.</div></div>
 

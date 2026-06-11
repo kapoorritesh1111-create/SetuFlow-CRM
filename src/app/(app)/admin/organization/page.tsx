@@ -2,8 +2,8 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
+import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
 import { OrgProfileCollapsible } from '@/features/admin/components/org-profile-collapsible';
 import { updateApprovalThreshold } from '@/features/admin/server/actions';
 import { updateOrganizationProfileV2 } from '@/features/admin/server/organization-profile-actions';
@@ -59,19 +59,6 @@ function SaveButton({ label = 'Save section' }: { label?: string }) {
   return <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">{label}</button>;
 }
 
-function SetupRouteCard({ title, eyebrow, description, href, stats, primaryLabel }: { title: string; eyebrow: string; description: string; href: string; stats: Array<{ label: string; value: string | number; tone?: 'success' | 'warning' | 'info' | 'neutral' }>; primaryLabel: string }) {
-  return (
-    <Link href={href} className="group block rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_55px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_28px_70px_rgba(37,99,235,0.11)]">
-      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">{eyebrow}</p>
-      <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">{title}</h2>
-      <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">{description}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {stats.map((stat) => <StatusBadge key={title + '-' + stat.label} label={stat.label + ': ' + stat.value} tone={stat.tone ?? 'neutral'} dot={false} />)}
-      </div>
-      <span className="mt-5 inline-flex min-h-10 items-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-slate-800">{primaryLabel}</span>
-    </Link>
-  );
-}
 
 export default async function AdminOrganizationPage({ searchParams }: { searchParams?: Promise<{ notice?: string }> }) {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the organization workspace." tone="warning" />;
@@ -183,23 +170,30 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
       <OrgProfileCollapsible sections={orgSections} />
 
-      <section className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">Setup progress</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{setupCompleteCount}/7 onboarding steps ready</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Complete company profile, country-driven market defaults, team, catalog, and governance before the first quote cycle.</p></div><div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm">Approval threshold: <span className={threshold == null ? 'text-amber-700' : 'text-emerald-700'}>{threshold == null ? 'Unset' : String(threshold) + '%'}</span></div></div>
-        <div className="mt-5 grid gap-2 md:grid-cols-2 xl:grid-cols-4">{setupChecklist.map((item) => <Link key={item.label} href={item.href} className={'rounded-2xl border px-4 py-3 text-sm font-semibold transition hover:-translate-y-0.5 ' + (item.done ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100')}>{item.done ? '✓' : '!'} {item.label}</Link>)}</div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <SetupRouteCard title="Organization profile" eyebrow="Company identity" href="/admin/organization#company-profile" description="Review company identity, URL slug, default country, inferred market, website, address, tax/VAT, and contact email." primaryLabel="Review profile" stats={[{ label: 'Slug', value: orgProfile.slug ?? 'Unset', tone: orgProfile.slug ? 'success' : 'warning' }, { label: 'Country', value: selectedCountry?.name ?? 'Unset', tone: selectedCountry ? 'success' : 'warning' }, { label: 'Market', value: inferredMarket?.name ?? 'Unset', tone: inferredMarket ? 'success' : 'warning' }]} />
-        <SetupRouteCard title="Commercial defaults" eyebrow="Quote controls" href="/admin/product-management" description="Set default currency, pricing calculator defaults, approval threshold, quote footer, and company details before quoting." primaryLabel="Set defaults" stats={[{ label: 'Currency', value: orgProfile.default_currency ?? suggestedCurrency, tone: 'info' }, { label: 'Threshold', value: threshold == null ? 'Unset' : String(threshold) + '%', tone: threshold == null ? 'warning' : 'success' }, { label: 'Market', value: inferredMarket?.name ?? 'Unset', tone: inferredMarket ? 'success' : 'warning' }]} />
-        <SetupRouteCard title="Team setup" eyebrow="Owner/admin/invites" href="/admin/users" description="Confirm owner coverage, admins, pending invitations, and role assignment." primaryLabel="Manage team" stats={[{ label: 'Owner/admin', value: ownerAdminMembers, tone: countTone(ownerAdminMembers) }, { label: 'Open invites', value: openInvitations, tone: openInvitations ? 'warning' : 'success' }, { label: 'Active users', value: summary.activeUsers, tone: countTone(summary.activeUsers) }]} />
-        <SetupRouteCard title="Reference data" eyebrow="Markets and workflow" href="/admin/markets" description="Configure markets, countries, categories, stages, and pipelines." primaryLabel="Configure lists" stats={[{ label: 'Markets', value: marketsCount, tone: countTone(marketsCount) }, { label: 'Countries', value: countriesCount, tone: countTone(countriesCount) }, { label: 'Stages', value: stagesCount, tone: countTone(stagesCount) }]} />
-        <SetupRouteCard title="Catalog readiness" eyebrow="Products" href="/admin/product-management" description="Confirm product count and quote-readiness before first quote creation." primaryLabel="Open catalog" stats={[{ label: 'Products', value: productsCount, tone: countTone(productsCount) }, { label: 'Categories', value: categoriesCount, tone: countTone(categoriesCount) }]} />
-        <SetupRouteCard title="Security and governance" eyebrow="Roles, permissions, audit" href="/admin/security" description="Review roles, permissions, audit log access, and approval threshold controls." primaryLabel="Review governance" stats={[{ label: 'Roles', value: roles.length, tone: countTone(roles.length) }, { label: 'Gaps', value: gapItems.length, tone: gapItems.length ? 'warning' : 'success' }, { label: 'Audit', value: 'Available', tone: 'info' }]} />
+      <section className="overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">Setup progress</p>
+            <h2 className="text-[13px] font-bold text-slate-950">{setupCompleteCount}/7 onboarding steps ready</h2>
+          </div>
+          <span className={'shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ' + (threshold == null ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
+            Threshold: {threshold == null ? 'Unset' : String(threshold) + '%'}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5 px-4 py-3.5">
+          {setupChecklist.map((item) => (
+            <Link key={item.label} href={item.href} className={'rounded-[7px] border px-2 py-1 text-[10px] font-semibold transition ' + (item.done ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100')}>
+              {item.done ? '✓' : '⊘'} {item.label}
+            </Link>
+          ))}
+        </div>
       </section>
 
       <SectionCard eyebrow="Governance" title="Approval threshold control" description="Set the percent override before approval is required.">
-        <form action={updateApprovalThreshold} className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[180px_1fr_auto] sm:items-center"><input name="threshold_pct" type="number" min="0" max="100" step="0.1" defaultValue={threshold ?? ''} placeholder="e.g. 10" className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /><p className="text-sm leading-6 text-slate-600">Set to 0 to require approval on all overrides.</p><button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save threshold</button></form>
+        <form action={updateApprovalThreshold} className="grid gap-3 rounded-[11px] border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[160px_1fr_auto] sm:items-center"><input name="threshold_pct" type="number" min="0" max="100" step="0.1" defaultValue={threshold ?? ''} placeholder="e.g. 10" className="min-h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /><p className="text-xs leading-5 text-slate-600">Set to 0 to require approval on all overrides.</p><button type="submit" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">Save threshold</button></form>
       </SectionCard>
+
+      <KitNextStep icon="👥" label="Profile saved — review team & access next" description="Confirm member roles and pending invitations" href="/admin/users" />
     </AdminSettingsShell>
   );
 }

@@ -23,8 +23,8 @@ async function savePricingControls(formData: FormData): Promise<void> {
   redirect('/admin/pricing-engine?notice=saved');
 }
 
-const inputClass = 'mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const selectClass = 'mt-1 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+const inputClass = 'mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+const selectClass = 'mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const CURRENCIES = ['USD','EUR','GBP','AED','INR','SGD','AUD','CAD'];
 
 export default async function PricingEnginePage({ searchParams }: { searchParams?: Promise<{ notice?: string }> }) {
@@ -75,7 +75,7 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
             ))}
           </div>
           <div className="flex justify-end pt-2">
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition">Save</button>
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 py-2 text-sm font-semibold text-white hover:bg-[#13305a] transition">Save</button>
           </div>
         </form>
       </SectionCard>

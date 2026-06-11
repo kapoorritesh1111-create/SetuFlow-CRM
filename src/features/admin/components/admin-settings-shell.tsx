@@ -111,8 +111,11 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
 export type AdminGapItem = { icon: string; text: string; href: string };
 
 function isInternalOrg(organizationName: string) {
+  // S24-ADMUX-26: strict match only. Never leak HQ tools to a client org whose
+  // name merely contains "setu" — prefer passing internalTools from the server
+  // (isSetuInternalOrganization) instead of relying on this name fallback.
   const normalized = organizationName.trim().toLowerCase();
-  return normalized === 'setu flow' || normalized === 'setuflow' || normalized.includes('setu');
+  return normalized === 'setu flow' || normalized === 'setuflow';
 }
 
 function AdminNavIconGlyph({ icon }: { icon: AdminNavIcon }) {
@@ -191,6 +194,7 @@ export function AdminSettingsShell({
   sectionTitle,
   gapItems = [],
   navCounts,
+  internalTools,
   children,
 }: {
   active: AdminNavKey;
@@ -199,9 +203,11 @@ export function AdminSettingsShell({
   sectionTitle?: string;
   gapItems?: AdminGapItem[];
   navCounts?: Partial<Record<'users' | 'invitations' | 'security', number>>;
+  /** S24-ADMUX-26: explicit HQ flag from isSetuInternalOrganization(); overrides the name heuristic. */
+  internalTools?: boolean;
   children?: ReactNode;
 }) {
-  const showInternalOnlyTools = isInternalOrg(organizationName);
+  const showInternalOnlyTools = internalTools ?? isInternalOrg(organizationName);
   const sections = visibleNavSections(showInternalOnlyTools);
   const allItems = sections.flatMap((section) => section.items);
   const activeItem = allItems.find((item) => itemIsActive(item, active));

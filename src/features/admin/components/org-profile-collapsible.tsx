@@ -14,13 +14,13 @@ export function OrgProfileCollapsible({ sections }: { sections: Section[] }) {
   return (
     <div className="space-y-3" id="company-profile">
       {sections.map((section, index) => (
-        <details key={section.id} open={index === 0} className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-slate-50">
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 text-xl" aria-hidden="true">{section.icon}</span>
+        <details key={section.id} open={index === 0} className="group overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm" aria-hidden="true">{section.icon}</span>
               <span className="min-w-0">
-                <span className="block text-sm font-bold text-slate-900">{section.title}</span>
-                <span className="mt-0.5 block truncate text-xs text-slate-400">{section.subtitle}</span>
+                <span className="block text-[13px] font-bold text-slate-950">{section.title}</span>
+                <span className="mt-0.5 block truncate text-[10px] text-slate-400">{section.subtitle}</span>
               </span>
             </span>
             <span className="flex flex-shrink-0 items-center gap-2">
@@ -29,7 +29,7 @@ export function OrgProfileCollapsible({ sections }: { sections: Section[] }) {
               <span className="hidden text-xs text-slate-400 group-open:inline" aria-hidden="true">▲</span>
             </span>
           </summary>
-          <div className="border-t border-slate-100 px-5 pb-5 pt-4">{section.children}</div>
+          <div className="border-t border-slate-100 px-4 pb-4 pt-3.5">{section.children}</div>
         </details>
       ))}
     </div>

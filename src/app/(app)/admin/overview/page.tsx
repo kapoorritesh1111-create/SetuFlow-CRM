@@ -1,10 +1,23 @@
+import Link from 'next/link';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import {
+  KitClientBadge,
+  KitNextStep,
+  KitOverviewCard,
+  KitSetupProgress,
+  type KitProgressPhase,
+} from '@/features/admin/components/admin-ui-kit';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
-import { requireAdminWorkspace } from '@/lib/workspace/auth';
+import { isSetuInternalOrganization, requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
 
+/**
+ * S24-ADMUX-22 — Admin Home rebuilt as the Admin UX V2 command center.
+ * Follows the HTML design contract: governance banner (via shell), client badge,
+ * phased setup progress, two compact 3-card rows, and a single next-step CTA.
+ * All counts are live Supabase queries scoped to the active organization.
+ */
 export default async function AdminOverviewPage() {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning" />;
   const { missingEnv, membership, organization, currentRoles } = await requireAdminWorkspace();
@@ -12,191 +25,178 @@ export default async function AdminOverviewPage() {
 
   const supabase = await createClient();
   const org = organization as any;
+  const internalTools = isSetuInternalOrganization(organization);
 
-  const [marketsRes, countriesRes, stagesRes, productsRes, categoriesRes, rolesRes, invitesRes, membersRes] = await Promise.all([
+  const [marketsRes, countriesRes, pipelinesRes, stagesRes, productsRes, categoriesRes, rolesRes, invitesRes, membersRes, eventsRes] = await Promise.all([
     supabase.from('markets').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     supabase.from('countries').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
+    supabase.from('pipelines').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     supabase.from('pipeline_stages').select('id, pipelines!inner(organization_id)', { count: 'exact', head: true }).eq('pipelines.organization_id', organization.id),
     supabase.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     supabase.from('product_categories').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     supabase.from('roles').select('id', { count: 'exact', head: true }).or(`organization_id.eq.${organization.id},organization_id.is.null`),
     supabase.from('organization_invitations').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id).in('status', ['draft', 'pending', 'sent']),
     supabase.from('organization_members').select('id, is_active, user_roles(roles(name))').eq('organization_id', organization.id),
+    supabase.from('trade_events').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
   ]);
 
-  const marketsCount   = marketsRes.count ?? 0;
+  const marketsCount = marketsRes.count ?? 0;
   const countriesCount = countriesRes.count ?? 0;
-  const stagesCount    = stagesRes.count ?? 0;
-  const productsCount  = productsRes.count ?? 0;
+  const pipelinesCount = pipelinesRes.count ?? 0;
+  const stagesCount = stagesRes.count ?? 0;
+  const productsCount = productsRes.count ?? 0;
   const categoriesCount = categoriesRes.count ?? 0;
-  const rolesCount     = rolesRes.count ?? 0;
-  const openInvites    = invitesRes.count ?? 0;
-  const members        = (membersRes.data ?? []) as any[];
-  const activeMembers  = members.filter((m) => m.is_active).length;
-  const ownerCount     = members.filter((m) => m.is_active && (m.user_roles ?? []).some((ur: any) => ur.roles?.name === 'owner')).length;
-  const threshold      = typeof org.approval_threshold_pct === 'number' ? org.approval_threshold_pct : null;
-  const slug           = org.slug ?? 'unset';
-  const country        = org.headquarters_country ?? 'Unset';
-  const currency       = org.default_currency ?? 'USD';
-  const myRole         = currentRoles[0] ?? 'member';
+  const rolesCount = rolesRes.count ?? 0;
+  const openInvites = invitesRes.count ?? 0;
+  const eventsCount = eventsRes.count ?? 0;
+  const members = (membersRes.data ?? []) as any[];
+  const activeMembers = members.filter((m) => m.is_active).length;
+  const ownerCount = members.filter((m) => m.is_active && (m.user_roles ?? []).some((ur: any) => ur.roles?.name === 'owner')).length;
+  const threshold = typeof org.approval_threshold_pct === 'number' ? org.approval_threshold_pct : null;
+  const slug = org.slug ?? 'unset';
+  const country = org.headquarters_country ?? org.default_country ?? null;
+  const currency = org.default_currency ?? 'USD';
+  const myRole = currentRoles[0] ?? 'member';
+  const myRoleLabel = myRole.charAt(0).toUpperCase() + myRole.slice(1);
 
-  // Governance status
-  const govItems = [
-    { ok: marketsCount > 0, label: marketsCount > 0 ? `✓ ${marketsCount} markets configured` : '⚠ No markets' },
-    { ok: productsCount > 0, label: productsCount > 0 ? `✓ ${productsCount} products added` : '⚠ No products' },
-    { ok: threshold != null, label: threshold != null ? `✓ Threshold: ${threshold}%` : '⚠ No approval threshold' },
-    { ok: openInvites === 0, label: openInvites > 0 ? `⚠ ${openInvites} open invitation${openInvites > 1 ? 's' : ''}` : '✓ No open invitations' },
-  ];
-
-  const cards = [
+  // 7 setup steps, phased exactly like the design contract.
+  const identityDone = Boolean(organization.name && org.slug);
+  const geographyDone = Boolean(country || org.default_country_id);
+  const steps = {
+    identity: identityDone,
+    geography: geographyDone,
+    markets: marketsCount > 0,
+    pipelines: pipelinesCount > 0 && stagesCount > 0,
+    products: productsCount > 0,
+    threshold: threshold != null,
+    team: ownerCount > 0,
+  };
+  const doneCount = Object.values(steps).filter(Boolean).length;
+  const govOk = doneCount === 7 && openInvites === 0;
+  const phases: KitProgressPhase[] = [
     {
-      eyebrow: 'Company identity',
-      title: 'Organization profile',
-      desc: 'Company identity, URL slug, default country, market, website, address, tax/VAT.',
-      tags: [`Slug: ${slug}`, country, org.default_market ?? 'Market unset'],
-      tagColors: ['teal', 'blue', 'teal'],
-      cta: 'Review profile',
-      href: '/admin/organization',
-      stripGrad: 'from-teal-500 to-blue-700',
-      iconPath: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
-      dot: Boolean(slug && org.default_country_id),
+      label: 'Phase 1 — Identity',
+      steps: [
+        { label: 'Company identity', done: steps.identity, href: '/admin/organization' },
+        { label: 'Geography & currency', done: steps.geography, href: '/admin/organization' },
+      ],
     },
     {
-      eyebrow: 'Quote controls',
-      title: 'Commercial defaults',
-      desc: 'Default currency, approval threshold, quote footer, and company details before quoting.',
-      tags: [`Currency: ${currency}`, threshold != null ? `Threshold: ${threshold}%` : 'Threshold unset', 'Market: ' + (org.default_market ?? 'Unset')],
-      tagColors: ['purple', 'purple', 'purple'],
-      cta: 'Set defaults',
-      href: '/admin/pricing',
-      stripGrad: 'from-indigo-500 to-violet-500',
-      iconPath: 'M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6',
-      dot: threshold != null,
+      label: 'Phase 2 — Trade Setup',
+      steps: [
+        { label: `Markets${marketsCount ? ` (${marketsCount})` : ''}`, done: steps.markets, href: '/admin/markets' },
+        { label: `Pipelines${stagesCount ? ` (${stagesCount} stages)` : ''}`, done: steps.pipelines, href: '/admin/pipelines' },
+        { label: `Products${productsCount ? ` (${productsCount})` : ''}`, done: steps.products, href: '/admin/catalog-governance' },
+      ],
     },
     {
-      eyebrow: 'Owner / Admin / Invites',
-      title: 'Team setup',
-      desc: 'Confirm owner coverage, admins, pending invitations, and role assignment.',
-      tags: [`Owner: ${ownerCount}`, `Open invites: ${openInvites}`, `Active: ${activeMembers}`],
-      tagColors: ['green', openInvites > 0 ? 'amber' : 'green', 'blue'],
-      cta: 'Manage team',
-      href: '/admin/users',
-      stripGrad: 'from-amber-400 to-amber-500',
-      iconPath: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
-      dot: ownerCount > 0 && openInvites === 0,
-      dotWarn: openInvites > 0,
-    },
-    {
-      eyebrow: 'Markets and workflow',
-      title: 'Reference data',
-      desc: 'Configure markets, countries, categories, stages, and pipelines.',
-      tags: [`Markets: ${marketsCount}`, `Countries: ${countriesCount}`, `Stages: ${stagesCount}`],
-      tagColors: ['teal', 'teal', 'teal'],
-      cta: 'Configure lists',
-      href: '/admin/markets',
-      stripGrad: 'from-cyan-500 to-teal-500',
-      iconPath: 'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
-      dot: marketsCount > 0 && stagesCount > 0,
-    },
-    {
-      eyebrow: 'Products',
-      title: 'Catalog governance',
-      desc: 'Manage product count, category readiness, import history, and protected cleanup controls.',
-      tags: [`Products: ${productsCount}`, `Categories: ${categoriesCount}`],
-      tagColors: ['green', 'green'],
-      cta: 'Open governance',
-      href: '/admin/catalog-governance',
-      stripGrad: 'from-emerald-500 to-green-500',
-      iconPath: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM12 2l7 4-7 4-7-4z',
-      dot: productsCount > 0,
-    },
-    {
-      eyebrow: 'Roles, permissions, audit',
-      title: 'Security and governance',
-      desc: 'Review roles, permissions, audit log access, and approval threshold controls.',
-      tags: [`Roles: ${rolesCount}`, `Gaps: 0`, 'Audit: Available'],
-      tagColors: ['red', 'green', 'blue'],
-      cta: 'Review governance',
-      href: '/admin/security',
-      stripGrad: 'from-rose-500 to-red-400',
-      iconPath: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
-      dot: rolesCount > 0 && threshold != null,
+      label: 'Phase 3 — Commerce',
+      steps: [
+        { label: threshold != null ? `Threshold (${threshold}%)` : 'Threshold', done: steps.threshold, href: '/admin/pricing' },
+        { label: `Team${activeMembers ? ` (${activeMembers})` : ''}`, done: steps.team, href: '/admin/users' },
+      ],
     },
   ];
 
-  function tagColor(color: string) {
-    if (color === 'teal')   return 'bg-teal-50 text-teal-700 border border-teal-200';
-    if (color === 'blue')   return 'bg-blue-50 text-blue-700 border border-blue-200';
-    if (color === 'purple') return 'bg-violet-50 text-violet-700 border border-violet-200';
-    if (color === 'green')  return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    if (color === 'amber')  return 'bg-amber-50 text-amber-700 border border-amber-200';
-    if (color === 'red')    return 'bg-rose-50 text-rose-700 border border-rose-200';
-    return 'bg-slate-100 text-slate-600';
-  }
+  const gapItems = [
+    !steps.markets ? { icon: '🌍', text: 'No markets configured', href: '/admin/markets' } : null,
+    !steps.pipelines ? { icon: '📊', text: 'Pipeline stages missing', href: '/admin/pipelines' } : null,
+    !steps.products ? { icon: '📦', text: 'No products in catalog', href: '/admin/catalog-governance' } : null,
+    !steps.threshold ? { icon: '🔒', text: 'Approval threshold not set', href: '/admin/pricing' } : null,
+    openInvites > 0 ? { icon: '✉️', text: `${openInvites} open invitation${openInvites === 1 ? '' : 's'}`, href: '/admin/users' } : null,
+  ].filter(Boolean) as Array<{ icon: string; text: string; href: string }>;
 
   return (
-    <AdminSettingsShell active="overview" organizationName={organization.name} sectionTitle="SaaS onboarding" missingCount={govItems.filter((g) => !g.ok).length}>
-      {/* Page header */}
-      <div>
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-500">Trade Command Center</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Organization setup · <span className="text-xl font-normal text-slate-400">{organization.name}</span></h1>
-        <p className="mt-1 text-sm text-slate-500">Configure company identity, team access, markets, catalog readiness, and governance controls.</p>
+    <AdminSettingsShell
+      active="overview"
+      organizationName={organization.name}
+      internalTools={internalTools}
+      sectionTitle="Trade Command Center"
+      missingCount={gapItems.length}
+      gapItems={gapItems}
+      navCounts={{ users: activeMembers, invitations: openInvites }}
+    >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">{myRoleLabel} · {currency}</span>
+        {country ? <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-600">{country}</span> : null}
+        <Link href="/pipeline" className="ml-auto inline-flex min-h-8 items-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">
+          Go to Pipeline →
+        </Link>
       </div>
 
-      {/* SF-19-019: Single governance status strip — removed duplicate governance bar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400 mr-1">Governance</span>
-        {govItems.map((item) => (
-          <span key={item.label} className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${item.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{item.label}</span>
-        ))}
-        <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 text-xs font-semibold ml-auto">{myRole.charAt(0).toUpperCase() + myRole.slice(1)} · {currency}</span>
+      {!internalTools ? <KitClientBadge orgName={organization.name} slug={org.slug} country={country} currency={currency} /> : null}
+
+      <KitSetupProgress doneCount={doneCount} totalCount={7} orgName={organization.name} phases={phases} />
+
+      <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+        <KitOverviewCard
+          eyebrow="Company identity"
+          title="Organization profile"
+          meta={`${organization.name} · ${slug}${country ? ` · ${country}` : ''} · ${currency}`}
+          cta="Edit"
+          href="/admin/organization"
+          stripClass="from-teal-500 to-[#1F487C]"
+          dot={identityDone ? 'ok' : 'warn'}
+        />
+        <KitOverviewCard
+          eyebrow="Team & Access"
+          title="Team setup"
+          meta={`${activeMembers} active · ${openInvites} invited · ${ownerCount} owner${ownerCount === 1 ? '' : 's'}`}
+          cta="Manage"
+          href="/admin/users"
+          stripClass="from-amber-400 to-orange-500"
+          dot={ownerCount > 0 ? (openInvites > 0 ? 'warn' : 'ok') : 'danger'}
+          warnBorder={ownerCount === 0}
+        />
+        <KitOverviewCard
+          eyebrow="Commerce Rules"
+          title="Commercial defaults"
+          meta={threshold != null ? `Threshold: ${threshold}% · ${currency}` : `⚠ Threshold not set · ${currency}`}
+          cta={threshold == null ? 'Set threshold' : 'Review'}
+          href="/admin/pricing"
+          stripClass="from-violet-600 to-indigo-600"
+          dot={threshold != null ? 'ok' : 'warn'}
+          warnBorder={threshold == null}
+        />
+      </div>
+      <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+        <KitOverviewCard
+          eyebrow="Trade Setup"
+          title="Markets & pipelines"
+          meta={marketsCount > 0 ? `${marketsCount} markets · ${countriesCount} countries · ${pipelinesCount} pipelines · ${stagesCount} stages` : '⚠ No markets · No stages'}
+          cta={marketsCount === 0 ? 'Add markets' : 'Configure'}
+          href="/admin/markets"
+          stripClass="from-cyan-500 to-teal-600"
+          dot={marketsCount === 0 ? 'danger' : steps.pipelines ? 'ok' : 'warn'}
+          warnBorder={marketsCount === 0}
+        />
+        <KitOverviewCard
+          eyebrow="Catalog"
+          title="Categories & pricing rules"
+          meta={`${productsCount} products · ${categoriesCount} categories · ${eventsCount} trade event${eventsCount === 1 ? '' : 's'}`}
+          cta="Open catalog"
+          href="/admin/catalog"
+          stripClass="from-emerald-500 to-green-600"
+          dot={productsCount > 0 ? 'ok' : 'warn'}
+        />
+        <KitOverviewCard
+          eyebrow="Governance"
+          title="Security & audit"
+          meta={`${rolesCount} roles · Audit available`}
+          cta="Review"
+          href="/admin/security"
+          stripClass="from-rose-500 to-red-500"
+          dot={rolesCount > 0 ? 'ok' : 'warn'}
+        />
       </div>
 
-      <div className="rounded-xl bg-gradient-to-br from-blue-950 to-blue-800 p-4 text-white shadow-sm">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-extrabold">
-          <span>{govItems.filter((g) => g.ok).length}/4 governance checks complete</span>
-          <span className="ml-auto text-[10px] font-semibold text-white/45">{organization.name}</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {govItems.map((item) => (
-            <span key={`progress-${item.label}`} className={item.ok ? 'rounded-lg border border-emerald-300/30 bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-200' : 'rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold text-white/35'}>
-              {item.label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* 6-card overview grid */}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {cards.map((card) => (
-          <Link key={card.title} href={card.href} className="group relative block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(15,23,42,0.12)]">
-            {/* Color strip */}
-            <div className={`h-1 w-full bg-gradient-to-r ${card.stripGrad}`} />
-            <div className="p-4">
-              {/* SF-19-024: Icon zone */}
-              <div className="mb-3 flex items-center gap-3">
-                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.stripGrad} shadow-sm`} aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={card.iconPath} />
-                  </svg>
-                </div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{card.eyebrow}</p>
-              </div>
-              <h2 className="text-[13px] font-extrabold tracking-tight text-slate-950">{card.title}</h2>
-              <p className="mt-1.5 min-h-[2.8rem] text-xs leading-5 text-slate-600">{card.desc}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {card.tags.map((tag, i) => (
-                  <span key={tag} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tagColor(card.tagColors?.[i] ?? 'slate')}`}>{tag}</span>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-[10.5px] font-extrabold text-slate-950 group-hover:underline">{card.cta} →</span>
-                <span className={`h-2.5 w-2.5 rounded-full ${card.dotWarn ? 'bg-amber-400' : card.dot ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <KitNextStep
+        icon={govOk ? '🚀' : !steps.markets ? '🌍' : '⚡'}
+        label={govOk ? 'Workspace ready — Go to Pipeline board' : !steps.markets ? 'Start by adding your first market' : 'Finish the remaining setup steps'}
+        description={govOk ? 'All setup phases complete. Switch to operational mode.' : !steps.markets ? 'Markets are required before pipeline stages can be configured' : `${7 - doneCount} step${7 - doneCount === 1 ? '' : 's'} remaining before full workflows unlock`}
+        href={govOk ? '/pipeline' : !steps.markets ? '/admin/markets' : !steps.pipelines ? '/admin/pipelines' : !steps.products ? '/admin/catalog-governance' : '/admin/pricing'}
+        warn={!govOk}
+      />
     </AdminSettingsShell>
   );
 }

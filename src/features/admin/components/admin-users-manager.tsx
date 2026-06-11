@@ -95,17 +95,17 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+        <div className="rounded-[11px] border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">People access</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{rows.filter((row) => row.status === 'active').length}</p>
           <p className="mt-1 text-sm text-slate-500">Active workspace users</p>
         </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+        <div className="rounded-[11px] border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Open invitations</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{pendingInviteCount}</p>
           <p className="mt-1 text-sm text-slate-500">Pending onboarding and reactivation links</p>
         </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+        <div className="rounded-[11px] border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Identity health</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{identityIssueCount === 0 ? 'Clean' : `${identityIssueCount} gaps`}</p>
           <p className="mt-1 text-sm text-slate-500">Names, emails, and avatar readiness</p>
@@ -148,7 +148,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
       {!filteredRows.length ? (
         <StateMessage title="No users match the current filter" description="Adjust the search or status filter to see more records." />
       ) : (
-        <div className="overflow-x-auto overscroll-x-contain rounded-3xl border border-slate-200 bg-white shadow-soft">
+        <div className="overflow-x-auto overscroll-x-contain rounded-[11px] border border-slate-200 bg-white shadow-soft">
           <table className="min-w-[860px] divide-y divide-slate-200 xl:min-w-full">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
               <tr>
@@ -292,7 +292,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
             {activeTab === 'profile' ? (
               <DrawerSection title="Profile" description="Member identity and recent access details.">
                 {selected.membershipId && selected.userId ? (
-                  <form action={updateMemberProfile} className="space-y-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                  <form action={updateMemberProfile} className="space-y-3 rounded-[11px] border border-slate-200 bg-slate-50 p-4">
                     <input type="hidden" name="membership_id" value={selected.membershipId} />
                     <input type="hidden" name="return_path" value="/admin/users" />
                     <div className="grid gap-3 sm:grid-cols-2">

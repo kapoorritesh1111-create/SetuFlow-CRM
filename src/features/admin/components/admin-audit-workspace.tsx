@@ -162,7 +162,7 @@ export function AdminAuditWorkspace({
             <input type="hidden" name="view" value={selectedView} />
             <label className="flex flex-col gap-2 text-sm text-slate-600 xl:col-span-2">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Event type</span>
-              <select name="event" defaultValue={selectedEventType} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+              <select name="event" defaultValue={selectedEventType} className="min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
                 <option value="all">All audit events</option>
                 {eventTypeOptions.map((item) => (
                   <option key={item} value={item}>{getAuditEventLabel(item)}</option>
@@ -171,7 +171,7 @@ export function AdminAuditWorkspace({
             </label>
             <label className="flex flex-col gap-2 text-sm text-slate-600">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Actor</span>
-              <select name="actor" defaultValue={selectedActorId} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+              <select name="actor" defaultValue={selectedActorId} className="min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
                 <option value="all">All actors</option>
                 {actorOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.label}</option>
@@ -180,11 +180,11 @@ export function AdminAuditWorkspace({
             </label>
             <label className="flex flex-col gap-2 text-sm text-slate-600">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Since</span>
-              <input type="date" name="since" defaultValue={since} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20" />
+              <input type="date" name="since" defaultValue={since} className="min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20" />
             </label>
             <label className="flex flex-col gap-2 text-sm text-slate-600">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Until</span>
-              <input type="date" name="until" defaultValue={until} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20" />
+              <input type="date" name="until" defaultValue={until} className="min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20" />
             </label>
             <div className="flex items-end gap-2 md:col-span-2 xl:col-span-5">
               <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:bg-slate-800">Apply filters</button>

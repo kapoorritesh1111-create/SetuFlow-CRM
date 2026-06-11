@@ -186,7 +186,7 @@ export default async function AdminAuditLogPage({
 }) {
   if (!hasSupabaseEnv) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-soft">
+      <div className="rounded-[11px] border border-slate-200 bg-white p-6 text-center shadow-soft">
         <p className="text-sm text-slate-600">Supabase environment variables are missing. Please configure your environment.</p>
       </div>
     );
@@ -196,7 +196,7 @@ export default async function AdminAuditLogPage({
   const { missingEnv, membership, organization, currentRoles } = await requireAdminWorkspace();
   if (missingEnv) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-soft">
+      <div className="rounded-[11px] border border-slate-200 bg-white p-6 text-center shadow-soft">
         <p className="text-sm text-slate-600">Supabase environment variables are missing. Please configure your environment.</p>
       </div>
     );

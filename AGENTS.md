@@ -34,6 +34,7 @@ public/internal/        — Legacy HTML workspace tools (issue-tracker, docs, ro
 
 ## Critical Rules
 
+0. **Admin UX rebuild priority (S24-ADMUX series)** — While any `S24-ADMUX-*` issue is Open or In Progress, agents MUST select from that series before any other issue, in dependency order: foundation (21) → Admin Home (22) → Workspace (23) → Trade Setup (24) → Commerce & Governance (25) → SETU Internal (26) → protocol (27). Work ONE issue at a time, keep every change scoped to that issue's pages, and never start a broad multi-page admin rewrite that the tracker did not ask for. The Admin UX V2 design contract is `setu-admin-complete.html`; the shared component kit is `src/features/admin/components/admin-ui-kit.tsx` + `admin-kit-tabs.tsx` — reuse it, do not fork new card/tab styles per page.
 1. **Never skip org scope** — all Supabase queries must include `.eq('organization_id', SETU_FLOW_ORG_ID)`
 2. **Admin client for reads** — use `createAdminSupabaseClient()` to bypass RLS for server reads
 3. **Smallest safe change** — only touch files related to the issue. No refactors.

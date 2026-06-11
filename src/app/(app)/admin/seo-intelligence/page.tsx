@@ -7,7 +7,7 @@ import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/a
 import { hasSupabaseEnv } from '@/lib/env';
 import { getLiveGoogleTrends, type LiveTrendResult } from '@/lib/seo/google-trends';
 import { seoChangeProof, seoCompetitors, seoKeywordClusters, seoKeywordGroupSummaries, seoOpportunities, seoUpgradeActions } from '@/lib/seo/seo-intelligence';
-import { requireAdminWorkspace } from '@/lib/workspace/auth';
+import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 
 export const metadata = { title: 'SEO Intelligence | SETU Flow Admin', robots: { index: false, follow: false } };
 
@@ -163,7 +163,7 @@ function CreateSeoPrForm() {
 
 export default async function SeoIntelligencePage() {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the SEO intelligence workspace." tone="warning" />;
-  const { missingEnv, membership, organization } = await requireAdminWorkspace();
+  const { missingEnv, membership, organization } = await requireSetuInternalAdminWorkspace();
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using the SEO intelligence workspace." tone="warning" />;
   if (!membership || !organization) return null;
 

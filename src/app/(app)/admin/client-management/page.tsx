@@ -4,6 +4,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
+import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { createWorkspaceFromOnboardingDraft, resendClientOnboardingNotification, sendFirstAdminInviteFromOnboardingRequest, updateClientOnboardingStatus } from '@/features/client-onboarding/server/actions';
 import { getLiveOrgHealthRows, type OrgHealthRow } from '@/features/client-onboarding/server/org-health';
 import { DEFAULT_SETU_FLOW_LOGO, defaultMarkets } from '@/features/client-onboarding/shared';
@@ -105,7 +106,8 @@ export default async function ClientManagementPage({ searchParams }: { searchPar
   const atRisk = healthRows.filter((row) => row.healthTone === 'danger').length;
   const averageHealth = healthRows.length ? Math.round(healthRows.reduce((sum, row) => sum + row.healthScore, 0) / healthRows.length) : 0;
   const gapItems: AdminGapItem[] = requestResult.error || entitlementResult.error || healthResult.error ? [{ icon: '⚙️', text: 'Check client management tables', href: '/admin/client-management' }] : [];
-  return <AdminSettingsShell active="client-management" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Client management" gapItems={gapItems}>
+  return <AdminSettingsShell active="client-management" organizationName={organization.name} internalTools missingCount={gapItems.length} sectionTitle="Client management" gapItems={gapItems}>
+    <KitInternalHeader icon="🏢" title="Client Management" description="Onboarding, provisioning, plans, seats, modules, Guru usage, and live org health for every client workspace." gradientClass="from-[#7c2d12] to-[#9a3412]" />
     <AdminPageHero title="Client Management" description="Internal workspace for onboarding, provisioning, plans, seats, modules, Guru usage, and live org health." badge="HQ only" cta={<div className="flex flex-col items-end gap-1"><Link href={INTAKE_URL} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Open intake form</Link><span className="text-[11px] font-semibold text-slate-500">{INTAKE_URL}</span></div>} stats={[{ label: 'Needs action', value: needsAction, tone: needsAction ? 'warning' : 'success' }, { label: 'Avg health', value: averageHealth, tone: averageHealth >= 75 ? 'success' : averageHealth >= 45 ? 'warning' : 'danger' }, { label: 'At risk', value: atRisk, tone: atRisk ? 'danger' : 'default' }, { label: 'Clients', value: orgs.length, tone: 'info' }]} />
     <Notice notice={searchParams?.notice} />
     {requestResult.error ? <StateMessage title="Onboarding data needs attention" description={requestResult.error.message} tone="warning" /> : null}{entitlementResult.error ? <StateMessage title="Entitlement tables need migration" description={entitlementResult.error.message} tone="warning" /> : null}{healthResult.error ? <StateMessage title="Live org health needs attention" description={healthResult.error} tone="warning" /> : null}

@@ -208,7 +208,7 @@ export default async function AdminDocumentTemplatesPage() {
         cta={
           <Link
             href="/orders"
-            className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+            className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-[#13305a]"
           >
             Open Orders
           </Link>

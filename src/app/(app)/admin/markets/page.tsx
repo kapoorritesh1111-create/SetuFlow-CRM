@@ -15,13 +15,13 @@ type MarketRow = Record<string, unknown> & {
   country_count?: number;
 };
 
-const inputClass = 'min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800';
-const secondaryButtonClass = 'inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50';
+const inputClass = 'min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]';
+const secondaryButtonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50';
 
 function MarketStatus({ active }: { active: boolean | null }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
       {active ? 'Active' : 'Inactive'}
     </span>
   );
@@ -36,42 +36,41 @@ function getErrorDigest(err: unknown) {
 function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
   return (
     <div id="markets" className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Operational coverage</p>
-            <h2 className="mt-1 text-xl font-bold text-slate-950">Markets</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">Review market coverage in a read-only table. Use Edit or Add market to open the focused drawer form.</p>
+      <section className="overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">Operational coverage</p>
+            <h2 className="text-[13px] font-bold text-slate-950">Markets</h2>
           </div>
-          <a href="#add-market" className={buttonClass}>+ Add market</a>
+          <a href="#add-market" className="inline-flex shrink-0 items-center rounded-[7px] border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 transition hover:bg-teal-100">+ Add market</a>
         </div>
-        <div className="mt-5 overflow-x-auto rounded-3xl border border-slate-200">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
               <tr>
-                <th className="px-4 py-3">Market name</th>
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Countries</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Sort</th>
-                <th className="px-4 py-3">Action</th>
+                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Market name</th>
+                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Code</th>
+                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Countries</th>
+                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Status</th>
+                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Sort</th>
+                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Action</th>
               </tr>
             </thead>
             <tbody>
               {markets.map((market) => (
-                <tr key={market.id} className={`border-t border-slate-100 align-middle transition hover:bg-slate-50${market.is_active ? '' : ' opacity-60'}`}>
-                  <td className="px-4 py-3"><span className="font-semibold text-slate-900">{market.name}</span></td>
-                  <td className="px-4 py-3 font-mono text-xs uppercase text-slate-500">{market.market_code ?? '-'}</td>
-                  <td className="px-4 py-3"><span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">{market.country_count ?? 0}</span></td>
-                  <td className="px-4 py-3"><MarketStatus active={market.is_active} /></td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{market.sort_order ?? 0}</td>
-                  <td className="px-4 py-3"><a href={`#market-${market.id}`} className={secondaryButtonClass}>Edit</a></td>
+                <tr key={market.id} className={`align-middle transition hover:bg-slate-50${market.is_active ? '' : ' opacity-60'}`}>
+                  <td className="border-b border-slate-50 px-2.5 py-2"><span className="text-xs font-bold text-slate-900">{market.name}</span></td>
+                  <td className="border-b border-slate-50 px-2.5 py-2 font-mono text-[10px] uppercase text-slate-500">{market.market_code ?? '-'}</td>
+                  <td className="border-b border-slate-50 px-2.5 py-2"><span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">{market.country_count ?? 0}</span></td>
+                  <td className="border-b border-slate-50 px-2.5 py-2"><MarketStatus active={market.is_active} /></td>
+                  <td className="border-b border-slate-50 px-2.5 py-2 text-[10px] text-slate-500">{market.sort_order ?? 0}</td>
+                  <td className="border-b border-slate-50 px-2.5 py-2"><a href={`#market-${market.id}`} className="text-[10px] font-semibold text-slate-500 transition hover:text-teal-600">Edit ›</a></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {markets.length === 0 ? <p className="mt-4 text-sm text-slate-500">No markets configured yet. Add the first market to unlock market-aware workflows.</p> : null}
+        {markets.length === 0 ? <p className="px-4 py-3 text-xs text-slate-500">No markets configured yet. Add the first market to unlock market-aware workflows.</p> : null}
       </section>
 
       {markets.map((market) => (
