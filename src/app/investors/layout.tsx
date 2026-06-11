@@ -58,6 +58,35 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           isolation: isolate;
         }
 
+        main > footer > div > span:first-child {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 156px;
+          height: 58px;
+          border-radius: 1rem;
+          background: rgba(255, 255, 255, 0.95);
+          color: transparent !important;
+          overflow: hidden;
+          box-shadow: 0 12px 34px rgba(0, 0, 0, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.22);
+        }
+
+        main > footer > div > span:first-child sup {
+          display: none;
+        }
+
+        main > footer > div > span:first-child::before {
+          content: '';
+          width: 132px;
+          height: 46px;
+          background-image: url('/logos/setu-flow-lockup.svg');
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: contain;
+        }
+
         @media (max-width: 1280px) {
           main > section:first-of-type > nav img[src='/logos/setu-flow-lockup.svg'] {
             height: clamp(52px, 4.4vw, 72px) !important;
@@ -79,6 +108,16 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           main > section:first-of-type > nav img[src='/logos/setu-flow-lockup.svg'] {
             height: 46px !important;
             max-width: 132px !important;
+          }
+
+          main > footer > div > span:first-child {
+            width: 136px;
+            height: 52px;
+          }
+
+          main > footer > div > span:first-child::before {
+            width: 116px;
+            height: 40px;
           }
         }
       `}</style>
