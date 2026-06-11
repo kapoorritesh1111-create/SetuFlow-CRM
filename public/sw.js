@@ -9,6 +9,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logos/setu-flow-logo.svg',
   '/logos/setu-flow-lockup.svg',
+  '/logos/setu-flow-lockup-white.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];

@@ -1037,9 +1037,13 @@ export function InvestorOverviewPage() {
       {/* Footer */}
       <footer className="bg-[#1f2a1d] border-t border-white/10 px-4 sm:px-6 md:px-10 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <span className="text-white/80 text-sm font-semibold tracking-tight">
-            Setu Flow<sup className="text-[9px] font-medium">TM</sup>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logos/setu-flow-lockup-white.svg"
+            alt="Setu Flow"
+            className="h-10 w-auto opacity-90"
+            draggable={false}
+          />
           <div className="flex items-center gap-6 text-xs text-white/50">
             <a
               href="https://www.setuflowcrm.com"

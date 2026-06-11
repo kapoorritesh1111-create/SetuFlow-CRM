@@ -53,3 +53,33 @@ Date: 2026-06-11 · Reporter: Ritesh Kapoor · Status: resolved (both)
    we need a white/mono variant of the lockup.
 5. Do **not** use `uploads/logo.png` anywhere — it is JPEG-encoded (no alpha,
    baked black background) despite the .png extension.
+
+
+---
+
+## v2 update (same day) — brand pack applied + deploy status check
+
+**Deploy status:** Verified at 13:30 UTC — production /investors is **still the
+proxied Vite SPA** (fetch returns the empty client-rendered shell; the SSR'd
+native page would return full body text like the homepage does). The changes
+in this zip have NOT been deployed yet. Commit to main → Vercel deploy → then
+the rewrite removal and native page go live together.
+
+**Logo pack (setu_flow_logo_files.zip) triage:**
+
+| File | Verdict |
+|---|---|
+| `logo.svg` | Byte-identical to the lockup already shipped — no change needed. |
+| `logo.png` | Proper transparent RGBA this time (1536×1024). Added to repo as `public/logos/setu-flow-lockup.png` (raster fallback). |
+| `logo.jpg` (3000×2000, white bg) | Print/source material only — not for web. |
+| `application logo/icon *.jpeg` (square, white bg) | App-store/source material — not for web (no alpha). |
+| `logo.pdf` / `logo.ai` | Source vectors — keep in brand archive. |
+
+**New in this zip (v2):**
+- `public/logos/setu-flow-lockup-white.svg` — all-white recolor of the lockup
+  vector, generated for dark backgrounds and visually verified against the
+  #1f2a1d footer color.
+- Footer of the investor page now renders the white lockup (`h-10 w-auto`)
+  instead of the text wordmark.
+- Both new logo files added to the SW precache list (sw.js re-validated with
+  node --check; component re-passed tsc --strict).
