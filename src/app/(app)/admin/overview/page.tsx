@@ -68,7 +68,7 @@ export default async function AdminOverviewPage() {
       tags: [`Currency: ${currency}`, threshold != null ? `Threshold: ${threshold}%` : 'Threshold unset', 'Market: ' + (org.default_market ?? 'Unset')],
       tagColors: ['purple', 'purple', 'purple'],
       cta: 'Set defaults',
-      href: '/admin/pricing-engine',
+      href: '/admin/pricing',
       stripGrad: 'from-indigo-500 to-violet-500',
       iconPath: 'M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6',
       dot: threshold != null,
@@ -100,12 +100,12 @@ export default async function AdminOverviewPage() {
     },
     {
       eyebrow: 'Products',
-      title: 'Catalog readiness',
-      desc: 'Confirm product count and quote-readiness before first quote creation.',
+      title: 'Catalog governance',
+      desc: 'Manage product count, category readiness, import history, and protected cleanup controls.',
       tags: [`Products: ${productsCount}`, `Categories: ${categoriesCount}`],
       tagColors: ['green', 'green'],
-      cta: 'Open catalog',
-      href: '/admin/product-management',
+      cta: 'Open governance',
+      href: '/admin/catalog-governance',
       stripGrad: 'from-emerald-500 to-green-500',
       iconPath: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM12 2l7 4-7 4-7-4z',
       dot: productsCount > 0,
@@ -152,13 +152,27 @@ export default async function AdminOverviewPage() {
         <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 text-xs font-semibold ml-auto">{myRole.charAt(0).toUpperCase() + myRole.slice(1)} · {currency}</span>
       </div>
 
+      <div className="rounded-xl bg-gradient-to-br from-blue-950 to-blue-800 p-4 text-white shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-extrabold">
+          <span>{govItems.filter((g) => g.ok).length}/4 governance checks complete</span>
+          <span className="ml-auto text-[10px] font-semibold text-white/45">{organization.name}</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {govItems.map((item) => (
+            <span key={`progress-${item.label}`} className={item.ok ? 'rounded-lg border border-emerald-300/30 bg-emerald-400/15 px-2 py-1 text-[10px] font-bold text-emerald-200' : 'rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold text-white/35'}>
+              {item.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* 6-card overview grid */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
-          <Link key={card.title} href={card.href} className="group relative block overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(15,23,42,0.12)]">
+          <Link key={card.title} href={card.href} className="group relative block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(15,23,42,0.12)]">
             {/* Color strip */}
             <div className={`h-1 w-full bg-gradient-to-r ${card.stripGrad}`} />
-            <div className="p-5">
+            <div className="p-4">
               {/* SF-19-024: Icon zone */}
               <div className="mb-3 flex items-center gap-3">
                 <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.stripGrad} shadow-sm`} aria-hidden="true">
@@ -168,15 +182,15 @@ export default async function AdminOverviewPage() {
                 </div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{card.eyebrow}</p>
               </div>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">{card.title}</h2>
-              <p className="mt-1.5 min-h-[3.5rem] text-sm leading-6 text-slate-600">{card.desc}</p>
+              <h2 className="text-[13px] font-extrabold tracking-tight text-slate-950">{card.title}</h2>
+              <p className="mt-1.5 min-h-[2.8rem] text-xs leading-5 text-slate-600">{card.desc}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {card.tags.map((tag, i) => (
                   <span key={tag} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tagColor(card.tagColors?.[i] ?? 'slate')}`}>{tag}</span>
                 ))}
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-950 group-hover:underline">{card.cta} →</span>
+                <span className="text-[10.5px] font-extrabold text-slate-950 group-hover:underline">{card.cta} →</span>
                 <span className={`h-2.5 w-2.5 rounded-full ${card.dotWarn ? 'bg-amber-400' : card.dot ? 'bg-emerald-500' : 'bg-slate-300'}`} />
               </div>
             </div>

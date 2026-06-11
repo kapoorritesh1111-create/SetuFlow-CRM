@@ -1,3 +1,12 @@
+
+## Admin Command Center UX pass
+
+- Reworked the Admin shell to match the attached Admin Redesign HTML: sticky dark admin chrome, quick page row, grouped left rail, compact section header, status chips, governance banner, and HQ-only internal section.
+- Preserved existing live Supabase-backed admin functions instead of replacing them with mock prototype data.
+- Added prototype-compatible aliases for `/admin/catalog`, `/admin/catalog-governance`, `/admin/pricing`, and `/admin/documents`.
+- Updated `/admin` to redirect to `/admin/overview`.
+- Tightened Admin Home to a command-center layout with compact governance progress.
+
 # Changes
 
 ## 2026-06-06 — Reverted public marketing View Transition pass

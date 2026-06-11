@@ -591,6 +591,9 @@ const Docs = (() => {
   <div class="mod-gate-row"><span class="mod-gate-label">Mobile</span><span class="mod-gate-items">Scan &#10140; Human review &#10140; Approve to lead</span></div>
 </div>
 
+<div class="section-block"><h2>Admin Command Center UX pass</h2>
+<p>The Admin area now follows the attached Admin Redesign HTML direction while keeping the existing Supabase-backed functions. The shell uses a dark admin chrome, grouped left rail, compact quick-nav row, governance status banner, and HQ-only internal controls. Prototype aliases now exist for <code>/admin/catalog</code>, <code>/admin/catalog-governance</code>, <code>/admin/pricing</code>, and <code>/admin/documents</code>.</p>
+</div>
 <div class="section-block"><h2>Admin Workspace —  Overhaul</h2>
 <p>All 11 Admin subtasks (A through K) were completed in May 2026. The admin experience is now fully CSS :target pattern — zero new client components, zero useState, pure server render with animated drawers.</p>
 </div>
