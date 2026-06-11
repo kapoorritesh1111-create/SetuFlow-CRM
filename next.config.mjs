@@ -10,6 +10,10 @@ const nextConfig = {
     }
   },
   async rewrites() {
+    // S24-BUG-217: /investors, /investor-overview, /preseed are now served
+    // natively by the App Router (src/app/investors). The proxy rewrites to
+    // setu-flow-landing.vercel.app (and the /assets/:path* catch-all that
+    // shadowed local static assets) have been removed.
     return {
       beforeFiles: [
         {

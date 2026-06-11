@@ -1,4 +1,4 @@
-const CACHE_NAME = 'setuflow-offline-v4-lead-queue';
+const CACHE_NAME = 'setuflow-offline-v5-investor-css-fix';
 const CAPTURE_URL = '/contact-exchange/scan';
 const DEFAULT_NOTIFICATION_URL = '/dashboard?panel=notifications';
 const LEAD_DB_NAME = 'setuflow-offline';
@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   CAPTURE_URL,
   '/manifest.json',
   '/logos/setu-flow-logo.svg',
+  '/logos/setu-flow-lockup.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
@@ -125,10 +126,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.method === 'GET' && url.origin === self.location.origin && (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/logos/') || url.pathname.startsWith('/icons/') || url.pathname.endsWith('.css') || url.pathname.endsWith('.woff2'))) {
+  // S24-BUG-217: cache-first scope tightened. The previous generic
+  // `url.pathname.endsWith('.css')` rule cached ANY same-origin stylesheet
+  // forever — including the /assets/*.css proxied from the old investor
+  // landing rewrite — which poisoned clients with stale/failed CSS and broke
+  // responsive rendering on /investors. Next.js CSS lives under
+  // /_next/static/, which is already covered and content-hashed.
+  if (request.method === 'GET' && url.origin === self.location.origin && (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/logos/') || url.pathname.startsWith('/icons/') || url.pathname.endsWith('.woff2'))) {
     event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+      if (response && response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+      }
       return response;
     })));
     return;

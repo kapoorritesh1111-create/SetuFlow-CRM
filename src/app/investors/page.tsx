@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { InvestorOverviewPage } from '@/components/marketing/investor-overview-page';
 
 export const metadata: Metadata = {
-  title: 'Investor Overview — Setu Flow Pre-Seed',
+  title: 'Setu Flow — Investor Overview | Pre-Seed',
   description:
-    'Setu Flow investor overview for the pre-seed round: trade execution CRM for SMB import-export teams, live traction, market thesis, and ML roadmap.',
+    'Setu Flow is the trade execution CRM for the 250,000+ SMB import-export teams stuck between Excel and SAP. 5 paying clients, CAC under $200. Raising a $250K–$500K pre-seed.',
   alternates: { canonical: '/investors' },
   openGraph: {
     title: 'Investor Overview — Setu Flow Pre-Seed',
