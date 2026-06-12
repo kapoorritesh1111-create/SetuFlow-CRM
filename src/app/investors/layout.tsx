@@ -61,12 +61,12 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
         }
 
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] {
-          width: min(36rem, calc(100vw - 3rem)) !important;
-          max-width: 36rem !important;
-          min-height: 9.65rem !important;
+          width: min(38rem, calc(100vw - 3rem)) !important;
+          max-width: 38rem !important;
+          min-height: 9.55rem !important;
           padding: 1rem 1.12rem !important;
           border-radius: 1.65rem !important;
-          background: linear-gradient(135deg, rgba(16, 38, 25, 0.38), rgba(31, 72, 124, 0.13), rgba(53, 159, 145, 0.055)) !important;
+          background: linear-gradient(135deg, rgba(16, 38, 25, 0.34), rgba(31, 72, 124, 0.12), rgba(53, 159, 145, 0.05)) !important;
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
           box-shadow: 0 20px 58px rgba(13, 39, 30, 0.12) !important;
           -webkit-backdrop-filter: blur(15px) saturate(120%);
@@ -78,20 +78,16 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
         }
 
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] p {
-          max-width: 31rem !important;
+          max-width: 34rem !important;
           margin-bottom: 0.75rem !important;
           color: rgba(255, 255, 255, 0.86) !important;
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child {
-          display: none !important;
         }
 
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child {
           width: 100% !important;
           display: grid !important;
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-          gap: 0.6rem !important;
+          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          gap: 0.55rem !important;
         }
 
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before {
@@ -99,11 +95,12 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
         }
 
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after {
-          content: 'Risk Signal';
+          content: 'Operator Control';
         }
 
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before,
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after,
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child,
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
           display: inline-flex !important;
           align-items: center !important;
@@ -113,39 +110,51 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           border-radius: 999px !important;
           border: 1px solid rgba(255, 255, 255, 0.14) !important;
           background: rgba(255, 255, 255, 0.085) !important;
-          padding: 0.48rem 0.6rem !important;
+          padding: 0.46rem 0.5rem !important;
           color: rgba(255, 255, 255, 0.92) !important;
-          font-size: 0.66rem !important;
+          font-size: 0.58rem !important;
           font-weight: 750 !important;
           line-height: 1.05 !important;
           text-align: center !important;
           text-decoration: none !important;
           white-space: normal !important;
+          box-shadow: none !important;
         }
 
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child,
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
           font-size: 0 !important;
           color: transparent !important;
         }
 
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child::before {
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child::before {
           content: 'Document Readiness';
           color: rgba(255, 255, 255, 0.92) !important;
-          font-size: 0.66rem !important;
+          font-size: 0.58rem !important;
+          font-weight: 750 !important;
+          line-height: 1.05 !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child::before {
+          content: 'Risk Signal';
+          color: rgba(255, 255, 255, 0.92) !important;
+          font-size: 0.58rem !important;
           font-weight: 750 !important;
           line-height: 1.05 !important;
         }
 
         main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] {
-          min-height: 9.65rem !important;
+          width: min(38rem, calc(100vw - 3rem)) !important;
+          min-height: 9.55rem !important;
+          bottom: 2.5rem !important;
           border-color: transparent !important;
           padding: 0 !important;
-          background: linear-gradient(135deg, rgba(16, 38, 25, 0.42), rgba(31, 72, 124, 0.16), rgba(53, 159, 145, 0.055)) !important;
+          background: linear-gradient(135deg, rgba(16, 38, 25, 0.36), rgba(31, 72, 124, 0.14), rgba(53, 159, 145, 0.05)) !important;
           box-shadow: 0 22px 66px rgba(13, 39, 30, 0.15) !important;
         }
 
         main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] > div {
-          min-height: 9.4rem !important;
+          min-height: 9.3rem !important;
           border-color: rgba(255, 255, 255, 0.045) !important;
           background: rgba(255, 255, 255, 0.035) !important;
         }
@@ -201,7 +210,7 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           }
 
           main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
         }
 
