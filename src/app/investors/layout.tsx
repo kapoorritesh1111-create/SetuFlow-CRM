@@ -6,7 +6,7 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
       <style>{`
         html {
           scroll-behavior: smooth;
-          scroll-padding-top: 104px;
+          scroll-padding-top: 88px;
         }
 
         #problem,
@@ -25,11 +25,13 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           left: 0 !important;
           right: 0 !important;
           z-index: 60 !important;
-          background: linear-gradient(180deg, rgba(255, 248, 236, 0.42), rgba(255, 248, 236, 0.14)) !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.34);
-          box-shadow: 0 14px 46px rgba(31, 42, 29, 0.04);
-          -webkit-backdrop-filter: blur(28px) saturate(155%);
-          backdrop-filter: blur(28px) saturate(155%);
+          padding-top: 0.65rem !important;
+          padding-bottom: 0.65rem !important;
+          background: linear-gradient(180deg, rgba(255, 248, 236, 0.34), rgba(255, 248, 236, 0.1)) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 12px 38px rgba(31, 42, 29, 0.035);
+          -webkit-backdrop-filter: blur(30px) saturate(160%);
+          backdrop-filter: blur(30px) saturate(160%);
         }
 
         main > section:first-of-type > nav::before {
@@ -37,25 +39,91 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           position: absolute;
           inset: 0;
           pointer-events: none;
-          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04), rgba(255,255,255,0.18));
+          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.035), rgba(255,255,255,0.18));
           z-index: -1;
         }
 
         main > section:first-of-type > nav img[src='/logos/setu-flow-lockup.svg'] {
-          height: clamp(58px, 4.9vw, 82px) !important;
+          height: clamp(50px, 4vw, 66px) !important;
           width: auto !important;
-          max-width: 190px !important;
+          max-width: 176px !important;
           object-fit: contain !important;
           display: block !important;
         }
 
         main > section:first-of-type > nav > div:first-child {
-          min-width: 290px;
+          min-width: 270px;
         }
 
         main > section:first-of-type > nav + div + div,
         main > section:first-of-type > nav + div + div + div {
           isolation: isolate;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] {
+          max-width: 22rem !important;
+          padding: 1rem 1.15rem !important;
+          border-radius: 1.65rem !important;
+          background: linear-gradient(135deg, rgba(16, 38, 25, 0.68), rgba(31, 72, 124, 0.26)) !important;
+          border: 1px solid rgba(255, 255, 255, 0.14) !important;
+          box-shadow: 0 22px 68px rgba(13, 39, 30, 0.18) !important;
+          -webkit-backdrop-filter: blur(18px) saturate(132%);
+          backdrop-filter: blur(18px) saturate(132%);
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:first-child {
+          margin-bottom: 0.55rem !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] p {
+          margin-bottom: 0.75rem !important;
+          color: rgba(255, 255, 255, 0.84) !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child {
+          display: none !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child {
+          gap: 0.75rem !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before {
+          content: 'Live product';
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after {
+          content: 'AI-assisted execution';
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before,
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after,
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
+          display: inline-flex !important;
+          align-items: center !important;
+          min-height: 1.9rem !important;
+          border-radius: 999px !important;
+          border: 1px solid rgba(255, 255, 255, 0.16) !important;
+          background: rgba(255, 255, 255, 0.1) !important;
+          padding: 0.48rem 0.72rem !important;
+          color: rgba(255, 255, 255, 0.92) !important;
+          font-size: 0.68rem !important;
+          font-weight: 700 !important;
+          line-height: 1 !important;
+          text-decoration: none !important;
+          white-space: nowrap !important;
+        }
+
+        main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] {
+          border-color: transparent !important;
+          padding: 0 !important;
+          background: linear-gradient(135deg, rgba(16, 38, 25, 0.8), rgba(31, 72, 124, 0.38), rgba(53, 159, 145, 0.16)) !important;
+          box-shadow: 0 24px 76px rgba(13, 39, 30, 0.26) !important;
+        }
+
+        main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] > div {
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          background: rgba(255, 255, 255, 0.055) !important;
         }
 
         main > footer > div > span:first-child {
@@ -89,8 +157,8 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
 
         @media (max-width: 1280px) {
           main > section:first-of-type > nav img[src='/logos/setu-flow-lockup.svg'] {
-            height: clamp(52px, 4.4vw, 72px) !important;
-            max-width: 170px !important;
+            height: clamp(46px, 3.8vw, 60px) !important;
+            max-width: 162px !important;
           }
         }
 
@@ -102,12 +170,17 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
 
         @media (max-width: 640px) {
           html {
-            scroll-padding-top: 86px;
+            scroll-padding-top: 78px;
+          }
+
+          main > section:first-of-type > nav {
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
           }
 
           main > section:first-of-type > nav img[src='/logos/setu-flow-lockup.svg'] {
-            height: 46px !important;
-            max-width: 132px !important;
+            height: 42px !important;
+            max-width: 124px !important;
           }
 
           main > footer > div > span:first-child {
