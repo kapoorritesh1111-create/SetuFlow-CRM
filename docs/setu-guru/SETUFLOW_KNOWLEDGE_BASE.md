@@ -303,3 +303,24 @@ The organization logo remains visible on desktop and links to `/dashboard`. Side
 ---
 
 _Updated: June 2026. Includes Sprint 21 Setu Guru operating copilot capabilities, current Orders PDF guidance, and current desktop navigation guidance._
+
+## Admin Workspace V2 (Sprint 24 redesign)
+
+The admin workspace is grouped into four sections plus an HQ-only section. Routes and merges:
+
+- **Admin Home** (`/admin/overview`) — command center: governance banner, 7-step phased setup progress (Identity → Trade Setup → Commerce), six status cards, contextual next step. All counts are live.
+- **Organization profile** (`/admin/organization`) — always-open cards: Company identity (name, slug, legal name, contact email), Geography & currency (country drives inferred market and suggested currency), Quote & order terms, Branding. The approval threshold is NOT here — it lives in Pricing Engine.
+- **Members & Roles** (`/admin/users`) — one tabbed page: Members, Invitations, Roles & permissions. `/admin/invitations` redirects here (tab=invites). Invitations send on creation via the configured email provider.
+- **Markets** (`/admin/markets`) — market list rows with Edit drawers plus an inline "Market form" card for adding. Zero markets shows a warning state; markets are required before pipelines.
+- **Pipelines & Stages** (`/admin/pipelines`, alias `/admin/stages`) — visual stage boards with same-page drawers for edit pipeline, add/edit stage, and the numbered Next Steps list used by Lead Command Center.
+- **Catalog** (`/admin/catalog`, alias `/admin/categories`) — Taxonomy + Pricing rules tabs. Daily product editing stays in `/products`.
+- **Catalog Governance** (`/admin/catalog-governance`, alias `/admin/product-management`) — governance only: CSV import wizard, import history, and protected product deletion (owner/admin, 2-year quote/order guard).
+- **Pricing Engine** (`/admin/pricing`, alias `/admin/pricing-engine`) — approval threshold % (required before quote approval), FX base currency, manual-FX-override and require-approval toggles.
+- **Document Templates** (`/admin/documents`) — quote terms, order terms, bank details, export declarations.
+- **Notifications** (`/admin/notifications`) — workspace default alert matrix per channel.
+- **Security & Roles** (`/admin/security`) and **Audit Log** (`/admin/audit`).
+- **SETU Flow Internal (HQ only, hidden from client orgs):** Client Management, Setu Guru Config, API & Webhooks, Rate Limits, AI Analytics. Client-org admins receive 404 on these routes.
+
+Sidebar status dots are live: Markets is red at zero, Pipelines is green only when pipelines and stages both exist, Pricing is green only when the threshold is set.
+
+When a user asks "where do I set the approval threshold" answer: Admin → Pricing Engine. When asked "where do I invite a teammate" answer: Admin → Members & Roles → Invitations tab.

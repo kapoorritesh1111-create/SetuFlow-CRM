@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
-import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
-import { OrgProfileCollapsible } from '@/features/admin/components/org-profile-collapsible';
-import { updateApprovalThreshold } from '@/features/admin/server/actions';
+import { KitNextStep, KitSectionCard, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
 import { updateOrganizationProfileV2 } from '@/features/admin/server/organization-profile-actions';
 import { buildAdminUsersViewModel } from '@/features/admin/view-model';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -52,11 +50,11 @@ function Field({ label, children, help }: { label: string; children: ReactNode; 
   );
 }
 
-const inputClass = 'mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none placeholder:text-slate-400 placeholder:font-normal focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const textareaClass = 'mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm normal-case tracking-normal text-slate-900 outline-none placeholder:text-slate-400 placeholder:font-normal focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+const inputClass = 'mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs normal-case tracking-normal text-slate-900 outline-none placeholder:italic placeholder:font-normal placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+const textareaClass = 'mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs normal-case tracking-normal text-slate-900 outline-none placeholder:italic placeholder:font-normal placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 
 function SaveButton({ label = 'Save section' }: { label?: string }) {
-  return <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">{label}</button>;
+  return <button type="submit" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">{label}</button>;
 }
 
 
@@ -105,6 +103,7 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
   const inferredMarket = selectedCountry?.markets ?? markets.find((market) => market.id === orgProfile.default_market_id) ?? null;
   const suggestedCurrency = currencyHint(selectedCountry, orgProfile.default_currency ?? 'USD');
   const notice = noticeCopy(params?.notice);
+  const { dots: navDots } = await getAdminNavSignals(supabase, organization.id, threshold);
 
   const gapItems: AdminGapItem[] = [
     !orgProfile.default_country_id ? { icon: '🌍', text: 'Default country not set', href: '/admin/organization#company-profile' } : null,
@@ -112,16 +111,6 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
     threshold == null ? { icon: '🔒', text: 'Approval threshold not set', href: '/admin/security' } : null,
   ].filter(Boolean) as AdminGapItem[];
 
-  const setupChecklist = [
-    { label: 'Organization profile complete', done: Boolean(organization.name && orgProfile.slug && orgProfile.legal_name && orgProfile.contact_email), href: '/admin/organization#company-profile' },
-    { label: 'Country selected', done: Boolean(orgProfile.default_country_id), href: '/admin/organization#company-profile' },
-    { label: 'Default market inferred', done: Boolean(orgProfile.default_market_id), href: '/admin/organization#company-profile' },
-    { label: 'Owner/admin present', done: ownerAdminMembers > 0, href: '/admin/users' },
-    { label: 'Markets configured', done: marketsCount > 0, href: '/admin/markets' },
-    { label: 'Products added', done: productsCount > 0, href: '/admin/product-management' },
-    { label: 'Approval threshold set', done: threshold != null, href: '/admin/security' },
-  ];
-  const setupCompleteCount = setupChecklist.filter((item) => item.done).length;
 
   const orgSections = [
     {
@@ -138,7 +127,7 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
       title: 'Geography & currency',
       subtitle: `${selectedCountry?.name ?? 'Country unset'} · ${inferredMarket?.name ?? 'market unset'} · ${orgProfile.default_currency ?? suggestedCurrency}`,
       badge: selectedCountry && inferredMarket ? 'ok' as const : 'optional' as const,
-      children: <form action={updateOrganizationProfileV2} className="grid gap-4 md:grid-cols-2"><Field label="Default country" help="The selected country automatically controls the organization default market."><select name="default_country_id" defaultValue={orgProfile.default_country_id ?? ''} className={inputClass}><option value="">Select country</option>{countries.map((country) => <option key={country.id} value={country.id}>{country.name}{country.iso2_code ? ` (${country.iso2_code})` : ''}</option>)}</select></Field><Field label="Default market" help="Read-only. It is inferred from the selected country after save."><input readOnly value={inferredMarket?.name ?? 'Select a country to infer market'} className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm normal-case tracking-normal text-slate-500 outline-none" /></Field><Field label="Default currency" help={`Suggested from country: ${suggestedCurrency}. You can override it when needed.`}><input name="default_currency" maxLength={3} defaultValue={orgProfile.default_currency ?? suggestedCurrency} placeholder={suggestedCurrency} className={inputClass + ' uppercase'} /></Field><Field label="Headquarters country label"><input name="headquarters_country" defaultValue={orgProfile.headquarters_country ?? selectedCountry?.name ?? ''} placeholder="Ireland" className={inputClass} /></Field><div className="md:col-span-2"><Field label="Registered address"><textarea name="registered_address" rows={3} defaultValue={orgProfile.registered_address ?? ''} placeholder="Registered office / billing address" className={textareaClass} /></Field></div><Field label="City"><input name="city" defaultValue={orgProfile.city ?? ''} placeholder="Dublin" className={inputClass} /></Field><Field label="Postal code"><input name="postal_code" defaultValue={orgProfile.postal_code ?? ''} placeholder="D02 XXXX" className={inputClass} /></Field><div className="flex justify-end md:col-span-2"><SaveButton label="Save geography" /></div></form>,
+      children: <form action={updateOrganizationProfileV2} className="grid gap-4 md:grid-cols-2"><Field label="Default country" help="The selected country automatically controls the organization default market."><select name="default_country_id" defaultValue={orgProfile.default_country_id ?? ''} className={inputClass}><option value="">Select country</option>{countries.map((country) => <option key={country.id} value={country.id}>{country.name}{country.iso2_code ? ` (${country.iso2_code})` : ''}</option>)}</select></Field><Field label="Default market" help="Read-only. It is inferred from the selected country after save."><input readOnly value={inferredMarket?.name ?? 'Select a country to infer market'} className="mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs normal-case tracking-normal text-slate-500 outline-none" /></Field><Field label="Default currency" help={`Suggested from country: ${suggestedCurrency}. You can override it when needed.`}><input name="default_currency" maxLength={3} defaultValue={orgProfile.default_currency ?? suggestedCurrency} placeholder={suggestedCurrency} className={inputClass + ' uppercase'} /></Field><Field label="Headquarters country label"><input name="headquarters_country" defaultValue={orgProfile.headquarters_country ?? selectedCountry?.name ?? ''} placeholder="Ireland" className={inputClass} /></Field><div className="md:col-span-2"><Field label="Registered address"><textarea name="registered_address" rows={3} defaultValue={orgProfile.registered_address ?? ''} placeholder="Registered office / billing address" className={textareaClass} /></Field></div><Field label="City"><input name="city" defaultValue={orgProfile.city ?? ''} placeholder="Dublin" className={inputClass} /></Field><Field label="Postal code"><input name="postal_code" defaultValue={orgProfile.postal_code ?? ''} placeholder="D02 XXXX" className={inputClass} /></Field><div className="flex justify-end md:col-span-2"><SaveButton label="Save geography" /></div></form>,
     },
     {
       id: 'terms',
@@ -159,39 +148,39 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
   ];
 
   return (
-    <AdminSettingsShell active="profile" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="SaaS onboarding" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }}>
-      <AdminPageHero
-        title="Organization Setup"
-        description="Set the company identity, clean URL slug, default country, inferred market, currency, team access, catalog readiness, and governance. Country drives market defaults for Setu Guru and pricing calculator guidance."
-        badge={organization.name}
-        stats={[{ label: 'My role', value: myRoleLabel, tone: 'info' }, { label: 'Country', value: selectedCountry?.name ?? 'Unset', tone: selectedCountry ? 'success' : 'warning' }, { label: 'Default market', value: inferredMarket?.name ?? 'Unset', tone: inferredMarket ? 'success' : 'warning' }, { label: 'Currency', value: orgProfile.default_currency ?? suggestedCurrency, tone: 'info' }]}
+    <AdminSettingsShell active="profile" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Organization Profile" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }} navDots={navDots}>
+      <KitTbar
+        eyebrow="Workspace"
+        title="Organization Profile"
+        chips={[
+          { label: orgProfile.slug ?? 'slug unset', tone: orgProfile.slug ? 'info' : 'warn' },
+          { label: selectedCountry?.name ?? 'Country unset', tone: selectedCountry ? 'neutral' : 'warn' },
+          { label: orgProfile.default_currency ?? suggestedCurrency, tone: 'info' },
+        ]}
       />
+      
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}
-      <OrgProfileCollapsible sections={orgSections} />
+      <div className="space-y-3">
+        {orgSections.map((section) => {
+          const headings: Record<string, { eyebrow: string; title: string }> = {
+            identity: { eyebrow: 'Company identity', title: 'Organization details' },
+            geography: { eyebrow: 'Geography & currency', title: 'Location defaults' },
+            terms: { eyebrow: 'Commerce terms', title: 'Quote & order terms' },
+            branding: { eyebrow: 'Branding', title: 'Quote & document branding' },
+          };
+          const heading = headings[section.id] ?? { eyebrow: 'Workspace', title: section.title };
+          return (
+            <KitSectionCard key={section.id} id={section.id} eyebrow={heading.eyebrow} title={heading.title} tag={section.badge === 'ok' ? 'Configured' : 'Optional'} tagTone={section.badge === 'ok' ? 'ok' : 'neutral'}>
+              {section.children}
+            </KitSectionCard>
+          );
+        })}
+      </div>
 
-      <section className="overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
-          <div className="min-w-0 flex-1">
-            <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">Setup progress</p>
-            <h2 className="text-[13px] font-bold text-slate-950">{setupCompleteCount}/7 onboarding steps ready</h2>
-          </div>
-          <span className={'shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ' + (threshold == null ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
-            Threshold: {threshold == null ? 'Unset' : String(threshold) + '%'}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1.5 px-4 py-3.5">
-          {setupChecklist.map((item) => (
-            <Link key={item.label} href={item.href} className={'rounded-[7px] border px-2 py-1 text-[10px] font-semibold transition ' + (item.done ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100')}>
-              {item.done ? '✓' : '⊘'} {item.label}
-            </Link>
-          ))}
-        </div>
-      </section>
+      
 
-      <SectionCard eyebrow="Governance" title="Approval threshold control" description="Set the percent override before approval is required.">
-        <form action={updateApprovalThreshold} className="grid gap-3 rounded-[11px] border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[160px_1fr_auto] sm:items-center"><input name="threshold_pct" type="number" min="0" max="100" step="0.1" defaultValue={threshold ?? ''} placeholder="e.g. 10" className="min-h-9 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /><p className="text-xs leading-5 text-slate-600">Set to 0 to require approval on all overrides.</p><button type="submit" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">Save threshold</button></form>
-      </SectionCard>
+      
 
       <KitNextStep icon="👥" label="Profile saved — review team & access next" description="Confirm member roles and pending invitations" href="/admin/users" />
     </AdminSettingsShell>

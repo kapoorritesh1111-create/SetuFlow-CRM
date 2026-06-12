@@ -193,6 +193,7 @@ export function AdminSettingsShell({
   sectionTitle,
   gapItems = [],
   navCounts,
+  navDots,
   internalTools,
   children,
 }: {
@@ -202,6 +203,8 @@ export function AdminSettingsShell({
   sectionTitle?: string;
   gapItems?: AdminGapItem[];
   navCounts?: Partial<Record<'users' | 'invitations' | 'security', number>>;
+  /** S24-ADMUX-31: live status dots per nav key, computed from org state (see getAdminNavSignals). */
+  navDots?: Partial<Record<string, 'ok' | 'warn' | 'danger'>>;
   /** S24-ADMUX-26: explicit HQ flag from isSetuInternalOrganization(); overrides the name heuristic. */
   internalTools?: boolean;
   children?: ReactNode;
@@ -262,7 +265,7 @@ export function AdminSettingsShell({
                       const isActive = itemIsActive(item, active);
                       const badgeLabel = getDynamicBadge(item, navCounts);
                       const badgeTone = getDynamicTone(item, navCounts);
-                      const statusDot = getDynamicStatus(item, navCounts);
+                      const statusDot = navDots?.[item.key] ?? getDynamicStatus(item, navCounts);
                       return (
                         <Link
                           key={item.key}

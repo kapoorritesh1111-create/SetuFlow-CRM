@@ -1,5 +1,7 @@
 import { StateMessage } from '@/components/ui/state-message';
-import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { KitNextStep, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
 import { createMarket, updateMarket } from '@/features/admin/server/actions';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -44,33 +46,45 @@ function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
           </div>
           <a href="#add-market" className="inline-flex shrink-0 items-center rounded-[7px] border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 transition hover:bg-teal-100">+ Add market</a>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr>
-                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Market name</th>
-                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Code</th>
-                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Countries</th>
-                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Status</th>
-                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Sort</th>
-                <th className="border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {markets.map((market) => (
-                <tr key={market.id} className={`align-middle transition hover:bg-slate-50${market.is_active ? '' : ' opacity-60'}`}>
-                  <td className="border-b border-slate-50 px-2.5 py-2"><span className="text-xs font-bold text-slate-900">{market.name}</span></td>
-                  <td className="border-b border-slate-50 px-2.5 py-2 font-mono text-[10px] uppercase text-slate-500">{market.market_code ?? '-'}</td>
-                  <td className="border-b border-slate-50 px-2.5 py-2"><span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">{market.country_count ?? 0}</span></td>
-                  <td className="border-b border-slate-50 px-2.5 py-2"><MarketStatus active={market.is_active} /></td>
-                  <td className="border-b border-slate-50 px-2.5 py-2 text-[10px] text-slate-500">{market.sort_order ?? 0}</td>
-                  <td className="border-b border-slate-50 px-2.5 py-2"><a href={`#market-${market.id}`} className="text-[10px] font-semibold text-slate-500 transition hover:text-teal-600">Edit ›</a></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="px-4 py-1.5">
+          {markets.map((market) => (
+            <div key={market.id} className={`flex items-center gap-2.5 border-b border-slate-50 py-2 last:border-b-0${market.is_active ? '' : ' opacity-60'}`}>
+              <span aria-hidden="true" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] bg-cyan-50 text-[13px]">🌍</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-slate-900">{market.name}</p>
+                <p className="text-[10.5px] text-slate-500">{market.market_code ? `${String(market.market_code).toUpperCase()} · ` : ''}{market.country_count ?? 0} countr{(market.country_count ?? 0) === 1 ? 'y' : 'ies'} · Sort {market.sort_order ?? 0}</p>
+              </div>
+              <MarketStatus active={market.is_active} />
+              <a href={`#market-${market.id}`} className="shrink-0 text-[10px] font-semibold text-slate-500 transition hover:text-teal-600">Edit ›</a>
+            </div>
+          ))}
         </div>
-        {markets.length === 0 ? <p className="px-4 py-3 text-xs text-slate-500">No markets configured yet. Add the first market to unlock market-aware workflows.</p> : null}
+        {markets.length === 0 ? (
+          <div className="mx-4 mb-4 rounded-[9px] border border-dashed border-amber-300 bg-amber-50 p-4 text-[11.5px] leading-[1.6] text-amber-900">
+            <strong>⚠ No markets configured</strong>
+            <p className="mt-2">Markets drive lead routing, pipeline defaults, Setu Guru context, and pricing rules. Add your first market.</p>
+            <p className="mt-2 text-[11px] italic">Common starting set: Europe, North America, Middle East &amp; Africa, Asia Pacific</p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">Add market</p>
+            <h2 className="text-[13px] font-bold text-slate-950">Market form</h2>
+          </div>
+        </div>
+        <form action={createMarket} className="px-4 py-3.5">
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <label className="block"><span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Market name</span><input className={`${inputClass} w-full`} name="name" placeholder="e.g. North America" required /></label>
+            <label className="block"><span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Market code</span><input className={`${inputClass} w-full uppercase`} name="market_code" placeholder="e.g. NA" /></label>
+            <label className="block"><span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Sort order</span><input className={`${inputClass} w-full`} name="sort_order" type="number" defaultValue="0" /></label>
+          </div>
+          <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-2.5">
+            <button type="submit" className={buttonClass}>Save market</button>
+          </div>
+        </form>
       </section>
 
       {markets.map((market) => (
@@ -144,10 +158,19 @@ export default async function Page() {
     }
     const rows = rawMarkets.map((market) => ({ ...market, country_count: countByMarket[market.id] ?? 0 }));
     const totalCountries = Object.values(countByMarket).reduce((total, current) => total + current, 0);
-    return <AdminSettingsShell active="markets" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0}>
-      <AdminPageHero title="Markets" description="Manage the active market list. Click Edit to open the focused drawer form." badge={organization.name}
-        stats={[{ label: 'Markets', value: rows.length, tone: rows.length ? 'success' : 'warning' }, { label: 'Active', value: rows.filter((row) => row.is_active).length, tone: 'info' }, { label: 'Countries', value: totalCountries, tone: 'info' }]} />
+    const threshold = typeof (organization as any).approval_threshold_pct === 'number' ? (organization as any).approval_threshold_pct : null;
+    const { dots: navDots } = await getAdminNavSignals(supabase, organization.id, threshold);
+    return <AdminSettingsShell active="markets" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0} navDots={navDots}>
+      <KitTbar
+        eyebrow="Trade Setup"
+        title="Markets"
+        chips={[{ label: `${rows.length} market${rows.length === 1 ? '' : 's'}`, tone: rows.length ? 'ok' : 'warn' }, { label: `${totalCountries} countries`, tone: 'neutral' }]}
+        action={<a href="#add-market" className={buttonClass}>+ Add market</a>}
+      />
       <MarketsWorkspace markets={rows} />
+      {rows.length === 0
+        ? <KitNextStep icon="🌍" label="Add a market to unlock pipeline setup" description="Pipeline stages are blocked until at least one market exists" href="#add-market" warn />
+        : <KitNextStep icon="📊" label="Markets set — configure pipelines for each market" description="Link pipeline stages to your active markets" href="/admin/pipelines" />}
     </AdminSettingsShell>;
   } catch (err) {
     const digest = getErrorDigest(err);

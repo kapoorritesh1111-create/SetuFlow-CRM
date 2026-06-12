@@ -343,3 +343,63 @@ export const kitTableClass = 'w-full border-collapse text-xs';
 export const kitThClass =
   'border-b border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400';
 export const kitTdClass = 'border-b border-slate-50 px-2.5 py-2 align-middle';
+
+/* S24-ADMUX-31 — role badge palette per the design contract (.r-owner/.r-admin/.r-sales/.r-logi/.r-dis). */
+const roleBadgePalette: Record<string, string> = {
+  owner: 'bg-blue-100 text-blue-700',
+  admin: 'bg-violet-100 text-violet-700',
+  sales: 'bg-slate-100 text-slate-600',
+  contributor: 'bg-slate-100 text-slate-600',
+  manager: 'bg-teal-50 text-teal-700',
+  logistics: 'bg-amber-100 text-amber-700',
+  member: 'bg-slate-100 text-slate-600',
+  viewer: 'bg-slate-100 text-slate-500',
+  disabled: 'bg-slate-100 text-slate-400',
+};
+
+export function KitRoleBadge({ role }: { role: string }) {
+  const palette = roleBadgePalette[role.trim().toLowerCase()] ?? 'bg-slate-100 text-slate-500';
+  return (
+    <span className={cn('inline-flex items-center rounded-[7px] px-1.5 py-0.5 text-[9px] font-bold capitalize', palette)}>
+      {role}
+    </span>
+  );
+}
+
+/* S24-ADMUX-31 — standardized page tbar (.tbar from the design contract). */
+export function KitTbar({
+  eyebrow,
+  title,
+  chips = [],
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  chips?: Array<{ label: string; tone?: KitTone }>;
+  action?: ReactNode;
+}) {
+  const chipTone: Record<KitTone, string> = {
+    ok: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    warn: 'border-amber-200 bg-amber-50 text-amber-700',
+    info: 'border-blue-200 bg-blue-50 text-blue-700',
+    neutral: 'border-slate-200 bg-slate-50 text-slate-600',
+    purple: 'border-violet-200 bg-violet-50 text-violet-700',
+    danger: 'border-rose-200 bg-rose-50 text-rose-700',
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-5 py-2.5 shadow-[0_1px_4px_rgba(15,23,42,0.05)]">
+      <div className="min-w-0">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">{eyebrow}</p>
+        <h1 className="truncate text-base font-bold tracking-[-0.02em] text-slate-950">{title}</h1>
+      </div>
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+        {chips.map((chip) => (
+          <span key={chip.label} className={cn('whitespace-nowrap rounded-full border px-2 py-[3px] text-[10px] font-semibold', chipTone[chip.tone ?? 'neutral'])}>
+            {chip.label}
+          </span>
+        ))}
+        {action}
+      </div>
+    </div>
+  );
+}

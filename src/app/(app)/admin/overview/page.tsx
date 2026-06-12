@@ -115,6 +115,13 @@ export default async function AdminOverviewPage() {
       missingCount={gapItems.length}
       gapItems={gapItems}
       navCounts={{ users: activeMembers, invitations: openInvites }}
+      navDots={{
+        markets: marketsCount === 0 ? 'danger' : 'ok',
+        pipelines: pipelinesCount > 0 && stagesCount > 0 ? 'ok' : 'warn',
+        categories: categoriesCount > 0 ? 'ok' : 'warn',
+        'trade-events': eventsCount > 0 ? 'ok' : 'warn',
+        'pricing-engine': threshold != null ? 'ok' : 'warn',
+      }}
     >
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">{myRoleLabel} · {currency}</span>

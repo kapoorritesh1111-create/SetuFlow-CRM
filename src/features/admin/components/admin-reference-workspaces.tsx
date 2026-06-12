@@ -247,23 +247,25 @@ export function TradeEventsAdminWorkspace({ events }: { events: AnyRow[] }) {
             <a href="#add-event-drawer" className={buttonClass}>+ Add your first event</a>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-[11px] border border-slate-200">
-            <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-left text-[8px] font-bold uppercase tracking-[0.13em] text-slate-400">
-                <tr><th className="px-2.5 py-2">Event</th><th className="px-2.5 py-2">Location</th><th className="px-2.5 py-2">Dates</th><th className="px-2.5 py-2">Status</th><th className="px-2.5 py-2">Edit</th></tr>
-              </thead>
-              <tbody>
-                {events.map((event) => (
-                  <tr key={event.id} className="border-t border-slate-100 align-middle hover:bg-slate-50">
-                    <td className="px-2.5 py-2 font-semibold text-slate-900">{event.name}</td>
-                    <td className="px-2.5 py-2 text-slate-500">{[event.city, event.country].filter(Boolean).join(', ') || '—'}</td>
-                    <td className="px-2.5 py-2 text-xs text-slate-500">{event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'}</td>
-                    <td className="px-2.5 py-2"><StatusBadge label={event.starts_on ? 'Scheduled' : 'Draft'} tone={event.starts_on ? 'info' : 'neutral'} dot={false} /></td>
-                    <td className="px-2.5 py-2"><a href={`#event-${event.id}`} className={secondaryButtonClass}>Edit</a></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {events.map((event) => {
+              const now = new Date(); now.setHours(0, 0, 0, 0);
+              const startsOn = event.starts_on ? new Date(event.starts_on) : null;
+              const endsOn = event.ends_on ? new Date(event.ends_on) : startsOn;
+              const status = !startsOn ? 'Draft' : endsOn && endsOn < now ? 'Completed' : startsOn <= now ? 'Live' : startsOn.getTime() - now.getTime() < 1000 * 60 * 60 * 24 * 90 ? 'Upcoming' : 'Scheduled';
+              const tone = status === 'Completed' ? 'success' : status === 'Upcoming' || status === 'Live' ? 'info' : 'neutral';
+              return (
+                <div key={event.id} className="mb-1.5 flex items-center gap-2.5 rounded-[9px] border border-slate-200 bg-white px-3 py-2.5 transition last:mb-0 hover:border-slate-300 hover:shadow-[0_2px_6px_rgba(15,23,42,0.05)]">
+                  <span aria-hidden="true" className="flex h-[33px] w-[33px] shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm">🎪</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-slate-900">{event.name}</p>
+                    <p className="truncate text-[10.5px] text-slate-500">{[event.city, event.country].filter(Boolean).join(', ') || 'Location TBC'} · {event.starts_on ? formatDate(event.starts_on) : 'Unscheduled'}{event.ends_on ? ` – ${formatDate(event.ends_on)}` : ''}</p>
+                  </div>
+                  <StatusBadge label={status} tone={tone as any} dot={false} />
+                  <a href={`#event-${event.id}`} className="shrink-0 text-[10px] font-semibold text-slate-500 transition hover:text-teal-600">Edit ›</a>
+                </div>
+              );
+            })}
           </div>
         )}
         {events.map((event) => (

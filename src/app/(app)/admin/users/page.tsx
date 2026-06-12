@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { KitTabs } from '@/features/admin/components/admin-kit-tabs';
-import { KitSectionCard, KitTag } from '@/features/admin/components/admin-ui-kit';
+import { KitNextStep, KitSectionCard, KitTag } from '@/features/admin/components/admin-ui-kit';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -271,6 +271,7 @@ export default async function AdminUsersPage({
           ]}
         />
       </KitSectionCard>
+      <KitNextStep icon="💰" label="Team configured — review commerce rules next" description="Ensure approval threshold and pricing defaults are set" href="/admin/pricing" />
     </AdminSettingsShell>
   );
 }

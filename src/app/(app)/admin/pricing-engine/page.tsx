@@ -1,4 +1,6 @@
-import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import { KitNextStep, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
 import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -16,8 +18,10 @@ async function savePricingControls(formData: FormData): Promise<void> {
   if (!organization) return;
   const supabase = await mk();
   await (supabase as any).from('organizations').update({
-    approval_threshold_pct: Number(formData.get('threshold_pct') ?? 15),
+    approval_threshold_pct: formData.get('threshold_pct') === null || formData.get('threshold_pct') === '' ? null : Number(formData.get('threshold_pct')),
     default_currency: String(formData.get('default_currency') ?? 'USD').toUpperCase(),
+    allow_fx_override: formData.get('allow_fx_override') === 'on',
+    require_override_approval: formData.get('require_approval') === 'on',
   }).eq('id', organization.id);
   revalidatePath('/admin/pricing-engine');
   redirect('/admin/pricing-engine?notice=saved');
@@ -33,20 +37,28 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
   if (missingEnv || !organization) return null;
   const params = await (searchParams ?? Promise.resolve({})) as { notice?: string };
   const org = organization as any;
-  const threshold = typeof org.approval_threshold_pct === 'number' ? org.approval_threshold_pct : 15;
+  const threshold = typeof org.approval_threshold_pct === 'number' ? org.approval_threshold_pct : null;
+  const supabaseForSignals = await (await import('@/lib/supabase/server')).createClient();
+  const { dots: navDots } = await getAdminNavSignals(supabaseForSignals, organization.id, threshold);
   const currency  = org.default_currency ?? 'USD';
   return (
-    <AdminSettingsShell active="pricing-engine" organizationName={organization.name} sectionTitle="Pricing Engine">
-      <AdminPageHero title="Pricing Engine" description="Commercial defaults that power the pricing calculator, quote generation, and margin calculations." badge="Commerce"
-        stats={[{ label: 'Threshold', value: `${threshold}%`, tone: 'success' }, { label: 'Base currency', value: currency, tone: 'info' }] as any} />
+    <AdminSettingsShell active="pricing-engine" organizationName={organization.name} sectionTitle="Pricing Engine" navDots={navDots}>
+      <KitTbar
+        eyebrow="Commerce Rules"
+        title="Pricing Engine"
+        chips={[
+          { label: threshold != null ? `Threshold: ${threshold}%` : '⚠ Not set', tone: threshold != null ? 'ok' : 'warn' },
+          { label: currency, tone: 'info' },
+        ]}
+      />
       {params.notice === 'saved' && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✓ Pricing controls saved.</div>}
       <SectionCard title="Approval & override controls" eyebrow="Commerce">
         <form action={savePricingControls} className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
               Approval threshold %
-              <input name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={threshold} className={inputClass} />
-              <span className="mt-1 block text-[11px] font-medium normal-case text-slate-400">Quotes overriding margin by more than this % need approval. Set 0 for all overrides.</span>
+              <input name="threshold_pct" type="number" min="0" max="100" step="0.5" defaultValue={threshold ?? ''} placeholder="e.g. 15" className={threshold == null ? `${inputClass} border-amber-300 bg-amber-50` : inputClass} />
+              <span className={`mt-1 block text-[11px] font-medium normal-case ${threshold == null ? 'text-amber-600' : 'text-slate-400'}`}>{threshold == null ? '⚠ Required — quotes cannot be approved without this' : 'Quotes overriding margin by more than this % need approval. Set 0 for all overrides.'}</span>
             </label>
             <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
               FX base currency
@@ -62,8 +74,8 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
           </div>
           <div className="flex flex-wrap gap-4">
             {[
-              { name: 'allow_fx_override', label: 'Allow manual FX override', desc: 'Operators can override FX when quoting', checked: true },
-              { name: 'require_approval',  label: 'Require approval for override', desc: 'Approval needed before margin override applies', checked: true },
+              { name: 'allow_fx_override', label: 'Allow manual FX override', desc: 'Operators can override FX when quoting', checked: org.allow_fx_override ?? true },
+              { name: 'require_approval',  label: 'Require approval for override', desc: 'Approval needed before margin override applies', checked: org.require_override_approval ?? true },
             ].map((t) => (
               <label key={t.name} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer hover:bg-slate-100 transition">
                 <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-4 w-4 rounded accent-slate-900" />
@@ -92,6 +104,9 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
         </label>
         <p className="mt-2 text-xs text-slate-400">Template assignment per category — coming in Quote Builder V2.</p>
       </SectionCard>
+      {threshold == null
+        ? <KitNextStep icon="📄" label="After setting threshold — configure document templates" description="Quote terms and bank details required before first quote" href="/admin/documents" warn />
+        : <KitNextStep icon="📄" label="Pricing ready — configure document templates" description="Add quote terms, bank details, and export declarations" href="/admin/documents" />}
     </AdminSettingsShell>
   );
 }

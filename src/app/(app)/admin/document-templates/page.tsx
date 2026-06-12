@@ -3,6 +3,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
+import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
 import { TermsEditor, BankDetailsEditor, ExportDeclarationsEditor } from '@/features/admin/components/document-terms-editor';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -255,6 +256,7 @@ export default async function AdminDocumentTemplatesPage() {
           </div>
         </SectionCard>
       </section>
+      <KitNextStep icon="🔔" label="Documents ready — configure notification defaults" description="Set workspace-level alert preferences" href="/admin/notifications" />
     </AdminSettingsShell>
   );
 }

@@ -75,6 +75,17 @@ export default async function Page() {
         </div>
       </div>
       <div id="catalog-add-category" className="space-y-4 px-5 py-4 lg:px-5 lg:py-4" data-admin-v2-foundation="S24-ADMUX-24" data-admin-v2-page="catalog">
+        <div className="flex gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3.5 py-3">
+          <span aria-hidden="true" className="text-base">🔗</span>
+          <div>
+            <p className="text-xs font-bold text-slate-900">Why is this one admin page?</p>
+            <p className="mt-1 text-[11px] leading-[1.6] text-slate-500">
+              <strong>Taxonomy tab</strong> — category structure, hierarchy, active/inactive (admin-only, set-once).{' '}
+              <strong>Pricing rules tab</strong> — EXW→DDP cost build-up defaults per category.{' '}
+              The daily product list lives in <strong>/products</strong> (main nav) — admin only needs the taxonomy and pricing governance.
+            </p>
+          </div>
+        </div>
         <CategoriesGovernanceWorkbench categories={rows} uncategorizedProducts={uncategorizedProducts} pricingRules={(pricingRulesResult.data ?? []) as PricingCalculatorDefaultRule[]} />
         <Link href="/admin/pricing" className="flex items-center gap-3 rounded-xl border border-teal-200 bg-teal-50 p-3 transition hover:bg-teal-100">
           <span className="text-base" aria-hidden="true">💰</span>

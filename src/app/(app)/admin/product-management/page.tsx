@@ -59,6 +59,15 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
         {searchParams?.notice ? <StateMessage title="Catalog Admin notice" description={searchParams.notice} tone="neutral" /> : null}
         <QueryIssuesAlert issues={data.queryIssues} />
 
+        <div className="flex gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3.5 py-3">
+          <span aria-hidden="true" className="text-base">🗄️</span>
+          <div>
+            <p className="text-xs font-bold text-slate-900">Why is this separate from Catalog?</p>
+            <p className="mt-1 text-[11px] leading-[1.6] text-slate-500">
+              The main <strong>/products</strong> catalog is for daily product editing, and the Catalog page manages taxonomy + pricing rules. This page is for <strong>governance-only</strong> tasks most users never need: CSV imports, import audit history, and protected product deletion with a 2-year quote/order guard. Owner/admin only.
+            </p>
+          </div>
+        </div>
         <ProductGovernanceWorkbench
           categories={categories}
           products={products}

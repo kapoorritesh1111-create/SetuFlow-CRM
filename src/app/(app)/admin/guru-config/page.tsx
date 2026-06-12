@@ -95,6 +95,7 @@ export default async function GuruConfigPage() {
         icon="🤖"
         title="Setu Guru Config"
         description="Platform-wide AI copilot controls: model selection, writeback, daily budget, and live search. Changes take effect immediately — no Vercel deploys needed."
+        stats={[{ value: String(monthlySearches ?? 0), label: 'Searches / mo' }, { value: String(settings.daily_search_budget), label: 'Daily budget' }, { value: `${usagePct}%`, label: 'Budget used' }]}
         gradientClass="from-[#0f2027] via-[#203a43] to-[#2c5364]"
       />
       <div className="flex items-center gap-2.5 rounded-[11px] border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><GuruAvatar size="md" /><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
