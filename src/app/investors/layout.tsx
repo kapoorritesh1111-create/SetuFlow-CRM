@@ -60,94 +60,53 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           isolation: isolate;
         }
 
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] {
-          width: min(38rem, calc(100vw - 3rem)) !important;
+        .investor-hero-proof-card {
+          width: min(38rem, calc(100vw - 3rem));
           max-width: 38rem !important;
-          min-height: 9.55rem !important;
-          padding: 1rem 1.12rem !important;
-          border-radius: 1.65rem !important;
-          background: linear-gradient(135deg, rgba(16, 38, 25, 0.34), rgba(31, 72, 124, 0.12), rgba(53, 159, 145, 0.05)) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          box-shadow: 0 20px 58px rgba(13, 39, 30, 0.12) !important;
+          min-height: 9.55rem;
+          padding: 1rem 1.12rem;
+          border-radius: 1.65rem;
+          background: linear-gradient(135deg, rgba(16, 38, 25, 0.36), rgba(31, 72, 124, 0.14), rgba(53, 159, 145, 0.05));
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 20px 58px rgba(13, 39, 30, 0.12);
           -webkit-backdrop-filter: blur(15px) saturate(120%);
           backdrop-filter: blur(15px) saturate(120%);
         }
 
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:first-child {
-          margin-bottom: 0.55rem !important;
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] p {
+        .investor-hero-proof-card p {
           max-width: 34rem !important;
           margin-bottom: 0.75rem !important;
           color: rgba(255, 255, 255, 0.86) !important;
         }
 
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child {
-          width: 100% !important;
-          display: grid !important;
-          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-          gap: 0.55rem !important;
+        .investor-hero-usp-row {
+          width: 100%;
         }
 
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before {
-          content: 'Lead Capture';
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after {
-          content: 'Operator Control';
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before,
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after,
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child,
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
-          display: inline-flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          min-width: 0 !important;
-          min-height: 1.95rem !important;
-          border-radius: 999px !important;
-          border: 1px solid rgba(255, 255, 255, 0.14) !important;
-          background: rgba(255, 255, 255, 0.085) !important;
-          padding: 0.46rem 0.5rem !important;
-          color: rgba(255, 255, 255, 0.92) !important;
-          font-size: 0.58rem !important;
-          font-weight: 750 !important;
-          line-height: 1.05 !important;
-          text-align: center !important;
-          text-decoration: none !important;
-          white-space: normal !important;
-          box-shadow: none !important;
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child,
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
-          font-size: 0 !important;
-          color: transparent !important;
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:first-child::before {
-          content: 'Document Readiness';
-          color: rgba(255, 255, 255, 0.92) !important;
-          font-size: 0.58rem !important;
-          font-weight: 750 !important;
-          line-height: 1.05 !important;
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child::before {
-          content: 'Risk Signal';
-          color: rgba(255, 255, 255, 0.92) !important;
-          font-size: 0.58rem !important;
-          font-weight: 750 !important;
-          line-height: 1.05 !important;
+        .investor-hero-usp-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 0;
+          min-height: 1.95rem;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.085);
+          padding: 0.46rem 0.5rem;
+          color: rgba(255, 255, 255, 0.92);
+          font-size: 0.58rem;
+          font-weight: 750;
+          line-height: 1.05;
+          text-align: center;
+          white-space: normal;
+          box-shadow: none;
         }
 
         main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] {
           width: min(38rem, calc(100vw - 3rem)) !important;
           min-height: 9.55rem !important;
           bottom: 2.5rem !important;
-          border-color: transparent !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
           padding: 0 !important;
           background: linear-gradient(135deg, rgba(16, 38, 25, 0.36), rgba(31, 72, 124, 0.14), rgba(53, 159, 145, 0.05)) !important;
           box-shadow: 0 22px 66px rgba(13, 39, 30, 0.15) !important;
@@ -157,10 +116,8 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           min-height: 9.3rem !important;
           border-color: rgba(255, 255, 255, 0.045) !important;
           background: rgba(255, 255, 255, 0.035) !important;
-        }
-
-        main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] div[class*='grid-cols-3'] {
-          display: none !important;
+          display: flex !important;
+          align-items: center !important;
         }
 
         main > footer > div > span:first-child {
@@ -204,12 +161,12 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
             min-width: auto;
           }
 
-          main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] {
-            width: min(24rem, calc(100vw - 2rem)) !important;
-            min-height: auto !important;
+          .investor-hero-proof-card {
+            width: min(24rem, calc(100vw - 2rem));
+            min-height: auto;
           }
 
-          main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child {
+          .investor-hero-usp-row {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
         }
