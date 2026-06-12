@@ -191,10 +191,38 @@ export default async function AdminOverviewPage() {
       </div>
 
       <KitNextStep
-        icon={govOk ? '🚀' : !steps.markets ? '🌍' : '⚡'}
-        label={govOk ? 'Workspace ready — Go to Pipeline board' : !steps.markets ? 'Start by adding your first market' : 'Finish the remaining setup steps'}
-        description={govOk ? 'All setup phases complete. Switch to operational mode.' : !steps.markets ? 'Markets are required before pipeline stages can be configured' : `${7 - doneCount} step${7 - doneCount === 1 ? '' : 's'} remaining before full workflows unlock`}
-        href={govOk ? '/pipeline' : !steps.markets ? '/admin/markets' : !steps.pipelines ? '/admin/pipelines' : !steps.products ? '/admin/catalog-governance' : '/admin/pricing'}
+        icon={govOk ? '🚀' : doneCount >= 7 ? '✉️' : !steps.markets ? '🌍' : '⚡'}
+        label={
+          govOk
+            ? 'Workspace ready — Go to Pipeline board'
+            : doneCount >= 7
+              ? `Setup complete — review ${openInvites} open invitation${openInvites === 1 ? '' : 's'}`
+              : !steps.markets
+                ? 'Start by adding your first market'
+                : 'Finish the remaining setup steps'
+        }
+        description={
+          govOk
+            ? 'All setup phases complete. Switch to operational mode.'
+            : doneCount >= 7
+              ? 'Resend or revoke pending invitations to clear the governance gap'
+              : !steps.markets
+                ? 'Markets are required before pipeline stages can be configured'
+                : `${7 - doneCount} step${7 - doneCount === 1 ? '' : 's'} remaining before full workflows unlock`
+        }
+        href={
+          govOk
+            ? '/pipeline'
+            : doneCount >= 7
+              ? '/admin/users?tab=invites'
+              : !steps.markets
+                ? '/admin/markets'
+                : !steps.pipelines
+                  ? '/admin/pipelines'
+                  : !steps.products
+                    ? '/admin/catalog-governance'
+                    : '/admin/pricing'
+        }
         warn={!govOk}
       />
     </AdminSettingsShell>

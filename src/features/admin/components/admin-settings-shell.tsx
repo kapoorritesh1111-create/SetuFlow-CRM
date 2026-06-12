@@ -43,7 +43,6 @@ type AdminNavItem = {
   badgeTone?: 'success' | 'warning' | 'danger' | 'info';
   statusDot?: AdminNavStatusDot;
   internalOnly?: boolean;
-  merged?: boolean;
   aliases?: AdminNavKey[];
 };
 
@@ -71,8 +70,8 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
     label: 'Trade Setup',
     items: [
       { key: 'markets', href: '/admin/markets', icon: 'globe', label: 'Markets', statusDot: 'ok' },
-      { key: 'pipelines', href: '/admin/pipelines', icon: 'workflow', label: 'Pipelines & Stages', statusDot: 'ok', merged: true, aliases: ['stages'] },
-      { key: 'categories', href: '/admin/catalog', icon: 'box', label: 'Catalog', sublabel: 'Categories + pricing rules', statusDot: 'ok', merged: true },
+      { key: 'pipelines', href: '/admin/pipelines', icon: 'workflow', label: 'Pipelines & Stages', statusDot: 'ok', aliases: ['stages'] },
+      { key: 'categories', href: '/admin/catalog', icon: 'box', label: 'Catalog', sublabel: 'Categories + pricing rules', statusDot: 'ok' },
       { key: 'product-management', href: '/admin/catalog-governance', icon: 'clipboard', label: 'Catalog Governance', sublabel: 'Imports, cleanup, audit', statusDot: 'ok' },
       { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade Events', statusDot: 'ok' },
     ],
@@ -224,12 +223,6 @@ export function AdminSettingsShell({
             <span aria-hidden="true">🏢</span>
             <span>{showInternalOnlyTools ? 'SETU Flow (Main org)' : organizationName}</span>
           </Link>
-          {showInternalOnlyTools ? (
-            <span className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-white/35">
-              <span aria-hidden="true">🌱</span>
-              Client orgs managed in Client Management
-            </span>
-          ) : null}
           <span className="ml-auto text-[10px] font-semibold text-white/35">{orgLabel}</span>
         </div>
         <div className="flex gap-0.5 overflow-x-auto px-3 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -286,7 +279,6 @@ export function AdminSettingsShell({
                             <span className={cn('block truncate', isActive ? 'font-extrabold' : 'font-semibold')}>{item.label}</span>
                             {item.sublabel ? <span className="block truncate text-[9px] font-medium text-slate-400">{item.sublabel}</span> : null}
                           </span>
-                          {item.merged ? <AdminNavBadge label="merged" tone="info" /> : null}
                           {badgeLabel ? <AdminNavBadge label={badgeLabel} tone={badgeTone} /> : null}
                           <AdminNavStatusDot dot={statusDot} />
                         </Link>
