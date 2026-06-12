@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { InvestorOverviewPage } from '@/components/marketing/investor-overview-page';
+import InvestorPolishRuntime from '@/components/marketing/investor-polish-runtime';
 
 export const metadata: Metadata = {
   title: 'Setu Flow — Investor Overview | Pre-Seed',
@@ -17,5 +18,10 @@ export const metadata: Metadata = {
 };
 
 export default function InvestorsPage() {
-  return <InvestorOverviewPage />;
+  return (
+    <>
+      <InvestorOverviewPage />
+      <InvestorPolishRuntime />
+    </>
+  );
 }
