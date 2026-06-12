@@ -120,6 +120,15 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           align-items: center !important;
         }
 
+        #round .rounded-2xl.border-white\/10.bg-white\/\[0\.04\] {
+          background: rgba(255, 255, 255, 0.075) !important;
+          border-color: rgba(255, 255, 255, 0.16) !important;
+        }
+
+        #round .rounded-2xl.border-white\/10.bg-white\/\[0\.04\] span.text-sm.leading-relaxed {
+          color: rgba(255, 255, 255, 0.86) !important;
+        }
+
         main > footer > div > span:first-child {
           position: relative;
           display: inline-flex;
