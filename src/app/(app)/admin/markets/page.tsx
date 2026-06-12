@@ -1,6 +1,6 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
-import { KitNextStep, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
 import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
 import { createMarket, updateMarket } from '@/features/admin/server/actions';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -105,7 +105,7 @@ function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
                 <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Market name<input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={market.name} required /></label>
                 <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Market code<input className={`${inputClass} mt-1 w-full uppercase`} name="market_code" defaultValue={market.market_code ?? ''} /></label>
                 <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Sort order<input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue={market.sort_order ?? 0} /></label>
-                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_active" defaultChecked={market.is_active ?? true} /> Active market</label>
+                <label className="flex items-center gap-2 rounded-[9px] border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_active" defaultChecked={market.is_active ?? true} /> Active market</label>
               </div>
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4"><a href="#markets" className={secondaryButtonClass}>Cancel</a><button type="submit" className={buttonClass}>Save market</button></div>
             </form>
@@ -160,13 +160,7 @@ export default async function Page() {
     const totalCountries = Object.values(countByMarket).reduce((total, current) => total + current, 0);
     const threshold = typeof (organization as any).approval_threshold_pct === 'number' ? (organization as any).approval_threshold_pct : null;
     const { dots: navDots } = await getAdminNavSignals(supabase, organization.id, threshold);
-    return <AdminSettingsShell active="markets" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0} navDots={navDots}>
-      <KitTbar
-        eyebrow="Trade Setup"
-        title="Markets"
-        chips={[{ label: `${rows.length} market${rows.length === 1 ? '' : 's'}`, tone: rows.length ? 'ok' : 'warn' }, { label: `${totalCountries} countries`, tone: 'neutral' }]}
-        action={<a href="#add-market" className={buttonClass}>+ Add market</a>}
-      />
+    return <AdminSettingsShell active="markets" organizationName={organization.name} missingCount={rows.length === 0 ? 1 : 0} navDots={navDots} tbarChips={[{ label: `${rows.length} market${rows.length === 1 ? '' : 's'}`, tone: rows.length ? 'ok' : 'warn' }, { label: `${totalCountries} countries`, tone: 'neutral' }]} tbarAction={<a href="#add-market" className={buttonClass}>+ Add market</a>}>
       <MarketsWorkspace markets={rows} />
       {rows.length === 0
         ? <KitNextStep icon="🌍" label="Add a market to unlock pipeline setup" description="Pipeline stages are blocked until at least one market exists" href="#add-market" warn />

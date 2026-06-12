@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
-import { SectionCard } from '@/components/ui/section-card';
+import { KitCompatSectionCard as SectionCard } from '@/features/admin/components/admin-ui-kit';
 import { StateMessage } from '@/components/ui/state-message';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';

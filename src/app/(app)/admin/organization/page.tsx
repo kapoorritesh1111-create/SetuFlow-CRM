@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';
-import { KitNextStep, KitSectionCard, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { KitNextStep, KitSectionCard } from '@/features/admin/components/admin-ui-kit';
 import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
 import { updateOrganizationProfileV2 } from '@/features/admin/server/organization-profile-actions';
 import { buildAdminUsersViewModel } from '@/features/admin/view-model';
@@ -148,16 +148,11 @@ export default async function AdminOrganizationPage({ searchParams }: { searchPa
   ];
 
   return (
-    <AdminSettingsShell active="profile" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Organization Profile" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }} navDots={navDots}>
-      <KitTbar
-        eyebrow="Workspace"
-        title="Organization Profile"
-        chips={[
-          { label: orgProfile.slug ?? 'slug unset', tone: orgProfile.slug ? 'info' : 'warn' },
-          { label: selectedCountry?.name ?? 'Country unset', tone: selectedCountry ? 'neutral' : 'warn' },
-          { label: orgProfile.default_currency ?? suggestedCurrency, tone: 'info' },
-        ]}
-      />
+    <AdminSettingsShell active="profile" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Organization Profile" gapItems={gapItems} navCounts={{ users: summary.totalUsers, invitations: openInvitations, security: gapItems.length }} navDots={navDots} tbarChips={[
+        { label: orgProfile.slug ?? 'slug unset', tone: orgProfile.slug ? 'info' : 'warn' },
+        { label: selectedCountry?.name ?? 'Country unset', tone: selectedCountry ? 'neutral' : 'warn' },
+        { label: orgProfile.default_currency ?? suggestedCurrency, tone: 'info' },
+      ]}>
       
 
       {notice ? <StateMessage title={notice.title} description={notice.description} tone={notice.tone} /> : null}

@@ -380,6 +380,9 @@ export function AppShell({ children, profile, organization, membership, currentR
   const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const desktopOnlyRoutes = ['/pipeline', '/quotes', '/products', '/admin', '/approval-send', '/reports'];
   const isDesktopOnlyRoute = desktopOnlyRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  // S24-ADMUX-38: /admin/* renders full-bleed — the Admin UX V2 chrome (dark org/page
+  // rows + 204px sidebar) owns the viewport; the app header and icon rail are suppressed.
+  const isAdminFullBleed = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
     setDesktopSidebarMode(normalizeSidebarMode(window.localStorage.getItem(DESKTOP_SIDEBAR_KEY)));
@@ -428,6 +431,21 @@ export function AppShell({ children, profile, organization, membership, currentR
 
   return (
     <>
+      {isAdminFullBleed ? (
+        <div className="min-h-screen bg-[#eef2f7]">
+          <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">
+            Skip to content
+          </a>
+          <main id="app-content" className="min-w-0">
+            <DesktopRedirect />
+            <div className="hidden md:block">{children}</div>
+          </main>
+          <div className="md:hidden">
+            <MobileTabBar />
+          </div>
+        </div>
+      ) : (
+      <>
       {shouldUseCanonicalMobileShell ? (
         <div className="md:hidden">
           <MobileShell signedIn={signedInForMobile} canonical>
@@ -492,6 +510,8 @@ export function AppShell({ children, profile, organization, membership, currentR
         </Link>
         <MobileTabBar />
       </div>
+      </>
+      )}
       <SetuGuruWidget pathname={pathname} routeTitle={routeMeta.title} organizationName={organization?.name} roleLabel={roleLabel} />
     </>
   );

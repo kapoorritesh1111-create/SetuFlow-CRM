@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SectionCard } from '@/components/ui/section-card';
+import { KitCompatSectionCard as SectionCard } from '@/features/admin/components/admin-ui-kit';
 import { StateMessage } from '@/components/ui/state-message';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AdminPageHero, AdminSettingsShell, type AdminGapItem } from '@/features/admin/components/admin-settings-shell';

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { SectionCard } from '@/components/ui/section-card';
+import { KitCompatSectionCard as SectionCard } from '@/features/admin/components/admin-ui-kit';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ActivityTimeline } from '@/components/ui/activity-timeline';

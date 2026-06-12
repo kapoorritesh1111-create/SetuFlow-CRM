@@ -82,7 +82,7 @@ export function TermsEditor({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+        className="flex w-full items-center justify-between rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
       >
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{label}</p>
@@ -150,7 +150,7 @@ export function BankDetailsEditor({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+        className="flex w-full items-center justify-between rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
       >
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Bank details</p>
@@ -216,7 +216,7 @@ export function ExportDeclarationsEditor({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+        className="flex w-full items-center justify-between rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
       >
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">

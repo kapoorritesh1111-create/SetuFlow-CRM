@@ -195,6 +195,8 @@ export function AdminSettingsShell({
   navCounts,
   navDots,
   internalTools,
+  tbarChips = [],
+  tbarAction,
   children,
 }: {
   active: AdminNavKey;
@@ -205,6 +207,10 @@ export function AdminSettingsShell({
   navCounts?: Partial<Record<'users' | 'invitations' | 'security', number>>;
   /** S24-ADMUX-31: live status dots per nav key, computed from org state (see getAdminNavSignals). */
   navDots?: Partial<Record<string, 'ok' | 'warn' | 'danger'>>;
+  /** S24-ADMUX-39: page state chips rendered in the single shell tbar. */
+  tbarChips?: Array<{ label: string; tone?: 'ok' | 'warn' | 'info' | 'neutral' | 'purple' | 'danger' }>;
+  /** S24-ADMUX-39: primary page action rendered at the right of the shell tbar. */
+  tbarAction?: ReactNode;
   /** S24-ADMUX-26: explicit HQ flag from isSetuInternalOrganization(); overrides the name heuristic. */
   internalTools?: boolean;
   children?: ReactNode;
@@ -216,7 +222,7 @@ export function AdminSettingsShell({
   const orgLabel = showInternalOnlyTools ? 'Owner · Full access' : 'Owner · Managed workspace';
 
   return (
-    <section className="overflow-hidden rounded-none bg-slate-50 text-slate-800 shadow-[0_1px_8px_rgba(15,23,42,0.06)] lg:rounded-[1.5rem]">
+    <section className="min-h-screen bg-slate-50 text-slate-800">
       <div className="sticky top-0 z-30 bg-slate-950 text-white shadow-[0_1px_0_rgba(255,255,255,0.07)]">
         <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2">
           <Link
@@ -248,7 +254,7 @@ export function AdminSettingsShell({
         </div>
       </div>
 
-      <div className="grid min-h-[calc(100vh-8rem)] lg:grid-cols-[204px_minmax(0,1fr)]">
+      <div className="grid min-h-[calc(100vh-72px)] lg:grid-cols-[204px_minmax(0,1fr)]">
         <aside className="border-r border-slate-200 bg-white py-2 lg:sticky lg:top-[5.2rem] lg:max-h-[calc(100vh-5.2rem)] lg:self-start lg:overflow-y-auto">
           <nav className="space-y-1">
             {sections.map((section, index) => {
@@ -322,13 +328,29 @@ export function AdminSettingsShell({
               <h1 className="text-base font-extrabold tracking-[-0.02em] text-slate-950">{activeItem?.label ?? 'Admin'}</h1>
             </div>
             <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+              {tbarChips.map((chip) => {
+                const chipTone: Record<string, string> = {
+                  ok: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                  warn: 'border-amber-300 bg-amber-50 text-amber-700',
+                  info: 'border-blue-200 bg-blue-50 text-blue-700',
+                  neutral: 'border-slate-200 bg-slate-50 text-slate-600',
+                  purple: 'border-violet-200 bg-violet-50 text-violet-700',
+                  danger: 'border-rose-200 bg-rose-50 text-rose-700',
+                };
+                return (
+                  <span key={chip.label} className={cn('whitespace-nowrap rounded-full border px-2 py-[3px] text-[10px] font-semibold', chipTone[chip.tone ?? 'neutral'])}>
+                    {chip.label}
+                  </span>
+                );
+              })}
               <span className={cn('rounded-full border px-2 py-1 text-[10px] font-bold', missingCount > 0 ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>
                 {missingCount > 0 ? `⚠ ${missingCount} gap${missingCount === 1 ? '' : 's'}` : '✓ Governance clear'}
               </span>
               <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">{organizationName}</span>
+              {tbarAction}
             </div>
           </div>
-          <div className="space-y-4 px-5 py-4 lg:px-5 lg:py-4">
+          <div className="space-y-3 px-[22px] pb-12 pt-3.5">
             <GovernanceBanner missingCount={missingCount} gapItems={gapItems} />
             {children}
           </div>
@@ -351,25 +373,21 @@ export function AdminPageHero({
   cta?: ReactNode;
   stats?: Array<{ label: string; value: string | number; tone?: 'default' | 'success' | 'warning' | 'danger' | 'info' }>;
 }) {
+  // S24-ADMUX-39/40: the shell tbar is the single page header. This legacy hero
+  // now renders only its state chips and CTA as a slim strip — no duplicate
+  // title/description block.
+  void description;
+  if (!badge && !cta && (!stats || stats.length === 0)) return null;
   return (
-    <section className="rounded-[13px] border border-slate-200 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <p className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] text-slate-400">Admin & Settings</p>
-          <h2 className="mt-1 text-lg font-extrabold tracking-[-0.02em] text-slate-950">{title}</h2>
-          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">{description}</p>
-        </div>
-        <div className="flex shrink-0 flex-wrap justify-start gap-1.5 md:justify-end">
-          {badge ? <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[10px] font-bold text-teal-700">{badge}</span> : null}
-          {stats?.map((stat) => (
-            <span key={stat.label} className={cn('rounded-full border px-2.5 py-1 text-[10px] font-bold', stat.tone === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-700' : stat.tone === 'danger' ? 'border-rose-200 bg-rose-50 text-rose-700' : stat.tone === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700')}>
-              {stat.label}: {stat.value}
-            </span>
-          ))}
-          {cta}
-        </div>
-      </div>
-    </section>
+    <div className="flex flex-wrap items-center justify-end gap-1.5" aria-label={title}>
+      {badge ? <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-[3px] text-[10px] font-bold text-teal-700">{badge}</span> : null}
+      {stats?.map((stat) => (
+        <span key={stat.label} className={cn('rounded-full border px-2 py-[3px] text-[10px] font-semibold', stat.tone === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-700' : stat.tone === 'danger' ? 'border-rose-200 bg-rose-50 text-rose-700' : stat.tone === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700')}>
+          {stat.label}: {stat.value}
+        </span>
+      ))}
+      {cta}
+    </div>
   );
 }
 

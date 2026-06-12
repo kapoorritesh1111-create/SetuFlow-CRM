@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SectionCard } from '@/components/ui/section-card';
+import { KitCompatSectionCard as SectionCard } from '@/features/admin/components/admin-ui-kit';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AICompactActionBrief } from '@/features/ai/ui/intelligence-panels';
@@ -95,8 +95,8 @@ export function OrganizationWorkspace({
         actions={
           <>
             <Link href={primaryLaneHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">{primaryLaneLabel}</Link>
-            <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
-            <Link href="/admin/organization#settings-lists" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
+            <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
+            <Link href="/admin/organization#settings-lists" className="inline-flex min-h-12 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
           </>
         }
         meta={

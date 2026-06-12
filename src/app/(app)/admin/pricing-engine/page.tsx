@@ -1,7 +1,7 @@
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
-import { KitNextStep, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
 import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
-import { SectionCard } from '@/components/ui/section-card';
+import { KitCompatSectionCard as SectionCard } from '@/features/admin/components/admin-ui-kit';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -42,16 +42,11 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
   const { dots: navDots } = await getAdminNavSignals(supabaseForSignals, organization.id, threshold);
   const currency  = org.default_currency ?? 'USD';
   return (
-    <AdminSettingsShell active="pricing-engine" organizationName={organization.name} sectionTitle="Pricing Engine" navDots={navDots}>
-      <KitTbar
-        eyebrow="Commerce Rules"
-        title="Pricing Engine"
-        chips={[
-          { label: threshold != null ? `Threshold: ${threshold}%` : '⚠ Not set', tone: threshold != null ? 'ok' : 'warn' },
-          { label: currency, tone: 'info' },
-        ]}
-      />
-      {params.notice === 'saved' && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✓ Pricing controls saved.</div>}
+    <AdminSettingsShell active="pricing-engine" organizationName={organization.name} sectionTitle="Pricing Engine" navDots={navDots} tbarChips={[
+        { label: threshold != null ? `Threshold: ${threshold}%` : '⚠ Not set', tone: threshold != null ? 'ok' : 'warn' },
+        { label: currency, tone: 'info' },
+      ]}>
+      {params.notice === 'saved' && <div className="rounded-[9px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">✓ Pricing controls saved.</div>}
       <SectionCard title="Approval & override controls" eyebrow="Commerce">
         <form action={savePricingControls} className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -77,21 +72,21 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
               { name: 'allow_fx_override', label: 'Allow manual FX override', desc: 'Operators can override FX when quoting', checked: org.allow_fx_override ?? true },
               { name: 'require_approval',  label: 'Require approval for override', desc: 'Approval needed before margin override applies', checked: org.require_override_approval ?? true },
             ].map((t) => (
-              <label key={t.name} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer hover:bg-slate-100 transition">
-                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-4 w-4 rounded accent-slate-900" />
+              <label key={t.name} className="flex items-center gap-3 rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2 cursor-pointer hover:bg-slate-100 transition">
+                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-[14px] w-[14px] rounded accent-[#1F487C]" />
                 <div>
-                  <p className="text-sm font-bold text-slate-900">{t.label}</p>
+                  <p className="text-xs font-bold text-slate-900">{t.label}</p>
                   <p className="text-xs text-slate-500">{t.desc}</p>
                 </div>
               </label>
             ))}
           </div>
           <div className="flex justify-end pt-2">
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 py-2 text-sm font-semibold text-white hover:bg-[#13305a] transition">Save</button>
+            <button type="submit" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#13305a] transition">Save</button>
           </div>
         </form>
       </SectionCard>
-      <SectionCard title="Default quote templates" eyebrow="Commerce" actions={<Link href="/admin/document-templates" className="inline-flex min-h-10 items-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">Manage templates →</Link>}>
+      <SectionCard title="Default quote templates" eyebrow="Commerce" actions={<Link href="/admin/document-templates" className="inline-flex min-h-8 items-center rounded-[9px] border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition">Manage templates →</Link>}>
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: 'Chips & snacks', val: 'Snacks Quote v2' }, { label: 'Powders', val: 'Powder Quote Standard' }, { label: 'Combined', val: 'Combined Quote Template' }].map((t) => (
             <label key={t.label} className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">

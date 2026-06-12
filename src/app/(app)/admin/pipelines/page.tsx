@@ -1,7 +1,7 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { StagesAdminWorkspace } from '@/features/admin/components/admin-reference-workspaces';
-import { KitNextStep, KitTbar } from '@/features/admin/components/admin-ui-kit';
+import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
 import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
 import { hasSupabaseEnv } from '@/lib/env';
 import { isSetuInternalOrganization, requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -61,16 +61,12 @@ export default async function Page() {
       missingCount={missingCount}
       sectionTitle="Pipelines & Stages"
       navDots={navDots}
+      tbarChips={[
+        { label: `${pipelines.length} pipeline${pipelines.length === 1 ? '' : 's'}`, tone: pipelines.length ? 'ok' : 'warn' },
+        { label: `${stages.length} stage${stages.length === 1 ? '' : 's'}`, tone: stages.length ? 'neutral' : 'warn' },
+      ]}
+      tbarAction={<a href="#add-pipeline-drawer" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">+ New pipeline</a>}
     >
-      <KitTbar
-        eyebrow="Trade Setup"
-        title="Pipelines & Stages"
-        chips={[
-          { label: `${pipelines.length} pipeline${pipelines.length === 1 ? '' : 's'}`, tone: pipelines.length ? 'ok' : 'warn' },
-          { label: `${stages.length} stage${stages.length === 1 ? '' : 's'}`, tone: stages.length ? 'neutral' : 'warn' },
-        ]}
-        action={<a href="#add-pipeline-drawer" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">+ New pipeline</a>}
-      />
       {counts.markets === 0 ? (
         <div className="rounded-[9px] border border-dashed border-amber-300 bg-amber-50 p-3.5 text-[11.5px] leading-[1.6] text-amber-900">
           <strong>⚠ Configure markets first</strong>

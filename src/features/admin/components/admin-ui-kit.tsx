@@ -403,3 +403,41 @@ export function KitTbar({
     </div>
   );
 }
+
+/**
+ * S24-ADMUX-40 — drop-in compact replacement for the roomy ui SectionCard,
+ * matching the design contract's .sc geometry (13px radius, 11px header
+ * padding, 13px body padding). Same props API so admin files can swap the
+ * import line without touching call sites.
+ */
+export function KitCompatSectionCard({
+  className,
+  title,
+  eyebrow,
+  description,
+  actions,
+  children,
+}: {
+  className?: string;
+  title?: string;
+  eyebrow?: string;
+  description?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  void description;
+  return (
+    <section className={cn('overflow-visible rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]', className)}>
+      {title || eyebrow || actions ? (
+        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
+          <div className="min-w-0 flex-1">
+            {eyebrow ? <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">{eyebrow}</p> : null}
+            {title ? <h2 className="truncate text-[13px] font-bold text-slate-950">{title}</h2> : null}
+          </div>
+          {actions ? <div className="flex shrink-0 flex-wrap items-center gap-1.5">{actions}</div> : null}
+        </div>
+      ) : null}
+      <div className="px-4 py-3.5">{children}</div>
+    </section>
+  );
+}

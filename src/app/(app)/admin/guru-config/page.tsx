@@ -1,7 +1,7 @@
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
-import { SectionCard } from '@/components/ui/section-card';
+import { KitCompatSectionCard as SectionCard } from '@/features/admin/components/admin-ui-kit';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -153,10 +153,10 @@ export default async function GuruConfigPage() {
               <label key={t.name} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 cursor-pointer hover:bg-slate-100 transition">
                 <span className="text-lg flex-shrink-0">{t.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-900">{t.label}</p>
+                  <p className="text-xs font-bold text-slate-900">{t.label}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
                 </div>
-                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-4 w-4 rounded accent-slate-900 flex-shrink-0" />
+                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-[14px] w-[14px] rounded accent-[#1F487C] flex-shrink-0" />
               </label>
             ))}
           </div>
