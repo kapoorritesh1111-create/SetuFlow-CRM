@@ -24,9 +24,6 @@ const HEADING_FONT = {
   letterSpacing: '-0.035em',
 } as const;
 
-/* ----------------------------- Inline icons ----------------------------- */
-/* Stroke-style 24x24 icons matching the lucide set used by the Vite app.   */
-
 function iconProps(props: SVGProps<SVGSVGElement>): SVGProps<SVGSVGElement> {
   return {
     xmlns: 'http://www.w3.org/2000/svg',
@@ -119,8 +116,6 @@ const FileSearchIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/* ------------------------------ Scroll reveal --------------------------- */
-
 function Reveal({
   children,
   className = '',
@@ -161,8 +156,6 @@ function Reveal({
     </div>
   );
 }
-
-/* --------------------------------- Data --------------------------------- */
 
 const problemCards = [
   {
@@ -306,33 +299,23 @@ const useOfFunds = [
 const milestones = [
   {
     period: 'Mo 1–3',
-    phase: 'Foundation — India + EU entry',
-    gtm: 'Launch India + EU go-to-market — export-council outreach and first trade-show demos · 10 paying clients',
-    product: 'ML data pipeline live on the audit-log corpus',
-    value: 'Lead-to-quote time cut from days to minutes; zero leads lost after capture',
+    milestone: 'India launch + 15 paying clients + first 2 channel partners',
   },
   {
     period: 'Mo 4–6',
-    phase: 'Funnel — repeatable acquisition',
-    gtm: 'WhatsApp-first inbound + freight-forwarder / export-council partner channel · 20 clients',
-    product: 'Predictive lead scoring + quote-risk scoring shipped',
-    value: 'Higher quote win-rate and margin protection on every deal',
+    milestone: '35 paying clients + first EU customers + AI quote/risk models live',
   },
   {
     period: 'Mo 7–9',
-    phase: 'Localize — EU depth',
-    gtm: 'EU localization — multi-language UI + destination customs templates · 35 clients',
-    product: 'Dispatch-delay prediction + document-intelligence beta',
-    value: 'Fewer port delays; clean commercial-to-ops handoff, no compliance surprises',
+    milestone: '75 paying clients + partner-led pipeline in EU/GCC + document intelligence beta',
   },
   {
     period: 'Mo 10–12',
-    phase: 'Scale-ready — year-two prep',
-    gtm: 'SEA + GCC expansion groundwork + first enterprise pilots · 40–50 clients',
-    product: 'ERP-integration foundations; Seed-ready metrics',
-    value: 'Proven retention + quantified margin/time savings as reference cases',
+    milestone: '120–150 paying clients + $1M ARR run-rate path + seed-ready GTM engine',
   },
 ];
+
+const heroUsps = ['Lead Capture', 'Document Readiness', 'Risk Signal', 'Operator Control'];
 
 function CompCell({ value, isSetu }: { value: string; isSetu: boolean }) {
   if (value === 'yes') {
@@ -356,8 +339,6 @@ function CompCell({ value, isSetu }: { value: string; isSetu: boolean }) {
   );
 }
 
-/* ------------------------------- Lockup logo ---------------------------- */
-
 function LockupLogo({ className = 'h-9 sm:h-10 w-auto' }: { className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -369,8 +350,6 @@ function LockupLogo({ className = 'h-9 sm:h-10 w-auto' }: { className?: string }
     />
   );
 }
-
-/* ------------------------------- Component ------------------------------ */
 
 export function InvestorOverviewPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -395,7 +374,6 @@ export function InvestorOverviewPage() {
 
   return (
     <main className="bg-white" style={{ WebkitFontSmoothing: 'antialiased' }}>
-      {/* Neue Haas webfonts (same sources as the Vite landing) */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link
@@ -480,7 +458,6 @@ export function InvestorOverviewPage() {
           </div>
         </nav>
 
-        {/* Mobile menu overlay */}
         <div
           className={`lg:hidden fixed inset-0 z-20 transition-opacity duration-300 ${
             menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -490,7 +467,6 @@ export function InvestorOverviewPage() {
           <div className="absolute inset-0 bg-[#1f2a1d]/40 backdrop-blur-sm" />
         </div>
 
-        {/* Mobile menu drawer */}
         <div
           className={`lg:hidden fixed top-0 right-0 bottom-0 z-20 w-[85%] max-w-sm bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             menuOpen ? 'translate-x-0' : 'translate-x-full'
@@ -542,7 +518,6 @@ export function InvestorOverviewPage() {
           </div>
         </div>
 
-        {/* Hero copy */}
         <div className="relative z-10 flex flex-col items-center text-center pt-24 sm:pt-28 md:pt-32 px-4 sm:px-6">
           <h1
             className="font-normal leading-[0.95] text-[#336443] text-[2rem] sm:text-4xl md:text-5xl lg:text-[4.75rem] xl:text-[5.25rem] max-w-5xl"
@@ -560,8 +535,7 @@ export function InvestorOverviewPage() {
           </p>
         </div>
 
-        {/* Bottom-left CTA block */}
-        <div className="absolute left-4 right-4 sm:right-auto sm:left-6 md:left-10 bottom-6 sm:bottom-8 md:bottom-10 z-10 max-w-sm">
+        <div className="investor-hero-proof-card absolute left-4 right-4 sm:right-auto sm:left-6 md:left-10 bottom-6 sm:bottom-8 md:bottom-10 z-10 max-w-sm">
           <div className="flex items-center gap-2 text-[#3d5638] sm:text-white/95 mb-3">
             <SparklesIcon className="w-4 h-4" />
             <span className="text-sm font-semibold sm:font-medium">Pre-Seed · $250K–$500K</span>
@@ -570,24 +544,16 @@ export function InvestorOverviewPage() {
             5 paying clients. CAC under $200. 10+ shipped modules. Raising to scale the sales funnel and
             ship ML on the trade data we already capture.
           </p>
-          <div className="flex items-center gap-4 flex-wrap">
-            <a
-              href={INVEST_MAILTO}
-              className="bg-[#3d5638] sm:bg-white hover:bg-[#2d4228] sm:hover:bg-white/90 text-white sm:text-[#1f2a1d] text-sm font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full transition-colors shadow-sm"
-            >
-              Request the Deck
-            </a>
-            <a
-              href="#traction"
-              className="text-[#3d5638] sm:text-white text-sm font-semibold sm:font-medium hover:opacity-80 transition-opacity"
-            >
-              See traction.
-            </a>
+          <div className="investor-hero-usp-row grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {heroUsps.map((usp) => (
+              <span key={usp} className="investor-hero-usp-pill">
+                {usp}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* The Problem */}
       <section id="problem" className="bg-white py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -626,7 +592,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* Market / Why now */}
       <section id="market" className="bg-[#f6f7f4] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -677,7 +642,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* Competitive Landscape */}
       <section id="competitive" className="bg-[#1f2a1d] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -746,7 +710,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* Traction */}
       <section id="traction" className="bg-white py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -805,7 +768,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* ML Roadmap */}
       <section id="roadmap" className="bg-[#f6f7f4] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -846,7 +808,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* Business Model */}
       <section id="model" className="bg-white py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -941,7 +902,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* The Round */}
       <section id="round" className="bg-[#1f2a1d] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -993,23 +953,9 @@ export function InvestorOverviewPage() {
               <div className="grid sm:grid-cols-2 gap-5">
                 {milestones.map((m) => (
                   <div key={m.period} className="rounded-2xl border border-white/10 p-5 sm:p-6 h-full">
-                    <div className="flex items-baseline gap-3 mb-3">
-                      <span className="text-sm font-semibold text-[#85AB8B]">{m.period}</span>
-                      <span className="text-xs text-white/50">{m.phase}</span>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {[
-                        { tag: 'GTM', text: m.gtm },
-                        { tag: 'Product', text: m.product },
-                        { tag: 'Value', text: m.value },
-                      ].map((row) => (
-                        <div key={row.tag} className="flex gap-3">
-                          <span className="shrink-0 w-16 text-[11px] font-semibold uppercase tracking-wider text-white/40 pt-0.5">
-                            {row.tag}
-                          </span>
-                          <span className="text-sm text-white/80 leading-relaxed">{row.text}</span>
-                        </div>
-                      ))}
+                    <div className="flex items-start gap-4">
+                      <span className="shrink-0 text-sm font-semibold text-[#85AB8B]">{m.period}</span>
+                      <span className="text-sm text-white/85 leading-relaxed">{m.milestone}</span>
                     </div>
                   </div>
                 ))}
@@ -1034,7 +980,6 @@ export function InvestorOverviewPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-[#1f2a1d] border-t border-white/10 px-4 sm:px-6 md:px-10 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
