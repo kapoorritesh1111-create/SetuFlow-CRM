@@ -87,14 +87,6 @@ function CrmFeatureOverlay({ phase, reducedMotion }: { phase: CrmPhase; reducedM
                   );
                 })}
               </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {['Next action', 'Document readiness', 'Risk signal'].map((label) => (
-                  <span key={label} className="rounded-full border border-white/18 bg-white/12 px-2.5 py-1.5 text-center text-[10px] font-bold text-white/90">
-                    {label}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
         </div>

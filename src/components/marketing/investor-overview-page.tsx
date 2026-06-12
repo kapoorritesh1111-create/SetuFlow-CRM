@@ -1,15 +1,6 @@
 'use client';
 
-/**
- * Investor Overview — native Next.js port of the SetuFlowLanding Vite app.
- * S24-BUG-217: replaces the next.config proxy rewrite to setu-flow-landing.vercel.app
- * S24-UI-218: uses the scalable lockup SVG (/logos/setu-flow-lockup.svg)
- *
- * 1:1 content + layout parity with SetuFlowLanding-master/src/App.tsx,
- * with lucide-react icons replaced by inline SVGs (lucide is not a CRM dependency).
- */
-
-import { useState, useEffect, useRef, ReactNode, SVGProps } from 'react';
+import { ReactNode, SVGProps, useEffect, useRef, useState } from 'react';
 import BoomerangVideoBg from './boomerang-video-bg';
 
 const BG_VIDEO =
@@ -23,9 +14,6 @@ const HEADING_FONT = {
     '"Neue Haas Grotesk Display Pro 55 Roman", "Neue Haas Grotesk Text Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
   letterSpacing: '-0.035em',
 } as const;
-
-/* ----------------------------- Inline icons ----------------------------- */
-/* Stroke-style 24x24 icons matching the lucide set used by the Vite app.   */
 
 function iconProps(props: SVGProps<SVGSVGElement>): SVGProps<SVGSVGElement> {
   return {
@@ -119,17 +107,7 @@ const FileSearchIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/* ------------------------------ Scroll reveal --------------------------- */
-
-function Reveal({
-  children,
-  className = '',
-  delay = 0,
-}: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
-}) {
+function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
 
@@ -152,9 +130,7 @@ function Reveal({
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${
-        shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-      } ${className}`}
+      className={`transition-all duration-700 ease-out ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
@@ -162,7 +138,7 @@ function Reveal({
   );
 }
 
-/* --------------------------------- Data --------------------------------- */
+const heroUsps = ['Lead Capture', 'Document Readiness', 'Risk Signal', 'Operator Control'];
 
 const problemCards = [
   {
@@ -218,14 +194,11 @@ const compRows = [
   { cap: 'Live FX rate locked at quote time', cells: ['no', 'no', '~ Treasury', 'yes'] },
   { cap: 'WhatsApp quote delivery', cells: ['no', 'no', 'no', 'yes'] },
   { cap: 'Stage Move Readiness (9-point gate)', cells: ['no', 'no', 'no', 'yes'] },
-  { cap: 'Mobile-native app (purpose-built)', cells: ['no', 'no', 'no', 'yes'] },
+  { cap: 'Mobile-native app purpose-built for trade', cells: ['no', 'no', 'no', 'yes'] },
   { cap: 'Business-card OCR → lead in 30s', cells: ['no', '~', 'no', 'yes'] },
   { cap: 'Country compliance by destination', cells: ['no', 'no', '~ Enterprise', 'yes'] },
   { cap: 'AI priority + risk + delay scoring', cells: ['no', 'no', 'no', 'yes'] },
-  {
-    cap: 'Time to value · 20-person team',
-    cells: ['Never', '2–4 weeks', '3–6 months · $50k', '<5 days · no fee'],
-  },
+  { cap: 'Time to value · 20-person team', cells: ['Never', '2–4 weeks', '3–6 months · $50k', '<5 days · no fee'] },
 ];
 
 const mlRoadmap = [
@@ -237,7 +210,7 @@ const mlRoadmap = [
   {
     icon: TargetIcon,
     title: 'Predictive Lead Scoring',
-    body: 'Upgrades the shipped rule-based lead health (fresh / stalled / at-risk) to learned conversion scoring from event source, response latency, and buyer-interaction signals.',
+    body: 'Upgrades the shipped rule-based lead health to learned conversion scoring from event source, response latency, and buyer-interaction signals.',
   },
   {
     icon: TruckIcon,
@@ -257,13 +230,7 @@ const pricingTiers = [
     price: '$199',
     cadence: '/mo · up to 5 users',
     note: '1–5 person export desks · India tier-2 cities · GCC SMBs',
-    features: [
-      'Pipeline + lead management',
-      'Quote builder (FOB/CIF/Ex-Factory)',
-      'vCard + QR + OCR capture',
-      'Mobile app',
-      'Up to 3 trade events / year',
-    ],
+    features: ['Pipeline + lead management', 'Quote builder', 'vCard + QR + OCR capture', 'Mobile app', 'Up to 3 trade events / year'],
     featured: false,
   },
   {
@@ -271,13 +238,7 @@ const pricingTiers = [
     price: '$499',
     cadence: '/mo · up to 10 users',
     note: 'Primary revenue tier · 50–200 person trading companies',
-    features: [
-      'Everything in Starter',
-      'AI Assist (priority, risk, delay)',
-      'WhatsApp quote delivery',
-      'Compliance + document workspace',
-      'Product catalog + market pricing',
-    ],
+    features: ['Everything in Starter', 'AI Assist', 'WhatsApp quote delivery', 'Compliance + document workspace', 'Product catalog + market pricing'],
     featured: true,
   },
   {
@@ -285,13 +246,7 @@ const pricingTiers = [
     price: 'Custom',
     cadence: 'multi-team · dedicated support',
     note: 'Custom workflows · approval thresholds',
-    features: [
-      'Everything in Growth',
-      'Unlimited users + custom roles',
-      'ERP integrations',
-      'Dedicated onboarding + SLA',
-      'Approval threshold customization',
-    ],
+    features: ['Everything in Growth', 'Unlimited users + custom roles', 'ERP integrations', 'Dedicated onboarding + SLA', 'Approval threshold customization'],
     featured: false,
   },
 ];
@@ -306,81 +261,67 @@ const useOfFunds = [
 const milestones = [
   {
     period: 'Mo 1–3',
-    phase: 'Foundation — India + EU entry',
-    gtm: 'Launch India + EU go-to-market — export-council outreach and first trade-show demos · 10 paying clients',
-    product: 'ML data pipeline live on the audit-log corpus',
-    value: 'Lead-to-quote time cut from days to minutes; zero leads lost after capture',
+    phase: 'Launch — India wedge',
+    gtm: 'India launch + 15 paying clients + first 2 channel partners',
+    product: 'Lead capture, quote workflow, document readiness, and Setu Guru signals hardened for repeatable onboarding',
+    value: 'Prove <5 day time-to-value and repeatable founder-led conversion from trade-event leads',
   },
   {
     period: 'Mo 4–6',
-    phase: 'Funnel — repeatable acquisition',
-    gtm: 'WhatsApp-first inbound + freight-forwarder / export-council partner channel · 20 clients',
-    product: 'Predictive lead scoring + quote-risk scoring shipped',
-    value: 'Higher quote win-rate and margin protection on every deal',
+    phase: 'Scale — repeatable acquisition',
+    gtm: '35 paying clients + first EU customers',
+    product: 'AI quote/risk models live across quote risk, margin protection, and lead prioritization',
+    value: 'Show measurable quote speed, win-rate lift, and reduced margin leakage for SMB exporters',
   },
   {
     period: 'Mo 7–9',
-    phase: 'Localize — EU depth',
-    gtm: 'EU localization — multi-language UI + destination customs templates · 35 clients',
-    product: 'Dispatch-delay prediction + document-intelligence beta',
-    value: 'Fewer port delays; clean commercial-to-ops handoff, no compliance surprises',
+    phase: 'Expand — EU/GCC pipeline',
+    gtm: '75 paying clients + partner-led pipeline in EU/GCC',
+    product: 'Document intelligence beta and destination compliance workflows live for priority corridors',
+    value: 'Reduce document misses, shipment blockers, and compliance surprises before ops handoff',
   },
   {
     period: 'Mo 10–12',
-    phase: 'Scale-ready — year-two prep',
-    gtm: 'SEA + GCC expansion groundwork + first enterprise pilots · 40–50 clients',
-    product: 'ERP-integration foundations; Seed-ready metrics',
-    value: 'Proven retention + quantified margin/time savings as reference cases',
+    phase: 'Seed-ready — category wedge',
+    gtm: '120–150 paying clients + $1M ARR run-rate path',
+    product: 'Seed-ready GTM engine, ERP integration foundations, and investor-grade cohort reporting',
+    value: 'Demonstrate retention, expansion path, and AI-assisted trade execution metrics for Seed raise',
   },
 ];
+
+function LockupLogo({ className = 'h-9 sm:h-10 w-auto' }: { className?: string }) {
+  return <img src="/logos/setu-flow-lockup.svg" alt="Setu Flow" className={className} draggable={false} />;
+}
 
 function CompCell({ value, isSetu }: { value: string; isSetu: boolean }) {
   if (value === 'yes') {
     return (
-      <span
-        className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
-          isSetu ? 'bg-[#85AB8B]/20 text-[#85AB8B]' : 'bg-white/10 text-white/70'
-        }`}
-      >
+      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${isSetu ? 'bg-[#85AB8B]/20 text-[#85AB8B]' : 'bg-white/10 text-white/70'}`}>
         <CheckIcon className="w-3.5 h-3.5" />
       </span>
     );
   }
-  if (value === 'no') {
-    return <XIcon className="w-4 h-4 text-white/25 mx-auto" />;
-  }
-  return (
-    <span className={`text-xs ${isSetu ? 'text-[#85AB8B] font-medium' : 'text-white/55'}`}>
-      {value}
-    </span>
-  );
+  if (value === 'no') return <XIcon className="w-4 h-4 text-white/25 mx-auto" />;
+  return <span className={`text-xs ${isSetu ? 'text-[#85AB8B] font-medium' : 'text-white/55'}`}>{value}</span>;
 }
 
-/* ------------------------------- Lockup logo ---------------------------- */
-
-function LockupLogo({ className = 'h-9 sm:h-10 w-auto' }: { className?: string }) {
+function SectionHeading({ eyebrow, title, accent, body, dark = false }: { eyebrow: string; title: string; accent: string; body?: string; dark?: boolean }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/logos/setu-flow-lockup.svg"
-      alt="Setu Flow"
-      className={className}
-      draggable={false}
-    />
+    <Reveal>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">{eyebrow}</p>
+      <h2 className={`${dark ? 'text-white' : 'text-[#336443]'} font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl`} style={HEADING_FONT}>
+        {title} <span className="text-[#85AB8B]">{accent}</span>
+      </h2>
+      {body ? <p className={`mt-5 ${dark ? 'text-white/75' : 'text-[#4b5b47]'} text-sm sm:text-base leading-relaxed max-w-2xl`}>{body}</p> : null}
+    </Reveal>
   );
 }
-
-/* ------------------------------- Component ------------------------------ */
 
 export function InvestorOverviewPage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
@@ -395,213 +336,72 @@ export function InvestorOverviewPage() {
 
   return (
     <main className="bg-white" style={{ WebkitFontSmoothing: 'antialiased' }}>
-      {/* Neue Haas webfonts (same sources as the Vite landing) */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
-      <link
-        href="https://db.onlinewebfonts.com/c/6e47ef470dd19698c911332a9b4d1cf4?family=Neue+Haas+Grotesk+Text+Pro"
-        rel="stylesheet"
-      />
-      <link
-        href="https://db.onlinewebfonts.com/c/dec0d9b4e22ca588dc20e1e2e09a59b5?family=Neue+Haas+Grotesk+Display+Pro+55+Roman"
-        rel="stylesheet"
-      />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://db.onlinewebfonts.com/c/6e47ef470dd19698c911332a9b4d1cf4?family=Neue+Haas+Grotesk+Text+Pro" rel="stylesheet" />
+      <link href="https://db.onlinewebfonts.com/c/dec0d9b4e22ca588dc20e1e2e09a59b5?family=Neue+Haas+Grotesk+Display+Pro+55+Roman" rel="stylesheet" />
 
       <section className="relative w-full min-h-screen sm:h-screen overflow-hidden">
         <BoomerangVideoBg src={BG_VIDEO} className="absolute inset-0 w-full h-full" />
         <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 sm:px-6 md:px-10 py-4 sm:py-6">
           <div className="flex items-center gap-3 text-[#2d3a2a]">
-            <a href="/" aria-label="Setu Flow home" className="inline-flex items-center">
-              <LockupLogo />
-            </a>
-            <span className="hidden md:inline-block text-[11px] font-semibold uppercase tracking-wider text-[#3d5638] bg-white/70 backdrop-blur-md border border-white/60 rounded-full px-3 py-1">
-              Investor Overview
-            </span>
+            <a href="/" aria-label="Setu Flow home" className="inline-flex items-center"><LockupLogo /></a>
+            <span className="hidden md:inline-block text-[11px] font-semibold uppercase tracking-wider text-[#3d5638] bg-white/70 backdrop-blur-md border border-white/60 rounded-full px-3 py-1">Investor Overview</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-1 bg-white/70 backdrop-blur-md rounded-full pl-6 pr-1 py-1 shadow-sm border border-white/60">
             {navLinks.map((link, i) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`text-sm px-3 py-2 transition-colors ${
-                  i === 0 ? 'font-semibold text-[#1f2a1d]' : 'font-medium text-[#4b5b47] hover:text-[#1f2a1d]'
-                }`}
-              >
-                {link.label}
-              </a>
+              <a key={link.href} href={link.href} className={`text-sm px-3 py-2 transition-colors ${i === 0 ? 'font-semibold text-[#1f2a1d]' : 'font-medium text-[#4b5b47] hover:text-[#1f2a1d]'}`}>{link.label}</a>
             ))}
-            <a
-              href={INVEST_MAILTO}
-              className="ml-2 bg-[#1f2a1d] hover:bg-[#2a3827] text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors"
-            >
-              Request the Deck
-            </a>
+            <a href={INVEST_MAILTO} className="ml-2 bg-[#1f2a1d] hover:bg-[#2a3827] text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors">Request the Deck</a>
           </div>
 
           <div className="flex items-center gap-3 sm:gap-6 text-[#2d3a2a]">
-            <a
-              href="https://www.setuflowcrm.com"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden sm:flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
-            >
-              <GlobeIcon className="w-4 h-4" />
-              Product Site
-            </a>
-            <a
-              href={INVEST_MAILTO}
-              className="hidden sm:flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
-            >
-              <MailIcon className="w-4 h-4" />
-              {INVEST_EMAIL}
-            </a>
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="lg:hidden relative flex items-center justify-center w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-white/60 text-[#1f2a1d] transition-all duration-300 hover:bg-white/90"
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-            >
-              <MenuIcon
-                className={`w-5 h-5 absolute transition-all duration-300 ${
-                  menuOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'
-                }`}
-              />
-              <XIcon
-                className={`w-5 h-5 absolute transition-all duration-300 ${
-                  menuOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'
-                }`}
-              />
+            <a href="https://www.setuflowcrm.com" target="_blank" rel="noreferrer" className="hidden sm:flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"><GlobeIcon className="w-4 h-4" />Product Site</a>
+            <a href={INVEST_MAILTO} className="hidden sm:flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"><MailIcon className="w-4 h-4" />{INVEST_EMAIL}</a>
+            <button onClick={() => setMenuOpen((v) => !v)} className="lg:hidden relative flex items-center justify-center w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-white/60 text-[#1f2a1d]" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>
+              {menuOpen ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
             </button>
           </div>
         </nav>
 
-        {/* Mobile menu overlay */}
-        <div
-          className={`lg:hidden fixed inset-0 z-20 transition-opacity duration-300 ${
-            menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-          onClick={() => setMenuOpen(false)}
-        >
+        <div className={`lg:hidden fixed inset-0 z-20 transition-opacity duration-300 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setMenuOpen(false)}>
           <div className="absolute inset-0 bg-[#1f2a1d]/40 backdrop-blur-sm" />
         </div>
-
-        {/* Mobile menu drawer */}
-        <div
-          className={`lg:hidden fixed top-0 right-0 bottom-0 z-20 w-[85%] max-w-sm bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            menuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
-        >
+        <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-20 w-[85%] max-w-sm bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-500 ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col h-full pt-24 px-8 pb-8">
-            <div className="flex flex-col gap-1">
-              {navLinks.map((link, i) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`text-2xl font-semibold text-[#1f2a1d] py-4 border-b border-[#1f2a1d]/10 transition-all duration-500 ${
-                    menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
-                  }`}
-                  style={{ transitionDelay: menuOpen ? `${150 + i * 70}ms` : '0ms' }}
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-
-            <div
-              className={`mt-8 flex flex-col gap-4 transition-all duration-500 ${
-                menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
-              }`}
-              style={{ transitionDelay: menuOpen ? '400ms' : '0ms' }}
-            >
-              <a
-                href="https://www.setuflowcrm.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-sm font-medium text-[#2d3a2a]"
-              >
-                <GlobeIcon className="w-4 h-4" />
-                Product Site
-              </a>
-              <a href={INVEST_MAILTO} className="flex items-center gap-2 text-sm font-medium text-[#2d3a2a]">
-                <MailIcon className="w-4 h-4" />
-                {INVEST_EMAIL}
-              </a>
-              <a
-                href={INVEST_MAILTO}
-                className="mt-2 bg-[#1f2a1d] hover:bg-[#2a3827] text-white text-sm font-semibold px-5 py-3 rounded-full transition-colors text-center"
-              >
-                Request the Deck
-              </a>
-            </div>
+            {navLinks.map((link) => <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="text-2xl font-semibold text-[#1f2a1d] py-4 border-b border-[#1f2a1d]/10">{link.label}</a>)}
+            <a href={INVEST_MAILTO} className="mt-8 bg-[#1f2a1d] text-white text-sm font-semibold px-5 py-3 rounded-full text-center">Request the Deck</a>
           </div>
         </div>
 
-        {/* Hero copy */}
         <div className="relative z-10 flex flex-col items-center text-center pt-24 sm:pt-28 md:pt-32 px-4 sm:px-6">
-          <h1
-            className="font-normal leading-[0.95] text-[#336443] text-[2rem] sm:text-4xl md:text-5xl lg:text-[4.75rem] xl:text-[5.25rem] max-w-5xl"
-            style={HEADING_FONT}
-          >
-            The missing operating layer{' '}
-            <span className="text-[#85AB8B]">
-              for the $10T
-              <br className="hidden sm:block" /> trade economy
-            </span>
+          <h1 className="font-normal leading-[0.95] text-[#336443] text-[2rem] sm:text-4xl md:text-5xl lg:text-[4.75rem] xl:text-[5.25rem] max-w-5xl" style={HEADING_FONT}>
+            The missing operating layer <span className="text-[#85AB8B]">for the $10T<br className="hidden sm:block" /> trade economy</span>
           </h1>
           <p className="mt-6 sm:mt-8 text-[#4b5b47] text-sm sm:text-base md:text-lg leading-relaxed max-w-md px-2">
-            Setu Flow is the trade execution CRM for the 250,000+ SMB import-export teams stuck between
-            Excel and SAP. Live product. Paying clients. Now raising.
+            Setu Flow is the trade execution CRM for the 250,000+ SMB import-export teams stuck between Excel and SAP. Live product. Paying clients. Now raising.
           </p>
         </div>
 
-        {/* Bottom-left CTA block */}
-        <div className="absolute left-4 right-4 sm:right-auto sm:left-6 md:left-10 bottom-6 sm:bottom-8 md:bottom-10 z-10 max-w-sm">
-          <div className="flex items-center gap-2 text-[#3d5638] sm:text-white/95 mb-3">
+        <div className="investor-hero-proof-card absolute left-4 right-4 sm:right-auto sm:left-6 md:left-10 bottom-6 sm:bottom-8 md:bottom-10 z-10 max-w-sm">
+          <div className="flex items-center gap-2 text-white/95 mb-3">
             <SparklesIcon className="w-4 h-4" />
-            <span className="text-sm font-semibold sm:font-medium">Pre-Seed · $250K–$500K</span>
+            <span className="text-sm font-medium">Pre-Seed · $250K–$500K</span>
           </div>
-          <p className="text-[#3d5638]/90 sm:text-white/85 text-xs leading-relaxed mb-6 max-w-xs font-medium sm:font-normal">
-            5 paying clients. CAC under $200. 10+ shipped modules. Raising to scale the sales funnel and
-            ship ML on the trade data we already capture.
+          <p className="text-white/85 text-xs leading-relaxed mb-6 max-w-xs font-normal">
+            5 paying clients. CAC under $200. 10+ shipped modules. Raising to scale the sales funnel and ship ML on the trade data we already capture.
           </p>
-          <div className="flex items-center gap-4 flex-wrap">
-            <a
-              href={INVEST_MAILTO}
-              className="bg-[#3d5638] sm:bg-white hover:bg-[#2d4228] sm:hover:bg-white/90 text-white sm:text-[#1f2a1d] text-sm font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-full transition-colors shadow-sm"
-            >
-              Request the Deck
-            </a>
-            <a
-              href="#traction"
-              className="text-[#3d5638] sm:text-white text-sm font-semibold sm:font-medium hover:opacity-80 transition-opacity"
-            >
-              See traction.
-            </a>
+          <div className="investor-hero-usp-row grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {heroUsps.map((usp) => <span key={usp} className="investor-hero-usp-pill">{usp}</span>)}
           </div>
         </div>
       </section>
 
-      {/* The Problem */}
       <section id="problem" className="bg-white py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">
-              The Problem
-            </p>
-            <h2
-              className="text-[#336443] font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              250,000+ trading companies.{' '}
-              <span className="text-[#85AB8B]">Zero purpose-built software.</span>
-            </h2>
-          </Reveal>
+          <SectionHeading eyebrow="The Problem" title="250,000+ trading companies." accent="Zero purpose-built software." />
           <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {problemCards.map((card, i) => (
               <Reveal key={card.title} delay={i * 70}>
@@ -613,401 +413,139 @@ export function InvestorOverviewPage() {
             ))}
             <Reveal delay={problemCards.length * 70}>
               <div className="rounded-2xl bg-[#1f2a1d] p-6 sm:p-8 h-full">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-3">
-                  The Gap
-                </p>
-                <p className="text-sm text-white/85 leading-relaxed">
-                  Between $0 (Excel) and $50,000 (SAP), there is nothing purpose-built for the 250,000+
-                  SMB trading company. That is the gap Setu Flow is built to own.
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-3">The Gap</p>
+                <p className="text-sm text-white/85 leading-relaxed">Between $0 Excel and $50,000 SAP, there is nothing purpose-built for the 250,000+ SMB trading company. That is the gap Setu Flow is built to own.</p>
               </div>
             </Reveal>
           </div>
         </div>
       </section>
 
-      {/* Market / Why now */}
       <section id="market" className="bg-[#f6f7f4] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">
-              Market · Why Now
-            </p>
-            <h2
-              className="text-[#336443] font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              $2.8B today. $5.7B by 2032.{' '}
-              <span className="text-[#85AB8B]">No dominant player for SMB traders.</span>
-            </h2>
-            <p className="mt-5 text-[#4b5b47] text-sm sm:text-base leading-relaxed max-w-2xl">
-              Post-COVID digitization is only half-done, India&apos;s $1T export mission needs faster quoting,
-              and assistive AI with operator approval is finally enterprise-safe. Three macro forces
-              converge — the window to build the dominant trade OS is open now.
-            </p>
-          </Reveal>
+          <SectionHeading eyebrow="Market · Why Now" title="$2.8B today. $5.7B by 2032." accent="No dominant player for SMB traders." body="Post-COVID digitization is only half-done, India's $1T export mission needs faster quoting, and assistive AI with operator approval is finally enterprise-safe." />
           <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {marketStats.map((stat, i) => (
               <Reveal key={stat.label} delay={i * 80}>
                 <div className="rounded-2xl bg-white border border-[#1f2a1d]/10 p-6 sm:p-8 h-full transition-shadow hover:shadow-md">
-                  <div className="text-3xl sm:text-4xl text-[#336443]" style={HEADING_FONT}>
-                    {stat.value}
-                  </div>
+                  <div className="text-3xl sm:text-4xl text-[#336443]" style={HEADING_FONT}>{stat.value}</div>
                   <div className="mt-2 text-xs sm:text-sm font-medium text-[#4b5b47]">{stat.label}</div>
                 </div>
               </Reveal>
             ))}
           </div>
-          <Reveal delay={240}>
-            <div className="mt-10 rounded-2xl bg-[#1f2a1d] text-white/90 p-6 sm:p-10">
-              <div className="flex items-center gap-2 mb-3">
-                <GlobeIcon className="w-4 h-4 text-[#85AB8B]" />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B]">
-                  A cross-border company by design
-                </span>
-              </div>
-              <p className="text-sm sm:text-base leading-relaxed max-w-3xl">
-                Setu Flow operates on the Import–Export axis: built in Ireland and the USA, going to market
-                in India + EU first, with SEA and GCC expansion staged from year two. Trade software is
-                inherently cross-border — every client connects at least two markets — making distribution
-                expansion a property of the product, not a leap.
-              </p>
-            </div>
-          </Reveal>
         </div>
       </section>
 
-      {/* Competitive Landscape */}
       <section id="competitive" className="bg-[#1f2a1d] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">
-              Competitive Landscape
-            </p>
-            <h2
-              className="text-white font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              Generic CRMs sell pipelines.{' '}
-              <span className="text-[#85AB8B]">Trade teams need execution.</span>
-            </h2>
-          </Reveal>
+          <SectionHeading dark eyebrow="Competitive Landscape" title="Generic CRMs sell pipelines." accent="Trade teams need execution." />
           <Reveal delay={120}>
             <div className="mt-10 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full min-w-[640px] border-collapse">
                 <thead>
                   <tr>
-                    <th className="text-left text-xs font-medium text-white/50 uppercase tracking-wider py-4 pr-4 align-bottom">
-                      Capability
-                    </th>
-                    {compCols.map((col, i) => {
-                      const isSetu = i === compCols.length - 1;
-                      return (
-                        <th
-                          key={col}
-                          className={`py-4 px-3 text-center text-xs font-semibold align-bottom ${
-                            isSetu
-                              ? 'text-[#85AB8B] bg-[#85AB8B]/10 rounded-t-xl'
-                              : 'text-white/60'
-                          }`}
-                        >
-                          {col}
-                        </th>
-                      );
-                    })}
+                    <th className="text-left text-xs font-medium text-white/50 uppercase tracking-wider py-4 pr-4 align-bottom">Capability</th>
+                    {compCols.map((col, i) => <th key={col} className={`py-4 px-3 text-center text-xs font-semibold align-bottom ${i === compCols.length - 1 ? 'text-[#85AB8B] bg-[#85AB8B]/10 rounded-t-xl' : 'text-white/60'}`}>{col}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {compRows.map((row) => (
                     <tr key={row.cap} className="border-t border-white/10">
                       <td className="py-3.5 pr-4 text-sm text-white/85">{row.cap}</td>
-                      {row.cells.map((cell, i) => {
-                        const isSetu = i === row.cells.length - 1;
-                        return (
-                          <td
-                            key={i}
-                            className={`py-3.5 px-3 text-center ${isSetu ? 'bg-[#85AB8B]/10' : ''}`}
-                          >
-                            <CompCell value={cell} isSetu={isSetu} />
-                          </td>
-                        );
-                      })}
+                      {row.cells.map((cell, i) => <td key={i} className={`py-3.5 px-3 text-center ${i === row.cells.length - 1 ? 'bg-[#85AB8B]/10' : ''}`}><CompCell value={cell} isSetu={i === row.cells.length - 1} /></td>)}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </Reveal>
-          <Reveal delay={200}>
-            <p className="mt-6 text-xs text-white/40">
-              ✓ Native · ~ Partial / separate module · ✕ Not present
-            </p>
-          </Reveal>
         </div>
       </section>
 
-      {/* Traction */}
       <section id="traction" className="bg-white py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">Traction</p>
-            <h2
-              className="text-[#336443] font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              Live numbers, <span className="text-[#85AB8B]">not projections.</span>
-            </h2>
-            <p className="mt-5 text-[#4b5b47] text-sm sm:text-base leading-relaxed max-w-xl">
-              Every client below was won founder-led, at trade events, with no paid acquisition — the
-              most capital-efficient validation an early trade-software company can show.
-            </p>
-          </Reveal>
+          <SectionHeading eyebrow="Traction" title="Live numbers," accent="not projections." body="Every client below was won founder-led, at trade events, with no paid acquisition — the most capital-efficient validation an early trade-software company can show." />
           <div className="mt-12 grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {tractionStats.map((stat, i) => (
               <Reveal key={stat.label} delay={i * 80}>
                 <div className="rounded-2xl border border-[#1f2a1d]/10 bg-[#f6f7f4] p-6 sm:p-8 h-full transition-shadow hover:shadow-md">
-                  <div className="text-3xl sm:text-4xl md:text-5xl text-[#336443]" style={HEADING_FONT}>
-                    {stat.value}
-                  </div>
+                  <div className="text-3xl sm:text-4xl md:text-5xl text-[#336443]" style={HEADING_FONT}>{stat.value}</div>
                   <div className="mt-2 text-xs sm:text-sm font-medium text-[#4b5b47]">{stat.label}</div>
                 </div>
               </Reveal>
             ))}
           </div>
-
           <Reveal delay={160}>
             <div className="mt-10 rounded-2xl border border-[#1f2a1d]/10 bg-[#f6f7f4] p-6 sm:p-8">
-              <div className="flex items-center gap-2 mb-5">
-                <GlobeIcon className="w-4 h-4 text-[#336443]" />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3d5638]">
-                  Clients &amp; active pilots across
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {liveCountries.map((c) => (
-                  <span
-                    key={c.name}
-                    className="inline-flex items-center gap-2 rounded-full bg-white border border-[#1f2a1d]/10 px-4 py-2 text-sm font-medium text-[#1f2a1d]"
-                  >
-                    <span className="text-base leading-none">{c.flag}</span>
-                    {c.name}
-                  </span>
-                ))}
-              </div>
+              <div className="flex items-center gap-2 mb-5"><GlobeIcon className="w-4 h-4 text-[#336443]" /><span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3d5638]">Clients &amp; active pilots across</span></div>
+              <div className="flex flex-wrap gap-3">{liveCountries.map((c) => <span key={c.name} className="inline-flex items-center gap-2 rounded-full bg-white border border-[#1f2a1d]/10 px-4 py-2 text-sm font-medium text-[#1f2a1d]"><span className="text-base leading-none">{c.flag}</span>{c.name}</span>)}</div>
             </div>
-          </Reveal>
-
-          <Reveal delay={220}>
-            <p className="mt-8 text-xs text-[#4b5b47]/80">
-              Revenue detail, cohort data, and the full data room are available with the deck.
-            </p>
           </Reveal>
         </div>
       </section>
 
-      {/* ML Roadmap */}
       <section id="roadmap" className="bg-[#f6f7f4] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">
-              ML Roadmap
-            </p>
-            <h2
-              className="text-[#336443] font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              The data is already captured. <span className="text-[#85AB8B]">Now it learns.</span>
-            </h2>
-            <p className="mt-5 text-[#4b5b47] text-sm sm:text-base leading-relaxed max-w-2xl">
-              100% of actions in Setu Flow are audit-logged — quotes, approvals, document states, stage
-              gates. That governed event stream is training data no generic CRM has. This raise ships
-              four models on top of it, each extending a module already in production.
-            </p>
-          </Reveal>
+          <SectionHeading eyebrow="ML Roadmap" title="The data is already captured." accent="Now it learns." body="100% of actions in Setu Flow are audit-logged — quotes, approvals, document states, and stage gates. This raise ships four models on top of that governed event stream." />
           <div className="mt-12 grid sm:grid-cols-2 gap-4 sm:gap-6">
             {mlRoadmap.map((item, i) => (
               <Reveal key={item.title} delay={i * 80}>
                 <div className="rounded-2xl border border-[#1f2a1d]/10 bg-white p-6 sm:p-8 h-full transition-shadow hover:shadow-md">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#336443]/10 text-[#336443] mb-4">
-                    <item.icon className="w-5 h-5" />
-                  </div>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#336443]/10 text-[#336443] mb-4"><item.icon className="w-5 h-5" /></div>
                   <h3 className="text-lg sm:text-xl font-semibold text-[#1f2a1d]">{item.title}</h3>
                   <p className="mt-2 text-sm text-[#4b5b47] leading-relaxed">{item.body}</p>
                 </div>
               </Reveal>
             ))}
           </div>
-          <Reveal delay={200}>
-            <p className="mt-8 text-xs text-[#4b5b47]/80">
-              All models follow the shipped Setu Guru pattern: AI suggests, operator approves, everything
-              audit-logged — the architecture compliance teams in regulated trade can trust.
-            </p>
-          </Reveal>
         </div>
       </section>
 
-      {/* Business Model */}
       <section id="model" className="bg-white py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">
-              Business Model
-            </p>
-            <h2
-              className="text-[#336443] font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              SaaS subscription. No implementation fee.{' '}
-              <span className="text-[#85AB8B]">High gross margin.</span>
-            </h2>
-          </Reveal>
+          <SectionHeading eyebrow="Business Model" title="SaaS subscription. No implementation fee." accent="High gross margin." />
           <div className="mt-12 grid md:grid-cols-3 gap-4 sm:gap-6 items-stretch">
             {pricingTiers.map((tier, i) => (
               <Reveal key={tier.name} delay={i * 90}>
-                <div
-                  className={`rounded-2xl p-6 sm:p-8 h-full border ${
-                    tier.featured
-                      ? 'bg-[#1f2a1d] border-[#1f2a1d] text-white shadow-lg'
-                      : 'bg-[#f6f7f4] border-[#1f2a1d]/10 text-[#1f2a1d]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <h3
-                      className={`text-xl font-semibold ${tier.featured ? 'text-white' : 'text-[#1f2a1d]'}`}
-                    >
-                      {tier.name}
-                    </h3>
-                    {tier.featured && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#85AB8B] text-[#1f2a1d] rounded-full px-2.5 py-1">
-                        Most Popular
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    className={`mt-4 text-4xl ${tier.featured ? 'text-[#85AB8B]' : 'text-[#336443]'}`}
-                    style={HEADING_FONT}
-                  >
-                    {tier.price}
-                  </div>
-                  <div
-                    className={`mt-1 text-xs ${tier.featured ? 'text-white/60' : 'text-[#4b5b47]'}`}
-                  >
-                    {tier.cadence}
-                  </div>
-                  <div
-                    className={`mt-4 text-xs leading-relaxed pb-4 mb-4 border-b ${
-                      tier.featured ? 'text-white/70 border-white/15' : 'text-[#4b5b47] border-[#1f2a1d]/10'
-                    }`}
-                  >
-                    {tier.note}
-                  </div>
-                  <ul className="flex flex-col gap-3">
-                    {tier.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5">
-                        <CheckIcon
-                          className={`w-4 h-4 mt-0.5 shrink-0 ${
-                            tier.featured ? 'text-[#85AB8B]' : 'text-[#336443]'
-                          }`}
-                        />
-                        <span
-                          className={`text-sm ${tier.featured ? 'text-white/85' : 'text-[#4b5b47]'}`}
-                        >
-                          {f}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className={`rounded-2xl p-6 sm:p-8 h-full border ${tier.featured ? 'bg-[#1f2a1d] border-[#1f2a1d] text-white shadow-lg' : 'bg-[#f6f7f4] border-[#1f2a1d]/10 text-[#1f2a1d]'}`}>
+                  <div className="flex items-center justify-between"><h3 className={`text-xl font-semibold ${tier.featured ? 'text-white' : 'text-[#1f2a1d]'}`}>{tier.name}</h3>{tier.featured ? <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#85AB8B] text-[#1f2a1d] rounded-full px-2.5 py-1">Most Popular</span> : null}</div>
+                  <div className={`mt-4 text-4xl ${tier.featured ? 'text-[#85AB8B]' : 'text-[#336443]'}`} style={HEADING_FONT}>{tier.price}</div>
+                  <div className={`mt-1 text-xs ${tier.featured ? 'text-white/60' : 'text-[#4b5b47]'}`}>{tier.cadence}</div>
+                  <div className={`mt-4 text-xs leading-relaxed pb-4 mb-4 border-b ${tier.featured ? 'text-white/70 border-white/15' : 'text-[#4b5b47] border-[#1f2a1d]/10'}`}>{tier.note}</div>
+                  <ul className="flex flex-col gap-3">{tier.features.map((f) => <li key={f} className="flex items-start gap-2.5"><CheckIcon className={`w-4 h-4 mt-0.5 shrink-0 ${tier.featured ? 'text-[#85AB8B]' : 'text-[#336443]'}`} /><span className={`text-sm ${tier.featured ? 'text-white/85' : 'text-[#4b5b47]'}`}>{f}</span></li>)}</ul>
                 </div>
               </Reveal>
             ))}
           </div>
-          <Reveal delay={280}>
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { v: '~$1,000/mo', l: 'Blended ACV' },
-                { v: '~75%', l: 'Gross margin at scale' },
-                { v: '$0', l: 'Implementation fee' },
-                { v: '~10%', l: 'Annual churn assumption' },
-              ].map((m) => (
-                <div key={m.l} className="rounded-2xl border border-[#1f2a1d]/10 bg-[#f6f7f4] p-5">
-                  <div className="text-2xl text-[#336443]" style={HEADING_FONT}>
-                    {m.v}
-                  </div>
-                  <div className="mt-1 text-xs font-medium text-[#4b5b47]">{m.l}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
         </div>
       </section>
 
-      {/* The Round */}
       <section id="round" className="bg-[#1f2a1d] py-20 sm:py-28 px-4 sm:px-6 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#85AB8B] mb-4">
-              The Round
-            </p>
-            <h2
-              className="text-white font-normal leading-[1.0] text-3xl sm:text-4xl md:text-5xl max-w-3xl"
-              style={HEADING_FONT}
-            >
-              Pre-Seed · <span className="text-[#85AB8B]">$250K–$500K</span>
-            </h2>
-            <p className="mt-5 text-white/75 text-sm sm:text-base leading-relaxed max-w-2xl">
-              Twelve months of execution: scale founder-led traction into a repeatable sales funnel, and
-              convert the platform&apos;s governed trade data into the ML capabilities above.
-            </p>
-          </Reveal>
-
+          <SectionHeading dark eyebrow="The Round" title="Pre-Seed ·" accent="$250K–$500K" body="Twelve months of execution: scale founder-led traction into a repeatable sales funnel, and convert the platform's governed trade data into the ML capabilities above." />
           <div className="mt-12 flex flex-col gap-14">
             <Reveal delay={80}>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.15em] text-white/60 mb-6">
-                Use of funds
-              </h3>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.15em] text-white/60 mb-6">Use of funds</h3>
               <div className="grid sm:grid-cols-2 gap-x-12 gap-y-7">
-                {useOfFunds.map((item) => (
-                  <div key={item.label}>
-                    <div className="flex items-baseline justify-between mb-2">
-                      <span className="text-sm font-semibold text-white">{item.label}</span>
-                      <span className="text-2xl text-[#85AB8B]" style={HEADING_FONT}>
-                        {item.pct}%
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#85AB8B] transition-all duration-1000"
-                        style={{ width: `${item.pct}%` }}
-                      />
-                    </div>
-                    <p className="mt-2 text-xs text-white/60">{item.detail}</p>
-                  </div>
-                ))}
+                {useOfFunds.map((item) => <div key={item.label}><div className="flex items-baseline justify-between mb-2"><span className="text-sm font-semibold text-white">{item.label}</span><span className="text-2xl text-[#85AB8B]" style={HEADING_FONT}>{item.pct}%</span></div><div className="h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full rounded-full bg-[#85AB8B]" style={{ width: `${item.pct}%` }} /></div><p className="mt-2 text-xs text-white/60">{item.detail}</p></div>)}
               </div>
             </Reveal>
 
             <Reveal delay={160}>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.15em] text-white/60 mb-6">
-                Twelve-month milestones
-              </h3>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.15em] text-white/60 mb-6">Twelve-month milestones</h3>
               <div className="grid sm:grid-cols-2 gap-5">
                 {milestones.map((m) => (
-                  <div key={m.period} className="rounded-2xl border border-white/10 p-5 sm:p-6 h-full">
-                    <div className="flex items-baseline gap-3 mb-3">
+                  <div key={m.period} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6 h-full">
+                    <div className="flex items-baseline justify-between gap-4 border-b border-white/10 pb-4 mb-4">
                       <span className="text-sm font-semibold text-[#85AB8B]">{m.period}</span>
-                      <span className="text-xs text-white/50">{m.phase}</span>
+                      <span className="text-sm font-semibold text-white text-right">{m.phase}</span>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      {[
-                        { tag: 'GTM', text: m.gtm },
-                        { tag: 'Product', text: m.product },
-                        { tag: 'Value', text: m.value },
-                      ].map((row) => (
-                        <div key={row.tag} className="flex gap-3">
-                          <span className="shrink-0 w-16 text-[11px] font-semibold uppercase tracking-wider text-white/40 pt-0.5">
-                            {row.tag}
-                          </span>
-                          <span className="text-sm text-white/80 leading-relaxed">{row.text}</span>
+                    <div className="space-y-3">
+                      {[['GTM', m.gtm], ['Product', m.product], ['Value', m.value]].map(([label, text]) => (
+                        <div key={label} className="grid grid-cols-[4.5rem_1fr] gap-3">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#85AB8B]/80">{label}</span>
+                          <span className="text-sm text-white/82 leading-relaxed">{text}</span>
                         </div>
                       ))}
                     </div>
@@ -1016,50 +554,20 @@ export function InvestorOverviewPage() {
               </div>
             </Reveal>
           </div>
-
           <Reveal delay={240}>
             <div className="mt-14 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-              <a
-                href={INVEST_MAILTO}
-                className="bg-white hover:bg-white/90 text-[#1f2a1d] text-sm font-semibold px-7 py-3.5 rounded-full transition-colors shadow-sm inline-flex items-center gap-2"
-              >
-                <MailIcon className="w-4 h-4" />
-                Request the Deck &amp; Data Room
-              </a>
-              <span className="text-white/60 text-sm">
-                {INVEST_EMAIL} · full materials for accredited investors
-              </span>
+              <a href={INVEST_MAILTO} className="bg-white hover:bg-white/90 text-[#1f2a1d] text-sm font-semibold px-7 py-3.5 rounded-full transition-colors shadow-sm inline-flex items-center gap-2"><MailIcon className="w-4 h-4" />Request the Deck &amp; Data Room</a>
+              <span className="text-white/60 text-sm">{INVEST_EMAIL} · full materials for accredited investors</span>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-[#1f2a1d] border-t border-white/10 px-4 sm:px-6 md:px-10 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logos/setu-flow-lockup-white.svg"
-            alt="Setu Flow"
-            className="h-10 w-auto opacity-90"
-            draggable={false}
-          />
-          <div className="flex items-center gap-6 text-xs text-white/50">
-            <a
-              href="https://www.setuflowcrm.com"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-white/80 transition-colors"
-            >
-              setuflowcrm.com
-            </a>
-            <a href={INVEST_MAILTO} className="hover:text-white/80 transition-colors">
-              {INVEST_EMAIL}
-            </a>
-          </div>
-          <span className="text-[11px] text-white/40">
-            Confidential — for accredited investors only · June 2026
-          </span>
+          <img src="/logos/setu-flow-lockup-white.svg" alt="Setu Flow" className="h-10 w-auto opacity-90" draggable={false} />
+          <div className="flex items-center gap-6 text-xs text-white/50"><a href="https://www.setuflowcrm.com" target="_blank" rel="noreferrer" className="hover:text-white/80 transition-colors">setuflowcrm.com</a><a href={INVEST_MAILTO} className="hover:text-white/80 transition-colors">{INVEST_EMAIL}</a></div>
+          <span className="text-[11px] text-white/40">Confidential — for accredited investors only · June 2026</span>
         </div>
       </footer>
     </main>
