@@ -102,15 +102,6 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           content: 'Risk Signal';
         }
 
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
-          font-size: 0 !important;
-        }
-
-        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child::before {
-          content: 'Document Readiness';
-          font-size: 0.66rem !important;
-        }
-
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::before,
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child::after,
         main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
@@ -130,6 +121,19 @@ export default function InvestorsLayout({ children }: { children: ReactNode }) {
           text-align: center !important;
           text-decoration: none !important;
           white-space: normal !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child {
+          font-size: 0 !important;
+          color: transparent !important;
+        }
+
+        main > section:first-of-type > div[class*='bottom-6'][class*='max-w-sm'] > div:last-child > a:last-child::before {
+          content: 'Document Readiness';
+          color: rgba(255, 255, 255, 0.92) !important;
+          font-size: 0.66rem !important;
+          font-weight: 750 !important;
+          line-height: 1.05 !important;
         }
 
         main > section:first-of-type > div:first-child div[class*='bg-gradient-to-br'][class*='bottom-'] {
