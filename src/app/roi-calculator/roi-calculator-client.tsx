@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 
 type PlanKey = 'starter' | 'growth';
+type NextStep = 'report_only' | 'book_demo' | 'request_trial';
 
 type RoiInputs = {
   people: number;
@@ -14,6 +15,16 @@ type RoiInputs = {
   hourlyCost: number;
   timeReductionRate: number;
   leadRecoveryRate: number;
+};
+
+type ContactForm = {
+  fullName: string;
+  email: string;
+  companyName: string;
+  phone: string;
+  role: string;
+  mainPainPoint: string;
+  nextStep: NextStep;
 };
 
 const plans: Record<PlanKey, { name: string; price: number; users: string }> = {
@@ -32,6 +43,26 @@ const defaults: RoiInputs = {
   timeReductionRate: 35,
   leadRecoveryRate: 25,
 };
+
+const defaultContact: ContactForm = {
+  fullName: '',
+  email: '',
+  companyName: '',
+  phone: '',
+  role: '',
+  mainPainPoint: 'Missed follow-ups',
+  nextStep: 'report_only',
+};
+
+const painPoints = [
+  'Missed follow-ups',
+  'Trade show lead leakage',
+  'Quote delays',
+  'Document readiness',
+  'Manual spreadsheet tracking',
+  'Team accountability',
+  'Full CRM workflow',
+];
 
 function money(value: number) {
   return new Intl.NumberFormat('en-US', {
@@ -91,6 +122,11 @@ export function RoiCalculatorClient() {
   const [inputs, setInputs] = useState<RoiInputs>(defaults);
   const [calculated, setCalculated] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
+  const [contact, setContact] = useState<ContactForm>(defaultContact);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
 
   const results = useMemo(() => {
     const monthlyTimeSavings = inputs.weeklyChaseHours * 4.33 * inputs.hourlyCost * (inputs.timeReductionRate / 100);
@@ -109,10 +145,36 @@ export function RoiCalculatorClient() {
     setCalculated(false);
   };
 
-  const subject = encodeURIComponent('SETU Flow ROI report request');
-  const body = encodeURIComponent(
-    `Hi SETU Flow team,\n\nPlease send me a personalized ROI report.\n\nInputs:\n- People following up: ${inputs.people}\n- Leads captured/month: ${inputs.leadsCaptured}\n- Leads lost or missed/month: ${inputs.leadsLost}\n- Team hours chasing leads/week: ${inputs.weeklyChaseHours}\n- Average value per recovered lead: $${inputs.recoveredLeadValue}\n- Plan: ${plans[inputs.plan].name}\n\nEstimated monthly impact: ${money(results.monthlyImpact)}\nNet monthly impact: ${money(results.netImpact)}\n\nThanks.`,
-  );
+  const openReportModal = (nextStep: NextStep) => {
+    setContact((current) => ({ ...current, nextStep }));
+    setSubmitError('');
+    setSubmitSuccess('');
+    setModalOpen(true);
+  };
+
+  const submitReport = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitError('');
+    setSubmitSuccess('');
+
+    try {
+      const response = await fetch('/api/roi-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact, inputs }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Unable to send ROI report. Please try again.');
+      }
+      setSubmitSuccess(payload.message || 'Your ROI report request has been received.');
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Unable to send ROI report. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <section className="bg-[linear-gradient(180deg,#f0f6fb_0%,#ffffff_38%,#f8fbff_100%)] px-4 py-12 sm:px-6 lg:px-8">
@@ -206,9 +268,11 @@ export function RoiCalculatorClient() {
             <p className="mt-4 text-xs leading-5 text-slate-500">
               Using {money(inputs.hourlyCost)}/hour team cost, {inputs.timeReductionRate}% time reduction, and {inputs.leadRecoveryRate}% lost-lead recovery. Current estimated lead-loss rate: {rounded(results.lossRate)}%.
             </p>
-            <a href={`mailto:admin@setugroups.com?subject=${subject}&body=${body}`} className="mt-5 flex w-full items-center justify-center rounded-xl border border-teal-600 bg-white px-5 py-4 text-sm font-extrabold text-teal-700 transition hover:bg-teal-50">
-              Send My ROI Report →
-            </a>
+            <div className="mt-5 grid gap-3">
+              <button type="button" onClick={() => openReportModal('book_demo')} className="flex w-full items-center justify-center rounded-xl bg-teal-600 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-teal-700">Book Demo With My ROI →</button>
+              <button type="button" onClick={() => openReportModal('request_trial')} className="flex w-full items-center justify-center rounded-xl border border-teal-600 bg-white px-5 py-4 text-sm font-extrabold text-teal-700 transition hover:bg-teal-50">Request Trial Access</button>
+              <button type="button" onClick={() => openReportModal('report_only')} className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm font-extrabold text-slate-700 transition hover:bg-slate-50">Send My ROI Report</button>
+            </div>
           </aside>
         </div>
 
@@ -221,6 +285,73 @@ export function RoiCalculatorClient() {
           </div>
         </div>
       </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[1.75rem] bg-white shadow-[0_32px_90px_rgba(15,23,42,.28)]">
+            <div className="flex items-start justify-between gap-5 border-b border-slate-100 p-6">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-teal-700">SETU Flow ROI Report</p>
+                <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-slate-950">Send your branded ROI report</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">We will save this as a potential SETU Flow lead and email a branded report to you. Admin is copied on every request.</p>
+              </div>
+              <button type="button" onClick={() => setModalOpen(false)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-xl font-bold text-slate-500 hover:bg-slate-50">×</button>
+            </div>
+            <form onSubmit={submitReport} className="grid gap-6 p-6 lg:grid-cols-[1fr_0.85fr]">
+              <div className="grid gap-4">
+                <label className="grid gap-2 text-sm font-bold text-slate-800">Full name *<input required value={contact.fullName} onChange={(event) => setContact((current) => ({ ...current, fullName: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                <label className="grid gap-2 text-sm font-bold text-slate-800">Work email *<input required type="email" value={contact.email} onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                <label className="grid gap-2 text-sm font-bold text-slate-800">Company name *<input required value={contact.companyName} onChange={(event) => setContact((current) => ({ ...current, companyName: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2 text-sm font-bold text-slate-800">Phone / WhatsApp<input value={contact.phone} onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                  <label className="grid gap-2 text-sm font-bold text-slate-800">Your role<input value={contact.role} onChange={(event) => setContact((current) => ({ ...current, role: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                </div>
+              </div>
+
+              <div className="grid gap-5">
+                <div>
+                  <p className="text-sm font-extrabold text-slate-950">Main workflow pain</p>
+                  <div className="mt-3 grid gap-2">
+                    {painPoints.map((pain) => (
+                      <label key={pain} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        <input type="radio" name="pain" checked={contact.mainPainPoint === pain} onChange={() => setContact((current) => ({ ...current, mainPainPoint: pain }))} />
+                        {pain}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-extrabold text-slate-950">What would you like next?</p>
+                  <div className="mt-3 grid gap-2">
+                    {([
+                      ['report_only', 'Send my report only'],
+                      ['book_demo', 'Book a demo with these numbers'],
+                      ['request_trial', 'Request trial access'],
+                    ] as [NextStep, string][]).map(([value, label]) => (
+                      <label key={value} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        <input type="radio" name="nextStep" checked={contact.nextStep === value} onChange={() => setContact((current) => ({ ...current, nextStep: value }))} />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500">
+                  <strong className="text-slate-700">Summary:</strong> {money(results.monthlyImpact)} estimated monthly impact, {rounded(results.leadsRecovered)} recovered leads/month, {plans[inputs.plan].name} plan.
+                </div>
+              </div>
+
+              <div className="lg:col-span-2">
+                {submitError && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{submitError}</div>}
+                {submitSuccess && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{submitSuccess}</div>}
+                <button disabled={submitting} type="submit" className="flex w-full items-center justify-center rounded-xl bg-teal-600 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">
+                  {submitting ? 'Sending...' : contact.nextStep === 'request_trial' ? 'Send Trial Onboarding Email →' : contact.nextStep === 'book_demo' ? 'Send ROI Report & Demo Request →' : 'Send My ROI Report →'}
+                </button>
+                <p className="mt-3 text-center text-xs text-slate-500">We respect your privacy. Your request is saved as a SETU Flow potential lead and BCC’d to admin@setugroups.com.</p>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
