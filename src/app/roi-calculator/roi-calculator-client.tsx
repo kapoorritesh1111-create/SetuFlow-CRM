@@ -76,6 +76,12 @@ function rounded(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value);
 }
 
+function clientSuccessMessage(nextStep: NextStep) {
+  if (nextStep === 'request_trial') return 'Your trial request is received. We have emailed your onboarding next step.';
+  if (nextStep === 'book_demo') return 'Your ROI report is on the way. We have included your demo request with these numbers.';
+  return 'Your ROI report is on the way. Please check your inbox.';
+}
+
 function Field({
   label,
   helper,
@@ -115,6 +121,25 @@ function ResultRow({ label, value, highlight = false }: { label: string; value: 
       <span className="text-xs font-semibold leading-5 text-slate-600">{label}</span>
       <span className={`text-sm font-extrabold ${highlight ? 'text-teal-700' : 'text-slate-950'}`}>{value}</span>
     </div>
+  );
+}
+
+function RadioCard({
+  name,
+  checked,
+  label,
+  onChange,
+}: {
+  name: string;
+  checked: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <label className={`flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm font-semibold transition sm:px-4 ${checked ? 'border-teal-500 bg-teal-50 text-teal-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 accent-teal-600" />
+      <span className="min-w-0 flex-1 whitespace-normal break-words leading-5">{label}</span>
+    </label>
   );
 }
 
@@ -165,10 +190,8 @@ export function RoiCalculatorClient() {
         body: JSON.stringify({ contact, inputs }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error || 'Unable to send ROI report. Please try again.');
-      }
-      setSubmitSuccess(payload.message || 'Your ROI report request has been received.');
+      if (!response.ok) throw new Error(payload.error || 'Unable to send ROI report. Please try again.');
+      setSubmitSuccess(clientSuccessMessage(contact.nextStep));
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Unable to send ROI report. Please try again.');
     } finally {
@@ -287,51 +310,45 @@ export function RoiCalculatorClient() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[1.75rem] bg-white shadow-[0_32px_90px_rgba(15,23,42,.28)]">
-            <div className="flex items-start justify-between gap-5 border-b border-slate-100 p-6">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-teal-700">SETU Flow ROI Report</p>
-                <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-slate-950">Send your branded ROI report</h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">We will save this as a potential SETU Flow lead and email a branded report to you. Admin is copied on every request.</p>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[92dvh] w-full overflow-y-auto overflow-x-hidden rounded-t-[1.75rem] bg-white shadow-[0_32px_90px_rgba(15,23,42,.28)] sm:max-w-4xl sm:rounded-[1.75rem]">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 p-4 backdrop-blur sm:p-6">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-700 sm:text-[11px]">SETU Flow ROI Report</p>
+                <h2 className="mt-2 text-xl font-extrabold tracking-[-0.04em] text-slate-950 sm:text-2xl">Send your branded ROI report</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">We will email you a branded SETU Flow ROI summary with next steps.</p>
               </div>
               <button type="button" onClick={() => setModalOpen(false)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-xl font-bold text-slate-500 hover:bg-slate-50">×</button>
             </div>
-            <form onSubmit={submitReport} className="grid gap-6 p-6 lg:grid-cols-[1fr_0.85fr]">
-              <div className="grid gap-4">
-                <label className="grid gap-2 text-sm font-bold text-slate-800">Full name *<input required value={contact.fullName} onChange={(event) => setContact((current) => ({ ...current, fullName: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
-                <label className="grid gap-2 text-sm font-bold text-slate-800">Work email *<input required type="email" value={contact.email} onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
-                <label className="grid gap-2 text-sm font-bold text-slate-800">Company name *<input required value={contact.companyName} onChange={(event) => setContact((current) => ({ ...current, companyName: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-2 text-sm font-bold text-slate-800">Phone / WhatsApp<input value={contact.phone} onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
-                  <label className="grid gap-2 text-sm font-bold text-slate-800">Your role<input value={contact.role} onChange={(event) => setContact((current) => ({ ...current, role: event.target.value }))} className="rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+            <form onSubmit={submitReport} className="grid min-w-0 gap-5 p-4 sm:p-6 lg:grid-cols-[1fr_0.85fr]">
+              <div className="grid min-w-0 gap-4">
+                <label className="grid gap-2 text-sm font-bold text-slate-800">Full name *<input required value={contact.fullName} onChange={(event) => setContact((current) => ({ ...current, fullName: event.target.value }))} className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                <label className="grid gap-2 text-sm font-bold text-slate-800">Work email *<input required type="email" value={contact.email} onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))} className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                <label className="grid gap-2 text-sm font-bold text-slate-800">Company name *<input required value={contact.companyName} onChange={(event) => setContact((current) => ({ ...current, companyName: event.target.value }))} className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2 text-sm font-bold text-slate-800">Phone / WhatsApp<input value={contact.phone} onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))} className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
+                  <label className="grid gap-2 text-sm font-bold text-slate-800">Your role<input value={contact.role} onChange={(event) => setContact((current) => ({ ...current, role: event.target.value }))} className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100" /></label>
                 </div>
               </div>
 
-              <div className="grid gap-5">
+              <div className="grid min-w-0 gap-5">
                 <div>
                   <p className="text-sm font-extrabold text-slate-950">Main workflow pain</p>
-                  <div className="mt-3 grid gap-2">
+                  <div className="mt-3 grid min-w-0 gap-2">
                     {painPoints.map((pain) => (
-                      <label key={pain} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <input type="radio" name="pain" checked={contact.mainPainPoint === pain} onChange={() => setContact((current) => ({ ...current, mainPainPoint: pain }))} />
-                        {pain}
-                      </label>
+                      <RadioCard key={pain} name="pain" label={pain} checked={contact.mainPainPoint === pain} onChange={() => setContact((current) => ({ ...current, mainPainPoint: pain }))} />
                     ))}
                   </div>
                 </div>
                 <div>
                   <p className="text-sm font-extrabold text-slate-950">What would you like next?</p>
-                  <div className="mt-3 grid gap-2">
+                  <div className="mt-3 grid min-w-0 gap-2">
                     {([
                       ['report_only', 'Send my report only'],
                       ['book_demo', 'Book a demo with these numbers'],
                       ['request_trial', 'Request trial access'],
                     ] as [NextStep, string][]).map(([value, label]) => (
-                      <label key={value} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <input type="radio" name="nextStep" checked={contact.nextStep === value} onChange={() => setContact((current) => ({ ...current, nextStep: value }))} />
-                        {label}
-                      </label>
+                      <RadioCard key={value} name="nextStep" label={label} checked={contact.nextStep === value} onChange={() => setContact((current) => ({ ...current, nextStep: value }))} />
                     ))}
                   </div>
                 </div>
@@ -343,10 +360,10 @@ export function RoiCalculatorClient() {
               <div className="lg:col-span-2">
                 {submitError && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{submitError}</div>}
                 {submitSuccess && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{submitSuccess}</div>}
-                <button disabled={submitting} type="submit" className="flex w-full items-center justify-center rounded-xl bg-teal-600 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">
+                <button disabled={submitting || Boolean(submitSuccess)} type="submit" className="flex w-full items-center justify-center rounded-xl bg-teal-600 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">
                   {submitting ? 'Sending...' : contact.nextStep === 'request_trial' ? 'Send Trial Onboarding Email →' : contact.nextStep === 'book_demo' ? 'Send ROI Report & Demo Request →' : 'Send My ROI Report →'}
                 </button>
-                <p className="mt-3 text-center text-xs text-slate-500">We respect your privacy. Your request is saved as a SETU Flow potential lead and BCC’d to admin@setugroups.com.</p>
+                <p className="mt-3 text-center text-xs leading-5 text-slate-500">We respect your privacy. We’ll only use your details to send the report and follow up on your selected request.</p>
               </div>
             </form>
           </div>
