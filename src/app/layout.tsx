@@ -5,7 +5,6 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
-import { MarketingRoiCalculatorPlacement } from '@/components/marketing/roi-calculator-section';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -156,7 +155,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LeadsFilterStability />
         <OfflineStatusBanner />
         {children}
-        <MarketingRoiCalculatorPlacement />
       </body>
     </html>
   );
