@@ -75,12 +75,25 @@ function fromEmail() {
   return process.env.SETU_NOTIFICATION_FROM_EMAIL ?? process.env.MAILTRAP_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? HELP_EMAIL;
 }
 
+function recommendedSalesAngle(painPoint: string) {
+  const pain = painPoint || 'missed follow-ups';
+  return `Lead with ${pain}. Use the ROI estimate as the discovery opener, then map the prospect's lead capture, follow-up ownership, quote workflow, document readiness, and order handoff into SETU Flow.`;
+}
+
 async function sendViaResend(payload: { to: string[]; bcc?: string[]; replyTo?: string; subject: string; text: string; html: string }) {
   if (!process.env.RESEND_API_KEY) return { ok: false, error: 'Email provider is not configured.' };
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: fromEmail(), to: payload.to, bcc: payload.bcc, reply_to: payload.replyTo ?? HELP_EMAIL, subject: payload.subject, text: payload.text, html: payload.html }),
+    body: JSON.stringify({
+      from: fromEmail(),
+      to: payload.to,
+      bcc: payload.bcc,
+      reply_to: payload.replyTo ?? HELP_EMAIL,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+    }),
   });
   return response.ok ? { ok: true, error: null } : { ok: false, error: 'Email could not be sent.' };
 }
@@ -226,9 +239,10 @@ function brandedEmail(data: Report) {
 }
 
 function adminEmail(data: Report) {
+  const salesAngle = recommendedSalesAngle(data.painPoint);
   const subject = `New ROI Calculator Lead - ${data.companyName}`;
-  const text = `New ROI Calculator Lead\n\nName: ${data.fullName}\nCompany: ${data.companyName}\nEmail: ${data.email}\nPhone: ${data.phone || 'Not provided'}\nRole: ${data.role || 'Not provided'}\nPain point: ${data.painPoint || 'Not provided'}\nNext step: ${data.nextStep}\nPlan: ${data.planName}\nMonthly impact: ${money(data.monthlyImpact)}\nRecovered leads/month: ${number(data.leadsRecovered)}\nSales angle: ${recommendedSalesAngle(data.painPoint)}`;
-  const html = `<div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6"><h2>New ROI Calculator Lead</h2><p><b>Name:</b> ${escapeHtml(data.fullName)}<br/><b>Company:</b> ${escapeHtml(data.companyName)}<br/><b>Email:</b> ${escapeHtml(data.email)}<br/><b>Phone:</b> ${escapeHtml(data.phone || 'Not provided')}<br/><b>Role:</b> ${escapeHtml(data.role || 'Not provided')}</p><p><b>Pain point:</b> ${escapeHtml(data.painPoint || 'Not provided')}<br/><b>Next step:</b> ${escapeHtml(data.nextStep)}<br/><b>Plan:</b> ${escapeHtml(data.planName)}</p><p><b>Monthly impact:</b> ${money(data.monthlyImpact)}<br/><b>Recovered leads/month:</b> ${number(data.leadsRecovered)}<br/><b>Net monthly impact:</b> ${money(data.netMonthlyImpact)}</p><p><b>Sales angle:</b><br/>${escapeHtml(recommendedSalesAngle(data.painPoint))}</p></div>`;
+  const text = `New ROI Calculator Lead\n\nName: ${data.fullName}\nCompany: ${data.companyName}\nEmail: ${data.email}\nPhone: ${data.phone || 'Not provided'}\nRole: ${data.role || 'Not provided'}\nPain point: ${data.painPoint || 'Not provided'}\nNext step: ${data.nextStep}\nPlan: ${data.planName}\nMonthly impact: ${money(data.monthlyImpact)}\nRecovered leads/month: ${number(data.leadsRecovered)}\nSales angle: ${salesAngle}`;
+  const html = `<div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6"><h2>New ROI Calculator Lead</h2><p><b>Name:</b> ${escapeHtml(data.fullName)}<br/><b>Company:</b> ${escapeHtml(data.companyName)}<br/><b>Email:</b> ${escapeHtml(data.email)}<br/><b>Phone:</b> ${escapeHtml(data.phone || 'Not provided')}<br/><b>Role:</b> ${escapeHtml(data.role || 'Not provided')}</p><p><b>Pain point:</b> ${escapeHtml(data.painPoint || 'Not provided')}<br/><b>Next step:</b> ${escapeHtml(data.nextStep)}<br/><b>Plan:</b> ${escapeHtml(data.planName)}</p><p><b>Monthly impact:</b> ${money(data.monthlyImpact)}<br/><b>Recovered leads/month:</b> ${number(data.leadsRecovered)}<br/><b>Net monthly impact:</b> ${money(data.netMonthlyImpact)}</p><p><b>Sales angle:</b><br/>${escapeHtml(salesAngle)}</p></div>`;
   return { subject, text, html };
 }
 
