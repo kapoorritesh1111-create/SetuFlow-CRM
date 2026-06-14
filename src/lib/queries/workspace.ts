@@ -15,6 +15,7 @@ export type SprintIssue = {
   description: string | null;
   category: string;
   issue_category: string | null;
+  issue_type?: string | null;
   severity: string;
   status: string;
   area: string | null;
