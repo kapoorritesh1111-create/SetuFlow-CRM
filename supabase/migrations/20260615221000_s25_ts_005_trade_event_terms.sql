@@ -33,6 +33,9 @@ language plpgsql
 as $$
 begin
   new.updated_at = now();
+  if new.usage_count <= old.usage_count then
+    new.usage_count = old.usage_count + 1;
+  end if;
   return new;
 end;
 $$;
