@@ -14,6 +14,13 @@ type TradeEventOptionRow = {
   ends_on: string | null;
 };
 
+type TradeEventTermRow = {
+  id: string;
+  kind: 'product' | 'category';
+  display_term: string;
+  usage_count: number;
+};
+
 type TradeEventOptionQuery = {
   select: (columns: string) => {
     eq: (column: 'organization_id', value: string) => {
@@ -22,8 +29,20 @@ type TradeEventOptionQuery = {
   };
 };
 
+type TradeEventTermQuery = {
+  select: (columns: string) => {
+    eq: (column: 'organization_id', value: string) => {
+      order: (column: 'last_used_at', options: { ascending: boolean }) => {
+        limit: (count: number) => Promise<{ data: TradeEventTermRow[] | null; error: { message?: string } | null }>;
+      };
+    };
+  };
+};
+
 type CapturePageDb = {
   from: (table: 'trade_events') => TradeEventOptionQuery;
+} & {
+  from: (table: 'trade_event_terms') => TradeEventTermQuery;
 };
 
 function formatEventDateLabel(startsOn: string | null, endsOn: string | null) {
@@ -57,11 +76,25 @@ export default async function TradeEventsCapturePage() {
     .eq('organization_id', workspace.organization.id)
     .order('starts_on', { ascending: true, nullsFirst: false });
 
+  const { data: termRows, error: termsError } = await db
+    .from('trade_event_terms')
+    .select('id, kind, display_term, usage_count')
+    .eq('organization_id', workspace.organization.id)
+    .order('last_used_at', { ascending: false })
+    .limit(24);
+
   const events = (eventRows ?? []).map((event) => ({
     id: event.id,
     name: event.name,
     locationLabel: [event.city, event.country].filter(Boolean).join(', ') || 'Location TBD',
     dateLabel: formatEventDateLabel(event.starts_on, event.ends_on),
+  }));
+
+  const reusableTerms = (termRows ?? []).map((term) => ({
+    id: term.id,
+    kind: term.kind,
+    displayTerm: term.display_term,
+    usageCount: term.usage_count,
   }));
 
   return (
@@ -70,7 +103,7 @@ export default async function TradeEventsCapturePage() {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Trade event entries</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Type, Dictate, or Scan Capture</h1>
-          <p className="mt-1 text-sm font-medium text-slate-600">Entries are saved to the event queue and stay separate from CRM leads until a user reviews them.</p>
+          <p className="mt-1 text-sm font-medium text-slate-600">Entries stay separate from CRM leads. Product and category terms are saved for fast reuse.</p>
         </div>
         <Link href="/trade-events" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100">Back to workspace</Link>
       </div>
@@ -78,8 +111,11 @@ export default async function TradeEventsCapturePage() {
       {error?.message ? (
         <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Trade events could not be loaded: {error.message}</div>
       ) : null}
+      {termsError?.message ? (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Saved product/category terms could not be loaded: {termsError.message}</div>
+      ) : null}
 
-      <TrialCapturePanel events={events} />
+      <TrialCapturePanel events={events} reusableTerms={reusableTerms} />
     </div>
   );
 }
