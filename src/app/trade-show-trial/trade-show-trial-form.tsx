@@ -8,15 +8,24 @@ import {
   type TradeShowTrialActionState,
 } from './actions';
 
-const fields = [
+type TrialSignupField = {
+  name: string;
+  label: string;
+  placeholder: string;
+  required: boolean;
+  autoComplete?: string;
+  type?: string;
+};
+
+const fields: TrialSignupField[] = [
   { name: 'fullName', label: 'Full name', placeholder: 'Ritesh Kapoor', required: true, autoComplete: 'name' },
   { name: 'company', label: 'Company', placeholder: 'Blue Orbit International', required: true, autoComplete: 'organization' },
   { name: 'email', label: 'Work email', placeholder: 'you@company.com', required: true, autoComplete: 'email', type: 'email' },
   { name: 'phoneWhatsapp', label: 'Phone / WhatsApp', placeholder: '+1 555 123 4567', required: true, autoComplete: 'tel' },
   { name: 'tradeShowName', label: 'Trade show name', placeholder: 'Gulfood 2026', required: true },
-  { name: 'boothNumber', label: 'Booth number', placeholder: 'Hall 3 / B-18' },
-  { name: 'mainProductCategory', label: 'Main product / category', placeholder: 'Fruit chips, jaggery, spices...' },
-] as const;
+  { name: 'boothNumber', label: 'Booth number', placeholder: 'Hall 3 / B-18', required: false },
+  { name: 'mainProductCategory', label: 'Main product / category', placeholder: 'Fruit chips, jaggery, spices...', required: false },
+];
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -49,18 +58,17 @@ export function TradeShowTrialForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((field, index) => {
           const wide = index >= 4;
-          const required = 'required' in field ? field.required : false;
           return (
             <label key={field.name} className={wide ? 'sm:col-span-2' : ''}>
               <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                 {field.label}
-                {required && <span className="text-[#108477]">*</span>}
+                {field.required && <span className="text-[#108477]">*</span>}
               </span>
               <input
                 name={field.name}
-                type={'type' in field ? field.type : 'text'}
-                required={required}
-                autoComplete={'autoComplete' in field ? field.autoComplete : undefined}
+                type={field.type ?? 'text'}
+                required={field.required}
+                autoComplete={field.autoComplete}
                 placeholder={field.placeholder}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#108477] focus:bg-white focus:ring-4 focus:ring-teal-100"
               />
