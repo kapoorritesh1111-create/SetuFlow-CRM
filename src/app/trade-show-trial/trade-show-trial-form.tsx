@@ -49,16 +49,17 @@ export function TradeShowTrialForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((field, index) => {
           const wide = index >= 4;
+          const required = 'required' in field ? field.required : false;
           return (
             <label key={field.name} className={wide ? 'sm:col-span-2' : ''}>
               <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                 {field.label}
-                {field.required && <span className="text-[#108477]">*</span>}
+                {required && <span className="text-[#108477]">*</span>}
               </span>
               <input
                 name={field.name}
                 type={'type' in field ? field.type : 'text'}
-                required={field.required}
+                required={required}
                 autoComplete={'autoComplete' in field ? field.autoComplete : undefined}
                 placeholder={field.placeholder}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#108477] focus:bg-white focus:ring-4 focus:ring-teal-100"
