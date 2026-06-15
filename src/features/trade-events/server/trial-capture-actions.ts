@@ -5,6 +5,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { buildReusableCaptureTermPayload, type SavedCaptureTerm } from '@/features/trade-events/server/capture-terms';
 
 export type TrialCaptureSource = 'type' | 'dictate' | 'scan';
 
@@ -44,6 +45,17 @@ type EntryPayload = {
   created_by: string;
 };
 
+type ReusableTermPayload = {
+  organization_id: string;
+  trade_event_id: string;
+  kind: 'product' | 'category';
+  normalized_key: string;
+  display_term: string;
+  usage_count: number;
+  last_used_at: string;
+  created_by: string;
+};
+
 type TradeEventQueryBuilder = {
   select: (columns: string) => {
     eq: (column: string, value: string) => {
@@ -62,10 +74,16 @@ type TradeEventEntryInsertBuilder = {
   };
 };
 
+type TradeEventTermUpsertBuilder = {
+  upsert: (payload: ReusableTermPayload[], options: { onConflict: string }) => Promise<{ error: DbError }>;
+};
+
 type TrialCaptureDb = {
   from: (table: 'trade_events') => TradeEventQueryBuilder;
 } & {
   from: (table: 'trade_event_entries') => TradeEventEntryInsertBuilder;
+} & {
+  from: (table: 'trade_event_terms') => TradeEventTermUpsertBuilder;
 };
 
 function getText(formData: FormData, key: string) {
@@ -126,6 +144,18 @@ export async function saveTrialTradeEventCapture(
   if (!eventRow?.id) return { error: 'Trade event was not found for this organization.' };
 
   const capturedAt = new Date().toISOString();
+  const productTerm = buildReusableCaptureTermPayload({ organizationId: workspace.organization.id, tradeEventId, userId: workspace.user.id, kind: 'product', term: productInterest, usedAt: capturedAt });
+  const categoryTerm = buildReusableCaptureTermPayload({ organizationId: workspace.organization.id, tradeEventId, userId: workspace.user.id, kind: 'category', term: typedCategory, usedAt: capturedAt });
+  const termPayloads = [productTerm, categoryTerm].filter((term): term is ReusableTermPayload => Boolean(term));
+  const savedTerms: SavedCaptureTerm[] = termPayloads.map((term) => ({ kind: term.kind, key: term.normalized_key }));
+
+  if (termPayloads.length) {
+    const { error: termError } = await db
+      .from('trade_event_terms')
+      .upsert(termPayloads, { onConflict: 'organization_id,kind,normalized_key' });
+    if (termError) return { error: termError.message ?? 'Could not save reusable quick-pick terms.' };
+  }
+
   const capturedNotes = captureSource === 'dictate' ? appendTranscriptToNotes(notes, transcript) : (notes || null);
   const normalizedPayload = {
     capture_source: captureSource,
@@ -135,6 +165,7 @@ export async function saveTrialTradeEventCapture(
     phone: phone || null,
     product_interest: productInterest || null,
     typed_category: typedCategory || null,
+    reusable_terms: savedTerms,
     notes: capturedNotes,
     trade_event_name: eventRow.name,
   };
@@ -154,6 +185,7 @@ export async function saveTrialTradeEventCapture(
     },
     captured_by: workspace.user.id,
     captured_at: capturedAt,
+    reusable_terms_saved: savedTerms,
     trial_capture_boundary: 'event_entry_only_no_crm_lead_conversion',
   };
 
@@ -197,6 +229,7 @@ export async function saveTrialTradeEventCapture(
         capture_source: captureSource,
         trade_event_id: tradeEventId,
         raw_input_retained: true,
+        reusable_terms_saved: savedTerms.length,
         lead_conversion_created: false,
       },
     },
@@ -205,5 +238,6 @@ export async function saveTrialTradeEventCapture(
   revalidatePath('/trade-events');
   revalidatePath('/trade-events/capture');
 
-  return { success: `${captureSource === 'type' ? 'Typed' : captureSource === 'dictate' ? 'Dictated' : 'Scanned'} event entry saved for ${company}.` };
+  const termSuffix = savedTerms.length ? ` ${savedTerms.length} reusable quick-pick term${savedTerms.length === 1 ? '' : 's'} updated.` : '';
+  return { success: `${captureSource === 'type' ? 'Typed' : captureSource === 'dictate' ? 'Dictated' : 'Scanned'} event entry saved for ${company}.${termSuffix}` };
 }
