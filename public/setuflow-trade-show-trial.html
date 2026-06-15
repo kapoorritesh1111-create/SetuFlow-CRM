@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SETU Flow — Trade Show Trial | Full Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#1F487C; --navy-dark:#193769; --teal:#279491; --teal-deep:#1f7d7a;
+    --ink:#11243d; --slate:#5d6e84; --slate-2:#8493a6;
+    --line:#e6ecf4; --line-soft:#eef2f8;
+    --bg:#eef2f8; --card:#ffffff;
+    --green:#15a34a; --green-soft:#e7f7ee; --amber:#d97706;
+    --grad:linear-gradient(135deg,#1F487C 0%,#2C7186 52%,#279491 100%);
+    --grad-soft:linear-gradient(135deg,#eaf1f9 0%,#e7f4f3 100%);
+    --shadow-xs:0 1px 2px rgba(17,36,61,.05);
+    --shadow:0 2px 6px rgba(17,36,61,.05),0 12px 32px rgba(17,36,61,.08);
+    --shadow-lg:0 8px 18px rgba(17,36,61,.08),0 30px 60px rgba(17,36,61,.13);
+    --radius:18px; --radius-sm:12px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; color:var(--ink); line-height:1.55;
+    font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+    background:
+      radial-gradient(1100px 520px at 12% -8%, #e3edf9 0%, transparent 60%),
+      radial-gradient(1000px 520px at 100% 0%, #e2f3f1 0%, transparent 55%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4,h5{font-family:"Sora",sans-serif;margin:0;line-height:1.18;letter-spacing:-.01em;}
+  .wrap{max-width:1300px;margin:0 auto;padding:0 22px;}
+
+  /* icon helpers */
+  .ic{width:1em;height:1em;display:inline-block;vertical-align:-0.13em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .ic.fill{fill:currentColor;stroke:none;}
+  .chipico{
+    width:38px;height:38px;border-radius:11px;flex:0 0 auto;display:grid;place-items:center;
+    background:var(--grad-soft);color:var(--navy);box-shadow:inset 0 0 0 1px rgba(31,72,124,.07);
+  }
+  .chipico .ic{width:18px;height:18px;}
+  .gradico{
+    width:46px;height:46px;border-radius:13px;flex:0 0 auto;display:grid;place-items:center;
+    background:var(--grad);color:#fff;box-shadow:0 6px 16px rgba(31,72,124,.28);
+  }
+  .gradico .ic{width:22px;height:22px;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .topbar .wrap{display:flex;align-items:center;gap:26px;padding:15px 22px;flex-wrap:wrap;}
+  .brandlock{display:flex;align-items:center;gap:13px;}
+  .brandlock svg.logo{height:52px;width:auto;display:block;filter:drop-shadow(0 1px 2px rgba(31,72,124,.12));}
+  .titleblock{flex:1;min-width:280px;border-left:1px solid var(--line);padding-left:24px;}
+  .titleblock h1{font-size:22px;font-weight:800;color:var(--navy);}
+  .titleblock p{margin:3px 0 0;color:var(--slate);font-size:13.5px;font-weight:500;max-width:62ch;}
+  .topcta{display:flex;gap:9px;align-items:center;}
+  .tag-pill{display:inline-flex;gap:7px;align-items:center;font-size:12px;font-weight:700;color:var(--teal-deep);background:#e3f4f2;padding:7px 13px;border-radius:30px;box-shadow:inset 0 0 0 1px rgba(39,148,145,.18);}
+
+  /* ---------- Sections ---------- */
+  section{padding:36px 0;}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:"Sora";font-weight:700;letter-spacing:.16em;text-transform:uppercase;font-size:11.5px;color:var(--teal-deep);margin-bottom:14px;}
+  .eyebrow .bar{width:26px;height:2px;background:var(--grad);border-radius:2px;}
+  .section-band{
+    background:var(--grad);color:#fff;border-radius:16px;padding:16px 22px;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    font-family:"Sora";font-weight:700;letter-spacing:.1em;font-size:14px;text-transform:uppercase;
+    margin-bottom:26px;box-shadow:var(--shadow-lg);position:relative;overflow:hidden;
+  }
+  .section-band::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.14) 50%,transparent 70%);}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .pad{padding:24px;}
+
+  /* ---------- Stepper ---------- */
+  .stepper{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+  .step-tab{
+    flex:1;min-width:158px;background:#fff;border:1px solid var(--line);border-radius:14px;
+    padding:14px 15px;cursor:pointer;text-align:left;display:flex;gap:12px;align-items:center;
+    transition:.2s cubic-bezier(.2,.7,.3,1);font-family:"Plus Jakarta Sans";position:relative;
+  }
+  .step-tab:hover{border-color:#bcd0e8;transform:translateY(-2px);box-shadow:var(--shadow);}
+  .step-tab .num{
+    flex:0 0 auto;width:30px;height:30px;border-radius:9px;background:var(--grad-soft);color:var(--navy);
+    display:grid;place-items:center;font-family:"Sora";font-weight:800;font-size:14px;box-shadow:inset 0 0 0 1px rgba(31,72,124,.08);
+  }
+  .step-tab .lbl{font-size:12.5px;font-weight:600;color:var(--slate);line-height:1.25;}
+  .step-tab.active{border-color:transparent;box-shadow:0 10px 26px rgba(31,72,124,.16);background:#fff;}
+  .step-tab.active::before{content:"";position:absolute;inset:0;border-radius:14px;padding:1.5px;background:var(--grad);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+  .step-tab.active .num{background:var(--grad);color:#fff;box-shadow:0 5px 12px rgba(31,72,124,.3);}
+  .step-tab.active .lbl{color:var(--navy);font-weight:700;}
+
+  .panel{display:none;}
+  .panel.show{display:block;animation:rise .4s cubic-bezier(.2,.7,.3,1);}
+  @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .panel-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:26px;align-items:center;}
+  .panel-head{display:flex;gap:13px;align-items:center;margin-bottom:16px;}
+  .panel-head .pn{width:40px;height:40px;border-radius:12px;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:"Sora";font-weight:800;font-size:17px;box-shadow:0 6px 15px rgba(31,72,124,.28);}
+  .panel-head h3{font-size:21px;color:var(--navy);}
+  .lede{color:var(--slate);font-size:14.5px;max-width:46ch;}
+  .feat-list{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:11px;}
+  .feat-list li{display:flex;gap:11px;align-items:center;font-size:14px;color:var(--ink);font-weight:500;}
+  .feat-list .chipico{width:30px;height:30px;border-radius:9px;}
+  .feat-list .chipico .ic{width:15px;height:15px;}
+
+  /* hero card */
+  .hero-card{
+    background:radial-gradient(130% 130% at 82% 4%, #2f6ba8 0%, #1a3c68 52%, #12294a 100%);
+    color:#fff;border-radius:22px;padding:30px;position:relative;overflow:hidden;
+    box-shadow:var(--shadow-lg);
+  }
+  .hero-card::before{content:"";position:absolute;right:-60px;top:-50px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(39,148,145,.5),transparent 68%);}
+  .hero-card::after{content:"";position:absolute;left:-40px;bottom:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(63,127,184,.35),transparent 70%);}
+  .hero-card .inner{position:relative;z-index:1;}
+  .hero-card .brandrow{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+  .hero-card .brandrow .hero-mark{height:34px;width:auto;filter:drop-shadow(0 3px 8px rgba(0,0,0,.28));}
+  .hero-card .brandrow .hero-word{font-family:"Sora";font-weight:800;font-size:20px;letter-spacing:-.01em;color:#fff;}
+  .hero-card .brandrow .hero-word em{font-style:italic;font-weight:600;color:#7fd6cf;}
+  .hero-card h2{font-size:28px;font-weight:800;line-height:1.12;margin-bottom:20px;max-width:13ch;}
+  .hero-card ul{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:12px;}
+  .hero-card li{font-size:14px;display:flex;gap:11px;align-items:center;color:#d7e6f6;}
+  .hero-card li .tk{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:rgba(123,224,176,.16);color:#7be0b0;flex:0 0 auto;}
+  .hero-card li .tk .ic{width:14px;height:14px;}
+
+  .btn{border:none;cursor:pointer;font-family:"Sora";font-weight:600;border-radius:12px;padding:13px 20px;font-size:14.5px;transition:.2s;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;}
+  .btn .ic{width:18px;height:18px;}
+  .btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 20px rgba(31,72,124,.3);}
+  .btn-primary:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 12px 26px rgba(31,72,124,.36);}
+  .btn-white{background:#fff;color:var(--navy);box-shadow:0 8px 20px rgba(0,0,0,.18);}
+  .btn-white:hover{transform:translateY(-2px);}
+  .btn-sm{width:auto;padding:9px 15px;font-size:13px;border-radius:10px;}
+
+  /* form */
+  .field{margin-bottom:14px;}
+  .field label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--slate);margin-bottom:6px;}
+  .field label .req{color:#e0476b;}
+  .field label .ic{width:14px;height:14px;color:var(--slate-2);}
+  .input-shell{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line);border-radius:11px;background:#fafcfe;padding:0 12px;transition:.18s;}
+  .input-shell:focus-within{border-color:var(--navy);background:#fff;box-shadow:0 0 0 4px rgba(31,72,124,.1);}
+  .input-shell .ic{width:16px;height:16px;color:var(--slate-2);flex:0 0 auto;}
+  .input-shell input{flex:1;border:none;background:transparent;padding:11px 0;font-family:"Plus Jakarta Sans";font-size:14px;color:var(--ink);outline:none;min-width:0;}
+  .cc{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--slate);padding-right:9px;border-right:1px solid var(--line);}
+  .muted-note{text-align:center;font-size:12px;color:var(--slate-2);margin-top:11px;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .muted-note .ic{width:14px;height:14px;}
+
+  /* success */
+  .success{text-align:center;padding:10px 6px;}
+  .success .ring{width:84px;height:84px;border-radius:50%;background:conic-gradient(from 0deg,#15a34a,#37c172,#15a34a);display:grid;place-items:center;margin:6px auto 18px;box-shadow:0 10px 26px rgba(21,163,74,.3);}
+  .success .ring .core{width:70px;height:70px;border-radius:50%;background:#fff;display:grid;place-items:center;}
+  .success .ring .ic{width:34px;height:34px;color:var(--green);stroke-width:2.6;}
+  .success h3{font-size:22px;color:var(--navy);margin-bottom:18px;}
+  .readylist{list-style:none;padding:0;margin:0 auto 20px;display:grid;gap:11px;text-align:left;max-width:290px;}
+  .readylist li{display:flex;gap:11px;align-items:center;font-size:14px;color:var(--ink);font-weight:600;}
+
+  /* internal lead created */
+  .lead-fields{list-style:none;padding:0;margin:0;display:grid;gap:14px;}
+  .lead-fields li{display:flex;gap:12px;align-items:center;font-size:14px;}
+  .lead-fields b{color:var(--slate);font-weight:700;}
+  .badge-center{width:70px;height:70px;border-radius:18px;background:var(--grad);display:grid;place-items:center;margin:0 auto 16px;color:#fff;box-shadow:0 10px 24px rgba(31,72,124,.3);}
+  .badge-center .ic{width:34px;height:34px;}
+
+  /* CRM card */
+  .crm{overflow:hidden;}
+  .crm-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--grad-soft);}
+  .crm-bar .crumbs{font-size:13px;color:var(--slate);font-weight:600;display:flex;align-items:center;gap:6px;}
+  .crm-bar .crumbs b{color:var(--navy);}
+  .badge{font-size:11px;font-weight:700;padding:5px 11px;border-radius:30px;display:inline-flex;align-items:center;gap:5px;}
+  .badge .ic{width:12px;height:12px;}
+  .badge-blue{background:#e7f0fb;color:var(--navy);}
+  .badge-green{background:var(--green-soft);color:var(--green);}
+  .crm-body{padding:20px 18px;}
+  .crm-name{display:flex;gap:12px;align-items:center;margin-bottom:16px;}
+  .avatar{width:44px;height:44px;border-radius:13px;background:var(--grad);display:grid;place-items:center;color:#fff;flex:0 0 auto;box-shadow:0 5px 13px rgba(31,72,124,.26);}
+  .avatar .ic{width:22px;height:22px;}
+  .crm-name .nm{font-family:"Sora";font-weight:700;font-size:16px;color:var(--ink);}
+  .crm-name .sub{font-size:13px;color:var(--slate);}
+  .crm-detail{font-size:13px;color:var(--ink);margin:7px 0;display:flex;gap:8px;align-items:center;}
+  .crm-detail .ic{width:15px;height:15px;color:var(--slate-2);flex:0 0 auto;}
+  .crm-detail b{color:var(--slate);font-weight:600;}
+  .crm-stats{display:flex;gap:10px;margin:18px 0 12px;border-top:1px solid var(--line);padding-top:16px;}
+  .crm-stat{flex:1;text-align:center;background:#fafcfe;border:1px solid var(--line);border-radius:12px;padding:10px 6px;}
+  .crm-stat .ic{width:17px;height:17px;color:var(--navy);margin-bottom:3px;}
+  .crm-stat .v{font-family:"Sora";font-weight:800;font-size:19px;color:var(--navy);line-height:1;}
+  .crm-stat .k{font-size:10.5px;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+  .crm-foot{font-size:12.5px;color:var(--teal-deep);font-weight:600;border-top:1px solid var(--line);padding-top:13px;display:flex;align-items:center;gap:7px;}
+  .crm-foot .ic{width:15px;height:15px;}
+
+  /* ---------- Capture workspace ---------- */
+  .ws{background:#fff;border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden;border:1px solid var(--line);}
+  .ws-grid{display:grid;grid-template-columns:repeat(5,1fr);}
+  .ws-col{padding:22px 19px;border-right:1px solid var(--line-soft);}
+  .ws-col:last-child{border-right:none;}
+  .ws-col h4{font-size:14px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .ws-col h4 .chipico{width:28px;height:28px;border-radius:8px;}
+  .ws-col h4 .chipico .ic{width:15px;height:15px;}
+
+  .cap-tabs{display:flex;background:#eef2f8;border-radius:12px;padding:4px;margin-bottom:16px;}
+  .cap-tabs button{flex:1;border:none;background:transparent;padding:9px 4px;border-radius:9px;font-family:"Sora";font-weight:600;font-size:12px;color:var(--slate);cursor:pointer;transition:.18s;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .cap-tabs button .ic{width:14px;height:14px;}
+  .cap-tabs button.on{background:var(--grad);color:#fff;box-shadow:0 5px 13px rgba(31,72,124,.3);}
+  .cap-view{display:none;}
+  .cap-view.on{display:block;animation:rise .3s ease;}
+
+  .phone-frame{border:1.5px solid var(--line);border-radius:16px;padding:13px;background:linear-gradient(180deg,#fafcfe,#f3f7fc);box-shadow:var(--shadow-xs);}
+  .scanline{font-size:11px;color:var(--teal-deep);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+  .mini-field{font-size:12px;margin-bottom:9px;display:flex;gap:9px;align-items:center;}
+  .mini-field .chipico{width:26px;height:26px;border-radius:8px;}
+  .mini-field .chipico .ic{width:13px;height:13px;}
+  .mini-field span{display:block;color:var(--slate-2);font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;}
+  .mini-field b{font-weight:600;color:var(--ink);font-size:12px;}
+  .typecap .input-shell{margin-bottom:9px;padding:0 11px;}
+  .typecap .input-shell input{padding:9px 0;font-size:13px;}
+
+  .wavewrap{background:linear-gradient(150deg,#10294a,#0c2745);border-radius:14px;padding:15px;color:#fff;margin-bottom:13px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);}
+  .wave{display:flex;align-items:center;gap:2.5px;height:38px;}
+  .wave i{flex:1;background:linear-gradient(180deg,#6fded6,#279491);border-radius:3px;animation:eq 1s ease-in-out infinite;min-height:14%;}
+  @keyframes eq{0%,100%{height:18%;}50%{height:92%;}}
+  .wave-time{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:#9fb6d4;font-weight:600;}
+  .rec-dot{width:9px;height:9px;border-radius:50%;background:#ff5d5d;display:inline-block;box-shadow:0 0 0 0 rgba(255,93,93,.6);animation:pulse 1.3s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,93,93,.55);}70%{box-shadow:0 0 0 7px rgba(255,93,93,0);}100%{box-shadow:0 0 0 0 rgba(255,93,93,0);}}
+  .quote{font-size:12px;font-style:italic;color:var(--ink);background:linear-gradient(180deg,#f6fafd,#eef6f9);border-left:3px solid var(--teal);padding:11px 13px;border-radius:0 10px 10px 0;margin-bottom:13px;}
+  .extracted .et{font-weight:700;color:var(--navy);margin-bottom:9px;font-size:12px;display:flex;align-items:center;gap:6px;}
+  .extracted .et .ic{width:14px;height:14px;color:var(--teal-deep);}
+  .extracted li{list-style:none;display:flex;gap:8px;margin-bottom:7px;color:var(--ink);font-size:11.5px;align-items:center;}
+  .extracted li .tk{width:17px;height:17px;border-radius:5px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;flex:0 0 auto;}
+  .extracted li .tk .ic{width:11px;height:11px;stroke-width:2.6;}
+
+  .lead-saved .row{display:flex;gap:10px;align-items:center;font-size:12.5px;padding:9px 0;border-bottom:1px solid var(--line-soft);}
+  .lead-saved .row:last-child{border-bottom:none;}
+  .lead-saved .row .chipico{width:28px;height:28px;border-radius:8px;}
+  .lead-saved .row .chipico .ic{width:14px;height:14px;}
+  .lead-saved .row .k{color:var(--slate-2);font-weight:700;flex:0 0 58px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;}
+  .lead-saved .row .v{color:var(--ink);font-weight:600;}
+  .saved-actions{display:flex;gap:8px;margin-top:15px;}
+  .saved-actions button{flex:1;font-size:11px;padding:10px 5px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--navy);font-family:"Sora";font-weight:600;cursor:pointer;transition:.18s;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .saved-actions button .ic{width:15px;height:15px;}
+  .saved-actions button:hover{border-color:var(--navy);background:#f4f9ff;transform:translateY(-1px);}
+
+  .chip-label{font-size:10.5px;font-weight:700;color:var(--slate-2);text-transform:uppercase;letter-spacing:.06em;margin:0 0 9px;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+  .chip{font-size:11.5px;background:var(--grad-soft);color:var(--navy);padding:6px 11px;border-radius:30px;display:flex;align-items:center;gap:7px;font-weight:600;box-shadow:inset 0 0 0 1px rgba(31,72,124,.08);}
+  .chip .x{cursor:pointer;opacity:.5;display:grid;place-items:center;}
+  .chip .x .ic{width:12px;height:12px;stroke-width:2.4;}
+  .chip .x:hover{opacity:1;color:#e0476b;}
+  .addnew{font-size:12px;color:var(--teal-deep);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+  .addnew .ic{width:13px;height:13px;}
+
+  .preview-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line-soft);}
+  .preview-row:last-child{border-bottom:none;}
+  .preview-row .pt{flex:1;}
+  .preview-row .pt b{font-size:12.5px;color:var(--ink);font-weight:700;display:block;}
+  .preview-row .pt span{font-size:10.5px;color:var(--slate-2);}
+  .preview-row .pv{font-size:11px;color:var(--navy);border:1.5px solid var(--line);padding:5px 11px;border-radius:9px;cursor:pointer;font-weight:700;display:flex;align-items:center;gap:5px;transition:.16s;font-family:"Sora";}
+  .preview-row .pv .ic{width:12px;height:12px;}
+  .preview-row .pv:hover{border-color:var(--navy);background:#f4f9ff;}
+
+  /* ---------- Backend + pipeline ---------- */
+  .two{display:grid;grid-template-columns:1.45fr 1fr;gap:24px;}
+  .card-title{font-size:15px;color:var(--navy);text-align:center;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:9px;}
+  .card-title .ic{width:18px;height:18px;color:var(--teal-deep);}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:24px 40px;}
+  .flow-node{text-align:center;position:relative;}
+  .flow-node:not(:nth-child(3n))::after{content:"";position:absolute;right:-27px;top:18px;width:11px;height:11px;border-top:2.5px solid #c4d4e8;border-right:2.5px solid #c4d4e8;transform:rotate(45deg);}
+  .flow-node .ring{width:54px;height:54px;border-radius:16px;margin:0 auto 9px;display:grid;place-items:center;color:#fff;box-shadow:var(--shadow);position:relative;}
+  .flow-node .ring .ic{width:24px;height:24px;}
+  .flow-node .lbl{font-size:11.5px;font-weight:600;color:var(--slate);line-height:1.3;}
+
+  .pipe{display:flex;gap:8px;}
+  .pipe-stage{flex:1;background:#fafcfe;border:1px solid var(--line);border-radius:13px;padding:13px 11px;transition:.2s;}
+  .pipe-stage:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+  .pipe-stage.win{background:linear-gradient(180deg,#eafaf0,#e2f6ea);border-color:#bfe6cd;}
+  .pipe-stage h5{font-family:"Sora";font-size:12px;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .pipe-stage h5 .ic{width:14px;height:14px;color:var(--teal-deep);}
+  .pipe-stage.win h5{color:var(--green);}
+  .pipe-stage.win h5 .ic{color:var(--green);}
+  .pipe-stage ul{list-style:none;padding:0;margin:0;}
+  .pipe-stage li{font-size:10.5px;color:var(--slate);margin-bottom:4px;position:relative;padding-left:11px;}
+  .pipe-stage li::before{content:"";position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--teal);}
+
+  /* ---------- Footer trio ---------- */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .trio .card{padding:22px;position:relative;overflow:hidden;}
+  .trio .card::before{content:"";position:absolute;left:0;top:0;height:100%;width:4px;background:var(--grad);}
+  .trio h4{font-size:12.5px;color:var(--navy);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;display:flex;align-items:center;gap:9px;}
+  .trio h4 .chipico{width:30px;height:30px;border-radius:9px;}
+  .trio h4 .chipico .ic{width:15px;height:15px;}
+  .trio ul{list-style:none;padding:0;margin:0;display:grid;gap:11px;}
+  .trio li{font-size:12.5px;display:flex;gap:9px;align-items:center;color:var(--ink);font-weight:500;}
+  .trio li .tk{width:18px;height:18px;border-radius:6px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;flex:0 0 auto;}
+  .trio li .tk .ic{width:12px;height:12px;stroke-width:2.6;}
+  .trio .pillrow{display:flex;flex-wrap:wrap;gap:8px;}
+  .pill{font-size:11.5px;background:var(--grad-soft);color:var(--navy);padding:7px 12px;border-radius:10px;display:flex;align-items:center;gap:7px;font-weight:600;box-shadow:inset 0 0 0 1px rgba(31,72,124,.08);}
+  .pill .ic{width:14px;height:14px;color:var(--teal-deep);}
+
+  footer{text-align:center;padding:34px 0 56px;color:var(--slate-2);font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+  footer svg.logo{height:34px;opacity:.85;}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(16px);transition:.6s cubic-bezier(.2,.7,.3,1);}
+  .reveal.in{opacity:1;transform:none;}
+
+  @media(max-width:1040px){
+    .ws-grid{grid-template-columns:repeat(2,1fr);}
+    .ws-col{border-bottom:1px solid var(--line-soft);}
+    .panel-grid{grid-template-columns:1fr;}
+    .two{grid-template-columns:1fr;}
+    .pipe{flex-wrap:wrap;}
+    .pipe-stage{min-width:140px;}
+  }
+  @media(max-width:680px){
+    .ws-grid{grid-template-columns:1fr;}
+    .trio{grid-template-columns:1fr;}
+    .flow{grid-template-columns:repeat(2,1fr);gap:20px 28px;}
+    .flow-node::after{display:none;}
+    .titleblock{border-left:none;padding-left:0;}
+    .topbar .wrap{gap:14px;}
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<clipPath id="clip-0">
+<path clip-rule="nonzero" d="M 336 351 L 1189 351 L 1189 632 L 336 632 Z M 336 351 "/>
+</clipPath>
+<clipPath id="clip-1">
+<path clip-rule="nonzero" d="M 738.382812 369.644531 C 736.441406 387.652344 734.542969 405.300781 732.542969 423.859375 C 676.597656 426.914062 622.410156 436.234375 569.160156 453.714844 C 586.210938 494.835938 579.140625 530.804688 544.988281 557.394531 C 509.8125 584.777344 472.351562 582.894531 437.085938 555.902344 C 428.972656 557.757812 351.414062 586.34375 346.785156 589.316406 C 343.867188 601.039062 340.761719 613.421875 337.722656 625.820312 C 337.332031 627.410156 337.273438 629.082031 336.949219 631.601562 C 338.855469 631.433594 339.886719 631.496094 340.828125 631.238281 C 401.226562 614.75 462.714844 604.09375 524.722656 595.800781 C 578.605469 588.597656 632.746094 584.851562 686.980469 582.941406 C 722.148438 581.703125 757.363281 581.097656 792.628906 581.902344 C 838.960938 582.960938 885.191406 584.800781 931.394531 588.480469 C 963.382812 591.027344 995.238281 594.605469 1026.941406 599.324219 C 1079.429688 607.136719 1131.585938 616.789062 1182.828125 630.863281 C 1184.371094 631.285156 1185.949219 632.324219 1188.363281 630.46875 C 1185.050781 616.6875 1181.648438 602.550781 1178.410156 589.089844 C 1170.625 584.851562 1093.433594 556.910156 1088.410156 556.347656 C 1047.015625 587.429688 1008.308594 579.371094 982.285156 559.765625 C 946.117188 532.511719 938.835938 496.0625 955.546875 453.746094 C 902.058594 436.648438 847.742188 426.722656 792.25 423.878906 C 788.8125 404.921875 789.042969 386.777344 785.433594 368.433594 C 777.351562 363.679688 771.0625 355.75 761.738281 351.523438 C 753.257812 357.027344 745.808594 363.359375 738.382812 369.644531 M 744.65625 485.898438 C 827.859375 478.253906 890.875 522.398438 924.234375 575.660156 C 816.296875 566.363281 709.433594 565.847656 602.21875 574.347656 C 636.199219 523.074219 682.90625 491.574219 744.65625 485.898438 "/>
+</clipPath>
+<linearGradient id="linear-pattern-0" gradientUnits="userSpaceOnUse" x1="-0.181602" y1="0" x2="1.27342" y2="0" gradientTransform="matrix(585.157349, 0, 0, 585.157349, 443.21402, 491.561279)"><stop offset="0" stop-color="#1F487C"/><stop offset="0.55" stop-color="#2C7186"/><stop offset="1" stop-color="#279491"/></linearGradient>
+<clipPath id="clip-2">
+<path clip-rule="nonzero" d="M 422 421 L 565 421 L 565 563 L 422 563 Z M 422 421 "/>
+</clipPath>
+<clipPath id="clip-3">
+<path clip-rule="nonzero" d="M 422.757812 489.035156 C 421.199219 529.417969 453.542969 562.320312 492.949219 562.488281 C 533.335938 562.664062 564.785156 532.074219 564.902344 492.5 C 565.882812 449.113281 530.277344 421.398438 494.847656 421.300781 C 494.773438 421.300781 494.703125 421.300781 494.632812 421.300781 C 455.394531 421.304688 424.257812 450.09375 422.757812 489.035156 "/>
+</clipPath>
+<linearGradient id="linear-pattern-1" gradientUnits="userSpaceOnUse" x1="-0.037619" y1="0" x2="0.209636" y2="0" gradientTransform="matrix(585.157349, 0, 0, 585.157349, 443.21402, 491.895996)"><stop offset="0" stop-color="#1F487C"/><stop offset="0.55" stop-color="#2C7186"/><stop offset="1" stop-color="#279491"/></linearGradient>
+<clipPath id="clip-4">
+<path clip-rule="nonzero" d="M 959 421 L 1102 421 L 1102 563 L 959 563 Z M 959 421 "/>
+</clipPath>
+<clipPath id="clip-5">
+<path clip-rule="nonzero" d="M 959.816406 491.316406 C 959.800781 530.851562 990.617188 562.25 1029.511719 562.328125 C 1070.742188 562.414062 1101 532.550781 1101.09375 491.683594 C 1102.386719 454.910156 1072.234375 422.085938 1032.027344 421.554688 C 1031.679688 421.546875 1031.335938 421.546875 1030.984375 421.546875 C 990.730469 421.550781 959.835938 452.445312 959.816406 491.316406 "/>
+</clipPath>
+<linearGradient id="linear-pattern-2" gradientUnits="userSpaceOnUse" x1="0.882816" y1="0" x2="1.12649" y2="0" gradientTransform="matrix(585.157349, 0, 0, 585.157349, 443.21402, 491.937439)"><stop offset="0" stop-color="#1F487C"/><stop offset="0.55" stop-color="#2C7186"/><stop offset="1" stop-color="#279491"/></linearGradient>
+<clipPath id="clip-6">
+<path clip-rule="nonzero" d="M 684 201 L 840 201 L 840 381 L 684 381 Z M 684 201 "/>
+</clipPath>
+<clipPath id="clip-7">
+<path clip-rule="nonzero" d="M 760.996094 201.464844 C 735.542969 261.238281 710.089844 321.015625 684.636719 380.789062 C 685.148438 381.199219 736.480469 347.621094 762.144531 330.074219 C 787.601562 347.417969 838.542969 380.621094 839.046875 380.21875 C 813.839844 320.566406 761.828125 201.453125 760.996094 201.464844 "/>
+</clipPath>
+<linearGradient id="linear-pattern-3" gradientUnits="userSpaceOnUse" x1="0.412576" y1="0" x2="0.676456" y2="0" gradientTransform="matrix(585.157349, 0, 0, 585.157349, 443.21402, 291.128662)"><stop offset="0" stop-color="#1F487C"/><stop offset="0.55" stop-color="#2C7186"/><stop offset="1" stop-color="#279491"/></linearGradient>
+</defs><g id="setuLogoArt"><g clip-path="url(#clip-0)">
+<g clip-path="url(#clip-1)">
+<path fill-rule="nonzero" fill="url(#linear-pattern-0)" d="M 336.949219 351.523438 L 336.949219 632.324219 L 1188.363281 632.324219 L 1188.363281 351.523438 Z M 336.949219 351.523438 "/>
+</g>
+</g>
+<g clip-path="url(#clip-2)">
+<g clip-path="url(#clip-3)">
+<path fill-rule="nonzero" fill="url(#linear-pattern-1)" d="M 421.199219 421.300781 L 421.199219 562.664062 L 565.882812 562.664062 L 565.882812 421.300781 Z M 421.199219 421.300781 "/>
+</g>
+</g>
+<g clip-path="url(#clip-4)">
+<g clip-path="url(#clip-5)">
+<path fill-rule="nonzero" fill="url(#linear-pattern-2)" d="M 959.800781 421.546875 L 959.800781 562.414062 L 1102.386719 562.414062 L 1102.386719 421.546875 Z M 959.800781 421.546875 "/>
+</g>
+</g>
+<g clip-path="url(#clip-6)">
+<g clip-path="url(#clip-7)">
+<path fill-rule="nonzero" fill="url(#linear-pattern-3)" d="M 684.636719 201.453125 L 684.636719 381.199219 L 839.046875 381.199219 L 839.046875 201.453125 Z M 684.636719 201.453125 "/>
+</g>
+</g>
+<path fill-rule="nonzero" fill="#1F487C"  d="M 734.492188 704.933594 C 743.390625 704.421875 752.242188 703.863281 761.160156 705.339844 C 761.574219 706.804688 762.09375 707.789062 762.089844 708.765625 C 761.964844 733.492188 762.8125 758.21875 761.488281 782.949219 C 760.453125 802.203125 750.082031 813.871094 732.359375 818.5625 C 712.40625 823.84375 692.089844 824.519531 672.488281 816.511719 C 657.96875 810.578125 649.527344 799.273438 649.089844 783.617188 C 648.398438 758.6875 648.792969 733.722656 648.777344 708.773438 C 648.773438 707.785156 649.246094 706.796875 649.617188 705.332031 C 658.527344 703.511719 667.402344 706.203125 675.6875 704.902344 C 678.40625 707.792969 677.765625 710.640625 677.738281 713.292969 C 677.53125 734.25 677.128906 755.207031 677.046875 776.164062 C 677.003906 786.597656 679.929688 795.824219 690.386719 800.519531 C 697.636719 803.78125 705.375 804.59375 713.167969 802.960938 C 726.640625 800.140625 732.925781 792.605469 733.050781 778.675781 C 733.25 756.871094 733.101562 735.0625 733.128906 713.253906 C 733.132812 710.777344 732.707031 708.21875 734.492188 704.933594 "/>
+<path fill-rule="nonzero" fill="#279491"  d="M 1141.90625 768.722656 C 1132.917969 785.410156 1123.925781 802.09375 1114.90625 818.835938 C 1105.8125 820.941406 1097.167969 820.414062 1087.960938 819.441406 C 1081.769531 793.582031 1075.652344 768.023438 1069.289062 741.449219 C 1078.09375 740.375 1085.894531 740.894531 1094.421875 741.066406 C 1099.730469 758.753906 1101.984375 776.839844 1106.714844 796.445312 C 1117.160156 777.035156 1126.773438 759.164062 1136.316406 741.429688 C 1144.566406 740.460938 1152.03125 740.773438 1160.4375 741.214844 C 1164.75 759.257812 1169 777.066406 1173.253906 794.875 C 1173.761719 795.035156 1174.273438 795.199219 1174.78125 795.363281 C 1183.691406 777.558594 1192.601562 759.753906 1201.664062 741.652344 C 1209.613281 740.121094 1217.445312 741.144531 1224.964844 741.011719 C 1226.503906 744.386719 1224.632812 746.1875 1223.570312 748.105469 C 1211.964844 769 1200.074219 789.742188 1188.792969 810.808594 C 1185.070312 817.757812 1180.644531 821.425781 1172.519531 820.257812 C 1167.203125 819.496094 1161.660156 821.011719 1155.660156 818.910156 C 1151.597656 802.40625 1147.476562 785.664062 1143.355469 768.925781 C 1142.875 768.859375 1142.386719 768.789062 1141.90625 768.722656 "/>
+<path fill-rule="nonzero" fill="#1F487C"  d="M 428.132812 705.019531 L 512.210938 705.019531 C 513.679688 710.625 513.347656 715.539062 512.386719 721.417969 C 493.792969 723.480469 474.992188 720.996094 455.753906 722.800781 C 455.152344 732.46875 455.253906 741.546875 455.757812 751.425781 C 473.070312 753.28125 490.003906 751.136719 506.890625 752.714844 C 508.953125 758.195312 508.183594 763.296875 507.429688 769.773438 L 456.023438 769.773438 C 454.945312 781.046875 455.289062 790.964844 455.722656 802.070312 L 516.894531 802.070312 C 519.105469 808.394531 518.25 813.726562 518.117188 819.710938 L 428.527344 819.710938 C 426.796875 814.601562 426.421875 712.832031 428.132812 705.019531 "/>
+<path fill-rule="nonzero" fill="#1F487C"  d="M 310.453125 812.28125 C 311.0625 806.820312 313.890625 801.964844 316.050781 796.964844 C 320.273438 796.214844 323.328125 798.441406 326.664062 799.421875 C 339.621094 803.230469 352.664062 805.945312 366.285156 803.589844 C 370.558594 802.847656 374.320312 801.144531 377.484375 798.273438 C 383.386719 792.914062 383.074219 784.136719 377.015625 779.039062 C 371.867188 774.703125 365.628906 772.917969 359.328125 771.273438 C 349.1875 768.628906 338.9375 766.347656 329.371094 761.878906 C 318.660156 756.875 311.90625 749.003906 311.46875 736.722656 C 311.007812 723.886719 316.679688 714.832031 328.054688 708.769531 C 344.78125 699.851562 385.789062 700.3125 402.253906 710.214844 C 401.507812 715.539062 398.703125 720.230469 397.039062 724.976562 C 394.371094 727.144531 392.382812 725.230469 390.304688 724.578125 C 377.976562 720.699219 365.492188 718.375 352.5625 720.910156 C 344.46875 722.496094 339.835938 726.941406 339.472656 733.238281 C 339.117188 739.375 342.6875 743.796875 350.761719 746.445312 C 358.128906 748.859375 365.597656 750.972656 373.078125 753.027344 C 379.773438 754.867188 386.207031 757.28125 392.460938 760.328125 C 403.28125 765.597656 409.109375 773.855469 409.289062 786.097656 C 409.476562 798.804688 404.339844 808.320312 393.265625 814.628906 C 386.953125 818.226562 380.089844 820.195312 372.972656 820.933594 C 354.285156 822.878906 335.707031 822.707031 317.628906 816.621094 C 315.082031 815.761719 312.367188 815.070312 310.453125 812.28125 "/>
+<path fill-rule="nonzero" fill="#279491"  d="M 907.832031 707.40625 C 908.304688 713.976562 906.894531 719.347656 906.039062 725.964844 L 852.570312 725.964844 C 850.976562 736.515625 849.550781 745.921875 847.925781 756.664062 L 896.457031 756.664062 C 896.152344 763.066406 896.105469 768.214844 894.566406 774.554688 L 845.121094 774.554688 C 841.019531 789.160156 841.375 803.386719 837.703125 817.339844 C 828.726562 818.429688 820.101562 817.84375 810.183594 817.730469 C 816.253906 780.394531 822.148438 744.140625 828.121094 707.40625 Z M 907.832031 707.40625 "/>
+<path fill-rule="nonzero" fill="#279491"  d="M 1033.378906 775.019531 C 1033.1875 760.539062 1023.132812 752.054688 1009.203125 754.144531 C 994.921875 756.289062 985.441406 767.527344 985.074219 782.667969 C 984.878906 790.828125 986.410156 798.402344 994.015625 802.847656 C 1002.066406 807.550781 1010.476562 807.257812 1018.613281 802.722656 C 1029.652344 796.574219 1032.398438 786 1033.378906 775.019531 M 1000.804688 820.347656 C 991.710938 819.914062 980.003906 818.875 970.273438 811.125 C 954.101562 798.246094 953.519531 772.796875 969.03125 756.347656 C 982.945312 741.59375 1000.761719 737.652344 1020.089844 738.863281 C 1029.765625 739.464844 1039.011719 741.800781 1047.039062 747.96875 C 1067.1875 763.457031 1062.339844 797.179688 1041.148438 810.457031 C 1029.722656 817.613281 1019.230469 820.496094 1000.804688 820.347656 "/>
+<path fill-rule="nonzero" fill="#1F487C"  d="M 567.003906 722.195312 L 530.476562 722.195312 C 528.203125 716.308594 528.964844 711.203125 529.640625 705.207031 L 631.609375 705.207031 C 633.417969 710.410156 632.933594 715.628906 631.621094 721.378906 C 620.136719 723.605469 608.558594 721.175781 595.972656 723.070312 L 595.972656 819.457031 C 585.808594 820.910156 576.976562 820.664062 567.003906 819.703125 Z M 567.003906 722.195312 "/>
+<path fill-rule="nonzero" fill="#279491"  d="M 926.699219 697.652344 C 935.535156 696.425781 943.753906 696.570312 953.550781 697.660156 C 946.921875 737.789062 940.390625 777.308594 933.800781 817.199219 C 924.863281 818.363281 916.84375 817.867188 907.433594 817.5625 C 913.933594 777.09375 920.289062 737.546875 926.699219 697.652344 "/></g><g id="setuMarkWhite"><g clip-path="url(#clip-0)">
+<g clip-path="url(#clip-1)">
+<path fill-rule="nonzero" fill="#ffffff" d="M 336.949219 351.523438 L 336.949219 632.324219 L 1188.363281 632.324219 L 1188.363281 351.523438 Z M 336.949219 351.523438 "/>
+</g>
+</g>
+<g clip-path="url(#clip-2)">
+<g clip-path="url(#clip-3)">
+<path fill-rule="nonzero" fill="#ffffff" d="M 421.199219 421.300781 L 421.199219 562.664062 L 565.882812 562.664062 L 565.882812 421.300781 Z M 421.199219 421.300781 "/>
+</g>
+</g>
+<g clip-path="url(#clip-4)">
+<g clip-path="url(#clip-5)">
+<path fill-rule="nonzero" fill="#ffffff" d="M 959.800781 421.546875 L 959.800781 562.414062 L 1102.386719 562.414062 L 1102.386719 421.546875 Z M 959.800781 421.546875 "/>
+</g>
+</g>
+<g clip-path="url(#clip-6)">
+<g clip-path="url(#clip-7)">
+<path fill-rule="nonzero" fill="#ffffff" d="M 684.636719 201.453125 L 684.636719 381.199219 L 839.046875 381.199219 L 839.046875 201.453125 Z M 684.636719 201.453125 "/>
+</g>
+</g></g></svg>
+
+<!-- ===== ICON SPRITE ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M4 12h16"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id="i-type" viewBox="0 0 24 24"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.1"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5M15 19c0-2.3 1.6-4 4-4"/></symbol>
+<symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M6 3h3l2 5-2.5 1.5a12 12 0 0 0 5 5L17 14l5 2v3a2 2 0 0 1-2 2A17 17 0 0 1 4 5a2 2 0 0 1 2-2z"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12z"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+<symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 4 7 20M17 4l-2 16M5 9h14M4 15h14"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l9 9-8 8-9-9z"/><circle cx="7.5" cy="7.5" r="1.3" class="fill"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></symbol>
+<symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+<symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M9 15l-3-3a12 12 0 0 1 9-9c2 0 3 1 3 3a12 12 0 0 1-9 9zM14.5 9.5h.01"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 6-3 7-3 7h18s-3-1-3-7M10.5 20a2 2 0 0 0 3 0"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-7"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" class="fill"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+<symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><path d="M14 14h3v3M20 14v.01M14 20h.01M17 17v.01M20 17v4"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8L12 3z"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4zM13 7l4 4"/></symbol>
+<symbol id="i-source" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11 16 7M8.2 13l7.8 4"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+<symbol id="i-cap" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M8 6V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/><circle cx="12" cy="12.5" r="3"/></symbol>
+</defs></svg>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+  <div class="wrap">
+    <div class="brandlock">
+      <svg class="logo" viewBox="305 188 920 660"><use href="#setuLogoArt"/></svg>
+    </div>
+    <div class="titleblock">
+      <h1>Trade Show Trial — Full Workflow</h1>
+      <p>Instant sign up. Start capturing leads in minutes. Every sign up automatically becomes an internal Setu Flow lead.</p>
+    </div>
+    <div class="topcta">
+      <span class="tag-pill"><svg class="ic"><use href="#i-spark"/></svg> Prototype</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== TOP 5-STEP FLOW ===== -->
+  <section class="reveal">
+    <div class="eyebrow"><span class="bar"></span> From visitor to internal lead</div>
+    <div class="stepper" id="stepper">
+      <button class="step-tab active" data-step="1"><span class="num">1</span><span class="lbl">Visitor Lands</span></button>
+      <button class="step-tab" data-step="2"><span class="num">2</span><span class="lbl">Quick Sign Up — Instant Access</span></button>
+      <button class="step-tab" data-step="3"><span class="num">3</span><span class="lbl">Trial Workspace Created</span></button>
+      <button class="step-tab" data-step="4"><span class="num">4</span><span class="lbl">Internal Lead Created in Setu Flow</span></button>
+      <button class="step-tab" data-step="5"><span class="num">5</span><span class="lbl">Lead Appears in Setu Flow CRM</span></button>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="panel show" data-panel="1">
+      <div class="panel-grid">
+        <div>
+          <div class="panel-head"><span class="pn">1</span><h3>Visitor Lands</h3></div>
+          <p class="lede">The trade show landing page leads with one promise — capture leads on the floor in minutes. No demo gate, no sales call. The visitor sees exactly what the trial does before they sign up.</p>
+          <ul class="feat-list">
+            <li><span class="chipico"><svg class="ic"><use href="#i-zap"/></svg></span> Live capture from the first second</li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-shield"/></svg></span> No credit card, no approval needed</li>
+          </ul>
+        </div>
+        <div class="hero-card">
+          <div class="inner">
+            <div class="brandrow"><svg class="hero-mark" viewBox="330 188 870 470"><use href="#setuMarkWhite"/></svg><span class="hero-word">SETU <em>Flow</em></span></div>
+            <h2>Capture trade show leads in minutes.</h2>
+            <ul>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Scan, dictate or type</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Save product interest</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Share vCard / QR</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Export CSV after the show</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> See full platform preview</li>
+            </ul>
+            <button class="btn btn-white" onclick="goStep(2)"><svg class="ic"><use href="#i-rocket"/></svg> Start Free Trial Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="panel" data-panel="2">
+      <div class="panel-grid">
+        <div>
+          <div class="panel-head"><span class="pn">2</span><h3>Quick Sign Up — Instant Access</h3></div>
+          <p class="lede">Seven fields, three required. Trade show name and booth are captured up front so the lead source is fully attributed from the first second. No credit card.</p>
+          <ul class="feat-list">
+            <li><span class="chipico"><svg class="ic"><use href="#i-flag"/></svg></span> Show &amp; booth captured at sign up</li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-clock"/></svg></span> Workspace ready in seconds</li>
+          </ul>
+        </div>
+        <div class="card pad">
+          <div class="field"><label><svg class="ic"><use href="#i-user"/></svg> Full Name <span class="req">*</span></label>
+            <div class="input-shell"><input id="f_name" value="Priya Sharma" /></div></div>
+          <div class="field"><label><svg class="ic"><use href="#i-building"/></svg> Company <span class="req">*</span></label>
+            <div class="input-shell"><input id="f_company" value="Green Valley Foods" /></div></div>
+          <div class="field"><label><svg class="ic"><use href="#i-mail"/></svg> Email <span class="req">*</span></label>
+            <div class="input-shell"><input id="f_email" value="priya@greenvalley.com" /></div></div>
+          <div class="field"><label><svg class="ic"><use href="#i-chat"/></svg> Phone / WhatsApp</label>
+            <div class="input-shell"><span class="cc">🇮🇳 +91</span><input id="f_phone" value="98765 43210" /></div></div>
+          <div class="field"><label><svg class="ic"><use href="#i-flag"/></svg> Trade Show Name <span class="req">*</span></label>
+            <div class="input-shell"><input id="f_show" value="Gulfood 2026" /></div></div>
+          <div class="field"><label><svg class="ic"><use href="#i-hash"/></svg> Booth Number (optional)</label>
+            <div class="input-shell"><input id="f_booth" value="B2-45" /></div></div>
+          <div class="field"><label><svg class="ic"><use href="#i-tag"/></svg> Main Product or Category (optional)</label>
+            <div class="input-shell"><input id="f_product" value="Mango Snacks" /></div></div>
+          <button class="btn btn-primary" onclick="goStep(3)"><svg class="ic"><use href="#i-rocket"/></svg> Start My Free Trial</button>
+          <p class="muted-note"><svg class="ic"><use href="#i-shield"/></svg> No credit card required</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="panel" data-panel="3">
+      <div class="panel-grid">
+        <div>
+          <div class="panel-head"><span class="pn">3</span><h3>Instant Trial Workspace Created</h3></div>
+          <p class="lede">A managed trial org is provisioned with the trade-show entitlement applied — capture, vCard, CSV and previews are live. The user is dropped straight into a working workspace.</p>
+          <ul class="feat-list">
+            <li><span class="chipico"><svg class="ic"><use href="#i-layers"/></svg></span> Capture, vCard, CSV &amp; previews enabled</li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-shield"/></svg></span> Trade-show entitlement applied automatically</li>
+          </ul>
+        </div>
+        <div class="card pad">
+          <div class="success">
+            <div class="ring"><div class="core"><svg class="ic"><use href="#i-check"/></svg></div></div>
+            <h3>Your Trade Show Trial is ready</h3>
+            <ul class="readylist">
+              <li><span class="chipico"><svg class="ic"><use href="#i-cap"/></svg></span> Start capturing leads</li>
+              <li><span class="chipico"><svg class="ic"><use href="#i-qr"/></svg></span> Share your vCard</li>
+              <li><span class="chipico"><svg class="ic"><use href="#i-download"/></svg></span> Export to CSV</li>
+              <li><span class="chipico"><svg class="ic"><use href="#i-eye"/></svg></span> Preview full platform</li>
+            </ul>
+            <button class="btn btn-primary" onclick="document.getElementById('workspace').scrollIntoView();"><svg class="ic"><use href="#i-arrow"/></svg> Go to My Workspace</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="panel" data-panel="4">
+      <div class="panel-grid">
+        <div>
+          <div class="panel-head"><span class="pn">4</span><h3>Automatic Internal Lead Created</h3></div>
+          <p class="lede">The same sign up writes a lead into the internal SETU Flow org — sales sees the new trial without anyone keying it in. Source and trade show carry over verbatim.</p>
+          <ul class="feat-list">
+            <li><span class="chipico"><svg class="ic"><use href="#i-source"/></svg></span> Fully attributed lead source</li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-bell"/></svg></span> Sales team notified instantly</li>
+          </ul>
+        </div>
+        <div class="card pad">
+          <div class="badge-center"><svg class="ic"><use href="#i-users"/></svg></div>
+          <h4 style="text-align:center;color:var(--navy);margin-bottom:20px;font-size:17px;">New internal lead created</h4>
+          <ul class="lead-fields" id="leadFields">
+            <li><span class="chipico"><svg class="ic"><use href="#i-source"/></svg></span><span><b>Lead Source:</b> Trade Show Trial</span></li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-building"/></svg></span><span><b>Company:</b> Green Valley Foods</span></li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-user"/></svg></span><span><b>Contact:</b> Priya Sharma</span></li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-phone"/></svg></span><span><b>Phone:</b> +91 98765 43210</span></li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-flag"/></svg></span><span><b>Trade Show:</b> Gulfood 2026</span></li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-hash"/></svg></span><span><b>Booth:</b> B2-45</span></li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-spark"/></svg></span><span><b>Status:</b> Trial Started</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="panel" data-panel="5">
+      <div class="panel-grid">
+        <div>
+          <div class="panel-head"><span class="pn">5</span><h3>Lead Appears in Setu Flow CRM</h3></div>
+          <p class="lede">Inside the internal CRM the trial lands in the Trade Show Trial pipeline with a fresh lead card — quotes, orders and tasks at zero, ready for the team to work.</p>
+          <ul class="feat-list">
+            <li><span class="chipico"><svg class="ic"><use href="#i-target"/></svg></span> Lands in the Trade Show Trial pipeline</li>
+            <li><span class="chipico"><svg class="ic"><use href="#i-chart"/></svg></span> Hot-lead scoring starts immediately</li>
+          </ul>
+        </div>
+        <div class="card crm">
+          <div class="crm-bar">
+            <span class="crumbs">Leads <svg class="ic" style="width:13px;height:13px"><use href="#i-arrow"/></svg> <b>Trade Show Trial</b></span>
+            <span class="badge badge-blue"><svg class="ic"><use href="#i-spark"/></svg> New Lead</span>
+          </div>
+          <div class="crm-body">
+            <div class="crm-name">
+              <div class="avatar"><svg class="ic"><use href="#i-user"/></svg></div>
+              <div><div class="nm" id="crmCompany">Green Valley Foods</div><div class="sub" id="crmContact">Priya Sharma</div></div>
+              <span class="badge badge-green" style="margin-left:auto;"><svg class="ic"><use href="#i-check"/></svg> Trial Started</span>
+            </div>
+            <p class="crm-detail"><svg class="ic"><use href="#i-source"/></svg><b>Source:</b> Trade Show Trial Signup</p>
+            <p class="crm-detail"><svg class="ic"><use href="#i-flag"/></svg><b>Trade Show:</b> <span id="crmShow">Gulfood 2026</span></p>
+            <p class="crm-detail"><svg class="ic"><use href="#i-phone"/></svg><b>Phone:</b> +91 98765 43210</p>
+            <p class="crm-detail"><svg class="ic"><use href="#i-hash"/></svg><b>Booth:</b> B2-45</p>
+            <p class="crm-detail"><svg class="ic"><use href="#i-mail"/></svg><b>Email:</b> priya@greenvalley.com</p>
+            <div class="crm-stats">
+              <div class="crm-stat"><svg class="ic"><use href="#i-file"/></svg><div class="v">0</div><div class="k">Quotes</div></div>
+              <div class="crm-stat"><svg class="ic"><use href="#i-box"/></svg><div class="v">0</div><div class="k">Orders</div></div>
+              <div class="crm-stat"><svg class="ic"><use href="#i-check-circle"/></svg><div class="v">0</div><div class="k">Tasks</div></div>
+            </div>
+            <p class="crm-foot"><svg class="ic"><use href="#i-spark"/></svg> Trial workspace created automatically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CAPTURE WORKSPACE ===== -->
+  <section id="workspace" class="reveal">
+    <div class="section-band"><svg class="ic" style="width:18px;height:18px"><use href="#i-cap"/></svg> Trial Workspace — Trade Show Capture Experience</div>
+    <div class="ws">
+      <div class="ws-grid">
+
+        <!-- Col 1 -->
+        <div class="ws-col">
+          <h4><span class="chipico"><svg class="ic"><use href="#i-cap"/></svg></span> Capture Leads (3 ways)</h4>
+          <div class="cap-tabs">
+            <button class="on" data-cap="type" onclick="capTab('type')"><svg class="ic"><use href="#i-type"/></svg> Type</button>
+            <button data-cap="dictate" onclick="capTab('dictate')"><svg class="ic"><use href="#i-mic"/></svg> Dictate</button>
+            <button data-cap="scan" onclick="capTab('scan')"><svg class="ic"><use href="#i-scan"/></svg> Scan</button>
+          </div>
+
+          <div class="cap-view on" data-capview="type">
+            <div class="typecap">
+              <div class="input-shell"><svg class="ic"><use href="#i-building"/></svg><input value="Green Valley Foods" /></div>
+              <div class="input-shell"><svg class="ic"><use href="#i-user"/></svg><input value="Priya Sharma" /></div>
+              <div class="input-shell"><svg class="ic"><use href="#i-mail"/></svg><input value="priya@greenvalley.com" /></div>
+              <div class="input-shell"><svg class="ic"><use href="#i-phone"/></svg><input value="+91 98765 43210" /></div>
+            </div>
+            <button class="btn btn-primary" style="font-size:13px;padding:11px;" onclick="saveLead()"><svg class="ic"><use href="#i-check"/></svg> Save Lead</button>
+          </div>
+
+          <div class="cap-view" data-capview="dictate">
+            <div class="wavewrap">
+              <div class="wave" id="wave"></div>
+              <div class="wave-time"><span style="display:flex;align-items:center;gap:7px"><span class="rec-dot"></span> Recording</span><span>00:08</span></div>
+            </div>
+            <div class="quote">"Company Green Valley Foods, contact Priya Sharma, product mango chips, category healthy snacks, notes wants samples next week."</div>
+            <div class="extracted">
+              <div class="et"><svg class="ic"><use href="#i-spark"/></svg> Auto-extracted fields</div>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Company: Green Valley Foods</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Contact: Priya Sharma</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Product: Mango Chips</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Category: Healthy Snacks</li>
+              <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Notes: wants samples next week</li>
+            </div>
+            <button class="btn btn-primary" style="font-size:13px;padding:11px;margin-top:13px;" onclick="saveLead()"><svg class="ic"><use href="#i-check"/></svg> Save Lead</button>
+          </div>
+
+          <div class="cap-view" data-capview="scan">
+            <div class="phone-frame">
+              <div class="scanline"><span class="rec-dot"></span> Scanning business card…</div>
+              <div class="mini-field"><span class="chipico"><svg class="ic"><use href="#i-building"/></svg></span><div><span>Company</span><b>Green Valley Foods</b></div></div>
+              <div class="mini-field"><span class="chipico"><svg class="ic"><use href="#i-user"/></svg></span><div><span>Contact</span><b>Priya Sharma</b></div></div>
+              <div class="mini-field"><span class="chipico"><svg class="ic"><use href="#i-mail"/></svg></span><div><span>Email</span><b>priya@greenvalley.com</b></div></div>
+              <div class="mini-field"><span class="chipico"><svg class="ic"><use href="#i-phone"/></svg></span><div><span>Phone</span><b>+91 98765 43210</b></div></div>
+            </div>
+            <button class="btn btn-primary" style="font-size:13px;padding:11px;margin-top:13px;" onclick="saveLead()"><svg class="ic"><use href="#i-check"/></svg> Save Lead</button>
+          </div>
+        </div>
+
+        <!-- Col 2 -->
+        <div class="ws-col">
+          <h4><span class="chipico"><svg class="ic"><use href="#i-check-circle"/></svg></span> Captured Lead Saved</h4>
+          <div class="crm-name" style="margin-bottom:14px;">
+            <div class="avatar" style="width:38px;height:38px;border-radius:11px;"><svg class="ic" style="width:19px;height:19px"><use href="#i-user"/></svg></div>
+            <div><div class="nm" style="font-size:14px;">Green Valley Foods</div><div class="sub">Priya Sharma</div></div>
+          </div>
+          <div class="lead-saved">
+            <div class="row"><span class="chipico"><svg class="ic"><use href="#i-mail"/></svg></span><span class="k">Email</span><span class="v">priya@greenvalley.com</span></div>
+            <div class="row"><span class="chipico"><svg class="ic"><use href="#i-phone"/></svg></span><span class="k">Phone</span><span class="v">+91 98765 43210</span></div>
+            <div class="row"><span class="chipico"><svg class="ic"><use href="#i-tag"/></svg></span><span class="k">Product</span><span class="v">Mango Chips</span></div>
+            <div class="row"><span class="chipico"><svg class="ic"><use href="#i-layers"/></svg></span><span class="k">Category</span><span class="v">Healthy Snacks</span></div>
+            <div class="row"><span class="chipico"><svg class="ic"><use href="#i-hash"/></svg></span><span class="k">Booth</span><span class="v">B2-45</span></div>
+            <div class="row"><span class="chipico"><svg class="ic"><use href="#i-edit"/></svg></span><span class="k">Notes</span><span class="v">Wants samples next week</span></div>
+          </div>
+          <div class="saved-actions">
+            <button onclick="toast('vCard / QR generated')"><svg class="ic"><use href="#i-qr"/></svg> vCard / QR</button>
+            <button onclick="capTab('type')"><svg class="ic"><use href="#i-plus"/></svg> Add Another</button>
+            <button onclick="toast('CSV exported')"><svg class="ic"><use href="#i-download"/></svg> Export CSV</button>
+          </div>
+        </div>
+
+        <!-- Col 3 -->
+        <div class="ws-col">
+          <h4><span class="chipico"><svg class="ic"><use href="#i-tag"/></svg></span> Saved for Easy Access</h4>
+          <p class="chip-label">Products</p>
+          <div class="chips" id="chipProducts">
+            <span class="chip">Mango Chips <span class="x" onclick="this.parentElement.remove()"><svg class="ic"><use href="#i-x"/></svg></span></span>
+            <span class="chip">Banana Chips <span class="x" onclick="this.parentElement.remove()"><svg class="ic"><use href="#i-x"/></svg></span></span>
+            <span class="chip">Coconut Chips <span class="x" onclick="this.parentElement.remove()"><svg class="ic"><use href="#i-x"/></svg></span></span>
+          </div>
+          <span class="addnew" onclick="addChip('chipProducts','New Product')"><svg class="ic"><use href="#i-plus"/></svg> Add New</span>
+          <p class="chip-label" style="margin-top:20px;">Categories</p>
+          <div class="chips" id="chipCats">
+            <span class="chip">Healthy Snacks <span class="x" onclick="this.parentElement.remove()"><svg class="ic"><use href="#i-x"/></svg></span></span>
+            <span class="chip">Organic Foods <span class="x" onclick="this.parentElement.remove()"><svg class="ic"><use href="#i-x"/></svg></span></span>
+            <span class="chip">Plant Based <span class="x" onclick="this.parentElement.remove()"><svg class="ic"><use href="#i-x"/></svg></span></span>
+          </div>
+          <span class="addnew" onclick="addChip('chipCats','New Category')"><svg class="ic"><use href="#i-plus"/></svg> Add New</span>
+        </div>
+
+        <!-- Col 4-5 -->
+        <div class="ws-col" style="grid-column:span 2;">
+          <h4><span class="chipico"><svg class="ic"><use href="#i-eye"/></svg></span> Preview Full Platform <span style="font-weight:500;color:var(--slate-2);font-size:11px;">(available after upgrade)</span></h4>
+          <div class="preview-row"><span class="chipico"><svg class="ic"><use href="#i-grid"/></svg></span><div class="pt"><b>Dashboard</b><span>Available after upgrade</span></div><span class="pv" onclick="toast('Preview locked — upgrade to unlock')"><svg class="ic"><use href="#i-lock"/></svg> Preview</span></div>
+          <div class="preview-row"><span class="chipico"><svg class="ic"><use href="#i-chart"/></svg></span><div class="pt"><b>Analytics</b><span>Available after upgrade</span></div><span class="pv" onclick="toast('Preview locked — upgrade to unlock')"><svg class="ic"><use href="#i-lock"/></svg> Preview</span></div>
+          <div class="preview-row"><span class="chipico"><svg class="ic"><use href="#i-target"/></svg></span><div class="pt"><b>Lead Command Center</b><span>Available after upgrade</span></div><span class="pv" onclick="toast('Preview locked — upgrade to unlock')"><svg class="ic"><use href="#i-lock"/></svg> Preview</span></div>
+          <div class="preview-row"><span class="chipico"><svg class="ic"><use href="#i-file"/></svg></span><div class="pt"><b>Quotes</b><span>Available after upgrade</span></div><span class="pv" onclick="toast('Preview locked — upgrade to unlock')"><svg class="ic"><use href="#i-lock"/></svg> Preview</span></div>
+          <div class="preview-row"><span class="chipico"><svg class="ic"><use href="#i-box"/></svg></span><div class="pt"><b>Orders</b><span>Available after upgrade</span></div><span class="pv" onclick="toast('Preview locked — upgrade to unlock')"><svg class="ic"><use href="#i-lock"/></svg> Preview</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BACKEND + PIPELINE ===== -->
+  <section class="reveal">
+    <div class="two">
+      <div class="card pad">
+        <h3 class="card-title"><svg class="ic"><use href="#i-layers"/></svg> What Happens in the Backend (Automatic)</h3>
+        <div class="flow">
+          <div class="flow-node"><div class="ring" style="background:linear-gradient(135deg,#6366f1,#818cf8)"><svg class="ic"><use href="#i-user"/></svg></div><div class="lbl">User Signs Up</div></div>
+          <div class="flow-node"><div class="ring" style="background:linear-gradient(135deg,#0ea271,#34d399)"><svg class="ic"><use href="#i-building"/></svg></div><div class="lbl">Trial Org Created</div></div>
+          <div class="flow-node"><div class="ring" style="background:var(--grad)"><svg class="ic"><use href="#i-shield"/></svg></div><div class="lbl">Trade Show Entitlement Applied</div></div>
+          <div class="flow-node"><div class="ring" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><svg class="ic"><use href="#i-layers"/></svg></div><div class="lbl">Modules Enabled (Capture, vCard, CSV, Previews)</div></div>
+          <div class="flow-node"><div class="ring" style="background:linear-gradient(135deg,#ea8a0b,#fbbf24)"><svg class="ic"><use href="#i-source"/></svg></div><div class="lbl">Internal Lead Created in Setu Flow</div></div>
+          <div class="flow-node"><div class="ring" style="background:linear-gradient(135deg,#0f766e,#2dd4bf)"><svg class="ic"><use href="#i-bell"/></svg></div><div class="lbl">Setu Flow Team Notified / SMS Queue</div></div>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <h3 class="card-title"><svg class="ic"><use href="#i-chart"/></svg> Internal Sales Pipeline (Automatic)</h3>
+        <div class="pipe">
+          <div class="pipe-stage"><h5><svg class="ic"><use href="#i-spark"/></svg> Trial Started</h5><ul><li>New sign up</li><li>Lead created</li></ul></div>
+          <div class="pipe-stage"><h5><svg class="ic"><use href="#i-cap"/></svg> Active Usage</h5><ul><li>Captured leads</li><li>CSV download</li><li>vCard shared</li><li>Preview viewed</li></ul></div>
+          <div class="pipe-stage"><h5><svg class="ic"><use href="#i-zap"/></svg> Engaged Lead</h5><ul><li>Hot lead score rises</li></ul></div>
+          <div class="pipe-stage"><h5><svg class="ic"><use href="#i-phone"/></svg> Sales Follow Up</h5><ul><li>Team reaches out at the right time</li></ul></div>
+          <div class="pipe-stage win"><h5><svg class="ic"><use href="#i-check-circle"/></svg> Converted</h5><ul><li>Upgrade to full Setu Flow</li></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER TRIO ===== -->
+  <section class="reveal">
+    <div class="trio">
+      <div class="card">
+        <h4><span class="chipico"><svg class="ic"><use href="#i-check-circle"/></svg></span> Trial Includes</h4>
+        <ul>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Capture leads (Type, Dictate, Scan)</li>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Save product &amp; category</li>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> vCard / QR sharing</li>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Export to CSV</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4><span class="chipico"><svg class="ic"><use href="#i-lock"/></svg></span> Available After Upgrade</h4>
+        <div class="pillrow">
+          <span class="pill"><svg class="ic"><use href="#i-grid"/></svg> Dashboard</span>
+          <span class="pill"><svg class="ic"><use href="#i-chart"/></svg> Analytics</span>
+          <span class="pill"><svg class="ic"><use href="#i-target"/></svg> Lead Command Center</span>
+          <span class="pill"><svg class="ic"><use href="#i-file"/></svg> Quotes</span>
+          <span class="pill"><svg class="ic"><use href="#i-box"/></svg> Orders</span>
+          <span class="pill"><svg class="ic"><use href="#i-shield"/></svg> Full CRM &amp; Compliance</span>
+        </div>
+      </div>
+      <div class="card">
+        <h4><span class="chipico"><svg class="ic"><use href="#i-rocket"/></svg></span> No Approval Needed</h4>
+        <ul>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Instant access</li>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Start in seconds</li>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> Your data is yours</li>
+          <li><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span> We build the pipeline, you close the deals</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <svg class="logo" viewBox="305 188 920 660"><use href="#setuLogoArt"/></svg>
+    <span>Trade Show Trial prototype · interactive mockup for review</span>
+  </footer>
+</div>
+
+<div id="toast" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#11243d;color:#fff;padding:13px 22px;border-radius:12px;font-family:'Sora';font-weight:600;font-size:13.5px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.28s cubic-bezier(.2,.7,.3,1);z-index:50;display:flex;align-items:center;gap:9px;"></div>
+
+<script>
+  (function(){const w=document.getElementById('wave');for(let i=0;i<42;i++){const b=document.createElement('i');b.style.animationDelay=(i*0.045)+'s';w.appendChild(b);}})();
+
+  function goStep(n){
+    document.querySelectorAll('.step-tab').forEach(t=>t.classList.toggle('active',t.dataset.step==n));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('show',p.dataset.panel==n));
+    syncLeadData();
+  }
+  document.querySelectorAll('.step-tab').forEach(t=>t.addEventListener('click',()=>goStep(t.dataset.step)));
+
+  function val(id){const e=document.getElementById(id);return e?e.value:'';}
+  function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+  function syncLeadData(){
+    const company=val('f_company'),show=val('f_show'),contact=val('f_name');
+    const ff=document.getElementById('leadFields');
+    if(ff){
+      ff.children[1].querySelector('span').innerHTML='<b>Company:</b> '+company;
+      ff.children[2].querySelector('span').innerHTML='<b>Contact:</b> '+contact;
+      ff.children[4].querySelector('span').innerHTML='<b>Trade Show:</b> '+show;
+    }
+    setText('crmCompany',company);setText('crmContact',contact);setText('crmShow',show);
+  }
+
+  function capTab(name){
+    document.querySelectorAll('.cap-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.cap===name));
+    document.querySelectorAll('.cap-view').forEach(v=>v.classList.toggle('on',v.dataset.capview===name));
+  }
+
+  function addChip(listId,def){
+    const name=prompt('Add to list:',def);if(!name)return;
+    const span=document.createElement('span');span.className='chip';
+    span.innerHTML=name+' <span class="x"><svg class="ic"><use href="#i-x"/></svg></span>';
+    span.querySelector('.x').onclick=()=>span.remove();
+    document.getElementById(listId).appendChild(span);
+  }
+
+  function saveLead(){toast('Lead saved to your trial workspace');}
+
+  let tt;
+  function toast(msg){
+    const t=document.getElementById('toast');
+    t.innerHTML='<svg class="ic" style="width:16px;height:16px"><use href="#i-check-circle"/></svg>'+msg;
+    t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
+    clearTimeout(tt);tt=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2000);
+  }
+
+  const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
