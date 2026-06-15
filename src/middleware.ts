@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
 import {
@@ -17,6 +17,12 @@ type TrialCapabilityRow = {
   preview_capabilities: string[] | null;
   allow_exports: boolean | null;
   allow_premium: boolean | null;
+};
+
+type MiddlewareCookieUpdate = {
+  name: string;
+  value: string;
+  options: CookieOptions;
 };
 
 function readMetadataOrganizationId(user: User) {
@@ -65,7 +71,7 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: MiddlewareCookieUpdate[]) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
