@@ -223,7 +223,7 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
     return { ok: false, message: 'Trade Show Trial provisioning is not available in this environment.' };
   }
 
-  const admin = createAdminSupabaseClient();
+  const admin = createAdminSupabaseClient() as SupabaseAdminClient;
   if (!admin) {
     return { ok: false, message: 'Trade Show Trial provisioning is not configured.' };
   }
