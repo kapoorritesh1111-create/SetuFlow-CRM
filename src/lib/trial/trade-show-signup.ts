@@ -36,7 +36,7 @@ type ProvisionRpcResult = {
   workspace_path?: string;
 };
 
-type SupabaseAdminClient = NonNullable<ReturnType<typeof createAdminSupabaseClient>>;
+type SupabaseAdminClient = any;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+()\d\s.-]{7,}$/;
@@ -153,7 +153,7 @@ async function findAuthUserIdByEmail(admin: SupabaseAdminClient, email: string) 
   if (profile?.id) return { userId: profile.id as string, fromProfile: true };
 
   const { data: usersPage } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  const matched = usersPage?.users?.find((user) => normalizeEmail(user.email) === email);
+  const matched = usersPage?.users?.find((user: { id: string; email?: string | null }) => normalizeEmail(user.email) === email);
   return matched?.id ? { userId: matched.id as string, fromProfile: false } : null;
 }
 
@@ -238,7 +238,7 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
     createdUser = await createOrAttachTrialUser(admin, value);
     const orgSlug = uniqueTrialSlug(value.company);
 
-    const { data, error } = await (admin as any).rpc('provision_trade_show_trial_workspace', {
+    const { data, error } = await admin.rpc('provision_trade_show_trial_workspace', {
       p_user_id: createdUser.userId,
       p_full_name: value.fullName,
       p_company: value.company,
