@@ -84,9 +84,9 @@ export async function middleware(request: NextRequest) {
     .select('organization_id, trial_mode, active_capabilities, preview_capabilities, allow_exports, allow_premium')
     .eq('organization_id', organizationId)
     .eq('trial_mode', TRADE_SHOW_TRIAL_MODE)
-    .maybeSingle<TrialCapabilityRow>();
+    .maybeSingle();
 
-  const state = normalizeTradeShowTrialCapabilityState(organizationId, data);
+  const state = normalizeTradeShowTrialCapabilityState(organizationId, data as TrialCapabilityRow | null);
   if (!isPreviewOnlyTrialCapability(state, capability)) return response;
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
