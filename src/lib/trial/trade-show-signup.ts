@@ -36,7 +36,7 @@ type ProvisionRpcResult = {
   workspace_path?: string;
 };
 
-type SupabaseAdminClient = ReturnType<typeof createAdminSupabaseClient>;
+type SupabaseAdminClient = NonNullable<ReturnType<typeof createAdminSupabaseClient>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+()\d\s.-]{7,}$/;
@@ -224,6 +224,10 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
   }
 
   const admin = createAdminSupabaseClient();
+  if (!admin) {
+    return { ok: false, message: 'Trade Show Trial provisioning is not configured.' };
+  }
+
   const metadata = getRequestMetadata();
   let createdUser: { userId: string; created: boolean; temporaryPassword: string | null } | null = null;
 
