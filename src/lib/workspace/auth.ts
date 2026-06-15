@@ -40,6 +40,14 @@ type QueryClient = {
   };
 };
 
+type WorkspaceRows = {
+  profile: WorkspaceProfile | null;
+  membership: MembershipRow | null;
+  memberships: MembershipRow[];
+  organization: OrganizationRow | null;
+  requestedOrganizationId: string | null;
+};
+
 const ACTIVE_ORGANIZATION_COOKIE = 'setuflow_active_organization_id';
 const ADMIN_ROLE_NAMES = ['owner', 'admin'] as const;
 
@@ -52,15 +60,12 @@ export function isSetuInternalOrganization(organization: OrganizationRow | null 
   return String(organization.slug ?? '').trim().toLowerCase() === SETU_INTERNAL_ORG_SLUG;
 }
 
-
 function normalizeOrganizationId(value: string | null | undefined) {
   const normalized = String(value ?? '').trim();
   return normalized.length > 0 ? normalized : null;
 }
 
-function getRequestedOrganizationId(user: User) {
-  const cookieStore = cookies();
-  const cookieOrgId = normalizeOrganizationId(cookieStore.get(ACTIVE_ORGANIZATION_COOKIE)?.value);
+function getUserMetadataOrganizationId(user: User) {
   const userMetadataOrgId = normalizeOrganizationId(
     (user.user_metadata as Record<string, unknown> | undefined)?.active_organization_id as string | undefined,
   );
@@ -68,17 +73,56 @@ function getRequestedOrganizationId(user: User) {
     (user.app_metadata as Record<string, unknown> | undefined)?.active_organization_id as string | undefined,
   );
 
-  return cookieOrgId ?? userMetadataOrgId ?? appMetadataOrgId ?? null;
+  return userMetadataOrgId ?? appMetadataOrgId ?? null;
 }
 
-export function persistActiveOrganization(orgId: string) {
-  const normalized = normalizeOrganizationId(orgId);
-  if (!normalized) return;
+function parseActiveOrganizationCookie(rawValue: string | null | undefined, user: User) {
+  const raw = normalizeOrganizationId(rawValue);
+  if (!raw) return null;
+
+  try {
+    const decoded = decodeURIComponent(raw);
+    const parsed = JSON.parse(decoded) as { userId?: unknown; organizationId?: unknown; orgId?: unknown };
+    const cookieUserId = String(parsed.userId ?? '').trim();
+    const organizationId = normalizeOrganizationId(String(parsed.organizationId ?? parsed.orgId ?? ''));
+
+    if (!organizationId) return null;
+    if (cookieUserId && cookieUserId !== user.id) return null;
+    return organizationId;
+  } catch {
+    // Backward compatibility for legacy cookies that stored only the organization id.
+    // If the value does not belong to the signed-in user's memberships, workspace
+    // resolution falls back to the user's first active membership below.
+    return raw;
+  }
+}
+
+function getRequestedOrganizationId(user: User, options?: { ignoreCookie?: boolean }) {
+  const cookieOrgId = options?.ignoreCookie
+    ? null
+    : parseActiveOrganizationCookie(cookies().get(ACTIVE_ORGANIZATION_COOKIE)?.value, user);
+
+  return cookieOrgId ?? getUserMetadataOrganizationId(user);
+}
+
+function buildActiveOrganizationCookieValue(orgId: string, userId?: string | null) {
+  const normalizedOrgId = normalizeOrganizationId(orgId);
+  if (!normalizedOrgId) return null;
+
+  const normalizedUserId = String(userId ?? '').trim();
+  if (!normalizedUserId) return normalizedOrgId;
+
+  return encodeURIComponent(JSON.stringify({ userId: normalizedUserId, organizationId: normalizedOrgId }));
+}
+
+export function persistActiveOrganization(orgId: string, userId?: string | null) {
+  const value = buildActiveOrganizationCookieValue(orgId, userId);
+  if (!value) return;
 
   const cookieStore = cookies();
   cookieStore.set({
     name: ACTIVE_ORGANIZATION_COOKIE,
-    value: normalized,
+    value,
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -100,7 +144,12 @@ export function clearActiveOrganization() {
   });
 }
 
-async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
+function logWorkspaceResolutionWarning(message: string, details: Record<string, unknown>) {
+  if (process.env.NODE_ENV === 'test') return;
+  console.warn(`[workspace-auth] ${message}`, details);
+}
+
+async function getWorkspaceRowsWithClient(client: QueryClient, user: User, options?: { ignoreCookie?: boolean }): Promise<WorkspaceRows> {
   const { data: profileRows } = await client.from('profiles').select('*').eq('id', user.id).limit(1);
 
   let profile = ((profileRows ?? [])[0] ?? null) as WorkspaceProfile | null;
@@ -135,7 +184,7 @@ async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
     }
   }
 
-  const requestedOrganizationId = getRequestedOrganizationId(user);
+  const requestedOrganizationId = getRequestedOrganizationId(user, options);
   const membership =
     memberships.find((row) => row.organization_id === requestedOrganizationId) ?? memberships[0] ?? null;
 
@@ -151,11 +200,47 @@ async function getWorkspaceRowsWithClient(client: QueryClient, user: User) {
     organization = ((organizationRows ?? [])[0] ?? null) as OrganizationRow | null;
   }
 
-  return { profile, membership, memberships, organization };
+  return { profile, membership, memberships, organization, requestedOrganizationId };
+}
+
+function mergeWorkspaceRows(primary: WorkspaceRows, fallback: WorkspaceRows): WorkspaceRows {
+  return {
+    profile: primary.profile ?? fallback.profile,
+    membership: primary.membership ?? fallback.membership,
+    memberships: primary.memberships.length > 0 ? primary.memberships : fallback.memberships,
+    organization: primary.organization ?? fallback.organization,
+    requestedOrganizationId: primary.requestedOrganizationId ?? fallback.requestedOrganizationId,
+  };
+}
+
+async function resolveWorkspaceRows(supabase: unknown, user: User, options?: { ignoreCookie?: boolean }) {
+  const admin = createAdminSupabaseClient();
+  let rows: WorkspaceRows = {
+    profile: null,
+    membership: null,
+    memberships: [],
+    organization: null,
+    requestedOrganizationId: getRequestedOrganizationId(user, options),
+  };
+
+  if (admin) {
+    rows = await getWorkspaceRowsWithClient(admin as unknown as QueryClient, user, options);
+  }
+
+  if (!rows.profile || !rows.membership || !rows.organization) {
+    const fallbackRows = await getWorkspaceRowsWithClient(supabase as unknown as QueryClient, user, options);
+    rows = mergeWorkspaceRows(rows, fallbackRows);
+  }
+
+  return rows;
+}
+
+function canRecoverWorkspaceRows(rows: WorkspaceRows) {
+  return Boolean(rows.requestedOrganizationId && (!rows.membership || !rows.organization));
 }
 
 export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
-  noStore(); // ✅ ONLY FIX
+  noStore();
 
   if (!hasSupabaseEnv) {
     return {
@@ -183,35 +268,48 @@ export async function getCurrentWorkspace(): Promise<WorkspaceContext> {
     };
   }
 
-  let profile: WorkspaceProfile | null = null;
-  let membership: MembershipRow | null = null;
-  let memberships: MembershipRow[] = [];
-  let organization: OrganizationRow | null = null;
+  let rows = await resolveWorkspaceRows(supabase, user);
 
-  const admin = createAdminSupabaseClient();
+  if (canRecoverWorkspaceRows(rows)) {
+    logWorkspaceResolutionWarning('workspace resolution retrying without active organization cookie', {
+      issue: 'GH-8',
+      userId: user.id,
+      requestedOrganizationId: rows.requestedOrganizationId,
+      membershipCount: rows.memberships.length,
+      hasProfile: Boolean(rows.profile),
+      hasMembership: Boolean(rows.membership),
+      hasOrganization: Boolean(rows.organization),
+    });
 
-  if (admin) {
-    const adminRows = await getWorkspaceRowsWithClient(admin as unknown as QueryClient, user);
-    profile = adminRows.profile;
-    membership = adminRows.membership;
-    memberships = adminRows.memberships;
-    organization = adminRows.organization;
+    try {
+      clearActiveOrganization();
+    } catch {
+      // In React server component render paths cookies may be immutable. The retry
+      // still ignores the stale cookie for this request, and the next writable
+      // server action/middleware pass can overwrite it.
+    }
+
+    rows = await resolveWorkspaceRows(supabase, user, { ignoreCookie: true });
   }
 
-  if (!profile || !membership || !organization) {
-    const fallbackRows = await getWorkspaceRowsWithClient(supabase as unknown as QueryClient, user);
-    profile = profile ?? fallbackRows.profile;
-    membership = membership ?? fallbackRows.membership;
-    memberships = memberships.length > 0 ? memberships : fallbackRows.memberships;
-    organization = organization ?? fallbackRows.organization;
+  if (!rows.membership || !rows.organization) {
+    logWorkspaceResolutionWarning('workspace resolution failed for signed-in user', {
+      issue: 'GH-8',
+      userId: user.id,
+      requestedOrganizationId: rows.requestedOrganizationId,
+      membershipCount: rows.memberships.length,
+      hasProfile: Boolean(rows.profile),
+      hasMembership: Boolean(rows.membership),
+      hasOrganization: Boolean(rows.organization),
+    });
   }
 
   return {
     user,
-    profile,
-    membership,
-    memberships,
-    organization,
+    profile: rows.profile,
+    membership: rows.membership,
+    memberships: rows.memberships,
+    organization: rows.organization,
     missingEnv: false,
   };
 }
