@@ -238,7 +238,7 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
     createdUser = await createOrAttachTrialUser(admin, value);
     const orgSlug = uniqueTrialSlug(value.company);
 
-    const { data, error } = await admin.rpc('provision_trade_show_trial_workspace', {
+    const { data, error } = await (admin as any).rpc('provision_trade_show_trial_workspace', {
       p_user_id: createdUser.userId,
       p_full_name: value.fullName,
       p_company: value.company,
