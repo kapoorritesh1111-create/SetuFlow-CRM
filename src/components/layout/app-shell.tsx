@@ -436,10 +436,14 @@ export function AppShell({ children, profile, organization, membership, currentR
           <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">
             Skip to content
           </a>
-          <main id="app-content" className="min-w-0">
-            <DesktopRedirect />
-            <div className="hidden md:block">{children}</div>
-          </main>
+          <div className="flex min-h-screen">
+            <DesktopSidebar organizationName={organization?.name} pathname={pathname} scope={globalScope} mode={desktopSidebarMode} canAccessAdmin={canAccessAdmin} onModeChange={changeDesktopSidebarMode} />
+            <main id="app-content" className="min-w-0 flex-1">
+              {/* S24-ADMUX-38: no app header here — the admin shell dark chrome IS the header */}
+              <DesktopRedirect />
+              <div className="hidden md:block">{children}</div>
+            </main>
+          </div>
           <div className="md:hidden">
             <MobileTabBar />
           </div>
