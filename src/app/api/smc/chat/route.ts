@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ async function assertSetuMember() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return { supabase, userId: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return { userId: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
   const { data: member, error: memberError } = await supabase
@@ -34,22 +35,25 @@ async function assertSetuMember() {
     .maybeSingle();
 
   if (memberError) {
-    return { supabase, userId: user.id, error: NextResponse.json({ error: "Unable to verify SMC access" }, { status: 500 }) };
+    return { userId: user.id, error: NextResponse.json({ error: "Unable to verify SMC access" }, { status: 500 }) };
   }
 
   if (!member) {
-    return { supabase, userId: user.id, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+    return { userId: user.id, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
-  return { supabase, userId: user.id, error: null };
+  return { userId: user.id, error: null };
 }
 
 export async function GET() {
   try {
-    const { supabase, error } = await assertSetuMember();
+    const { error } = await assertSetuMember();
     if (error) return error;
 
-    const { data, error: queryError } = await (supabase as any)
+    const service = createServiceRoleClient();
+    if (!service) return NextResponse.json({ messages: [] });
+
+    const { data, error: queryError } = await (service as any)
       .from("smc_chat_messages")
       .select("*")
       .eq("organization_id", SETU_ORG_ID)
@@ -66,14 +70,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, userId, error } = await assertSetuMember();
+    const { userId, error } = await assertSetuMember();
     if (error) return error;
+
+    const service = createServiceRoleClient();
+    if (!service) return NextResponse.json({ error: "Chat client unavailable" }, { status: 500 });
 
     const body = (await request.json()) as ChatPayload;
     const content = text(body.content);
     if (!content) return NextResponse.json({ error: "Message is required" }, { status: 400 });
 
-    const { data, error: insertError } = await (supabase as any)
+    const { data, error: insertError } = await (service as any)
       .from("smc_chat_messages")
       .insert({
         organization_id: SETU_ORG_ID,
