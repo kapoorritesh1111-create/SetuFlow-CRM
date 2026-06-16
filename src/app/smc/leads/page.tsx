@@ -26,8 +26,8 @@ export default async function SmcLeadsPage() {
       <div className="smc-ph">
         <div><div className="bc">Growth</div><h1>Internal Leads</h1></div>
         <div className="ha">
-          <button className="smc-btn">Export CSV</button>
-          <button className="smc-btn smc-btn-p">+ New Lead</button>
+          <button className="smc-btn is-disabled" disabled title="Coming soon — CSV export will be wired after lead filters are finalized">Export CSV</button>
+          <button className="smc-btn smc-btn-p is-disabled" disabled title="Coming soon — New Lead creation will use the governed onboarding request modal">+ New Lead</button>
         </div>
       </div>
       <div className="smc-kr">
