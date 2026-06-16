@@ -121,13 +121,19 @@ function TermChips({
   );
 }
 
+function tradeEventExportHref(eventId?: string | null) {
+  return eventId ? `/api/trial/export-csv?event_id=${encodeURIComponent(eventId)}` : '/api/trial/export-csv';
+}
+
 export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelProps) {
   const [captureSource, setCaptureSource] = useState<TrialCaptureSource>('type');
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? '');
   const [fields, setFields] = useState<CaptureFields>(emptyFields);
   const [state, formAction] = useFormState<TrialCaptureActionState | undefined, FormData>(saveTrialTradeEventCapture, undefined);
   const hasEvents = events.length > 0;
   const productTerms = reusableTerms.filter((term) => term.kind === 'product').slice(0, 12);
   const categoryTerms = reusableTerms.filter((term) => term.kind === 'category').slice(0, 12);
+  const selectedEventExportHref = tradeEventExportHref(selectedEventId);
 
   const extractedPreview = useMemo(() => {
     if (captureSource === 'dictate') return extractFields(fields.transcript);
@@ -162,8 +168,11 @@ export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelPr
             Save booth conversations as event entries only. Product and category terms become reusable quick-pick chips for the next capture.
           </p>
         </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
-          Active trial tools: Type · Dictate · Scan
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {hasEvents ? (
+            <a href={selectedEventExportHref} className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100">Export selected CSV</a>
+          ) : null}
+          <a href="/api/trial/export-csv" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 transition hover:bg-emerald-100">Export all CSV</a>
         </div>
       </div>
 
@@ -190,7 +199,7 @@ export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelPr
           <div className="space-y-4">
             <label className="block">
               <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Trade event</span>
-              <select name="trade_event_id" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 outline-none ring-blue-500/20 focus:ring-4" required>
+              <select name="trade_event_id" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 outline-none ring-blue-500/20 focus:ring-4" required>
                 {events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.locationLabel} · {event.dateLabel}</option>)}
               </select>
             </label>
@@ -252,10 +261,14 @@ export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelPr
               <li>• Saves product/category terms for reuse</li>
               <li>• Keeps terms independent from catalog products</li>
               <li>• Does not create a CRM lead automatically</li>
+              <li>• CSV exports include capture-only fields for this event</li>
             </ul>
             {state?.error ? <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{state.error}</p> : null}
             {state?.success ? <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{state.success}</p> : null}
-            <div className="mt-4"><SubmitButton captureSource={captureSource} /></div>
+            <div className="mt-4 flex flex-col gap-2">
+              <SubmitButton captureSource={captureSource} />
+              <a href={selectedEventExportHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-blue-200 bg-white px-5 text-sm font-black text-blue-700 shadow-sm transition hover:bg-blue-50">Export this event CSV</a>
+            </div>
           </aside>
         </form>
       )}
