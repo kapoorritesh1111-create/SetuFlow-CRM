@@ -10,10 +10,17 @@ type ChatPayload = {
   content?: unknown;
   sender_id?: unknown;
   sender_name?: unknown;
+  channel?: unknown;
+  recipient_id?: unknown;
+  recipient_name?: unknown;
 };
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function safeChannel(value: unknown) {
+  return text(value) === "dm" ? "dm" : "team";
 }
 
 async function assertSetuMember() {
@@ -45,7 +52,7 @@ async function assertSetuMember() {
   return { userId: user.id, error: null };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { error } = await assertSetuMember();
     if (error) return error;
@@ -53,13 +60,21 @@ export async function GET() {
     const service = createServiceRoleClient();
     if (!service) return NextResponse.json({ messages: [] });
 
-    const { data, error: queryError } = await (service as any)
+    const { searchParams } = new URL(request.url);
+    const channel = safeChannel(searchParams.get("channel"));
+    const recipientId = text(searchParams.get("recipient_id"));
+
+    let query = (service as any)
       .from("smc_chat_messages")
       .select("*")
       .eq("organization_id", SETU_ORG_ID)
+      .eq("channel", channel)
       .order("created_at", { ascending: false })
       .limit(50);
 
+    query = channel === "dm" && recipientId ? query.eq("recipient_id", recipientId) : query.is("recipient_id", null);
+
+    const { data, error: queryError } = await query;
     if (queryError) throw queryError;
     return NextResponse.json({ messages: (data ?? []).reverse() });
   } catch (err) {
@@ -80,13 +95,21 @@ export async function POST(request: NextRequest) {
     const content = text(body.content);
     if (!content) return NextResponse.json({ error: "Message is required" }, { status: 400 });
 
+    const channel = safeChannel(body.channel);
+    const recipientId = channel === "dm" ? text(body.recipient_id) : null;
+    const recipientName = channel === "dm" ? text(body.recipient_name) : null;
+    if (channel === "dm" && !recipientId) return NextResponse.json({ error: "Recipient is required" }, { status: 400 });
+
     const { data, error: insertError } = await (service as any)
       .from("smc_chat_messages")
       .insert({
         organization_id: SETU_ORG_ID,
         content,
         sender_id: text(body.sender_id) ?? userId,
-        sender_name: text(body.sender_name) ?? "SMC User",
+        sender_name: text(body.sender_name) ?? "Ritesh Kapoor",
+        channel,
+        recipient_id: recipientId,
+        recipient_name: recipientName,
       })
       .select("*")
       .single();
