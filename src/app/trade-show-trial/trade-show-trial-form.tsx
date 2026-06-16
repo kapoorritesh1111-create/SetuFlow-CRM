@@ -18,13 +18,13 @@ type TrialSignupField = {
 };
 
 const fields: TrialSignupField[] = [
-  { name: 'fullName', label: 'Full name', placeholder: 'Ritesh Kapoor', required: true, autoComplete: 'name' },
-  { name: 'company', label: 'Company', placeholder: 'Blue Orbit International', required: true, autoComplete: 'organization' },
-  { name: 'email', label: 'Work email', placeholder: 'you@company.com', required: true, autoComplete: 'email', type: 'email' },
-  { name: 'phoneWhatsapp', label: 'Phone / WhatsApp', placeholder: '+1 555 123 4567', required: true, autoComplete: 'tel' },
-  { name: 'tradeShowName', label: 'Trade show name', placeholder: 'Gulfood 2026', required: true },
-  { name: 'boothNumber', label: 'Booth number', placeholder: 'Hall 3 / B-18', required: false },
-  { name: 'mainProductCategory', label: 'Main product / category', placeholder: 'Fruit chips, jaggery, spices...', required: false },
+  { name: 'fullName', label: 'Full name', placeholder: 'Your full name', required: true, autoComplete: 'name' },
+  { name: 'company', label: 'Company', placeholder: 'Your company name', required: true, autoComplete: 'organization' },
+  { name: 'email', label: 'Work email', placeholder: 'name@company.com', required: true, autoComplete: 'email', type: 'email' },
+  { name: 'phoneWhatsapp', label: 'Phone / WhatsApp', placeholder: 'Phone or WhatsApp', required: true, autoComplete: 'tel' },
+  { name: 'tradeShowName', label: 'Trade show name', placeholder: 'Trade show or event name', required: true },
+  { name: 'boothNumber', label: 'Booth number', placeholder: 'Booth, hall, or stand', required: false },
+  { name: 'mainProductCategory', label: 'Main product / category', placeholder: 'Main products or categories', required: false },
 ];
 
 function SubmitButton() {
@@ -33,9 +33,10 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="flex w-full items-center justify-center rounded-2xl bg-[#06263f] px-5 py-4 text-sm font-bold text-white shadow-[0_20px_45px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a] disabled:cursor-not-allowed disabled:opacity-70"
+      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#06263f] px-5 py-4 text-sm font-black text-white shadow-[0_18px_38px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a] disabled:cursor-not-allowed disabled:opacity-70 sm:text-base"
     >
-      {pending ? 'Building your trial workspace...' : 'Start My Free Trial'}
+      {pending ? 'Preparing your workspace...' : 'Start My Free Trial'}
+      <span aria-hidden className="text-xl leading-none">›</span>
     </button>
   );
 }
@@ -50,17 +51,17 @@ export function TradeShowTrialForm() {
   const [state, formAction] = useFormState(startTradeShowTrial, tradeShowTrialInitialState);
 
   return (
-    <form action={formAction} className="rounded-[2rem] border border-white/60 bg-white p-5 shadow-[0_28px_80px_rgba(15,23,42,0.16)] sm:p-7">
-      <div className="mb-5 rounded-2xl border border-teal-100 bg-teal-50/80 px-4 py-3 text-sm font-semibold text-[#108477]">
-        No credit card. No approval wait. Phone / WhatsApp and trade show name are required so your booth workspace is ready immediately.
+    <form action={formAction} className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-[0_24px_64px_rgba(15,23,42,0.13)] backdrop-blur sm:p-7">
+      <div className="mb-5 rounded-2xl border border-teal-100 bg-teal-50/80 px-4 py-3 text-sm font-black leading-6 text-[#108477]">
+        No credit card required. Trade show capture, contact sharing, and CSV export included.
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
         {fields.map((field, index) => {
           const wide = index >= 4;
           return (
             <label key={field.name} className={wide ? 'sm:col-span-2' : ''}>
-              <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+              <span className="mb-1.5 flex items-center gap-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-slate-500">
                 {field.label}
                 {field.required && <span className="text-[#108477]">*</span>}
               </span>
@@ -70,7 +71,7 @@ export function TradeShowTrialForm() {
                 required={field.required}
                 autoComplete={field.autoComplete}
                 placeholder={field.placeholder}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#108477] focus:bg-white focus:ring-4 focus:ring-teal-100"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-[#108477] focus:bg-white focus:ring-4 focus:ring-teal-100"
               />
               <FieldError state={state} name={field.name} />
             </label>
@@ -87,7 +88,7 @@ export function TradeShowTrialForm() {
       <div className="mt-6 space-y-3">
         <SubmitButton />
         <p className="text-center text-xs leading-6 text-slate-500">
-          By starting a trial, your company gets a guided trade-show workspace with trade event context, vCard setup, and export-ready trial permissions.
+          Includes capture tools, contact sharing, and CSV export access.
         </p>
       </div>
     </form>
