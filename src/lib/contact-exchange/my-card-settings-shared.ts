@@ -3,6 +3,11 @@ import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
 
 export type MyCardSettingsRow = Database['public']['Tables']['my_card_settings']['Row'];
 
+type MyCardContextFields = {
+  trade_show_name?: string | null;
+  booth_number?: string | null;
+};
+
 export type MyCardSettingsInput = {
   primaryPhone: string;
   secondaryPhone: string;
@@ -52,7 +57,7 @@ export function toCardSettingsInput(row?: Partial<MyCardSettingsRow> | null, def
   };
 }
 
-export function mergeIdentityWithCardSettings(identity: PublicCardIdentity, settings?: Partial<MyCardSettingsRow> | null): PublicCardIdentity {
+export function mergeIdentityWithCardSettings(identity: PublicCardIdentity, settings?: Partial<MyCardSettingsRow & MyCardContextFields> | null): PublicCardIdentity {
   if (!settings) return identity;
   return {
     ...identity,
@@ -62,6 +67,8 @@ export function mergeIdentityWithCardSettings(identity: PublicCardIdentity, sett
     address: settings.address?.trim() || identity.address || null,
     bookingUrl: settings.booking_url?.trim() || identity.bookingUrl || null,
     quoteUrl: settings.quote_url?.trim() || identity.quoteUrl || null,
+    tradeShowName: settings.trade_show_name?.trim() || identity.tradeShowName || null,
+    boothNumber: settings.booth_number?.trim() || identity.boothNumber || null,
     socials: {
       linkedin: settings.linkedin_url?.trim() || identity.socials?.linkedin || null,
       instagram: settings.instagram_url?.trim() || identity.socials?.instagram || null,
