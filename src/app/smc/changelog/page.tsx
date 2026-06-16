@@ -9,7 +9,7 @@ export default async function SmcChangelogPage() {
   const entries = await getEntries();
   return (<>
     <div className="smc-ph"><div><div className="bc">Product</div><h1>Changelog</h1></div>
-      <div className="ha"><button className="smc-btn smc-btn-p">+ New Entry</button></div>
+      <div className="ha"><button className="smc-btn smc-btn-p is-disabled" disabled title="Coming soon">+ New Entry</button></div>
     </div>
     <div className="smc-content-page">
       {entries.length>0?entries.map(e=>(
@@ -23,7 +23,7 @@ export default async function SmcChangelogPage() {
         <p style={{color:'#64748b',marginBottom:20}}>Document what shipped per sprint. Toggle client-facing to generate public release notes.</p>
         <div className="smc-content-grid">
           {[{s:26,title:'S26 — Admin Workspace Rebuild + SMC',items:'Admin IA consolidation, SMC foundation, trade show upgrades'},{s:25,title:'S25 — Trade Show Features',items:'vCard context, CSV export, upgrade preview, trial capture'},{s:24,title:'S24 — Quote Command Center',items:'Quote lifecycle overhaul, five outcome actions, Guru coaching, trial system'}].map(r=>(
-            <div key={r.s} className="smc-content-card"><h4>{r.title}</h4><p>{r.items}</p><p style={{marginTop:6}}><button className="smc-btn" style={{fontSize:10}}>Create Entry</button></p></div>
+            <div key={r.s} className="smc-content-card"><h4>{r.title}</h4><p>{r.items}</p><p style={{marginTop:6}}><button className="smc-btn is-disabled" disabled title="Coming soon" style={{fontSize:10}}>Create Entry</button></p></div>
           ))}
         </div>
       </>}
