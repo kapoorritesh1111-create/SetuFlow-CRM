@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(vcard, {
     status: 200,
     headers: {
-      'Content-Type': 'text/x-vcard; charset=utf-8',
+      'Content-Type': 'text/vcard; charset=utf-8',
       'Content-Disposition': `attachment; filename="${getVCardFilename({ fullName })}"`,
       'Cache-Control': 'private, no-store',
     },
