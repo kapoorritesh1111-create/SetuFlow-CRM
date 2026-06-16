@@ -4,6 +4,7 @@ import { getWorkspaceAccess, isSetuInternalOrganization } from '@/lib/workspace/
 import { SmcShell } from './smc-shell';
 import type { ReactNode } from 'react';
 import './smc.css';
+import './smc-s27.css';
 
 export const dynamic = 'force-dynamic';
 
