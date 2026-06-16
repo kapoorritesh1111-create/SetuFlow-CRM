@@ -119,6 +119,20 @@ function isProtectedApiPath(pathname: string) {
   return pathname.startsWith('/api/') && !isPublicPath(pathname);
 }
 
+function isRouterPrefetch(request: NextRequest) {
+  const purpose = request.headers.get('purpose')?.toLowerCase();
+  const secPurpose = request.headers.get('sec-purpose')?.toLowerCase();
+  const nextRouterPrefetch = request.headers.get('next-router-prefetch');
+  const nextUrl = request.headers.get('next-url');
+
+  return (
+    nextRouterPrefetch === '1' ||
+    purpose === 'prefetch' ||
+    secPurpose === 'prefetch' ||
+    Boolean(nextUrl && request.method === 'GET')
+  );
+}
+
 function loginRedirect(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = '/client-login';
@@ -193,6 +207,15 @@ export async function middleware(request: NextRequest) {
   const workspaceDestination = workspaceRedirects[pathname];
   if (workspaceDestination) {
     return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)), nonce);
+  }
+
+  // Critical auth hardening: Next/link prefetches can fan out many protected page
+  // requests at the same time. If each request validates/refreshes the same
+  // Supabase refresh token, Supabase can report refresh_token_already_used and
+  // leave the real foreground navigation with a broken session. Never refresh
+  // auth tokens for speculative protected-route prefetches.
+  if (!isPublicPath(pathname) && !isProtectedApiPath(pathname) && isRouterPrefetch(request)) {
+    return applySecurityHeaders(new NextResponse(null, { status: 204 }), nonce);
   }
 
   if (!hasSupabaseMiddlewareEnv()) {
