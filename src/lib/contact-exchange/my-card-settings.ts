@@ -3,7 +3,12 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 import type { PublicCardIdentity } from '@/lib/contact-exchange/public-card';
-import { mergeIdentityWithCardSettings, type MyCardSettingsInput, type MyCardSettingsRow } from '@/lib/contact-exchange/my-card-settings-shared';
+import { type MyCardSettingsInput, type MyCardSettingsRow } from '@/lib/contact-exchange/my-card-settings-shared';
+
+type PublicCardContextFields = {
+  trade_show_name?: string | null;
+  booth_number?: string | null;
+};
 
 function sanitizeText(value?: string | null) {
   return String(value ?? '').trim();
@@ -83,9 +88,9 @@ export async function upsertMyCardSettingsForUser(args: {
     updated_at: new Date().toISOString(),
   };
 
-  const myCardSettingsTable = supabase.from('my_card_settings') as any;
-  const { data, error } = await myCardSettingsTable
-    .upsert(payload as any, { onConflict: 'user_id' })
+  const { data, error } = await supabase
+    .from('my_card_settings')
+    .upsert(payload, { onConflict: 'user_id' })
     .select('*')
     .single();
 
@@ -109,6 +114,7 @@ export async function getPublicCardByShareSlug(shareSlug: string) {
 
   const profile = Array.isArray(settings.profiles) ? settings.profiles[0] : settings.profiles;
   const organization = Array.isArray(settings.organizations) ? settings.organizations[0] : settings.organizations;
+  const context = settings as PublicCardContextFields;
 
   const identity: PublicCardIdentity = {
     fullName: profile?.full_name?.trim() || profile?.email?.split('@')[0] || 'SETU Flow contact',
@@ -124,6 +130,8 @@ export async function getPublicCardByShareSlug(shareSlug: string) {
     bookingUrl: settings.booking_url?.trim() || null,
     quoteUrl: settings.quote_url?.trim() || null,
     organizationId: settings.organization_id,
+    tradeShowName: context.trade_show_name?.trim() || null,
+    boothNumber: context.booth_number?.trim() || null,
     socials: {
       linkedin: settings.linkedin_url?.trim() || null,
       instagram: settings.instagram_url?.trim() || null,
