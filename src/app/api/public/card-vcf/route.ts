@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     secondaryPhone: identity.secondaryPhone,
     website: identity.website,
     address: identity.address,
+    tradeShowName: identity.tradeShowName,
+    boothNumber: identity.boothNumber,
   });
 
   return new NextResponse(vcard, {
