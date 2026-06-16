@@ -290,6 +290,12 @@ export function SmcShell({ children }: { children: ReactNode }) {
   const [notif, setNotif] = useState(false);
   const [chat, setChat] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [counts, setCounts] = useState({ total: 0, bugs: 0, enhancement: 0, ux: 0, backlog: 0 });
+
+  // Fetch sidebar counts
+  useEffect(() => {
+    fetch('/api/smc/counts').then(r => r.json()).then(d => setCounts(d)).catch(() => {});
+  }, [pathname]);
 
   // S27-ENH-011: Esc closes panels
   useEffect(() => {
@@ -375,99 +381,58 @@ export function SmcShell({ children }: { children: ReactNode }) {
               {I[getI()]} {getL()} <span className="smc-mbdg">Internal</span>
             </h2>
           </div>
-          <div className="smc-sb-search">
-            <input
-              type="text"
-              placeholder={`Search ${getL().toLowerCase()}…`}
-              value={sidebarSearch}
-              onChange={(e) => setSidebarSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && sidebarSearch.trim()) {
-                  router.push(`/smc/issues?q=${encodeURIComponent(sidebarSearch.trim())}`);
-                  setSidebarSearch("");
-                }
-              }}
-            />
-          </div>
           <div className="smc-sb-scroll">
-            {(pathname === "/smc" ||
-              pathname.startsWith("/smc/issues") ||
-              pathname.startsWith("/smc/board")) && (
+            {/* Dashboard sidebar */}
+            {pathname === "/smc" && (
+              <>
+                <div className="smc-ngl">Quick Links</div>
+                <Link href="/smc/issues" className="smc-ni">{I.list} Issues <span className="cnt">{counts.total||'…'}</span></Link>
+                <Link href="/smc/board" className="smc-ni">{I.board} Sprint Board</Link>
+                <Link href="/smc/leads" className="smc-ni">{I.leads} Internal Leads</Link>
+                <Link href="/smc/clients" className="smc-ni">{I.clients} Client Orgs</Link>
+                <div className="smc-ngl">Tools</div>
+                <Link href="/smc/wiki" className="smc-ni">{I.wiki} Docs Hub</Link>
+                <Link href="/smc/roadmap" className="smc-ni">{I.chart} Roadmap</Link>
+                <Link href="/smc/qa" className="smc-ni">{I.check} QA Tests</Link>
+                <Link href="/smc/demo" className="smc-ni">{I.monitor} Pre-Demo</Link>
+              </>
+            )}
+            {/* Issues/Board sidebar */}
+            {(pathname.startsWith("/smc/issues") || pathname.startsWith("/smc/board")) && (
               <>
                 <div className="smc-ngl">Views</div>
-                <Link
-                  href="/smc/issues"
-                  className={`smc-ni ${pathname === "/smc/issues" ? "active" : ""}`}
-                >
-                  {I.list} All Issues <span className="cnt">373</span>
-                </Link>
-                <Link
-                  href="/smc/board"
-                  className={`smc-ni ${pathname === "/smc/board" ? "active" : ""}`}
-                >
-                  {I.board} Board View
-                </Link>
-                <Link href="/smc/issues?view=backlog" className="smc-ni">
-                  {I.chart} Backlog <span className="cnt">10</span>
-                </Link>
+                <Link href="/smc/issues" className={`smc-ni ${pathname==='/smc/issues'?'active':''}`}>{I.list} All Issues <span className="cnt">{counts.total||'…'}</span></Link>
+                <Link href="/smc/board" className={`smc-ni ${pathname==='/smc/board'?'active':''}`}>{I.board} Board View</Link>
+                <Link href="/smc/issues?view=backlog" className="smc-ni">{I.chart} Backlog <span className="cnt">{counts.backlog}</span></Link>
                 <div className="smc-ngl">Filters</div>
-                <Link href="/smc/issues?type=Bug" className="smc-ni">
-                  {I.filter} Bugs <span className="cnt">183</span>
-                </Link>
-                <Link href="/smc/issues?type=Enhancement" className="smc-ni">
-                  {I.filter} Enhancement <span className="cnt">59</span>
-                </Link>
-                <Link href="/smc/issues?type=UX" className="smc-ni">
-                  {I.filter} UX <span className="cnt">74</span>
-                </Link>
+                <Link href="/smc/issues?type=Bug" className="smc-ni">{I.filter} Bugs <span className="cnt">{counts.bugs}</span></Link>
+                <Link href="/smc/issues?type=Enhancement" className="smc-ni">{I.filter} Enhancement <span className="cnt">{counts.enhancement}</span></Link>
+                <Link href="/smc/issues?type=UX" className="smc-ni">{I.filter} UX <span className="cnt">{counts.ux}</span></Link>
                 <div className="smc-ngl">Sprints</div>
                 {[27, 26, 25, 24, 23, 22].map((s) => (
-                  <Link
-                    key={s}
-                    href={`/smc/issues?sprint=${s}`}
-                    className="smc-ni"
-                  >
-                    Sprint {s}
-                  </Link>
+                  <Link key={s} href={`/smc/issues?sprint=${s}`} className="smc-ni">Sprint {s}</Link>
                 ))}
               </>
             )}
+            {/* Leads sidebar */}
             {pathname.startsWith("/smc/leads") && (
               <>
                 <div className="smc-ngl">Pipeline</div>
-                <Link href="/smc/leads" className="smc-ni active">
-                  All Leads <span className="cnt">3</span>
-                </Link>
-                {[
-                  "Inquiry",
-                  "Qualified",
-                  "Trial",
-                  "Negotiating",
-                  "Converted",
-                ].map((s) => (
-                  <Link key={s} href="/smc/leads" className="smc-ni">
-                    {s}
-                  </Link>
+                <Link href="/smc/leads" className="smc-ni active">All Leads <span className="cnt">3</span></Link>
+                {["Inquiry","Qualified","Trial","Negotiating","Converted"].map((s) => (
+                  <Link key={s} href="/smc/leads" className="smc-ni">{s}</Link>
                 ))}
               </>
             )}
-            {!pathname.startsWith("/smc/issues") &&
-              !pathname.startsWith("/smc/board") &&
-              !pathname.startsWith("/smc/leads") &&
-              pathname !== "/smc" && (
-                <>
-                  <div className="smc-ngl">Navigation</div>
-                  {(NAV.filter((n) => n !== "div") as NI[]).map((n) => (
-                    <Link
-                      key={n.id}
-                      href={n.path}
-                      className={`smc-ni ${isA(n.path) ? "active" : ""}`}
-                    >
-                      {n.label}
-                    </Link>
-                  ))}
-                </>
-              )}
+            {/* Other pages: general nav */}
+            {!pathname.startsWith("/smc/issues") && !pathname.startsWith("/smc/board") && !pathname.startsWith("/smc/leads") && pathname !== "/smc" && (
+              <>
+                <div className="smc-ngl">Navigation</div>
+                {(NAV.filter((n) => n !== "div") as NI[]).map((n) => (
+                  <Link key={n.id} href={n.path} className={`smc-ni ${isA(n.path) ? "active" : ""}`}>{n.label}</Link>
+                ))}
+              </>
+            )}
           </div>
           <div className="smc-tm-sec">
             <h4>Team</h4>
