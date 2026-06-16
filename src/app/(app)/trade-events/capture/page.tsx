@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { TrialCapturePanel } from '@/features/trade-events/components/trial-capture-panel';
+import { TradeEventUpgradePreview } from '@/features/trade-events/components/trade-event-upgrade-preview';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '@/lib/utils';
 import { requireWorkspace } from '@/lib/workspace/auth';
@@ -116,6 +117,7 @@ export default async function TradeEventsCapturePage() {
       ) : null}
 
       <TrialCapturePanel events={events} reusableTerms={reusableTerms} />
+      <TradeEventUpgradePreview />
     </div>
   );
 }
