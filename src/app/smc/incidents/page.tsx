@@ -1,7 +1,7 @@
 export default function SmcIncidentsPage() {
   return (<>
     <div className="smc-ph"><div><div className="bc">Operations</div><h1>Incidents</h1></div>
-      <div className="ha"><button className="smc-btn smc-btn-p">+ Report Incident</button></div>
+      <div className="ha"><button className="smc-btn smc-btn-p is-disabled" disabled title="Coming soon — incident reporting will use the governed incident modal">+ Report Incident</button></div>
     </div>
     <div className="smc-kr">
       <div className="smc-kp green"><div className="v">0</div><div className="l">Active</div></div>
@@ -14,7 +14,7 @@ export default function SmcIncidentsPage() {
       <h2>Past Incidents</h2>
       <div className="smc-content-grid">
         {[
-          {title:'Service worker CSS cache poisoning',severity:'P1',resolved:'May 28',mttr:'4h',desc:'SW cached stale CSS causing investor pages to render with wrong styles'},
+          {title:'Service worker CSS cache issue',severity:'P1',resolved:'May 28',mttr:'4h',desc:'Service worker cached stale CSS causing investor pages to render with wrong styles'},
           {title:'Supabase RLS policy gap on sprint_issues',severity:'P2',resolved:'May 15',mttr:'2h',desc:'Anon role could read sprint data via direct API calls'},
           {title:'Onboarding wizard 500 error',severity:'P2',resolved:'Apr 20',mttr:'30h',desc:'Missing nullable check on workspace_domain caused crash for new signups'},
         ].map((inc,i)=>(
