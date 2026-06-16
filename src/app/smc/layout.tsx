@@ -5,6 +5,7 @@ import { SmcShell } from './smc-shell';
 import type { ReactNode } from 'react';
 import './smc.css';
 import './smc-s27.css';
+import './smc-premium.css';
 
 export const dynamic = 'force-dynamic';
 
