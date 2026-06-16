@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import type { Database, Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,34 @@ type IssueStatus = (typeof STATUSES)[number];
 type IssueType = (typeof TYPES)[number];
 type IssueSeverity = (typeof SEVERITIES)[number];
 type IssuePriority = (typeof PRIORITIES)[number];
+type SprintIssueValue = Json | string[] | number[] | null | undefined;
+type SprintIssueRow = Record<string, SprintIssueValue> & {
+  id: string;
+  organization_id: string | null;
+  issue_ref: string | null;
+  issue_number: number | null;
+};
+type SprintIssueInsert = Record<string, SprintIssueValue>;
+type SprintIssueUpdate = Partial<SprintIssueInsert>;
+type SmcDatabase = Omit<Database, "public"> & {
+  public: Omit<Database["public"], "Tables"> & {
+    Tables: Database["public"]["Tables"] & {
+      sprint_issues: {
+        Row: SprintIssueRow;
+        Insert: SprintIssueInsert;
+        Update: SprintIssueUpdate;
+        Relationships: [];
+      };
+    };
+  };
+};
+type SmcSupabase = SupabaseClient<SmcDatabase>;
+
+function smcClient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): SmcSupabase {
+  return supabase as unknown as SmcSupabase;
+}
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -185,12 +215,14 @@ export async function PATCH(
     if (accessError) return accessError;
 
     const body = (await request.json()) as IssuePayload;
-    const updatePayload = compactUpdatePayload(buildUpdatePayload(body));
+    const updatePayload = compactUpdatePayload(
+      buildUpdatePayload(body),
+    ) as SprintIssueUpdate;
     const title = updatePayload.title;
     if (body.title !== undefined && !title)
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
-    const { data, error } = await supabase
+    const { data, error } = await smcClient(supabase)
       .from("sprint_issues")
       .update(updatePayload)
       .eq("id", id)
