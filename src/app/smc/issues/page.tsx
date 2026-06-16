@@ -189,11 +189,13 @@ function SmcIssuesContent() {
     const type = searchParams.get("type");
     const sprint = searchParams.get("sprint");
     const view = searchParams.get("view");
+    const q = searchParams.get("q");
     setTypeFilter(type);
     setSprintFilter(
       sprint && Number.isFinite(Number(sprint)) ? Number(sprint) : null,
     );
     setViewFilter(view);
+    if (q) setSearch(q);
     setKpiF(null);
     setSel(new Set());
   }, [searchParams]);

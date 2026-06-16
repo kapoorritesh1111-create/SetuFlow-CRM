@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 const I: Record<string, ReactNode> = {
@@ -272,9 +272,11 @@ const MSGS = [
 
 export function SmcShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sb, setSb] = useState(true);
   const [notif, setNotif] = useState(false);
   const [chat, setChat] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState("");
 
   const isA = (p: string) =>
     p === "/smc" ? pathname === "/smc" : pathname.startsWith(p);
@@ -289,13 +291,8 @@ export function SmcShell({ children }: { children: ReactNode }) {
     <div className={`smc-shell ${sb ? "with-sidebar" : ""}`}>
       {/* RAIL */}
       <aside className="smc-rail">
-        <Link href="/smc" className="smc-rl">
-          <img
-            src="/logos/setu-flow-logo.svg"
-            alt="SMC"
-            width={22}
-            height={22}
-          />
+        <Link href="/smc" className="smc-rl" title="Setu Mission Control">
+          <span className="smc-rl-mark">SMC</span>
         </Link>
         {NAV.map((item, i) => {
           if (item === "div") return <div key={`d${i}`} className="smc-rdiv" />;
@@ -360,6 +357,14 @@ export function SmcShell({ children }: { children: ReactNode }) {
             <input
               type="text"
               placeholder={`Search ${getL().toLowerCase()}…`}
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && sidebarSearch.trim()) {
+                  router.push(`/smc/issues?q=${encodeURIComponent(sidebarSearch.trim())}`);
+                  setSidebarSearch("");
+                }
+              }}
             />
           </div>
           <div className="smc-sb-scroll">

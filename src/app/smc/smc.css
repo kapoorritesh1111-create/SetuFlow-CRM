@@ -70,20 +70,30 @@
   width: 0;
 }
 .smc-rl {
-  width: 34px;
-  height: 34px;
-  background: var(--teal);
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, rgba(39,148,145,.15), rgba(31,72,124,.2));
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 12px;
   margin-bottom: 8px;
   cursor: pointer;
   flex-shrink: 0;
   text-decoration: none;
+  transition: 150ms ease;
+}
+.smc-rl:hover {
+  background: linear-gradient(135deg, rgba(39,148,145,.25), rgba(31,72,124,.3));
+  border-color: rgba(255,255,255,.2);
+}
+.smc-rl-mark {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--teal);
+  font-family: 'DM Mono', monospace;
 }
 .smc-rb {
   width: 38px;
