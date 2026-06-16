@@ -26,7 +26,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data, error } = await supabase
       .from("sprint_issues")
-      .update(patchData)
+      .update(patchData as any)
       .eq("organization_id", SETU_ORG_ID)
       .in("id", ids)
       .select("id");
