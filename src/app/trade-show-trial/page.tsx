@@ -188,17 +188,6 @@ export default function TradeShowTrialPage() {
             </div>
 
             <div className="lg:justify-self-end">
-              <div className="mb-4 flex items-start gap-4 rounded-[1.7rem] border border-white/70 bg-white/94 p-4 text-[#0b2e4a] shadow-[0_20px_70px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5">
-                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#dff7f2] text-[#108477]">
-                  <Icon name="badge" className="h-6 w-6" />
-                </span>
-                <div>
-                  <p className="text-lg font-extrabold">Quick setup</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">
-                    We prepare your trade show workspace with the right event and contact details.
-                  </p>
-                </div>
-              </div>
               <TradeShowTrialForm />
             </div>
           </div>
