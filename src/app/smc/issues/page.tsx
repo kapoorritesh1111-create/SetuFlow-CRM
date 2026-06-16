@@ -212,6 +212,19 @@ function SmcIssuesContent() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // S27-ENH-011: Esc closes drawer and modal
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showModal) { setShowModal(false); return; }
+        if (drawerIssue) { setDrawerIssue(null); return; }
+        setShowCols(false);
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [showModal, drawerIssue]);
+
   const counts = useMemo(() => {
     const a = issues;
     return {
@@ -526,6 +539,41 @@ function SmcIssuesContent() {
           {filtered.length} issues
         </span>
       </div>
+
+      {/* S27-ENH-008: Bulk action bar */}
+      {sel.size > 0 && (
+        <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 24px',background:'#e6f5f4',borderBottom:'1px solid #279491',flexShrink:0}}>
+          <span style={{fontSize:12,fontWeight:600,color:'#279491'}}>{sel.size} selected</span>
+          <select style={{border:'1px solid #279491',borderRadius:6,padding:'4px 8px',fontSize:11,fontFamily:'inherit',background:'#fff',color:'#1e293b'}}
+            defaultValue="" onChange={async(e)=>{
+              if(!e.target.value)return;
+              const ids=Array.from(sel);
+              await fetch('/api/smc/issues/bulk',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,updates:{status:e.target.value}})});
+              await refreshIssues();setSel(new Set());e.target.value='';
+            }}>
+            <option value="" disabled>Change status…</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="In Review">In Review</option>
+            <option value="Blocked">Blocked</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Deferred">Deferred</option>
+          </select>
+          <select style={{border:'1px solid #279491',borderRadius:6,padding:'4px 8px',fontSize:11,fontFamily:'inherit',background:'#fff',color:'#1e293b'}}
+            defaultValue="" onChange={async(e)=>{
+              if(!e.target.value)return;
+              const ids=Array.from(sel);
+              await fetch('/api/smc/issues/bulk',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,updates:{assigned_to:e.target.value}})});
+              await refreshIssues();setSel(new Set());e.target.value='';
+            }}>
+            <option value="" disabled>Assign to…</option>
+            <option value="Ritesh Kapoor">Ritesh Kapoor</option>
+            <option value="Kumar Mayank">Kumar Mayank</option>
+            <option value="Ankush Arya">Ankush Arya</option>
+          </select>
+          <button className="smc-btn" style={{fontSize:10,padding:'3px 8px'}} onClick={()=>setSel(new Set())}>Clear selection</button>
+        </div>
+      )}
 
       <div className="smc-cs">
         <table className="smc-it">

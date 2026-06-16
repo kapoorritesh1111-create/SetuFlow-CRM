@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 const I: Record<string, ReactNode> = {
   grid: (
@@ -150,6 +150,16 @@ const I: Record<string, ReactNode> = {
       <line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   ),
+  check: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  ),
+  monitor: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  ),
 };
 
 type NI = {
@@ -189,7 +199,10 @@ const NAV: (NI | "div")[] = [
     label: "Ops Protocol",
   },
   { id: "flags", path: "/smc/flags", icon: "flags", label: "Feature Flags" },
-  { id: "wiki", path: "/smc/wiki", icon: "wiki", label: "Wiki" },
+  { id: "wiki", path: "/smc/wiki", icon: "wiki", label: "Docs Hub" },
+  { id: "roadmap", path: "/smc/roadmap", icon: "chart", label: "Roadmap" },
+  { id: "qa", path: "/smc/qa", icon: "check", label: "QA Tests" },
+  { id: "demo", path: "/smc/demo", icon: "monitor", label: "Pre-Demo" },
   {
     id: "changelog",
     path: "/smc/changelog",
@@ -277,6 +290,15 @@ export function SmcShell({ children }: { children: ReactNode }) {
   const [notif, setNotif] = useState(false);
   const [chat, setChat] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
+
+  // S27-ENH-011: Esc closes panels
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setNotif(false); setChat(false); }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
 
   const isA = (p: string) =>
     p === "/smc" ? pathname === "/smc" : pathname.startsWith(p);
