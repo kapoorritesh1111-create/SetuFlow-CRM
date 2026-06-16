@@ -28,7 +28,7 @@ export default function TradeShowTrialSuccessPage({
             Your Trade Show Trial is ready.
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            We created the trial organization, trade show context, member access, vCard setup foundation, and export-ready trial permissions.
+            We created your booth-ready workspace with trade show context, capture tools, vCard setup, export permissions, and guided upgrade previews.
           </p>
 
           {email && (
@@ -37,7 +37,7 @@ export default function TradeShowTrialSuccessPage({
               <p className="mt-1 text-sm text-slate-600">{email}</p>
               {existing && (
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  This email already had an account, so sign in with your existing credentials to enter the new trial workspace.
+                  This email already has a Setu Flow account. Sign in with your existing credentials to enter the new trial workspace.
                 </p>
               )}
             </div>
@@ -59,7 +59,7 @@ export default function TradeShowTrialSuccessPage({
           </div>
 
           <p className="mt-8 max-w-xl text-sm leading-7 text-slate-500">
-            Next Sprint 25 issues will add the dedicated trial workspace mode, capture workflows, product chips, internal lead automation, and upgrade preview controls.
+            Start capturing booth conversations now, organize product interest as you go, and review the full Setu Flow platform experience when you are ready to upgrade.
           </p>
         </section>
       </main>
