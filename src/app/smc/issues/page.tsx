@@ -4,6 +4,22 @@ export const dynamic = 'force-dynamic';
 
 const SETU_ORG = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
 
+type IssueRow = {
+  id: string;
+  issue_ref: string;
+  title: string;
+  status: string;
+  priority: string | null;
+  severity: string | null;
+  issue_type: string | null;
+  sprint_number: number;
+  story_points: number | null;
+  assigned_to: string | null;
+  reporter_name: string | null;
+  area: string | null;
+  created_at: string;
+};
+
 function priorityClass(p: string | null) {
   if (!p) return 'low';
   const l = p.toLowerCase();
@@ -16,8 +32,8 @@ function priorityClass(p: string | null) {
 function statusClass(s: string) {
   const l = s.toLowerCase();
   if (l === 'resolved' || l === 'done') return 'done';
-  if (l === 'in_progress' || l === 'in progress') return 'progress';
-  if (l === 'in_review' || l === 'review') return 'review';
+  if (l.includes('progress')) return 'progress';
+  if (l.includes('review')) return 'review';
   if (l === 'blocked') return 'blocked';
   if (l === 'deferred') return 'deferred';
   return 'open';
@@ -33,6 +49,11 @@ function typeClass(t: string | null) {
   return 'feat';
 }
 
+function initials(name: string | null): string {
+  if (!name) return '??';
+  return name.split(' ').map(w => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+}
+
 async function getIssues() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -42,16 +63,16 @@ async function getIssues() {
     .order('sprint_number', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(100);
-  return data ?? [];
+  return (data as IssueRow[]) ?? [];
 }
 
 export default async function SmcIssuesPage() {
   const issues = await getIssues();
-  const statusCounts = {
+  const counts = {
     total: issues.length,
     open: issues.filter(i => !['Resolved', 'Deferred'].includes(i.status)).length,
-    progress: issues.filter(i => ['in_progress', 'In Progress'].includes(i.status)).length,
-    blocked: issues.filter(i => ['blocked', 'Blocked'].includes(i.status)).length,
+    progress: issues.filter(i => i.status.toLowerCase().includes('progress')).length,
+    blocked: issues.filter(i => i.status.toLowerCase() === 'blocked').length,
     done: issues.filter(i => i.status === 'Resolved').length,
     deferred: issues.filter(i => i.status === 'Deferred').length,
   };
@@ -75,12 +96,12 @@ export default async function SmcIssuesPage() {
         </div>
       </div>
       <div className="smc-kr">
-        <div className="smc-kp"><div className="v">{statusCounts.total}</div><div className="l">Total</div></div>
-        <div className="smc-kp amber"><div className="v">{statusCounts.open}</div><div className="l">Open</div></div>
-        <div className="smc-kp teal"><div className="v">{statusCounts.progress}</div><div className="l">In Progress</div></div>
-        <div className="smc-kp red"><div className="v">{statusCounts.blocked}</div><div className="l">Blocked</div></div>
-        <div className="smc-kp green"><div className="v">{statusCounts.done}</div><div className="l">Done</div></div>
-        <div className="smc-kp"><div className="v">{statusCounts.deferred}</div><div className="l">Deferred</div></div>
+        <div className="smc-kp"><div className="v">{counts.total}</div><div className="l">Total</div></div>
+        <div className="smc-kp amber"><div className="v">{counts.open}</div><div className="l">Open</div></div>
+        <div className="smc-kp teal"><div className="v">{counts.progress}</div><div className="l">In Progress</div></div>
+        <div className="smc-kp red"><div className="v">{counts.blocked}</div><div className="l">Blocked</div></div>
+        <div className="smc-kp green"><div className="v">{counts.done}</div><div className="l">Done</div></div>
+        <div className="smc-kp"><div className="v">{counts.deferred}</div><div className="l">Deferred</div></div>
       </div>
       <div className="smc-tl">
         <span className="smc-chip active">All</span>
@@ -89,7 +110,6 @@ export default async function SmcIssuesPage() {
         <span className="smc-chip">Bugs</span>
         <span className="smc-chip">Features</span>
         <div className="smc-sp" />
-        <input type="text" placeholder="Quick filter…" style={{ border: '1px solid #e2e8f0', borderRadius: 5, padding: '3px 8px', fontSize: '10.5px', width: 160, outline: 'none', fontFamily: 'inherit' }} />
       </div>
       <div className="smc-cs">
         <table className="smc-it">
@@ -117,17 +137,17 @@ export default async function SmcIssuesPage() {
                   </div>
                 </td>
                 <td><span className={`smc-st ${statusClass(issue.status)}`}>{issue.status}</span></td>
-                <td style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#64748b', textAlign: 'center' }}>{issue.story_points ?? '—'}</td>
+                <td style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#64748b', textAlign: 'center' }}>{issue.story_points ?? '\u2014'}</td>
                 <td>
-                  {issue.assigned_to && (
+                  {issue.assigned_to ? (
                     <div className="smc-as">
                       <div className="smc-aa" style={{ background: '#279491' }}>
-                        {issue.assigned_to.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+                        {initials(issue.assigned_to)}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </td>
-                <td style={{ fontFamily: "'DM Mono', monospace", fontSize: '10.5px', color: '#64748b', textAlign: 'center' }}>{issue.sprint_number}</td>
+                <td style={{ fontFamily: "'DM Mono', monospace", fontSize: 10.5, color: '#64748b', textAlign: 'center' }}>{issue.sprint_number}</td>
               </tr>
             ))}
           </tbody>
