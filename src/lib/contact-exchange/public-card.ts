@@ -19,18 +19,22 @@ export type PublicCardIdentity = {
   bookingUrl?: string | null;
   quoteUrl?: string | null;
   organizationId?: string | null;
+  tradeShowName?: string | null;
+  boothNumber?: string | null;
   socials?: PublicCardSocialLinks;
 };
 
+function isHttpUrl(value: string) {
+  const lower = value.toLowerCase();
+  return lower.startsWith('http://') || lower.startsWith('https://');
+}
 
 function isShareSafeAssetUrl(value?: string | null) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return false;
-  // Data URLs from phone uploads can be thousands of characters long and break
-  // QR, .vcf and copied links. Stable http(s) assets or app-hosted root-relative
-  // assets are safe to include in share links.
-  if (/^data:/i.test(trimmed) || /^blob:/i.test(trimmed)) return false;
-  if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('/')) return false;
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith('data:') || lower.startsWith('blob:')) return false;
+  if (!isHttpUrl(trimmed) && !trimmed.startsWith('/')) return false;
   return trimmed.length <= 500;
 }
 
@@ -42,7 +46,8 @@ export function getShareSafeAssetUrl(value?: string | null) {
 function normalizeUrl(value?: string | null) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || /^tel:/i.test(trimmed)) return trimmed;
+  const lower = trimmed.toLowerCase();
+  if (isHttpUrl(trimmed) || lower.startsWith('mailto:') || lower.startsWith('tel:')) return trimmed;
   return `https://${trimmed}`;
 }
 
@@ -62,6 +67,8 @@ export function buildPublicCardSearchParams(identity: PublicCardIdentity) {
     book: identity.bookingUrl ? normalizeUrl(identity.bookingUrl) : undefined,
     quote: identity.quoteUrl ? normalizeUrl(identity.quoteUrl) : undefined,
     orgId: identity.organizationId ?? undefined,
+    show: identity.tradeShowName ?? undefined,
+    booth: identity.boothNumber ?? undefined,
     linkedin: identity.socials?.linkedin ? normalizeUrl(identity.socials.linkedin) : undefined,
     instagram: identity.socials?.instagram ? normalizeUrl(identity.socials.instagram) : undefined,
     facebook: identity.socials?.facebook ? normalizeUrl(identity.socials.facebook) : undefined,
@@ -95,6 +102,8 @@ export function parsePublicCardSearchParams(searchParams: Record<string, string 
     bookingUrl: get('book') || null,
     quoteUrl: get('quote') || null,
     organizationId: get('orgId') || null,
+    tradeShowName: get('show') || get('tradeShowName') || get('trade_show_name') || null,
+    boothNumber: get('booth') || get('boothNumber') || get('booth_number') || null,
     socials: {
       linkedin: get('linkedin') || null,
       instagram: get('instagram') || null,

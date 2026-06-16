@@ -65,6 +65,11 @@ function uniqueTrialSlug(company: string) {
   return `${base}-${randomUUID().slice(0, 8)}`;
 }
 
+function uniqueCardSlug(seed: string) {
+  const base = slugify(seed).slice(0, 40) || 'card';
+  return `${base}-${randomUUID().slice(0, 8)}`;
+}
+
 function buildTemporaryPassword() {
   return `Setu-${randomUUID()}-Aa1!`;
 }
@@ -191,6 +196,36 @@ async function createOrAttachTrialUser(admin: SupabaseAdminClient, input: TradeS
   return { userId: data.user.id, created: true, temporaryPassword };
 }
 
+async function seedTrialVCardContext(admin: SupabaseAdminClient, args: {
+  userId: string;
+  organizationId: string;
+  input: TradeShowTrialSignupInput;
+}) {
+  const { data: existing } = await admin
+    .from('my_card_settings')
+    .select('share_slug')
+    .eq('user_id', args.userId)
+    .maybeSingle();
+
+  const shareSlug = existing?.share_slug || uniqueCardSlug(args.input.fullName || args.input.email);
+  const payload = {
+    user_id: args.userId,
+    organization_id: args.organizationId,
+    share_slug: shareSlug,
+    primary_phone: clean(args.input.phoneWhatsapp),
+    trade_show_name: clean(args.input.tradeShowName),
+    booth_number: clean(args.input.boothNumber) || null,
+    is_public: true,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await admin
+    .from('my_card_settings')
+    .upsert(payload, { onConflict: 'user_id' });
+
+  if (error) throw error;
+}
+
 async function deleteCreatedTrialUser(admin: SupabaseAdminClient, userId: string | null, created: boolean) {
   if (!created || !userId) return;
   try {
@@ -263,6 +298,7 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
     const organizationId = String(payload.organization_id ?? '');
     if (!organizationId) throw new Error('Trial workspace was not created.');
 
+    await seedTrialVCardContext(admin, { userId: createdUser.userId, organizationId, input: value });
     const signedIn = await signInNewTrialUser(value.email, createdUser.temporaryPassword, organizationId);
 
     return {

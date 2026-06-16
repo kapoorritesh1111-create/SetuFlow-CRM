@@ -10,6 +10,8 @@ export type VCardIdentity = {
   secondaryPhone?: string | null;
   website?: string | null;
   address?: string | null;
+  tradeShowName?: string | null;
+  boothNumber?: string | null;
 };
 
 function escapeVCardValue(value: string) {
@@ -28,7 +30,8 @@ function hasRealValue(value?: string | null) {
 function normalizeUrl(value?: string | null) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return '';
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const lower = trimmed.toLowerCase();
+  return lower.startsWith('http://') || lower.startsWith('https://') ? trimmed : `https://${trimmed}`;
 }
 
 function normalizePhone(value?: string | null) {
@@ -44,19 +47,22 @@ function splitName(fullName: string) {
 
 function dataImageToVCardPhoto(value?: string | null) {
   const trimmed = String(value ?? '').trim();
-  const match = /^data:image\/(jpeg|jpg|png);base64,(.+)$/i.exec(trimmed);
-  if (!match) return null;
-  const type = match[1].toUpperCase() === 'JPG' ? 'JPEG' : match[1].toUpperCase();
-  const base64 = match[2].replace(/\s/g, '');
+  const lower = trimmed.toLowerCase();
+  if (!lower.startsWith('data:image/') || !lower.includes(';base64,')) return null;
+  const [mimePart, encodedPart] = trimmed.split(';base64,');
+  const rawType = mimePart.split('/')[1]?.toUpperCase();
+  const type = rawType === 'JPG' ? 'JPEG' : rawType;
+  const base64 = String(encodedPart ?? '').replace(/\s/g, '');
   // iOS Contacts is much more reliable when embedded contact photos are small.
   // Larger photos may be silently ignored by the native preview/import sheet.
-  if (!base64 || base64.length > 360_000) return null;
+  if (!type || !['JPEG', 'PNG'].includes(type) || !base64 || base64.length > 360_000) return null;
   return { type, base64 };
 }
 
 function photoUriForVCard(value?: string | null) {
   const trimmed = String(value ?? '').trim();
-  if (!trimmed || !/^https?:\/\//i.test(trimmed)) return null;
+  const lower = trimmed.toLowerCase();
+  if (!trimmed || (!lower.startsWith('http://') && !lower.startsWith('https://'))) return null;
   return trimmed.length <= 500 ? trimmed : null;
 }
 
@@ -73,12 +79,24 @@ function foldLine(line: string) {
   return parts.join('\r\n');
 }
 
+function buildTradeShowContext(identity: VCardIdentity) {
+  const tradeShowName = String(identity.tradeShowName ?? '').trim();
+  const boothNumber = String(identity.boothNumber ?? '').trim();
+  if (!tradeShowName) return null;
+  return {
+    tradeShowName,
+    boothNumber,
+    note: `Met at ${tradeShowName}${boothNumber ? `, Booth ${boothNumber}` : ''}. Shared via Setu Flow`,
+  };
+}
+
 export function buildVCard(identity: VCardIdentity) {
   const fullName = identity.fullName.trim() || 'SETU Flow contact';
   const { given, family } = splitName(fullName);
   const organizationName = identity.organizationName.trim() || 'SETU Flow';
   const email = identity.email.trim();
   const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const tradeShowContext = buildTradeShowContext(identity);
 
   const lines = [
     'BEGIN:VCARD',
@@ -100,6 +118,11 @@ export function buildVCard(identity: VCardIdentity) {
   if (hasRealValue(identity.website)) lines.push(`URL;TYPE=WORK:${escapeVCardValue(normalizeUrl(identity.website))}`);
   if (hasRealValue(identity.address)) lines.push(`ADR;TYPE=WORK:;;${escapeVCardValue(String(identity.address).trim())};;;;`);
 
+  if (tradeShowContext) {
+    lines.push(`X-SETU-TRADE-SHOW:${escapeVCardValue(tradeShowContext.tradeShowName)}`);
+    if (tradeShowContext.boothNumber) lines.push(`X-SETU-BOOTH:${escapeVCardValue(tradeShowContext.boothNumber)}`);
+  }
+
   const photo = dataImageToVCardPhoto(identity.avatarUrl);
   if (photo) {
     lines.push(`PHOTO;TYPE=${photo.type};ENCODING=BASE64:${photo.base64}`);
@@ -108,7 +131,7 @@ export function buildVCard(identity: VCardIdentity) {
     if (photoUri) lines.push(`PHOTO;VALUE=URI:${escapeVCardValue(photoUri)}`);
   }
 
-  lines.push('NOTE:Shared via Setu Flow');
+  lines.push(`NOTE:${escapeVCardValue(tradeShowContext?.note ?? 'Shared via Setu Flow')}`);
   lines.push(`REV:${now}`);
   lines.push('END:VCARD');
   return `${lines.map(foldLine).join('\r\n')}\r\n`;

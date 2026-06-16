@@ -19,12 +19,14 @@ export async function GET(request: NextRequest) {
     secondaryPhone: identity.secondaryPhone,
     website: identity.website,
     address: identity.address,
+    tradeShowName: identity.tradeShowName,
+    boothNumber: identity.boothNumber,
   });
 
   return new NextResponse(vcard, {
     status: 200,
     headers: {
-      'Content-Type': 'text/x-vcard; charset=utf-8',
+      'Content-Type': 'text/vcard; charset=utf-8',
       'Content-Disposition': `attachment; filename="${getVCardFilename({ fullName: identity.fullName })}"`,
       'Cache-Control': 'public, max-age=300',
     },
