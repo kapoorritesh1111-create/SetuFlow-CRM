@@ -1,37 +1,75 @@
 import { SiteShell } from '@/components/marketing/site-shell';
 import { TradeShowTrialForm } from './trade-show-trial-form';
 
-const tourSteps = [
-  ['01', 'Capture', 'Save booth conversations.'],
-  ['02', 'Organize', 'Tag buyer interest.'],
-  ['03', 'Export', 'Download CSV lists.'],
-  ['04', 'Follow up', 'Preview the full CRM.'],
-] as const;
+type IconName = 'card' | 'bolt' | 'person' | 'badge' | 'download' | 'screen' | 'folder' | 'chart' | 'scan';
 
-const benefits = ['No credit card', 'Instant setup', 'Booth capture', 'Digital card', 'CSV export'];
+const tourSteps: Array<{ number: string; title: string; body: string; icon: IconName }> = [
+  { number: '01', title: 'Capture', body: 'Save booth conversations.', icon: 'scan' },
+  { number: '02', title: 'Organize', body: 'Tag buyer interest.', icon: 'folder' },
+  { number: '03', title: 'Export', body: 'Download CSV lists.', icon: 'download' },
+  { number: '04', title: 'Follow up', body: 'Preview the full CRM.', icon: 'chart' },
+];
 
-const lowerSteps = [
-  ['Create your workspace', 'Add your event details and we prepare your workspace.'],
-  ['Capture at the booth', 'Use scan, type, or voice to capture meaningful lead details.'],
-  ['Organize and export', 'Organize by products and interest. Export clean buyer lists instantly.'],
-  ['Explore and upgrade', 'Preview the full Setu Flow platform and upgrade when ready.'],
-] as const;
+const benefits: Array<{ label: string; icon: IconName }> = [
+  { label: 'No credit card', icon: 'card' },
+  { label: 'Instant setup', icon: 'bolt' },
+  { label: 'Booth capture', icon: 'person' },
+  { label: 'Digital card', icon: 'badge' },
+  { label: 'CSV export', icon: 'download' },
+];
+
+const lowerSteps: Array<{ title: string; body: string; icon: IconName }> = [
+  { title: 'Create your workspace', body: 'Add your event details and we prepare your workspace.', icon: 'person' },
+  { title: 'Capture at the booth', body: 'Use scan, type, or voice to capture meaningful lead details.', icon: 'scan' },
+  { title: 'Organize and export', body: 'Organize by products and interest. Export clean buyer lists instantly.', icon: 'folder' },
+  { title: 'Explore and upgrade', body: 'Preview the full Setu Flow platform and upgrade when ready.', icon: 'badge' },
+];
+
+function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {
+  const common = {
+    className,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+
+  if (name === 'card') {
+    return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M3 10h18" /></svg>;
+  }
+  if (name === 'bolt') {
+    return <svg {...common}><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" /></svg>;
+  }
+  if (name === 'person') {
+    return <svg {...common}><circle cx="12" cy="8" r="4" /><path d="M4 21c1.6-4 4.3-6 8-6s6.4 2 8 6" /></svg>;
+  }
+  if (name === 'badge') {
+    return <svg {...common}><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M9 8h6" /><path d="M9 12h3" /><path d="M14 15h1" /></svg>;
+  }
+  if (name === 'download') {
+    return <svg {...common}><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>;
+  }
+  if (name === 'screen') {
+    return <svg {...common}><rect x="4" y="5" width="16" height="11" rx="2" /><path d="M8 21h8" /><path d="M12 16v5" /></svg>;
+  }
+  if (name === 'folder') {
+    return <svg {...common}><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>;
+  }
+  if (name === 'scan') {
+    return <svg {...common}><path d="M7 3H5a2 2 0 0 0-2 2v2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><path d="M17 21h2a2 2 0 0 0 2-2v-2" /><path d="M8 12h8" /></svg>;
+  }
+  return <svg {...common}><path d="M5 20V10" /><path d="M12 20V4" /><path d="M19 20v-7" /></svg>;
+}
 
 export function TradeShowTrialVideoPage() {
   return (
     <SiteShell>
       <main className="bg-white">
         <section className="relative isolate overflow-hidden bg-[#061e34] text-white">
-          <video
-            className="absolute inset-0 -z-30 h-full w-full object-cover"
-            src="/marketing/trade-show-trial-tour.mp4.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            aria-hidden="true"
-          />
+          <video className="absolute inset-0 -z-30 h-full w-full object-cover" src="/marketing/trade-show-trial-tour.mp4.mp4" autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />
           <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(6,30,52,0.93)_0%,rgba(6,30,52,0.80)_44%,rgba(6,30,52,0.45)_100%)]" />
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_18%,rgba(16,132,119,0.24),transparent_34%)]" />
 
@@ -47,31 +85,31 @@ export function TradeShowTrialVideoPage() {
               <div className="mt-7 max-w-2xl rounded-[1.6rem] border border-white/16 bg-[#061e34]/42 p-4 shadow-[0_20px_64px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5">
                 <p className="text-sm font-extrabold text-white/92 sm:text-base">Your trial tour</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-4">
-                  {tourSteps.map(([number, title, body], index) => (
-                    <div key={number} className="relative rounded-2xl border border-white/10 bg-white/[0.045] p-3 sm:border-0 sm:bg-transparent sm:p-0">
+                  {tourSteps.map((step, index) => (
+                    <div key={step.number} className="relative rounded-2xl border border-white/10 bg-white/[0.045] p-3 sm:border-0 sm:bg-transparent sm:p-0">
                       {index < tourSteps.length - 1 ? <span className="hidden text-[#20d996] sm:absolute sm:right-1 sm:top-6 sm:block">&rarr;</span> : null}
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-extrabold text-[#20d996] ring-1 ring-white/12">
-                        {number}
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[#20d996] ring-1 ring-white/12">
+                        <Icon name={step.icon} className="h-5 w-5" />
                       </span>
-                      <h2 className="mt-3 text-sm font-extrabold text-white">{title}</h2>
-                      <p className="mt-1 text-xs leading-5 text-white/70">{body}</p>
+                      <p className="mt-3 text-xs font-extrabold text-[#20d996]">{step.number}</p>
+                      <h2 className="mt-1 text-sm font-extrabold text-white">{step.title}</h2>
+                      <p className="mt-1 text-xs leading-5 text-white/70">{step.body}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="mt-5 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-5">
-                {benefits.map((label) => (
-                  <span key={label} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-white/12 bg-white/[0.10] px-3 text-center text-xs font-extrabold leading-4 text-white/90 shadow-[0_10px_24px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:text-[0.78rem]">
-                    {label}
+                {benefits.map((item) => (
+                  <span key={item.label} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.10] px-3 text-center text-xs font-extrabold leading-4 text-white/90 shadow-[0_10px_24px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:text-[0.78rem]">
+                    <Icon name={item.icon} className="h-4 w-4 shrink-0 text-[#20d996]" />
+                    {item.label}
                   </span>
                 ))}
               </div>
             </div>
 
-            <div className="lg:justify-self-end">
-              <TradeShowTrialForm />
-            </div>
+            <div className="lg:justify-self-end"><TradeShowTrialForm /></div>
           </div>
         </section>
 
@@ -80,11 +118,11 @@ export function TradeShowTrialVideoPage() {
             <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#108477]">How your trial tour works</p>
             <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-[#0b2e4a] sm:text-4xl">One workspace. Four clear moves.</h2>
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {lowerSteps.map(([title, body]) => (
-                <div key={title} className="rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-[0_18px_48px_rgba(15,23,42,0.055)] sm:text-center">
-                  <span className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#dff7f2] text-sm font-extrabold text-[#108477]">✓</span>
-                  <h3 className="mt-5 text-lg font-extrabold text-[#0b2e4a]">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>
+              {lowerSteps.map((step) => (
+                <div key={step.title} className="rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-[0_18px_48px_rgba(15,23,42,0.055)] sm:text-center">
+                  <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#dff7f2] text-[#108477]"><Icon name={step.icon} className="h-6 w-6" /></span>
+                  <h3 className="mt-5 text-lg font-extrabold text-[#0b2e4a]">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{step.body}</p>
                 </div>
               ))}
             </div>
