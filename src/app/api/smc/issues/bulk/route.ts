@@ -24,9 +24,9 @@ export async function PATCH(request: NextRequest) {
       patchData.resolved_at = new Date().toISOString();
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("sprint_issues")
-      .update(patchData as any)
+      .update(patchData)
       .eq("organization_id", SETU_ORG_ID)
       .in("id", ids)
       .select("id");
