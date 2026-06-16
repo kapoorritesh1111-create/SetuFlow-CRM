@@ -162,7 +162,7 @@ export default function TradeShowTrialPage() {
                         <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[#20d996] ring-1 ring-white/12">
                           <Icon name={step.icon} className="h-5 w-5" />
                         </span>
-                        {index < steps.length - 1 ? <span className="hidden text-[#20d996] sm:absolute sm:right-2 sm:top-5 sm:block">-></span> : null}
+                        {index < steps.length - 1 ? <span className="hidden text-[#20d996] sm:absolute sm:right-2 sm:top-5 sm:block">&rarr;</span> : null}
                         <div>
                           <p className="text-sm font-extrabold text-[#20d996] sm:mt-4">{step.number}</p>
                           <h2 className="mt-1 text-sm font-extrabold text-white sm:text-base">{step.title}</h2>
