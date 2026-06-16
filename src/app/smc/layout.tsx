@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import './smc.css';
 import './smc-s27.css';
 import './smc-premium.css';
+import './smc-settings-polish.css';
 
 export const dynamic = 'force-dynamic';
 
