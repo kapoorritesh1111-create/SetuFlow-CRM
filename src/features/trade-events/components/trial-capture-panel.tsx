@@ -11,6 +11,13 @@ type TrialCaptureEventOption = {
   dateLabel: string;
 };
 
+export type TrialCaptureReusableTerm = {
+  id: string;
+  kind: 'product' | 'category';
+  displayTerm: string;
+  usageCount: number;
+};
+
 type CaptureFields = {
   company: string;
   contact: string;
@@ -26,6 +33,7 @@ type CaptureFields = {
 
 type TrialCapturePanelProps = {
   events: TrialCaptureEventOption[];
+  reusableTerms: TrialCaptureReusableTerm[];
 };
 
 const TABS: Array<{ key: TrialCaptureSource; label: string; icon: string; help: string }> = [
@@ -81,11 +89,45 @@ function extractFields(rawInput: string): Partial<CaptureFields> {
   return { company, contact, email, phone, productInterest, typedCategory, notes };
 }
 
-export function TrialCapturePanel({ events }: TrialCapturePanelProps) {
+function TermChips({
+  label,
+  terms,
+  onPick,
+  onAddNew,
+}: {
+  label: string;
+  terms: TrialCaptureReusableTerm[];
+  onPick: (term: string) => void;
+  onAddNew: () => void;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{label}</p>
+        <button type="button" onClick={onAddNew} className="rounded-full border border-dashed border-blue-300 bg-white px-3 py-1 text-xs font-black text-blue-700 hover:bg-blue-50">+ Add New</button>
+      </div>
+      {terms.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {terms.map((term) => (
+            <button key={term.id} type="button" onClick={() => onPick(term.displayTerm)} className="rounded-full border border-blue-100 bg-white px-3 py-1.5 text-xs font-black text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-700">
+              {term.displayTerm} <span className="font-semibold text-slate-400">×{term.usageCount}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 text-xs font-semibold text-slate-500">Save a term once and it will appear here for quick reuse.</p>
+      )}
+    </div>
+  );
+}
+
+export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelProps) {
   const [captureSource, setCaptureSource] = useState<TrialCaptureSource>('type');
   const [fields, setFields] = useState<CaptureFields>(emptyFields);
   const [state, formAction] = useFormState<TrialCaptureActionState | undefined, FormData>(saveTrialTradeEventCapture, undefined);
   const hasEvents = events.length > 0;
+  const productTerms = reusableTerms.filter((term) => term.kind === 'product').slice(0, 12);
+  const categoryTerms = reusableTerms.filter((term) => term.kind === 'category').slice(0, 12);
 
   const extractedPreview = useMemo(() => {
     if (captureSource === 'dictate') return extractFields(fields.transcript);
@@ -117,7 +159,7 @@ export function TrialCapturePanel({ events }: TrialCapturePanelProps) {
           <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Trade Show Trial Capture</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Capture leads three ways</h2>
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600">
-            Save booth conversations as event entries only. Trial captures stay in the trade-event queue and are not auto-converted into CRM leads.
+            Save booth conversations as event entries only. Product and category terms become reusable quick-pick chips for the next capture.
           </p>
         </div>
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
@@ -129,12 +171,7 @@ export function TrialCapturePanel({ events }: TrialCapturePanelProps) {
         {TABS.map((tab) => {
           const selected = captureSource === tab.key;
           return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setCaptureSource(tab.key)}
-              className={`rounded-2xl border px-4 py-3 text-left transition ${selected ? 'border-blue-500 bg-blue-50 shadow-[0_16px_34px_rgba(37,99,235,0.14)]' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
-            >
+            <button key={tab.key} type="button" onClick={() => setCaptureSource(tab.key)} className={`rounded-2xl border px-4 py-3 text-left transition ${selected ? 'border-blue-500 bg-blue-50 shadow-[0_16px_34px_rgba(37,99,235,0.14)]' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
               <div className="flex items-center gap-2 text-sm font-black text-slate-950"><span>{tab.icon}</span>{tab.label}</div>
               <p className="mt-1 text-xs font-semibold text-slate-500">{tab.help}</p>
             </button>
@@ -154,24 +191,14 @@ export function TrialCapturePanel({ events }: TrialCapturePanelProps) {
             <label className="block">
               <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Trade event</span>
               <select name="trade_event_id" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 outline-none ring-blue-500/20 focus:ring-4" required>
-                {events.map((event) => (
-                  <option key={event.id} value={event.id}>{event.name} · {event.locationLabel} · {event.dateLabel}</option>
-                ))}
+                {events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.locationLabel} · {event.dateLabel}</option>)}
               </select>
             </label>
 
             {captureSource === 'dictate' ? (
               <label className="block">
                 <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Full transcript</span>
-                <textarea
-                  name="raw_transcript"
-                  value={fields.transcript}
-                  onChange={(event) => updateField('transcript', event.target.value)}
-                  rows={6}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none ring-blue-500/20 focus:ring-4"
-                  placeholder="Example: Contact is Priya Shah from Sunrise Imports. Email priya@example.com. Looking for mango chips. Category snacks. Needs pricing next week."
-                  required
-                />
+                <textarea name="raw_transcript" value={fields.transcript} onChange={(event) => updateField('transcript', event.target.value)} rows={6} className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none ring-blue-500/20 focus:ring-4" placeholder="Example: Contact is Priya Shah from Sunrise Imports. Looking for mango chips. Category snacks." required />
               </label>
             ) : null}
 
@@ -179,25 +206,11 @@ export function TrialCapturePanel({ events }: TrialCapturePanelProps) {
               <div className="grid gap-4">
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Raw OCR / QR / badge payload</span>
-                  <textarea
-                    name="raw_scan_payload"
-                    value={fields.scanPayload}
-                    onChange={(event) => updateField('scanPayload', event.target.value)}
-                    rows={6}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none ring-blue-500/20 focus:ring-4"
-                    placeholder="Paste card OCR text, QR payload, or badge export text here. The full payload is retained in raw_payload."
-                    required={!fields.scanRef}
-                  />
+                  <textarea name="raw_scan_payload" value={fields.scanPayload} onChange={(event) => updateField('scanPayload', event.target.value)} rows={6} className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none ring-blue-500/20 focus:ring-4" placeholder="Paste card OCR text, QR payload, or badge export text here." required={!fields.scanRef} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Optional scan reference</span>
-                  <input
-                    name="source_scan_ref"
-                    value={fields.scanRef}
-                    onChange={(event) => updateField('scanRef', event.target.value)}
-                    className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none ring-blue-500/20 focus:ring-4"
-                    placeholder="File name, badge ID, QR URL, or storage reference"
-                  />
+                  <input name="source_scan_ref" value={fields.scanRef} onChange={(event) => updateField('scanRef', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none ring-blue-500/20 focus:ring-4" placeholder="File name, badge ID, QR URL, or storage reference" />
                 </label>
               </div>
             ) : null}
@@ -205,60 +218,44 @@ export function TrialCapturePanel({ events }: TrialCapturePanelProps) {
             {(captureSource === 'dictate' || captureSource === 'scan') && Object.values(extractedPreview).some(Boolean) ? (
               <div className="rounded-3xl border border-blue-200 bg-blue-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black text-blue-950">Auto-extracted fields ready</p>
-                    <p className="mt-1 text-xs font-semibold text-blue-700">Review and edit before saving. Raw input is still retained.</p>
-                  </div>
+                  <div><p className="text-sm font-black text-blue-950">Auto-extracted fields ready</p><p className="mt-1 text-xs font-semibold text-blue-700">Review and edit before saving. Raw input is still retained.</p></div>
                   <button type="button" onClick={applyExtractedFields} className="rounded-2xl bg-blue-700 px-4 py-2 text-sm font-black text-white">Apply fields</button>
                 </div>
               </div>
             ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Company *</span>
-                <input name="captured_company_name" value={fields.company} onChange={(event) => updateField('company', event.target.value)} required className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Contact</span>
-                <input name="captured_contact_name" value={fields.contact} onChange={(event) => updateField('contact', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Email</span>
-                <input name="captured_email" type="email" value={fields.email} onChange={(event) => updateField('email', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Phone / WhatsApp</span>
-                <input name="captured_phone" value={fields.phone} onChange={(event) => updateField('phone', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Product interest</span>
-                <input name="product_interest" value={fields.productInterest} onChange={(event) => updateField('productInterest', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Typed category</span>
-                <input name="typed_category" value={fields.typedCategory} onChange={(event) => updateField('typedCategory', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-              </label>
+              <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Company *</span><input name="captured_company_name" value={fields.company} onChange={(event) => updateField('company', event.target.value)} required className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
+              <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Contact</span><input name="captured_contact_name" value={fields.contact} onChange={(event) => updateField('contact', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
+              <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Email</span><input name="captured_email" type="email" value={fields.email} onChange={(event) => updateField('email', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
+              <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Phone / WhatsApp</span><input name="captured_phone" value={fields.phone} onChange={(event) => updateField('phone', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
             </div>
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Notes</span>
-              <textarea name="captured_notes" value={fields.notes} onChange={(event) => updateField('notes', event.target.value)} rows={4} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" />
-            </label>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-3">
+                <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Product interest</span><input name="product_interest" value={fields.productInterest} onChange={(event) => updateField('productInterest', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
+                <TermChips label="Saved products" terms={productTerms} onPick={(term) => updateField('productInterest', term)} onAddNew={() => updateField('productInterest', '')} />
+              </div>
+              <div className="space-y-3">
+                <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Typed category</span><input name="typed_category" value={fields.typedCategory} onChange={(event) => updateField('typedCategory', event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
+                <TermChips label="Saved categories" terms={categoryTerms} onPick={(term) => updateField('typedCategory', term)} onAddNew={() => updateField('typedCategory', '')} />
+              </div>
+            </div>
+
+            <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Notes</span><textarea name="captured_notes" value={fields.notes} onChange={(event) => updateField('notes', event.target.value)} rows={4} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
           </div>
 
           <aside className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-4 lg:self-start">
             <p className="text-sm font-black text-slate-950">Before save</p>
             <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-600">
               <li>• Saves to <span className="font-black text-slate-900">trade_event_entries</span></li>
-              <li>• Retains raw transcript / scan payload</li>
-              <li>• Stores product/category in normalized payload</li>
+              <li>• Saves product/category terms for reuse</li>
+              <li>• Keeps terms independent from catalog products</li>
               <li>• Does not create a CRM lead automatically</li>
             </ul>
             {state?.error ? <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{state.error}</p> : null}
             {state?.success ? <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{state.success}</p> : null}
-            <div className="mt-4">
-              <SubmitButton captureSource={captureSource} />
-            </div>
+            <div className="mt-4"><SubmitButton captureSource={captureSource} /></div>
           </aside>
         </form>
       )}
