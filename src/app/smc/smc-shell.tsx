@@ -2,28 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { createBrowserClient } from "@/lib/supabase/client";
-
-const I: Record<string, ReactNode> = {
-  grid: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
-  issues: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-  board: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>,
-  leads: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
-  clients: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>,
-  wiki: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
-  chart: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
-  bell: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  list: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-  chat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  send: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
-  filter: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
-  settings: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1.08V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.34.35.65.6 1 .3.25.68.39 1.08.4H21a2 2 0 1 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/></svg>,
-  more: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
-};
 
 type NavItem = { id: string; path: string; icon: string; label: string };
 type ChatMessage = { id: string; content: string; sender_id: string | null; sender_name: string | null; created_at: string };
+
+const I: Record<string, ReactNode> = {
+  grid: <span>▦</span>,
+  issues: <span>!</span>,
+  board: <span>▥</span>,
+  leads: <span>+</span>,
+  clients: <span>◔</span>,
+  wiki: <span>▤</span>,
+  chart: <span>▥</span>,
+  bell: <span>◌</span>,
+  list: <span>☰</span>,
+  chat: <span>□</span>,
+  send: <span>➤</span>,
+  filter: <span>▽</span>,
+  settings: <span>⚙</span>,
+  more: <span>...</span>,
+};
 
 const CORE_NAV: NavItem[] = [
   { id: "dash", path: "/smc", icon: "grid", label: "Dashboard" },
@@ -63,6 +63,8 @@ const TEAM = [
   { i: "AA", n: "Ankush Arya", c: "#8b5cf6", on: false },
 ];
 
+const CHAT_PROMPTS = ["Post a status update", "Ask about an issue", "Share a deployment note"];
+
 function fmtTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "now";
@@ -78,6 +80,8 @@ export function SmcShell({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
   const [counts, setCounts] = useState({ total: 0, bugs: 0, enhancement: 0, ux: 0, backlog: 0 });
 
   const allNav = useMemo(() => [...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV, ...UTILITY_NAV.filter((n) => n.path !== "#notifications")], []);
@@ -104,10 +108,11 @@ export function SmcShell({ children }: { children: ReactNode }) {
     if (!chat) return;
     let cancelled = false;
     setChatLoading(true);
+    setChatError(null);
     fetch("/api/smc/chat")
       .then((r) => r.json())
       .then((d) => { if (!cancelled) setMessages((d.messages ?? []) as ChatMessage[]); })
-      .catch(() => { if (!cancelled) setMessages([]); })
+      .catch(() => { if (!cancelled) { setMessages([]); setChatError("Unable to load chat. You can still try sending a new message."); } })
       .finally(() => { if (!cancelled) setChatLoading(false); });
 
     const supabase = createBrowserClient();
@@ -128,14 +133,20 @@ export function SmcShell({ children }: { children: ReactNode }) {
   async function sendMessage(e: FormEvent) {
     e.preventDefault();
     const content = message.trim();
-    if (!content) return;
+    if (!content || sending) return;
     setMessage("");
+    setSending(true);
+    setChatError(null);
     const res = await fetch("/api/smc/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, sender_name: "SMC User" }),
     });
-    if (!res.ok) setMessage(content);
+    if (!res.ok) {
+      setMessage(content);
+      setChatError("Message was not sent. Check access and try again.");
+    }
+    setSending(false);
   }
 
   function navButton(item: NavItem) {
@@ -168,8 +179,8 @@ export function SmcShell({ children }: { children: ReactNode }) {
           <div className="smc-sb-head"><h2>{I[activeItem.icon]} {activeItem.label} <span className="smc-mbdg">Internal</span></h2></div>
           <div className="smc-sb-scroll">
             <div className="smc-ngl">Core</div>
-            <Link href="/smc/issues" className={`smc-ni ${pathname==="/smc/issues"?"active":""}`}>{I.list} Issues <span className="cnt">{counts.total || "…"}</span></Link>
-            <Link href="/smc/board" className={`smc-ni ${pathname==="/smc/board"?"active":""}`}>{I.board} Board View</Link>
+            <Link href="/smc/issues" className={`smc-ni ${pathname === "/smc/issues" ? "active" : ""}`}>{I.list} Issues <span className="cnt">{counts.total || "..."}</span></Link>
+            <Link href="/smc/board" className={`smc-ni ${pathname === "/smc/board" ? "active" : ""}`}>{I.board} Board View</Link>
             <Link href="/smc/leads" className="smc-ni">{I.leads} Internal Leads</Link>
             <Link href="/smc/clients" className="smc-ni">{I.clients} Client Orgs</Link>
             {(pathname.startsWith("/smc/issues") || pathname.startsWith("/smc/board")) && (<><div className="smc-ngl">Filters</div><Link href="/smc/issues?type=Bug" className="smc-ni">{I.filter} Bugs <span className="cnt">{counts.bugs}</span></Link><Link href="/smc/issues?type=Enhancement" className="smc-ni">{I.filter} Enhancement <span className="cnt">{counts.enhancement}</span></Link><Link href="/smc/issues?type=UX" className="smc-ni">{I.filter} UX <span className="cnt">{counts.ux}</span></Link></>)}
@@ -183,24 +194,36 @@ export function SmcShell({ children }: { children: ReactNode }) {
       <main className="smc-main">{children}</main>
 
       <div className={`smc-notif ${notif ? "open" : ""}`}>
-        <div className="smc-notif-head"><h3>Notifications</h3><button onClick={() => setNotif(false)} style={{ border: "none", background: "none", cursor: "pointer", color: "#64748b", fontSize: 18 }}>✕</button></div>
+        <div className="smc-notif-head"><h3>Notifications</h3><button onClick={() => setNotif(false)} style={{ border: "none", background: "none", cursor: "pointer", color: "#64748b", fontSize: 18 }}>x</button></div>
         <div className="smc-empty-state"><div className="smc-empty-icon">{I.bell}</div><h4>No new notifications</h4><p>Live operational alerts will appear here when there is something to review.</p></div>
       </div>
 
       {!chat && <button className="smc-chat-fab" onClick={() => { setChat(true); setNotif(false); }}>{I.chat}</button>}
 
       <div className={`smc-mobile-nav ${mobileNav ? "open" : ""}`}>
-        <div className="smc-mobile-nav-card"><div className="smc-mobile-nav-head"><h3>SMC navigation</h3><button onClick={() => setMobileNav(false)}>✕</button></div><div className="smc-mobile-nav-grid">{[...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV].map((n) => <Link key={n.id} href={n.path} onClick={() => setMobileNav(false)}>{I[n.icon]}<span>{n.label}</span></Link>)}</div></div>
+        <div className="smc-mobile-nav-card"><div className="smc-mobile-nav-head"><h3>SMC navigation</h3><button onClick={() => setMobileNav(false)}>x</button></div><div className="smc-mobile-nav-grid">{[...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV].map((n) => <Link key={n.id} href={n.path} onClick={() => setMobileNav(false)}>{I[n.icon]}<span>{n.label}</span></Link>)}</div></div>
       </div>
 
       <div className={`smc-chat ${chat ? "open" : ""}`}>
-        <div className="smc-chat-head">{I.chat}<h4>Team Chat</h4><span style={{ fontSize: 10, opacity: 0.5 }}>realtime</span><div style={{ marginLeft: "auto" }}><button onClick={() => setChat(false)}>✕</button></div></div>
+        <div className="smc-chat-head">{I.chat}<h4>Team Chat</h4><span className="smc-chat-status">Live</span><div style={{ marginLeft: "auto" }}><button onClick={() => setChat(false)}>x</button></div></div>
         <div className="smc-chat-msgs">
-          {chatLoading && <div className="smc-chat-empty">Loading messages…</div>}
-          {!chatLoading && messages.length === 0 && <div className="smc-chat-empty"><strong>Team chat coming soon.</strong><br />Messages will sync in real time once your team starts posting.</div>}
+          {chatLoading && <div className="smc-chat-empty">Loading messages...</div>}
+          {!chatLoading && messages.length === 0 && (
+            <div className="smc-chat-empty">
+              <div className="smc-chat-empty-card">
+                <div className="smc-empty-icon">{I.chat}</div>
+                <h4>Start the team chat</h4>
+                <p>Share an update, ask a question, or post a decision for the SMC team. Your first message will appear here in real time.</p>
+                <div className="smc-chat-prompt-row">
+                  {CHAT_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => setMessage(prompt)}>{prompt}</button>)}
+                </div>
+              </div>
+            </div>
+          )}
           {messages.map((m) => <div key={m.id} className="smc-msg smc-msg-in"><div className="smc-msg-sender">{m.sender_name || "SMC"}</div><div className="smc-msg-bubble">{m.content}</div><div className="smc-msg-time">{fmtTime(m.created_at)}</div></div>)}
         </div>
-        <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder="Message…" value={message} onChange={(e) => setMessage(e.target.value)} /><button type="submit" disabled={!message.trim()}>{I.send}</button></form>
+        {chatError && <div style={{ padding: "0 14px 8px", color: "#dc2626", fontSize: 11 }}>{chatError}</div>}
+        <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder="Write a team update..." value={message} onChange={(e) => setMessage(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
       </div>
     </div>
   );
