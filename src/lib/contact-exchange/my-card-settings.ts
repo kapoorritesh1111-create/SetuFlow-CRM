@@ -88,9 +88,9 @@ export async function upsertMyCardSettingsForUser(args: {
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
-    .from('my_card_settings')
-    .upsert(payload, { onConflict: 'user_id' })
+  const myCardSettingsTable = supabase.from('my_card_settings') as any;
+  const { data, error } = await myCardSettingsTable
+    .upsert(payload as any, { onConflict: 'user_id' })
     .select('*')
     .single();
 
