@@ -12,25 +12,17 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const sprint = searchParams.get('sprint');
-    const status = searchParams.get('status');
-    const type = searchParams.get('type');
-    const limit = parseInt(searchParams.get('limit') ?? '100');
+    const limit = parseInt(searchParams.get('limit') ?? '1000');
 
-    let query = supabase
+    const { data, error } = await supabase
       .from('sprint_issues')
       .select('*')
       .eq('organization_id', SETU_ORG_ID)
+      .order('sprint_number', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (sprint) query = query.eq('sprint_number', parseInt(sprint));
-    if (status) query = query.ilike('status', status);
-    if (type) query = query.ilike('issue_type', type);
-
-    const { data, error } = await query;
     if (error) throw error;
-
     return NextResponse.json({ issues: data ?? [] });
   } catch (err) {
     console.error('SMC issues error:', err);

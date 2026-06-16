@@ -24,5 +24,9 @@ export default async function SmcLayout({ children }: { children: ReactNode }) {
     redirect('/dashboard');
   }
 
-  return <SmcShell>{children}</SmcShell>;
+  return (
+    <div className="smc-root">
+      <SmcShell>{children}</SmcShell>
+    </div>
+  );
 }
