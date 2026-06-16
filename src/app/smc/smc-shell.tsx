@@ -78,7 +78,7 @@ export function SmcShell({children}:{children:ReactNode}){
     <div className={`smc-shell ${sb?'with-sidebar':''}`}>
       {/* RAIL */}
       <aside className="smc-rail">
-        <Link href="/smc" className="smc-rl">S</Link>
+        <Link href="/smc" className="smc-rl"><img src="/logos/setu-flow-logo.svg" alt="SMC" width={22} height={22} /></Link>
         {NAV.map((item,i)=>{if(item==='div')return<div key={`d${i}`} className="smc-rdiv"/>;return<Link key={item.id} href={item.path} className={`smc-rb ${isA(item.path)?'active':''}`}>{I[item.icon]}{item.dot&&<span className="dot"/>}<span className="smc-rb-tip">{item.label}</span></Link>})}
         <div className="smc-rsp"/>
         <button className="smc-rb" onClick={()=>setSb(!sb)}>{I.list}<span className="smc-rb-tip">Sidebar</span></button>

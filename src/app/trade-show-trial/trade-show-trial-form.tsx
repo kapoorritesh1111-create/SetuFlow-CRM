@@ -33,7 +33,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#06263f] px-5 py-4 text-sm font-extrabold text-white shadow-[0_18px_38px_rgba(6,38,63,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a] disabled:cursor-not-allowed disabled:opacity-70 sm:text-base"
+      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#06263f] px-5 py-4 text-sm font-black text-white shadow-[0_18px_38px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a] disabled:cursor-not-allowed disabled:opacity-70 sm:text-base"
     >
       {pending ? 'Preparing your workspace...' : 'Start My Free Trial'}
       <span aria-hidden className="text-xl leading-none">›</span>
@@ -51,10 +51,9 @@ export function TradeShowTrialForm() {
   const [state, formAction] = useFormState(startTradeShowTrial, tradeShowTrialInitialState);
 
   return (
-    <form action={formAction} className="rounded-[2rem] border border-white/80 bg-white/95 p-4 shadow-[0_24px_64px_rgba(0,0,0,0.16)] backdrop-blur sm:p-7">
-      <div className="mb-5">
-        <p className="text-xl font-extrabold tracking-[-0.02em] text-[#0b2e4a]">Quick setup</p>
-        <p className="mt-1 text-sm leading-6 text-slate-500">No credit card required. CSV export included.</p>
+    <form action={formAction} className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-[0_24px_64px_rgba(15,23,42,0.13)] backdrop-blur sm:p-7">
+      <div className="mb-5 rounded-2xl border border-teal-100 bg-teal-50/80 px-4 py-3 text-sm font-black leading-6 text-[#108477]">
+        No credit card required. Trade show capture, contact sharing, and CSV export included.
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -62,7 +61,7 @@ export function TradeShowTrialForm() {
           const wide = index >= 4;
           return (
             <label key={field.name} className={wide ? 'sm:col-span-2' : ''}>
-              <span className="mb-1.5 flex items-center gap-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+              <span className="mb-1.5 flex items-center gap-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-slate-500">
                 {field.label}
                 {field.required && <span className="text-[#108477]">*</span>}
               </span>

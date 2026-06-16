@@ -40,6 +40,7 @@
 .smc-sb { background: #fff; border-right: 1px solid var(--s200); display: flex; flex-direction: column; overflow: hidden; }
 .smc-sb-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--s100); flex-shrink: 0; }
 .smc-sb-head h2 { font-size: 13px; font-weight: 600; color: var(--navy-d); display: flex; align-items: center; gap: 6px; }
+.smc-sb-head h2 svg { width: 16px; height: 16px; flex-shrink: 0; }
 .smc-mbdg { font-size: 8px; font-weight: 700; background: linear-gradient(135deg,var(--amber),var(--amber-d)); color: var(--navy-9); padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: .05em; }
 .smc-sb-search { padding: 6px 14px; flex-shrink: 0; }
 .smc-sb-search input { width: 100%; background: var(--s50); border: 1px solid var(--s200); border-radius: 5px; padding: 6px 10px; font-size: 12px; color: var(--s700); outline: none; font-family: inherit; }
@@ -51,6 +52,8 @@
 .smc-ni { display: flex; align-items: center; gap: 8px; padding: 6px 14px; color: var(--s600); cursor: pointer; transition: 100ms ease; font-size: 12.5px; border-left: 3px solid transparent; text-decoration: none; }
 .smc-ni:hover { background: var(--s50); color: var(--s800); }
 .smc-ni.active { background: var(--teal-l); color: var(--navy); font-weight: 500; border-left-color: var(--teal); }
+.smc-ni svg { width: 14px; height: 14px; flex-shrink: 0; opacity: .5; }
+.smc-ni.active svg { opacity: 1; }
 .smc-ni .cnt { margin-left: auto; font-size: 10px; font-family: 'DM Mono', monospace; background: var(--s100); color: var(--s500); padding: 1px 6px; border-radius: 10px; }
 .smc-ni.active .cnt { background: var(--teal); color: #fff; }
 .smc-tm-sec { padding: 10px 14px; border-top: 1px solid var(--s100); flex-shrink: 0; }
@@ -309,3 +312,14 @@
 .smc-content-card .cc-stat{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:var(--navy);margin-top:8px}
 
 @media(max-width:768px){.smc-chat{width:calc(100% - 16px);right:8px;bottom:60px;height:55vh}.smc-chat-fab{bottom:60px}.smc-notif{width:100%}}
+
+/* ═══ SVG SIZE FIXES ═══ */
+.smc-ngl svg { width: 12px; height: 12px; }
+.smc-tm svg { width: 14px; height: 14px; }
+.smc-notif-icon svg { width: 15px; height: 15px; }
+.smc-chat-head svg { width: 16px; height: 16px; }
+.smc-chat-input button svg { width: 16px; height: 16px; }
+.smc-composer-bar svg { width: 14px; height: 14px; }
+.smc-drawer-head svg { width: 14px; height: 14px; }
+.smc-ph svg { width: 14px; height: 14px; }
+.smc-dc-i svg { width: 18px; height: 18px; }
