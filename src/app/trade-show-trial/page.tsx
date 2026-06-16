@@ -129,7 +129,7 @@ export default function TradeShowTrialPage() {
         <section className="relative isolate overflow-hidden bg-[#061e34] text-white">
           <video
             className="absolute inset-0 -z-30 h-full w-full object-cover"
-            src="/marketing/trade-show-trial-tour.mp4"
+            src="/marketing/trade-show-trial-tour.mp4.mp4"
             autoPlay
             muted
             loop
