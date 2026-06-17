@@ -1,71 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import type { Database, Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
-const STATUSES = [
-  "Open",
-  "In Progress",
-  "In Review",
-  "Blocked",
-  "Resolved",
-  "Deferred",
-  "Won't Fix",
-] as const;
-const TYPES = [
-  "Bug",
-  "Feature",
-  "Enhancement",
-  "Docs",
-  "DevOps",
-  "UX",
-  "Task",
-  "Test",
-] as const;
-const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
-const PRIORITIES = ["P0", "P1", "P2", "P3"] as const;
+const STATUSES = ["Open", "In Progress", "In Review", "Blocked", "Resolved", "Deferred", "Won't Fix"];
+const TYPES = ["Bug", "Feature", "Enhancement", "Docs", "DevOps", "UX", "Task", "Test"];
+const SEVERITIES = ["Critical", "High", "Medium", "Low"];
+const PRIORITIES = ["P0", "P1", "P2", "P3"];
 
-type IssueStatus = (typeof STATUSES)[number];
-type IssueType = (typeof TYPES)[number];
-type IssueSeverity = (typeof SEVERITIES)[number];
-type IssuePriority = (typeof PRIORITIES)[number];
 type IssuePayload = Record<string, unknown>;
-type SprintIssueValue = Json | string[] | number[] | null | undefined;
-type SprintIssueRow = Record<string, SprintIssueValue> & {
-  id: string;
-  organization_id: string | null;
-  issue_ref: string | null;
-  issue_number: number | null;
-};
-type SprintIssueInsert = Record<string, SprintIssueValue>;
-type SprintIssueUpdate = Partial<SprintIssueInsert>;
-type SmcDatabase = Omit<Database, "public"> & {
-  public: Omit<Database["public"], "Tables"> & {
-    Tables: Database["public"]["Tables"] & {
-      sprint_issues: {
-        Row: SprintIssueRow;
-        Insert: SprintIssueInsert;
-        Update: SprintIssueUpdate;
-        Relationships: [];
-      };
-    };
-  };
-};
-type SmcSupabase = SupabaseClient<SmcDatabase>;
-
-type RefRow = {
-  issue_ref: string | null;
-  issue_number: number | null;
-};
-
-function smcClient(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-): SmcSupabase {
-  return supabase as unknown as SmcSupabase;
-}
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -80,25 +24,18 @@ function numberValue(value: unknown): number | null {
   return null;
 }
 
-function pick<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-  fallback: T,
-): T {
+function pick(value: unknown, allowed: string[], fallback: string) {
   const cleaned = text(value);
   if (!cleaned) return fallback;
-  const match = allowed.find(
-    (item) => item.toLowerCase() === cleaned.toLowerCase(),
-  );
-  return match ?? fallback;
+  return allowed.find((item) => item.toLowerCase() === cleaned.toLowerCase()) ?? fallback;
 }
 
-function normalizePriority(value: unknown): IssuePriority {
+function normalizePriority(value: unknown) {
   const cleaned = text(value)?.split(" ")[0] ?? "P2";
   return pick(cleaned, PRIORITIES, "P2");
 }
 
-function typeCode(type: IssueType): string {
+function typeCode(type: string) {
   if (type === "Enhancement") return "ENH";
   if (type === "Feature") return "FEAT";
   if (type === "Docs") return "DOC";
@@ -109,17 +46,25 @@ function typeCode(type: IssueType): string {
   return "BUG";
 }
 
+function jsonSafe(value: unknown) {
+  if (value === undefined) return null;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return null;
+  }
+}
+
 async function assertSetuMember() {
   const supabase = await createClient();
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
-  if (userError || !user)
-    return {
-      supabase,
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
+
+  if (userError || !user) {
+    return { supabase, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
 
   const { data: member, error: memberError } = await supabase
     .from("organization_members")
@@ -128,28 +73,40 @@ async function assertSetuMember() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (memberError)
-    return {
-      supabase,
-      error: NextResponse.json(
-        { error: "Unable to verify SMC access" },
-        { status: 500 },
-      ),
-    };
-  if (!member)
-    return {
-      supabase,
-      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
+  if (memberError) {
+    return { supabase, error: NextResponse.json({ error: "Unable to verify SMC access" }, { status: 500 }) };
+  }
+
+  if (!member) {
+    return { supabase, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
   return { supabase, error: null };
 }
 
-function buildIssuePayload(
-  body: IssuePayload,
-  issueRef: string,
-  issueNumber: number,
-): SprintIssueInsert {
-  const issueType = pick<IssueType>(body.issue_type, TYPES, "Bug");
+async function nextIssueRef(supabase: Awaited<ReturnType<typeof createClient>>, sprintNumber: number, issueType: string) {
+  const { data, error } = await supabase
+    .from("sprint_issues")
+    .select("issue_ref, issue_number")
+    .eq("organization_id", SETU_ORG_ID)
+    .eq("sprint_number", sprintNumber)
+    .limit(1000);
+
+  if (error) throw error;
+  const maxNumber = (data ?? []).reduce((max, row) => {
+    const parsedFromRef = String(row.issue_ref ?? "").match(/-(\d+)$/)?.[1];
+    const candidate = Number(row.issue_number ?? parsedFromRef ?? 0);
+    return Number.isFinite(candidate) && candidate > max ? candidate : max;
+  }, 0);
+  const nextNumber = maxNumber + 1;
+  return {
+    issueRef: `S${sprintNumber}-${typeCode(issueType)}-${String(nextNumber).padStart(3, "0")}`,
+    issueNumber: nextNumber,
+  };
+}
+
+function buildIssuePayload(body: IssuePayload, issueRef: string, issueNumber: number) {
+  const issueType = pick(body.issue_type, TYPES, "Bug");
   const sprintNumber = numberValue(body.sprint_number) ?? 27;
   const area = text(body.area);
 
@@ -159,8 +116,8 @@ function buildIssuePayload(
     issue_number: issueNumber,
     title: text(body.title) ?? "Untitled SMC issue",
     description: text(body.description),
-    status: pick<IssueStatus>(body.status, STATUSES, "Open"),
-    severity: pick<IssueSeverity>(body.severity, SEVERITIES, "Medium"),
+    status: pick(body.status, STATUSES, "Open"),
+    severity: pick(body.severity, SEVERITIES, "Medium"),
     priority: normalizePriority(body.priority),
     issue_type: issueType,
     issue_category: text(body.issue_category) ?? issueType,
@@ -172,9 +129,7 @@ function buildIssuePayload(
     assigned_to: text(body.assigned_to),
     reporter_name: text(body.reporter_name) ?? "Ritesh Kapoor",
     area,
-    workflow_area:
-      text(body.workflow_area) ??
-      (area ? area.toLowerCase().replace(/\s+/g, "_") : "smc"),
+    workflow_area: text(body.workflow_area) ?? (area ? area.toLowerCase().replace(/\s+/g, "_") : "smc"),
     acceptance_criteria: text(body.acceptance_criteria),
     regression_test: text(body.regression_test),
     steps_to_reproduce: text(body.steps_to_reproduce),
@@ -185,34 +140,8 @@ function buildIssuePayload(
     target_date: text(body.target_date),
     git_branch: text(body.git_branch),
     fix_applied: text(body.fix_applied),
+    attachments: jsonSafe(body.attachments),
     submitted_via: "smc",
-  };
-}
-
-async function nextIssueRef(
-  supabase: SmcSupabase,
-  sprintNumber: number,
-  issueType: IssueType,
-) {
-  const { data, error } = await supabase
-    .from("sprint_issues")
-    .select("issue_ref, issue_number")
-    .eq("organization_id", SETU_ORG_ID)
-    .eq("sprint_number", sprintNumber)
-    .limit(1000);
-
-  if (error) throw error;
-  const rows = (data as RefRow[]) ?? [];
-  const maxNumber = rows.reduce((max, row) => {
-    const parsedFromRef = row.issue_ref?.match(/-(\d+)$/)?.[1];
-    const parsed = parsedFromRef ? Number(parsedFromRef) : null;
-    const candidate = row.issue_number ?? parsed ?? 0;
-    return Number.isFinite(candidate) && candidate > max ? candidate : max;
-  }, 0);
-  const nextNumber = maxNumber + 1;
-  return {
-    issueRef: `S${sprintNumber}-${typeCode(issueType)}-${String(nextNumber).padStart(3, "0")}`,
-    issueNumber: nextNumber,
   };
 }
 
@@ -224,7 +153,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") ?? "1000", 10);
 
-    const { data, error } = await smcClient(supabase)
+    const { data, error } = await supabase
       .from("sprint_issues")
       .select("*")
       .eq("organization_id", SETU_ORG_ID)
@@ -236,10 +165,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ issues: data ?? [] });
   } catch (err) {
     console.error("SMC issues error:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch issues" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to fetch issues" }, { status: 500 });
   }
 }
 
@@ -250,38 +176,22 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json()) as IssuePayload;
     const title = text(body.title);
-    if (!title)
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
     const sprintNumber = numberValue(body.sprint_number) ?? 27;
-    const issueType = pick<IssueType>(body.issue_type, TYPES, "Bug");
+    const issueType = pick(body.issue_type, TYPES, "Bug");
     const explicitRef = text(body.issue_ref);
-    const smcSupabase = smcClient(supabase);
     const generated = explicitRef
-      ? {
-          issueRef: explicitRef,
-          issueNumber: numberValue(body.issue_number) ?? 0,
-        }
-      : await nextIssueRef(smcSupabase, sprintNumber, issueType);
+      ? { issueRef: explicitRef, issueNumber: numberValue(body.issue_number) ?? 0 }
+      : await nextIssueRef(supabase, sprintNumber, issueType);
 
-    const payload = buildIssuePayload(
-      { ...body, title, sprint_number: sprintNumber, issue_type: issueType },
-      generated.issueRef,
-      generated.issueNumber,
-    );
-    const { data, error } = await smcSupabase
-      .from("sprint_issues")
-      .insert(payload)
-      .select("*")
-      .single();
+    const payload = buildIssuePayload({ ...body, title, sprint_number: sprintNumber, issue_type: issueType }, generated.issueRef, generated.issueNumber);
+    const { data, error } = await supabase.from("sprint_issues").insert(payload).select("*").single();
 
     if (error) throw error;
     return NextResponse.json({ issue: data }, { status: 201 });
   } catch (err) {
     console.error("SMC create issue error:", err);
-    return NextResponse.json(
-      { error: "Failed to create issue" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to create issue" }, { status: 500 });
   }
 }
