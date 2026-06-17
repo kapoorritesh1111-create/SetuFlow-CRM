@@ -1,66 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import type { Database, Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
-const STATUSES = [
-  "Open",
-  "In Progress",
-  "In Review",
-  "Blocked",
-  "Resolved",
-  "Deferred",
-  "Won't Fix",
-] as const;
-const TYPES = [
-  "Bug",
-  "Feature",
-  "Enhancement",
-  "Docs",
-  "DevOps",
-  "UX",
-  "Task",
-  "Test",
-] as const;
-const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
-const PRIORITIES = ["P0", "P1", "P2", "P3"] as const;
+const STATUSES = ["Open", "In Progress", "In Review", "Blocked", "Resolved", "Deferred", "Won't Fix"];
+const TYPES = ["Bug", "Feature", "Enhancement", "Docs", "DevOps", "UX", "Task", "Test"];
+const SEVERITIES = ["Critical", "High", "Medium", "Low"];
+const PRIORITIES = ["P0", "P1", "P2", "P3"];
 
 type IssuePayload = Record<string, unknown>;
-type IssueStatus = (typeof STATUSES)[number];
-type IssueType = (typeof TYPES)[number];
-type IssueSeverity = (typeof SEVERITIES)[number];
-type IssuePriority = (typeof PRIORITIES)[number];
-type SprintIssueValue = Json | string[] | number[] | null | undefined;
-type SprintIssueRow = Record<string, SprintIssueValue> & {
-  id: string;
-  organization_id: string | null;
-  issue_ref: string | null;
-  issue_number: number | null;
-};
-type SprintIssueInsert = Record<string, SprintIssueValue>;
-type SprintIssueUpdate = Partial<SprintIssueInsert>;
-type SmcDatabase = Omit<Database, "public"> & {
-  public: Omit<Database["public"], "Tables"> & {
-    Tables: Database["public"]["Tables"] & {
-      sprint_issues: {
-        Row: SprintIssueRow;
-        Insert: SprintIssueInsert;
-        Update: SprintIssueUpdate;
-        Relationships: [];
-      };
-    };
-  };
-};
-type SmcSupabase = SupabaseClient<SmcDatabase>;
-
-function smcClient(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-): SmcSupabase {
-  return supabase as unknown as SmcSupabase;
-}
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -75,22 +24,29 @@ function numberValue(value: unknown): number | null {
   return null;
 }
 
-function pick<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-  fallback: T,
-): T {
+function pick(value: unknown, allowed: string[], fallback: string) {
   const cleaned = text(value);
   if (!cleaned) return fallback;
-  const match = allowed.find(
-    (item) => item.toLowerCase() === cleaned.toLowerCase(),
-  );
-  return match ?? fallback;
+  return allowed.find((item) => item.toLowerCase() === cleaned.toLowerCase()) ?? fallback;
 }
 
-function normalizePriority(value: unknown): IssuePriority {
+function normalizePriority(value: unknown) {
   const cleaned = text(value)?.split(" ")[0] ?? "P2";
   return pick(cleaned, PRIORITIES, "P2");
+}
+
+function has(body: IssuePayload, key: string) {
+  return Object.prototype.hasOwnProperty.call(body, key);
+}
+
+function jsonSafe(value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return null;
+  }
 }
 
 async function assertSetuMember() {
@@ -99,11 +55,10 @@ async function assertSetuMember() {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
-  if (userError || !user)
-    return {
-      supabase,
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
+
+  if (userError || !user) {
+    return { supabase, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
 
   const { data: member, error: memberError } = await supabase
     .from("organization_members")
@@ -112,117 +67,69 @@ async function assertSetuMember() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (memberError)
-    return {
-      supabase,
-      error: NextResponse.json(
-        { error: "Unable to verify SMC access" },
-        { status: 500 },
-      ),
-    };
-  if (!member)
-    return {
-      supabase,
-      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
+  if (memberError) {
+    return { supabase, error: NextResponse.json({ error: "Unable to verify SMC access" }, { status: 500 }) };
+  }
+
+  if (!member) {
+    return { supabase, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
   return { supabase, error: null };
 }
 
-function compactUpdatePayload<T extends Record<string, unknown>>(
-  payload: T,
-): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined),
-  ) as Partial<T>;
-}
-
-function nullableTextField(
-  body: IssuePayload,
-  key: string,
-): string | null | undefined {
-  return Object.prototype.hasOwnProperty.call(body, key)
-    ? text(body[key])
-    : undefined;
-}
-
-function nullableNumberField(
-  body: IssuePayload,
-  key: string,
-): number | null | undefined {
-  return Object.prototype.hasOwnProperty.call(body, key)
-    ? numberValue(body[key])
-    : undefined;
+function compact(payload: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
 }
 
 function buildUpdatePayload(body: IssuePayload) {
-  const area = nullableTextField(body, "area");
-  return {
-    title: Object.prototype.hasOwnProperty.call(body, "title")
-      ? (text(body.title) ?? undefined)
-      : undefined,
-    description: nullableTextField(body, "description"),
-    status:
-      body.status === undefined
-        ? undefined
-        : pick<IssueStatus>(body.status, STATUSES, "Open"),
-    severity:
-      body.severity === undefined
-        ? undefined
-        : pick<IssueSeverity>(body.severity, SEVERITIES, "Medium"),
-    priority:
-      body.priority === undefined
-        ? undefined
-        : normalizePriority(body.priority),
-    issue_type:
-      body.issue_type === undefined
-        ? undefined
-        : pick<IssueType>(body.issue_type, TYPES, "Bug"),
-    issue_category: nullableTextField(body, "issue_category"),
-    sprint_number: nullableNumberField(body, "sprint_number") ?? undefined,
-    story_points: nullableNumberField(body, "story_points"),
-    assigned_to: nullableTextField(body, "assigned_to"),
-    reporter_name: nullableTextField(body, "reporter_name"),
+  const area = has(body, "area") ? text(body.area) : undefined;
+  return compact({
+    title: has(body, "title") ? text(body.title) : undefined,
+    description: has(body, "description") ? text(body.description) : undefined,
+    status: has(body, "status") ? pick(body.status, STATUSES, "Open") : undefined,
+    severity: has(body, "severity") ? pick(body.severity, SEVERITIES, "Medium") : undefined,
+    priority: has(body, "priority") ? normalizePriority(body.priority) : undefined,
+    issue_type: has(body, "issue_type") ? pick(body.issue_type, TYPES, "Bug") : undefined,
+    issue_category: has(body, "issue_category") ? text(body.issue_category) : undefined,
+    sprint_number: has(body, "sprint_number") ? numberValue(body.sprint_number) : undefined,
+    story_points: has(body, "story_points") ? numberValue(body.story_points) : undefined,
+    assigned_to: has(body, "assigned_to") ? text(body.assigned_to) : undefined,
+    reporter_name: has(body, "reporter_name") ? text(body.reporter_name) : undefined,
     area,
-    workflow_area:
-      nullableTextField(body, "workflow_area") ??
-      (typeof area === "string"
-        ? area.toLowerCase().replace(/\s+/g, "_")
-        : undefined),
-    acceptance_criteria: nullableTextField(body, "acceptance_criteria"),
-    regression_test: nullableTextField(body, "regression_test"),
-    steps_to_reproduce: nullableTextField(body, "steps_to_reproduce"),
-    expected_behavior: nullableTextField(body, "expected_behavior"),
-    actual_behavior: nullableTextField(body, "actual_behavior"),
-    environment: nullableTextField(body, "environment"),
-    customer_impact: nullableTextField(body, "customer_impact"),
-    target_date: nullableTextField(body, "target_date"),
-    git_branch: nullableTextField(body, "git_branch"),
-    fix_applied: nullableTextField(body, "fix_applied"),
+    workflow_area: has(body, "workflow_area") ? text(body.workflow_area) : typeof area === "string" ? area.toLowerCase().replace(/\s+/g, "_") : undefined,
+    acceptance_criteria: has(body, "acceptance_criteria") ? text(body.acceptance_criteria) : undefined,
+    regression_test: has(body, "regression_test") ? text(body.regression_test) : undefined,
+    steps_to_reproduce: has(body, "steps_to_reproduce") ? text(body.steps_to_reproduce) : undefined,
+    expected_behavior: has(body, "expected_behavior") ? text(body.expected_behavior) : undefined,
+    actual_behavior: has(body, "actual_behavior") ? text(body.actual_behavior) : undefined,
+    environment: has(body, "environment") ? text(body.environment) : undefined,
+    customer_impact: has(body, "customer_impact") ? text(body.customer_impact) : undefined,
+    target_date: has(body, "target_date") ? text(body.target_date) : undefined,
+    git_branch: has(body, "git_branch") ? text(body.git_branch) : undefined,
+    fix_applied: has(body, "fix_applied") ? text(body.fix_applied) : undefined,
+    attachments: has(body, "attachments") ? jsonSafe(body.attachments) : undefined,
     updated_at: new Date().toISOString(),
-  };
+  });
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const id = params.id;
-    if (!/^[0-9a-fA-F-]{36}$/.test(id))
+    if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
       return NextResponse.json({ error: "Invalid issue id" }, { status: 400 });
+    }
 
     const { supabase, error: accessError } = await assertSetuMember();
     if (accessError) return accessError;
 
     const body = (await request.json()) as IssuePayload;
-    const updatePayload = compactUpdatePayload(
-      buildUpdatePayload(body),
-    ) as SprintIssueUpdate;
-    const title = updatePayload.title;
-    if (body.title !== undefined && !title)
+    const updatePayload = buildUpdatePayload(body);
+    if (has(body, "title") && !updatePayload.title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
 
-    const { data, error } = await smcClient(supabase)
+    const { data, error } = await supabase
       .from("sprint_issues")
       .update(updatePayload)
       .eq("id", id)
@@ -234,9 +141,6 @@ export async function PATCH(
     return NextResponse.json({ issue: data });
   } catch (err) {
     console.error("SMC update issue error:", err);
-    return NextResponse.json(
-      { error: "Failed to update issue" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to update issue" }, { status: 500 });
   }
 }
