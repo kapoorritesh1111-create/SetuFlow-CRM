@@ -69,8 +69,8 @@ const CHANNELS = [
 ];
 const TEAM_MEMBERS = [
   { name: "Ritesh Kapoor", initials: "RK", online: true, id: "180afa12-6ff6-4e16-b8d1-04b13e508970" },
-  { name: "Kumar Mayank", initials: "KM", online: true, id: "" },
-  { name: "Ankush Arya", initials: "AA", online: false, id: "" },
+  { name: "Kumar Mayank", initials: "KM", online: true, id: "f7208bf2-2ef3-4e37-bb6b-0c7d16860bce" },
+  { name: "Ankush Arya", initials: "AA", online: false, id: "d9103794-e6be-472b-b131-c2ee8524877c" },
 ];
 const CHAT_PROMPTS = ["Post a status update", "Ask about this issue", "Share a deployment note"];
 
