@@ -5,382 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SETU Flow — Product Showcase</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: #0a1628;
-  overflow: hidden;
-  width: 100vw;
-  height: 100vh;
-}
-
-.showcase {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 16/9;
-  max-width: 1920px;
-  max-height: 1080px;
-  margin: 0 auto;
-  overflow: hidden;
-  background: #0a1628;
-}
-
-/* Ambient background grid */
-.showcase::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(rgba(39,148,145,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(39,148,145,.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  z-index: 0;
-  animation: gridPulse 8s ease-in-out infinite;
-}
-
-@keyframes gridPulse {
-  0%, 100% { opacity: .3; }
-  50% { opacity: .6; }
-}
-
-/* Ambient gradient orbs */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  z-index: 0;
-  animation: orbFloat 12s ease-in-out infinite;
-}
-.orb-1 { width: 500px; height: 500px; background: rgba(39,148,145,.08); top: -10%; left: -5%; }
-.orb-2 { width: 400px; height: 400px; background: rgba(31,72,124,.06); bottom: -10%; right: -5%; animation-delay: 4s; }
-
-@keyframes orbFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(30px, -20px) scale(1.1); }
-}
-
-/* ═══ SCENES ═══ */
-.scene {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  z-index: 1;
-}
-
-/* Scene timing: 12s total */
-/* Scene 1: 0-2.5s | Scene 2: 2-5s | Scene 3: 4.5-8s | Scene 4: 7.5-10s | Scene 5: 9.5-12s */
-
-.scene-1 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 0s; }
-.scene-2 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 2.4s; }
-.scene-3 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 4.8s; }
-.scene-4 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 7.2s; }
-.scene-5 { animation: sceneFinal 12s ease-in-out infinite; animation-delay: 9.6s; }
-
-@keyframes sceneFlow {
-  0% { opacity: 0; transform: scale(.97); }
-  4% { opacity: 1; transform: scale(1); }
-  18% { opacity: 1; transform: scale(1); }
-  22% { opacity: 0; transform: scale(1.01); }
-  100% { opacity: 0; }
-}
-
-@keyframes sceneFinal {
-  0% { opacity: 0; transform: scale(.9); }
-  5% { opacity: 1; transform: scale(1); }
-  18% { opacity: 1; transform: scale(1); }
-  22% { opacity: 0; transform: scale(1.02); }
-  100% { opacity: 0; }
-}
-
-/* Screenshot container */
-.ss-frame {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
-}
-
-.ss-frame img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Ken Burns effect */
-.kb-zoom-out {
-  animation: kbZoomOut 3s ease-out forwards;
-}
-.kb-zoom-in {
-  animation: kbZoomIn 3s ease-out forwards;
-}
-.kb-pan-right {
-  animation: kbPanRight 3s ease-out forwards;
-}
-.kb-pan-left {
-  animation: kbPanLeft 3s ease-out forwards;
-}
-
-@keyframes kbZoomOut {
-  0% { transform: scale(1.08); }
-  100% { transform: scale(1); }
-}
-@keyframes kbZoomIn {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.06); }
-}
-@keyframes kbPanRight {
-  0% { transform: scale(1.05) translateX(-1%); }
-  100% { transform: scale(1.05) translateX(1%); }
-}
-@keyframes kbPanLeft {
-  0% { transform: scale(1.05) translateX(1%); }
-  100% { transform: scale(1.05) translateX(-1%); }
-}
-
-/* Text overlays */
-.overlay-text {
-  position: absolute;
-  bottom: 12%;
-  left: 0;
-  right: 0;
-  text-align: center;
-  z-index: 5;
-}
-
-.overlay-text h2 {
-  font-size: clamp(24px, 3.2vw, 48px);
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -.02em;
-  text-shadow: 0 2px 20px rgba(0,0,0,.6);
-  animation: textSlideUp .8s ease-out .3s both;
-}
-
-.overlay-text h2 span {
-  color: #34d3c5;
-}
-
-.overlay-text p {
-  font-size: clamp(12px, 1.4vw, 18px);
-  color: rgba(255,255,255,.6);
-  margin-top: 8px;
-  animation: textSlideUp .8s ease-out .5s both;
-}
-
-@keyframes textSlideUp {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-/* ═══ SCENE 1: Command Center ═══ */
-.scene-1 .ss-frame {
-  width: 78%;
-  max-width: 1100px;
-  aspect-ratio: 16/10;
-}
-
-/* ═══ SCENE 2: Mobile + vCard split ═══ */
-.scene-2-layout {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  padding: 0 6%;
-}
-
-.scene-2-layout .ss-frame:first-child {
-  width: 45%;
-  aspect-ratio: 16/10;
-}
-
-.scene-2-layout .phone-frame {
-  width: 22%;
-  max-width: 240px;
-  background: #1a1a2e;
-  border-radius: 28px;
-  padding: 8px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
-  animation: phoneSlideIn .7s ease-out .2s both;
-}
-
-.scene-2-layout .phone-frame img {
-  border-radius: 20px;
-  width: 100%;
-}
-
-@keyframes phoneSlideIn {
-  0% { opacity: 0; transform: translateX(40px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
-/* ═══ SCENE 3: Execution + Analytics ═══ */
-.scene-3-layout {
-  display: flex;
-  gap: 20px;
-  padding: 0 5%;
-}
-
-.scene-3-layout .ss-frame {
-  width: 50%;
-  aspect-ratio: 16/10;
-}
-
-/* ═══ SCENE 4: AI Guru ═══ */
-.scene-4 .ss-frame {
-  width: 72%;
-  max-width: 1050px;
-  aspect-ratio: 16/10;
-  position: relative;
-}
-
-.guru-glow {
-  position: absolute;
-  bottom: 10%;
-  right: 5%;
-  width: 35%;
-  height: 60%;
-  border-radius: 16px;
-  box-shadow: 0 0 60px rgba(39,148,145,.4), 0 0 120px rgba(39,148,145,.15);
-  animation: guruPulse 2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes guruPulse {
-  0%, 100% { opacity: .4; }
-  50% { opacity: .8; }
-}
-
-/* ═══ SCENE 5: Logo Outro ═══ */
-.scene-5-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-}
-
-.scene-5-content .logo-reveal {
-  width: clamp(120px, 20vw, 260px);
-  animation: logoScale 1.2s cubic-bezier(.175,.885,.32,1.275) .2s both;
-}
-
-.scene-5-content .logo-reveal img {
-  width: 100%;
-  filter: drop-shadow(0 10px 30px rgba(39,148,145,.3));
-}
-
-@keyframes logoScale {
-  0% { opacity: 0; transform: scale(.7); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-.scene-5-content .tagline {
-  font-size: clamp(16px, 2.2vw, 32px);
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: -.01em;
-  animation: textSlideUp .8s ease-out .6s both;
-}
-
-.scene-5-content .url {
-  font-size: clamp(12px, 1.2vw, 18px);
-  color: #34d3c5;
-  font-weight: 500;
-  letter-spacing: .05em;
-  animation: textSlideUp .8s ease-out .8s both;
-}
-
-/* Progress bar */
-.progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #279491, #34d3c5);
-  z-index: 10;
-  animation: progressBar 12s linear infinite;
-}
-
-@keyframes progressBar {
-  0% { width: 0%; }
-  100% { width: 100%; }
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#080e1a;overflow:hidden;width:100vw;height:100vh;-webkit-font-smoothing:antialiased}
+.stage{position:relative;width:100%;height:100%;max-width:1920px;max-height:1080px;margin:0 auto;overflow:hidden;background:linear-gradient(145deg,#080e1a 0%,#0c1829 40%,#0f1f35 100%)}
+.ambient{position:absolute;inset:0;pointer-events:none;z-index:0}
+.glow{position:absolute;border-radius:50%;filter:blur(100px);opacity:.12;animation:drift 20s ease-in-out infinite alternate}
+.glow-1{width:600px;height:600px;background:radial-gradient(circle,#279491,transparent 70%);top:-15%;left:10%}
+.glow-2{width:500px;height:500px;background:radial-gradient(circle,#1F487C,transparent 70%);bottom:-20%;right:5%;animation-delay:8s}
+.glow-3{width:300px;height:300px;background:radial-gradient(circle,#34d3c5,transparent 70%);top:50%;left:60%;animation-delay:4s}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(40px,-30px) scale(1.15)}}
+.stage::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.02'/%3E%3C/svg%3E");opacity:.4;z-index:1;pointer-events:none}
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;z-index:2;transition:opacity 1s cubic-bezier(.4,0,.2,1);will-change:opacity,transform}
+.scene.active{opacity:1}
+.frame{position:relative;border-radius:14px;overflow:hidden;background:#111827;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 4px 6px rgba(0,0,0,.3),0 20px 40px rgba(0,0,0,.4),0 40px 80px rgba(0,0,0,.3);transform:perspective(1200px) rotateX(1deg)}
+.frame img{display:block;width:100%;height:100%;object-fit:cover;will-change:transform}
+.kb{transition:transform 3.5s cubic-bezier(.25,.1,.25,1)}
+.kb-zo{transform:scale(1.06)}.kb-zo.go{transform:scale(1)}
+.kb-zi{transform:scale(1)}.kb-zi.go{transform:scale(1.06)}
+.kb-pr{transform:scale(1.04) translateX(-1.5%)}.kb-pr.go{transform:scale(1.04) translateX(1.5%)}
+.kb-pl{transform:scale(1.04) translateX(1.5%)}.kb-pl.go{transform:scale(1.04) translateX(-1.5%)}
+.phone{width:220px;border:3px solid rgba(255,255,255,.12);border-radius:32px;padding:6px;background:linear-gradient(145deg,#1a1f2e,#12172a);box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.06);flex-shrink:0;transform:translateX(60px);opacity:0;transition:all .9s cubic-bezier(.4,0,.2,1) .3s;position:relative}
+.phone.show{transform:translateX(0);opacity:1}
+.phone img{border-radius:26px;width:100%;display:block}
+.phone::before{content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);width:60px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;z-index:5}
+.caption{position:absolute;bottom:10%;left:0;right:0;text-align:center;z-index:5;padding:0 5%}
+.caption h2{font-size:clamp(22px,3.5vw,52px);font-weight:700;color:#fff;letter-spacing:-.03em;line-height:1.15;transform:translateY(30px);opacity:0;transition:all .7s cubic-bezier(.4,0,.2,1) .15s}
+.caption h2 em{font-style:normal;background:linear-gradient(135deg,#34d3c5,#279491);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.caption p{font-size:clamp(11px,1.3vw,17px);color:rgba(255,255,255,.45);margin-top:10px;font-weight:400;transform:translateY(20px);opacity:0;transition:all .7s cubic-bezier(.4,0,.2,1) .35s}
+.scene.active .caption h2,.scene.active .caption p{transform:translateY(0);opacity:1}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(39,148,145,.1);border:1px solid rgba(39,148,145,.2);border-radius:20px;font-size:11px;font-weight:600;color:#34d3c5;letter-spacing:.04em;text-transform:uppercase;margin-bottom:16px;transform:translateY(15px);opacity:0;transition:all .6s cubic-bezier(.4,0,.2,1) .05s}
+.scene.active .badge{transform:translateY(0);opacity:1}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:#34d3c5;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.layout-center{flex-direction:column;gap:0}
+.layout-split{gap:clamp(16px,3vw,40px);padding:0 6%}
+.layout-split .frame{width:48%}
+.layout-center .frame{width:76%;max-width:1100px}
+.guru-hl{position:absolute;bottom:8%;right:3%;width:30%;height:55%;border:2px solid rgba(52,211,197,.25);border-radius:14px;box-shadow:0 0 40px rgba(52,211,197,.15);opacity:0;pointer-events:none;transition:opacity .8s ease .5s}
+.scene.active .guru-hl{opacity:1;animation:gb 3s ease-in-out infinite}
+@keyframes gb{0%,100%{box-shadow:0 0 40px rgba(52,211,197,.12)}50%{box-shadow:0 0 60px rgba(52,211,197,.25)}}
+.outro-c{display:flex;flex-direction:column;align-items:center;gap:20px}
+.outro-logo{width:clamp(100px,18vw,240px);transform:scale(.8);opacity:0;transition:all 1s cubic-bezier(.175,.885,.32,1.275) .1s;filter:drop-shadow(0 8px 30px rgba(39,148,145,.2))}
+.scene.active .outro-logo{transform:scale(1);opacity:1}
+.outro-logo img{width:100%}
+.outro-tag{font-size:clamp(18px,2.4vw,36px);font-weight:600;color:#fff;letter-spacing:-.01em;transform:translateY(20px);opacity:0;transition:all .7s ease .4s}
+.outro-url{font-size:clamp(12px,1.2vw,18px);color:#34d3c5;font-weight:500;letter-spacing:.06em;transform:translateY(15px);opacity:0;transition:all .7s ease .6s}
+.scene.active .outro-tag,.scene.active .outro-url{transform:translateY(0);opacity:1}
+.outro-line{width:60px;height:2px;background:linear-gradient(90deg,transparent,#279491,transparent);transform:scaleX(0);transition:transform .8s ease .3s}
+.scene.active .outro-line{transform:scaleX(1)}
+.progress-t{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,.04);z-index:10}
+.progress-b{height:100%;background:linear-gradient(90deg,#279491,#34d3c5);width:0%;transition:width .1s linear}
+.dots{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.dn{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);transition:all .4s ease;cursor:pointer}
+.dn.active{background:#34d3c5;transform:scale(1.4)}
 </style>
 </head>
 <body>
-<div class="showcase">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-
-  <!-- Scene 1: Command Center -->
-  <div class="scene scene-1">
-    <div class="ss-frame">
-      <img src="/marketing/ss-dashboard.jpg" alt="Dashboard" class="kb-zoom-out" />
-    </div>
-    <div class="overlay-text">
-      <h2>Your Entire Operation, <span>in One View.</span></h2>
-    </div>
-  </div>
-
-  <!-- Scene 2: Lead Capture & Mobile -->
-  <div class="scene scene-2">
-    <div class="scene-2-layout">
-      <div class="ss-frame">
-        <img src="/marketing/vcard-share-homepage-blurred.png" alt="vCard" class="kb-pan-right" />
-      </div>
-      <div class="phone-frame">
-        <img src="/marketing/ss-mobile-capture.jpg" alt="Mobile Capture" class="kb-zoom-in" />
-      </div>
-    </div>
-    <div class="overlay-text">
-      <h2>Capture Leads <span>Instantly on the Go.</span></h2>
-    </div>
-  </div>
-
-  <!-- Scene 3: Execution & Analytics -->
-  <div class="scene scene-3">
-    <div class="scene-3-layout">
-      <div class="ss-frame">
-        <img src="/marketing/orders-execution.png" alt="Orders" class="kb-pan-left" />
-      </div>
-      <div class="ss-frame">
-        <img src="/marketing/ss-analytics.jpg" alt="Analytics" class="kb-zoom-out" />
-      </div>
-    </div>
-    <div class="overlay-text">
-      <h2>Track Execution, <span>Maximize Performance.</span></h2>
-    </div>
-  </div>
-
-  <!-- Scene 4: AI Guru -->
-  <div class="scene scene-4">
-    <div class="ss-frame">
-      <img src="/marketing/ss-leads.jpg" alt="Leads with Guru" class="kb-pan-right" />
-      <div class="guru-glow"></div>
-    </div>
-    <div class="overlay-text">
-      <h2>Driven by <span>Smarter Insights.</span></h2>
-    </div>
-  </div>
-
-  <!-- Scene 5: Logo Outro -->
-  <div class="scene scene-5">
-    <div class="scene-5-content">
-      <div class="logo-reveal">
-        <img src="/logos/setu-flow-hero-logo.jpg" alt="SETU Flow" />
-      </div>
-      <div class="tagline">Streamline Your Workflow Today.</div>
-      <div class="url">www.setuflowcrm.com</div>
-    </div>
-  </div>
-
-  <div class="progress"></div>
+<div class="stage" id="stage">
+  <div class="ambient"><div class="glow glow-1"></div><div class="glow glow-2"></div><div class="glow glow-3"></div></div>
+  <div class="scene layout-center" data-s="0"><div class="caption" style="bottom:auto;top:6%"><span class="badge"><span class="dot"></span>Live Dashboard</span></div><div class="frame" style="aspect-ratio:16/10"><img src="/marketing/ss-dashboard.jpg" alt="Dashboard" class="kb kb-zo"/></div><div class="caption"><h2>Your Entire Operation,<br><em>in One View.</em></h2></div></div>
+  <div class="scene layout-split" data-s="1"><div class="frame" style="aspect-ratio:16/10"><img src="/marketing/vcard-share-homepage-blurred.png" alt="vCard" class="kb kb-pr"/></div><div class="phone" id="phone"><img src="/marketing/ss-mobile-capture.jpg" alt="Mobile" class="kb kb-zi"/></div><div class="caption"><h2>Capture Leads<br><em>Instantly on the Go.</em></h2></div></div>
+  <div class="scene layout-split" data-s="2"><div class="frame" style="aspect-ratio:16/10"><img src="/marketing/orders-execution.png" alt="Orders" class="kb kb-pl"/></div><div class="frame" style="aspect-ratio:16/10"><img src="/marketing/ss-analytics.jpg" alt="Analytics" class="kb kb-zo"/></div><div class="caption"><h2>Track Execution,<br><em>Maximize Performance.</em></h2></div></div>
+  <div class="scene layout-center" data-s="3"><div class="caption" style="bottom:auto;top:6%"><span class="badge"><span class="dot"></span>AI-Powered</span></div><div class="frame" style="aspect-ratio:16/10;position:relative"><img src="/marketing/ss-leads.jpg" alt="Guru" class="kb kb-pr"/><div class="guru-hl"></div></div><div class="caption"><h2>Driven by<br><em>Smarter Insights.</em></h2></div></div>
+  <div class="scene layout-center" data-s="4"><div class="outro-c"><div class="outro-logo"><img src="/logos/setu-flow-hero-logo.jpg" alt="SETU Flow"/></div><div class="outro-line"></div><div class="outro-tag">Streamline Your Workflow Today.</div><div class="outro-url">www.setuflowcrm.com</div></div></div>
+  <div class="progress-t"><div class="progress-b" id="pb"></div></div>
+  <div class="dots" id="dots"></div>
 </div>
+<script>
+const D=2800,scenes=document.querySelectorAll('.scene'),pb=document.getElementById('pb'),dc=document.getElementById('dots'),ph=document.getElementById('phone');
+let cur=-1,st=Date.now(),td=scenes.length*D;
+scenes.forEach((_,i)=>{const d=document.createElement('div');d.className='dn';d.onclick=()=>{st=Date.now()-i*D;};dc.appendChild(d);});
+const dots=dc.querySelectorAll('.dn');
+function go(i){if(i===cur)return;if(cur>=0){scenes[cur].classList.remove('active');scenes[cur].querySelectorAll('.kb').forEach(e=>e.classList.remove('go'));if(cur===1)ph.classList.remove('show');dots[cur].classList.remove('active');}cur=i;scenes[cur].classList.add('active');dots[cur].classList.add('active');setTimeout(()=>{scenes[cur].querySelectorAll('.kb').forEach(e=>e.classList.add('go'));if(cur===1)ph.classList.add('show');},80);}
+function tick(){const e=Date.now()-st,l=e%td,si=Math.floor(l/D),p=(l/td)*100;pb.style.width=p+'%';if(si!==cur)go(si);requestAnimationFrame(tick);}
+st=Date.now();requestAnimationFrame(tick);
+</script>
 </body>
 </html>
