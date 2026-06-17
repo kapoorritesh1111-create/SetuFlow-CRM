@@ -1,57 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
 
 const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
 
+async function getUser() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const admin = createServiceRoleClient();
+    if (!admin) return NextResponse.json({ messages: [], conversation_id: null });
+
     const { searchParams } = new URL(request.url);
-    const conversationId = searchParams.get("conversation_id");
-    const channelKey = searchParams.get("channel");
-    const limit = parseInt(searchParams.get("limit") ?? "50");
+    const channelKey = searchParams.get("channel") ?? "general";
 
-    let convId = conversationId;
+    // Look up conversation by channel key
+    const { data: conv } = await admin
+      .from("chat_conversations")
+      .select("id")
+      .eq("organization_id", SETU_ORG_ID)
+      .eq("channel_key", channelKey)
+      .maybeSingle();
 
-    // If channel key provided, look up the conversation
-    if (!convId && channelKey) {
-      const { data: conv } = await (supabase as any)
-        .from("chat_conversations")
-        .select("id")
-        .eq("organization_id", SETU_ORG_ID)
-        .eq("channel_key", channelKey)
-        .maybeSingle();
-      convId = conv?.id ?? null;
-    }
+    if (!conv) return NextResponse.json({ messages: [], conversation_id: null });
 
-    if (!convId) {
-      return NextResponse.json({ messages: [], conversation_id: null });
-    }
-
-    const { data, error } = await (supabase as any)
+    // Fetch messages
+    const { data } = await admin
       .from("chat_messages")
       .select("*")
-      .eq("conversation_id", convId)
+      .eq("conversation_id", conv.id)
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .limit(50);
 
-    if (error) throw error;
-
-    // Update last_read_at for this user in this conversation
-    await (supabase as any)
+    // Update last_read_at
+    await admin
       .from("chat_participants")
       .update({ last_read_at: new Date().toISOString() })
-      .eq("conversation_id", convId)
+      .eq("conversation_id", conv.id)
       .eq("user_id", user.id);
 
     return NextResponse.json({
       messages: (data ?? []).reverse(),
-      conversation_id: convId,
+      conversation_id: conv.id,
     });
   } catch (err) {
     console.error("Chat GET error:", err);
@@ -61,22 +60,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const admin = createServiceRoleClient();
+    if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 500 });
+
     const body = await request.json();
-    const { content, conversation_id, channel, mentions, sender_name } = body;
+    const { content, channel, conversation_id, mentions, sender_name } = body;
 
     if (!content?.trim()) {
       return NextResponse.json({ error: "Message required" }, { status: 400 });
     }
 
+    // Resolve conversation ID
     let convId = conversation_id;
-
-    // If channel key provided instead of conversation_id
     if (!convId && channel) {
-      const { data: conv } = await (supabase as any)
+      const { data: conv } = await admin
         .from("chat_conversations")
         .select("id")
         .eq("organization_id", SETU_ORG_ID)
@@ -84,18 +84,13 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       convId = conv?.id;
     }
+    if (!convId) return NextResponse.json({ error: "Channel not found" }, { status: 404 });
 
-    if (!convId) {
-      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
-    }
+    // Extract issue refs
+    const issueRefs = (content.match(/S\d+-[A-Z]+-\d+/g) ?? []).map((ref: string) => ({ type: "issue", ref }));
 
-    // Extract issue refs from content
-    const issueRefs = (content.match(/S\d+-[A-Z]+-\d+/g) ?? []).map((ref: string) => ({
-      type: "issue",
-      ref,
-    }));
-
-    const { data, error } = await (supabase as any)
+    // Insert message with service role (bypasses RLS)
+    const { data, error } = await admin
       .from("chat_messages")
       .insert({
         conversation_id: convId,
@@ -110,15 +105,18 @@ export async function POST(request: NextRequest) {
       .select("*")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Chat insert error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
-    // Update conversation's updated_at
-    await (supabase as any)
+    // Update conversation timestamp
+    await admin
       .from("chat_conversations")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", convId);
 
-    // Create notifications for mentioned users
+    // Create notifications for mentions
     if (mentions?.length) {
       const notifs = mentions.map((userId: string) => ({
         organization_id: SETU_ORG_ID,
@@ -126,11 +124,11 @@ export async function POST(request: NextRequest) {
         conversation_id: convId,
         message_id: data.id,
         type: "mention",
-        title: `${data.sender_name} mentioned you in chat`,
+        title: `${data.sender_name} mentioned you in #${channel ?? 'chat'}`,
         content: content.trim().slice(0, 100),
         link: "/smc",
       }));
-      await (supabase as any).from("chat_notifications").insert(notifs);
+      await admin.from("chat_notifications").insert(notifs).catch(() => {});
     }
 
     return NextResponse.json({ message: data }, { status: 201 });

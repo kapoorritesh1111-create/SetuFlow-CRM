@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 type NavItem = { id: string; path: string; icon: string; label: string };
@@ -111,6 +111,26 @@ export function SmcShell({ children }: { children: ReactNode }) {
   const [counts, setCounts] = useState({ total: 0, bugs: 0, enhancement: 0, ux: 0, backlog: 0 });
   const [showMentions, setShowMentions] = useState(false);
   const [mentionIds, setMentionIds] = useState<string[]>([]);
+  const chatRef = useRef<HTMLDivElement>(null);
+  const msgsEndRef = useRef<HTMLDivElement>(null);
+
+  // Click outside closes chat
+  useEffect(() => {
+    if (!chat) return;
+    const handler = (e: MouseEvent) => {
+      const fab = document.querySelector('.smc-chat-fab');
+      if (chatRef.current && !chatRef.current.contains(e.target as Node) && !(fab && fab.contains(e.target as Node))) {
+        setChat(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [chat]);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const allNav = useMemo(() => [...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV, ...UTILITY_NAV.filter((n) => n.path !== "#notifications")], []);
   const activeItem = allNav.find((n) => n.path === "/smc" ? pathname === "/smc" : pathname.startsWith(n.path)) ?? CORE_NAV[0];
@@ -171,20 +191,47 @@ export function SmcShell({ children }: { children: ReactNode }) {
     setSending(true);
     setChatError(null);
     setShowMentions(false);
-    const res = await fetch("/api/smc/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content,
-        channel: activeChannel,
-        conversation_id: activeConvId,
-        sender_name: "Ritesh Kapoor",
-        mentions: mentionIds.length > 0 ? mentionIds : undefined,
-      }),
-    });
-    if (!res.ok) {
+
+    // Optimistic update — show message immediately
+    const optimisticMsg: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      content,
+      sender_id: null,
+      sender_name: "Ritesh Kapoor",
+      created_at: new Date().toISOString(),
+      message_type: "user",
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    try {
+      const res = await fetch("/api/smc/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          channel: activeChannel,
+          conversation_id: activeConvId,
+          sender_name: "Ritesh Kapoor",
+          mentions: mentionIds.length > 0 ? mentionIds : undefined,
+        }),
+      });
+      if (!res.ok) {
+        // Remove optimistic message on failure
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
+        setMessage(content);
+        const errData = await res.json().catch(() => ({}));
+        setChatError(errData.error ?? "Message was not sent. Try again.");
+      } else {
+        // Replace optimistic with real message from response
+        const { message: realMsg } = await res.json();
+        if (realMsg) {
+          setMessages((prev) => prev.map((m) => m.id === optimisticMsg.id ? realMsg : m));
+        }
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
       setMessage(content);
-      setChatError("Message was not sent. Try again.");
+      setChatError("Network error. Try again.");
     }
     setMentionIds([]);
     setSending(false);
@@ -261,7 +308,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
         <div className="smc-mobile-nav-card"><div className="smc-mobile-nav-head"><h3>SMC navigation</h3><button onClick={() => setMobileNav(false)}>Close</button></div><div className="smc-mobile-nav-grid">{[...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV].map((n) => <Link key={n.id} href={n.path} onClick={() => setMobileNav(false)}>{I[n.icon]}<span>{n.label}</span></Link>)}</div></div>
       </div>
 
-      <div className={`smc-chat smc-chat-pro ${chat ? "open" : ""}`}>
+      <div ref={chatRef} className={`smc-chat smc-chat-pro ${chat ? "open" : ""}`}>
         <div className="smc-chat-head"><div className="smc-chat-target"><div className="smc-chat-target-avatar">#</div><div><h4>#{activeChannel}</h4><span>{CHANNELS.find(c=>c.key===activeChannel)?.label ?? 'General'}</span></div></div><span className="smc-chat-status">Live</span><button onClick={() => setChat(false)}>Close</button></div>
         <div className="smc-chat-switcher">{CHANNELS.map((ch) => <button key={ch.key} className={activeChannel === ch.key ? "active" : ""} onClick={() => switchChannel(ch.key)}>#<span>{ch.label}</span></button>)}</div>
         <div className="smc-chat-msgs">
@@ -270,6 +317,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
             <div className="smc-chat-empty"><div className="smc-chat-empty-card"><div className="smc-empty-icon">{I.chat}</div><h4>Start the #{activeChannel} channel</h4><p>Share updates, ask questions, or post decisions for the team.</p><div className="smc-chat-prompt-row">{CHAT_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => setMessage(prompt)}>{prompt}</button>)}</div></div></div>
           )}
           {messages.map((m) => <div key={m.id} className={`smc-msg ${m.message_type === 'bot' ? 'smc-msg-bot' : 'smc-msg-in'}`}><div className="smc-msg-sender">{m.sender_name || "SMC"}{m.message_type === 'bot' && ' 🤖'}</div><div className="smc-msg-bubble">{renderContent(m.content)}</div><div className="smc-msg-time">{fmtTime(m.created_at)}</div></div>)}
+          <div ref={msgsEndRef} />
         </div>
         {chatError && <div className="smc-chat-error">{chatError}</div>}
         <div style={{position:'relative'}}>
