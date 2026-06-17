@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow — Background Video</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;width:100vw;height:100vh;background:#060b16}
+
+.bg-video{
+  position:fixed;inset:0;z-index:0;overflow:hidden;
+  /* Atmospheric treatment — slightly desaturated, dark */
+  filter:saturate(.85) brightness(.92);
+}
+
+/* Each slide fills the viewport */
+.slide{
+  position:absolute;inset:0;
+  opacity:0;
+  transition:opacity 1.5s ease-in-out;
+  will-change:opacity;
+}
+.slide.active{opacity:1}
+
+.slide img{
+  position:absolute;
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center top;
+  will-change:transform;
+  /* Ken Burns base — each slide overrides with specific motion */
+  transition:transform 6s cubic-bezier(.25,.1,.25,1);
+}
+
+/* Ken Burns variants */
+.slide[data-kb="zoom-out"] img{transform:scale(1.12)}
+.slide[data-kb="zoom-out"].active img{transform:scale(1.02)}
+
+.slide[data-kb="zoom-in"] img{transform:scale(1)}
+.slide[data-kb="zoom-in"].active img{transform:scale(1.1)}
+
+.slide[data-kb="pan-right"] img{transform:scale(1.08) translateX(-2%)}
+.slide[data-kb="pan-right"].active img{transform:scale(1.08) translateX(2%)}
+
+.slide[data-kb="pan-left"] img{transform:scale(1.08) translateX(2%)}
+.slide[data-kb="pan-left"].active img{transform:scale(1.08) translateX(-2%)}
+
+.slide[data-kb="pan-up"] img{transform:scale(1.08) translateY(2%);object-position:center bottom}
+.slide[data-kb="pan-up"].active img{transform:scale(1.08) translateY(-2%)}
+
+.slide[data-kb="drift"] img{transform:scale(1.06) translate(-1%,1%)}
+.slide[data-kb="drift"].active img{transform:scale(1.06) translate(1%,-1%)}
+
+.slide[data-kb="slow-reveal"] img{transform:scale(1.15)}
+.slide[data-kb="slow-reveal"].active img{transform:scale(1)}
+
+/* Dark overlay for page content readability */
+.overlay{
+  position:fixed;inset:0;z-index:1;
+  background:linear-gradient(
+    180deg,
+    rgba(6,11,22,.55) 0%,
+    rgba(6,11,22,.35) 30%,
+    rgba(6,11,22,.40) 70%,
+    rgba(6,11,22,.65) 100%
+  );
+  pointer-events:none;
+}
+
+/* Subtle vignette */
+.vignette{
+  position:fixed;inset:0;z-index:2;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(6,11,22,.5) 100%);
+  pointer-events:none;
+}
+
+/* Optional: thin progress line at very bottom */
+.progress{
+  position:fixed;bottom:0;left:0;height:2px;z-index:3;
+  background:linear-gradient(90deg,rgba(39,148,145,.6),rgba(52,211,197,.6));
+  transition:width .15s linear;
+}
+</style>
+</head>
+<body>
+
+<div class="bg-video" id="bgVideo">
+  <!-- Scene 1: Lead Capture — where deals begin -->
+  <div class="slide" data-kb="zoom-out">
+    <img src="/marketing/ss-capture-lead.jpg" alt="" />
+  </div>
+
+  <!-- Scene 2: vCard Sharing — instant connection -->
+  <div class="slide" data-kb="pan-right">
+    <img src="/marketing/ss-vcard.jpg" alt="" />
+  </div>
+
+  <!-- Scene 3: Quote Builder — precision pricing -->
+  <div class="slide" data-kb="pan-left">
+    <img src="/marketing/ss-quotebuilder.jpg" alt="" />
+  </div>
+
+  <!-- Scene 4: Pipeline — every deal tracked -->
+  <div class="slide" data-kb="drift">
+    <img src="/marketing/pipeline-commercial-view.png" alt="" />
+  </div>
+
+  <!-- Scene 5: Orders — execution at scale -->
+  <div class="slide" data-kb="zoom-in">
+    <img src="/marketing/ss-orders.jpg" alt="" />
+  </div>
+
+  <!-- Scene 6: Analytics — data-driven decisions -->
+  <div class="slide" data-kb="pan-up">
+    <img src="/marketing/ss-analytics.jpg" alt="" />
+  </div>
+
+  <!-- Scene 7: Dashboard — the complete picture -->
+  <div class="slide" data-kb="slow-reveal">
+    <img src="/marketing/ss-dashboard.jpg" alt="" />
+  </div>
+</div>
+
+<div class="overlay"></div>
+<div class="vignette"></div>
+<div class="progress" id="progress"></div>
+
+<script>
+// Atmospheric background — no text, slow motion, seamless loop
+const SCENE_DURATION = 5000;  // 5 seconds per scene
+const slides = document.querySelectorAll('.slide');
+const progress = document.getElementById('progress');
+const total = slides.length;
+const loopDuration = total * SCENE_DURATION;
+let current = -1;
+let startTime = Date.now();
+
+function activate(idx) {
+  if (idx === current) return;
+  // Reset Ken Burns on the new slide before showing
+  const newSlide = slides[idx];
+  const img = newSlide.querySelector('img');
+  // Force reflow to restart the KB transition
+  img.style.transition = 'none';
+  // Reset to start position by removing active
+  newSlide.classList.remove('active');
+  void img.offsetHeight; // force reflow
+  img.style.transition = '';
+
+  // Deactivate old
+  if (current >= 0) slides[current].classList.remove('active');
+  // Activate new
+  current = idx;
+  slides[current].classList.add('active');
+}
+
+function tick() {
+  const elapsed = Date.now() - startTime;
+  const loopTime = elapsed % loopDuration;
+  const sceneIdx = Math.floor(loopTime / SCENE_DURATION) % total;
+  const pct = (loopTime / loopDuration) * 100;
+
+  progress.style.width = pct + '%';
+
+  if (sceneIdx !== current) {
+    activate(sceneIdx);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+// Preload images then start
+let loaded = 0;
+slides.forEach(slide => {
+  const img = slide.querySelector('img');
+  if (img.complete) { loaded++; }
+  else { img.onload = () => { loaded++; if (loaded === total) { startTime = Date.now(); } }; }
+});
+
+startTime = Date.now();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
