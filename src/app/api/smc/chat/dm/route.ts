@@ -1,1 +1,1 @@
-export { POST as POST } from "../../../../chat/dm/route";
+export { POST as POST } from "../../../chat/dm/route";
