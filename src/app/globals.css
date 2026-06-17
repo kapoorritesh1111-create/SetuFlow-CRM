@@ -223,8 +223,8 @@ button[aria-haspopup="menu"] + [role="menu"] {
   }
 }
 
-/* S28-UX-022: natural page recovery for SMC Client Orgs.
-   Do not trap the selected client workspace in a short internal scroll pane. */
+/* S28-UX-022: adaptive SMC Client Orgs recovery.
+   Let the main page scroll naturally, while cards and KPI rows reflow by viewport size. */
 @media (min-width: 900px) {
   main:has(.smc-lb) {
     max-height: none !important;
@@ -237,14 +237,97 @@ button[aria-haspopup="menu"] + [role="menu"] {
     max-height: none !important;
     min-height: auto !important;
     overflow: visible !important;
-    padding: 18px 24px !important;
+    padding: clamp(14px, 1.4vw, 24px) !important;
   }
 
   aside:has(.smc-lb) {
     position: sticky !important;
-    top: 18px !important;
-    max-height: calc(100dvh - 36px) !important;
+    top: clamp(10px, 1.2vw, 18px) !important;
+    max-height: calc(100dvh - 2rem) !important;
     overflow-y: auto !important;
+  }
+
+  main:has(.smc-lb) input,
+  main:has(.smc-lb) select,
+  main:has(.smc-lb) textarea,
+  aside:has(.smc-lb) button {
+    min-height: clamp(36px, 4.4dvh, 46px) !important;
+  }
+}
+
+@media (min-width: 900px) and (max-height: 850px) {
+  body:has(main .smc-lb) div[style*="padding: 18px 28px"] {
+    padding: 10px 22px !important;
+  }
+
+  body:has(main .smc-lb) h1 {
+    font-size: 18px !important;
+  }
+
+  body:has(main .smc-lb) div[style*="grid-template-columns: repeat(4,1fr)"] > div {
+    padding: 9px 8px !important;
+  }
+
+  body:has(main .smc-lb) div[style*="grid-template-columns: repeat(4,1fr)"] strong {
+    font-size: 21px !important;
+  }
+
+  body:has(main .smc-lb) div[style*="grid-template-columns: 370px minmax(0, 1fr)"] {
+    grid-template-columns: minmax(280px, 330px) minmax(0, 1fr) !important;
+    gap: 16px !important;
+    padding: 16px 20px !important;
+  }
+
+  body:has(main .smc-lb) main > div:first-child {
+    padding: 14px 20px !important;
+  }
+
+  body:has(main .smc-lb) nav button {
+    min-height: 38px !important;
+    padding-top: 9px !important;
+    padding-bottom: 8px !important;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1280px) {
+  body:has(main .smc-lb) div[style*="grid-template-columns: 370px minmax(0, 1fr)"] {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) !important;
+    gap: 16px !important;
+    padding-inline: 16px !important;
+  }
+
+  main:has(.smc-lb) div[style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  main:has(.smc-lb) div[style*="grid-template-columns: repeat(3, 1fr)"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  main:has(.smc-lb) div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 899px) {
+  body:has(main .smc-lb) div[style*="grid-template-columns: 370px minmax(0, 1fr)"] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+  }
+
+  body:has(main .smc-lb) div[style*="grid-template-columns: repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  aside:has(.smc-lb) {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  main:has(.smc-lb) div[style*="grid-template-columns:"] {
+    grid-template-columns: 1fr !important;
   }
 }
 
