@@ -1,3 +1,11 @@
+## Sprint 28 SMC client operations — S28-FEAT-012
+
+- Wired the Client Orgs Activity tab to existing `audit_logs` records for SMC client operations.
+- Added per-client audit timeline entries for module grants, entitlement updates, Guru/API changes, lifecycle conversion, and related SMC actions.
+- Included actor user ID, timestamp, action type, entity/related client IDs, and compact before/after summaries in the Activity tab feed.
+- Added defensive redaction for sensitive key/token/secret/password/API credential fields before audit payloads are shown in SMC.
+- Kept the implementation schema-free and reused existing SMC audit writes.
+
 ## Sprint 28 SMC client operations — S28-FEAT-011
 
 - Added lifecycle context loading for SMC Client Orgs from existing `client_onboarding_requests` and trial-linked `leads` data.
