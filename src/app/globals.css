@@ -266,6 +266,26 @@ button[aria-haspopup="menu"] + [role="menu"] {
   }
 }
 
+/* S28-UX-022: custom switch visual state.
+   The switch input is hidden, so mirror :checked into the inline-styled track and knob. */
+main:has(.smc-lb) label:has(input[type="checkbox"]) > span:last-child > span:first-of-type {
+  background: #cbd5e1 !important;
+  transition: background-color 160ms ease;
+}
+
+main:has(.smc-lb) label:has(input[type="checkbox"]:checked) > span:last-child > span:first-of-type {
+  background: #279491 !important;
+}
+
+main:has(.smc-lb) label:has(input[type="checkbox"]) > span:last-child > span:last-child {
+  left: 3px !important;
+  transition: left 160ms ease;
+}
+
+main:has(.smc-lb) label:has(input[type="checkbox"]:checked) > span:last-child > span:last-child {
+  left: 19px !important;
+}
+
 @media (min-width: 900px) and (max-height: 850px) {
   body:has(main .smc-lb) div[style*="padding: 18px 28px"] {
     padding: 10px 22px !important;
