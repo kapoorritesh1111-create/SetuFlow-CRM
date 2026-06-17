@@ -1,9 +1,9 @@
 ## Sprint 28 SMC client operations — S28-UX-022
 
-- Restored normal 100% zoom usability for SMC Client Orgs tabs by making the selected client workspace use a predictable internal tab-body scroll region.
-- Added a controlled scroll region for the left client organization list so long client lists do not push the whole page out of view.
-- Kept the selected client header and tab row accessible while Entitlements, Lifecycle, Guru/API, and Activity content scrolls inside the workspace.
-- Fixed the regression where users had to zoom the browser to 50% to see and use full tab forms.
+- Corrected the Client Orgs scroll recovery after live review showed the internal tab pane created a poor demo/sales experience.
+- Removed the trapped selected-workspace scroll behavior and restored natural full-page scrolling for Entitlements, Lifecycle, Guru/API, and Activity content.
+- Kept only the left client organization list eligible for independent scrolling when the list grows long.
+- Preserved 100% browser zoom usability without creating a large dead space below the active tab content.
 
 ## Sprint 28 SMC client operations — S28-UX-021
 
