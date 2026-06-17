@@ -74,12 +74,15 @@ function fmtTime(value: string) {
 }
 
 function renderContent(text: string) {
-  // Auto-link issue refs like S27-BUG-018
-  const parts = text.split(/(S\d+-[A-Z]+-\d+)/g);
+  // Auto-link issue refs and highlight @mentions
+  const parts = text.split(/(S\d+-[A-Z]+-\d+|@[A-Z][a-z]+ [A-Z][a-z]+)/g);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (/^S\d+-[A-Z]+-\d+$/.test(part)) {
       return <a key={i} href={`/smc/issues?q=${part}`} style={{ color: '#279491', fontWeight: 600, textDecoration: 'none' }}>{part}</a>;
+    }
+    if (/^@[A-Z]/.test(part)) {
+      return <span key={i} style={{ color: '#279491', fontWeight: 600 }}>{part}</span>;
     }
     return part;
   });
@@ -99,6 +102,8 @@ export function SmcShell({ children }: { children: ReactNode }) {
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [counts, setCounts] = useState({ total: 0, bugs: 0, enhancement: 0, ux: 0, backlog: 0 });
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionIds, setMentionIds] = useState<string[]>([]);
 
   const allNav = useMemo(() => [...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV, ...UTILITY_NAV.filter((n) => n.path !== "#notifications")], []);
   const activeItem = allNav.find((n) => n.path === "/smc" ? pathname === "/smc" : pathname.startsWith(n.path)) ?? CORE_NAV[0];
@@ -158,6 +163,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
     setMessage("");
     setSending(true);
     setChatError(null);
+    setShowMentions(false);
     const res = await fetch("/api/smc/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -166,13 +172,26 @@ export function SmcShell({ children }: { children: ReactNode }) {
         channel: activeChannel,
         conversation_id: activeConvId,
         sender_name: "Ritesh Kapoor",
+        mentions: mentionIds.length > 0 ? mentionIds : undefined,
       }),
     });
     if (!res.ok) {
       setMessage(content);
       setChatError("Message was not sent. Try again.");
     }
+    setMentionIds([]);
     setSending(false);
+  }
+
+  function handleMessageInput(val: string) {
+    setMessage(val);
+    setShowMentions(val.endsWith("@") || /\s@$/.test(val));
+  }
+
+  function insertMention(name: string, userId: string) {
+    setMessage((prev) => prev.replace(/@\s*$/, `@${name} `));
+    setMentionIds((prev) => [...prev, userId]);
+    setShowMentions(false);
   }
 
   function switchChannel(key: string) {
@@ -192,7 +211,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
   return (
     <div className={`smc-shell ${sb ? "with-sidebar" : ""}`}>
       <aside className="smc-rail">
-        <Link href="/smc" className="smc-rl smc-brand-mark" title="Setu Mission Control"><span className="smc-rl-mark">S</span></Link>
+        <Link href="/smc" className="smc-rl smc-brand-mark" title="Setu Mission Control"><img src="/logos/setu-flow-lockup-white.svg" alt="SF" width={24} height={24} style={{borderRadius:4}} /></Link>
         {CORE_NAV.map(navButton)}
         <div className="smc-rdiv" />
         {TOOL_NAV.map(navButton)}
@@ -246,7 +265,12 @@ export function SmcShell({ children }: { children: ReactNode }) {
           {messages.map((m) => <div key={m.id} className={`smc-msg ${m.message_type === 'bot' ? 'smc-msg-bot' : 'smc-msg-in'}`}><div className="smc-msg-sender">{m.sender_name || "SMC"}{m.message_type === 'bot' && ' 🤖'}</div><div className="smc-msg-bubble">{renderContent(m.content)}</div><div className="smc-msg-time">{fmtTime(m.created_at)}</div></div>)}
         </div>
         {chatError && <div className="smc-chat-error">{chatError}</div>}
-        <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder={`Message #${activeChannel}...`} value={message} onChange={(e) => setMessage(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
+        <div style={{position:'relative'}}>
+          {showMentions && <div style={{position:'absolute',bottom:'100%',left:8,background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,.12)',padding:4,minWidth:180,zIndex:10,marginBottom:4}}>
+            {TEAM_MEMBERS.map((m) => <button key={m.initials} type="button" style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',border:'none',background:'none',width:'100%',cursor:'pointer',borderRadius:4,fontSize:12,fontFamily:'inherit',color:'#1e293b'}} onMouseDown={(e)=>{e.preventDefault();insertMention(m.name,'');}} onMouseOver={(e)=>(e.currentTarget.style.background='#f1f5f9')} onMouseOut={(e)=>(e.currentTarget.style.background='none')}><span style={{width:22,height:22,borderRadius:'50%',background:'#279491',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600}}>{m.initials}</span>{m.name}</button>)}
+          </div>}
+          <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder={`Message #${activeChannel}... (type @ to mention)`} value={message} onChange={(e) => handleMessageInput(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
+        </div>
       </div>
     </div>
   );
