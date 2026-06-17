@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { MODULE_DEFINITIONS, type ModuleKey } from "@/lib/modules/module-grants";
 
 export type SmcClientModuleGrant = {
@@ -111,12 +111,29 @@ type GuruAccessResponse = {
   error?: string;
 };
 
+type TabKey = "overview" | "modules" | "entitlements" | "guru" | "lifecycle" | "activity";
+
+type SaveState = {
+  type: "idle" | "saving" | "success" | "error";
+  message: string;
+  moduleKey?: ModuleKey;
+  apiKeyId?: string;
+};
+
 const PLAN_OPTIONS = ["starter", "growth", "professional", "enterprise", "custom"];
 const BILLING_OPTIONS = ["trial", "active", "past_due", "paused", "cancelled"];
 const STAGE_OPTIONS = ["intake", "provision", "guided_trial", "invite", "entitlements", "live", "paused"];
 const OVERAGE_OPTIONS = ["warn_only", "warn_then_block", "allow_overage", "block_at_limit"];
 const TRIAL_TEMPLATES = ["", "export_foods_basic", "ingredient_trader", "distributor_importer", "packaging_converter"];
 const GURU_MODEL_OPTIONS = ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"];
+const TABS: Array<{ key: TabKey; label: string; icon: string }> = [
+  { key: "overview", label: "Overview", icon: "◇" },
+  { key: "modules", label: "Modules", icon: "▦" },
+  { key: "entitlements", label: "Entitlements", icon: "▣" },
+  { key: "guru", label: "Guru & API", icon: "✦" },
+  { key: "lifecycle", label: "Lifecycle", icon: "↗" },
+  { key: "activity", label: "Activity", icon: "↺" },
+];
 
 function stageLabel(stage: string) {
   const normalized = stage.toLowerCase().replace(/[_-]+/g, " ");
@@ -162,11 +179,21 @@ function fieldStyle(): CSSProperties {
   return {
     width: "100%",
     border: "1px solid #dbe4ef",
-    borderRadius: 10,
-    padding: "8px 10px",
+    borderRadius: 12,
+    padding: "10px 12px",
     fontSize: 12,
     background: "#fff",
     color: "#0f172a",
+  };
+}
+
+function cardStyle(extra?: CSSProperties): CSSProperties {
+  return {
+    border: "1px solid #e2e8f0",
+    borderRadius: 16,
+    background: "#fff",
+    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.04)",
+    ...extra,
   };
 }
 
@@ -198,18 +225,88 @@ function activeKeyCount(client: SmcClientOrg) {
   return client.api_keys.filter((key) => key.is_active && !key.revoked_at).length;
 }
 
-function statusColor(type: "idle" | "saving" | "success" | "error") {
+function statusColor(type: SaveState["type"]) {
   if (type === "error") return "#ef4444";
   if (type === "success") return "#10b981";
   return "#64748b";
 }
 
+function statusLabel(client: SmcClientOrg) {
+  if (client.internal) return "Platform";
+  return titleCase(client.billing_status);
+}
+
+function healthColor(client: SmcClientOrg) {
+  if (client.health_tone === "green") return "#10b981";
+  if (client.health_tone === "amber") return "#f59e0b";
+  return "#ef4444";
+}
+
+function ToggleField({ name, label, defaultChecked }: { name: string; label: string; defaultChecked: boolean }) {
+  return (
+    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 12px", background: "#fff", fontSize: 12, color: "#334155" }}>
+      <span>{label}</span>
+      <input name={name} type="checkbox" defaultChecked={defaultChecked} style={{ width: 18, height: 18, accentColor: "#279491" }} />
+    </label>
+  );
+}
+
+function StatusMessage({ state }: { state: SaveState }) {
+  if (!state.message) return null;
+  return (
+    <div style={{ border: `1px solid ${state.type === "error" ? "#fecaca" : state.type === "success" ? "#bbf7d0" : "#dbe4ef"}`, background: state.type === "error" ? "#fef2f2" : state.type === "success" ? "#ecfdf5" : "#f8fafc", color: statusColor(state.type), borderRadius: 12, padding: "10px 12px", fontSize: 12, marginBottom: 12 }}>
+      {state.message}
+    </div>
+  );
+}
+
+function MetricCard({ label, value, helper, tone }: { label: string; value: ReactNode; helper: string; tone?: string }) {
+  return (
+    <div style={cardStyle({ padding: 16 })}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: tone ?? "#1F487C", lineHeight: 1 }}>{value}</div>
+          <div style={{ marginTop: 7, fontSize: 12, fontWeight: 700, color: "#0f172a" }}>{label}</div>
+          <div style={{ marginTop: 4, fontSize: 11, color: "#64748b" }}>{helper}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabButton({ active, label, icon, onClick }: { active: boolean; label: string; icon: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: 0,
+        borderBottom: active ? "3px solid #4f46e5" : "3px solid transparent",
+        background: active ? "#f8fafc" : "transparent",
+        color: active ? "#4f46e5" : "#475569",
+        fontWeight: 800,
+        fontSize: 12,
+        padding: "14px 12px 12px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 7,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span>{icon}</span>
+      {label}
+    </button>
+  );
+}
+
 export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
   const [clientRows, setClientRows] = useState(clients);
   const [selectedId, setSelectedId] = useState(clients[0]?.id ?? "");
-  const [operationState, setOperationState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string }>({ type: "idle", message: "" });
-  const [moduleState, setModuleState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string; moduleKey?: ModuleKey }>({ type: "idle", message: "" });
-  const [guruApiState, setGuruApiState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string; apiKeyId?: string }>({ type: "idle", message: "" });
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [operationState, setOperationState] = useState<SaveState>({ type: "idle", message: "" });
+  const [moduleState, setModuleState] = useState<SaveState>({ type: "idle", message: "" });
+  const [guruApiState, setGuruApiState] = useState<SaveState>({ type: "idle", message: "" });
 
   const selected = useMemo(
     () => clientRows.find((client) => client.id === selectedId) ?? clientRows[0],
@@ -234,7 +331,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
     const response = await fetch("/api/smc/client-entitlements", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ organization_id: selected.id, ...payload }),
+      body: JSON.stringify({ organization_id: selected.id, organizationId: selected.id, client_org_id: selected.id, ...payload }),
     });
 
     const json = (await response.json().catch(() => ({}))) as EntitlementResponse;
@@ -295,7 +392,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
     const response = await fetch("/api/smc/client-guru-api-access", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ organization_id: selected.id, ...payload }),
+      body: JSON.stringify({ organization_id: selected.id, organizationId: selected.id, client_org_id: selected.id, ...payload }),
     });
 
     const json = (await response.json().catch(() => ({}))) as GuruAccessResponse;
@@ -335,22 +432,23 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
 
   async function setModuleGrant(moduleKey: ModuleKey, enabled: boolean) {
     if (!selected || selected.internal) return;
+    const selectedOrgId = selected.id;
     setModuleState({ type: "saving", moduleKey, message: `${enabled ? "Enabling" : "Disabling"} ${moduleName(moduleKey)}...` });
 
     const response = await fetch("/api/smc/client-module-grants", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ organization_id: selected.id, module_key: moduleKey, enabled }),
+      body: JSON.stringify({ organization_id: selectedOrgId, organizationId: selectedOrgId, client_org_id: selectedOrgId, module_key: moduleKey, moduleKey, enabled }),
     });
 
     const json = (await response.json().catch(() => ({}))) as ModuleGrantResponse;
     if (!response.ok || json.error || !json.grant) {
-      setModuleState({ type: "error", moduleKey, message: json.error ?? "Unable to update module access." });
+      setModuleState({ type: "error", moduleKey, message: json.error ?? "Unable to update module access. Refresh Client Orgs and try again." });
       return;
     }
 
     setClientRows((rows) => rows.map((client) => {
-      if (client.id !== selected.id) return client;
+      if (client.id !== selectedOrgId) return client;
       const moduleGrants = nextModuleState(client.module_grants, json.grant!);
       const moduleKeys = moduleGrants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
       return {
@@ -431,6 +529,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
 
   async function convertTrialToPaid() {
     if (!selected) return;
+    setActiveTab("lifecycle");
     await submitEntitlement({
       plan_key: selected.plan && selected.plan !== "starter" ? selected.plan : "enterprise",
       billing_status: "active",
@@ -445,6 +544,318 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
       allow_dispatch: true,
       guided_mode_enabled: false,
     });
+  }
+
+  function selectClient(clientId: string) {
+    setSelectedId(clientId);
+    setActiveTab("overview");
+    resetStates();
+  }
+
+  function renderOverview(client: SmcClientOrg) {
+    const posture = [
+      { label: "Governance", value: client.governance_clear ? "Clear" : "Pending", ok: client.governance_clear },
+      { label: "Guru", value: client.guru_enabled ? "Enabled" : "Not configured", ok: client.guru_enabled },
+      { label: "API Access", value: activeKeyCount(client) > 0 || client.api_rate_limit_value ? "Governed" : "Not governed", ok: activeKeyCount(client) > 0 || Boolean(client.api_rate_limit_value) },
+      { label: "Module Access", value: `${client.module_keys.length}/${MODULE_DEFINITIONS.length} enabled`, ok: client.module_keys.length > 0 },
+      { label: "Products", value: client.products_count > 0 ? `${client.products_count} loaded` : "Not loaded", ok: client.products_count > 0 },
+      { label: "Recent Leads", value: client.recent_leads_count > 0 ? `${client.recent_leads_count} recent` : "No recent leads", ok: client.recent_leads_count > 0 },
+    ];
+
+    return (
+      <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          <div style={cardStyle({ padding: 18, gridColumn: "span 1" })}>
+            <h4 style={{ margin: 0, fontSize: 13 }}>Health & Status</h4>
+            <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 18 }}>
+              <div style={{ width: 108, height: 108, borderRadius: 999, border: `10px solid ${healthColor(client)}`, display: "grid", placeItems: "center", color: "#0f172a", fontWeight: 900, fontSize: 28 }}>{client.health_score}</div>
+              <div style={{ flex: 1, display: "grid", gap: 8 }}>
+                {["stage", "plan", "billing", "seats"].map((item) => (
+                  <div key={item} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, borderBottom: "1px solid #f1f5f9", paddingBottom: 7 }}>
+                    <span style={{ color: "#64748b" }}>{titleCase(item)}</span>
+                    <strong>{item === "stage" ? stageLabel(client.stage) : item === "plan" ? titleCase(client.plan) : item === "billing" ? titleCase(client.billing_status) : client.seats ?? "-"}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={cardStyle({ padding: 18 })}>
+            <h4 style={{ margin: 0, fontSize: 13 }}>Operational Posture</h4>
+            <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
+              {posture.map((item) => (
+                <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontSize: 12 }}>
+                  <span style={{ color: "#334155" }}>{item.ok ? "✓" : "△"} {item.label}</span>
+                  <strong style={{ color: item.ok ? "#10b981" : "#ef4444" }}>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={cardStyle({ padding: 18 })}>
+            <h4 style={{ margin: 0, fontSize: 13 }}>Quick Actions</h4>
+            <div style={{ display: "grid", gap: 9, marginTop: 16 }}>
+              <button type="button" className="smc-btn primary" onClick={() => setActiveTab("modules")}>Enable modules</button>
+              <button type="button" className="smc-btn" onClick={() => setActiveTab("entitlements")}>Review entitlements</button>
+              <button type="button" className="smc-btn" onClick={() => setActiveTab("guru")}>Manage Guru & API</button>
+              <button type="button" className="smc-btn" onClick={() => setActiveTab("lifecycle")}>Open lifecycle</button>
+              <button type="button" className="smc-btn" onClick={() => setActiveTab("activity")}>View activity</button>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1.3fr .7fr", gap: 16 }}>
+          <div style={cardStyle({ padding: 18 })}>
+            <h4 style={{ margin: 0, fontSize: 13 }}>Recent Activity</h4>
+            <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+              {client.recent_activity.map((item) => <div key={item} style={{ fontSize: 12, color: "#475569", display: "flex", justifyContent: "space-between", gap: 12 }}><span>↺ {item}</span><span style={{ color: "#94a3b8" }}>Now</span></div>)}
+            </div>
+          </div>
+          <div style={cardStyle({ padding: 18, background: "linear-gradient(135deg, #fffbeb, #fff)" })}>
+            <h4 style={{ margin: 0, fontSize: 13 }}>Needs Attention <span className="smc-lb" style={{ background: "#fef3c7", color: "#d97706" }}>{client.needs_attention.length}</span></h4>
+            <div style={{ display: "grid", gap: 9, marginTop: 14 }}>
+              {client.needs_attention.length ? client.needs_attention.map((item) => <div key={item} style={{ border: "1px solid #fde68a", borderRadius: 12, padding: 10, background: "#fff", fontSize: 12, color: "#92400e" }}>△ {item}</div>) : <div style={{ fontSize: 12, color: "#10b981" }}>All core signals look healthy.</div>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderModules(client: SmcClientOrg) {
+    return (
+      <div style={cardStyle({ padding: 18 })}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: 14 }}>Module Access</h4>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>Enable or disable product modules for this client. Messages stay scoped to module actions.</p>
+          </div>
+          <span className="smc-lb" style={{ background: "#e6f5f4", color: "#279491" }}>{client.module_keys.length}/{MODULE_DEFINITIONS.length} enabled</span>
+        </div>
+        <div style={{ marginTop: 14 }}><StatusMessage state={moduleState} /></div>
+        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+          {MODULE_DEFINITIONS.map((moduleDef) => {
+            const enabled = isModuleEnabled(client, moduleDef.key);
+            const saving = moduleState.type === "saving" && moduleState.moduleKey === moduleDef.key;
+            return (
+              <div key={moduleDef.key} style={{ border: `1px solid ${enabled ? "#99f6e4" : "#e2e8f0"}`, borderRadius: 14, padding: 14, background: enabled ? "#f0fdfa" : "#fff", display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "center" }}>
+                <div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <strong style={{ fontSize: 13, color: "#0f172a" }}>{moduleDef.title}</strong>
+                    <span className="smc-lb" style={{ background: enabled ? "#ecfdf5" : "#f1f5f9", color: enabled ? "#10b981" : "#64748b", fontSize: 9 }}>{enabled ? "Enabled" : "Disabled"}</span>
+                  </div>
+                  <p style={{ margin: "5px 0 0", fontSize: 11, color: "#64748b" }}>{moduleDef.subtitle}</p>
+                </div>
+                <button type="button" className={enabled ? "smc-btn" : "smc-btn primary"} disabled={saving} onClick={() => setModuleGrant(moduleDef.key, !enabled)} style={{ minWidth: 140 }}>
+                  {saving ? "Saving..." : enabled ? "Disable" : "Enable"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  function renderEntitlements(client: SmcClientOrg) {
+    return (
+      <form key={`${client.id}-${client.billing_status}-${client.plan}-${client.seats}`} onSubmit={saveControls} style={cardStyle({ padding: 18 })}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: 14 }}>Entitlements</h4>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>Plan, billing, usage limits, and client access permissions.</p>
+          </div>
+          <button type="submit" className="smc-btn primary" disabled={operationState.type === "saving"}>{operationState.type === "saving" ? "Saving..." : "Save entitlements"}</button>
+        </div>
+        <StatusMessage state={operationState} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+          <label style={{ fontSize: 11, color: "#475569" }}>Plan<br />
+            <select name="plan_key" defaultValue={PLAN_OPTIONS.includes(client.plan ?? "") ? client.plan ?? "enterprise" : "enterprise"} style={fieldStyle()}>{PLAN_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}</select>
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Billing<br />
+            <select name="billing_status" defaultValue={client.billing_status} style={fieldStyle()}>{BILLING_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}</select>
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Stage<br />
+            <select name="onboarding_stage" defaultValue={client.onboarding_stage} style={fieldStyle()}>{STAGE_OPTIONS.map((option) => <option key={option} value={option}>{stageLabel(option)}</option>)}</select>
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Seats<br />
+            <input name="seat_limit" type="number" min={1} defaultValue={client.seats ?? 25} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Trial ends<br />
+            <input name="trial_ends_at" type="date" defaultValue={safeDate(client.trial_ends_at)} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Renews<br />
+            <input name="renews_at" type="date" defaultValue={safeDate(client.renews_at)} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Max users<br />
+            <input name="max_users" type="number" min={0} defaultValue={client.max_users || client.seats || 25} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Max leads<br />
+            <input name="max_leads" type="number" min={0} defaultValue={client.max_leads} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Max quotes<br />
+            <input name="max_quotes" type="number" min={0} defaultValue={client.max_quotes} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Max orders<br />
+            <input name="max_orders" type="number" min={0} defaultValue={client.max_orders} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Guru requests<br />
+            <input name="guru_monthly_request_limit" type="number" min={0} defaultValue={client.guru_monthly_request_limit ?? 25000} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Guru spend cap<br />
+            <input name="guru_monthly_spend_limit" type="number" min={0} step="0.01" defaultValue={client.guru_monthly_spend_limit ?? 2500} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Overage<br />
+            <select name="overage_policy" defaultValue={client.overage_policy} style={fieldStyle()}>{OVERAGE_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}</select>
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Trial template<br />
+            <select name="trial_template_key" defaultValue={client.trial_template_key ?? ""} style={fieldStyle()}>{TRIAL_TEMPLATES.map((option) => <option key={option || "none"} value={option}>{option ? titleCase(option) : "None"}</option>)}</select>
+          </label>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginTop: 16 }}>
+          <ToggleField name="allow_exports" label="Exports" defaultChecked={client.allow_exports} />
+          <ToggleField name="allow_invites" label="Invites" defaultChecked={client.allow_invites} />
+          <ToggleField name="allow_settings_edit" label="Settings edit" defaultChecked={client.allow_settings_edit} />
+          <ToggleField name="allow_dispatch" label="Dispatch" defaultChecked={client.allow_dispatch} />
+          <ToggleField name="guided_mode_enabled" label="Guided mode" defaultChecked={client.guided_mode_enabled} />
+        </div>
+        <label style={{ display: "block", marginTop: 14, fontSize: 11, color: "#475569" }}>Internal notes<br />
+          <textarea name="internal_notes" defaultValue={client.internal_notes ?? ""} rows={4} style={{ ...fieldStyle(), resize: "vertical" }} />
+        </label>
+      </form>
+    );
+  }
+
+  function renderGuru(client: SmcClientOrg) {
+    return (
+      <form key={`${client.id}-guru-${client.guru_model}-${client.api_rate_limit_value ?? "default"}`} onSubmit={saveGuruApiAccess} style={cardStyle({ padding: 18 })}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: 14 }}>Guru Credits & API Access</h4>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>Runtime settings, credit posture, API keys, and rate limits.</p>
+          </div>
+          <span className="smc-lb" style={{ background: "#f0fdfa", color: "#0f766e" }}>{activeKeyCount(client)} active keys</span>
+        </div>
+        <StatusMessage state={guruApiState} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={cardStyle({ padding: 14, boxShadow: "none" })}>
+            <span className="cc-label">Monthly requests</span>
+            <div className="cc-val" style={{ marginTop: 5 }}>{client.guru_requests_used.toLocaleString()} / {(client.guru_monthly_request_limit ?? 0).toLocaleString()}</div>
+            <div style={{ height: 8, background: "#e2e8f0", borderRadius: 99, marginTop: 10, overflow: "hidden" }}><div style={{ width: ratio(client.guru_requests_used, client.guru_monthly_request_limit), height: "100%", background: "#279491" }} /></div>
+          </div>
+          <div style={cardStyle({ padding: 14, boxShadow: "none" })}>
+            <span className="cc-label">Monthly spend</span>
+            <div className="cc-val" style={{ marginTop: 5 }}>{money(client.guru_spend_used)} / {money(client.guru_monthly_spend_limit)}</div>
+            <div style={{ height: 8, background: "#e2e8f0", borderRadius: 99, marginTop: 10, overflow: "hidden" }}><div style={{ width: ratio(client.guru_spend_used, client.guru_monthly_spend_limit), height: "100%", background: "#279491" }} /></div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginTop: 14 }}>
+          <label style={{ fontSize: 11, color: "#475569" }}>Guru model<br />
+            <select name="guru_model" defaultValue={client.guru_model} style={fieldStyle()}>{GURU_MODEL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Daily search budget<br />
+            <input name="guru_daily_search_budget" type="number" min={0} defaultValue={client.guru_daily_search_budget} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>API requests<br />
+            <input name="api_rate_limit_value" type="number" min={0} defaultValue={client.api_rate_limit_value ?? 1000} style={fieldStyle()} />
+          </label>
+          <label style={{ fontSize: 11, color: "#475569" }}>Window ms<br />
+            <input name="api_rate_limit_window_ms" type="number" min={1000} defaultValue={client.api_rate_limit_window_ms ?? 86400000} style={fieldStyle()} />
+          </label>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginTop: 14 }}>
+          <ToggleField name="guru_live_search_enabled" label="Live search" defaultChecked={client.guru_live_search_enabled} />
+          <ToggleField name="guru_writeback_enabled" label="Writeback" defaultChecked={client.guru_writeback_enabled} />
+          <ToggleField name="guru_require_admin_approval" label="Admin approval" defaultChecked={client.guru_require_admin_approval} />
+          <ToggleField name="guru_ai_analytics_enabled" label="AI analytics" defaultChecked={client.guru_ai_analytics_enabled} />
+        </div>
+        <label style={{ display: "block", marginTop: 14, fontSize: 11, color: "#475569" }}>Rate-limit reason<br />
+          <textarea name="api_rate_limit_reason" defaultValue={client.api_rate_limit_reason ?? "SMC client API access policy"} rows={3} style={{ ...fieldStyle(), resize: "vertical" }} />
+        </label>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+          <button type="submit" className="smc-btn primary" disabled={guruApiState.type === "saving"}>{guruApiState.type === "saving" && !guruApiState.apiKeyId ? "Saving..." : "Save Guru/API access"}</button>
+        </div>
+        <div style={{ borderTop: "1px solid #e2e8f0", marginTop: 18, paddingTop: 16 }}>
+          <h5 style={{ margin: "0 0 10px", fontSize: 13 }}>API keys</h5>
+          {client.api_keys.length === 0 && <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>No API keys have been created for this client yet.</p>}
+          <div style={{ display: "grid", gap: 8 }}>
+            {client.api_keys.map((apiKey) => {
+              const isSaving = guruApiState.type === "saving" && guruApiState.apiKeyId === apiKey.id;
+              return (
+                <div key={apiKey.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, background: apiKey.is_active ? "#fff" : "#f8fafc", display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center" }}>
+                  <div>
+                    <strong style={{ display: "block", fontSize: 12, color: "#0f172a" }}>{apiKey.name}</strong>
+                    <span style={{ display: "block", marginTop: 2, fontSize: 10, color: "#64748b" }}>{apiKey.key_prefix} - {apiKey.scopes.length} scopes - Last used {safeDate(apiKey.last_used_at) || "never"}</span>
+                  </div>
+                  {apiKey.is_active ? <button type="button" className="smc-btn" disabled={isSaving} onClick={() => revokeApiKey(apiKey.id)}>{isSaving ? "Revoking..." : "Revoke key"}</button> : <span className="smc-lb">Revoked</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </form>
+    );
+  }
+
+  function renderLifecycle(client: SmcClientOrg) {
+    const stages = ["Intake", "Provision", "Guided Trial", "Invite", "Entitlements", "Live"];
+    return (
+      <div style={cardStyle({ padding: 18 })}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: 14 }}>Lifecycle</h4>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>A dedicated home for S28-FEAT-011 trial lifecycle and paid conversion workflow.</p>
+          </div>
+          {client.billing_status === "trial" ? <button type="button" className="smc-btn primary" onClick={convertTrialToPaid} disabled={operationState.type === "saving"}>Convert to paid</button> : <span className="smc-lb" style={{ background: "#ecfdf5", color: "#10b981" }}>Paid/active</span>}
+        </div>
+        <div style={{ marginTop: 14 }}><StatusMessage state={operationState} /></div>
+        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {stages.map((stage) => <span key={stage} className="smc-lb" style={{ background: stage === stageLabel(client.stage) ? "#e6f5f4" : "#f1f5f9", color: stage === stageLabel(client.stage) ? "#279491" : "#64748b", padding: "7px 10px" }}>{stage}</span>)}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginTop: 18 }}>
+          <div style={cardStyle({ padding: 14, boxShadow: "none" })}><span className="cc-label">Current stage</span><br /><strong>{stageLabel(client.stage)}</strong></div>
+          <div style={cardStyle({ padding: 14, boxShadow: "none" })}><span className="cc-label">Billing</span><br /><strong>{titleCase(client.billing_status)}</strong></div>
+          <div style={cardStyle({ padding: 14, boxShadow: "none" })}><span className="cc-label">Trial ends</span><br /><strong>{safeDate(client.trial_ends_at) || "-"}</strong></div>
+          <div style={cardStyle({ padding: 14, boxShadow: "none" })}><span className="cc-label">Renews</span><br /><strong>{safeDate(client.renews_at) || "-"}</strong></div>
+        </div>
+        <div style={{ marginTop: 18, padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0", fontSize: 12, color: "#475569" }}>
+          Full trade-show trial lifecycle fields and conversion notes will be added here in S28-FEAT-011 without crowding module, entitlement, or Guru/API controls.
+        </div>
+      </div>
+    );
+  }
+
+  function renderActivity(client: SmcClientOrg) {
+    return (
+      <div style={cardStyle({ padding: 18 })}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: 14 }}>Activity & Audit</h4>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>A dedicated home for S28-FEAT-012 client operation audit history.</p>
+          </div>
+          <span className="smc-lb" style={{ background: "#f1f5f9", color: "#475569" }}>Preview</span>
+        </div>
+        <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
+          {client.recent_activity.map((item, index) => (
+            <div key={`${item}-${index}`} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", gap: 12, border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, fontSize: 12, alignItems: "center" }}>
+              <span style={{ color: "#94a3b8" }}>{index === 0 ? "Today" : "Recent"}</span>
+              <span style={{ color: "#334155" }}>{item}</span>
+              <span className="smc-lb" style={{ background: "#e6f5f4", color: "#279491" }}>System</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 18, padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0", fontSize: 12, color: "#475569" }}>
+          Live audit-log timeline, actor filters, and operation history will be wired here in S28-FEAT-012.
+        </div>
+      </div>
+    );
+  }
+
+  function renderActiveTab(client: SmcClientOrg) {
+    if (client.internal) return renderOverview(client);
+    if (activeTab === "modules") return renderModules(client);
+    if (activeTab === "entitlements") return renderEntitlements(client);
+    if (activeTab === "guru") return renderGuru(client);
+    if (activeTab === "lifecycle") return renderLifecycle(client);
+    if (activeTab === "activity") return renderActivity(client);
+    return renderOverview(client);
   }
 
   return (
@@ -462,313 +873,72 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
         <div className="smc-kp green"><div className="v">{trialClients.length}</div><div className="l">Trial Clients</div></div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(420px, .75fr)", gap: 16, padding: "0 24px 24px", overflow: "auto" }}>
-        <div className="smc-client-grid" style={{ padding: 0 }}>
-          {clientRows.map((client) => (
-            <button
-              type="button"
-              key={client.id}
-              className="smc-client-card"
-              onClick={() => {
-                setSelectedId(client.id);
-                resetStates();
-              }}
-              style={{ textAlign: "left", cursor: "pointer", border: selected?.id === client.id ? "1px solid #279491" : undefined }}
-            >
-              <h3>
-                {client.name}{" "}
-                {client.internal
-                  ? <span className="smc-lb" style={{ background: "#e6f5f4", color: "#279491", fontSize: 9 }}>Platform</span>
-                  : <span className="smc-lb" style={{ background: client.billing_status === "trial" ? "#fef3c7" : "#ecfdf5", color: client.billing_status === "trial" ? "#d97706" : "#10b981", fontSize: 9 }}>{titleCase(client.billing_status)}</span>}
-              </h3>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "10px 0" }}>
-                <div style={{ flex: 1, height: 8, background: "#e2e8f0", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ width: `${client.health_score}%`, height: "100%", background: client.health_tone === "green" ? "#10b981" : client.health_tone === "amber" ? "#f59e0b" : "#ef4444" }} />
+      <div style={{ display: "grid", gridTemplateColumns: "360px minmax(0, 1fr)", gap: 18, padding: "0 24px 24px", overflow: "auto" }}>
+        <section style={cardStyle({ padding: 14, alignSelf: "start" })}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 15 }}>All Client Organizations</h3>
+              <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Select a client to manage operations.</p>
+            </div>
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {clientRows.map((client) => (
+              <button
+                type="button"
+                key={client.id}
+                onClick={() => selectClient(client.id)}
+                style={{
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: selected?.id === client.id ? "1px solid #4f46e5" : "1px solid #e2e8f0",
+                  background: selected?.id === client.id ? "linear-gradient(135deg, #f8f7ff, #fff)" : "#fff",
+                  borderRadius: 14,
+                  padding: 14,
+                  boxShadow: selected?.id === client.id ? "0 12px 28px rgba(79, 70, 229, .12)" : "none",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 14, color: "#0f172a" }}>{client.name} <span className="smc-lb" style={{ background: client.internal ? "#e6f5f4" : client.billing_status === "trial" ? "#fef3c7" : "#ecfdf5", color: client.internal ? "#279491" : client.billing_status === "trial" ? "#d97706" : "#10b981", fontSize: 9 }}>{statusLabel(client)}</span></h3>
+                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#64748b" }}>{stageLabel(client.stage)} · {titleCase(client.plan)} Plan</p>
+                  </div>
+                  <div style={{ width: 46, height: 46, borderRadius: 999, border: `4px solid ${healthColor(client)}`, display: "grid", placeItems: "center", fontSize: 13, fontWeight: 900, color: healthColor(client) }}>{client.health_score}</div>
                 </div>
-                <strong style={{ fontSize: 12, color: client.health_tone === "green" ? "#10b981" : client.health_tone === "amber" ? "#d97706" : "#ef4444" }}>{client.health_score}</strong>
-              </div>
-              <div className="cc-meta">
-                <div><span className="cc-label">Stage</span><br /><span className="cc-val">{stageLabel(client.stage)}</span></div>
-                <div><span className="cc-label">Modules</span><br /><span className="cc-val">{client.module_keys.length} enabled</span></div>
-                <div><span className="cc-label">Plan</span><br /><span className="cc-val">{titleCase(client.plan)}</span></div>
-                <div><span className="cc-label">API keys</span><br /><span className="cc-val">{activeKeyCount(client)} active</span></div>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                <span className={`smc-lb ${healthClass(client.health_score)}`} style={{ fontSize: 10 }}>{client.health_score >= 75 ? "Healthy" : "Needs attention"}</span>
-                <span className="smc-lb" style={{ background: client.governance_clear ? "#ecfdf5" : "#fef3c7", color: client.governance_clear ? "#10b981" : "#d97706", fontSize: 10 }}>{client.governance_clear ? "Governance clear" : "Governance pending"}</span>
-              </div>
-            </button>
-          ))}
-        </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12, fontSize: 11, color: "#475569" }}>
+                  <span>Modules <strong>{client.module_keys.length}/{MODULE_DEFINITIONS.length}</strong></span>
+                  <span>API Keys <strong>{activeKeyCount(client)}</strong></span>
+                  <span>Seats <strong>{client.seats ?? "-"}</strong></span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
 
         {selected && (
-          <aside className="smc-client-card" style={{ position: "sticky", top: 16, alignSelf: "start", maxHeight: "calc(100vh - 120px)", overflow: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <section style={cardStyle({ overflow: "hidden", minHeight: 620 })}>
+            <div style={{ padding: "18px 22px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
               <div>
-                <span className="cc-label">Selected org</span>
-                <h2 style={{ margin: "4px 0 0", fontSize: 20 }}>{selected.name}</h2>
-                <p style={{ margin: "4px 0 0", fontSize: 11, color: "#94a3b8" }}>{selected.id}</p>
+                <h2 style={{ margin: 0, fontSize: 20, color: "#0f172a" }}>{selected.name} <span className="smc-lb" style={{ background: selected.internal ? "#e6f5f4" : selected.billing_status === "trial" ? "#fef3c7" : "#ecfdf5", color: selected.internal ? "#279491" : selected.billing_status === "trial" ? "#d97706" : "#10b981" }}>{statusLabel(selected)}</span></h2>
+                <p style={{ margin: "6px 0 0", fontSize: 11, color: "#94a3b8" }}>{selected.id}</p>
               </div>
-              <span className="smc-lb" style={{ background: selected.health_tone === "green" ? "#ecfdf5" : selected.health_tone === "amber" ? "#fef3c7" : "#fef2f2", color: selected.health_tone === "green" ? "#10b981" : selected.health_tone === "amber" ? "#d97706" : "#ef4444" }}>{selected.health_score}/100</span>
-            </div>
-            <div className="cc-meta" style={{ marginTop: 16 }}>
-              <div><span className="cc-label">Stage</span><br /><span className="cc-val">{stageLabel(selected.stage)}</span></div>
-              <div><span className="cc-label">Billing</span><br /><span className="cc-val">{titleCase(selected.billing_status)}</span></div>
-              <div><span className="cc-label">Plan</span><br /><span className="cc-val">{titleCase(selected.plan)}</span></div>
-              <div><span className="cc-label">Seats</span><br /><span className="cc-val">{selected.seats ?? "-"}</span></div>
-              <div><span className="cc-label">Guru requests</span><br /><span className="cc-val">{selected.guru_requests_used}/{selected.guru_monthly_request_limit ?? "-"}</span></div>
-              <div><span className="cc-label">API keys</span><br /><span className="cc-val">{activeKeyCount(selected)} active</span></div>
-            </div>
-
-            {!selected.internal && (
-              <>
-                <section style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: 13 }}>Module Grants</h4>
-                      <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Add, remove, enable, or disable client modules from SMC.</p>
-                    </div>
-                    <span className="smc-lb" style={{ background: "#e6f5f4", color: "#279491", fontSize: 10 }}>{selected.module_keys.length}/{MODULE_DEFINITIONS.length} enabled</span>
-                  </div>
-
-                  {moduleState.message && (
-                    <p style={{ margin: "0 0 10px", fontSize: 12, color: statusColor(moduleState.type) }}>{moduleState.message}</p>
-                  )}
-
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {MODULE_DEFINITIONS.map((moduleDef) => {
-                      const enabled = isModuleEnabled(selected, moduleDef.key);
-                      const saving = moduleState.type === "saving" && moduleState.moduleKey === moduleDef.key;
-                      return (
-                        <div key={moduleDef.key} style={{ border: `1px solid ${enabled ? "#99f6e4" : "#e2e8f0"}`, borderRadius: 12, padding: 10, background: enabled ? "#f0fdfa" : "#fff" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                            <div>
-                              <strong style={{ display: "block", fontSize: 12, color: "#0f172a" }}>{moduleDef.title}</strong>
-                              <span style={{ display: "block", marginTop: 2, fontSize: 10, color: "#64748b", lineHeight: 1.35 }}>{moduleDef.subtitle}</span>
-                            </div>
-                            <span className="smc-lb" style={{ background: enabled ? "#ecfdf5" : "#f1f5f9", color: enabled ? "#10b981" : "#64748b", fontSize: 9 }}>{enabled ? "Enabled" : "Disabled"}</span>
-                          </div>
-                          <button type="button" className={enabled ? "smc-btn" : "smc-btn primary"} disabled={saving} onClick={() => setModuleGrant(moduleDef.key, !enabled)} style={{ width: "100%", marginTop: 8 }}>
-                            {saving ? "Saving..." : enabled ? "Disable / remove access" : "Enable / add access"}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-
-                <form key={`${selected.id}-guru-${selected.guru_model}-${selected.api_rate_limit_value ?? "default"}`} onSubmit={saveGuruApiAccess} style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: 13 }}>Guru Credits & API Access</h4>
-                      <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Manage Guru runtime settings, credit posture, API keys, and rate limits per client.</p>
-                    </div>
-                    <span className="smc-lb" style={{ background: "#f0fdfa", color: "#0f766e", fontSize: 10 }}>{activeKeyCount(selected)} active keys</span>
-                  </div>
-
-                  {guruApiState.message && (
-                    <p style={{ margin: "0 0 10px", fontSize: 12, color: statusColor(guruApiState.type) }}>{guruApiState.message}</p>
-                  )}
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 10 }}>
-                      <span className="cc-label">Monthly requests</span>
-                      <div className="cc-val" style={{ marginTop: 4 }}>{selected.guru_requests_used.toLocaleString()} / {(selected.guru_monthly_request_limit ?? 0).toLocaleString()}</div>
-                      <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, marginTop: 8, overflow: "hidden" }}><div style={{ width: ratio(selected.guru_requests_used, selected.guru_monthly_request_limit), height: "100%", background: "#279491" }} /></div>
-                    </div>
-                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 10 }}>
-                      <span className="cc-label">Monthly spend</span>
-                      <div className="cc-val" style={{ marginTop: 4 }}>{money(selected.guru_spend_used)} / {money(selected.guru_monthly_spend_limit)}</div>
-                      <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, marginTop: 8, overflow: "hidden" }}><div style={{ width: ratio(selected.guru_spend_used, selected.guru_monthly_spend_limit), height: "100%", background: "#279491" }} /></div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Guru model<br />
-                      <select name="guru_model" defaultValue={selected.guru_model} style={fieldStyle()}>
-                        {GURU_MODEL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                      </select>
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Daily search budget<br />
-                      <input name="guru_daily_search_budget" type="number" min={0} defaultValue={selected.guru_daily_search_budget} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>API requests<br />
-                      <input name="api_rate_limit_value" type="number" min={0} defaultValue={selected.api_rate_limit_value ?? 1000} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Window ms<br />
-                      <input name="api_rate_limit_window_ms" type="number" min={1000} defaultValue={selected.api_rate_limit_window_ms ?? 86400000} style={fieldStyle()} />
-                    </label>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                    {[
-                      { key: "guru_live_search_enabled", label: "Live search", checked: selected.guru_live_search_enabled },
-                      { key: "guru_writeback_enabled", label: "Writeback", checked: selected.guru_writeback_enabled },
-                      { key: "guru_require_admin_approval", label: "Admin approval", checked: selected.guru_require_admin_approval },
-                      { key: "guru_ai_analytics_enabled", label: "AI analytics", checked: selected.guru_ai_analytics_enabled },
-                    ].map((item) => (
-                      <label key={item.key} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
-                        <input name={item.key} type="checkbox" defaultChecked={item.checked} /> {item.label}
-                      </label>
-                    ))}
-                  </div>
-
-                  <label style={{ display: "block", marginTop: 12, fontSize: 11, color: "#475569" }}>Rate-limit reason<br />
-                    <textarea name="api_rate_limit_reason" defaultValue={selected.api_rate_limit_reason ?? "SMC client API access policy"} rows={2} style={{ ...fieldStyle(), resize: "vertical" }} />
-                  </label>
-
-                  <button type="submit" className="smc-btn primary" disabled={guruApiState.type === "saving"} style={{ width: "100%", marginTop: 12 }}>
-                    {guruApiState.type === "saving" && !guruApiState.apiKeyId ? "Saving..." : "Save Guru/API access"}
-                  </button>
-
-                  <div style={{ marginTop: 14 }}>
-                    <h5 style={{ margin: "0 0 8px", fontSize: 12 }}>API keys</h5>
-                    {selected.api_keys.length === 0 && <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>No API keys have been created for this client yet.</p>}
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {selected.api_keys.map((apiKey) => {
-                        const isSaving = guruApiState.type === "saving" && guruApiState.apiKeyId === apiKey.id;
-                        return (
-                          <div key={apiKey.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 10, background: apiKey.is_active ? "#fff" : "#f8fafc" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                              <div>
-                                <strong style={{ display: "block", fontSize: 12, color: "#0f172a" }}>{apiKey.name}</strong>
-                                <span style={{ display: "block", marginTop: 2, fontSize: 10, color: "#64748b" }}>{apiKey.key_prefix} - {apiKey.scopes.length} scopes - Last used {safeDate(apiKey.last_used_at) || "never"}</span>
-                              </div>
-                              <span className="smc-lb" style={{ background: apiKey.is_active ? "#ecfdf5" : "#f1f5f9", color: apiKey.is_active ? "#10b981" : "#64748b", fontSize: 9 }}>{apiKey.is_active ? "Active" : "Revoked"}</span>
-                            </div>
-                            {apiKey.is_active && (
-                              <button type="button" className="smc-btn" disabled={isSaving} onClick={() => revokeApiKey(apiKey.id)} style={{ width: "100%", marginTop: 8 }}>
-                                {isSaving ? "Revoking..." : "Revoke key"}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </form>
-
-                <form key={`${selected.id}-${selected.billing_status}-${selected.plan}-${selected.seats}`} onSubmit={saveControls} style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: 13 }}>Client Operations</h4>
-                      <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Upgrade, convert trials, and adjust access without leaving SMC.</p>
-                    </div>
-                    {selected.billing_status === "trial" && (
-                      <button type="button" className="smc-btn primary" onClick={convertTrialToPaid} disabled={operationState.type === "saving"} style={{ whiteSpace: "nowrap" }}>Convert to paid</button>
-                    )}
-                  </div>
-
-                  {operationState.message && (
-                    <p style={{ margin: "0 0 10px", fontSize: 12, color: statusColor(operationState.type) }}>{operationState.message}</p>
-                  )}
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Plan<br />
-                      <select name="plan_key" defaultValue={PLAN_OPTIONS.includes(selected.plan ?? "") ? selected.plan ?? "enterprise" : "enterprise"} style={fieldStyle()}>
-                        {PLAN_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
-                      </select>
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Billing<br />
-                      <select name="billing_status" defaultValue={selected.billing_status} style={fieldStyle()}>
-                        {BILLING_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
-                      </select>
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Stage<br />
-                      <select name="onboarding_stage" defaultValue={selected.onboarding_stage} style={fieldStyle()}>
-                        {STAGE_OPTIONS.map((option) => <option key={option} value={option}>{stageLabel(option)}</option>)}
-                      </select>
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Seats<br />
-                      <input name="seat_limit" type="number" min={1} defaultValue={selected.seats ?? 25} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Trial ends<br />
-                      <input name="trial_ends_at" type="date" defaultValue={safeDate(selected.trial_ends_at)} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Renews<br />
-                      <input name="renews_at" type="date" defaultValue={safeDate(selected.renews_at)} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Guru requests<br />
-                      <input name="guru_monthly_request_limit" type="number" min={0} defaultValue={selected.guru_monthly_request_limit ?? 25000} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Guru spend cap<br />
-                      <input name="guru_monthly_spend_limit" type="number" min={0} step="0.01" defaultValue={selected.guru_monthly_spend_limit ?? 2500} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Max users<br />
-                      <input name="max_users" type="number" min={0} defaultValue={selected.max_users || selected.seats || 25} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Max leads<br />
-                      <input name="max_leads" type="number" min={0} defaultValue={selected.max_leads} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Max quotes<br />
-                      <input name="max_quotes" type="number" min={0} defaultValue={selected.max_quotes} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Max orders<br />
-                      <input name="max_orders" type="number" min={0} defaultValue={selected.max_orders} style={fieldStyle()} />
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Overage<br />
-                      <select name="overage_policy" defaultValue={selected.overage_policy} style={fieldStyle()}>
-                        {OVERAGE_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
-                      </select>
-                    </label>
-                    <label style={{ fontSize: 11, color: "#475569" }}>Trial template<br />
-                      <select name="trial_template_key" defaultValue={selected.trial_template_key ?? ""} style={fieldStyle()}>
-                        {TRIAL_TEMPLATES.map((option) => <option key={option || "none"} value={option}>{option ? titleCase(option) : "None"}</option>)}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                    {[
-                      { key: "allow_exports", label: "Exports", checked: selected.allow_exports },
-                      { key: "allow_invites", label: "Invites", checked: selected.allow_invites },
-                      { key: "allow_settings_edit", label: "Settings edit", checked: selected.allow_settings_edit },
-                      { key: "allow_dispatch", label: "Dispatch", checked: selected.allow_dispatch },
-                      { key: "guided_mode_enabled", label: "Guided mode", checked: selected.guided_mode_enabled },
-                    ].map((item) => (
-                      <label key={item.key} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
-                        <input name={item.key} type="checkbox" defaultChecked={item.checked} /> {item.label}
-                      </label>
-                    ))}
-                  </div>
-
-                  <label style={{ display: "block", marginTop: 12, fontSize: 11, color: "#475569" }}>Internal notes<br />
-                    <textarea name="internal_notes" defaultValue={selected.internal_notes ?? ""} rows={3} style={{ ...fieldStyle(), resize: "vertical" }} />
-                  </label>
-
-                  <button type="submit" className="smc-btn primary" disabled={operationState.type === "saving"} style={{ width: "100%", marginTop: 12 }}>
-                    {operationState.type === "saving" ? "Saving..." : "Save client controls"}
-                  </button>
-                </form>
-              </>
-            )}
-
-            <div style={{ marginTop: 16 }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Onboarding Pipeline</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {["Intake", "Provision", "Guided Trial", "Invite", "Entitlements", "Live"].map((stage) => (
-                  <span key={stage} className="smc-lb" style={{ background: stage === stageLabel(selected.stage) ? "#e6f5f4" : "#f1f5f9", color: stage === stageLabel(selected.stage) ? "#279491" : "#64748b", fontSize: 10 }}>{stage}</span>
-                ))}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span className={`smc-lb ${healthClass(selected.health_score)}`} style={{ fontSize: 11 }}>{selected.health_score}/100</span>
+                <span className="smc-lb" style={{ background: "#f1f5f9", color: "#475569" }}>{selected.module_keys.length}/{MODULE_DEFINITIONS.length} modules</span>
+                <span className="smc-lb" style={{ background: "#f0fdfa", color: "#0f766e" }}>{activeKeyCount(selected)} API keys</span>
               </div>
             </div>
-            <div style={{ marginTop: 16 }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Modules</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {selected.module_keys.length ? selected.module_keys.map((key) => <span key={key} className="smc-lb" style={{ background: "#f1f5f9", color: "#475569", fontSize: 10 }}>{moduleName(key)}</span>) : <span style={{ color: "#94a3b8", fontSize: 12 }}>No modules enabled</span>}
-              </div>
+            <div style={{ display: "flex", overflowX: "auto", borderBottom: "1px solid #e2e8f0", padding: "0 12px" }}>
+              {TABS.map((tab) => (
+                <TabButton key={tab.key} active={activeTab === tab.key} label={tab.label} icon={tab.icon} onClick={() => {
+                  setActiveTab(tab.key);
+                  resetStates();
+                }} />
+              ))}
             </div>
-            <div style={{ marginTop: 16 }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Healthy Signals</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {selected.signals.map((signal) => <span key={signal} className="smc-lb" style={{ background: "#ecfdf5", color: "#10b981", fontSize: 10 }}>{signal}</span>)}
-              </div>
+            <div style={{ padding: 20, background: "#f8fafc", minHeight: 520 }}>
+              {renderActiveTab(selected)}
             </div>
-            {selected.needs_attention.length > 0 && <div style={{ marginTop: 16 }}><h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Needs Attention</h4><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{selected.needs_attention.map((signal) => <span key={signal} className="smc-lb" style={{ background: "#fef3c7", color: "#d97706", fontSize: 10 }}>{signal}</span>)}</div></div>}
-            <div style={{ marginTop: 16 }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Recent Activity</h4>
-              {selected.recent_activity.map((item) => <p key={item} style={{ margin: "4px 0", fontSize: 12, color: "#64748b" }}>- {item}</p>)}
-            </div>
-          </aside>
+          </section>
         )}
       </div>
     </>
