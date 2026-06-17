@@ -9,6 +9,17 @@ export type SmcClientModuleGrant = {
   enabled: boolean;
 };
 
+export type SmcClientApiKey = {
+  id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  last_used_at: string | null;
+  created_at: string | null;
+  revoked_at: string | null;
+  is_active: boolean;
+};
+
 export type SmcClientOrg = {
   id: string;
   name: string;
@@ -33,6 +44,19 @@ export type SmcClientOrg = {
   guru_enabled: boolean;
   guru_monthly_request_limit: number | null;
   guru_monthly_spend_limit: number | null;
+  guru_requests_used: number;
+  guru_spend_used: number;
+  guru_model: string;
+  guru_live_search_enabled: boolean;
+  guru_writeback_enabled: boolean;
+  guru_require_admin_approval: boolean;
+  guru_ai_analytics_enabled: boolean;
+  guru_daily_search_budget: number;
+  api_keys: SmcClientApiKey[];
+  api_rate_limit_value: number | null;
+  api_rate_limit_window_ms: number | null;
+  api_rate_limit_reason: string | null;
+  api_rate_limit_key_prefix: string | null;
   overage_policy: string;
   trial_ends_at: string | null;
   renews_at: string | null;
@@ -67,11 +91,32 @@ type ModuleGrantResponse = {
   error?: string;
 };
 
+type GuruAccessResponse = {
+  guru_settings?: {
+    model?: string;
+    live_search_enabled?: boolean;
+    writeback_enabled?: boolean;
+    require_admin_approval?: boolean;
+    ai_analytics_enabled?: boolean;
+    daily_search_budget?: number;
+  };
+  api_rate_limit?: {
+    key_prefix?: string;
+    limit_value?: number;
+    window_ms?: number;
+    reason?: string | null;
+  };
+  api_keys?: SmcClientApiKey[];
+  revoked_api_key_id?: string | null;
+  error?: string;
+};
+
 const PLAN_OPTIONS = ["starter", "growth", "professional", "enterprise", "custom"];
 const BILLING_OPTIONS = ["trial", "active", "past_due", "paused", "cancelled"];
 const STAGE_OPTIONS = ["intake", "provision", "guided_trial", "invite", "entitlements", "live", "paused"];
 const OVERAGE_OPTIONS = ["warn_only", "warn_then_block", "allow_overage", "block_at_limit"];
 const TRIAL_TEMPLATES = ["", "export_foods_basic", "ingredient_trader", "distributor_importer", "packaging_converter"];
+const GURU_MODEL_OPTIONS = ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"];
 
 function stageLabel(stage: string) {
   const normalized = stage.toLowerCase().replace(/[_-]+/g, " ");
@@ -85,7 +130,7 @@ function stageLabel(stage: string) {
 }
 
 function titleCase(value: string | null | undefined) {
-  if (!value) return "—";
+  if (!value) return "-";
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
@@ -102,6 +147,15 @@ function healthClass(score: number) {
 
 function safeDate(value: string | null | undefined) {
   return value ? value.slice(0, 10) : "";
+}
+
+function money(value: number | null | undefined) {
+  return `$${Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function ratio(used: number, limit: number | null) {
+  if (!limit) return "0%";
+  return `${Math.min(100, Math.round((used / limit) * 100))}%`;
 }
 
 function fieldStyle(): CSSProperties {
@@ -125,6 +179,11 @@ function numberFromForm(form: FormData, key: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function decimalFromForm(form: FormData, key: string, fallback: number) {
+  const parsed = Number(String(form.get(key) ?? ""));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function isModuleEnabled(client: SmcClientOrg, moduleKey: ModuleKey) {
   return client.module_grants.some((grant) => grant.module_key === moduleKey && grant.enabled);
 }
@@ -135,11 +194,22 @@ function nextModuleState(grants: SmcClientModuleGrant[], grant: SmcClientModuleG
   return grants.map((item) => (item.module_key === grant.module_key ? grant : item));
 }
 
+function activeKeyCount(client: SmcClientOrg) {
+  return client.api_keys.filter((key) => key.is_active && !key.revoked_at).length;
+}
+
+function statusColor(type: "idle" | "saving" | "success" | "error") {
+  if (type === "error") return "#ef4444";
+  if (type === "success") return "#10b981";
+  return "#64748b";
+}
+
 export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
   const [clientRows, setClientRows] = useState(clients);
   const [selectedId, setSelectedId] = useState(clients[0]?.id ?? "");
   const [operationState, setOperationState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string }>({ type: "idle", message: "" });
   const [moduleState, setModuleState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string; moduleKey?: ModuleKey }>({ type: "idle", message: "" });
+  const [guruApiState, setGuruApiState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string; apiKeyId?: string }>({ type: "idle", message: "" });
 
   const selected = useMemo(
     () => clientRows.find((client) => client.id === selectedId) ?? clientRows[0],
@@ -151,9 +221,15 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
     ? Math.round(clientRows.reduce((sum, client) => sum + client.health_score, 0) / clientRows.length)
     : 0;
 
+  function resetStates() {
+    setOperationState({ type: "idle", message: "" });
+    setModuleState({ type: "idle", message: "" });
+    setGuruApiState({ type: "idle", message: "" });
+  }
+
   async function submitEntitlement(payload: Record<string, unknown>) {
     if (!selected || selected.internal) return;
-    setOperationState({ type: "saving", message: "Saving client controls…" });
+    setOperationState({ type: "saving", message: "Saving client controls..." });
 
     const response = await fetch("/api/smc/client-entitlements", {
       method: "PATCH",
@@ -212,9 +288,54 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
     });
   }
 
+  async function submitGuruApiAccess(payload: Record<string, unknown>, options?: { apiKeyId?: string; message?: string }) {
+    if (!selected || selected.internal) return;
+    setGuruApiState({ type: "saving", apiKeyId: options?.apiKeyId, message: options?.message ?? "Saving Guru/API access..." });
+
+    const response = await fetch("/api/smc/client-guru-api-access", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ organization_id: selected.id, ...payload }),
+    });
+
+    const json = (await response.json().catch(() => ({}))) as GuruAccessResponse;
+    if (!response.ok || json.error || !json.guru_settings || !json.api_rate_limit) {
+      setGuruApiState({ type: "error", apiKeyId: options?.apiKeyId, message: json.error ?? "Unable to update Guru/API access." });
+      return;
+    }
+
+    setClientRows((rows) => rows.map((client) => {
+      if (client.id !== selected.id) return client;
+      const activeKeys = (json.api_keys ?? client.api_keys).filter((key) => key.is_active && !key.revoked_at).length;
+      return {
+        ...client,
+        guru_enabled: true,
+        guru_model: json.guru_settings?.model ?? client.guru_model,
+        guru_live_search_enabled: Boolean(json.guru_settings?.live_search_enabled ?? client.guru_live_search_enabled),
+        guru_writeback_enabled: Boolean(json.guru_settings?.writeback_enabled ?? client.guru_writeback_enabled),
+        guru_require_admin_approval: Boolean(json.guru_settings?.require_admin_approval ?? client.guru_require_admin_approval),
+        guru_ai_analytics_enabled: Boolean(json.guru_settings?.ai_analytics_enabled ?? client.guru_ai_analytics_enabled),
+        guru_daily_search_budget: Number(json.guru_settings?.daily_search_budget ?? client.guru_daily_search_budget),
+        api_keys: json.api_keys ?? client.api_keys,
+        api_rate_limit_value: Number(json.api_rate_limit?.limit_value ?? client.api_rate_limit_value ?? 0),
+        api_rate_limit_window_ms: Number(json.api_rate_limit?.window_ms ?? client.api_rate_limit_window_ms ?? 86400000),
+        api_rate_limit_reason: json.api_rate_limit?.reason ?? client.api_rate_limit_reason,
+        api_rate_limit_key_prefix: json.api_rate_limit?.key_prefix ?? client.api_rate_limit_key_prefix,
+        signals: activeKeys > 0 || json.api_rate_limit ? Array.from(new Set([...client.signals, "API access governed", "Guru enabled"])) : client.signals,
+        needs_attention: client.needs_attention.filter((item) => item !== "Guru config" && item !== "API rate limit"),
+        recent_activity: client.recent_activity.map((item) => item.includes("active API keys") ? `${activeKeys} active API keys` : item),
+      };
+    }));
+
+    setGuruApiState({
+      type: "success",
+      message: json.revoked_api_key_id ? "API key revoked and access policy saved." : "Guru/API access policy saved.",
+    });
+  }
+
   async function setModuleGrant(moduleKey: ModuleKey, enabled: boolean) {
     if (!selected || selected.internal) return;
-    setModuleState({ type: "saving", moduleKey, message: `${enabled ? "Enabling" : "Disabling"} ${moduleName(moduleKey)}…` });
+    setModuleState({ type: "saving", moduleKey, message: `${enabled ? "Enabling" : "Disabling"} ${moduleName(moduleKey)}...` });
 
     const response = await fetch("/api/smc/client-module-grants", {
       method: "PATCH",
@@ -257,7 +378,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
       onboarding_stage: String(form.get("onboarding_stage") ?? selected.onboarding_stage),
       seat_limit: numberFromForm(form, "seat_limit", selected.seats ?? 25),
       guru_monthly_request_limit: numberFromForm(form, "guru_monthly_request_limit", selected.guru_monthly_request_limit ?? 25000),
-      guru_monthly_spend_limit: Number(form.get("guru_monthly_spend_limit") ?? selected.guru_monthly_spend_limit ?? 2500),
+      guru_monthly_spend_limit: decimalFromForm(form, "guru_monthly_spend_limit", selected.guru_monthly_spend_limit ?? 2500),
       overage_policy: String(form.get("overage_policy") ?? selected.overage_policy),
       trial_ends_at: String(form.get("trial_ends_at") ?? "") || null,
       renews_at: String(form.get("renews_at") ?? "") || null,
@@ -273,6 +394,39 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
       trial_template_key: String(form.get("trial_template_key") ?? "") || null,
       internal_notes: String(form.get("internal_notes") ?? ""),
     });
+  }
+
+  async function saveGuruApiAccess(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    const form = new FormData(event.currentTarget);
+    await submitGuruApiAccess({
+      model: String(form.get("guru_model") ?? selected.guru_model),
+      live_search_enabled: boolFromForm(form, "guru_live_search_enabled"),
+      writeback_enabled: boolFromForm(form, "guru_writeback_enabled"),
+      require_admin_approval: boolFromForm(form, "guru_require_admin_approval"),
+      ai_analytics_enabled: boolFromForm(form, "guru_ai_analytics_enabled"),
+      daily_search_budget: numberFromForm(form, "guru_daily_search_budget", selected.guru_daily_search_budget),
+      api_rate_limit_value: numberFromForm(form, "api_rate_limit_value", selected.api_rate_limit_value ?? 1000),
+      api_rate_limit_window_ms: numberFromForm(form, "api_rate_limit_window_ms", selected.api_rate_limit_window_ms ?? 86400000),
+      api_rate_limit_reason: String(form.get("api_rate_limit_reason") ?? selected.api_rate_limit_reason ?? "SMC client API access policy"),
+    });
+  }
+
+  async function revokeApiKey(apiKeyId: string) {
+    if (!selected) return;
+    await submitGuruApiAccess({
+      model: selected.guru_model,
+      live_search_enabled: selected.guru_live_search_enabled,
+      writeback_enabled: selected.guru_writeback_enabled,
+      require_admin_approval: selected.guru_require_admin_approval,
+      ai_analytics_enabled: selected.guru_ai_analytics_enabled,
+      daily_search_budget: selected.guru_daily_search_budget,
+      api_rate_limit_value: selected.api_rate_limit_value ?? 1000,
+      api_rate_limit_window_ms: selected.api_rate_limit_window_ms ?? 86400000,
+      api_rate_limit_reason: selected.api_rate_limit_reason ?? "SMC client API key revoke",
+      revoke_api_key_id: apiKeyId,
+    }, { apiKeyId, message: "Revoking API key..." });
   }
 
   async function convertTrialToPaid() {
@@ -308,7 +462,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
         <div className="smc-kp green"><div className="v">{trialClients.length}</div><div className="l">Trial Clients</div></div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(400px, .75fr)", gap: 16, padding: "0 24px 24px", overflow: "auto" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(420px, .75fr)", gap: 16, padding: "0 24px 24px", overflow: "auto" }}>
         <div className="smc-client-grid" style={{ padding: 0 }}>
           {clientRows.map((client) => (
             <button
@@ -317,8 +471,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
               className="smc-client-card"
               onClick={() => {
                 setSelectedId(client.id);
-                setOperationState({ type: "idle", message: "" });
-                setModuleState({ type: "idle", message: "" });
+                resetStates();
               }}
               style={{ textAlign: "left", cursor: "pointer", border: selected?.id === client.id ? "1px solid #279491" : undefined }}
             >
@@ -338,7 +491,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
                 <div><span className="cc-label">Stage</span><br /><span className="cc-val">{stageLabel(client.stage)}</span></div>
                 <div><span className="cc-label">Modules</span><br /><span className="cc-val">{client.module_keys.length} enabled</span></div>
                 <div><span className="cc-label">Plan</span><br /><span className="cc-val">{titleCase(client.plan)}</span></div>
-                <div><span className="cc-label">Seats</span><br /><span className="cc-val">{client.seats ?? "—"}</span></div>
+                <div><span className="cc-label">API keys</span><br /><span className="cc-val">{activeKeyCount(client)} active</span></div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                 <span className={`smc-lb ${healthClass(client.health_score)}`} style={{ fontSize: 10 }}>{client.health_score >= 75 ? "Healthy" : "Needs attention"}</span>
@@ -362,11 +515,9 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
               <div><span className="cc-label">Stage</span><br /><span className="cc-val">{stageLabel(selected.stage)}</span></div>
               <div><span className="cc-label">Billing</span><br /><span className="cc-val">{titleCase(selected.billing_status)}</span></div>
               <div><span className="cc-label">Plan</span><br /><span className="cc-val">{titleCase(selected.plan)}</span></div>
-              <div><span className="cc-label">Seats</span><br /><span className="cc-val">{selected.seats ?? "—"}</span></div>
-              <div><span className="cc-label">Trial ends</span><br /><span className="cc-val">{safeDate(selected.trial_ends_at) || "—"}</span></div>
-              <div><span className="cc-label">Renews</span><br /><span className="cc-val">{safeDate(selected.renews_at) || "—"}</span></div>
-              <div><span className="cc-label">Guru requests</span><br /><span className="cc-val">{selected.guru_monthly_request_limit ?? "—"}</span></div>
-              <div><span className="cc-label">Max users</span><br /><span className="cc-val">{selected.max_users || selected.seats || "—"}</span></div>
+              <div><span className="cc-label">Seats</span><br /><span className="cc-val">{selected.seats ?? "-"}</span></div>
+              <div><span className="cc-label">Guru requests</span><br /><span className="cc-val">{selected.guru_requests_used}/{selected.guru_monthly_request_limit ?? "-"}</span></div>
+              <div><span className="cc-label">API keys</span><br /><span className="cc-val">{activeKeyCount(selected)} active</span></div>
             </div>
 
             {!selected.internal && (
@@ -381,7 +532,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
                   </div>
 
                   {moduleState.message && (
-                    <p style={{ margin: "0 0 10px", fontSize: 12, color: moduleState.type === "error" ? "#ef4444" : moduleState.type === "success" ? "#10b981" : "#64748b" }}>{moduleState.message}</p>
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: statusColor(moduleState.type) }}>{moduleState.message}</p>
                   )}
 
                   <div style={{ display: "grid", gap: 8 }}>
@@ -397,20 +548,105 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
                             </div>
                             <span className="smc-lb" style={{ background: enabled ? "#ecfdf5" : "#f1f5f9", color: enabled ? "#10b981" : "#64748b", fontSize: 9 }}>{enabled ? "Enabled" : "Disabled"}</span>
                           </div>
-                          <button
-                            type="button"
-                            className={enabled ? "smc-btn" : "smc-btn primary"}
-                            disabled={saving}
-                            onClick={() => setModuleGrant(moduleDef.key, !enabled)}
-                            style={{ width: "100%", marginTop: 8 }}
-                          >
-                            {saving ? "Saving…" : enabled ? "Disable / remove access" : "Enable / add access"}
+                          <button type="button" className={enabled ? "smc-btn" : "smc-btn primary"} disabled={saving} onClick={() => setModuleGrant(moduleDef.key, !enabled)} style={{ width: "100%", marginTop: 8 }}>
+                            {saving ? "Saving..." : enabled ? "Disable / remove access" : "Enable / add access"}
                           </button>
                         </div>
                       );
                     })}
                   </div>
                 </section>
+
+                <form key={`${selected.id}-guru-${selected.guru_model}-${selected.api_rate_limit_value ?? "default"}`} onSubmit={saveGuruApiAccess} style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: 13 }}>Guru Credits & API Access</h4>
+                      <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Manage Guru runtime settings, credit posture, API keys, and rate limits per client.</p>
+                    </div>
+                    <span className="smc-lb" style={{ background: "#f0fdfa", color: "#0f766e", fontSize: 10 }}>{activeKeyCount(selected)} active keys</span>
+                  </div>
+
+                  {guruApiState.message && (
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: statusColor(guruApiState.type) }}>{guruApiState.message}</p>
+                  )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 10 }}>
+                      <span className="cc-label">Monthly requests</span>
+                      <div className="cc-val" style={{ marginTop: 4 }}>{selected.guru_requests_used.toLocaleString()} / {(selected.guru_monthly_request_limit ?? 0).toLocaleString()}</div>
+                      <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, marginTop: 8, overflow: "hidden" }}><div style={{ width: ratio(selected.guru_requests_used, selected.guru_monthly_request_limit), height: "100%", background: "#279491" }} /></div>
+                    </div>
+                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 10 }}>
+                      <span className="cc-label">Monthly spend</span>
+                      <div className="cc-val" style={{ marginTop: 4 }}>{money(selected.guru_spend_used)} / {money(selected.guru_monthly_spend_limit)}</div>
+                      <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, marginTop: 8, overflow: "hidden" }}><div style={{ width: ratio(selected.guru_spend_used, selected.guru_monthly_spend_limit), height: "100%", background: "#279491" }} /></div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Guru model<br />
+                      <select name="guru_model" defaultValue={selected.guru_model} style={fieldStyle()}>
+                        {GURU_MODEL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Daily search budget<br />
+                      <input name="guru_daily_search_budget" type="number" min={0} defaultValue={selected.guru_daily_search_budget} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>API requests<br />
+                      <input name="api_rate_limit_value" type="number" min={0} defaultValue={selected.api_rate_limit_value ?? 1000} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Window ms<br />
+                      <input name="api_rate_limit_window_ms" type="number" min={1000} defaultValue={selected.api_rate_limit_window_ms ?? 86400000} style={fieldStyle()} />
+                    </label>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                    {[
+                      { key: "guru_live_search_enabled", label: "Live search", checked: selected.guru_live_search_enabled },
+                      { key: "guru_writeback_enabled", label: "Writeback", checked: selected.guru_writeback_enabled },
+                      { key: "guru_require_admin_approval", label: "Admin approval", checked: selected.guru_require_admin_approval },
+                      { key: "guru_ai_analytics_enabled", label: "AI analytics", checked: selected.guru_ai_analytics_enabled },
+                    ].map((item) => (
+                      <label key={item.key} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
+                        <input name={item.key} type="checkbox" defaultChecked={item.checked} /> {item.label}
+                      </label>
+                    ))}
+                  </div>
+
+                  <label style={{ display: "block", marginTop: 12, fontSize: 11, color: "#475569" }}>Rate-limit reason<br />
+                    <textarea name="api_rate_limit_reason" defaultValue={selected.api_rate_limit_reason ?? "SMC client API access policy"} rows={2} style={{ ...fieldStyle(), resize: "vertical" }} />
+                  </label>
+
+                  <button type="submit" className="smc-btn primary" disabled={guruApiState.type === "saving"} style={{ width: "100%", marginTop: 12 }}>
+                    {guruApiState.type === "saving" && !guruApiState.apiKeyId ? "Saving..." : "Save Guru/API access"}
+                  </button>
+
+                  <div style={{ marginTop: 14 }}>
+                    <h5 style={{ margin: "0 0 8px", fontSize: 12 }}>API keys</h5>
+                    {selected.api_keys.length === 0 && <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>No API keys have been created for this client yet.</p>}
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {selected.api_keys.map((apiKey) => {
+                        const isSaving = guruApiState.type === "saving" && guruApiState.apiKeyId === apiKey.id;
+                        return (
+                          <div key={apiKey.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 10, background: apiKey.is_active ? "#fff" : "#f8fafc" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                              <div>
+                                <strong style={{ display: "block", fontSize: 12, color: "#0f172a" }}>{apiKey.name}</strong>
+                                <span style={{ display: "block", marginTop: 2, fontSize: 10, color: "#64748b" }}>{apiKey.key_prefix} - {apiKey.scopes.length} scopes - Last used {safeDate(apiKey.last_used_at) || "never"}</span>
+                              </div>
+                              <span className="smc-lb" style={{ background: apiKey.is_active ? "#ecfdf5" : "#f1f5f9", color: apiKey.is_active ? "#10b981" : "#64748b", fontSize: 9 }}>{apiKey.is_active ? "Active" : "Revoked"}</span>
+                            </div>
+                            {apiKey.is_active && (
+                              <button type="button" className="smc-btn" disabled={isSaving} onClick={() => revokeApiKey(apiKey.id)} style={{ width: "100%", marginTop: 8 }}>
+                                {isSaving ? "Revoking..." : "Revoke key"}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </form>
 
                 <form key={`${selected.id}-${selected.billing_status}-${selected.plan}-${selected.seats}`} onSubmit={saveControls} style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -424,7 +660,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
                   </div>
 
                   {operationState.message && (
-                    <p style={{ margin: "0 0 10px", fontSize: 12, color: operationState.type === "error" ? "#ef4444" : operationState.type === "success" ? "#10b981" : "#64748b" }}>{operationState.message}</p>
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: statusColor(operationState.type) }}>{operationState.message}</p>
                   )}
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -484,14 +720,14 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
                     {[
-                      ["allow_exports", "Exports", selected.allow_exports],
-                      ["allow_invites", "Invites", selected.allow_invites],
-                      ["allow_settings_edit", "Settings edit", selected.allow_settings_edit],
-                      ["allow_dispatch", "Dispatch", selected.allow_dispatch],
-                      ["guided_mode_enabled", "Guided mode", selected.guided_mode_enabled],
-                    ].map(([key, label, checked]) => (
-                      <label key={String(key)} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
-                        <input name={String(key)} type="checkbox" defaultChecked={Boolean(checked)} /> {String(label)}
+                      { key: "allow_exports", label: "Exports", checked: selected.allow_exports },
+                      { key: "allow_invites", label: "Invites", checked: selected.allow_invites },
+                      { key: "allow_settings_edit", label: "Settings edit", checked: selected.allow_settings_edit },
+                      { key: "allow_dispatch", label: "Dispatch", checked: selected.allow_dispatch },
+                      { key: "guided_mode_enabled", label: "Guided mode", checked: selected.guided_mode_enabled },
+                    ].map((item) => (
+                      <label key={item.key} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
+                        <input name={item.key} type="checkbox" defaultChecked={item.checked} /> {item.label}
                       </label>
                     ))}
                   </div>
@@ -501,7 +737,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
                   </label>
 
                   <button type="submit" className="smc-btn primary" disabled={operationState.type === "saving"} style={{ width: "100%", marginTop: 12 }}>
-                    {operationState.type === "saving" ? "Saving…" : "Save client controls"}
+                    {operationState.type === "saving" ? "Saving..." : "Save client controls"}
                   </button>
                 </form>
               </>
@@ -530,7 +766,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
             {selected.needs_attention.length > 0 && <div style={{ marginTop: 16 }}><h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Needs Attention</h4><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{selected.needs_attention.map((signal) => <span key={signal} className="smc-lb" style={{ background: "#fef3c7", color: "#d97706", fontSize: 10 }}>{signal}</span>)}</div></div>}
             <div style={{ marginTop: 16 }}>
               <h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Recent Activity</h4>
-              {selected.recent_activity.map((item) => <p key={item} style={{ margin: "4px 0", fontSize: 12, color: "#64748b" }}>• {item}</p>)}
+              {selected.recent_activity.map((item) => <p key={item} style={{ margin: "4px 0", fontSize: 12, color: "#64748b" }}>- {item}</p>)}
             </div>
           </aside>
         )}
