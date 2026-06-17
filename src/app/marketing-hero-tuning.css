@@ -1,47 +1,92 @@
-/* Marketing hero background tuning
-   Keeps the shared /marketing/setuflow-bg-video.html layer visible while preserving
-   readable hero copy and the trade-show trial form. Loaded after globals.css. */
+/* Marketing hero background layer and tuning. */
+
+.setu-shared-hero-shell {
+  position: relative;
+  isolation: isolate;
+  background: #061e34;
+}
+
+.setu-shared-hero-shell > main {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.setu-shared-hero-shell > main > section:first-child {
+  position: relative;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+.setu-shared-hero-background {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 0;
+  width: 100%;
+  height: min(760px, calc(100vh - 88px));
+  min-height: 560px;
+  overflow: hidden;
+  pointer-events: none;
+  background: #061426;
+}
 
 .setu-shared-hero-background__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  transform: scale(1.04);
+  transform-origin: center;
   opacity: 0.74 !important;
   filter: saturate(0.98) contrast(1.04) brightness(0.92) !important;
 }
 
+.setu-shared-hero-background__overlay,
+.setu-shared-hero-background__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .setu-shared-hero-background__overlay {
   background:
-    linear-gradient(
-      90deg,
-      rgba(4, 16, 31, 0.84) 0%,
-      rgba(4, 16, 31, 0.70) 34%,
-      rgba(4, 16, 31, 0.34) 62%,
-      rgba(4, 16, 31, 0.55) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(4, 16, 31, 0.02) 0%,
-      rgba(4, 16, 31, 0.12) 100%
-    ) !important;
+    linear-gradient(90deg, rgba(4,16,31,0.84) 0%, rgba(4,16,31,0.70) 34%, rgba(4,16,31,0.34) 62%, rgba(4,16,31,0.55) 100%),
+    linear-gradient(180deg, rgba(4,16,31,0.02) 0%, rgba(4,16,31,0.12) 100%) !important;
 }
 
 .setu-shared-hero-background__overlay--strong {
   background:
-    linear-gradient(
-      90deg,
-      rgba(6, 30, 52, 0.84) 0%,
-      rgba(6, 30, 52, 0.72) 44%,
-      rgba(6, 30, 52, 0.38) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(6, 30, 52, 0.05) 0%,
-      rgba(6, 30, 52, 0.16) 100%
-    ) !important;
+    linear-gradient(90deg, rgba(6,30,52,0.84) 0%, rgba(6,30,52,0.72) 44%, rgba(6,30,52,0.38) 100%),
+    linear-gradient(180deg, rgba(6,30,52,0.05) 0%, rgba(6,30,52,0.16) 100%) !important;
 }
 
 .setu-shared-hero-background__glow {
   background:
-    radial-gradient(circle at 22% 18%, rgba(32, 217, 150, 0.28), transparent 34%),
-    radial-gradient(circle at 76% 34%, rgba(52, 179, 168, 0.24), transparent 42%) !important;
+    radial-gradient(circle at 22% 18%, rgba(32,217,150,0.28), transparent 34%),
+    radial-gradient(circle at 76% 34%, rgba(52,179,168,0.24), transparent 42%) !important;
+}
+
+.setu-shared-hero-shell--home > main > section:first-child h1,
+.setu-shared-hero-shell--home > main > section:first-child h2 {
+  color: #ffffff !important;
+}
+
+.setu-shared-hero-shell--home > main > section:first-child p {
+  color: rgba(255,255,255,0.76) !important;
+}
+
+.setu-shared-hero-shell--home > main > section:first-child span {
+  color: rgba(255,255,255,0.82);
+}
+
+.setu-shared-hero-shell--home > main > section:first-child a:first-of-type {
+  box-shadow: 0 18px 46px rgba(13,148,136,0.30);
+}
+
+.setu-shared-hero-shell--trial > main > section:first-child > video {
+  display: none;
 }
 
 .setu-shared-hero-shell--trial .setu-shared-hero-background__frame {
@@ -50,30 +95,26 @@
 }
 
 @media (max-width: 767px) {
+  .setu-shared-hero-background {
+    height: 100vh;
+    min-height: 720px;
+  }
+
   .setu-shared-hero-background__frame {
+    transform: scale(1.12);
     opacity: 0.66 !important;
     filter: saturate(0.95) contrast(1.04) brightness(0.84) !important;
   }
 
   .setu-shared-hero-background__overlay {
     background:
-      linear-gradient(
-        180deg,
-        rgba(4, 16, 31, 0.86) 0%,
-        rgba(4, 16, 31, 0.72) 52%,
-        rgba(4, 16, 31, 0.58) 100%
-      ),
-      radial-gradient(circle at 60% 16%, rgba(52, 179, 168, 0.22), transparent 40%) !important;
+      linear-gradient(180deg, rgba(4,16,31,0.86) 0%, rgba(4,16,31,0.72) 52%, rgba(4,16,31,0.58) 100%),
+      radial-gradient(circle at 60% 16%, rgba(52,179,168,0.22), transparent 40%) !important;
   }
 
   .setu-shared-hero-background__overlay--strong {
     background:
-      linear-gradient(
-        180deg,
-        rgba(6, 30, 52, 0.88) 0%,
-        rgba(6, 30, 52, 0.76) 52%,
-        rgba(6, 30, 52, 0.64) 100%
-      ),
-      radial-gradient(circle at 60% 16%, rgba(52, 179, 168, 0.22), transparent 40%) !important;
+      linear-gradient(180deg, rgba(6,30,52,0.88) 0%, rgba(6,30,52,0.76) 52%, rgba(6,30,52,0.64) 100%),
+      radial-gradient(circle at 60% 16%, rgba(52,179,168,0.22), transparent 40%) !important;
   }
 }
