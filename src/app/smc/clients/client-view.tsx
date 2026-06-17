@@ -2,6 +2,12 @@
 
 import { useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
+import { MODULE_DEFINITIONS, type ModuleKey } from "@/lib/modules/module-grants";
+
+export type SmcClientModuleGrant = {
+  module_key: ModuleKey;
+  enabled: boolean;
+};
 
 export type SmcClientOrg = {
   id: string;
@@ -10,6 +16,7 @@ export type SmcClientOrg = {
   created_at: string | null;
   member_count: number;
   module_keys: string[];
+  module_grants: SmcClientModuleGrant[];
   plan: string | null;
   seats: number | null;
   billing_status: string;
@@ -55,6 +62,11 @@ type EntitlementResponse = {
   error?: string;
 };
 
+type ModuleGrantResponse = {
+  grant?: SmcClientModuleGrant;
+  error?: string;
+};
+
 const PLAN_OPTIONS = ["starter", "growth", "professional", "enterprise", "custom"];
 const BILLING_OPTIONS = ["trial", "active", "past_due", "paused", "cancelled"];
 const STAGE_OPTIONS = ["intake", "provision", "guided_trial", "invite", "entitlements", "live", "paused"];
@@ -78,7 +90,8 @@ function titleCase(value: string | null | undefined) {
 }
 
 function moduleName(key: string) {
-  return titleCase(key);
+  const definition = MODULE_DEFINITIONS.find((moduleDef) => moduleDef.key === key);
+  return definition?.title ?? titleCase(key);
 }
 
 function healthClass(score: number) {
@@ -112,10 +125,21 @@ function numberFromForm(form: FormData, key: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function isModuleEnabled(client: SmcClientOrg, moduleKey: ModuleKey) {
+  return client.module_grants.some((grant) => grant.module_key === moduleKey && grant.enabled);
+}
+
+function nextModuleState(grants: SmcClientModuleGrant[], grant: SmcClientModuleGrant) {
+  const existing = grants.some((item) => item.module_key === grant.module_key);
+  if (!existing) return [...grants, grant];
+  return grants.map((item) => (item.module_key === grant.module_key ? grant : item));
+}
+
 export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
   const [clientRows, setClientRows] = useState(clients);
   const [selectedId, setSelectedId] = useState(clients[0]?.id ?? "");
   const [operationState, setOperationState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string }>({ type: "idle", message: "" });
+  const [moduleState, setModuleState] = useState<{ type: "idle" | "saving" | "success" | "error"; message: string; moduleKey?: ModuleKey }>({ type: "idle", message: "" });
 
   const selected = useMemo(
     () => clientRows.find((client) => client.id === selectedId) ?? clientRows[0],
@@ -186,6 +210,41 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
       type: "success",
       message: json.converted_to_paid ? "Trial converted to a paid active client." : "Client controls updated.",
     });
+  }
+
+  async function setModuleGrant(moduleKey: ModuleKey, enabled: boolean) {
+    if (!selected || selected.internal) return;
+    setModuleState({ type: "saving", moduleKey, message: `${enabled ? "Enabling" : "Disabling"} ${moduleName(moduleKey)}…` });
+
+    const response = await fetch("/api/smc/client-module-grants", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ organization_id: selected.id, module_key: moduleKey, enabled }),
+    });
+
+    const json = (await response.json().catch(() => ({}))) as ModuleGrantResponse;
+    if (!response.ok || json.error || !json.grant) {
+      setModuleState({ type: "error", moduleKey, message: json.error ?? "Unable to update module access." });
+      return;
+    }
+
+    setClientRows((rows) => rows.map((client) => {
+      if (client.id !== selected.id) return client;
+      const moduleGrants = nextModuleState(client.module_grants, json.grant!);
+      const moduleKeys = moduleGrants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
+      return {
+        ...client,
+        module_grants: moduleGrants,
+        module_keys: moduleKeys,
+        guru_enabled: moduleKeys.includes("setu_guru") || client.guru_enabled,
+        needs_attention: moduleKeys.length > 0
+          ? client.needs_attention.filter((item) => item !== "Module access")
+          : Array.from(new Set([...client.needs_attention, "Module access"])),
+        recent_activity: client.recent_activity.map((item) => item.includes("modules enabled") ? `${moduleKeys.length} modules enabled` : item),
+      };
+    }));
+
+    setModuleState({ type: "success", moduleKey, message: `${moduleName(moduleKey)} ${enabled ? "enabled" : "disabled"}.` });
   }
 
   async function saveControls(event: FormEvent<HTMLFormElement>) {
@@ -259,6 +318,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
               onClick={() => {
                 setSelectedId(client.id);
                 setOperationState({ type: "idle", message: "" });
+                setModuleState({ type: "idle", message: "" });
               }}
               style={{ textAlign: "left", cursor: "pointer", border: selected?.id === client.id ? "1px solid #279491" : undefined }}
             >
@@ -275,10 +335,8 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
                 <strong style={{ fontSize: 12, color: client.health_tone === "green" ? "#10b981" : client.health_tone === "amber" ? "#d97706" : "#ef4444" }}>{client.health_score}</strong>
               </div>
               <div className="cc-meta">
-                <div><span className="cc-label">Org ID</span><br /><span className="cc-val" style={{ fontFamily: "'DM Mono',monospace", fontSize: 11 }}>{client.id.slice(0, 8)}</span></div>
-                <div><span className="cc-label">Slug</span><br /><span className="cc-val">{client.slug ?? "—"}</span></div>
                 <div><span className="cc-label">Stage</span><br /><span className="cc-val">{stageLabel(client.stage)}</span></div>
-                <div><span className="cc-label">Modules</span><br /><span className="cc-val">{client.module_keys.length} granted</span></div>
+                <div><span className="cc-label">Modules</span><br /><span className="cc-val">{client.module_keys.length} enabled</span></div>
                 <div><span className="cc-label">Plan</span><br /><span className="cc-val">{titleCase(client.plan)}</span></div>
                 <div><span className="cc-label">Seats</span><br /><span className="cc-val">{client.seats ?? "—"}</span></div>
               </div>
@@ -312,98 +370,141 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
             </div>
 
             {!selected.internal && (
-              <form key={`${selected.id}-${selected.billing_status}-${selected.plan}-${selected.seats}`} onSubmit={saveControls} style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: 13 }}>Client Operations</h4>
-                    <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Upgrade, convert trials, and adjust access without leaving SMC.</p>
+              <>
+                <section style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: 13 }}>Module Grants</h4>
+                      <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Add, remove, enable, or disable client modules from SMC.</p>
+                    </div>
+                    <span className="smc-lb" style={{ background: "#e6f5f4", color: "#279491", fontSize: 10 }}>{selected.module_keys.length}/{MODULE_DEFINITIONS.length} enabled</span>
                   </div>
-                  {selected.billing_status === "trial" && (
-                    <button type="button" className="smc-btn primary" onClick={convertTrialToPaid} disabled={operationState.type === "saving"} style={{ whiteSpace: "nowrap" }}>Convert to paid</button>
+
+                  {moduleState.message && (
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: moduleState.type === "error" ? "#ef4444" : moduleState.type === "success" ? "#10b981" : "#64748b" }}>{moduleState.message}</p>
                   )}
-                </div>
 
-                {operationState.message && (
-                  <p style={{ margin: "0 0 10px", fontSize: 12, color: operationState.type === "error" ? "#ef4444" : operationState.type === "success" ? "#10b981" : "#64748b" }}>{operationState.message}</p>
-                )}
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {MODULE_DEFINITIONS.map((moduleDef) => {
+                      const enabled = isModuleEnabled(selected, moduleDef.key);
+                      const saving = moduleState.type === "saving" && moduleState.moduleKey === moduleDef.key;
+                      return (
+                        <div key={moduleDef.key} style={{ border: `1px solid ${enabled ? "#99f6e4" : "#e2e8f0"}`, borderRadius: 12, padding: 10, background: enabled ? "#f0fdfa" : "#fff" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                            <div>
+                              <strong style={{ display: "block", fontSize: 12, color: "#0f172a" }}>{moduleDef.title}</strong>
+                              <span style={{ display: "block", marginTop: 2, fontSize: 10, color: "#64748b", lineHeight: 1.35 }}>{moduleDef.subtitle}</span>
+                            </div>
+                            <span className="smc-lb" style={{ background: enabled ? "#ecfdf5" : "#f1f5f9", color: enabled ? "#10b981" : "#64748b", fontSize: 9 }}>{enabled ? "Enabled" : "Disabled"}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className={enabled ? "smc-btn" : "smc-btn primary"}
+                            disabled={saving}
+                            onClick={() => setModuleGrant(moduleDef.key, !enabled)}
+                            style={{ width: "100%", marginTop: 8 }}
+                          >
+                            {saving ? "Saving…" : enabled ? "Disable / remove access" : "Enable / add access"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Plan<br />
-                    <select name="plan_key" defaultValue={PLAN_OPTIONS.includes(selected.plan ?? "") ? selected.plan ?? "enterprise" : "enterprise"} style={fieldStyle()}>
-                      {PLAN_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
-                    </select>
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Billing<br />
-                    <select name="billing_status" defaultValue={selected.billing_status} style={fieldStyle()}>
-                      {BILLING_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
-                    </select>
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Stage<br />
-                    <select name="onboarding_stage" defaultValue={selected.onboarding_stage} style={fieldStyle()}>
-                      {STAGE_OPTIONS.map((option) => <option key={option} value={option}>{stageLabel(option)}</option>)}
-                    </select>
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Seats<br />
-                    <input name="seat_limit" type="number" min={1} defaultValue={selected.seats ?? 25} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Trial ends<br />
-                    <input name="trial_ends_at" type="date" defaultValue={safeDate(selected.trial_ends_at)} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Renews<br />
-                    <input name="renews_at" type="date" defaultValue={safeDate(selected.renews_at)} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Guru requests<br />
-                    <input name="guru_monthly_request_limit" type="number" min={0} defaultValue={selected.guru_monthly_request_limit ?? 25000} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Guru spend cap<br />
-                    <input name="guru_monthly_spend_limit" type="number" min={0} step="0.01" defaultValue={selected.guru_monthly_spend_limit ?? 2500} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Max users<br />
-                    <input name="max_users" type="number" min={0} defaultValue={selected.max_users || selected.seats || 25} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Max leads<br />
-                    <input name="max_leads" type="number" min={0} defaultValue={selected.max_leads} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Max quotes<br />
-                    <input name="max_quotes" type="number" min={0} defaultValue={selected.max_quotes} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Max orders<br />
-                    <input name="max_orders" type="number" min={0} defaultValue={selected.max_orders} style={fieldStyle()} />
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Overage<br />
-                    <select name="overage_policy" defaultValue={selected.overage_policy} style={fieldStyle()}>
-                      {OVERAGE_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
-                    </select>
-                  </label>
-                  <label style={{ fontSize: 11, color: "#475569" }}>Trial template<br />
-                    <select name="trial_template_key" defaultValue={selected.trial_template_key ?? ""} style={fieldStyle()}>
-                      {TRIAL_TEMPLATES.map((option) => <option key={option || "none"} value={option}>{option ? titleCase(option) : "None"}</option>)}
-                    </select>
-                  </label>
-                </div>
+                <form key={`${selected.id}-${selected.billing_status}-${selected.plan}-${selected.seats}`} onSubmit={saveControls} style={{ marginTop: 18, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: 13 }}>Client Operations</h4>
+                      <p style={{ margin: "3px 0 0", fontSize: 11, color: "#64748b" }}>Upgrade, convert trials, and adjust access without leaving SMC.</p>
+                    </div>
+                    {selected.billing_status === "trial" && (
+                      <button type="button" className="smc-btn primary" onClick={convertTrialToPaid} disabled={operationState.type === "saving"} style={{ whiteSpace: "nowrap" }}>Convert to paid</button>
+                    )}
+                  </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                  {[
-                    ["allow_exports", "Exports", selected.allow_exports],
-                    ["allow_invites", "Invites", selected.allow_invites],
-                    ["allow_settings_edit", "Settings edit", selected.allow_settings_edit],
-                    ["allow_dispatch", "Dispatch", selected.allow_dispatch],
-                    ["guided_mode_enabled", "Guided mode", selected.guided_mode_enabled],
-                  ].map(([key, label, checked]) => (
-                    <label key={String(key)} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
-                      <input name={String(key)} type="checkbox" defaultChecked={Boolean(checked)} /> {String(label)}
+                  {operationState.message && (
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: operationState.type === "error" ? "#ef4444" : operationState.type === "success" ? "#10b981" : "#64748b" }}>{operationState.message}</p>
+                  )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Plan<br />
+                      <select name="plan_key" defaultValue={PLAN_OPTIONS.includes(selected.plan ?? "") ? selected.plan ?? "enterprise" : "enterprise"} style={fieldStyle()}>
+                        {PLAN_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
+                      </select>
                     </label>
-                  ))}
-                </div>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Billing<br />
+                      <select name="billing_status" defaultValue={selected.billing_status} style={fieldStyle()}>
+                        {BILLING_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
+                      </select>
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Stage<br />
+                      <select name="onboarding_stage" defaultValue={selected.onboarding_stage} style={fieldStyle()}>
+                        {STAGE_OPTIONS.map((option) => <option key={option} value={option}>{stageLabel(option)}</option>)}
+                      </select>
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Seats<br />
+                      <input name="seat_limit" type="number" min={1} defaultValue={selected.seats ?? 25} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Trial ends<br />
+                      <input name="trial_ends_at" type="date" defaultValue={safeDate(selected.trial_ends_at)} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Renews<br />
+                      <input name="renews_at" type="date" defaultValue={safeDate(selected.renews_at)} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Guru requests<br />
+                      <input name="guru_monthly_request_limit" type="number" min={0} defaultValue={selected.guru_monthly_request_limit ?? 25000} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Guru spend cap<br />
+                      <input name="guru_monthly_spend_limit" type="number" min={0} step="0.01" defaultValue={selected.guru_monthly_spend_limit ?? 2500} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Max users<br />
+                      <input name="max_users" type="number" min={0} defaultValue={selected.max_users || selected.seats || 25} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Max leads<br />
+                      <input name="max_leads" type="number" min={0} defaultValue={selected.max_leads} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Max quotes<br />
+                      <input name="max_quotes" type="number" min={0} defaultValue={selected.max_quotes} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Max orders<br />
+                      <input name="max_orders" type="number" min={0} defaultValue={selected.max_orders} style={fieldStyle()} />
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Overage<br />
+                      <select name="overage_policy" defaultValue={selected.overage_policy} style={fieldStyle()}>
+                        {OVERAGE_OPTIONS.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
+                      </select>
+                    </label>
+                    <label style={{ fontSize: 11, color: "#475569" }}>Trial template<br />
+                      <select name="trial_template_key" defaultValue={selected.trial_template_key ?? ""} style={fieldStyle()}>
+                        {TRIAL_TEMPLATES.map((option) => <option key={option || "none"} value={option}>{option ? titleCase(option) : "None"}</option>)}
+                      </select>
+                    </label>
+                  </div>
 
-                <label style={{ display: "block", marginTop: 12, fontSize: 11, color: "#475569" }}>Internal notes<br />
-                  <textarea name="internal_notes" defaultValue={selected.internal_notes ?? ""} rows={3} style={{ ...fieldStyle(), resize: "vertical" }} />
-                </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                    {[
+                      ["allow_exports", "Exports", selected.allow_exports],
+                      ["allow_invites", "Invites", selected.allow_invites],
+                      ["allow_settings_edit", "Settings edit", selected.allow_settings_edit],
+                      ["allow_dispatch", "Dispatch", selected.allow_dispatch],
+                      ["guided_mode_enabled", "Guided mode", selected.guided_mode_enabled],
+                    ].map(([key, label, checked]) => (
+                      <label key={String(key)} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#475569" }}>
+                        <input name={String(key)} type="checkbox" defaultChecked={Boolean(checked)} /> {String(label)}
+                      </label>
+                    ))}
+                  </div>
 
-                <button type="submit" className="smc-btn primary" disabled={operationState.type === "saving"} style={{ width: "100%", marginTop: 12 }}>
-                  {operationState.type === "saving" ? "Saving…" : "Save client controls"}
-                </button>
-              </form>
+                  <label style={{ display: "block", marginTop: 12, fontSize: 11, color: "#475569" }}>Internal notes<br />
+                    <textarea name="internal_notes" defaultValue={selected.internal_notes ?? ""} rows={3} style={{ ...fieldStyle(), resize: "vertical" }} />
+                  </label>
+
+                  <button type="submit" className="smc-btn primary" disabled={operationState.type === "saving"} style={{ width: "100%", marginTop: 12 }}>
+                    {operationState.type === "saving" ? "Saving…" : "Save client controls"}
+                  </button>
+                </form>
+              </>
             )}
 
             <div style={{ marginTop: 16 }}>
@@ -417,7 +518,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
             <div style={{ marginTop: 16 }}>
               <h4 style={{ margin: "0 0 8px", fontSize: 12 }}>Modules</h4>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {selected.module_keys.length ? selected.module_keys.map((key) => <span key={key} className="smc-lb" style={{ background: "#f1f5f9", color: "#475569", fontSize: 10 }}>{moduleName(key)}</span>) : <span style={{ color: "#94a3b8", fontSize: 12 }}>No modules granted</span>}
+                {selected.module_keys.length ? selected.module_keys.map((key) => <span key={key} className="smc-lb" style={{ background: "#f1f5f9", color: "#475569", fontSize: 10 }}>{moduleName(key)}</span>) : <span style={{ color: "#94a3b8", fontSize: 12 }}>No modules enabled</span>}
               </div>
             </div>
             <div style={{ marginTop: 16 }}>
