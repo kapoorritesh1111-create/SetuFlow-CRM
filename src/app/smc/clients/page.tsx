@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { MODULE_DEFINITIONS } from "@/lib/modules/module-grants";
 import { SmcClientsClient, type SmcClientOrg } from "./client-view";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,12 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
   const onb = data.onboarding.find((row) => row.linked_organization_id === org.id) ?? null;
   const entitlement = data.entitlements.find((row) => row.organization_id === org.id) ?? null;
   const guru = data.guru.find((row) => row.organization_id === org.id) ?? null;
-  const orgModules = rowsFor(data.grants, org.id).filter((row) => row.enabled !== false);
+  const orgModuleRows = rowsFor(data.grants, org.id);
+  const orgModules = orgModuleRows.filter((row) => row.enabled !== false);
+  const moduleGrants = MODULE_DEFINITIONS.map((moduleDef) => {
+    const grant = orgModuleRows.find((row) => row.module_key === moduleDef.key);
+    return { module_key: moduleDef.key, enabled: Boolean(grant?.enabled) };
+  });
   const orgProducts = rowsFor(data.products, org.id).filter((row) => row.is_active !== false);
   const orgLeads = rowsFor(data.leads, org.id);
   const orgQuotes = rowsFor(data.quotes, org.id);
@@ -51,7 +57,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
   const marketsConfigured = Boolean(org.default_market_id || org.default_country_id || org.headquarters_country || (onb?.requested_markets?.length ?? 0) > 0 || (onb?.requested_countries?.length ?? 0) > 0);
   const approvalThresholds = org.approval_threshold_pct !== null && org.approval_threshold_pct !== undefined;
   const recentActivity = recentLeads.length > 0 || recentQuotes.length > 0;
-  const guruEnabled = Boolean(guru?.model || guru?.ai_analytics_enabled || entitlement?.guru_monthly_request_limit);
+  const guruEnabled = Boolean(guru?.model || guru?.ai_analytics_enabled || entitlement?.guru_monthly_request_limit || moduleGrants.some((grant) => grant.module_key === "setu_guru" && grant.enabled));
   const stage = stageFrom(entitlement?.onboarding_stage ?? onb?.pipeline_stage ?? onb?.status);
   const billingStatus = entitlement?.billing_status ?? (onb?.is_trial_request ? "trial" : "active");
   const plan = entitlement?.plan_key ?? (onb?.requested_plan === "trial" ? "starter" : onb?.requested_plan) ?? null;
@@ -83,6 +89,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     !recentActivity ? "Recent leads" : null,
     !guruEnabled ? "Guru config" : null,
     billingStatus === "trial" ? "Trial conversion" : null,
+    moduleGrants.every((grant) => !grant.enabled) ? "Module access" : null,
   ].filter(Boolean) as string[];
 
   return {
@@ -92,6 +99,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     created_at: org.created_at ?? null,
     member_count: countRows(data.members, org.id),
     module_keys: orgModules.map((row) => row.module_key).filter(Boolean),
+    module_grants: moduleGrants,
     plan,
     seats,
     billing_status: billingStatus,
