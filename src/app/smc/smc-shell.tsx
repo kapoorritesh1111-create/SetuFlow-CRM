@@ -68,9 +68,9 @@ const CHANNELS = [
   { key: "incidents", label: "Incidents" },
 ];
 const TEAM_MEMBERS = [
-  { name: "Ritesh Kapoor", initials: "RK", online: true },
-  { name: "Kumar Mayank", initials: "KM", online: true },
-  { name: "Ankush Arya", initials: "AA", online: false },
+  { name: "Ritesh Kapoor", initials: "RK", online: true, id: "180afa12-6ff6-4e16-b8d1-04b13e508970" },
+  { name: "Kumar Mayank", initials: "KM", online: true, id: "" },
+  { name: "Ankush Arya", initials: "AA", online: false, id: "" },
 ];
 const CHAT_PROMPTS = ["Post a status update", "Ask about this issue", "Share a deployment note"];
 
@@ -212,7 +212,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
           channel: activeChannel,
           conversation_id: activeConvId,
           sender_name: "Ritesh Kapoor",
-          mentions: mentionIds.length > 0 ? mentionIds : undefined,
+          mentions: mentionIds.filter(id => id.length > 0).length > 0 ? mentionIds.filter(id => id.length > 0) : undefined,
         }),
       });
       if (!res.ok) {
@@ -322,7 +322,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
         {chatError && <div className="smc-chat-error">{chatError}</div>}
         <div style={{position:'relative'}}>
           {showMentions && <div style={{position:'absolute',bottom:'100%',left:8,background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,.12)',padding:4,minWidth:180,zIndex:10,marginBottom:4}}>
-            {TEAM_MEMBERS.map((m) => <button key={m.initials} type="button" style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',border:'none',background:'none',width:'100%',cursor:'pointer',borderRadius:4,fontSize:12,fontFamily:'inherit',color:'#1e293b'}} onMouseDown={(e)=>{e.preventDefault();insertMention(m.name,'');}} onMouseOver={(e)=>(e.currentTarget.style.background='#f1f5f9')} onMouseOut={(e)=>(e.currentTarget.style.background='none')}><span style={{width:22,height:22,borderRadius:'50%',background:'#279491',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600}}>{m.initials}</span>{m.name}</button>)}
+            {TEAM_MEMBERS.map((m) => <button key={m.initials} type="button" style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',border:'none',background:'none',width:'100%',cursor:'pointer',borderRadius:4,fontSize:12,fontFamily:'inherit',color:'#1e293b'}} onMouseDown={(e)=>{e.preventDefault();insertMention(m.name,m.id);}} onMouseOver={(e)=>(e.currentTarget.style.background='#f1f5f9')} onMouseOut={(e)=>(e.currentTarget.style.background='none')}><span style={{width:22,height:22,borderRadius:'50%',background:'#279491',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600}}>{m.initials}</span>{m.name}</button>)}
           </div>}
           <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder={`Message #${activeChannel}... (type @ to mention)`} value={message} onChange={(e) => handleMessageInput(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
         </div>

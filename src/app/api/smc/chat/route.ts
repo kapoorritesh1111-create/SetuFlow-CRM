@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         sender_name: sender_name ?? user.user_metadata?.full_name ?? user.email ?? "Unknown",
         content: content.trim(),
         message_type: "user",
-        mentions: mentions ?? [],
+        mentions: (mentions ?? []).filter((id: string) => id && id.length > 10),
         entity_refs: issueRefs.length > 0 ? issueRefs : [],
       })
       .select("*")
@@ -118,17 +118,20 @@ export async function POST(request: NextRequest) {
 
     // Create notifications for mentions
     if (mentions?.length) {
-      const notifs = mentions.map((userId: string) => ({
-        organization_id: SETU_ORG_ID,
-        user_id: userId,
-        conversation_id: convId,
-        message_id: data.id,
-        type: "mention",
-        title: `${data.sender_name} mentioned you in #${channel ?? 'chat'}`,
-        content: content.trim().slice(0, 100),
-        link: "/smc",
-      }));
-      try { await admin.from("chat_notifications").insert(notifs); } catch { /* ignore */ }
+      const validMentions = mentions.filter((id: string) => id && id.length > 10);
+      if (validMentions.length > 0) {
+        const notifs = validMentions.map((userId: string) => ({
+          organization_id: SETU_ORG_ID,
+          user_id: userId,
+          conversation_id: convId,
+          message_id: data.id,
+          type: "mention",
+          title: `${data.sender_name} mentioned you in #${channel ?? 'chat'}`,
+          content: content.trim().slice(0, 100),
+          link: "/smc",
+        }));
+        try { await admin.from("chat_notifications").insert(notifs); } catch { /* ignore */ }
+      }
     }
 
     return NextResponse.json({ message: data }, { status: 201 });
