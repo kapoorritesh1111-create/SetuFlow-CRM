@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         content: content.trim().slice(0, 100),
         link: "/smc",
       }));
-      await admin.from("chat_notifications").insert(notifs).catch(() => {});
+      try { await admin.from("chat_notifications").insert(notifs); } catch { /* ignore */ }
     }
 
     return NextResponse.json({ message: data }, { status: 201 });
