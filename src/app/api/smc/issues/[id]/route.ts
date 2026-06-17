@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import type { Database, Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,22 @@ const SEVERITIES = ["Critical", "High", "Medium", "Low"];
 const PRIORITIES = ["P0", "P1", "P2", "P3"];
 
 type IssuePayload = Record<string, unknown>;
+type SprintIssueValue = Json | string[] | number[] | null | undefined;
+type SprintIssueRow = Record<string, SprintIssueValue> & { id: string; organization_id: string | null };
+type SprintIssueInsert = Record<string, SprintIssueValue>;
+type SprintIssueUpdate = Partial<SprintIssueInsert>;
+type SmcDatabase = Omit<Database, "public"> & {
+  public: Omit<Database["public"], "Tables"> & {
+    Tables: Database["public"]["Tables"] & {
+      sprint_issues: { Row: SprintIssueRow; Insert: SprintIssueInsert; Update: SprintIssueUpdate; Relationships: [] };
+    };
+  };
+};
+type SmcSupabase = SupabaseClient<SmcDatabase>;
+
+function smcClient(supabase: Awaited<ReturnType<typeof createClient>>): SmcSupabase {
+  return supabase as unknown as SmcSupabase;
+}
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -39,11 +57,11 @@ function has(body: IssuePayload, key: string) {
   return Object.prototype.hasOwnProperty.call(body, key);
 }
 
-function jsonSafe(value: unknown) {
+function jsonSafe(value: unknown): Json | null | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
   try {
-    return JSON.parse(JSON.stringify(value));
+    return JSON.parse(JSON.stringify(value)) as Json;
   } catch {
     return null;
   }
@@ -78,11 +96,11 @@ async function assertSetuMember() {
   return { supabase, error: null };
 }
 
-function compact(payload: Record<string, unknown>) {
-  return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
+function compact(payload: Record<string, SprintIssueValue>) {
+  return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined)) as SprintIssueUpdate;
 }
 
-function buildUpdatePayload(body: IssuePayload) {
+function buildUpdatePayload(body: IssuePayload): SprintIssueUpdate {
   const area = has(body, "area") ? text(body.area) : undefined;
   return compact({
     title: has(body, "title") ? text(body.title) : undefined,
@@ -129,7 +147,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await smcClient(supabase)
       .from("sprint_issues")
       .update(updatePayload)
       .eq("id", id)
