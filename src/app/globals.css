@@ -223,33 +223,28 @@ button[aria-haspopup="menu"] + [role="menu"] {
   }
 }
 
-/* S28-UX-022: SMC Client Orgs scroll recovery. */
+/* S28-UX-022: natural page recovery for SMC Client Orgs.
+   Do not trap the selected client workspace in a short internal scroll pane. */
 @media (min-width: 900px) {
-  .smc-lb {
-    scroll-margin-top: 96px;
-  }
-
   main:has(.smc-lb) {
-    max-height: calc(100dvh - 248px) !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    display: block !important;
   }
 
   main:has(.smc-lb) > section {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    padding: 16px 18px !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 18px 24px !important;
   }
 
   aside:has(.smc-lb) {
-    max-height: calc(100dvh - 248px) !important;
-    min-height: 0 !important;
+    position: sticky !important;
+    top: 18px !important;
+    max-height: calc(100dvh - 36px) !important;
     overflow-y: auto !important;
-    position: static !important;
   }
 }
 
