@@ -6,12 +6,18 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const SETU_ORG = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type JsonRecord = Record<string, any>;
 
 function errorJson(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
+}
+
+function readOrganizationId(body: JsonRecord) {
+  const candidates = [body.organization_id, body.organizationId, body.client_org_id, body.clientOrgId, body.org_id, body.orgId];
+  const value = candidates.find((candidate) => typeof candidate === "string" && candidate.trim().length > 0);
+  return typeof value === "string" ? value.trim() : "";
 }
 
 async function requireSetuOperator() {
@@ -43,14 +49,16 @@ export async function PATCH(request: Request) {
   if (response) return response;
 
   const body = (await request.json().catch(() => null)) as JsonRecord | null;
-  if (!body) return errorJson("Invalid JSON body");
+  if (!body) return errorJson("Could not read the module access request. Refresh Client Orgs and try again.");
 
-  const organizationId = typeof body.organization_id === "string" ? body.organization_id.trim() : "";
-  if (!UUID_RE.test(organizationId)) return errorJson("Valid organization_id is required");
+  const organizationId = readOrganizationId(body);
+  if (!UUID_RE.test(organizationId)) {
+    return errorJson("Could not identify the selected client organization. Refresh Client Orgs, select the client again, and retry module access.");
+  }
   if (organizationId === SETU_ORG) return errorJson("Platform organization module grants cannot be changed from Client Orgs", 403);
 
-  const moduleKey = normalizeModuleKey(body.module_key);
-  if (!moduleKey) return errorJson(`Valid module_key is required. Allowed: ${MODULE_KEYS.join(", ")}`);
+  const moduleKey = normalizeModuleKey(body.module_key ?? body.moduleKey);
+  if (!moduleKey) return errorJson(`Choose a valid module before changing access. Allowed: ${MODULE_KEYS.join(", ")}`);
 
   const enabled = body.enabled === true;
   const admin = createServiceRoleClient() as any;
