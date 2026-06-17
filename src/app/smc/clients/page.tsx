@@ -26,10 +26,12 @@ function rowsFor(rows: AnyRow[], orgId: string) {
 
 function stageFrom(status: string | null | undefined) {
   const value = (status ?? "intake").toLowerCase();
-  if (value.includes("live") || value.includes("active")) return "live";
+  if (value.includes("live") || value.includes("active") || value.includes("converted")) return "live";
+  if (value.includes("guided") || value.includes("trial")) return "guided_trial";
   if (value.includes("entitlement")) return "entitlements";
   if (value.includes("invite")) return "invite";
   if (value.includes("provision") || value.includes("setup")) return "provision";
+  if (value.includes("paused")) return "paused";
   return "intake";
 }
 
@@ -50,6 +52,10 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
   const approvalThresholds = org.approval_threshold_pct !== null && org.approval_threshold_pct !== undefined;
   const recentActivity = recentLeads.length > 0 || recentQuotes.length > 0;
   const guruEnabled = Boolean(guru?.model || guru?.ai_analytics_enabled || entitlement?.guru_monthly_request_limit);
+  const stage = stageFrom(entitlement?.onboarding_stage ?? onb?.pipeline_stage ?? onb?.status);
+  const billingStatus = entitlement?.billing_status ?? (onb?.is_trial_request ? "trial" : "active");
+  const plan = entitlement?.plan_key ?? (onb?.requested_plan === "trial" ? "starter" : onb?.requested_plan) ?? null;
+  const seats = entitlement?.seat_limit ?? entitlement?.max_users ?? onb?.requested_seat_count ?? null;
 
   const healthScore = Math.min(100,
     (profileComplete ? 20 : 0) +
@@ -67,6 +73,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     approvalThresholds ? "Approval thresholds set" : null,
     recentActivity ? "Recent activity" : null,
     guruEnabled ? "Guru enabled" : null,
+    billingStatus === "active" ? "Paid/active" : null,
   ].filter(Boolean) as string[];
   const needsAttention = [
     !profileComplete ? "Profile complete" : null,
@@ -75,6 +82,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     !approvalThresholds ? "Approval threshold" : null,
     !recentActivity ? "Recent leads" : null,
     !guruEnabled ? "Guru config" : null,
+    billingStatus === "trial" ? "Trial conversion" : null,
   ].filter(Boolean) as string[];
 
   return {
@@ -84,9 +92,11 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     created_at: org.created_at ?? null,
     member_count: countRows(data.members, org.id),
     module_keys: orgModules.map((row) => row.module_key).filter(Boolean),
-    plan: entitlement?.plan_key ?? onb?.requested_plan ?? null,
-    seats: entitlement?.seat_limit ?? entitlement?.max_users ?? onb?.requested_seat_count ?? null,
-    stage: stageFrom(entitlement?.onboarding_stage ?? onb?.pipeline_stage ?? onb?.status),
+    plan,
+    seats,
+    billing_status: billingStatus,
+    onboarding_stage: entitlement?.onboarding_stage ?? stage,
+    stage,
     health_score: healthScore,
     health_tone: healthScore >= 75 ? "green" : healthScore >= 45 ? "amber" : "red",
     governance_clear: marketsConfigured && approvalThresholds,
@@ -96,6 +106,22 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     recent_leads_count: recentLeads.length,
     quotes_count: orgQuotes.length,
     guru_enabled: guruEnabled,
+    guru_monthly_request_limit: entitlement?.guru_monthly_request_limit ?? null,
+    guru_monthly_spend_limit: entitlement?.guru_monthly_spend_limit ?? null,
+    overage_policy: entitlement?.overage_policy ?? "warn_then_block",
+    trial_ends_at: entitlement?.trial_ends_at ?? null,
+    renews_at: entitlement?.renews_at ?? null,
+    max_leads: entitlement?.max_leads ?? 0,
+    max_quotes: entitlement?.max_quotes ?? 0,
+    max_orders: entitlement?.max_orders ?? 0,
+    max_users: entitlement?.max_users ?? seats ?? 0,
+    allow_exports: entitlement?.allow_exports ?? true,
+    allow_invites: entitlement?.allow_invites ?? true,
+    allow_settings_edit: entitlement?.allow_settings_edit ?? true,
+    allow_dispatch: entitlement?.allow_dispatch ?? true,
+    guided_mode_enabled: entitlement?.guided_mode_enabled ?? false,
+    trial_template_key: entitlement?.trial_template_key ?? null,
+    internal_notes: entitlement?.internal_notes ?? null,
     signals,
     needs_attention: needsAttention,
     recent_activity: [
@@ -103,6 +129,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
       `${recentLeads.length} recent leads in last 30 days`,
       `${orgQuotes.length} quotes created`,
       `${orgModules.length} modules enabled`,
+      `Billing status: ${billingStatus}`,
     ],
     internal: org.id === SETU_ORG,
   };
