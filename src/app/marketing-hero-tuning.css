@@ -1,0 +1,79 @@
+/* Marketing hero background tuning
+   Keeps the shared /marketing/setuflow-bg-video.html layer visible while preserving
+   readable hero copy and the trade-show trial form. Loaded after globals.css. */
+
+.setu-shared-hero-background__frame {
+  opacity: 0.74 !important;
+  filter: saturate(0.98) contrast(1.04) brightness(0.92) !important;
+}
+
+.setu-shared-hero-background__overlay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(4, 16, 31, 0.84) 0%,
+      rgba(4, 16, 31, 0.70) 34%,
+      rgba(4, 16, 31, 0.34) 62%,
+      rgba(4, 16, 31, 0.55) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(4, 16, 31, 0.02) 0%,
+      rgba(4, 16, 31, 0.12) 100%
+    ) !important;
+}
+
+.setu-shared-hero-background__overlay--strong {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(6, 30, 52, 0.84) 0%,
+      rgba(6, 30, 52, 0.72) 44%,
+      rgba(6, 30, 52, 0.38) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(6, 30, 52, 0.05) 0%,
+      rgba(6, 30, 52, 0.16) 100%
+    ) !important;
+}
+
+.setu-shared-hero-background__glow {
+  background:
+    radial-gradient(circle at 22% 18%, rgba(32, 217, 150, 0.28), transparent 34%),
+    radial-gradient(circle at 76% 34%, rgba(52, 179, 168, 0.24), transparent 42%) !important;
+}
+
+.setu-shared-hero-shell--trial .setu-shared-hero-background__frame {
+  opacity: 0.68 !important;
+  filter: saturate(0.96) contrast(1.04) brightness(0.86) !important;
+}
+
+@media (max-width: 767px) {
+  .setu-shared-hero-background__frame {
+    opacity: 0.66 !important;
+    filter: saturate(0.95) contrast(1.04) brightness(0.84) !important;
+  }
+
+  .setu-shared-hero-background__overlay {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(4, 16, 31, 0.86) 0%,
+        rgba(4, 16, 31, 0.72) 52%,
+        rgba(4, 16, 31, 0.58) 100%
+      ),
+      radial-gradient(circle at 60% 16%, rgba(52, 179, 168, 0.22), transparent 40%) !important;
+  }
+
+  .setu-shared-hero-background__overlay--strong {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(6, 30, 52, 0.88) 0%,
+        rgba(6, 30, 52, 0.76) 52%,
+        rgba(6, 30, 52, 0.64) 100%
+      ),
+      radial-gradient(circle at 60% 16%, rgba(52, 179, 168, 0.22), transparent 40%) !important;
+  }
+}
