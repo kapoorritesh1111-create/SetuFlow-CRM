@@ -114,12 +114,17 @@ export function SmcShell({ children }: { children: ReactNode }) {
   const chatRef = useRef<HTMLDivElement>(null);
   const msgsEndRef = useRef<HTMLDivElement>(null);
 
-  // Click outside closes chat
+  // Click outside closes chat (but not when clicking sidebar or FAB)
   useEffect(() => {
     if (!chat) return;
     const handler = (e: MouseEvent) => {
-      const fab = document.querySelector('.smc-chat-fab');
-      if (chatRef.current && !chatRef.current.contains(e.target as Node) && !(fab && fab.contains(e.target as Node))) {
+      const target = e.target as Node;
+      const fab = document.querySelector('.smc-chat-fab, .smc-premium-chat-fab');
+      const sidebar = document.querySelector('.smc-sb');
+      if (chatRef.current &&
+          !chatRef.current.contains(target) &&
+          !(fab && fab.contains(target)) &&
+          !(sidebar && sidebar.contains(target))) {
         setChat(false);
       }
     };
@@ -173,7 +178,18 @@ export function SmcShell({ children }: { children: ReactNode }) {
       .channel(`smc-chat-${activeChannel}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
         const next = payload.new as ChatMessage;
-        setMessages((cur) => cur.some((m) => m.id === next.id) ? cur : [...cur, next].slice(-50));
+        setMessages((cur) => {
+          // Already have this exact message
+          if (cur.some((m) => m.id === next.id)) return cur;
+          // Replace optimistic temp message with matching content
+          const tempIdx = cur.findIndex((m) => m.id.startsWith('temp-') && m.content === next.content);
+          if (tempIdx >= 0) {
+            const updated = [...cur];
+            updated[tempIdx] = next;
+            return updated;
+          }
+          return [...cur, next].slice(-50);
+        });
       })
       .subscribe();
 
@@ -239,12 +255,19 @@ export function SmcShell({ children }: { children: ReactNode }) {
 
   function handleMessageInput(val: string) {
     setMessage(val);
-    setShowMentions(val.endsWith("@") || /\s@$/.test(val));
+    // Show mentions when @ followed by optional partial name at end of input
+    setShowMentions(/@\w*$/.test(val));
   }
 
+  // Filter team members by what's typed after @
+  const mentionQuery = message.match(/@(\w*)$/)?.[1]?.toLowerCase() ?? '';
+  const filteredMentions = showMentions
+    ? TEAM_MEMBERS.filter(m => m.name.toLowerCase().includes(mentionQuery) || m.initials.toLowerCase().includes(mentionQuery))
+    : [];
+
   function insertMention(name: string, userId: string) {
-    setMessage((prev) => prev.replace(/@\s*$/, `@${name} `));
-    setMentionIds((prev) => [...prev, userId]);
+    setMessage((prev) => prev.replace(/@\w*$/, `@${name} `));
+    if (userId) setMentionIds((prev) => [...prev, userId]);
     setShowMentions(false);
   }
 
@@ -316,13 +339,13 @@ export function SmcShell({ children }: { children: ReactNode }) {
           {!chatLoading && messages.length === 0 && (
             <div className="smc-chat-empty"><div className="smc-chat-empty-card"><div className="smc-empty-icon">{I.chat}</div><h4>Start the #{activeChannel} channel</h4><p>Share updates, ask questions, or post decisions for the team.</p><div className="smc-chat-prompt-row">{CHAT_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => setMessage(prompt)}>{prompt}</button>)}</div></div></div>
           )}
-          {messages.map((m) => <div key={m.id} className={`smc-msg ${m.message_type === 'bot' ? 'smc-msg-bot' : 'smc-msg-in'}`}><div className="smc-msg-sender">{m.sender_name || "SMC"}{m.message_type === 'bot' && ' 🤖'}</div><div className="smc-msg-bubble">{renderContent(m.content)}</div><div className="smc-msg-time">{fmtTime(m.created_at)}</div></div>)}
+          {messages.map((m) => <div key={m.id} className={`smc-msg ${m.message_type === 'bot' ? 'smc-msg-bot' : 'smc-msg-in'}`}><div className="smc-msg-sender">{m.sender_name || "SMC"}{m.message_type === 'bot' && ' 🤖'}</div><div className="smc-msg-bubble">{renderContent(m.content)}</div><div className="smc-msg-time">{fmtTime(m.created_at)} {!m.id.startsWith('temp-') && <span style={{color:'#279491',fontSize:10,marginLeft:3}}>✓</span>}{m.id.startsWith('temp-') && <span style={{color:'#94a3b8',fontSize:10,marginLeft:3}}>⏳</span>}</div></div>)}
           <div ref={msgsEndRef} />
         </div>
         {chatError && <div className="smc-chat-error">{chatError}</div>}
         <div style={{position:'relative'}}>
-          {showMentions && <div style={{position:'absolute',bottom:'100%',left:8,background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,.12)',padding:4,minWidth:180,zIndex:10,marginBottom:4}}>
-            {TEAM_MEMBERS.map((m) => <button key={m.initials} type="button" style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',border:'none',background:'none',width:'100%',cursor:'pointer',borderRadius:4,fontSize:12,fontFamily:'inherit',color:'#1e293b'}} onMouseDown={(e)=>{e.preventDefault();insertMention(m.name,m.id);}} onMouseOver={(e)=>(e.currentTarget.style.background='#f1f5f9')} onMouseOut={(e)=>(e.currentTarget.style.background='none')}><span style={{width:22,height:22,borderRadius:'50%',background:'#279491',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600}}>{m.initials}</span>{m.name}</button>)}
+          {showMentions && filteredMentions.length > 0 && <div style={{position:'absolute',bottom:'100%',left:8,background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,.12)',padding:4,minWidth:180,zIndex:10,marginBottom:4}}>
+            {filteredMentions.map((m) => <button key={m.initials} type="button" style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',border:'none',background:'none',width:'100%',cursor:'pointer',borderRadius:4,fontSize:12,fontFamily:'inherit',color:'#1e293b'}} onMouseDown={(e)=>{e.preventDefault();insertMention(m.name,m.id);}} onMouseOver={(e)=>(e.currentTarget.style.background='#f1f5f9')} onMouseOut={(e)=>(e.currentTarget.style.background='none')}><span style={{width:22,height:22,borderRadius:'50%',background:'#279491',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600}}>{m.initials}</span>{m.name}</button>)}
           </div>}
           <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder={`Message #${activeChannel}... (type @ to mention)`} value={message} onChange={(e) => handleMessageInput(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
         </div>
