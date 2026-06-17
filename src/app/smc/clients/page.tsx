@@ -36,10 +36,22 @@ function stageFrom(status: string | null | undefined) {
   return "intake";
 }
 
+function apiPrefix(orgId: string) {
+  return `api:org:${orgId}`;
+}
+
+function latestUsage(rows: AnyRow[], orgId: string) {
+  return rowsFor(rows, orgId).sort((a, b) => String(b.period_month ?? "").localeCompare(String(a.period_month ?? "")))[0] ?? null;
+}
+
 function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg {
   const onb = data.onboarding.find((row) => row.linked_organization_id === org.id) ?? null;
   const entitlement = data.entitlements.find((row) => row.organization_id === org.id) ?? null;
   const guru = data.guru.find((row) => row.organization_id === org.id) ?? null;
+  const usage = latestUsage(data.usage, org.id);
+  const apiKeys = rowsFor(data.apiKeys, org.id);
+  const activeApiKeys = apiKeys.filter((row) => row.is_active !== false && !row.revoked_at);
+  const apiRateLimit = data.rateLimits.find((row) => row.organization_id === org.id && row.key_prefix === apiPrefix(org.id)) ?? null;
   const orgModuleRows = rowsFor(data.grants, org.id);
   const orgModules = orgModuleRows.filter((row) => row.enabled !== false);
   const moduleGrants = MODULE_DEFINITIONS.map((moduleDef) => {
@@ -79,6 +91,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     approvalThresholds ? "Approval thresholds set" : null,
     recentActivity ? "Recent activity" : null,
     guruEnabled ? "Guru enabled" : null,
+    activeApiKeys.length > 0 || apiRateLimit ? "API access governed" : null,
     billingStatus === "active" ? "Paid/active" : null,
   ].filter(Boolean) as string[];
   const needsAttention = [
@@ -90,6 +103,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     !guruEnabled ? "Guru config" : null,
     billingStatus === "trial" ? "Trial conversion" : null,
     moduleGrants.every((grant) => !grant.enabled) ? "Module access" : null,
+    !apiRateLimit && activeApiKeys.length > 0 ? "API rate limit" : null,
   ].filter(Boolean) as string[];
 
   return {
@@ -116,6 +130,28 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     guru_enabled: guruEnabled,
     guru_monthly_request_limit: entitlement?.guru_monthly_request_limit ?? null,
     guru_monthly_spend_limit: entitlement?.guru_monthly_spend_limit ?? null,
+    guru_requests_used: Number(usage?.guru_requests_used ?? 0),
+    guru_spend_used: Number(usage?.guru_spend_used ?? 0),
+    guru_model: guru?.model ?? "gpt-4.1-mini",
+    guru_live_search_enabled: guru?.live_search_enabled ?? true,
+    guru_writeback_enabled: guru?.writeback_enabled ?? false,
+    guru_require_admin_approval: guru?.require_admin_approval ?? true,
+    guru_ai_analytics_enabled: guru?.ai_analytics_enabled ?? true,
+    guru_daily_search_budget: guru?.daily_search_budget ?? 10,
+    api_keys: apiKeys.map((key) => ({
+      id: key.id,
+      name: key.name ?? "Unnamed key",
+      key_prefix: key.key_prefix ?? "",
+      scopes: key.scopes ?? [],
+      last_used_at: key.last_used_at ?? null,
+      created_at: key.created_at ?? null,
+      revoked_at: key.revoked_at ?? null,
+      is_active: key.is_active !== false && !key.revoked_at,
+    })),
+    api_rate_limit_value: apiRateLimit?.limit_value ?? null,
+    api_rate_limit_window_ms: apiRateLimit?.window_ms ?? null,
+    api_rate_limit_reason: apiRateLimit?.reason ?? null,
+    api_rate_limit_key_prefix: apiRateLimit?.key_prefix ?? apiPrefix(org.id),
     overage_policy: entitlement?.overage_policy ?? "warn_then_block",
     trial_ends_at: entitlement?.trial_ends_at ?? null,
     renews_at: entitlement?.renews_at ?? null,
@@ -137,6 +173,8 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
       `${recentLeads.length} recent leads in last 30 days`,
       `${orgQuotes.length} quotes created`,
       `${orgModules.length} modules enabled`,
+      `${activeApiKeys.length} active API keys`,
+      `${Number(usage?.guru_requests_used ?? 0)} Guru requests used`,
       `Billing status: ${billingStatus}`,
     ],
     internal: org.id === SETU_ORG,
@@ -160,13 +198,16 @@ async function getData() {
   const admin = createServiceRoleClient() as any;
   if (!admin) return [];
 
-  const [orgs, members, grants, onboarding, entitlements, guru, products, leads, quotes] = await Promise.all([
+  const [orgs, members, grants, onboarding, entitlements, guru, apiKeys, rateLimits, usage, products, leads, quotes] = await Promise.all([
     admin.from("organizations").select("*"),
     admin.from("organization_members").select("organization_id"),
     admin.from("org_module_grants").select("organization_id, module_key, enabled"),
     admin.from("client_onboarding_requests").select("*"),
     admin.from("client_entitlement_profiles").select("*"),
     admin.from("workspace_guru_settings").select("*"),
+    admin.from("api_keys").select("id, organization_id, name, key_prefix, scopes, last_used_at, created_at, revoked_at, is_active"),
+    admin.from("rate_limit_overrides").select("id, organization_id, key_prefix, limit_value, window_ms, reason, updated_at"),
+    admin.from("client_usage_rollups").select("organization_id, period_month, guru_requests_used, guru_spend_used"),
     admin.from("products").select("organization_id, is_active"),
     admin.from("leads").select("organization_id, created_at"),
     admin.from("quotes").select("organization_id, created_at"),
@@ -178,6 +219,9 @@ async function getData() {
     onboarding: onboarding.data ?? [],
     entitlements: entitlements.data ?? [],
     guru: guru.data ?? [],
+    apiKeys: apiKeys.data ?? [],
+    rateLimits: rateLimits.data ?? [],
+    usage: usage.data ?? [],
     products: products.data ?? [],
     leads: leads.data ?? [],
     quotes: quotes.data ?? [],
