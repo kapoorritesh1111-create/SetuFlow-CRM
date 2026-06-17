@@ -1,3 +1,12 @@
+## Sprint 28 SMC client operations — S28-FEAT-011
+
+- Added lifecycle context loading for SMC Client Orgs from existing `client_onboarding_requests` and trial-linked `leads` data.
+- Expanded the Client Orgs data model with trade-show source, event, contact, requested-plan, requested-seat, product-interest, follow-up, and trial lead count fields.
+- Replaced the Lifecycle placeholder with a real trade-show trial lifecycle workspace inside the selected client tabs.
+- Added contact actions for email, phone, and website directly from the Lifecycle tab.
+- Added editable lifecycle controls for stage, billing, target plan, seats, trial end, renewal date, trial template, and conversion notes.
+- Added save lifecycle and convert-to-paid actions using the existing protected SMC entitlement workflow, preserving audit and onboarding writeback behavior.
+
 ## Sprint 28 SMC client operations — S28-UX-020
 
 - Refactored SMC Client Orgs from a long selected-client drawer into a tabbed operations workspace.
