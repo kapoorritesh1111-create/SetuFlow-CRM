@@ -25,6 +25,28 @@ export const LANGUAGES: {
   { code: 'ar', flagSrc: '/flags/ae.svg', label: 'Arabic', native: 'Arabic', short: 'AR', region: 'UAE / GCC', dir: 'rtl' },
 ];
 
+function getCookieValue(name: string) {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+function clearCookie(name: string) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  const expires = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  const hostname = window.location.hostname;
+  const domains = ['', hostname, hostname.startsWith('www.') ? hostname.slice(4) : `.${hostname}`];
+
+  domains.forEach((domain) => {
+    document.cookie = `${name}=; ${expires}; path=/`;
+    if (domain) document.cookie = `${name}=; ${expires}; path=/; domain=${domain}`;
+  });
+}
+
+export function clearGoogleTranslateCookies() {
+  clearCookie('googtrans');
+}
+
 export function getStoredLanguage(): MarketingLang {
   if (typeof window === 'undefined') return 'en';
   const value = window.localStorage.getItem(LANG_STORAGE_KEY) as MarketingLang | null;
@@ -33,10 +55,31 @@ export function getStoredLanguage(): MarketingLang {
 
 export function applyStoredLanguage(code: MarketingLang) {
   if (typeof window === 'undefined') return;
+
+  const previousGoogleTranslateCookie = getCookieValue('googtrans');
+  const wasTranslated =
+    document.documentElement.classList.contains('translated-ltr') ||
+    document.documentElement.classList.contains('translated-rtl') ||
+    document.body.classList.contains('translated-ltr') ||
+    document.body.classList.contains('translated-rtl') ||
+    Boolean(document.querySelector('.goog-te-combo')) ||
+    Boolean(previousGoogleTranslateCookie && !previousGoogleTranslateCookie.endsWith('/en'));
+
   window.localStorage.setItem(LANG_STORAGE_KEY, code);
   document.documentElement.lang = code;
   document.documentElement.dir = code === 'ar' ? 'rtl' : 'ltr';
+
+  if (code === 'en') {
+    clearGoogleTranslateCookies();
+    document.documentElement.classList.remove('translated-ltr', 'translated-rtl');
+    document.body.classList.remove('translated-ltr', 'translated-rtl');
+  }
+
   window.dispatchEvent(new CustomEvent('setuflow-language-change', { detail: code }));
+
+  if (code === 'en' && wasTranslated) {
+    window.location.reload();
+  }
 }
 
 export function useMarketingLanguage() {
@@ -47,6 +90,7 @@ export function useMarketingLanguage() {
     setLanguage(initial);
     document.documentElement.lang = initial;
     document.documentElement.dir = initial === 'ar' ? 'rtl' : 'ltr';
+    if (initial === 'en') clearGoogleTranslateCookies();
     const handler = (event: Event) => setLanguage((event as CustomEvent<MarketingLang>).detail || getStoredLanguage());
     window.addEventListener('setuflow-language-change', handler);
     return () => window.removeEventListener('setuflow-language-change', handler);
