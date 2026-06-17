@@ -1,3 +1,3 @@
-import { GET, POST } from "../../../chat/messages/route";
+import { GET, POST } from "../../chat/messages/route";
 
 export { GET, POST };
