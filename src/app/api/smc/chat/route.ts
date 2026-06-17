@@ -21,36 +21,48 @@ export async function GET(request: NextRequest) {
     if (!admin) return NextResponse.json({ messages: [], conversation_id: null });
 
     const { searchParams } = new URL(request.url);
+    const conversationIdParam = searchParams.get("conversation_id");
     const channelKey = searchParams.get("channel") ?? "general";
 
-    // Look up conversation by channel key
-    const { data: conv } = await admin
-      .from("chat_conversations")
-      .select("id")
-      .eq("organization_id", SETU_ORG_ID)
-      .eq("channel_key", channelKey)
-      .maybeSingle();
+    let conversationId: string | null = conversationIdParam;
 
-    if (!conv) return NextResponse.json({ messages: [], conversation_id: null });
+    if (!conversationId) {
+      const { data: conv } = await admin
+        .from("chat_conversations")
+        .select("id")
+        .eq("organization_id", SETU_ORG_ID)
+        .eq("channel_key", channelKey)
+        .maybeSingle();
+      conversationId = conv?.id ?? null;
+    } else {
+      const { data: conv } = await admin
+        .from("chat_conversations")
+        .select("id")
+        .eq("organization_id", SETU_ORG_ID)
+        .eq("id", conversationId)
+        .maybeSingle();
+      conversationId = conv?.id ?? null;
+    }
 
-    // Fetch messages
+    if (!conversationId) return NextResponse.json({ messages: [], conversation_id: null });
+
     const { data } = await admin
       .from("chat_messages")
       .select("*")
-      .eq("conversation_id", conv.id)
+      .eq("organization_id", SETU_ORG_ID)
+      .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
       .limit(50);
 
-    // Update last_read_at
     await admin
       .from("chat_participants")
       .update({ last_read_at: new Date().toISOString() })
-      .eq("conversation_id", conv.id)
+      .eq("conversation_id", conversationId)
       .eq("user_id", user.id);
 
     return NextResponse.json({
       messages: (data ?? []).reverse(),
-      conversation_id: conv.id,
+      conversation_id: conversationId,
     });
   } catch (err) {
     console.error("Chat GET error:", err);
@@ -73,7 +85,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Message required" }, { status: 400 });
     }
 
-    // Resolve conversation ID
     let convId = conversation_id;
     if (!convId && channel) {
       const { data: conv } = await admin
@@ -84,12 +95,11 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       convId = conv?.id;
     }
-    if (!convId) return NextResponse.json({ error: "Channel not found" }, { status: 404 });
+    if (!convId) return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
 
-    // Extract issue refs
     const issueRefs = (content.match(/S\d+-[A-Z]+-\d+/g) ?? []).map((ref: string) => ({ type: "issue", ref }));
+    const validMentions = Array.isArray(mentions) ? mentions.filter((id: string) => id && id.length > 10) : [];
 
-    // Insert message with service role (bypasses RLS)
     const { data, error } = await admin
       .from("chat_messages")
       .insert({
@@ -99,7 +109,7 @@ export async function POST(request: NextRequest) {
         sender_name: sender_name ?? user.user_metadata?.full_name ?? user.email ?? "Unknown",
         content: content.trim(),
         message_type: "user",
-        mentions: (mentions ?? []).filter((id: string) => id && id.length > 10),
+        mentions: validMentions,
         entity_refs: issueRefs.length > 0 ? issueRefs : [],
       })
       .select("*")
@@ -110,28 +120,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Update conversation timestamp
     await admin
       .from("chat_conversations")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", convId);
 
-    // Create notifications for mentions
-    if (mentions?.length) {
-      const validMentions = mentions.filter((id: string) => id && id.length > 10);
-      if (validMentions.length > 0) {
-        const notifs = validMentions.map((userId: string) => ({
-          organization_id: SETU_ORG_ID,
-          user_id: userId,
-          conversation_id: convId,
-          message_id: data.id,
-          type: "mention",
-          title: `${data.sender_name} mentioned you in #${channel ?? 'chat'}`,
-          content: content.trim().slice(0, 100),
-          link: "/smc",
-        }));
-        try { await admin.from("chat_notifications").insert(notifs); } catch { /* ignore */ }
-      }
+    if (validMentions.length > 0) {
+      const notifs = validMentions.map((userId: string) => ({
+        organization_id: SETU_ORG_ID,
+        user_id: userId,
+        conversation_id: convId,
+        message_id: data.id,
+        type: "mention",
+        title: `${data.sender_name} mentioned you in #${channel ?? "chat"}`,
+        content: content.trim().slice(0, 100),
+        link: "/smc",
+      }));
+      try { await admin.from("chat_notifications").insert(notifs); } catch { /* ignore */ }
     }
 
     return NextResponse.json({ message: data }, { status: 201 });
