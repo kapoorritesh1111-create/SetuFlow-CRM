@@ -7,6 +7,7 @@ import { SmcClientsClient, type SmcClientOrg } from "./client-view";
 export const dynamic = "force-dynamic";
 
 const SETU_ORG = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
+const SENSITIVE_KEY_RE = /(token|secret|password|key|api[_-]?key|credential|authorization|bearer|jwt)/i;
 
 type AnyRow = Record<string, any>;
 
@@ -48,6 +49,42 @@ function trialLeadsFor(rows: AnyRow[], orgId: string) {
   return rows.filter((row) => row.organization_id === orgId || row.trial_org_id === orgId);
 }
 
+function cleanValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) return value.length ? `${value.length} items` : "empty";
+  if (typeof value === "object") return "object";
+  return String(value).slice(0, 80);
+}
+
+function summarizeDelta(payload: AnyRow | null | undefined) {
+  const before = payload?.before && typeof payload.before === "object" ? payload.before : {};
+  const after = payload?.after && typeof payload.after === "object" ? payload.after : {};
+  const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]))
+    .filter((key) => !SENSITIVE_KEY_RE.test(key))
+    .slice(0, 4);
+  if (!keys.length) return "No before/after summary captured";
+  return keys.map((key) => `${key}: ${cleanValue(before[key])} → ${cleanValue(after[key])}`).join("; ");
+}
+
+function auditRowsFor(rows: AnyRow[], orgId: string) {
+  return rows.filter((row) => {
+    const payload = row.payload ?? {};
+    return row.entity_id === orgId || payload.client_org_id === orgId || payload.related_client_org_id === orgId || payload.organization_id === orgId;
+  });
+}
+
+function formatAuditLine(row: AnyRow) {
+  const payload = row.payload ?? {};
+  const when = row.created_at ? new Date(row.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Unknown time";
+  const actor = row.actor_user_id ? `Actor ${String(row.actor_user_id).slice(0, 8)}` : "System actor";
+  const action = String(row.action ?? "audit_event").replace(/[_-]+/g, " ");
+  const entity = `${row.entity_type ?? "entity"}:${String(row.entity_id ?? payload.client_org_id ?? "-").slice(0, 8)}`;
+  const related = payload.client_org_id ? `client:${String(payload.client_org_id).slice(0, 8)}` : entity;
+  return `${when} · ${actor} · ${action} · ${entity} · ${related} · ${summarizeDelta(payload)}`;
+}
+
 function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg {
   const onb = data.onboarding.find((row) => row.linked_organization_id === org.id) ?? null;
   const entitlement = data.entitlements.find((row) => row.organization_id === org.id) ?? null;
@@ -69,12 +106,16 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
   const orgQuotes = rowsFor(data.quotes, org.id);
   const recentLeads = orgLeads.filter((row) => isRecent(row.created_at));
   const recentQuotes = orgQuotes.filter((row) => isRecent(row.created_at));
+  const auditTimeline = auditRowsFor(data.auditLogs, org.id)
+    .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))
+    .slice(0, 12)
+    .map(formatAuditLine);
 
   const profileComplete = Boolean(org.legal_name || org.contact_email || org.website || onb?.website || onb?.primary_admin_email || primaryTrialLead?.email);
   const productsLoaded = orgProducts.length > 0;
   const marketsConfigured = Boolean(org.default_market_id || org.default_country_id || org.headquarters_country || (onb?.requested_markets?.length ?? 0) > 0 || (onb?.requested_countries?.length ?? 0) > 0 || primaryTrialLead?.country);
   const approvalThresholds = org.approval_threshold_pct !== null && org.approval_threshold_pct !== undefined;
-  const recentActivity = recentLeads.length > 0 || recentQuotes.length > 0;
+  const recentActivity = recentLeads.length > 0 || recentQuotes.length > 0 || auditTimeline.length > 0;
   const guruEnabled = Boolean(guru?.model || guru?.ai_analytics_enabled || entitlement?.guru_monthly_request_limit || moduleGrants.some((grant) => grant.module_key === "setu_guru" && grant.enabled));
   const stage = stageFrom(entitlement?.onboarding_stage ?? onb?.pipeline_stage ?? onb?.status);
   const billingStatus = entitlement?.billing_status ?? (onb?.is_trial_request ? "trial" : "active");
@@ -148,7 +189,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     api_keys: apiKeys.map((key) => ({
       id: key.id,
       name: key.name ?? "Unnamed key",
-      key_prefix: key.key_prefix ?? "",
+      key_prefix: key.key_prefix ? `${String(key.key_prefix).slice(0, 7)}…` : "redacted",
       scopes: key.scopes ?? [],
       last_used_at: key.last_used_at ?? null,
       created_at: key.created_at ?? null,
@@ -158,7 +199,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     api_rate_limit_value: apiRateLimit?.limit_value ?? null,
     api_rate_limit_window_ms: apiRateLimit?.window_ms ?? null,
     api_rate_limit_reason: apiRateLimit?.reason ?? null,
-    api_rate_limit_key_prefix: apiRateLimit?.key_prefix ?? apiPrefix(org.id),
+    api_rate_limit_key_prefix: apiRateLimit?.key_prefix ? `${String(apiRateLimit.key_prefix).slice(0, 12)}…` : apiPrefix(org.id),
     overage_policy: entitlement?.overage_policy ?? "warn_then_block",
     trial_ends_at: entitlement?.trial_ends_at ?? null,
     renews_at: entitlement?.renews_at ?? null,
@@ -200,7 +241,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     trial_lead_count: trialLeads.length,
     signals,
     needs_attention: needsAttention,
-    recent_activity: [
+    recent_activity: auditTimeline.length ? auditTimeline : [
       `${orgProducts.length} active products`,
       `${recentLeads.length} recent leads in last 30 days`,
       `${orgQuotes.length} quotes created`,
@@ -231,7 +272,7 @@ async function getData() {
   const admin = createServiceRoleClient() as any;
   if (!admin) return [];
 
-  const [orgs, members, grants, onboarding, entitlements, guru, apiKeys, rateLimits, usage, products, leads, quotes] = await Promise.all([
+  const [orgs, members, grants, onboarding, entitlements, guru, apiKeys, rateLimits, usage, products, leads, quotes, auditLogs] = await Promise.all([
     admin.from("organizations").select("*"),
     admin.from("organization_members").select("organization_id"),
     admin.from("org_module_grants").select("organization_id, module_key, enabled"),
@@ -244,6 +285,7 @@ async function getData() {
     admin.from("products").select("organization_id, is_active"),
     admin.from("leads").select("organization_id, trial_org_id, created_at, contact_name, email, phone, website, source_type, source_label, trade_show_name, booth_number, main_product_category, products_or_needs, notes, country, last_contacted_at, next_follow_up_at"),
     admin.from("quotes").select("organization_id, created_at"),
+    admin.from("audit_logs").select("id, organization_id, actor_user_id, entity_type, entity_id, action, payload, created_at").eq("organization_id", SETU_ORG).order("created_at", { ascending: false }).limit(250),
   ]);
 
   const data = {
@@ -258,6 +300,7 @@ async function getData() {
     products: products.data ?? [],
     leads: leads.data ?? [],
     quotes: quotes.data ?? [],
+    auditLogs: auditLogs.data ?? [],
   };
 
   return ((orgs.data ?? []) as AnyRow[]).map((org) => buildClient(org, data));
