@@ -7,98 +7,61 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{overflow:hidden;width:100vw;height:100vh;background:#060b16}
-
-.bg-video{
-  position:fixed;inset:0;z-index:0;overflow:hidden;
-}
-
-.slide{
-  position:absolute;inset:-3%;
-  width:106%;height:106%;
-  opacity:0;
-  transition:opacity 1.8s ease-in-out;
-  will-change:opacity;
-}
+.stage{position:fixed;inset:0;overflow:hidden;background:linear-gradient(145deg,#060b16,#0c1829)}
+.slide{position:absolute;inset:0;opacity:0;transition:opacity 1.6s ease-in-out;will-change:opacity;display:flex;align-items:center;justify-content:center}
 .slide.active{opacity:1}
 
-.slide img{
-  position:absolute;
-  width:100%;height:100%;
-  object-fit:cover;
-  object-position:center center;
-  will-change:transform;
-  /* Base zoom so UI text isn't readable — atmospheric only */
-  filter:saturate(.82) brightness(.88);
-  transition:transform 6s cubic-bezier(.25,.1,.25,1);
-}
+/* Landscape screenshots — fill viewport */
+.slide img{position:absolute;width:100%;height:100%;object-fit:cover;object-position:center top;filter:saturate(.8) brightness(.85);will-change:transform;transition:transform 6s cubic-bezier(.25,.1,.25,1)}
 
-/* Ken Burns — subtle, cinematic movements */
+/* Portrait override (vCard) — contain, centered on dark bg */
+.slide.portrait img{object-fit:contain;object-position:center center;filter:saturate(.85) brightness(.8)}
+
+/* Wide/short override (analytics) — cover but position top */
+.slide.wide img{object-position:center top}
+
+/* Ken Burns */
 .slide[data-kb="zo"] img{transform:scale(1.08)}
-.slide[data-kb="zo"].active img{transform:scale(1)}
+.slide[data-kb="zo"].active img{transform:scale(1.01)}
+.slide[data-kb="zi"] img{transform:scale(1.01)}
+.slide[data-kb="zi"].active img{transform:scale(1.07)}
+.slide[data-kb="pr"] img{transform:scale(1.05) translateX(-1.5%)}
+.slide[data-kb="pr"].active img{transform:scale(1.05) translateX(1.5%)}
+.slide[data-kb="pl"] img{transform:scale(1.05) translateX(1.5%)}
+.slide[data-kb="pl"].active img{transform:scale(1.05) translateX(-1.5%)}
+.slide[data-kb="pu"] img{transform:scale(1.05) translateY(2%)}
+.slide[data-kb="pu"].active img{transform:scale(1.05) translateY(-2%)}
+.slide[data-kb="dr"] img{transform:scale(1.06) translate(-1%,.5%)}
+.slide[data-kb="dr"].active img{transform:scale(1.06) translate(1%,-.5%)}
+.slide[data-kb="sr"] img{transform:scale(1.1)}
+.slide[data-kb="sr"].active img{transform:scale(1.01)}
 
-.slide[data-kb="zi"] img{transform:scale(1)}
-.slide[data-kb="zi"].active img{transform:scale(1.08)}
-
-.slide[data-kb="pr"] img{transform:scale(1.06) translateX(-2%)}
-.slide[data-kb="pr"].active img{transform:scale(1.06) translateX(2%)}
-
-.slide[data-kb="pl"] img{transform:scale(1.06) translateX(2%)}
-.slide[data-kb="pl"].active img{transform:scale(1.06) translateX(-2%)}
-
-.slide[data-kb="pu"] img{transform:scale(1.06) translateY(3%)}
-.slide[data-kb="pu"].active img{transform:scale(1.06) translateY(-2%)}
-
-.slide[data-kb="dr"] img{transform:scale(1.07) translate(-1.5%,1%)}
-.slide[data-kb="dr"].active img{transform:scale(1.07) translate(1.5%,-1%)}
-
-.slide[data-kb="sr"] img{transform:scale(1.12)}
-.slide[data-kb="sr"].active img{transform:scale(1.02)}
-
-/* Consistent dark overlay — sits ON TOP of all slides */
-.overlay{
-  position:fixed;inset:0;z-index:1;
-  background:
-    linear-gradient(180deg,
-      rgba(6,11,22,.25) 0%,
-      rgba(6,11,22,.15) 25%,
-      rgba(6,11,22,.12) 50%,
-      rgba(6,11,22,.15) 75%,
-      rgba(6,11,22,.30) 100%
-    );
-  pointer-events:none;
-}
-
-/* Vignette for cinematic edges */
-.vignette{
-  position:fixed;inset:0;z-index:2;
-  background:radial-gradient(ellipse at center,transparent 40%,rgba(6,11,22,.35) 100%);
-  pointer-events:none;
-}
-
-/* Subtle color wash — ties everything to brand palette */
-.color-wash{
-  position:fixed;inset:0;z-index:1;
-  background:linear-gradient(135deg,rgba(31,72,124,.08) 0%,transparent 50%,rgba(39,148,145,.06) 100%);
-  pointer-events:none;
-  mix-blend-mode:screen;
-}
-
-/* Progress */
-.progress{position:fixed;bottom:0;left:0;height:2px;z-index:3;background:linear-gradient(90deg,rgba(39,148,145,.4),rgba(52,211,197,.4));transition:width .15s linear}
+/* Overlay — light enough to see content, dark enough for text on top */
+.overlay{position:fixed;inset:0;z-index:1;background:linear-gradient(180deg,rgba(6,11,22,.3) 0%,rgba(6,11,22,.1) 30%,rgba(6,11,22,.1) 70%,rgba(6,11,22,.35) 100%);pointer-events:none}
+.vignette{position:fixed;inset:0;z-index:2;background:radial-gradient(ellipse at center,transparent 50%,rgba(6,11,22,.4) 100%);pointer-events:none}
+.wash{position:fixed;inset:0;z-index:1;background:linear-gradient(135deg,rgba(31,72,124,.05) 0%,transparent 50%,rgba(39,148,145,.04) 100%);pointer-events:none;mix-blend-mode:screen}
+.progress{position:fixed;bottom:0;left:0;height:2px;z-index:3;background:linear-gradient(90deg,rgba(39,148,145,.5),rgba(52,211,197,.5));transition:width .15s linear}
 </style>
 </head>
 <body>
-<div class="bg-video" id="bgv">
+<div class="stage">
+  <!-- 1. Lead Capture — 1600x1006, good landscape -->
   <div class="slide" data-kb="zo"><img src="/marketing/ss-capture-lead.jpg" alt=""/></div>
-  <div class="slide" data-kb="pr"><img src="/marketing/ss-vcard.jpg" alt=""/></div>
+  <!-- 2. vCard — 365x782 PORTRAIT — use contain -->
+  <div class="slide portrait" data-kb="zi"><img src="/marketing/ss-vcard.jpg" alt=""/></div>
+  <!-- 3. Quote Builder — 1600x1181, tall landscape -->
   <div class="slide" data-kb="pl"><img src="/marketing/ss-quotebuilder.jpg" alt=""/></div>
+  <!-- 4. Pipeline — 1628x969, good landscape -->
   <div class="slide" data-kb="dr"><img src="/marketing/pipeline-commercial-view.png" alt=""/></div>
-  <div class="slide" data-kb="zi"><img src="/marketing/ss-orders.jpg" alt=""/></div>
-  <div class="slide" data-kb="pu"><img src="/marketing/ss-analytics.jpg" alt=""/></div>
+  <!-- 5. Orders — 1600x987, good landscape -->
+  <div class="slide" data-kb="pr"><img src="/marketing/ss-orders.jpg" alt=""/></div>
+  <!-- 6. Analytics — 1600x467, ULTRA WIDE -->
+  <div class="slide wide" data-kb="pu"><img src="/marketing/ss-analytics.jpg" alt=""/></div>
+  <!-- 7. Dashboard — 1600x667, wide -->
   <div class="slide" data-kb="sr"><img src="/marketing/ss-dashboard.jpg" alt=""/></div>
 </div>
 <div class="overlay"></div>
-<div class="color-wash"></div>
+<div class="wash"></div>
 <div class="vignette"></div>
 <div class="progress" id="pb"></div>
 <script>
@@ -108,27 +71,23 @@ let cur=-1,st=Date.now();
 function go(i){
   if(i===cur)return;
   const s=slides[i],img=s.querySelector('img');
-  // Reset KB
   img.style.transition='none';
   s.classList.remove('active');
   void img.offsetHeight;
   img.style.transition='';
-  // Swap
   if(cur>=0)slides[cur].classList.remove('active');
   cur=i;
   slides[cur].classList.add('active');
 }
 function tick(){
-  const e=Date.now()-st,l=e%T,si=Math.floor(l/D)%N,p=(l/T)*100;
-  pb.style.width=p+'%';
+  const l=(Date.now()-st)%T,si=Math.floor(l/D)%N;
+  pb.style.width=((l/T)*100)+'%';
   if(si!==cur)go(si);
   requestAnimationFrame(tick);
 }
-// Preload
 let ld=0;
 slides.forEach(s=>{const img=s.querySelector('img');if(img.complete)ld++;else img.onload=()=>{ld++;if(ld===N)st=Date.now();}});
-st=Date.now();
-requestAnimationFrame(tick);
+st=Date.now();requestAnimationFrame(tick);
 </script>
 </body>
 </html>
