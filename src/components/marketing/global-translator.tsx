@@ -2,10 +2,9 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { type MarketingLang, useMarketingLanguage } from './language-selector';
+import { clearGoogleTranslateCookies, type MarketingLang, useMarketingLanguage } from './language-selector';
 
-const GOOGLE_LANGUAGE: Record<MarketingLang, string> = {
-  en: 'en',
+const GOOGLE_LANGUAGE: Record<Exclude<MarketingLang, 'en'>, string> = {
   de: 'de',
   fr: 'fr',
   es: 'es',
@@ -40,17 +39,26 @@ type WindowWithTranslate = Window & {
 function setCookie(name: string, value: string) {
   if (typeof document === 'undefined') return;
   const expires = 'expires=Fri, 31 Dec 9999 23:59:59 GMT';
-  document.cookie = `${name}=${value}; ${expires}; path=/`;
+  document.cookie = `${name}=${value}; ${expires}; path=/; SameSite=Lax`;
   const hostname = window.location.hostname;
-  if (hostname.includes('.')) document.cookie = `${name}=${value}; ${expires}; path=/; domain=.${hostname}`;
+  if (hostname.includes('.')) document.cookie = `${name}=${value}; ${expires}; path=/; domain=.${hostname.replace(/^www\./, '')}; SameSite=Lax`;
 }
 
-function applyGoogleTranslate(language: MarketingLang) {
+function resetToEnglish() {
+  if (typeof document === 'undefined') return;
+  clearGoogleTranslateCookies();
+  document.documentElement.lang = 'en';
+  document.documentElement.dir = 'ltr';
+  document.documentElement.classList.remove('translated-ltr', 'translated-rtl');
+  document.body.classList.remove('translated-ltr', 'translated-rtl');
+}
+
+function applyGoogleTranslate(language: Exclude<MarketingLang, 'en'>) {
   if (typeof window === 'undefined') return;
-  const target = GOOGLE_LANGUAGE[language] || 'en';
+  const target = GOOGLE_LANGUAGE[language];
   document.documentElement.lang = language;
   document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-  setCookie('googtrans', `/auto/${target}`);
+  setCookie('googtrans', `/en/${target}`);
   const select = document.querySelector<HTMLSelectElement>('.goog-te-combo');
   if (select) {
     select.value = target;
@@ -80,7 +88,7 @@ function restoreProtectedBrands() {
   });
 }
 
-function loadGoogleTranslate(language: MarketingLang) {
+function loadGoogleTranslate(language: Exclude<MarketingLang, 'en'>) {
   if (typeof window === 'undefined') return;
   const scopedWindow = window as WindowWithTranslate;
 
@@ -99,7 +107,7 @@ function loadGoogleTranslate(language: MarketingLang) {
   scopedWindow.googleTranslateElementInit = () => {
     if (!scopedWindow.google?.translate?.TranslateElement) return;
     new scopedWindow.google.translate.TranslateElement(
-      { pageLanguage: 'en', includedLanguages: 'en,de,fr,es,zh-CN,hi,ar', autoDisplay: false },
+      { pageLanguage: 'en', includedLanguages: 'de,fr,es,zh-CN,hi,ar', autoDisplay: false },
       'setuflow-google-translate',
     );
     window.setTimeout(() => applyGoogleTranslate(language), 250);
@@ -126,6 +134,12 @@ export function GlobalTranslator() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    if (language === 'en') {
+      resetToEnglish();
+      return;
+    }
+
     loadGoogleTranslate(language);
     const timers = [100, 350, 900, 1600].map((delay) => window.setTimeout(() => {
       applyGoogleTranslate(language);
@@ -143,7 +157,9 @@ export function GlobalTranslator() {
     <style jsx global>{`
       .goog-te-banner-frame,
       .skiptranslate iframe,
-      iframe.goog-te-banner-frame {
+      iframe.goog-te-banner-frame,
+      .goog-te-balloon-frame,
+      .goog-te-spinner-pos {
         display: none !important;
         visibility: hidden !important;
       }
