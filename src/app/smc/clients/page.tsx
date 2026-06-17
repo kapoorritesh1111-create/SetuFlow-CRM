@@ -1,77 +1,148 @@
-import { createServiceRoleClient } from '@/lib/supabase/service-role';
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { SmcClientsClient, type SmcClientOrg } from "./client-view";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-type Org = { id:string; name:string; slug:string; created_at:string };
-type Member = { organization_id:string };
-type Grant = { organization_id:string; module_key:string };
+const SETU_ORG = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
 
-const SETU_ORG = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+type AnyRow = Record<string, any>;
 
-async function getData() {
-  // Auth check with normal client
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+function isRecent(value: string | null | undefined) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return Date.now() - date.getTime() <= 30 * 864e5;
+}
 
-  // Use service role to bypass RLS and see all orgs
-  const admin = createServiceRoleClient();
-  if (!admin) return { orgs: [], members: [], grants: [], onb: [] };
+function countRows(rows: AnyRow[], orgId: string) {
+  return rows.filter((row) => row.organization_id === orgId).length;
+}
 
-  const [orgsRes, membersRes, grantsRes, onbRes] = await Promise.all([
-    admin.from('organizations').select('*'),
-    admin.from('organization_members').select('organization_id'),
-    admin.from('org_module_grants').select('organization_id, module_key'),
-    admin.from('client_onboarding_requests').select('*'),
-  ]);
+function rowsFor(rows: AnyRow[], orgId: string) {
+  return rows.filter((row) => row.organization_id === orgId);
+}
+
+function stageFrom(status: string | null | undefined) {
+  const value = (status ?? "intake").toLowerCase();
+  if (value.includes("live") || value.includes("active")) return "live";
+  if (value.includes("entitlement")) return "entitlements";
+  if (value.includes("invite")) return "invite";
+  if (value.includes("provision") || value.includes("setup")) return "provision";
+  return "intake";
+}
+
+function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg {
+  const onb = data.onboarding.find((row) => row.linked_organization_id === org.id) ?? null;
+  const entitlement = data.entitlements.find((row) => row.organization_id === org.id) ?? null;
+  const guru = data.guru.find((row) => row.organization_id === org.id) ?? null;
+  const orgModules = rowsFor(data.grants, org.id).filter((row) => row.enabled !== false);
+  const orgProducts = rowsFor(data.products, org.id).filter((row) => row.is_active !== false);
+  const orgLeads = rowsFor(data.leads, org.id);
+  const orgQuotes = rowsFor(data.quotes, org.id);
+  const recentLeads = orgLeads.filter((row) => isRecent(row.created_at));
+  const recentQuotes = orgQuotes.filter((row) => isRecent(row.created_at));
+
+  const profileComplete = Boolean(org.legal_name || org.contact_email || org.website || onb?.website || onb?.primary_admin_email);
+  const productsLoaded = orgProducts.length > 0;
+  const marketsConfigured = Boolean(org.default_market_id || org.default_country_id || org.headquarters_country || (onb?.requested_markets?.length ?? 0) > 0 || (onb?.requested_countries?.length ?? 0) > 0);
+  const approvalThresholds = org.approval_threshold_pct !== null && org.approval_threshold_pct !== undefined;
+  const recentActivity = recentLeads.length > 0 || recentQuotes.length > 0;
+  const guruEnabled = Boolean(guru?.model || guru?.ai_analytics_enabled || entitlement?.guru_monthly_request_limit);
+
+  const healthScore = Math.min(100,
+    (profileComplete ? 20 : 0) +
+    (productsLoaded ? 20 : 0) +
+    (marketsConfigured ? 20 : 0) +
+    (approvalThresholds ? 15 : 0) +
+    (recentActivity ? 15 : 0) +
+    (guruEnabled ? 10 : 0),
+  );
+
+  const signals = [
+    profileComplete ? "Profile complete" : null,
+    productsLoaded ? "Products loaded" : null,
+    marketsConfigured ? "Markets configured" : null,
+    approvalThresholds ? "Approval thresholds set" : null,
+    recentActivity ? "Recent activity" : null,
+    guruEnabled ? "Guru enabled" : null,
+  ].filter(Boolean) as string[];
+  const needsAttention = [
+    !profileComplete ? "Profile complete" : null,
+    !productsLoaded ? "Products loaded" : null,
+    !marketsConfigured ? "Markets configured" : null,
+    !approvalThresholds ? "Approval threshold" : null,
+    !recentActivity ? "Recent leads" : null,
+    !guruEnabled ? "Guru config" : null,
+  ].filter(Boolean) as string[];
 
   return {
-    orgs: (orgsRes.data ?? []) as Org[],
-    members: (membersRes.data ?? []) as Member[],
-    grants: (grantsRes.data ?? []) as Grant[],
-    onb: (onbRes.data ?? []) as any[],
+    id: org.id,
+    name: org.name ?? "Unnamed org",
+    slug: org.slug ?? null,
+    created_at: org.created_at ?? null,
+    member_count: countRows(data.members, org.id),
+    module_keys: orgModules.map((row) => row.module_key).filter(Boolean),
+    plan: entitlement?.plan_key ?? onb?.requested_plan ?? null,
+    seats: entitlement?.seat_limit ?? entitlement?.max_users ?? onb?.requested_seat_count ?? null,
+    stage: stageFrom(entitlement?.onboarding_stage ?? onb?.pipeline_stage ?? onb?.status),
+    health_score: healthScore,
+    health_tone: healthScore >= 75 ? "green" : healthScore >= 45 ? "amber" : "red",
+    governance_clear: marketsConfigured && approvalThresholds,
+    markets_configured: marketsConfigured,
+    security_configured: Boolean(entitlement?.allow_invites !== false && entitlement?.allow_settings_edit !== false),
+    products_count: orgProducts.length,
+    recent_leads_count: recentLeads.length,
+    quotes_count: orgQuotes.length,
+    guru_enabled: guruEnabled,
+    signals,
+    needs_attention: needsAttention,
+    recent_activity: [
+      `${orgProducts.length} active products`,
+      `${recentLeads.length} recent leads in last 30 days`,
+      `${orgQuotes.length} quotes created`,
+      `${orgModules.length} modules enabled`,
+    ],
+    internal: org.id === SETU_ORG,
   };
 }
 
-export default async function SmcClientsPage() {
-  const { orgs, members, grants, onb } = await getData();
-  const clientOrgs = orgs.filter(o => o.id !== SETU_ORG);
+async function getData() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  return (
-    <>
-      <div className="smc-ph"><div><div className="bc">Growth</div><h1>Client Orgs</h1></div></div>
-      <div className="smc-kr">
-        <div className="smc-kp"><div className="v">{orgs.length}</div><div className="l">Total Orgs</div></div>
-        <div className="smc-kp teal"><div className="v">{clientOrgs.length}</div><div className="l">Client Orgs</div></div>
-        <div className="smc-kp"><div className="v">{members.length}</div><div className="l">Total Members</div></div>
-        <div className="smc-kp"><div className="v">{grants.length}</div><div className="l">Module Grants</div></div>
-      </div>
-      <div className="smc-client-grid">
-        {orgs.map(org => {
-          const mc = members.filter(m=>m.organization_id===org.id).length;
-          const gc = grants.filter(g=>g.organization_id===org.id).length;
-          const ob = onb.find((o:any)=>o.linked_organization_id===org.id);
-          const internal = org.id === SETU_ORG;
-          return (
-            <div key={org.id} className="smc-client-card">
-              <h3>{org.name} {internal
-                ? <span className="smc-lb" style={{background:'#e6f5f4',color:'#279491',fontSize:9}}>Platform</span>
-                : <span className="smc-lb" style={{background:'#ecfdf5',color:'#10b981',fontSize:9}}>{ob?.status==='live'?'Active':'Setup'}</span>
-              }</h3>
-              <div className="cc-meta">
-                <div><span className="cc-label">Org ID</span><br/><span className="cc-val" style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>{org.id.slice(0,8)}</span></div>
-                <div><span className="cc-label">Slug</span><br/><span className="cc-val">{org.slug}</span></div>
-                <div><span className="cc-label">Members</span><br/><span className="cc-val">{mc}</span></div>
-                <div><span className="cc-label">Modules</span><br/><span className="cc-val">{gc} granted</span></div>
-                <div><span className="cc-label">Plan</span><br/><span className="cc-val">{ob?.requested_plan??'—'}</span></div>
-                <div><span className="cc-label">Seats</span><br/><span className="cc-val">{ob?.requested_seat_count??'—'}</span></div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
+  const admin = createServiceRoleClient() as any;
+  if (!admin) return [];
+
+  const [orgs, members, grants, onboarding, entitlements, guru, products, leads, quotes] = await Promise.all([
+    admin.from("organizations").select("*"),
+    admin.from("organization_members").select("organization_id"),
+    admin.from("org_module_grants").select("organization_id, module_key, enabled"),
+    admin.from("client_onboarding_requests").select("*"),
+    admin.from("client_entitlement_profiles").select("*"),
+    admin.from("workspace_guru_settings").select("*"),
+    admin.from("products").select("organization_id, is_active"),
+    admin.from("leads").select("organization_id, created_at"),
+    admin.from("quotes").select("organization_id, created_at"),
+  ]);
+
+  const data = {
+    members: members.data ?? [],
+    grants: grants.data ?? [],
+    onboarding: onboarding.data ?? [],
+    entitlements: entitlements.data ?? [],
+    guru: guru.data ?? [],
+    products: products.data ?? [],
+    leads: leads.data ?? [],
+    quotes: quotes.data ?? [],
+  };
+
+  return ((orgs.data ?? []) as AnyRow[]).map((org) => buildClient(org, data));
+}
+
+export default async function SmcClientsPage() {
+  const clients = await getData();
+  return <SmcClientsClient clients={clients} />;
 }
