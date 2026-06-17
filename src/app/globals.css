@@ -223,6 +223,36 @@ button[aria-haspopup="menu"] + [role="menu"] {
   }
 }
 
+/* S28-UX-022: SMC Client Orgs scroll recovery. */
+@media (min-width: 900px) {
+  .smc-lb {
+    scroll-margin-top: 96px;
+  }
+
+  main:has(.smc-lb) {
+    max-height: calc(100dvh - 248px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  main:has(.smc-lb) > section {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    padding: 16px 18px !important;
+  }
+
+  aside:has(.smc-lb) {
+    max-height: calc(100dvh - 248px) !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    position: static !important;
+  }
+}
+
 /* NS-16 Premium Mobile UX recovery pass */
 @media (max-width: 767px) {
   :root { color-scheme: light; }
