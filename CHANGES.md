@@ -1,3 +1,11 @@
+## Sprint 28 SMC client operations — S28-UX-021
+
+- Differentiated Client Orgs tabs so Entitlements now reads as a compact policy and limits matrix, while Lifecycle reads as a journey and conversion workspace.
+- Replaced large checkbox-style controls with compact premium switch rows across Entitlements and Guru/API.
+- Reworked Lifecycle around a stage rail, next-action panel, contact card, source/event card, and conversion panel.
+- Reduced the selected client workspace's nested-scroll feel by letting tab content expand naturally inside the main page workspace.
+- Kept Activity focused on the client operation audit timeline introduced in S28-FEAT-012.
+
 ## Sprint 28 SMC client operations — S28-FEAT-012
 
 - Wired the Client Orgs Activity tab to existing `audit_logs` records for SMC client operations.
