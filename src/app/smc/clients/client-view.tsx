@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
 
 export type SmcClientOrg = {
   id: string;
@@ -90,7 +91,7 @@ function safeDate(value: string | null | undefined) {
   return value ? value.slice(0, 10) : "";
 }
 
-function fieldStyle(): React.CSSProperties {
+function fieldStyle(): CSSProperties {
   return {
     width: "100%",
     border: "1px solid #dbe4ef",
@@ -187,7 +188,7 @@ export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
     });
   }
 
-  async function saveControls(event: React.FormEvent<HTMLFormElement>) {
+  async function saveControls(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected) return;
     const form = new FormData(event.currentTarget);
