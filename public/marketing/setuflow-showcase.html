@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETU Flow — Product Showcase</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #0a1628;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+.showcase {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 16/9;
+  max-width: 1920px;
+  max-height: 1080px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #0a1628;
+}
+
+/* Ambient background grid */
+.showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(39,148,145,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(39,148,145,.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 0;
+  animation: gridPulse 8s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: .3; }
+  50% { opacity: .6; }
+}
+
+/* Ambient gradient orbs */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 0;
+  animation: orbFloat 12s ease-in-out infinite;
+}
+.orb-1 { width: 500px; height: 500px; background: rgba(39,148,145,.08); top: -10%; left: -5%; }
+.orb-2 { width: 400px; height: 400px; background: rgba(31,72,124,.06); bottom: -10%; right: -5%; animation-delay: 4s; }
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -20px) scale(1.1); }
+}
+
+/* ═══ SCENES ═══ */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Scene timing: 12s total */
+/* Scene 1: 0-2.5s | Scene 2: 2-5s | Scene 3: 4.5-8s | Scene 4: 7.5-10s | Scene 5: 9.5-12s */
+
+.scene-1 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 0s; }
+.scene-2 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 2.4s; }
+.scene-3 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 4.8s; }
+.scene-4 { animation: sceneFlow 12s ease-in-out infinite; animation-delay: 7.2s; }
+.scene-5 { animation: sceneFinal 12s ease-in-out infinite; animation-delay: 9.6s; }
+
+@keyframes sceneFlow {
+  0% { opacity: 0; transform: scale(.97); }
+  4% { opacity: 1; transform: scale(1); }
+  18% { opacity: 1; transform: scale(1); }
+  22% { opacity: 0; transform: scale(1.01); }
+  100% { opacity: 0; }
+}
+
+@keyframes sceneFinal {
+  0% { opacity: 0; transform: scale(.9); }
+  5% { opacity: 1; transform: scale(1); }
+  18% { opacity: 1; transform: scale(1); }
+  22% { opacity: 0; transform: scale(1.02); }
+  100% { opacity: 0; }
+}
+
+/* Screenshot container */
+.ss-frame {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
+}
+
+.ss-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Ken Burns effect */
+.kb-zoom-out {
+  animation: kbZoomOut 3s ease-out forwards;
+}
+.kb-zoom-in {
+  animation: kbZoomIn 3s ease-out forwards;
+}
+.kb-pan-right {
+  animation: kbPanRight 3s ease-out forwards;
+}
+.kb-pan-left {
+  animation: kbPanLeft 3s ease-out forwards;
+}
+
+@keyframes kbZoomOut {
+  0% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes kbZoomIn {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+@keyframes kbPanRight {
+  0% { transform: scale(1.05) translateX(-1%); }
+  100% { transform: scale(1.05) translateX(1%); }
+}
+@keyframes kbPanLeft {
+  0% { transform: scale(1.05) translateX(1%); }
+  100% { transform: scale(1.05) translateX(-1%); }
+}
+
+/* Text overlays */
+.overlay-text {
+  position: absolute;
+  bottom: 12%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 5;
+}
+
+.overlay-text h2 {
+  font-size: clamp(24px, 3.2vw, 48px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -.02em;
+  text-shadow: 0 2px 20px rgba(0,0,0,.6);
+  animation: textSlideUp .8s ease-out .3s both;
+}
+
+.overlay-text h2 span {
+  color: #34d3c5;
+}
+
+.overlay-text p {
+  font-size: clamp(12px, 1.4vw, 18px);
+  color: rgba(255,255,255,.6);
+  margin-top: 8px;
+  animation: textSlideUp .8s ease-out .5s both;
+}
+
+@keyframes textSlideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══ SCENE 1: Command Center ═══ */
+.scene-1 .ss-frame {
+  width: 78%;
+  max-width: 1100px;
+  aspect-ratio: 16/10;
+}
+
+/* ═══ SCENE 2: Mobile + vCard split ═══ */
+.scene-2-layout {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  padding: 0 6%;
+}
+
+.scene-2-layout .ss-frame:first-child {
+  width: 45%;
+  aspect-ratio: 16/10;
+}
+
+.scene-2-layout .phone-frame {
+  width: 22%;
+  max-width: 240px;
+  background: #1a1a2e;
+  border-radius: 28px;
+  padding: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
+  animation: phoneSlideIn .7s ease-out .2s both;
+}
+
+.scene-2-layout .phone-frame img {
+  border-radius: 20px;
+  width: 100%;
+}
+
+@keyframes phoneSlideIn {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ═══ SCENE 3: Execution + Analytics ═══ */
+.scene-3-layout {
+  display: flex;
+  gap: 20px;
+  padding: 0 5%;
+}
+
+.scene-3-layout .ss-frame {
+  width: 50%;
+  aspect-ratio: 16/10;
+}
+
+/* ═══ SCENE 4: AI Guru ═══ */
+.scene-4 .ss-frame {
+  width: 72%;
+  max-width: 1050px;
+  aspect-ratio: 16/10;
+  position: relative;
+}
+
+.guru-glow {
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+  width: 35%;
+  height: 60%;
+  border-radius: 16px;
+  box-shadow: 0 0 60px rgba(39,148,145,.4), 0 0 120px rgba(39,148,145,.15);
+  animation: guruPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes guruPulse {
+  0%, 100% { opacity: .4; }
+  50% { opacity: .8; }
+}
+
+/* ═══ SCENE 5: Logo Outro ═══ */
+.scene-5-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.scene-5-content .logo-reveal {
+  width: clamp(120px, 20vw, 260px);
+  animation: logoScale 1.2s cubic-bezier(.175,.885,.32,1.275) .2s both;
+}
+
+.scene-5-content .logo-reveal img {
+  width: 100%;
+  filter: drop-shadow(0 10px 30px rgba(39,148,145,.3));
+}
+
+@keyframes logoScale {
+  0% { opacity: 0; transform: scale(.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.scene-5-content .tagline {
+  font-size: clamp(16px, 2.2vw, 32px);
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -.01em;
+  animation: textSlideUp .8s ease-out .6s both;
+}
+
+.scene-5-content .url {
+  font-size: clamp(12px, 1.2vw, 18px);
+  color: #34d3c5;
+  font-weight: 500;
+  letter-spacing: .05em;
+  animation: textSlideUp .8s ease-out .8s both;
+}
+
+/* Progress bar */
+.progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #279491, #34d3c5);
+  z-index: 10;
+  animation: progressBar 12s linear infinite;
+}
+
+@keyframes progressBar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="showcase">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Scene 1: Command Center -->
+  <div class="scene scene-1">
+    <div class="ss-frame">
+      <img src="/marketing/ss-dashboard.jpg" alt="Dashboard" class="kb-zoom-out" />
+    </div>
+    <div class="overlay-text">
+      <h2>Your Entire Operation, <span>in One View.</span></h2>
+    </div>
+  </div>
+
+  <!-- Scene 2: Lead Capture & Mobile -->
+  <div class="scene scene-2">
+    <div class="scene-2-layout">
+      <div class="ss-frame">
+        <img src="/marketing/vcard-share-homepage-blurred.png" alt="vCard" class="kb-pan-right" />
+      </div>
+      <div class="phone-frame">
+        <img src="/marketing/ss-mobile-capture.jpg" alt="Mobile Capture" class="kb-zoom-in" />
+      </div>
+    </div>
+    <div class="overlay-text">
+      <h2>Capture Leads <span>Instantly on the Go.</span></h2>
+    </div>
+  </div>
+
+  <!-- Scene 3: Execution & Analytics -->
+  <div class="scene scene-3">
+    <div class="scene-3-layout">
+      <div class="ss-frame">
+        <img src="/marketing/orders-execution.png" alt="Orders" class="kb-pan-left" />
+      </div>
+      <div class="ss-frame">
+        <img src="/marketing/ss-analytics.jpg" alt="Analytics" class="kb-zoom-out" />
+      </div>
+    </div>
+    <div class="overlay-text">
+      <h2>Track Execution, <span>Maximize Performance.</span></h2>
+    </div>
+  </div>
+
+  <!-- Scene 4: AI Guru -->
+  <div class="scene scene-4">
+    <div class="ss-frame">
+      <img src="/marketing/ss-leads.jpg" alt="Leads with Guru" class="kb-pan-right" />
+      <div class="guru-glow"></div>
+    </div>
+    <div class="overlay-text">
+      <h2>Driven by <span>Smarter Insights.</span></h2>
+    </div>
+  </div>
+
+  <!-- Scene 5: Logo Outro -->
+  <div class="scene scene-5">
+    <div class="scene-5-content">
+      <div class="logo-reveal">
+        <img src="/logos/setu-flow-hero-logo.jpg" alt="SETU Flow" />
+      </div>
+      <div class="tagline">Streamline Your Workflow Today.</div>
+      <div class="url">www.setuflowcrm.com</div>
+    </div>
+  </div>
+
+  <div class="progress"></div>
+</div>
+</body>
+</html>
