@@ -44,6 +44,10 @@ function latestUsage(rows: AnyRow[], orgId: string) {
   return rowsFor(rows, orgId).sort((a, b) => String(b.period_month ?? "").localeCompare(String(a.period_month ?? "")))[0] ?? null;
 }
 
+function trialLeadsFor(rows: AnyRow[], orgId: string) {
+  return rows.filter((row) => row.organization_id === orgId || row.trial_org_id === orgId);
+}
+
 function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg {
   const onb = data.onboarding.find((row) => row.linked_organization_id === org.id) ?? null;
   const entitlement = data.entitlements.find((row) => row.organization_id === org.id) ?? null;
@@ -60,13 +64,15 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
   });
   const orgProducts = rowsFor(data.products, org.id).filter((row) => row.is_active !== false);
   const orgLeads = rowsFor(data.leads, org.id);
+  const trialLeads = trialLeadsFor(data.leads, org.id);
+  const primaryTrialLead = trialLeads[0] ?? null;
   const orgQuotes = rowsFor(data.quotes, org.id);
   const recentLeads = orgLeads.filter((row) => isRecent(row.created_at));
   const recentQuotes = orgQuotes.filter((row) => isRecent(row.created_at));
 
-  const profileComplete = Boolean(org.legal_name || org.contact_email || org.website || onb?.website || onb?.primary_admin_email);
+  const profileComplete = Boolean(org.legal_name || org.contact_email || org.website || onb?.website || onb?.primary_admin_email || primaryTrialLead?.email);
   const productsLoaded = orgProducts.length > 0;
-  const marketsConfigured = Boolean(org.default_market_id || org.default_country_id || org.headquarters_country || (onb?.requested_markets?.length ?? 0) > 0 || (onb?.requested_countries?.length ?? 0) > 0);
+  const marketsConfigured = Boolean(org.default_market_id || org.default_country_id || org.headquarters_country || (onb?.requested_markets?.length ?? 0) > 0 || (onb?.requested_countries?.length ?? 0) > 0 || primaryTrialLead?.country);
   const approvalThresholds = org.approval_threshold_pct !== null && org.approval_threshold_pct !== undefined;
   const recentActivity = recentLeads.length > 0 || recentQuotes.length > 0;
   const guruEnabled = Boolean(guru?.model || guru?.ai_analytics_enabled || entitlement?.guru_monthly_request_limit || moduleGrants.some((grant) => grant.module_key === "setu_guru" && grant.enabled));
@@ -93,6 +99,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     guruEnabled ? "Guru enabled" : null,
     activeApiKeys.length > 0 || apiRateLimit ? "API access governed" : null,
     billingStatus === "active" ? "Paid/active" : null,
+    onb?.wants_trade_events || primaryTrialLead?.trade_show_name ? "Trade-show context" : null,
   ].filter(Boolean) as string[];
   const needsAttention = [
     !profileComplete ? "Profile complete" : null,
@@ -166,6 +173,31 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
     guided_mode_enabled: entitlement?.guided_mode_enabled ?? false,
     trial_template_key: entitlement?.trial_template_key ?? null,
     internal_notes: entitlement?.internal_notes ?? null,
+    lifecycle_request_id: onb?.id ?? null,
+    lifecycle_status: onb?.status ?? null,
+    lifecycle_pipeline_stage: onb?.pipeline_stage ?? null,
+    lifecycle_source: onb?.source ?? primaryTrialLead?.source_type ?? null,
+    lifecycle_source_detail: onb?.source_detail ?? primaryTrialLead?.source_label ?? null,
+    lifecycle_industry: onb?.industry ?? primaryTrialLead?.main_product_category ?? null,
+    lifecycle_lead_score: onb?.lead_score ?? null,
+    lifecycle_tags: onb?.tags ?? [],
+    lifecycle_requested_modules: onb?.requested_modules ?? [],
+    lifecycle_requested_plan: onb?.requested_plan ?? null,
+    lifecycle_requested_seat_count: onb?.requested_seat_count ?? null,
+    lifecycle_wants_trade_events: Boolean(onb?.wants_trade_events ?? primaryTrialLead?.trade_show_name),
+    lifecycle_primary_admin_name: onb?.primary_admin_name ?? primaryTrialLead?.contact_name ?? null,
+    lifecycle_primary_admin_email: onb?.primary_admin_email ?? primaryTrialLead?.email ?? org.contact_email ?? null,
+    lifecycle_primary_phone: onb?.primary_phone ?? primaryTrialLead?.phone ?? null,
+    lifecycle_website: onb?.website ?? primaryTrialLead?.website ?? org.website ?? null,
+    lifecycle_last_contact_at: onb?.last_contact_at ?? primaryTrialLead?.last_contacted_at ?? null,
+    lifecycle_next_follow_up_at: onb?.next_follow_up_at ?? primaryTrialLead?.next_follow_up_at ?? null,
+    lifecycle_pricing_notes: onb?.pricing_rules_notes ?? null,
+    lifecycle_product_notes: onb?.product_category_notes ?? primaryTrialLead?.products_or_needs ?? null,
+    lifecycle_additional_notes: onb?.additional_notes ?? primaryTrialLead?.notes ?? null,
+    lifecycle_trade_show_name: primaryTrialLead?.trade_show_name ?? onb?.source_detail ?? null,
+    lifecycle_booth_number: primaryTrialLead?.booth_number ?? null,
+    lifecycle_main_product_category: primaryTrialLead?.main_product_category ?? onb?.industry ?? null,
+    trial_lead_count: trialLeads.length,
     signals,
     needs_attention: needsAttention,
     recent_activity: [
@@ -175,6 +207,7 @@ function buildClient(org: AnyRow, data: Record<string, AnyRow[]>): SmcClientOrg 
       `${orgModules.length} modules enabled`,
       `${activeApiKeys.length} active API keys`,
       `${Number(usage?.guru_requests_used ?? 0)} Guru requests used`,
+      `${trialLeads.length} trial-linked leads`,
       `Billing status: ${billingStatus}`,
     ],
     internal: org.id === SETU_ORG,
@@ -209,7 +242,7 @@ async function getData() {
     admin.from("rate_limit_overrides").select("id, organization_id, key_prefix, limit_value, window_ms, reason, updated_at"),
     admin.from("client_usage_rollups").select("organization_id, period_month, guru_requests_used, guru_spend_used"),
     admin.from("products").select("organization_id, is_active"),
-    admin.from("leads").select("organization_id, created_at"),
+    admin.from("leads").select("organization_id, trial_org_id, created_at, contact_name, email, phone, website, source_type, source_label, trade_show_name, booth_number, main_product_category, products_or_needs, notes, country, last_contacted_at, next_follow_up_at"),
     admin.from("quotes").select("organization_id, created_at"),
   ]);
 
