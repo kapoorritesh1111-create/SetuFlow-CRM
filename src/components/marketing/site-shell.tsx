@@ -18,6 +18,16 @@ const navItems: [string, string][] = [
   ['/compare', 'Compare'],
 ];
 
+const sharedHeroRoutes = new Set([
+  '/',
+  '/platform',
+  '/solutions',
+  '/setu-guru-ai',
+  '/field-mobile',
+  '/pricing',
+  '/trade-show-trial',
+]);
+
 function MenuIcon() {
   return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>;
 }
@@ -50,7 +60,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const isActive = (href: string) => pathname === href;
   const isHome = pathname === '/';
   const isVideoHeroPage = pathname === '/trade-show-trial';
-  const hasSharedHeroBackground = isHome || isVideoHeroPage;
+  const hasSharedHeroBackground = sharedHeroRoutes.has(pathname);
   const headerClassName = isVideoHeroPage
     ? 'sticky top-0 z-40 border-b border-white/10 bg-[#061e34]/78 shadow-[0_12px_38px_rgba(0,0,0,0.14)] backdrop-blur-2xl'
     : 'sticky top-0 z-40 border-b border-[#1F487C]/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl';
