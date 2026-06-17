@@ -28,12 +28,29 @@ function HomeIcon() {
   return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" /><path d="M9 21V12h6v9" /></svg>;
 }
 
+function SharedMarketingHeroBackground({ strong = false }: { strong?: boolean }) {
+  return (
+    <div className="setu-shared-hero-background" aria-hidden="true">
+      <iframe
+        className="setu-shared-hero-background__frame"
+        src="/marketing/setuflow-bg-video.html"
+        title=""
+        tabIndex={-1}
+        loading="eager"
+      />
+      <div className={strong ? 'setu-shared-hero-background__overlay setu-shared-hero-background__overlay--strong' : 'setu-shared-hero-background__overlay'} />
+      <div className="setu-shared-hero-background__glow" />
+    </div>
+  );
+}
+
 export function SiteShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href;
   const isHome = pathname === '/';
   const isVideoHeroPage = pathname === '/trade-show-trial';
+  const hasSharedHeroBackground = isHome || isVideoHeroPage;
   const headerClassName = isVideoHeroPage
     ? 'sticky top-0 z-40 border-b border-white/10 bg-[#061e34]/78 shadow-[0_12px_38px_rgba(0,0,0,0.14)] backdrop-blur-2xl'
     : 'sticky top-0 z-40 border-b border-[#1F487C]/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl';
@@ -86,7 +103,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      {children}
+      <div className={hasSharedHeroBackground ? `setu-shared-hero-shell ${isVideoHeroPage ? 'setu-shared-hero-shell--trial' : 'setu-shared-hero-shell--home'}` : undefined}>
+        {hasSharedHeroBackground && <SharedMarketingHeroBackground strong={isVideoHeroPage} />}
+        {children}
+      </div>
       <SetuGuruLiteWidget />
 
       <footer className="border-t border-[#1F487C]/10 bg-white">
@@ -104,6 +124,119 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <div className="mt-10 flex flex-col items-start gap-4 border-t border-slate-100 pt-8 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-400" suppressHydrationWarning>&copy; {new Date().getFullYear()} Setu Groups. All rights reserved.</p><p className="text-xs text-slate-400">Trade execution software for global import-export teams.</p></div>
         </div>
       </footer>
+
+      <style jsx global>{`
+        .setu-shared-hero-shell {
+          position: relative;
+          isolation: isolate;
+          background: #061e34;
+        }
+
+        .setu-shared-hero-shell > main {
+          position: relative;
+          z-index: 1;
+          background: transparent;
+        }
+
+        .setu-shared-hero-shell > main > section:first-child {
+          position: relative;
+          overflow: hidden;
+          background: transparent !important;
+        }
+
+        .setu-shared-hero-background {
+          position: absolute;
+          inset: 0 auto auto 0;
+          z-index: 0;
+          width: 100%;
+          height: min(760px, calc(100vh - 88px));
+          min-height: 560px;
+          overflow: hidden;
+          pointer-events: none;
+          background: #061426;
+        }
+
+        .setu-shared-hero-background__frame {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+          display: block;
+          transform: scale(1.04);
+          transform-origin: center;
+          opacity: 0.44;
+          filter: saturate(0.9) contrast(1.05) brightness(0.72);
+        }
+
+        .setu-shared-hero-background__overlay,
+        .setu-shared-hero-background__glow {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+
+        .setu-shared-hero-background__overlay {
+          background:
+            linear-gradient(90deg, rgba(4, 16, 31, 0.96) 0%, rgba(4, 16, 31, 0.88) 34%, rgba(4, 16, 31, 0.58) 62%, rgba(4, 16, 31, 0.78) 100%),
+            linear-gradient(180deg, rgba(4, 16, 31, 0.10) 0%, rgba(4, 16, 31, 0.22) 100%);
+        }
+
+        .setu-shared-hero-background__overlay--strong {
+          background:
+            linear-gradient(90deg, rgba(6, 30, 52, 0.96) 0%, rgba(6, 30, 52, 0.90) 44%, rgba(6, 30, 52, 0.66) 100%),
+            linear-gradient(180deg, rgba(6, 30, 52, 0.16) 0%, rgba(6, 30, 52, 0.34) 100%);
+        }
+
+        .setu-shared-hero-background__glow {
+          background:
+            radial-gradient(circle at 22% 18%, rgba(32, 217, 150, 0.20), transparent 34%),
+            radial-gradient(circle at 76% 34%, rgba(52, 179, 168, 0.18), transparent 42%);
+        }
+
+        .setu-shared-hero-shell--home > main > section:first-child h1,
+        .setu-shared-hero-shell--home > main > section:first-child h2 {
+          color: #ffffff !important;
+        }
+
+        .setu-shared-hero-shell--home > main > section:first-child p {
+          color: rgba(255, 255, 255, 0.76) !important;
+        }
+
+        .setu-shared-hero-shell--home > main > section:first-child span {
+          color: rgba(255, 255, 255, 0.82);
+        }
+
+        .setu-shared-hero-shell--home > main > section:first-child a:first-of-type {
+          box-shadow: 0 18px 46px rgba(13, 148, 136, 0.30);
+        }
+
+        .setu-shared-hero-shell--trial > main > section:first-child > video {
+          display: none;
+        }
+
+        .setu-shared-hero-shell--trial .setu-shared-hero-background__frame {
+          opacity: 0.36;
+          filter: saturate(0.85) contrast(1.05) brightness(0.62);
+        }
+
+        @media (max-width: 767px) {
+          .setu-shared-hero-background {
+            height: 100vh;
+            min-height: 720px;
+          }
+
+          .setu-shared-hero-background__frame {
+            transform: scale(1.12);
+          }
+
+          .setu-shared-hero-background__overlay {
+            background:
+              linear-gradient(180deg, rgba(4, 16, 31, 0.96) 0%, rgba(4, 16, 31, 0.86) 52%, rgba(4, 16, 31, 0.78) 100%),
+              radial-gradient(circle at 60% 16%, rgba(52, 179, 168, 0.18), transparent 40%);
+          }
+        }
+      `}</style>
     </div>
   );
 }
