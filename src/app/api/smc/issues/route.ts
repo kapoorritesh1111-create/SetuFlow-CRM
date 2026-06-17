@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import type { Database, Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,29 @@ const SEVERITIES = ["Critical", "High", "Medium", "Low"];
 const PRIORITIES = ["P0", "P1", "P2", "P3"];
 
 type IssuePayload = Record<string, unknown>;
+type SprintIssueValue = Json | string[] | number[] | null | undefined;
+type SprintIssueRow = Record<string, SprintIssueValue> & {
+  id: string;
+  organization_id: string | null;
+  issue_ref: string | null;
+  issue_number: number | null;
+};
+type SprintIssueInsert = Record<string, SprintIssueValue>;
+type SprintIssueUpdate = Partial<SprintIssueInsert>;
+type SmcDatabase = Omit<Database, "public"> & {
+  public: Omit<Database["public"], "Tables"> & {
+    Tables: Database["public"]["Tables"] & {
+      sprint_issues: { Row: SprintIssueRow; Insert: SprintIssueInsert; Update: SprintIssueUpdate; Relationships: [] };
+    };
+  };
+};
+type SmcSupabase = SupabaseClient<SmcDatabase>;
+
+type RefRow = { issue_ref: string | null; issue_number: number | null };
+
+function smcClient(supabase: Awaited<ReturnType<typeof createClient>>): SmcSupabase {
+  return supabase as unknown as SmcSupabase;
+}
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -46,10 +71,10 @@ function typeCode(type: string) {
   return "BUG";
 }
 
-function jsonSafe(value: unknown) {
+function jsonSafe(value: unknown): Json | null {
   if (value === undefined) return null;
   try {
-    return JSON.parse(JSON.stringify(value));
+    return JSON.parse(JSON.stringify(value)) as Json;
   } catch {
     return null;
   }
@@ -84,7 +109,7 @@ async function assertSetuMember() {
   return { supabase, error: null };
 }
 
-async function nextIssueRef(supabase: Awaited<ReturnType<typeof createClient>>, sprintNumber: number, issueType: string) {
+async function nextIssueRef(supabase: SmcSupabase, sprintNumber: number, issueType: string) {
   const { data, error } = await supabase
     .from("sprint_issues")
     .select("issue_ref, issue_number")
@@ -93,9 +118,10 @@ async function nextIssueRef(supabase: Awaited<ReturnType<typeof createClient>>, 
     .limit(1000);
 
   if (error) throw error;
-  const maxNumber = (data ?? []).reduce((max, row) => {
-    const parsedFromRef = String(row.issue_ref ?? "").match(/-(\d+)$/)?.[1];
-    const candidate = Number(row.issue_number ?? parsedFromRef ?? 0);
+  const rows = (data as RefRow[]) ?? [];
+  const maxNumber = rows.reduce((max, row) => {
+    const parsedFromRef = row.issue_ref?.match(/-(\d+)$/)?.[1];
+    const candidate = row.issue_number ?? (parsedFromRef ? Number(parsedFromRef) : 0);
     return Number.isFinite(candidate) && candidate > max ? candidate : max;
   }, 0);
   const nextNumber = maxNumber + 1;
@@ -105,7 +131,7 @@ async function nextIssueRef(supabase: Awaited<ReturnType<typeof createClient>>, 
   };
 }
 
-function buildIssuePayload(body: IssuePayload, issueRef: string, issueNumber: number) {
+function buildIssuePayload(body: IssuePayload, issueRef: string, issueNumber: number): SprintIssueInsert {
   const issueType = pick(body.issue_type, TYPES, "Bug");
   const sprintNumber = numberValue(body.sprint_number) ?? 27;
   const area = text(body.area);
@@ -153,7 +179,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") ?? "1000", 10);
 
-    const { data, error } = await supabase
+    const { data, error } = await smcClient(supabase)
       .from("sprint_issues")
       .select("*")
       .eq("organization_id", SETU_ORG_ID)
@@ -174,6 +200,7 @@ export async function POST(request: NextRequest) {
     const { supabase, error: accessError } = await assertSetuMember();
     if (accessError) return accessError;
 
+    const smcSupabase = smcClient(supabase);
     const body = (await request.json()) as IssuePayload;
     const title = text(body.title);
     if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -183,10 +210,10 @@ export async function POST(request: NextRequest) {
     const explicitRef = text(body.issue_ref);
     const generated = explicitRef
       ? { issueRef: explicitRef, issueNumber: numberValue(body.issue_number) ?? 0 }
-      : await nextIssueRef(supabase, sprintNumber, issueType);
+      : await nextIssueRef(smcSupabase, sprintNumber, issueType);
 
     const payload = buildIssuePayload({ ...body, title, sprint_number: sprintNumber, issue_type: issueType }, generated.issueRef, generated.issueNumber);
-    const { data, error } = await supabase.from("sprint_issues").insert(payload).select("*").single();
+    const { data, error } = await smcSupabase.from("sprint_issues").insert(payload).select("*").single();
 
     if (error) throw error;
     return NextResponse.json({ issue: data }, { status: 201 });
