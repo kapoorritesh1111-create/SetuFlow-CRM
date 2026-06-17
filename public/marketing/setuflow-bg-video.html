@@ -28,7 +28,7 @@ body{overflow:hidden;width:100vw;height:100vh;background:#060b16}
   object-position:center center;
   will-change:transform;
   /* Base zoom so UI text isn't readable — atmospheric only */
-  filter:saturate(.75) brightness(.7) contrast(1.05);
+  filter:saturate(.82) brightness(.88);
   transition:transform 6s cubic-bezier(.25,.1,.25,1);
 }
 
@@ -59,11 +59,11 @@ body{overflow:hidden;width:100vw;height:100vh;background:#060b16}
   position:fixed;inset:0;z-index:1;
   background:
     linear-gradient(180deg,
-      rgba(6,11,22,.50) 0%,
-      rgba(6,11,22,.32) 25%,
-      rgba(6,11,22,.28) 50%,
-      rgba(6,11,22,.32) 75%,
-      rgba(6,11,22,.55) 100%
+      rgba(6,11,22,.25) 0%,
+      rgba(6,11,22,.15) 25%,
+      rgba(6,11,22,.12) 50%,
+      rgba(6,11,22,.15) 75%,
+      rgba(6,11,22,.30) 100%
     );
   pointer-events:none;
 }
@@ -71,7 +71,7 @@ body{overflow:hidden;width:100vw;height:100vh;background:#060b16}
 /* Vignette for cinematic edges */
 .vignette{
   position:fixed;inset:0;z-index:2;
-  background:radial-gradient(ellipse at center,transparent 40%,rgba(6,11,22,.6) 100%);
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(6,11,22,.35) 100%);
   pointer-events:none;
 }
 
