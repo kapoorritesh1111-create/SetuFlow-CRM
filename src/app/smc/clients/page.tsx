@@ -113,6 +113,15 @@ async function getData() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: setuMembership, error: membershipError } = await supabase
+    .from("organization_members")
+    .select("id")
+    .eq("organization_id", SETU_ORG)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (membershipError || !setuMembership) redirect("/dashboard");
+
   const admin = createServiceRoleClient() as any;
   if (!admin) return [];
 
