@@ -1,123 +1,141 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
 
 const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
 
-type ChatPayload = {
-  content?: unknown;
-  sender_id?: unknown;
-  sender_name?: unknown;
-  channel?: unknown;
-  recipient_id?: unknown;
-  recipient_name?: unknown;
-};
-
-function text(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function safeChannel(value: unknown) {
-  return text(value) === "dm" ? "dm" : "team";
-}
-
-async function assertSetuMember() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { userId: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const { data: member, error: memberError } = await supabase
-    .from("organization_members")
-    .select("id")
-    .eq("organization_id", SETU_ORG_ID)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (memberError) {
-    return { userId: user.id, error: NextResponse.json({ error: "Unable to verify SMC access" }, { status: 500 }) };
-  }
-
-  if (!member) {
-    return { userId: user.id, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  return { userId: user.id, error: null };
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await assertSetuMember();
-    if (error) return error;
-
-    const service = createServiceRoleClient();
-    if (!service) return NextResponse.json({ messages: [] });
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const channel = safeChannel(searchParams.get("channel"));
-    const recipientId = text(searchParams.get("recipient_id"));
+    const conversationId = searchParams.get("conversation_id");
+    const channelKey = searchParams.get("channel");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
 
-    let query = (service as any)
-      .from("smc_chat_messages")
+    let convId = conversationId;
+
+    // If channel key provided, look up the conversation
+    if (!convId && channelKey) {
+      const { data: conv } = await (supabase as any)
+        .from("chat_conversations")
+        .select("id")
+        .eq("organization_id", SETU_ORG_ID)
+        .eq("channel_key", channelKey)
+        .maybeSingle();
+      convId = conv?.id ?? null;
+    }
+
+    if (!convId) {
+      return NextResponse.json({ messages: [], conversation_id: null });
+    }
+
+    const { data, error } = await (supabase as any)
+      .from("chat_messages")
       .select("*")
-      .eq("organization_id", SETU_ORG_ID)
-      .eq("channel", channel)
+      .eq("conversation_id", convId)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(limit);
 
-    query = channel === "dm" && recipientId ? query.eq("recipient_id", recipientId) : query.is("recipient_id", null);
+    if (error) throw error;
 
-    const { data, error: queryError } = await query;
-    if (queryError) throw queryError;
-    return NextResponse.json({ messages: (data ?? []).reverse() });
+    // Update last_read_at for this user in this conversation
+    await (supabase as any)
+      .from("chat_participants")
+      .update({ last_read_at: new Date().toISOString() })
+      .eq("conversation_id", convId)
+      .eq("user_id", user.id);
+
+    return NextResponse.json({
+      messages: (data ?? []).reverse(),
+      conversation_id: convId,
+    });
   } catch (err) {
-    console.error("SMC chat GET error:", err);
-    return NextResponse.json({ messages: [] });
+    console.error("Chat GET error:", err);
+    return NextResponse.json({ messages: [], conversation_id: null });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, error } = await assertSetuMember();
-    if (error) return error;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const service = createServiceRoleClient();
-    if (!service) return NextResponse.json({ error: "Chat client unavailable" }, { status: 500 });
+    const body = await request.json();
+    const { content, conversation_id, channel, mentions, sender_name } = body;
 
-    const body = (await request.json()) as ChatPayload;
-    const content = text(body.content);
-    if (!content) return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    if (!content?.trim()) {
+      return NextResponse.json({ error: "Message required" }, { status: 400 });
+    }
 
-    const channel = safeChannel(body.channel);
-    const recipientId = channel === "dm" ? text(body.recipient_id) : null;
-    const recipientName = channel === "dm" ? text(body.recipient_name) : null;
-    if (channel === "dm" && !recipientId) return NextResponse.json({ error: "Recipient is required" }, { status: 400 });
+    let convId = conversation_id;
 
-    const { data, error: insertError } = await (service as any)
-      .from("smc_chat_messages")
+    // If channel key provided instead of conversation_id
+    if (!convId && channel) {
+      const { data: conv } = await (supabase as any)
+        .from("chat_conversations")
+        .select("id")
+        .eq("organization_id", SETU_ORG_ID)
+        .eq("channel_key", channel)
+        .maybeSingle();
+      convId = conv?.id;
+    }
+
+    if (!convId) {
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    }
+
+    // Extract issue refs from content
+    const issueRefs = (content.match(/S\d+-[A-Z]+-\d+/g) ?? []).map((ref: string) => ({
+      type: "issue",
+      ref,
+    }));
+
+    const { data, error } = await (supabase as any)
+      .from("chat_messages")
       .insert({
+        conversation_id: convId,
         organization_id: SETU_ORG_ID,
-        content,
-        sender_id: text(body.sender_id) ?? userId,
-        sender_name: text(body.sender_name) ?? "Ritesh Kapoor",
-        channel,
-        recipient_id: recipientId,
-        recipient_name: recipientName,
+        sender_id: user.id,
+        sender_name: sender_name ?? user.user_metadata?.full_name ?? user.email ?? "Unknown",
+        content: content.trim(),
+        message_type: "user",
+        mentions: mentions ?? [],
+        entity_refs: issueRefs.length > 0 ? issueRefs : [],
       })
       .select("*")
       .single();
 
-    if (insertError) throw insertError;
+    if (error) throw error;
+
+    // Update conversation's updated_at
+    await (supabase as any)
+      .from("chat_conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", convId);
+
+    // Create notifications for mentioned users
+    if (mentions?.length) {
+      const notifs = mentions.map((userId: string) => ({
+        organization_id: SETU_ORG_ID,
+        user_id: userId,
+        conversation_id: convId,
+        message_id: data.id,
+        type: "mention",
+        title: `${data.sender_name} mentioned you in chat`,
+        content: content.trim().slice(0, 100),
+        link: "/smc",
+      }));
+      await (supabase as any).from("chat_notifications").insert(notifs);
+    }
+
     return NextResponse.json({ message: data }, { status: 201 });
   } catch (err) {
-    console.error("SMC chat POST error:", err);
-    return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
+    console.error("Chat POST error:", err);
+    return NextResponse.json({ error: "Failed to send" }, { status: 500 });
   }
 }

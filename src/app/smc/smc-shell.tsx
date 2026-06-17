@@ -6,8 +6,8 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { createBrowserClient } from "@/lib/supabase/client";
 
 type NavItem = { id: string; path: string; icon: string; label: string };
-type ChatTarget = { id: string; type: "team" | "dm"; name: string; initials: string; online: boolean };
-type ChatMessage = { id: string; content: string; sender_id: string | null; sender_name: string | null; created_at: string; channel?: string | null; recipient_id?: string | null; recipient_name?: string | null };
+type Conversation = { id: string; title: string; channel_key: string | null; conversation_type: string; unread_count: number };
+type ChatMessage = { id: string; content: string; sender_id: string | null; sender_name: string | null; created_at: string; message_type?: string; entity_refs?: any[] };
 
 const I: Record<string, ReactNode> = {
   grid: <span className="smc-ico">⌘</span>,
@@ -54,11 +54,16 @@ const SECONDARY_NAV: NavItem[] = [
   { id: "changelog", path: "/smc/changelog", icon: "wiki", label: "Changelog" },
   { id: "health", path: "/smc/health", icon: "chart", label: "Health" },
 ];
-const TEAM: ChatTarget[] = [
-  { id: "team", type: "team", name: "Team Channel", initials: "SMC", online: true },
-  { id: "ritesh", type: "dm", name: "Ritesh Kapoor", initials: "RK", online: true },
-  { id: "kumar", type: "dm", name: "Kumar Mayank", initials: "KM", online: true },
-  { id: "ankush", type: "dm", name: "Ankush Arya", initials: "AA", online: false },
+const CHANNELS = [
+  { key: "general", label: "General" },
+  { key: "engineering", label: "Engineering" },
+  { key: "leads", label: "Leads" },
+  { key: "incidents", label: "Incidents" },
+];
+const TEAM_MEMBERS = [
+  { name: "Ritesh Kapoor", initials: "RK", online: true },
+  { name: "Kumar Mayank", initials: "KM", online: true },
+  { name: "Ankush Arya", initials: "AA", online: false },
 ];
 const CHAT_PROMPTS = ["Post a status update", "Ask about this issue", "Share a deployment note"];
 
@@ -68,13 +73,26 @@ function fmtTime(value: string) {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+function renderContent(text: string) {
+  // Auto-link issue refs like S27-BUG-018
+  const parts = text.split(/(S\d+-[A-Z]+-\d+)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (/^S\d+-[A-Z]+-\d+$/.test(part)) {
+      return <a key={i} href={`/smc/issues?q=${part}`} style={{ color: '#279491', fontWeight: 600, textDecoration: 'none' }}>{part}</a>;
+    }
+    return part;
+  });
+}
+
 export function SmcShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [sb, setSb] = useState(true);
   const [notif, setNotif] = useState(false);
   const [chat, setChat] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [chatTarget, setChatTarget] = useState<ChatTarget>(TEAM[0]);
+  const [activeChannel, setActiveChannel] = useState("general");
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -107,31 +125,31 @@ export function SmcShell({ children }: { children: ReactNode }) {
     let cancelled = false;
     setChatLoading(true);
     setChatError(null);
-    const params = new URLSearchParams({ channel: chatTarget.type });
-    if (chatTarget.type === "dm") params.set("recipient_id", chatTarget.id);
-    fetch(`/api/smc/chat?${params.toString()}`)
+    fetch(`/api/smc/chat?channel=${activeChannel}`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setMessages((d.messages ?? []) as ChatMessage[]); })
-      .catch(() => { if (!cancelled) { setMessages([]); setChatError("Unable to load this conversation. Try again in a moment."); } })
+      .then((d) => {
+        if (!cancelled) {
+          setMessages((d.messages ?? []) as ChatMessage[]);
+          setActiveConvId(d.conversation_id);
+        }
+      })
+      .catch(() => { if (!cancelled) { setMessages([]); setChatError("Unable to load. Try again."); } })
       .finally(() => { if (!cancelled) setChatLoading(false); });
 
     const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("smc-chat")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "smc_chat_messages" }, (payload) => {
+    const sub = supabase
+      .channel(`smc-chat-${activeChannel}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
         const next = payload.new as ChatMessage;
-        const sameTeam = chatTarget.type === "team" && (next.channel ?? "team") === "team" && !next.recipient_id;
-        const sameDm = chatTarget.type === "dm" && next.channel === "dm" && next.recipient_id === chatTarget.id;
-        if (!sameTeam && !sameDm) return;
-        setMessages((current) => current.some((m) => m.id === next.id) ? current : [...current, next].slice(-50));
+        setMessages((cur) => cur.some((m) => m.id === next.id) ? cur : [...cur, next].slice(-50));
       })
       .subscribe();
 
     return () => {
       cancelled = true;
-      void supabase.removeChannel(channel);
+      void supabase.removeChannel(sub);
     };
-  }, [chat, chatTarget]);
+  }, [chat, activeChannel]);
 
   async function sendMessage(e: FormEvent) {
     e.preventDefault();
@@ -143,19 +161,23 @@ export function SmcShell({ children }: { children: ReactNode }) {
     const res = await fetch("/api/smc/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, sender_name: "Ritesh Kapoor", channel: chatTarget.type, recipient_id: chatTarget.type === "dm" ? chatTarget.id : null, recipient_name: chatTarget.type === "dm" ? chatTarget.name : null }),
+      body: JSON.stringify({
+        content,
+        channel: activeChannel,
+        conversation_id: activeConvId,
+        sender_name: "Ritesh Kapoor",
+      }),
     });
     if (!res.ok) {
       setMessage(content);
-      setChatError("Message was not sent. Check access and try again.");
+      setChatError("Message was not sent. Try again.");
     }
     setSending(false);
   }
 
-  function openChat(target: ChatTarget) {
-    setChatTarget(target);
-    setChat(true);
-    setNotif(false);
+  function switchChannel(key: string) {
+    setActiveChannel(key);
+    setMessages([]);
   }
 
   function navButton(item: NavItem) {
@@ -180,7 +202,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
         <button className="smc-rb smc-sidebar-toggle" title="Sidebar" aria-label="Sidebar" onClick={() => setSb(!sb)}>{I.list}<span className="smc-rb-tip">Sidebar</span></button>
         <button className={`smc-rb ${notif ? "active" : ""}`} title="Notifications" aria-label="Notifications" onClick={() => { setNotif(!notif); setChat(false); }}>{I.bell}<span className="smc-rb-tip">Notifications</span></button>
         {navButton({ id: "settings", path: "/smc/settings", icon: "settings", label: "Settings" })}
-        <button className="smc-rav smc-chat-avatar" title="Open team chat" onClick={() => openChat(TEAM[0])}>RK</button>
+        <button className="smc-rav smc-chat-avatar" title="Open team chat" onClick={() => { setChat(true); setNotif(false); }}>RK</button>
       </aside>
 
       {sb && (
@@ -196,7 +218,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
             <div className="smc-ngl">Tools</div>
             {[...TOOL_NAV, ...SECONDARY_NAV].map((n) => <Link key={n.id} href={n.path} className={`smc-ni ${isA(n.path) ? "active" : ""}`}>{I[n.icon]} {n.label}</Link>)}
           </div>
-          <div className="smc-tm-sec"><h4>Team chat</h4>{TEAM.map((t) => <button key={t.id} className={`smc-tm smc-team-chat-row ${chatTarget.id === t.id && chat ? "active" : ""}`} onClick={() => openChat(t)}><div className="smc-av" style={{ background: t.id === "team" ? "#0f2744" : t.id === "kumar" ? "#1F487C" : t.id === "ankush" ? "#8b5cf6" : "#279491" }}>{t.initials}{t.online && <span className="on" />}</div><span>{t.name}</span><small>{t.type === "team" ? "Channel" : t.online ? "Online" : "Away"}</small></button>)}</div>
+          <div className="smc-tm-sec"><h4>Channels</h4>{CHANNELS.map((ch) => <button key={ch.key} className={`smc-tm smc-team-chat-row ${activeChannel === ch.key && chat ? "active" : ""}`} onClick={() => { setActiveChannel(ch.key); setChat(true); setNotif(false); }}><div className="smc-av" style={{ background: "#0f2744" }}>#</div><span>{ch.label}</span><small>Channel</small></button>)}<h4 style={{marginTop:8}}>Team</h4>{TEAM_MEMBERS.map((t) => <div key={t.initials} className="smc-tm"><div className="smc-av" style={{ background: t.initials === "RK" ? "#279491" : t.initials === "KM" ? "#1F487C" : "#8b5cf6" }}>{t.initials}{t.online && <span className="on" />}</div><span>{t.name}</span><small>{t.online ? "Online" : "Away"}</small></div>)}</div>
         </nav>
       )}
 
@@ -207,24 +229,24 @@ export function SmcShell({ children }: { children: ReactNode }) {
         <div className="smc-empty-state"><div className="smc-empty-icon">{I.bell}</div><h4>No new notifications</h4><p>Live operational alerts will appear here when there is something to review.</p></div>
       </div>
 
-      {!chat && <button className="smc-chat-fab smc-premium-chat-fab" onClick={() => openChat(TEAM[0])}>{I.chat}<span>Chat</span></button>}
+      {!chat && <button className="smc-chat-fab smc-premium-chat-fab" onClick={() => { setChat(true); setNotif(false); }}>{I.chat}<span>Chat</span></button>}
 
       <div className={`smc-mobile-nav ${mobileNav ? "open" : ""}`}>
         <div className="smc-mobile-nav-card"><div className="smc-mobile-nav-head"><h3>SMC navigation</h3><button onClick={() => setMobileNav(false)}>Close</button></div><div className="smc-mobile-nav-grid">{[...CORE_NAV, ...TOOL_NAV, ...SECONDARY_NAV].map((n) => <Link key={n.id} href={n.path} onClick={() => setMobileNav(false)}>{I[n.icon]}<span>{n.label}</span></Link>)}</div></div>
       </div>
 
       <div className={`smc-chat smc-chat-pro ${chat ? "open" : ""}`}>
-        <div className="smc-chat-head"><div className="smc-chat-target"><div className="smc-chat-target-avatar">{chatTarget.initials}</div><div><h4>{chatTarget.type === "team" ? "Team Channel" : `Chat with ${chatTarget.name}`}</h4><span>{chatTarget.type === "team" ? "Everyone in SMC" : chatTarget.online ? "Online now" : "Away"}</span></div></div><span className="smc-chat-status">Live</span><button onClick={() => setChat(false)}>Close</button></div>
-        <div className="smc-chat-switcher">{TEAM.map((t) => <button key={t.id} className={chatTarget.id === t.id ? "active" : ""} onClick={() => setChatTarget(t)}>{t.initials}<span>{t.type === "team" ? "Team" : t.name.split(" ")[0]}</span></button>)}</div>
+        <div className="smc-chat-head"><div className="smc-chat-target"><div className="smc-chat-target-avatar">#</div><div><h4>#{activeChannel}</h4><span>{CHANNELS.find(c=>c.key===activeChannel)?.label ?? 'General'}</span></div></div><span className="smc-chat-status">Live</span><button onClick={() => setChat(false)}>Close</button></div>
+        <div className="smc-chat-switcher">{CHANNELS.map((ch) => <button key={ch.key} className={activeChannel === ch.key ? "active" : ""} onClick={() => switchChannel(ch.key)}>#<span>{ch.label}</span></button>)}</div>
         <div className="smc-chat-msgs">
           {chatLoading && <div className="smc-chat-empty">Loading conversation...</div>}
           {!chatLoading && messages.length === 0 && (
-            <div className="smc-chat-empty"><div className="smc-chat-empty-card"><div className="smc-empty-icon">{I.chat}</div><h4>{chatTarget.type === "team" ? "Start the team channel" : `Start a chat with ${chatTarget.name}`}</h4><p>{chatTarget.type === "team" ? "Share an update, ask a question, or post a decision for the SMC team." : `Send a workspace message to ${chatTarget.name}.`}</p><div className="smc-chat-prompt-row">{CHAT_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => setMessage(prompt)}>{prompt}</button>)}</div></div></div>
+            <div className="smc-chat-empty"><div className="smc-chat-empty-card"><div className="smc-empty-icon">{I.chat}</div><h4>Start the #{activeChannel} channel</h4><p>Share updates, ask questions, or post decisions for the team.</p><div className="smc-chat-prompt-row">{CHAT_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => setMessage(prompt)}>{prompt}</button>)}</div></div></div>
           )}
-          {messages.map((m) => <div key={m.id} className="smc-msg smc-msg-in"><div className="smc-msg-sender">{m.sender_name || "SMC"}</div><div className="smc-msg-bubble">{m.content}</div><div className="smc-msg-time">{fmtTime(m.created_at)}</div></div>)}
+          {messages.map((m) => <div key={m.id} className={`smc-msg ${m.message_type === 'bot' ? 'smc-msg-bot' : 'smc-msg-in'}`}><div className="smc-msg-sender">{m.sender_name || "SMC"}{m.message_type === 'bot' && ' 🤖'}</div><div className="smc-msg-bubble">{renderContent(m.content)}</div><div className="smc-msg-time">{fmtTime(m.created_at)}</div></div>)}
         </div>
         {chatError && <div className="smc-chat-error">{chatError}</div>}
-        <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder={chatTarget.type === "team" ? "Message the SMC team..." : `Message ${chatTarget.name}...`} value={message} onChange={(e) => setMessage(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
+        <form className="smc-chat-input" onSubmit={sendMessage}><input type="text" placeholder={`Message #${activeChannel}...`} value={message} onChange={(e) => setMessage(e.target.value)} /><button type="submit" disabled={!message.trim() || sending} title="Send message">{I.send}</button></form>
       </div>
     </div>
   );
