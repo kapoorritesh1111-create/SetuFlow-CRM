@@ -7,14 +7,16 @@ type Lead = { id:string; company_name:string; primary_admin_name:string|null; pr
 
 async function getLeads() {
   const supabase = await createClient();
-  const { data } = await supabase.from('client_onboarding_requests').select('*').order('created_at', { ascending: false });
+  const db = supabase as any;
+  const { data } = await db.from('client_onboarding_requests').select('*').order('created_at', { ascending: false });
   return (data as Lead[]) ?? [];
 }
 
 async function createLead(formData: FormData) {
   'use server';
   const supabase = await createClient();
-  const { error } = await supabase.from('client_onboarding_requests').insert({
+  const db = supabase as any;
+  const { error } = await db.from('client_onboarding_requests').insert({
     company_name: String(formData.get('company_name') ?? '').trim(),
     primary_admin_name: String(formData.get('contact_name') ?? '').trim() || null,
     primary_admin_email: String(formData.get('email') ?? '').trim(),
