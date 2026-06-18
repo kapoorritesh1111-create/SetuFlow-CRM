@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppEntityDiscussionDrawer } from "@/components/chat/app-entity-discussion-drawer";
+import { CrmChatFab } from "@/components/chat/crm-chat-fab";
 
 type ChatContext = {
   organization_id: string;
@@ -33,11 +34,18 @@ export function AppEntityDiscussionBridge() {
   if (!context) return null;
 
   return (
-    <AppEntityDiscussionDrawer
-      organizationId={context.organization_id}
-      currentUserId={context.user_id}
-      currentUserName={context.user_name}
-    />
+    <>
+      <CrmChatFab
+        organizationId={context.organization_id}
+        currentUserId={context.user_id}
+        currentUserName={context.user_name}
+      />
+      <AppEntityDiscussionDrawer
+        organizationId={context.organization_id}
+        currentUserId={context.user_id}
+        currentUserName={context.user_name}
+      />
+    </>
   );
 }
 
