@@ -58,18 +58,8 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
       .catch(() => {});
   }, [open, activeChannel, mode]);
 
-  // Click outside
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setShowPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  // Remove mousedown listener — use backdrop overlay instead
+  const [dmSearch, setDmSearch] = useState("");
 
   function switchChannel(key: string) {
     setMode("channel");
@@ -109,8 +99,8 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
           onClick={() => setOpen(true)}
           style={{
             position: "fixed",
-            bottom: 80,
-            right: 20,
+            bottom: 16,
+            left: 56,
             zIndex: 50,
             display: "flex",
             alignItems: "center",
@@ -134,6 +124,9 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
         </button>
       )}
 
+      {/* Backdrop — clicking this closes the panel */}
+      {open && <div onClick={() => { setOpen(false); setShowPicker(false); }} style={{ position: "fixed", inset: 0, zIndex: 9989 }} />}
+
       {/* Chat panel */}
       {open && (
         <div
@@ -141,7 +134,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
           style={{
             position: "fixed",
             bottom: 16,
-            right: 16,
+            left: 56,
             width: expanded ? "min(680px, calc(100vw - 32px))" : "min(400px, calc(100vw - 32px))",
             height: expanded ? "min(calc(100vh - 32px), 800px)" : "min(520px, calc(100vh - 100px))",
             borderRadius: 20,
@@ -255,18 +248,25 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
                 DM ▾
               </button>
               {showPicker && (
-                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,.12)", padding: 6, minWidth: 180, zIndex: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "4px 8px", textTransform: "uppercase", letterSpacing: ".05em" }}>Team Members</div>
-                  {[
-                    { id: "180afa12-6ff6-4e16-b8d1-04b13e508970", name: "Ritesh Kapoor", initials: "RK" },
-                    { id: "f7208bf2-2ef3-4e37-bb6b-0c7d16860bce", name: "Kumar Mayank", initials: "KM" },
-                    { id: "d9103794-e6be-472b-b131-c2ee8524877c", name: "Ankush Arya", initials: "AA" },
-                  ].filter(m => m.id !== currentUserId).map(m => (
-                    <button key={m.id} onClick={() => openDm(m.id, m.name)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px", border: "none", background: "none", cursor: "pointer", borderRadius: 8, fontFamily: "inherit", fontSize: 12, color: "#1e293b" }} onMouseOver={e => (e.currentTarget.style.background = "#f1f5f9")} onMouseOut={e => (e.currentTarget.style.background = "none")}>
-                      <span style={{ width: 24, height: 24, borderRadius: "50%", background: m.initials === "KM" ? "#1F487C" : m.initials === "AA" ? "#8b5cf6" : "#279491", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>{m.initials}</span>
-                      {m.name}
-                    </button>
-                  ))}
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 12px 36px rgba(0,0,0,.15)", padding: 8, width: 260, zIndex: 10 }} onMouseDown={e => e.stopPropagation()}>
+                  <input type="text" placeholder="Search team members..." value={dmSearch} onChange={e => setDmSearch(e.target.value)} autoFocus style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 10px", fontSize: 12, marginBottom: 6, fontFamily: "inherit", outline: "none" }} />
+                  <div style={{ maxHeight: 220, overflowY: "auto" }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "#94a3b8", padding: "6px 8px 4px", textTransform: "uppercase", letterSpacing: ".08em" }}>Org Members</div>
+                    {[
+                      { id: "180afa12-6ff6-4e16-b8d1-04b13e508970", name: "Ritesh Kapoor", initials: "RK", role: "Owner", color: "#279491" },
+                      { id: "f7208bf2-2ef3-4e37-bb6b-0c7d16860bce", name: "Kumar Mayank", initials: "KM", role: "Admin", color: "#1F487C" },
+                      { id: "d9103794-e6be-472b-b131-c2ee8524877c", name: "Ankush Arya", initials: "AA", role: "Member", color: "#8b5cf6" },
+                    ].filter(m => m.id !== currentUserId && m.name.toLowerCase().includes(dmSearch.toLowerCase())).map(m => (
+                      <button key={m.id} onClick={() => { openDm(m.id, m.name); setDmSearch(""); }} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 8px", border: "none", background: "none", cursor: "pointer", borderRadius: 10, fontFamily: "inherit", fontSize: 12, color: "#1e293b", textAlign: "left" }} onMouseOver={e => (e.currentTarget.style.background = "#f1f5f9")} onMouseOut={e => (e.currentTarget.style.background = "none")}>
+                        <span style={{ width: 32, height: 32, borderRadius: "50%", background: m.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{m.initials}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{m.name}</div>
+                          <div style={{ fontSize: 10, color: "#94a3b8" }}>{m.role}</div>
+                        </div>
+                      </button>
+                    ))}
+                    {[].length === 0 && dmSearch && <div style={{ padding: "12px 8px", fontSize: 12, color: "#94a3b8", textAlign: "center" }}>No members match "{dmSearch}"</div>}
+                  </div>
                 </div>
               )}
             </div>
