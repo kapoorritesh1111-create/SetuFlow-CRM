@@ -51,10 +51,18 @@ function formatEventDateLabel(startsOn: string | null, endsOn: string | null) {
   if (startsOn && !endsOn) return formatDate(startsOn);
   if (!startsOn && endsOn) return formatDate(endsOn);
   if (startsOn === endsOn) return formatDate(startsOn);
-  return `${formatDate(startsOn)} – ${formatDate(endsOn)}`;
+  return `${formatDate(startsOn)} to ${formatDate(endsOn)}`;
 }
 
-export default async function TradeEventsCapturePage() {
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+export default async function TradeEventsCapturePage({
+  searchParams,
+}: {
+  searchParams?: { eventId?: string | string[]; source?: string | string[]; leadType?: string | string[] };
+}) {
   const workspace = await requireWorkspace();
 
   if (!workspace.membership || !workspace.organization) {
@@ -68,6 +76,10 @@ export default async function TradeEventsCapturePage() {
       />
     );
   }
+
+  const requestedEventId = firstParam(searchParams?.eventId).trim();
+  const requestedSource = firstParam(searchParams?.source).trim();
+  const requestedLeadType = firstParam(searchParams?.leadType).trim();
 
   const supabase = await createClient();
   const db = supabase as unknown as CapturePageDb;
@@ -84,7 +96,13 @@ export default async function TradeEventsCapturePage() {
     .order('last_used_at', { ascending: false })
     .limit(24);
 
-  const events = (eventRows ?? []).map((event) => ({
+  const sortedEventRows = [...(eventRows ?? [])].sort((left, right) => {
+    if (requestedEventId && left.id === requestedEventId) return -1;
+    if (requestedEventId && right.id === requestedEventId) return 1;
+    return 0;
+  });
+
+  const events = sortedEventRows.map((event) => ({
     id: event.id,
     name: event.name,
     locationLabel: [event.city, event.country].filter(Boolean).join(', ') || 'Location TBD',
@@ -98,15 +116,17 @@ export default async function TradeEventsCapturePage() {
     usageCount: term.usage_count,
   }));
 
+  const modeLabel = requestedSource === 'scan' ? 'Scan card' : requestedSource === 'dictate' ? 'Dictate note' : requestedLeadType === 'supplier' ? 'Capture supplier' : 'Capture buyer';
+
   return (
     <div className="space-y-5 pb-4">
       <div className="flex flex-col gap-3 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Trade event entries</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Type, Dictate, or Scan Capture</h1>
-          <p className="mt-1 text-sm font-medium text-slate-600">Entries stay separate from CRM leads. Product and category terms are saved for fast reuse.</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{modeLabel}: Type, Dictate, or Scan Capture</h1>
+          <p className="mt-1 text-sm font-medium text-slate-600">Entries stay separate from CRM leads. Product and category terms are saved for fast reuse inside this workspace only.</p>
         </div>
-        <Link href="/trade-events" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100">Back to workspace</Link>
+        <Link href="/trade-events?mode=trade_show_trial" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700 transition hover:bg-blue-100">Back to workspace</Link>
       </div>
 
       {error?.message ? (
