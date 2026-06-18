@@ -72,7 +72,10 @@ async function createLead(formData: FormData) {
   const notes = textValue(formData.get('notes')) || null;
   const templateKey = normalizeTrialTemplate(formData.get('trial_template_key'));
   const requestedPlan = textValue(formData.get('plan')) || 'starter';
+  const source = textValue(formData.get('source')) || 'internal';
+  const isTradeShow = source === 'trade_show';
   const isTrialRequest = formData.get('is_trial') === 'on' || requestedPlan === 'trial';
+  const requestedModules = isTradeShow ? ['full_crm', 'trade_show'] : ['full_crm'];
 
   const { error } = await db.from('client_onboarding_requests').insert({
     company_name: companyName,
@@ -88,15 +91,15 @@ async function createLead(formData: FormData) {
     requested_seat_count: numberValue(formData.get('seats'), 5),
     is_trial_request: isTrialRequest,
     trial_template_key: templateKey,
-    requested_modules: ['lead_management', 'quotes', 'orders'],
+    requested_modules: requestedModules,
     pipeline_stage: isTrialRequest ? 'trial' : 'inquiry',
     lead_score: isTrialRequest ? 40 : 20,
     status: 'submitted',
-    source: textValue(formData.get('source')) || 'internal',
+    source,
     source_detail: textValue(formData.get('source_detail')) || null,
     internal_notes: notes,
     additional_notes: notes,
-    wants_trade_events: textValue(formData.get('source')) === 'trade_show',
+    wants_trade_events: isTradeShow,
     tags: [templateKey, requestedPlan, isTrialRequest ? 'trial' : 'lead'].filter(Boolean),
   });
 
