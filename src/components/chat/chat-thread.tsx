@@ -61,7 +61,7 @@ export function ChatThread({
   conversationId,
   organizationId,
   autoCreateTitle,
-  autoEnrollUsers = [],
+  autoEnrollUsers,
   compact = false,
   currentUserId,
   currentUserName,
@@ -76,6 +76,7 @@ export function ChatThread({
   const [mentionIds, setMentionIds] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const autoEnrollUsersKey = useMemo(() => (autoEnrollUsers ?? []).join("|"), [autoEnrollUsers]);
   const mentionQuery = message.match(/@(\w*)$/)?.[1]?.toLowerCase() ?? "";
   const mentionTargets = useMemo(() => FALLBACK_MENTIONS.filter((member) => member.userId !== currentUserId && (!mentionQuery || member.name.toLowerCase().includes(mentionQuery) || member.initials.toLowerCase().includes(mentionQuery))), [currentUserId, mentionQuery]);
 
@@ -84,7 +85,6 @@ export function ChatThread({
 
   useEffect(() => {
     let cancelled = false;
-
     async function ensureAndLoad() {
       setLoading(true);
       setError(null);
@@ -99,7 +99,7 @@ export function ChatThread({
               entity_type: entityType,
               entity_id: entityId,
               title: autoCreateTitle,
-              auto_enroll_users: autoEnrollUsers,
+              auto_enroll_users: autoEnrollUsersKey ? autoEnrollUsersKey.split("|") : [],
             }),
           });
           const created = await createRes.json();
@@ -107,11 +107,9 @@ export function ChatThread({
           convId = created.conversation_id;
           if (!cancelled) setActiveConversationId(convId ?? null);
         }
-
         const params = new URLSearchParams({ organization_id: organizationId });
         if (convId) params.set("conversation_id", convId);
         else if (entityType && entityId) { params.set("entity_type", entityType); params.set("entity_id", entityId); }
-
         const res = await fetch(`/api/chat/messages?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Unable to load discussion");
@@ -128,10 +126,9 @@ export function ChatThread({
         if (!cancelled) setLoading(false);
       }
     }
-
     void ensureAndLoad();
     return () => { cancelled = true; };
-  }, [activeConversationId, autoCreateTitle, autoEnrollUsers, conversationId, entityId, entityType, organizationId]);
+  }, [activeConversationId, autoCreateTitle, autoEnrollUsersKey, conversationId, entityId, entityType, organizationId]);
 
   useEffect(() => {
     if (!activeConversationId) return;
@@ -158,34 +155,17 @@ export function ChatThread({
     event.preventDefault();
     const content = message.trim();
     if (!content || sending || !activeConversationId) return;
-
-    const optimistic: ChatMessage = {
-      id: `temp-${Date.now()}`,
-      content,
-      sender_id: currentUserId,
-      sender_name: currentUserName,
-      created_at: new Date().toISOString(),
-      message_type: "user",
-      delivery_status: "delivered",
-    };
-
+    const optimistic: ChatMessage = { id: `temp-${Date.now()}`, content, sender_id: currentUserId, sender_name: currentUserName, created_at: new Date().toISOString(), message_type: "user", delivery_status: "delivered" };
     setMessage("");
     setSending(true);
     setError(null);
     setShowMentions(false);
     setMessages((current) => [...current, optimistic]);
-
     try {
       const res = await fetch("/api/chat/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          conversation_id: activeConversationId,
-          content,
-          sender_name: currentUserName,
-          mentions: mentionIds,
-        }),
+        body: JSON.stringify({ organization_id: organizationId, conversation_id: activeConversationId, content, sender_name: currentUserName, mentions: mentionIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Message was not sent");
@@ -205,21 +185,21 @@ export function ChatThread({
   return <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={wrapperStyle}>
     <div style={{ flex: 1, overflowY: "auto", padding: compact ? "12px" : "18px", background: compact ? "#f8fafc" : "linear-gradient(180deg,#f8fafc,#eef9f8)", borderRadius: compact ? 0 : 20 }}>
       {loading && <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>Loading discussion...</div>}
-      {!loading && messages.length === 0 && <div style={{ textAlign: "center", color: "#64748b", padding: 28 }}><div style={{ fontSize: 28 }}>💬</div><strong>Start the discussion</strong><p style={{ margin: "8px auto 0", maxWidth: 360 }}>Share updates, mention teammates, link issue refs, or drop files for this work object.</p></div>}
+      {!loading && messages.length === 0 && <div style={{ textAlign: "center", color: "#64748b", padding: 28 }}><div style={{ fontSize: 28 }}>Chat</div><strong>Start the discussion</strong><p style={{ margin: "8px auto 0", maxWidth: 360 }}>Share updates, mention teammates, link issue refs, or drop files for this work object.</p></div>}
       {messages.map((item, index) => {
         const mine = item.sender_id === currentUserId || item.sender_name === currentUserName;
         const previous = index > 0 ? messages[index - 1] : null;
         const sameSender = previous?.sender_name === item.sender_name && new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() < 300000;
         const showDate = !previous || new Date(item.created_at).toDateString() !== new Date(previous.created_at).toDateString();
         const dateLabel = new Date(item.created_at).toDateString() === new Date().toDateString() ? "Today" : new Date(item.created_at).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-        return <div key={item.id}>{showDate && <div style={{ textAlign: "center", padding: "14px 0 8px" }}><span style={{ background: "#e2e8f0", padding: "3px 12px", borderRadius: 999, fontSize: 10, color: "#64748b", fontWeight: 800 }}>{dateLabel}</span></div>}<div style={{ display: "flex", flexDirection: mine ? "row-reverse" : "row", gap: 8, marginTop: sameSender ? 3 : 14, alignItems: "flex-start" }}>{!sameSender && !mine && <div style={{ width: 30, height: 30, borderRadius: 999, background: item.message_type === "bot" ? "#475569" : "#279491", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900 }}>{item.message_type === "bot" ? "⚡" : initials(item.sender_name)}</div>}{sameSender && !mine && <div style={{ width: 30 }} />}<div style={{ maxWidth: compact ? "82%" : "72%", minWidth: 64 }}>{!sameSender && !mine && <div style={{ fontSize: 11, color: "#475569", fontWeight: 800, marginBottom: 3 }}>{item.sender_name}{item.message_type === "bot" ? " 🤖" : ""}</div>}<div style={{ padding: "10px 14px", borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : "#fff", color: mine ? "#fff" : "#1e293b", fontSize: 13.5, lineHeight: 1.55, boxShadow: mine ? "0 4px 12px rgba(39,148,145,.24)" : "0 2px 8px rgba(15,39,68,.08)", border: mine ? "none" : "1px solid #e2e8f0" }}>{renderContent(item.content, mine)}</div><div style={{ fontSize: 9, color: "#94a3b8", marginTop: 4, textAlign: mine ? "right" : "left" }}>{fmtTime(item.created_at)} {mine ? (item.id.startsWith("temp-") ? "⏳" : "✓") : ""}</div></div></div></div>;
+        return <div key={item.id}>{showDate && <div style={{ textAlign: "center", padding: "14px 0 8px" }}><span style={{ background: "#e2e8f0", padding: "3px 12px", borderRadius: 999, fontSize: 10, color: "#64748b", fontWeight: 800 }}>{dateLabel}</span></div>}<div style={{ display: "flex", flexDirection: mine ? "row-reverse" : "row", gap: 8, marginTop: sameSender ? 3 : 14, alignItems: "flex-start" }}>{!sameSender && !mine && <div style={{ width: 30, height: 30, borderRadius: 999, background: item.message_type === "bot" ? "#475569" : "#279491", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900 }}>{item.message_type === "bot" ? "AI" : initials(item.sender_name)}</div>}{sameSender && !mine && <div style={{ width: 30 }} />}<div style={{ maxWidth: compact ? "82%" : "72%", minWidth: 64 }}>{!sameSender && !mine && <div style={{ fontSize: 11, color: "#475569", fontWeight: 800, marginBottom: 3 }}>{item.sender_name}{item.message_type === "bot" ? " bot" : ""}</div>}<div style={{ padding: "10px 14px", borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : "#fff", color: mine ? "#fff" : "#1e293b", fontSize: 13.5, lineHeight: 1.55, boxShadow: mine ? "0 4px 12px rgba(39,148,145,.24)" : "0 2px 8px rgba(15,39,68,.08)", border: mine ? "none" : "1px solid #e2e8f0" }}>{renderContent(item.content, mine)}</div><div style={{ fontSize: 9, color: "#94a3b8", marginTop: 4, textAlign: mine ? "right" : "left" }}>{fmtTime(item.created_at)} {mine ? (item.id.startsWith("temp-") ? "sending" : "sent") : ""}</div></div></div></div>;
       })}
       <div ref={endRef} />
     </div>
     {error && <div style={{ color: "#b91c1c", background: "#fee2e2", padding: "8px 12px", fontSize: 12 }}>{error}</div>}
     <div style={{ position: "relative", padding: compact ? 10 : 12, borderTop: "1px solid #e2e8f0", background: "#fff" }}>
       {showMentions && mentionTargets.length > 0 && <div style={{ position: "absolute", bottom: "100%", left: 12, zIndex: 20, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 16px 40px rgba(15,39,68,.16)", padding: 6, minWidth: 220 }}>{mentionTargets.map((member) => <button key={member.userId} type="button" onMouseDown={(event) => { event.preventDefault(); insertMention(member); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: "8px 10px", cursor: "pointer", borderRadius: 10, textAlign: "left" }}><span style={{ width: 24, height: 24, borderRadius: 999, background: "#1F487C", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900 }}>{member.initials}</span><strong style={{ color: "#123", fontSize: 12 }}>{member.name}</strong></button>)}</div>}
-      <div style={{ border: "1px dashed #cbd5e1", borderRadius: 14, padding: "7px 10px", marginBottom: 8, color: "#64748b", fontSize: 11, background: "#f8fafc" }}>📎 Drop files here or use the CRM uploader for attachments.</div>
+      <div style={{ border: "1px dashed #cbd5e1", borderRadius: 14, padding: "7px 10px", marginBottom: 8, color: "#64748b", fontSize: 11, background: "#f8fafc" }}>Drop files here or use the CRM uploader for attachments.</div>
       <form onSubmit={sendMessage} style={{ display: "flex", gap: 8 }}><input value={message} onChange={(event) => handleInput(event.target.value)} placeholder="Message... type @ to mention or S29-FEAT-001 to link" style={{ flex: 1, border: "1px solid #dbe7ea", borderRadius: 999, padding: "10px 13px", outline: "none", fontSize: 13 }} /><button type="submit" disabled={!message.trim() || sending || !activeConversationId} style={{ border: "none", borderRadius: 999, padding: "0 16px", background: "#279491", color: "#fff", fontWeight: 900, cursor: "pointer", opacity: !message.trim() || sending || !activeConversationId ? .55 : 1 }}>Send</button></form>
     </div>
   </section>;
