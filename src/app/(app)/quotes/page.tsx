@@ -10,6 +10,7 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildQuotesPageViewModel } from '@/features/quotes/logic/build-quotes-page-view-model';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
 import { buildLeadQuoteHref, buildOrdersHref } from '@/lib/workflow/handoffs';
+import { DiscussionButton } from '@/components/chat/discussion-button';
 import { approveLeadQuoteAdjustment, rejectLeadQuoteAdjustment } from '@/features/leads/server/actions';
 import { logQuoteNegotiationResponse, markQuoteAsDirectOrder, recordQuoteOutcomeWorkflow } from '@/features/quotes/server/actions';
 
@@ -819,6 +820,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
                   )}
                   <Link href={`/api/quotes/${selected.id}/pdf`} target="_blank" style={secondaryLink('#334155','#dbe4ef')}>Customer PDF</Link>
                   <Link href={buildLeadQuoteHref(selected.leadId,selected.id,selectedMode,{handoff:'quote-revise'})} style={secondaryLink('#334155','#dbe4ef')}>Edit / revise quote</Link>
+                  <DiscussionButton entityType="quote" entityId={selected.id} organizationId={organizationId} currentUserId={workspace?.user?.id ?? ''} currentUserName={workspace?.profile?.full_name ?? workspace?.user?.email ?? 'User'} title={`Quote ${selected.quoteNumber ?? selected.id.slice(0,8)} discussion`} autoEnrollUsers={[workspace?.user?.id ?? ''].filter(Boolean)} />
                 </div>
               </div>
 

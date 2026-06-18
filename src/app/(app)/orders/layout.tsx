@@ -62,11 +62,11 @@ function whatsappContact(lead: any) {
   return clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
-function ResponsiveOrdersWorkspace({ orders, catalogOptions }: { orders: ProductionOrder8S[]; catalogOptions: CatalogOrderOption8S[] }) {
+function ResponsiveOrdersWorkspace({ orders, catalogOptions, organizationId, currentUserId, currentUserName }: { orders: ProductionOrder8S[]; catalogOptions: CatalogOrderOption8S[]; organizationId: string; currentUserId: string; currentUserName: string }) {
   return (
     <>
       <div className="md:hidden"><MobileOrdersWorkspace orders={orders} catalogOptions={catalogOptions} /></div>
-      <div className="hidden md:block"><OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} /></div>
+      <div className="hidden md:block"><OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} /></div>
     </>
   );
 }
@@ -95,7 +95,7 @@ export default async function OrdersLayout({ children: _children }: { children: 
 
   if (ordersError) return <EmptyState title="Could not load structured orders" description={String(ordersError.message ?? 'Unknown error')} />;
   const orderRows = Array.isArray(rawOrders) ? rawOrders : [];
-  if (!orderRows.length) return <ResponsiveOrdersWorkspace orders={[]} catalogOptions={[]} />;
+  if (!orderRows.length) return <ResponsiveOrdersWorkspace orders={[]} catalogOptions={[]} organizationId={orgId} currentUserId={workspace.user?.id ?? ''} currentUserName={(workspace.profile as any)?.full_name ?? workspace.user?.email ?? 'User'} />;
 
   const quoteIds = [...new Set(orderRows.map((order: any) => order.source_quote_id).filter(Boolean))];
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
@@ -372,5 +372,5 @@ export default async function OrdersLayout({ children: _children }: { children: 
     } as ProductionOrder8S;
   });
 
-  return <ResponsiveOrdersWorkspace orders={orders} catalogOptions={catalogOptions} />;
+  return <ResponsiveOrdersWorkspace orders={orders} catalogOptions={catalogOptions} organizationId={orgId} currentUserId={workspace.user?.id ?? ''} currentUserName={(workspace.profile as any)?.full_name ?? workspace.user?.email ?? 'User'} />;
 }

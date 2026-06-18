@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
+import { postSystemMessage } from '@/lib/chat/system-post';
 import { safeUserError, logServerError } from '@/lib/safe-error';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { enforceTrialAction } from '@/lib/trial/enforcement';
@@ -928,6 +929,8 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
   const fetched = await fetchQuoteRecord(db, organization.id, quote.quote_id);
   if (fetched.error) return { error: fetched.error };
 
+  try { await postSystemMessage({ entityType: 'quote', entityId: quote.quote_id, organizationId: organization.id, content: `Quote created by ${currentUser.email ?? 'user'}` }); } catch {}
+
   revalidateCommercialViews(quote.lead_id);
   revalidatePath('/contracts');
   return {
@@ -1230,6 +1233,8 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
 
   const fetched = await fetchQuoteRecord(db, organization.id, quoteId);
   if (fetched.error) return { error: fetched.error };
+
+  try { await postSystemMessage({ entityType: 'quote', entityId: quoteId, organizationId: organization.id, content: `Quote ${requestedOutcome.replaceAll('_', ' ')} by ${currentUser.email ?? 'user'}` }); } catch {}
 
   revalidateCommercialViews(existing.lead_id);
   revalidatePath('/quotes');

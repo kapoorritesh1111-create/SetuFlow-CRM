@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { DiscussionButton } from '@/components/chat/discussion-button';
 import {
   addManualActualOrderLineAction,
   approveActualOrderLinesGateAction,
@@ -758,7 +759,7 @@ function HiddenFreightFields({ order }: { order: ProductionOrder8S }) {
   );
 }
 
-export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { orders: ProductionOrder8S[]; catalogOptions?: CatalogOrderOption8S[] }) {
+export function OrdersProductionWorkspace8S({ orders, catalogOptions = [], organizationId = '', currentUserId = '', currentUserName = '' }: { orders: ProductionOrder8S[]; catalogOptions?: CatalogOrderOption8S[]; organizationId?: string; currentUserId?: string; currentUserName?: string }) {
   const searchParams = useSearchParams();
   const [kpiFilter, setKpiFilter] = useState<KpiFilter>(null);
   const [search, setSearch] = useState('');
@@ -1010,6 +1011,12 @@ export function OrdersProductionWorkspace8S({ orders, catalogOptions = [] }: { o
               />
             </section>
             <ActionStack order={activeOrder} next={next} setStage={setSelectedStage} />
+            {organizationId && currentUserId && (
+              <div style={{display:'grid',gap:8,marginTop:10}}>
+                <DiscussionButton entityType="order" entityId={activeOrder.orderId ?? activeOrder.quoteId} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} title={`Order ${activeOrder.orderNumber ?? 'pending'} discussion`} label="Order Discussion" />
+                {activeOrder.shipment?.id && <DiscussionButton entityType="dispatch" entityId={activeOrder.shipment.id} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} title={`Dispatch ${activeOrder.shipment.trackingNumber ?? activeOrder.shipment.bookingReference ?? ''} discussion`} label="Dispatch Discussion" />}
+              </div>
+            )}
           </>
         ) : (
           <section className="workspace-panel empty-workspace">

@@ -1,5 +1,8 @@
 'use server';
 
+import { postSystemMessage } from '@/lib/chat/system-post';
+import { getWorkspaceAccess } from '@/lib/workspace/auth';
+
 import {
   progressOrderExecution as progressOrderExecutionImpl,
   signContractAction as signContractActionImpl,
@@ -80,7 +83,12 @@ export async function advanceOrderStageAction(...args: Parameters<typeof advance
 }
 
 export async function approveActualOrderLinesGateAction(...args: Parameters<typeof approveActualOrderLinesGateActionImpl>) {
-  return approveActualOrderLinesGateActionImpl(...args);
+  const result = await approveActualOrderLinesGateActionImpl(...args);
+  try {
+    const fd = args[0]; const orderId = fd instanceof FormData ? (fd.get('order_id') as string) : '';
+    if (orderId) { const ws = await getWorkspaceAccess(); if (ws?.organization?.id) await postSystemMessage({ entityType: 'order', entityId: orderId, organizationId: ws.organization.id, content: `Actual order lines approved by ${ws.user?.email ?? 'user'}` }); }
+  } catch {}
+  return result;
 }
 
 export async function approveDeliveryNoteAction(...args: Parameters<typeof approveDeliveryNoteActionImpl>) {
@@ -112,7 +120,12 @@ export async function approvePackingOverridesAction(...args: Parameters<typeof a
 }
 
 export async function closeOrderAction(...args: Parameters<typeof closeOrderActionImpl>) {
-  return closeOrderActionImpl(...args);
+  const result = await closeOrderActionImpl(...args);
+  try {
+    const fd = args[0]; const orderId = fd instanceof FormData ? (fd.get('order_id') as string) : '';
+    if (orderId) { const ws = await getWorkspaceAccess(); if (ws?.organization?.id) await postSystemMessage({ entityType: 'order', entityId: orderId, organizationId: ws.organization.id, content: `Order closed by ${ws.user?.email ?? 'user'}` }); }
+  } catch {}
+  return result;
 }
 
 export async function createShipmentDraftGateAction(...args: Parameters<typeof createShipmentDraftGateActionImpl>) {
