@@ -63,6 +63,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unreadFromId, setUnreadFromId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -79,6 +80,15 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   useEffect(() => setActiveConversationId(conversationId ?? null), [conversationId]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { const timer = window.setInterval(() => setTypingUsers((x) => ({ ...x })), 1000); return () => clearInterval(timer); }, []);
+
+  // presence heartbeat
+  useEffect(() => {
+    if (!organizationId) return;
+    function heartbeat() { void fetch("/api/chat/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organization_id: organizationId }) }); }
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 60000);
+    return () => clearInterval(timer);
+  }, [organizationId]);
 
   // close composer emoji on outside click
   useEffect(() => {
@@ -138,6 +148,8 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
     finally { setMentionIds([]); setSending(false); }
   }
   async function removeMessage(id: string) { if (id.startsWith("temp-")) return; setMessages((cur) => cur.filter((m) => m.id !== id)); try { await fetch(`/api/chat/messages?id=${id}`, { method: "DELETE" }); } catch {} }
+  async function pinMessage(id: string) { if (!activeConversationId) return; try { const res = await fetch("/api/chat/pin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message_id: id, conversation_id: activeConversationId }) }); const data = await res.json(); if (res.ok) { setMessages((cur) => cur.map((m) => m.id === id ? { ...m, pinned_at: data.pinned ? new Date().toISOString() : null, pinned_by: data.pinned ? currentUserId : null } : m)); } } catch {} }
+  function markUnread(messageId: string) { setUnreadFromId(messageId); const msg = messages.find((m) => m.id === messageId); if (msg && activeConversationId) { const beforeTimestamp = new Date(new Date(msg.created_at).getTime() - 1000).toISOString(); void fetch("/api/chat/read-state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversation_id: activeConversationId, timestamp: beforeTimestamp }) }); } }
   function readByOther(m: Message) { const readers = participants.filter((p) => p.user_id !== currentUserId); return conversationType === "dm" && readers.length > 0 && readers.every((p) => p.last_read_at && new Date(p.last_read_at).getTime() > new Date(m.created_at).getTime()); }
   function onDrop(e: DragEvent<HTMLDivElement>) { e.preventDefault(); setDragging(false); if (e.dataTransfer.files?.length) void uploadFiles(e.dataTransfer.files); }
 
@@ -165,6 +177,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   }
 
   const readByOtherCb = useCallback((m: Message) => readByOther(m), [participants, conversationType, currentUserId]);
+  const pinnedMessage = useMemo(() => messages.filter((m) => m.pinned_at).sort((a, b) => new Date(b.pinned_at!).getTime() - new Date(a.pinned_at!).getTime())[0] ?? null, [messages]);
 
   return (
     <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={{ height: compact ? "100%" : undefined, minHeight: compact ? undefined : 520, display: "flex", flexDirection: "column" }}>
@@ -173,6 +186,15 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
         <div style={{ padding: 10, borderBottom: "1px solid #e2e8f0", background: "#fff", display: "flex", justifyContent: "space-between", gap: 10 }}>
           <strong>Thread: {threadParent.sender_name}</strong>
           <button type="button" onClick={() => { setThreadParent(null); setReplyingTo(null); }} style={pill}>Back</button>
+        </div>
+      )}
+
+      {/* pinned message bar */}
+      {pinnedMessage && !threadParent && (
+        <div onClick={() => { const el = document.getElementById(`msg-${pinnedMessage.id}`); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.style.background = "#fffbeb"; setTimeout(() => { el.style.background = ""; }, 1500); } }}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "#FAEEDA", borderBottom: "1px solid #FAC775", fontSize: 12, color: "#854F0B", cursor: "pointer" }}>
+          <span>📌</span>
+          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><strong>{pinnedMessage.sender_name}</strong>: {(pinnedMessage.content || "Attachment").slice(0, 60)}</span>
         </div>
       )}
 
@@ -188,7 +210,15 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
         {loading && <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>Loading discussion...</div>}
         {!loading && messages.length === 0 && <div style={{ textAlign: "center", color: "#64748b", padding: 28 }}><strong>Start the conversation</strong><p>Send a message, mention teammates, attach files, or react.</p></div>}
         {messages.map((m, i) => (
-          <MessageRow
+          <div key={m.id}>
+            {unreadFromId === m.id && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", color: "#dc2626", fontSize: 11, fontWeight: 700 }}>
+                <span style={{ flex: 1, height: 1, background: "#dc2626" }} />
+                New messages
+                <span style={{ flex: 1, height: 1, background: "#dc2626" }} />
+              </div>
+            )}
+            <MessageRow
             key={m.id}
             message={m}
             index={i}
@@ -208,8 +238,11 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
             onSetThreadParent={setThreadParent}
             onToggleReaction={(id, emoji) => void toggleReaction(id, emoji)}
             onRemoveMessage={removeMessage}
+            onPinMessage={pinMessage}
+            onMarkUnread={markUnread}
             readByOther={readByOtherCb}
           />
+          </div>
         ))}
         <div ref={endRef} />
       </div>
