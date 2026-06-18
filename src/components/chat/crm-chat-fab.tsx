@@ -10,7 +10,7 @@ interface CrmChatFabProps {
 }
 
 type Channel = { key: string; label: string; conversationId?: string };
-type ConvRecord = { id: string; channel_key?: string; conversation_type: string; title?: string };
+type ConvRecord = { id: string; channel_key?: string; conversation_type: string; title?: string; unread_count?: number; last_message_at?: string; last_message_preview?: string };
 
 const DEFAULT_CHANNELS: Channel[] = [
   { key: "general", label: "General" },
@@ -36,33 +36,52 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
   const [view, setView] = useState<View>("chat");
   const [dmTarget, setDmTarget] = useState<{ name: string; convId: string } | null>(null);
   const [dmSearch, setDmSearch] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [activeDms, setActiveDms] = useState<{ id: string; name: string; initials: string; lastMsg?: string; lastAt?: string }[]>([]);
+  const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversations
+  // Fetch conversations + periodic unread refresh
   useEffect(() => {
     if (!open) return;
-    fetch("/api/chat/conversations")
+    const doFetch = () => fetch("/api/chat/conversations")
       .then(r => r.json())
       .then(d => {
         const convs: ConvRecord[] = d.conversations ?? [];
         if (convs.length === 0) {
-          // Auto-provision: create default channels for this org
           fetch("/api/chat/conversations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ provision_defaults: true }),
           }).catch(() => {});
         }
+        // Update channel conversation IDs
         setChannels(prev =>
           prev.map(ch => {
             const match = convs.find(c => c.channel_key === ch.key);
             return match ? { ...ch, conversationId: match.id } : ch;
           })
         );
+        // Unread counts per channel
+        const uc: Record<string, number> = {};
+        convs.forEach(c => { if (c.channel_key && (c.unread_count ?? 0) > 0) uc[c.channel_key] = c.unread_count ?? 0; });
+        setUnreadCounts(uc);
+        // Active DMs
+        const dms = convs.filter(c => c.conversation_type === "dm" && c.title);
+        setActiveDms(dms.map(c => ({
+          id: c.id,
+          name: c.title ?? "Team Member",
+          initials: (c.title ?? "TM").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+          lastMsg: c.last_message_preview,
+          lastAt: c.last_message_at,
+        })));
         const active = convs.find(c => c.channel_key === activeChannel);
         if (active && view === "chat") setActiveConvId(active.id);
       })
       .catch(() => {});
+    doFetch();
+    const timer = setInterval(doFetch, 12000);
+    return () => clearInterval(timer);
   }, [open, activeChannel]);
 
   function switchChannel(key: string) {
@@ -108,6 +127,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
           style={{ position:"fixed", bottom:16, left:56, zIndex:50, display:"flex", alignItems:"center", gap:6, padding:"12px 18px", border:"none", borderRadius:999, background:"linear-gradient(135deg,#0f2744,#279491)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", boxShadow:"0 8px 24px rgba(15,39,68,.3)", fontFamily:"inherit" }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Chat
+          {totalUnread > 0 && <span style={{ background:"#ef4444", color:"#fff", fontSize:9, fontWeight:800, padding:"1px 6px", borderRadius:99, marginLeft:2 }}>{totalUnread}</span>}
         </button>
       )}
 
@@ -150,6 +170,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
               <button key={ch.key} onClick={() => switchChannel(ch.key)}
                 style={{ border: view==="chat" && activeChannel===ch.key ? "1px solid #279491" : "1px solid transparent", borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer", background: view==="chat" && activeChannel===ch.key ? "rgba(39,148,145,.08)" : "transparent", color: view==="chat" && activeChannel===ch.key ? "#279491" : "#64748b", whiteSpace:"nowrap", fontFamily:"inherit" }}>
                 # {ch.label}
+                {unreadCounts[ch.key] ? <span style={{ background:"#ef4444", color:"#fff", fontSize:8, fontWeight:800, padding:"1px 5px", borderRadius:99, marginLeft:3 }}>{unreadCounts[ch.key]}</span> : null}
               </button>
             ))}
             <button onClick={() => setView(view === "dm-picker" ? "chat" : "dm-picker")}
@@ -169,6 +190,23 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
                     style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:12, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", background:"#f8fafc" }} />
                 </div>
                 <div style={{ flex:1, overflowY:"auto", padding:"8px 10px" }}>
+                  {activeDms.length > 0 && (
+                    <>
+                      <div style={{ fontSize:10, fontWeight:800, color:"#94a3b8", padding:"8px 6px 6px", textTransform:"uppercase", letterSpacing:".08em" }}>Active Conversations</div>
+                      {activeDms.map(dm => (
+                        <button key={dm.id} onClick={() => { setView("dm-chat"); setDmTarget({ name: dm.name, convId: dm.id }); setActiveConvId(dm.id); }}
+                          style={{ display:"flex", alignItems:"center", gap:12, width:"100%", padding:"10px", border:"none", background:"none", cursor:"pointer", borderRadius:14, fontFamily:"inherit", textAlign:"left", transition:"background 100ms ease" }}
+                          onMouseOver={e => (e.currentTarget.style.background="#f0fdfa")} onMouseOut={e => (e.currentTarget.style.background="none")}>
+                          <div style={{ width:36, height:36, borderRadius:"50%", background:"#279491", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, flexShrink:0 }}>{dm.initials}</div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontWeight:600, fontSize:13, color:"#1e293b" }}>{dm.name}</div>
+                            {dm.lastMsg && <div style={{ fontSize:11, color:"#94a3b8", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dm.lastMsg}</div>}
+                          </div>
+                          <div style={{ width:8, height:8, borderRadius:"50%", background:"#279491", flexShrink:0 }} />
+                        </button>
+                      ))}
+                    </>
+                  )}
                   <div style={{ fontSize:10, fontWeight:800, color:"#94a3b8", padding:"8px 6px 6px", textTransform:"uppercase", letterSpacing:".08em" }}>Team Members</div>
                   {filteredMembers.map(m => (
                     <button key={m.id} onClick={() => openDm(m.id, m.name)}
