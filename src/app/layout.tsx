@@ -133,11 +133,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const nonce = headers().get('x-nonce') ?? undefined;
 
   return (
-    <html lang="en" className={jakarta.variable} suppressHydrationWarning>
+    <html lang="en" dir="ltr" className={jakarta.variable} suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.min.css" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0c7fff" />
+        <meta name="google" content="notranslate" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="SETU Flow" />
