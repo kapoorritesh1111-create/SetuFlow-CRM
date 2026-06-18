@@ -75,7 +75,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
           onClick={() => setOpen(true)}
           style={{
             position: "fixed",
-            bottom: 20,
+            bottom: 80,
             right: 20,
             zIndex: 50,
             display: "flex",
