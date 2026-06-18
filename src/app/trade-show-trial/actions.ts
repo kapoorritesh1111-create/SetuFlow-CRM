@@ -4,15 +4,11 @@ import { redirect } from 'next/navigation';
 
 import { provisionTradeShowTrialSignup } from '@/lib/trial/trade-show-signup';
 
-export type TradeShowTrialActionState = {
+type TradeShowTrialActionState = {
   ok: boolean;
   message: string;
   fieldErrors?: Record<string, string>;
 };
-
-const initialState: TradeShowTrialActionState = { ok: false, message: '' };
-
-export { initialState as tradeShowTrialInitialState };
 
 function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
