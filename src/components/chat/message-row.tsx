@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 
 /* ── shared types (re-exported from chat-thread) ── */
 export type Attachment = { name: string; url: string; size: number; type: string; storage_path: string };
-export type Message = { id: string; content: string; sender_id?: string | null; sender_name: string | null; created_at: string; edited_at?: string | null; message_type?: string; attachments?: Attachment[] | null; parent_message_id?: string | null; reply_count?: number };
+export type Message = { id: string; content: string; sender_id?: string | null; sender_name: string | null; created_at: string; edited_at?: string | null; message_type?: string; attachments?: Attachment[] | null; parent_message_id?: string | null; reply_count?: number; pinned_at?: string | null; pinned_by?: string | null };
 export type Reaction = { id: string; message_id: string; user_id: string; user_name: string | null; emoji: string; created_at: string };
 
 /* ── constants ── */
@@ -64,6 +64,8 @@ export interface MessageRowProps {
   onSetThreadParent: (m: Message | null) => void;
   onToggleReaction: (id: string, emoji: string) => void;
   onRemoveMessage: (id: string) => void;
+  onPinMessage: (id: string) => void;
+  onMarkUnread: (id: string) => void;
   readByOther: (m: Message) => boolean;
 }
 
@@ -71,7 +73,7 @@ export function MessageRow({
   message: m, index: i, messages, currentUserId, currentUserName, compact,
   reactions, threadParent, editingId, editingContent,
   onSetEditingId, onSetEditingContent, onCancelEdit, onSaveEdit,
-  onSetReplyingTo, onSetThreadParent, onToggleReaction, onRemoveMessage, readByOther,
+  onSetReplyingTo, onSetThreadParent, onToggleReaction, onRemoveMessage, onPinMessage, onMarkUnread, readByOther,
 }: MessageRowProps) {
   const [hovered, setHovered] = useState(false);
   const [showOverflow, setShowOverflow] = useState(false);
@@ -250,6 +252,12 @@ export function MessageRow({
                     <button type="button" onClick={copyText} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: "8px 10px", cursor: "pointer", borderRadius: 6, fontSize: 12, color: "#1e293b", fontFamily: "inherit" }}>
                       📋 Copy text
                     </button>
+                    <button type="button" onClick={() => { onPinMessage(m.id); setShowOverflow(false); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: "8px 10px", cursor: "pointer", borderRadius: 6, fontSize: 12, color: "#1e293b", fontFamily: "inherit" }}>
+                      📌 {m.pinned_at ? "Unpin" : "Pin message"}
+                    </button>
+                    <button type="button" onClick={() => { onMarkUnread(m.id); setShowOverflow(false); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: "8px 10px", cursor: "pointer", borderRadius: 6, fontSize: 12, color: "#1e293b", fontFamily: "inherit" }}>
+                      🔵 Mark unread
+                    </button>
                     {mine && (
                       <button type="button" onClick={() => { onSetEditingId(m.id); onSetEditingContent(m.content); setShowOverflow(false); }}
                         style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: "8px 10px", cursor: "pointer", borderRadius: 6, fontSize: 12, color: "#1e293b", fontFamily: "inherit" }}>
@@ -272,12 +280,17 @@ export function MessageRow({
           <div style={{
             padding: isEditing ? 12 : "10px 14px",
             borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-            background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : "#fff",
+            background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : m.pinned_at ? "linear-gradient(135deg,#fff,#FAEEDA)" : "#fff",
             color: mine ? "#fff" : "#1e293b",
             boxShadow: "0 2px 8px rgba(15,39,68,.08)",
-            border: mine ? "none" : "1px solid #f1f5f9",
+            border: mine ? "none" : m.pinned_at ? "1px solid #FAC775" : "1px solid #f1f5f9",
             position: "relative", overflow: "visible",
           }}>
+            {m.pinned_at && !mine && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, color: "#854F0B", fontWeight: 700, marginBottom: 4 }}>
+                📌 Pinned
+              </div>
+            )}
             {isEditing ? (
               <div style={{ display: "grid", gap: 10, minWidth: 250 }}>
                 <textarea
