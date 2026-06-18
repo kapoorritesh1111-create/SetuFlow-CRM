@@ -27,11 +27,20 @@ type ChatMessage = {
 
 type MentionTarget = { userId: string; name: string; initials: string };
 
-const FALLBACK_MENTIONS: MentionTarget[] = [
-  { userId: "180afa12-6ff6-4e16-b8d1-04b13e508970", name: "Ritesh Kapoor", initials: "RK" },
-  { userId: "f7208bf2-2ef3-4e37-bb6b-0c7d16860bce", name: "Kumar Mayank", initials: "KM" },
-  { userId: "d9103794-e6be-472b-b131-c2ee8524877c", name: "Ankush Arya", initials: "AA" },
-];
+const FALLBACK_MENTIONS: MentionTarget[] = [];
+
+async function fetchOrgMentions(): Promise<MentionTarget[]> {
+  try {
+    const res = await fetch("/api/chat/context", { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.members ?? []).map((m: any) => ({
+      userId: m.id,
+      name: m.name || "Team Member",
+      initials: (m.name || "TM").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+    }));
+  } catch { return []; }
+}
 
 function initials(name?: string | null) {
   return (name ?? "??").split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase();
@@ -73,12 +82,17 @@ export function ChatThread({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMentions, setShowMentions] = useState(false);
+  const [orgMentions, setOrgMentions] = useState<MentionTarget[]>([]);
   const [mentionIds, setMentionIds] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
 
   const autoEnrollUsersKey = useMemo(() => (autoEnrollUsers ?? []).join("|"), [autoEnrollUsers]);
   const mentionQuery = message.match(/@(\w*)$/)?.[1]?.toLowerCase() ?? "";
-  const mentionTargets = useMemo(() => FALLBACK_MENTIONS.filter((member) => member.userId !== currentUserId && (!mentionQuery || member.name.toLowerCase().includes(mentionQuery) || member.initials.toLowerCase().includes(mentionQuery))), [currentUserId, mentionQuery]);
+  const allMentions = orgMentions.length ? orgMentions : FALLBACK_MENTIONS;
+  const mentionTargets = useMemo(() => allMentions.filter((member) => member.userId !== currentUserId && (!mentionQuery || member.name.toLowerCase().includes(mentionQuery) || member.initials.toLowerCase().includes(mentionQuery))), [allMentions, currentUserId, mentionQuery]);
+
+  // Fetch org members for @mention
+  useEffect(() => { fetchOrgMentions().then(setOrgMentions).catch(() => {}); }, []);
 
   useEffect(() => setActiveConversationId(conversationId ?? null), [conversationId]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
