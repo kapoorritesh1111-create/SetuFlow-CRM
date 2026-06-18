@@ -113,7 +113,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
   const filteredMembers = membersList.filter((m) => m.name.toLowerCase().includes(dmSearch.toLowerCase()));
   const onlineCount = membersList.filter((m) => m.online).length;
   const headerTitle = view === "dm-chat" && dmTarget ? dmTarget.name : view === "dm-picker" ? "Direct Messages" : `#${activeChannel}`;
-  const headerSub = view === "dm-chat" ? "Direct Message" : view === "dm-picker" ? "Select a team member" : `${membersList.length + 1} members${onlineCount > 0 ? ` \u00b7 ${onlineCount} online` : ""}`;
+  const headerSub = view === "dm-chat" ? "Direct Message" : view === "dm-picker" ? "Select a team member" : `${membersList.length + 1} members${onlineCount > 0 ? ` · ${onlineCount} online` : ""}`;
 
   const favChannels = CHANNELS.filter((k) => isFav(k));
   const normalChannels = CHANNELS.filter((k) => !isFav(k) && !isMuted(k));
@@ -125,7 +125,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
     if (filter === "unread" && uc === 0) return null;
     if (filter === "dms") return null;
     const convId = convs.find((c) => c.channel_key === key)?.id;
-    return <div key={key} onClick={() => switchChannel(key)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", background: isActive ? "#f1f5f9" : "transparent", borderLeft: isActive ? "2px solid #279491" : "2px solid transparent" }}><span style={{ fontSize: 14, color: "#94a3b8", width: 18, textAlign: "center" }}>#</span><span style={{ flex: 1, fontSize: 13, color: "#1e293b", fontWeight: uc > 0 ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{CHANNEL_LABELS[key] || key}</span>{uc > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99 }}>{uc}</span>}{!inFav && convId && <button type="button" onClick={(e) => { e.stopPropagation(); void togglePref(convId, "is_favorite"); }} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, color: isFav(key) ? "#d97706" : "#d1d5db", fontSize: 12 }}>\u2B50</button>}</div>;
+    return <div key={key} onClick={() => switchChannel(key)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", background: isActive ? "#f1f5f9" : "transparent", borderLeft: isActive ? "2px solid #279491" : "2px solid transparent" }}><span style={{ fontSize: 14, color: "#94a3b8", width: 18, textAlign: "center" }}>#</span><span style={{ flex: 1, fontSize: 13, color: "#1e293b", fontWeight: uc > 0 ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{CHANNEL_LABELS[key] || key}</span>{uc > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99 }}>{uc}</span>}{!inFav && convId && <button type="button" onClick={(e) => { e.stopPropagation(); void togglePref(convId, "is_favorite"); }} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, color: isFav(key) ? "#d97706" : "#d1d5db", fontSize: 12 }}>⭐</button>}</div>;
   }
 
   function dmRow(dm: DmRecord) {
@@ -149,7 +149,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
         <div style={{ padding: "10px 12px", background: "#0f2744", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span style={{ fontWeight: 700, fontSize: 14 }}>Chat</span><button type="button" onClick={() => setView("dm-picker")} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>+ DM</button></div>
         <div style={{ display: "flex", gap: 2, padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{(["all","unread","channels","dms"] as Filter[]).map((f) => <button key={f} type="button" onClick={() => setFilter(f)} style={{ flex: 1, border: "none", borderRadius: 6, padding: "5px 4px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textAlign: "center", background: filter === f ? "#e1f5ee" : "transparent", color: filter === f ? "#085041" : "#94a3b8", textTransform: "capitalize" }}>{f}</button>)}</div>
         <div style={{ flex: 1, overflowY: "auto" }}>
-          {filter !== "dms" && favChannels.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "8px 12px 4px", textTransform: "uppercase", letterSpacing: ".04em" }}>\u2B50 Favorites</div>{favChannels.map((k) => channelRow(k, true))}</>}
+          {filter !== "dms" && favChannels.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "8px 12px 4px", textTransform: "uppercase", letterSpacing: ".04em" }}>⭐ Favorites</div>{favChannels.map((k) => channelRow(k, true))}</>}
           {filter !== "dms" && <><div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "8px 12px 4px", textTransform: "uppercase", letterSpacing: ".04em" }}>Channels</div>{normalChannels.map((k) => channelRow(k))}</>}
           {filter !== "channels" && activeDms.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "8px 12px 4px", textTransform: "uppercase", letterSpacing: ".04em", borderTop: "1px solid #f1f5f9" }}>Direct messages</div>{activeDms.map(dmRow)}</>}
           {filter !== "dms" && mutedChannels.length > 0 && <><div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "8px 12px 4px", textTransform: "uppercase", letterSpacing: ".04em", borderTop: "1px solid #f1f5f9", opacity: .5 }}>Muted</div>{mutedChannels.map((k) => <div key={k} style={{ opacity: .5 }}>{channelRow(k)}</div>)}</>}
@@ -160,13 +160,13 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "linear-gradient(135deg,#0f2744,#1F487C)", color: "#fff", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {(view === "dm-chat" || view === "dm-picker") && <button type="button" onClick={() => setView("chat")} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 12, marginRight: 4 }}>\u2190</button>}
+            {(view === "dm-chat" || view === "dm-picker") && <button type="button" onClick={() => setView("chat")} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 12, marginRight: 4 }}>←</button>}
             <div style={{ width: 32, height: 32, borderRadius: 10, background: view === "dm-chat" ? "#279491" : "rgba(255,255,255,.12)", display: "grid", placeItems: "center", fontSize: 14, color: "#fff", fontWeight: 700 }}>{view === "dm-chat" ? gi(dmTarget?.name ?? "DM") : "#"}</div>
             <div><div style={{ fontWeight: 700, fontSize: 14 }}>{headerTitle}</div><div style={{ fontSize: 10, opacity: .6 }}>{headerSub}</div></div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
-            <button type="button" onClick={() => setExpanded(!expanded)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>{expanded ? "\u2199" : "\u2197"}</button>
-            <button type="button" onClick={() => { setOpen(false); setView("chat"); setExpanded(false); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>\u2715</button>
+            <button type="button" onClick={() => setExpanded(!expanded)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>{expanded ? "↙" : "↗"}</button>
+            <button type="button" onClick={() => { setOpen(false); setView("chat"); setExpanded(false); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>✕</button>
           </div>
         </div>
 
