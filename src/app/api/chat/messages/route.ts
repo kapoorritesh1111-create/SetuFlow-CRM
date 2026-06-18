@@ -184,6 +184,13 @@ export async function POST(request: NextRequest) {
 
     await ensureParticipant(admin, convId, orgId, user.id);
 
+    const { data: conversation } = await admin
+      .from("chat_conversations")
+      .select("id, title, conversation_type, channel_key")
+      .eq("id", convId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+
     const parentId = uuid(parent_message_id ?? null);
     if (parentId) {
       const { data: parent } = await admin
@@ -200,13 +207,14 @@ export async function POST(request: NextRequest) {
       ? mentions.filter((id: string) => /^[0-9a-fA-F-]{36}$/.test(id))
       : [];
 
+    const displayName = sender_name ?? getDisplayName(user, "Unknown");
     const { data, error } = await admin
       .from("chat_messages")
       .insert({
         conversation_id: convId,
         organization_id: orgId,
         sender_id: user.id,
-        sender_name: sender_name ?? getDisplayName(user, "Unknown"),
+        sender_name: displayName,
         content: trimmedContent,
         message_type: "user",
         mentions: validMentions,
@@ -222,23 +230,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const now = new Date().toISOString();
     await admin
       .from("chat_conversations")
-      .update({ updated_at: new Date().toISOString() })
+      .update({ updated_at: now })
       .eq("id", convId);
 
-    if (validMentions.length > 0) {
-      const notifs = validMentions.map((userId: string) => ({
-        organization_id: orgId,
-        user_id: userId,
-        conversation_id: convId,
-        message_id: data.id,
-        type: parentId ? "reply" : "mention",
-        title: `${data.sender_name} mentioned you in ${channel ? `#${channel}` : "chat"}`,
-        content: trimmedContent.slice(0, 100),
-        link: "/chat",
-      }));
-      try { await admin.from("chat_notifications").insert(notifs); } catch { /* best effort */ }
+    await admin
+      .from("chat_participants")
+      .update({ last_read_at: now })
+      .eq("conversation_id", convId)
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id);
+
+    const notificationUserIds = new Set<string>(validMentions.filter((id: string) => id !== user.id));
+
+    if (conversation?.conversation_type === "dm") {
+      const { data: participantRows } = await admin
+        .from("chat_participants")
+        .select("user_id, muted")
+        .eq("conversation_id", convId)
+        .eq("organization_id", orgId)
+        .neq("user_id", user.id);
+
+      for (const row of participantRows ?? []) {
+        if (!row.muted && row.user_id) notificationUserIds.add(row.user_id);
+      }
+    }
+
+    if (notificationUserIds.size > 0) {
+      const notifs = Array.from(notificationUserIds).map((userId) => {
+        const isMention = validMentions.includes(userId);
+        const isDm = conversation?.conversation_type === "dm";
+        return {
+          organization_id: orgId,
+          user_id: userId,
+          conversation_id: convId,
+          message_id: data.id,
+          type: isDm && !isMention ? "dm" : parentId ? "reply" : "mention",
+          title: isDm ? `${displayName} sent you a direct message` : `${displayName} mentioned you in ${conversation?.channel_key ? `#${conversation.channel_key}` : "chat"}`,
+          content: trimmedContent ? trimmedContent.slice(0, 140) : "Attachment",
+          link: `/chat?conversation_id=${convId}`,
+        };
+      });
+      try { await admin.from("chat_notifications").insert(notifs); } catch (notifyErr) { console.error("Chat notification insert error:", notifyErr); }
     }
 
     return NextResponse.json({ message: { ...data, reply_count: 0 } }, { status: 201 });
