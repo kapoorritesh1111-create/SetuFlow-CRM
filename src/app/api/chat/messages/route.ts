@@ -13,6 +13,29 @@ import {
 
 export const dynamic = "force-dynamic";
 
+type AttachmentInput = {
+  name?: unknown;
+  url?: unknown;
+  size?: unknown;
+  type?: unknown;
+  storage_path?: unknown;
+};
+
+function sanitizeAttachments(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 10).map((item: AttachmentInput) => ({
+    name: typeof item?.name === "string" ? item.name.slice(0, 180) : "Attachment",
+    url: typeof item?.url === "string" ? item.url : "",
+    size: typeof item?.size === "number" ? item.size : 0,
+    type: typeof item?.type === "string" ? item.type.slice(0, 120) : "application/octet-stream",
+    storage_path: typeof item?.storage_path === "string" ? item.storage_path : "",
+  })).filter((item) => item.url && item.storage_path);
+}
+
+function uuid(value: string | null) {
+  return value && /^[0-9a-fA-F-]{36}$/.test(value) ? value : null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthenticatedChatUser();
@@ -23,6 +46,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const conversationIdParam = searchParams.get("conversation_id");
+    const parentMessageId = uuid(searchParams.get("parent_message_id"));
     const channelKey = searchParams.get("channel");
     const entityType = searchParams.get("entity_type");
     const entityId = searchParams.get("entity_id");
@@ -62,13 +86,48 @@ export async function GET(request: NextRequest) {
 
     await ensureParticipant(admin, conversationId, organizationId, user.id);
 
-    const { data } = await admin
+    let messageQuery = admin
       .from("chat_messages")
       .select("*")
       .eq("organization_id", organizationId)
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
       .limit(50);
+
+    messageQuery = parentMessageId
+      ? messageQuery.eq("parent_message_id", parentMessageId)
+      : messageQuery.is("parent_message_id", null);
+
+    const { data } = await messageQuery;
+    const messages = (data ?? []).reverse();
+    const messageIds = messages.map((item: any) => item.id).filter(Boolean);
+
+    let replyCounts: Record<string, number> = {};
+    if (!parentMessageId && messageIds.length > 0) {
+      const { data: replies } = await admin
+        .from("chat_messages")
+        .select("parent_message_id")
+        .eq("organization_id", organizationId)
+        .eq("conversation_id", conversationId)
+        .in("parent_message_id", messageIds);
+      replyCounts = (replies ?? []).reduce((acc: Record<string, number>, row: any) => {
+        if (row.parent_message_id) acc[row.parent_message_id] = (acc[row.parent_message_id] ?? 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    const { data: conversation } = await admin
+      .from("chat_conversations")
+      .select("id, conversation_type")
+      .eq("id", conversationId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    const { data: participants } = await admin
+      .from("chat_participants")
+      .select("user_id, last_read_at")
+      .eq("conversation_id", conversationId)
+      .eq("organization_id", organizationId);
 
     await admin
       .from("chat_participants")
@@ -77,9 +136,12 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id);
 
     return NextResponse.json({
-      messages: (data ?? []).reverse(),
+      messages: messages.map((item: any) => ({ ...item, reply_count: replyCounts[item.id] ?? 0 })),
       conversation_id: conversationId,
       organization_id: organizationId,
+      conversation_type: conversation?.conversation_type ?? null,
+      participants: participants ?? [],
+      parent_message_id: parentMessageId,
     });
   } catch (err) {
     console.error("Chat messages GET error:", err);
@@ -96,9 +158,11 @@ export async function POST(request: NextRequest) {
     if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 500 });
 
     const body = await request.json();
-    const { content, channel, conversation_id, mentions, sender_name, organization_id } = body;
+    const { content, channel, conversation_id, mentions, sender_name, organization_id, parent_message_id } = body;
+    const attachments = sanitizeAttachments(body.attachments);
+    const trimmedContent = typeof content === "string" ? content.trim() : "";
 
-    if (!content?.trim()) {
+    if (!trimmedContent && attachments.length === 0) {
       return NextResponse.json({ error: "Message required" }, { status: 400 });
     }
 
@@ -120,6 +184,18 @@ export async function POST(request: NextRequest) {
 
     await ensureParticipant(admin, convId, orgId, user.id);
 
+    const parentId = uuid(parent_message_id ?? null);
+    if (parentId) {
+      const { data: parent } = await admin
+        .from("chat_messages")
+        .select("id")
+        .eq("id", parentId)
+        .eq("organization_id", orgId)
+        .eq("conversation_id", convId)
+        .maybeSingle();
+      if (!parent) return NextResponse.json({ error: "Parent message not found" }, { status: 404 });
+    }
+
     const validMentions = Array.isArray(mentions)
       ? mentions.filter((id: string) => /^[0-9a-fA-F-]{36}$/.test(id))
       : [];
@@ -131,10 +207,12 @@ export async function POST(request: NextRequest) {
         organization_id: orgId,
         sender_id: user.id,
         sender_name: sender_name ?? getDisplayName(user, "Unknown"),
-        content: content.trim(),
+        content: trimmedContent,
         message_type: "user",
         mentions: validMentions,
-        entity_refs: extractIssueRefs(content),
+        entity_refs: extractIssueRefs(trimmedContent),
+        attachments,
+        parent_message_id: parentId,
       })
       .select("*")
       .single();
@@ -155,18 +233,64 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         conversation_id: convId,
         message_id: data.id,
-        type: "mention",
+        type: parentId ? "reply" : "mention",
         title: `${data.sender_name} mentioned you in ${channel ? `#${channel}` : "chat"}`,
-        content: content.trim().slice(0, 100),
+        content: trimmedContent.slice(0, 100),
         link: "/chat",
       }));
       try { await admin.from("chat_notifications").insert(notifs); } catch { /* best effort */ }
     }
 
-    return NextResponse.json({ message: data }, { status: 201 });
+    return NextResponse.json({ message: { ...data, reply_count: 0 } }, { status: 201 });
   } catch (err) {
     console.error("Chat messages POST error:", err);
     return NextResponse.json({ error: "Failed to send" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const chatUser = await getAuthenticatedChatUser();
+    if (!chatUser) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+    const admin = createServiceRoleClient();
+    if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+
+    const body = await request.json();
+    const msgId = uuid(body.id ?? null);
+    const content = typeof body.content === "string" ? body.content.trim() : "";
+
+    if (!msgId) return NextResponse.json({ error: "Message ID required" }, { status: 400 });
+    if (!content) return NextResponse.json({ error: "Message content required" }, { status: 400 });
+
+    const { data: msg } = await admin
+      .from("chat_messages")
+      .select("id, sender_id, content, original_content, conversation_id")
+      .eq("id", msgId)
+      .maybeSingle();
+
+    if (!msg) return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    if (msg.sender_id !== chatUser.id) return NextResponse.json({ error: "Can only edit your own messages" }, { status: 403 });
+
+    const organizationId = await ensureConversationAccess(admin, chatUser.id, msg.conversation_id);
+    if (!organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { data, error } = await admin
+      .from("chat_messages")
+      .update({
+        content,
+        original_content: msg.original_content ?? msg.content,
+        edited_at: new Date().toISOString(),
+      })
+      .eq("id", msgId)
+      .select("*")
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ message: data });
+  } catch (err) {
+    console.error("Chat messages PATCH error:", err);
+    return NextResponse.json({ error: "Failed to edit message" }, { status: 500 });
   }
 }
 
@@ -175,21 +299,23 @@ export async function DELETE(request: NextRequest) {
     const chatUser = await getAuthenticatedChatUser();
     if (!chatUser) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-    const msgId = request.nextUrl.searchParams.get("id");
+    const msgId = uuid(request.nextUrl.searchParams.get("id"));
     if (!msgId) return NextResponse.json({ error: "Message ID required" }, { status: 400 });
 
     const admin = createServiceRoleClient();
     if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
 
-    // Only allow deleting own messages
     const { data: msg } = await admin
       .from("chat_messages")
-      .select("id, sender_id")
+      .select("id, sender_id, conversation_id")
       .eq("id", msgId)
       .maybeSingle();
 
     if (!msg) return NextResponse.json({ error: "Message not found" }, { status: 404 });
     if (msg.sender_id !== chatUser.id) return NextResponse.json({ error: "Can only delete your own messages" }, { status: 403 });
+
+    const organizationId = await ensureConversationAccess(admin, chatUser.id, msg.conversation_id);
+    if (!organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await admin.from("chat_messages").delete().eq("id", msgId);
     return NextResponse.json({ deleted: true });
