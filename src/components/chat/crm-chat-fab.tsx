@@ -7,6 +7,7 @@ interface CrmChatFabProps {
   organizationId: string;
   currentUserId: string;
   currentUserName: string;
+  orgMembers?: { id: string; name: string; role: string }[];
 }
 
 type Channel = { key: string; label: string; conversationId?: string };
@@ -19,15 +20,11 @@ const DEFAULT_CHANNELS: Channel[] = [
   { key: "approvals", label: "Approvals" },
 ];
 
-const TEAM_HARDCODE = [
-  { id: "180afa12-6ff6-4e16-b8d1-04b13e508970", name: "Ritesh Kapoor", initials: "RK", role: "Owner", color: "#279491" },
-  { id: "f7208bf2-2ef3-4e37-bb6b-0c7d16860bce", name: "Kumar Mayank", initials: "KM", role: "Admin", color: "#1F487C" },
-  { id: "d9103794-e6be-472b-b131-c2ee8524877c", name: "Ankush Arya", initials: "AA", role: "Member", color: "#8b5cf6" },
-];
+const ROLE_COLORS: Record<string, string> = { owner: "#279491", admin: "#1F487C", member: "#8b5cf6", viewer: "#64748b" };
 
 type View = "channels" | "dm-picker" | "chat" | "dm-chat";
 
-export function CrmChatFab({ organizationId, currentUserId, currentUserName }: CrmChatFabProps) {
+export function CrmChatFab({ organizationId, currentUserId, currentUserName, orgMembers = [] }: CrmChatFabProps) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [channels, setChannels] = useState<Channel[]>(DEFAULT_CHANNELS);
@@ -113,8 +110,15 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
 
   if (!organizationId || !currentUserId) return null;
 
-  const filteredMembers = TEAM_HARDCODE
-    .filter(m => m.id !== currentUserId && m.name.toLowerCase().includes(dmSearch.toLowerCase()));
+  const membersList = orgMembers
+    .filter(m => m.id !== currentUserId)
+    .map(m => ({
+      ...m,
+      initials: m.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(),
+      color: ROLE_COLORS[m.role?.toLowerCase()] ?? "#64748b",
+      roleLabel: (m.role || "member").charAt(0).toUpperCase() + (m.role || "member").slice(1),
+    }));
+  const filteredMembers = membersList.filter(m => m.name.toLowerCase().includes(dmSearch.toLowerCase()));
 
   const headerTitle = view === "dm-chat" && dmTarget ? dmTarget.name : view === "dm-picker" ? "Direct Messages" : `#${activeChannel}`;
   const headerSub = view === "dm-chat" ? "Direct Message" : view === "dm-picker" ? "Select a team member" : "Team Chat";
@@ -215,7 +219,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName }: C
                       <div style={{ width:40, height:40, borderRadius:"50%", background:m.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, flexShrink:0 }}>{m.initials}</div>
                       <div style={{ flex:1 }}>
                         <div style={{ fontWeight:600, fontSize:14, color:"#1e293b" }}>{m.name}</div>
-                        <div style={{ fontSize:11, color:"#94a3b8", marginTop:1 }}>{m.role}</div>
+                        <div style={{ fontSize:11, color:"#94a3b8", marginTop:1 }}>{m.roleLabel}</div>
                       </div>
                       <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     </button>

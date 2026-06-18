@@ -8,6 +8,7 @@ type ChatContext = {
   organization_id: string;
   user_id: string;
   user_name: string;
+  members?: { id: string; name: string; role: string }[];
 };
 
 export function AppEntityDiscussionBridge() {
@@ -39,6 +40,7 @@ export function AppEntityDiscussionBridge() {
         organizationId={context.organization_id}
         currentUserId={context.user_id}
         currentUserName={context.user_name}
+        orgMembers={context.members ?? []}
       />
       <AppEntityDiscussionDrawer
         organizationId={context.organization_id}
