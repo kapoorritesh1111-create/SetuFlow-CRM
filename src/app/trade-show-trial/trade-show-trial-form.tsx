@@ -2,11 +2,15 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 
-import {
-  startTradeShowTrial,
-  tradeShowTrialInitialState,
-  type TradeShowTrialActionState,
-} from './actions';
+import { startTradeShowTrial } from './actions';
+
+export type TradeShowTrialActionState = {
+  ok: boolean;
+  message: string;
+  fieldErrors?: Record<string, string>;
+};
+
+const tradeShowTrialInitialState: TradeShowTrialActionState = { ok: false, message: '' };
 
 type TrialSignupField = {
   name: string;
