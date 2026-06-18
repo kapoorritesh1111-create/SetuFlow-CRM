@@ -1,9 +1,55 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-type Lead = { id:string; company_name:string; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null };
+type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null };
+type SearchParams = Record<string, string | string[] | undefined>;
+
+const TRIAL_TEMPLATES = [
+  { key: '', label: 'Common template / Export foods basic' },
+  { key: 'export_foods_basic', label: 'Export foods basic' },
+  { key: 'ingredient_trader', label: 'Ingredient trader' },
+  { key: 'distributor_importer', label: 'Distributor / importer' },
+  { key: 'packaging_converter', label: 'Packaging converter / Stark Packmate' },
+] as const;
+
+function textValue(value: FormDataEntryValue | null) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function slugify(value: string) {
+  const slug = value
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 42);
+  return slug || `lead-${Date.now().toString(36)}`;
+}
+
+function normalizeTrialTemplate(value: FormDataEntryValue | null) {
+  const key = textValue(value);
+  if (['export_foods_basic', 'ingredient_trader', 'distributor_importer', 'packaging_converter'].includes(key)) return key;
+  return 'export_foods_basic';
+}
+
+function numberValue(value: FormDataEntryValue | null, fallback: number) {
+  const parsed = Number.parseInt(textValue(value), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function firstParam(params: SearchParams | undefined, key: string) {
+  const value = params?.[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function noticeContent(notice: string | undefined, detail: string | undefined) {
+  if (notice === 'created') return { tone: 'success', title: 'Lead saved', body: 'The internal lead was saved to client_onboarding_requests and added to the SMC pipeline.' };
+  if (notice === 'save-error') return { tone: 'error', title: 'Lead was not saved', body: detail || 'Supabase rejected the lead. Check the required fields and try again.' };
+  return null;
+}
 
 async function getLeads() {
   const supabase = await createClient();
@@ -16,26 +62,54 @@ async function createLead(formData: FormData) {
   'use server';
   const supabase = await createClient();
   const db = supabase as any;
+
+  const companyName = textValue(formData.get('company_name'));
+  const email = textValue(formData.get('email'));
+  const slugBase = slugify(companyName);
+  const suffix = Date.now().toString(36).slice(-6);
+  const companySlug = `${slugBase}-${suffix}`.slice(0, 60).replace(/-+$/g, '');
+  const workspaceDomain = `${companySlug}.setuflowcrm.com`;
+  const notes = textValue(formData.get('notes')) || null;
+  const templateKey = normalizeTrialTemplate(formData.get('trial_template_key'));
+  const requestedPlan = textValue(formData.get('plan')) || 'starter';
+  const source = textValue(formData.get('source')) || 'internal';
+  const isTradeShow = source === 'trade_show';
+  const isTrialRequest = formData.get('is_trial') === 'on' || requestedPlan === 'trial';
+  const requestedModules = isTradeShow ? ['full_crm', 'trade_show'] : ['full_crm'];
+
   const { error } = await db.from('client_onboarding_requests').insert({
-    company_name: String(formData.get('company_name') ?? '').trim(),
-    primary_admin_name: String(formData.get('contact_name') ?? '').trim() || null,
-    primary_admin_email: String(formData.get('email') ?? '').trim(),
-    primary_phone: String(formData.get('phone') ?? '').trim() || null,
-    headquarters_country: String(formData.get('country') ?? '').trim() || null,
-    website: String(formData.get('website') ?? '').trim() || null,
-    industry: String(formData.get('industry') ?? '').trim() || null,
-    requested_plan: String(formData.get('plan') ?? 'starter'),
-    requested_seat_count: Number(formData.get('seats') ?? 5),
-    is_trial_request: formData.get('is_trial') === 'on',
-    pipeline_stage: 'inquiry',
-    lead_score: 0,
-    status: 'new',
-    source: String(formData.get('source') ?? 'internal').trim(),
-    source_detail: String(formData.get('source_detail') ?? '').trim() || null,
-    internal_notes: String(formData.get('notes') ?? '').trim() || null,
+    company_name: companyName,
+    company_slug: companySlug,
+    workspace_domain: workspaceDomain,
+    primary_admin_name: textValue(formData.get('contact_name')) || null,
+    primary_admin_email: email,
+    primary_phone: textValue(formData.get('phone')) || null,
+    headquarters_country: textValue(formData.get('country')) || null,
+    website: textValue(formData.get('website')) || null,
+    industry: textValue(formData.get('industry')) || null,
+    requested_plan: requestedPlan,
+    requested_seat_count: numberValue(formData.get('seats'), 5),
+    is_trial_request: isTrialRequest,
+    trial_template_key: templateKey,
+    requested_modules: requestedModules,
+    pipeline_stage: isTrialRequest ? 'trial' : 'inquiry',
+    lead_score: isTrialRequest ? 40 : 20,
+    status: 'submitted',
+    source,
+    source_detail: textValue(formData.get('source_detail')) || null,
+    internal_notes: notes,
+    additional_notes: notes,
+    wants_trade_events: isTradeShow,
+    tags: [templateKey, requestedPlan, isTrialRequest ? 'trial' : 'lead'].filter(Boolean),
   });
-  if (error) console.error('Create lead error:', error);
+
+  if (error) {
+    console.error('Create lead error:', error);
+    redirect(`/smc/leads?lead_notice=save-error&lead_error=${encodeURIComponent(error.message)}`);
+  }
+
   revalidatePath('/smc/leads');
+  redirect('/smc/leads?lead_notice=created');
 }
 
 const STAGES = [
@@ -52,7 +126,9 @@ function waLink(phone: string|null, name: string|null) {
   return `https://wa.me/${clean.startsWith('+') ? clean.slice(1) : clean}?text=${encodeURIComponent(`Hi${name ? ' ' + name : ''}, following up regarding SETU Flow CRM.`)}`;
 }
 
-export default async function SmcLeadsPage() {
+export default async function SmcLeadsPage({ searchParams }: { searchParams?: SearchParams | Promise<SearchParams> }) {
+  const params = await searchParams;
+  const notice = noticeContent(firstParam(params, 'lead_notice'), firstParam(params, 'lead_error'));
   const leads = await getLeads();
 
   return (
@@ -67,6 +143,12 @@ export default async function SmcLeadsPage() {
         <div className="smc-kp"><div className="v">{leads.length}</div><div className="l">Pipeline</div></div>
         {STAGES.map(st=>{const c=leads.filter(l=>l.pipeline_stage===st.key).length;return <div key={st.key} className="smc-kp"><div className="v" style={{color:st.color}}>{c}</div><div className="l">{st.label}</div></div>})}
       </div>
+
+      {notice && (
+        <div style={{margin:'0 16px 12px',border:`1px solid ${notice.tone==='error'?'#fecaca':'#bbf7d0'}`,background:notice.tone==='error'?'#fef2f2':'#ecfdf5',color:notice.tone==='error'?'#991b1b':'#047857',borderRadius:14,padding:'12px 14px',fontSize:12,fontWeight:700}}>
+          {notice.title}<span style={{display:'block',fontWeight:500,marginTop:3}}>{notice.body}</span>
+        </div>
+      )}
 
       {/* New Lead Form */}
       <details style={{margin:'0 16px 16px',background:'#fff',border:'1px solid #dbe6ef',borderRadius:18,boxShadow:'0 8px 24px rgba(15,23,42,.05)'}}>
@@ -84,6 +166,7 @@ export default async function SmcLeadsPage() {
           <label style={{fontSize:11,color:'#475569',fontWeight:600}}>Industry<input name="industry" style={{width:'100%',marginTop:4,border:'1px solid #dbe6ef',borderRadius:10,padding:'9px 11px',fontSize:12}} placeholder="Food Import/Export" /></label>
           <label style={{fontSize:11,color:'#475569',fontWeight:600}}>Plan<select name="plan" style={{width:'100%',marginTop:4,border:'1px solid #dbe6ef',borderRadius:10,padding:'9px 11px',fontSize:12}}><option value="starter">Starter</option><option value="growth">Growth</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></label>
           <label style={{fontSize:11,color:'#475569',fontWeight:600}}>Seats<input name="seats" type="number" min={1} defaultValue={5} style={{width:'100%',marginTop:4,border:'1px solid #dbe6ef',borderRadius:10,padding:'9px 11px',fontSize:12}} /></label>
+          <label style={{fontSize:11,color:'#475569',fontWeight:600}}>Trial Template<select name="trial_template_key" defaultValue="" style={{width:'100%',marginTop:4,border:'1px solid #dbe6ef',borderRadius:10,padding:'9px 11px',fontSize:12}}>{TRIAL_TEMPLATES.map(template=><option key={template.key || 'common'} value={template.key}>{template.label}</option>)}</select></label>
           <label style={{fontSize:11,color:'#475569',fontWeight:600}}>Source<select name="source" style={{width:'100%',marginTop:4,border:'1px solid #dbe6ef',borderRadius:10,padding:'9px 11px',fontSize:12}}><option value="internal">Internal / Referral</option><option value="trade_show">Trade Show</option><option value="website">Website</option><option value="cold_outreach">Cold Outreach</option><option value="linkedin">LinkedIn</option></select></label>
           <label style={{fontSize:11,color:'#475569',fontWeight:600}}>Source Detail<input name="source_detail" style={{width:'100%',marginTop:4,border:'1px solid #dbe6ef',borderRadius:10,padding:'9px 11px',fontSize:12}} placeholder="Gulfood 2026, Booth A12" /></label>
           <label style={{fontSize:11,color:'#475569',fontWeight:600,display:'flex',alignItems:'center',gap:8,marginTop:18}}><input name="is_trial" type="checkbox" /> Trial Request</label>
@@ -137,6 +220,7 @@ export default async function SmcLeadsPage() {
                     <div style={{display:'flex',gap:4,marginTop:8,flexWrap:'wrap'}}>
                       <span className="smc-lb" style={{background:'#f1f5f9',color:'#475569'}}>{lead.requested_seat_count} seats</span>
                       <span className="smc-lb" style={{background:'#f5f3ff',color:'#8b5cf6'}}>{lead.requested_plan}</span>
+                      {lead.trial_template_key&&<span className="smc-lb" style={{background:'#e0f2fe',color:'#0369a1'}}>{lead.trial_template_key.replace(/_/g,' ')}</span>}
                       {lead.is_trial_request&&<span className="smc-lb" style={{background:'#fef3c7',color:'#d97706'}}>Trial</span>}
                       {lead.source&&<span className="smc-lb" style={{background:'#ecfdf5',color:'#10b981'}}>{lead.source}</span>}
                     </div>
