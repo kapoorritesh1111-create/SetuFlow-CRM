@@ -140,5 +140,7 @@ export function getPremiumCapabilityForPathname(pathname: string): TradeShowTria
   if (pathname === '/orders' || pathname.startsWith('/orders/')) return 'orders';
   if (pathname.startsWith('/api/quotes/')) return 'quotes';
   if (pathname.startsWith('/api/orders/')) return 'orders';
+  if (pathname.startsWith('/api/products') || pathname.startsWith('/api/catalog')) return 'lead_command_center';
+  if (pathname.startsWith('/api/leads/coverage-resolver')) return 'lead_command_center';
   return null;
 }
