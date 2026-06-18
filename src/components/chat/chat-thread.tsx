@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import { createBrowserClient } from "@/lib/supabase/client";
+import { MessageRow, initials, fmtBytes, renderContent, type Attachment, type Message, type Reaction } from "./message-row";
 
 export interface ChatThreadProps {
   entityType?: string;
@@ -15,21 +16,30 @@ export interface ChatThreadProps {
   currentUserName: string;
 }
 
-type Attachment = { name: string; url: string; size: number; type: string; storage_path: string };
-type Message = { id: string; content: string; sender_id?: string | null; sender_name: string | null; created_at: string; edited_at?: string | null; message_type?: string; attachments?: Attachment[] | null; parent_message_id?: string | null; reply_count?: number };
-type Reaction = { id: string; message_id: string; user_id: string; user_name: string | null; emoji: string; created_at: string };
 type Participant = { user_id: string; last_read_at: string | null };
 type Member = { userId: string; name: string; initials: string; email?: string | null; online?: boolean };
 
-const QUICK_REACTIONS = ["👍", "❤️", "✅"];
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const pill = { borderRadius: 999, border: "1px solid #dbe7ea", background: "#fff", color: "#0f2744", cursor: "pointer" };
+const pill = { borderRadius: 999 as const, border: "1px solid #dbe7ea", background: "#fff", color: "#0f2744", cursor: "pointer" as const };
 
-function initials(name?: string | null) { return (name || "TM").split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase(); }
-function fmtTime(value: string) { const d = new Date(value); return Number.isNaN(d.getTime()) ? "now" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
-function fmtBytes(size: number) { if (!Number.isFinite(size) || size <= 0) return "Unknown size"; if (size < 1024) return `${size} B`; if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`; return `${(size / 1048576).toFixed(1)} MB`; }
-async function fetchMembers(organizationId: string): Promise<Member[]> { try { const res = await fetch(`/api/chat/context?organization_id=${organizationId}`, { cache: "no-store" }); if (!res.ok) return []; const data = await res.json(); return (data.members ?? []).map((m: any) => ({ userId: m.id, name: m.name || m.email || "Team Member", email: m.email, initials: m.initials || initials(m.name || m.email), online: Boolean(m.online) })); } catch { return []; } }
-function renderContent(text: string, mine: boolean) { return text.split(/(S\d+-[A-Z]+-\d+|@[A-Za-z][A-Za-z0-9]*(?:\s+[A-Za-z][A-Za-z0-9]*)?)/g).map((part, i) => { if (/^S\d+-[A-Z]+-\d+$/.test(part)) return <a key={i} href={`/smc/issues?q=${part}`} style={{ color: mine ? "#fff" : "#1F487C", fontWeight: 800, textDecoration: "underline" }}>{part}</a>; if (/^@[A-Za-z]/.test(part)) return <strong key={i} style={{ color: mine ? "#d1faf9" : "#1F487C" }}>{part}</strong>; return part; }); }
+const COMPOSER_EMOJI = [
+  "\u{1F600}","\u{1F602}","\u{1F60A}","\u{1F60D}","\u{1F929}","\u{1F60E}","\u{1F914}","\u{1F44D}","\u{1F44E}","\u{1F44F}",
+  "\u{1F525}","\u{2764}\u{FE0F}","\u{1F4AF}","\u{2705}","\u{274C}","\u{1F389}","\u{1F680}","\u{2B50}","\u{1F4A1}","\u{1F4CC}",
+  "\u{26A1}","\u{2728}","\u{1F91D}","\u{1F4AA}","\u{1F64F}","\u{1F62D}","\u{1F624}","\u{1F440}","\u{1F648}","\u{2615}",
+];
+
+async function fetchMembers(organizationId: string): Promise<Member[]> {
+  try {
+    const res = await fetch(`/api/chat/context?organization_id=${organizationId}`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.members ?? []).map((m: any) => ({
+      userId: m.id, name: m.name || m.email || "Team Member",
+      email: m.email, initials: m.initials || initials(m.name || m.email),
+      online: Boolean(m.online),
+    }));
+  } catch { return []; }
+}
 
 export function ChatThread({ entityType, entityId, conversationId, organizationId, autoCreateTitle, autoEnrollUsers, compact = false, currentUserId, currentUserName }: ChatThreadProps) {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId ?? null);
@@ -42,6 +52,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   const [mentionIds, setMentionIds] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showMentions, setShowMentions] = useState(false);
+  const [showComposerEmoji, setShowComposerEmoji] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; at: number }>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
@@ -51,10 +62,11 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [hovered, setHovered] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const composerEmojiRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef<any>(null);
   const lastTypingRef = useRef(0);
   const enrollKey = useMemo(() => (autoEnrollUsers ?? []).join("|"), [autoEnrollUsers]);
@@ -67,6 +79,14 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   useEffect(() => setActiveConversationId(conversationId ?? null), [conversationId]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { const timer = window.setInterval(() => setTypingUsers((x) => ({ ...x })), 1000); return () => clearInterval(timer); }, []);
+
+  // close composer emoji on outside click
+  useEffect(() => {
+    if (!showComposerEmoji) return;
+    function handler(e: MouseEvent) { if (composerEmojiRef.current && !composerEmojiRef.current.contains(e.target as Node)) setShowComposerEmoji(false); }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showComposerEmoji]);
 
   async function loadReactions(convId: string) { try { const res = await fetch(`/api/chat/reactions?conversation_id=${convId}`, { cache: "no-store" }); const data = await res.json(); const next: Record<string, Reaction[]> = {}; for (const r of data.reactions ?? []) next[r.message_id] = [...(next[r.message_id] ?? []), r]; setReactions(next); } catch {} }
   async function markRead(convId: string) { try { await fetch("/api/chat/read-state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversation_id: convId }) }); setParticipants((p) => p.map((row) => row.user_id === currentUserId ? { ...row, last_read_at: new Date().toISOString() } : row)); } catch {} }
@@ -93,14 +113,9 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
     const supabase = createBrowserClient();
     const msgSub = supabase.channel(`chat-thread-${activeConversationId}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${activeConversationId}` }, (payload) => {
       const next = payload.new as Message;
-      const match = threadParent?.id ? next.parent_message_id === threadParent.id : true;
+      const match = threadParent?.id ? next.parent_message_id === threadParent.id : !next.parent_message_id;
       if (!match) { setMessages((cur) => cur.map((m) => m.id === next.parent_message_id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m)); return; }
-      setMessages((cur) => {
-        if (cur.some((m) => m.id === next.id)) return cur;
-        const withoutTemp = cur.filter((m) => !(m.id.startsWith("temp-") && m.sender_id === next.sender_id && m.content === next.content));
-        const bumped = next.parent_message_id ? withoutTemp.map((m) => m.id === next.parent_message_id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m) : withoutTemp;
-        return [...bumped, next].slice(-50);
-      });
+      setMessages((cur) => cur.some((m) => m.id === next.id) ? cur : [...cur.filter((m) => !(m.id.startsWith("temp-") && m.sender_id === next.sender_id && m.content === next.content)), next].slice(-50));
       void markRead(activeConversationId);
     }).on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${activeConversationId}` }, (payload) => { const next = payload.new as Message; setMessages((cur) => cur.map((m) => m.id === next.id ? { ...m, ...next } : m)); }).subscribe();
     const reactionSub = supabase.channel(`chat-reactions-${activeConversationId}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_reactions" }, (payload) => { const next = payload.new as Reaction; setReactions((cur) => ({ ...cur, [next.message_id]: [...(cur[next.message_id] ?? []).filter((r) => r.id !== next.id && !(r.user_id === next.user_id && r.emoji === next.emoji)), next] })); }).on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_reactions" }, (payload) => { const old = payload.old as Partial<Reaction>; if (!old.message_id) return; setReactions((cur) => ({ ...cur, [old.message_id!]: (cur[old.message_id!] ?? []).filter((r) => r.id !== old.id) })); }).subscribe();
@@ -124,13 +139,179 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   }
   async function removeMessage(id: string) { if (id.startsWith("temp-")) return; setMessages((cur) => cur.filter((m) => m.id !== id)); try { await fetch(`/api/chat/messages?id=${id}`, { method: "DELETE" }); } catch {} }
   function readByOther(m: Message) { const readers = participants.filter((p) => p.user_id !== currentUserId); return conversationType === "dm" && readers.length > 0 && readers.every((p) => p.last_read_at && new Date(p.last_read_at).getTime() > new Date(m.created_at).getTime()); }
-  function grouped(id: string) { const rows = reactions[id] ?? []; const map = new Map<string, { emoji: string; users: string[]; own: boolean }>(); for (const r of rows) { const v = map.get(r.emoji) ?? { emoji: r.emoji, users: [], own: false }; v.users.push(r.user_name || "Team member"); if (r.user_id === currentUserId) v.own = true; map.set(r.emoji, v); } return Array.from(map.values()); }
   function onDrop(e: DragEvent<HTMLDivElement>) { e.preventDefault(); setDragging(false); if (e.dataTransfer.files?.length) void uploadFiles(e.dataTransfer.files); }
-  function attachmentList(items?: Attachment[] | null) { if (!items?.length) return null; return <div style={{ display: "grid", gap: 6, marginTop: 8 }}>{items.map((f) => f.type?.startsWith("image/") ? <a key={f.storage_path || f.url} href={f.url} target="_blank" rel="noreferrer"><img src={f.url} alt={f.name} style={{ maxWidth: 240, maxHeight: 180, borderRadius: 12, objectFit: "cover" }} /></a> : <a key={f.storage_path || f.url} href={f.url} target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "none", border: "1px solid #dbe7ea", borderRadius: 12, padding: 8, background: "rgba(255,255,255,.7)" }}>File: <strong>{f.name}</strong> <small>{fmtBytes(f.size)}</small></a>)}</div>; }
-  function replyContext(m: Message, mine: boolean) { if (!m.parent_message_id || threadParent) return null; const parent = messages.find((item) => item.id === m.parent_message_id); if (!parent) return null; return <div style={{ borderLeft: `3px solid ${mine ? "rgba(255,255,255,.65)" : "#279491"}`, background: mine ? "rgba(255,255,255,.14)" : "#f8fafc", color: mine ? "#ecfeff" : "#475569", padding: "6px 8px", borderRadius: 8, marginBottom: 8, fontSize: 11, lineHeight: 1.35 }}><div style={{ fontWeight: 900, marginBottom: 2 }}>Replying to {parent.sender_name || "Team member"}</div><div style={{ opacity: .9, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parent.content || "Attachment"}</div></div>; }
-  function row(m: Message, i: number) { const mine = m.sender_id === currentUserId || m.sender_name === currentUserName; const prev = i > 0 ? messages[i - 1] : null; const same = prev?.sender_name === m.sender_name && new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 300000; const date = !prev || new Date(m.created_at).toDateString() !== new Date(prev.created_at).toDateString(); const groups = grouped(m.id); return <div key={m.id}>{date && <div style={{ textAlign: "center", padding: "12px 0 6px" }}><span style={{ background: "#e2e8f0", padding: "3px 10px", borderRadius: 999, fontSize: 10, color: "#64748b", fontWeight: 800 }}>{new Date(m.created_at).toDateString() === new Date().toDateString() ? "Today" : new Date(m.created_at).toLocaleDateString()}</span></div>}<div style={{ display: "flex", flexDirection: mine ? "row-reverse" : "row", gap: 8, marginTop: same ? 3 : 12 }} onMouseEnter={() => setHovered(m.id)} onMouseLeave={() => setHovered(null)}>{!mine && <div style={{ width: 30, height: 30, borderRadius: 999, background: "#279491", color: "#fff", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 900 }}>{initials(m.sender_name)}</div>}<div style={{ maxWidth: compact ? "82%" : "72%", minWidth: 44 }}><div style={{ padding: editingId === m.id ? 12 : "10px 14px", borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : "#fff", color: mine ? "#fff" : "#1e293b", boxShadow: "0 3px 10px rgba(15,39,68,.12)", position: "relative", overflow: "visible" }}>{editingId === m.id ? <div style={{ display: "grid", gap: 10, minWidth: 250 }}><textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => { if (e.key === "Escape") cancelEdit(); if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void saveEdit(); } }} autoFocus style={{ width: "100%", minHeight: 74, color: "#102033", background: "#fff", borderRadius: 10, border: "2px solid #bfdbfe", padding: 10, boxSizing: "border-box", outline: "none", fontSize: 13, lineHeight: 1.45 }} /><div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}><button type="button" onClick={cancelEdit} style={{ ...pill, padding: "7px 14px", fontWeight: 900, fontSize: 12 }}>Cancel</button><button type="button" onClick={() => void saveEdit()} disabled={!editingContent.trim()} style={{ border: "none", borderRadius: 999, padding: "7px 16px", background: editingContent.trim() ? "#0f2744" : "#94a3b8", color: "#fff", fontWeight: 900, fontSize: 12, cursor: editingContent.trim() ? "pointer" : "not-allowed" }}>Save</button></div></div> : <>{replyContext(m, mine)}{m.content ? renderContent(m.content, mine) : null}{attachmentList(m.attachments)}</>}{hovered === m.id && !m.id.startsWith("temp-") && editingId !== m.id && <div style={{ position: "absolute", top: 4, right: mine ? undefined : 4, left: mine ? 4 : undefined, display: "flex", gap: 1, maxWidth: "calc(100% - 8px)", flexWrap: "wrap", background: "rgba(255,255,255,.98)", border: "1px solid #dbe7ea", borderRadius: 10, padding: "2px 3px", zIndex: 3, color: "#0f2744" }}>{QUICK_REACTIONS.map((emoji) => <button key={emoji} type="button" onClick={() => toggleReaction(m.id, emoji)} style={{ border: "none", background: (reactions[m.id] ?? []).some((r) => r.emoji === emoji && r.user_id === currentUserId) ? "#d1faf9" : "transparent", cursor: "pointer", borderRadius: 6, padding: "2px 4px", fontSize: 14 }}>{emoji}</button>)}<button type="button" onClick={() => setReplyingTo(m)} style={{ border: "none", background: "transparent", cursor: "pointer", padding: "2px 4px" }}>↩</button>{mine && <button type="button" onClick={() => { setEditingId(m.id); setEditingContent(m.content); }} style={{ border: "none", background: "transparent", cursor: "pointer", padding: "2px 4px" }}>✎</button>}{mine && <button type="button" onClick={() => removeMessage(m.id)} style={{ border: "none", background: "transparent", cursor: "pointer", padding: "2px 4px", color: "#dc2626" }}>×</button>}</div>}</div>{groups.length > 0 && <div style={{ display: "inline-flex", gap: 3, marginTop: 4, flexWrap: "wrap", justifyContent: mine ? "flex-end" : "flex-start" }}>{groups.map((g) => <button key={g.emoji} type="button" title={g.users.join(", ")} onClick={() => toggleReaction(m.id, g.emoji)} style={{ background: g.own ? "#d1faf9" : "#f1f5f9", border: g.own ? "1px solid #99e6e1" : "1px solid #e2e8f0", borderRadius: 99, padding: "2px 8px", fontSize: 13, cursor: "pointer" }}>{g.emoji} {g.users.length}</button>)}</div>}{!threadParent && (m.reply_count ?? 0) > 0 && <button type="button" onClick={() => setThreadParent(m)} style={{ border: "none", background: "transparent", color: "#1F487C", fontSize: 11, fontWeight: 800, marginTop: 4, cursor: "pointer" }}>{m.reply_count} replies</button>}<div style={{ fontSize: 9, color: readByOther(m) ? "#279491" : "#94a3b8", marginTop: 4, textAlign: mine ? "right" : "left" }}>{fmtTime(m.created_at)} {m.edited_at ? "(edited)" : ""} {mine ? (readByOther(m) ? "read" : "sent") : ""}</div></div></div></div>; }
 
-  return <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={{ height: compact ? "100%" : undefined, minHeight: compact ? undefined : 520, display: "flex", flexDirection: "column" }}>{threadParent && <div style={{ padding: 10, borderBottom: "1px solid #e2e8f0", background: "#fff", display: "flex", justifyContent: "space-between", gap: 10 }}><strong>Thread: {threadParent.sender_name}</strong><button type="button" onClick={() => { setThreadParent(null); setReplyingTo(null); }} style={pill}>Back</button></div>}<div onDragEnter={(e) => { e.preventDefault(); setDragging(true); }} onDragOver={(e) => e.preventDefault()} onDragLeave={() => setDragging(false)} onDrop={onDrop} style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: compact ? 12 : 18, background: dragging ? "#ecfeff" : compact ? "#f8fafc" : "linear-gradient(180deg,#f8fafc,#eef9f8)", borderRadius: compact ? 0 : 20, position: "relative" }}>{dragging && <div style={{ position: "absolute", inset: 12, border: "2px dashed #279491", borderRadius: 18, background: "rgba(236,254,255,.76)", display: "grid", placeItems: "center", zIndex: 5, fontWeight: 900 }}>Drop files to attach</div>}{loading && <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>Loading discussion...</div>}{!loading && messages.length === 0 && <div style={{ textAlign: "center", color: "#64748b", padding: 28 }}><strong>Start the conversation</strong><p>Send a message, mention teammates, attach files, or react.</p></div>}{messages.map(row)}<div ref={endRef} /></div>{activeTypers.length > 0 && <div style={{ padding: "6px 14px", background: "#fff", color: "#64748b", fontSize: 11 }}>{activeTypers.join(", ")} typing ...</div>}{error && <div style={{ color: "#b91c1c", background: "#fee2e2", padding: "8px 12px", fontSize: 12 }}>{error}</div>}<div style={{ position: "relative", padding: compact ? 10 : 12, borderTop: "1px solid #e2e8f0", background: "#fff" }}>{showMentions && <div style={{ position: "absolute", bottom: "100%", left: 12, zIndex: 20, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 6, minWidth: 240, maxHeight: 260, overflowY: "auto", boxShadow: "0 16px 40px rgba(15,39,68,.16)" }}>{mentionTargets.length ? mentionTargets.map((m) => <button key={m.userId} type="button" onMouseDown={(e) => { e.preventDefault(); insertMention(m); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: 8, cursor: "pointer", textAlign: "left" }}><span style={{ width: 24, height: 24, borderRadius: 999, background: m.online ? "#279491" : "#64748b", color: "#fff", display: "grid", placeItems: "center", fontSize: 9, fontWeight: 900 }}>{m.initials}</span><span><strong>{m.name}</strong><br /><small style={{ color: m.online ? "#16a34a" : "#94a3b8" }}>{m.online ? "Online" : "Away"}</small></span></button>) : <div style={{ padding: 10, color: "#64748b", fontSize: 12 }}>No active members match this mention.</div>}</div>}{(replyingTo || attachments.length > 0) && <div style={{ display: "grid", gap: 6, marginBottom: 8 }}>{replyingTo && <div style={{ display: "flex", justifyContent: "space-between", background: "#f1f5f9", borderRadius: 12, padding: 8, fontSize: 12 }}><span>Replying to {replyingTo.sender_name}: {(replyingTo.content || "Attachment").slice(0, 80)}</span><button type="button" onClick={() => setReplyingTo(null)} style={{ border: "none", background: "transparent", cursor: "pointer" }}>x</button></div>}{attachments.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{attachments.map((f) => <span key={f.storage_path} style={{ border: "1px solid #dbe7ea", borderRadius: 999, padding: "4px 8px", fontSize: 11 }}>{f.name}<button type="button" onClick={() => setAttachments((cur) => cur.filter((x) => x.storage_path !== f.storage_path))} style={{ border: "none", background: "transparent", cursor: "pointer" }}>x</button></span>)}</div>}</div>}<form onSubmit={send} style={{ display: "flex", gap: 8 }}><input ref={fileRef} type="file" multiple onChange={(e) => { if (e.target.files) void uploadFiles(e.target.files); }} style={{ display: "none" }} /><button type="button" onClick={() => fileRef.current?.click()} disabled={!activeConversationId || uploading} style={{ ...pill, width: 36, height: 36, padding: 0, flexShrink: 0 }}>📎</button><input value={message} onChange={(e) => updateInput(e.target.value)} placeholder="Message... type @ to mention a teammate" style={{ flex: 1, border: "1px solid #dbe7ea", borderRadius: 999, padding: "10px 13px", outline: "none", fontSize: 13 }} /><button type="submit" disabled={(!message.trim() && attachments.length === 0) || sending || !activeConversationId} style={{ border: "none", borderRadius: 999, padding: "0 16px", background: "#279491", color: "#fff", fontWeight: 900, opacity: (!message.trim() && attachments.length === 0) || sending || !activeConversationId ? .55 : 1 }}>{uploading ? "Uploading" : "Send"}</button></form></div></section>;
+  // auto-resize textarea
+  function autoResize() {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
+
+  // insert emoji at cursor in composer
+  function insertComposerEmoji(emoji: string) {
+    const el = composerRef.current;
+    if (el) {
+      const start = el.selectionStart ?? message.length;
+      const end = el.selectionEnd ?? message.length;
+      const next = message.slice(0, start) + emoji + message.slice(end);
+      updateInput(next);
+      setTimeout(() => { el.focus(); el.selectionStart = el.selectionEnd = start + emoji.length; }, 0);
+    } else {
+      updateInput(message + emoji);
+    }
+    setShowComposerEmoji(false);
+  }
+
+  const readByOtherCb = useCallback((m: Message) => readByOther(m), [participants, conversationType, currentUserId]);
+
+  return (
+    <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={{ height: compact ? "100%" : undefined, minHeight: compact ? undefined : 520, display: "flex", flexDirection: "column" }}>
+      {/* thread header */}
+      {threadParent && (
+        <div style={{ padding: 10, borderBottom: "1px solid #e2e8f0", background: "#fff", display: "flex", justifyContent: "space-between", gap: 10 }}>
+          <strong>Thread: {threadParent.sender_name}</strong>
+          <button type="button" onClick={() => { setThreadParent(null); setReplyingTo(null); }} style={pill}>Back</button>
+        </div>
+      )}
+
+      {/* message area */}
+      <div
+        onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragOver={(e) => e.preventDefault()}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: compact ? 12 : 18, background: dragging ? "#ecfeff" : compact ? "#f8fafc" : "linear-gradient(180deg,#f8fafc,#eef9f8)", borderRadius: compact ? 0 : 20, position: "relative" }}
+      >
+        {dragging && <div style={{ position: "absolute", inset: 12, border: "2px dashed #279491", borderRadius: 18, background: "rgba(236,254,255,.76)", display: "grid", placeItems: "center", zIndex: 5, fontWeight: 700 }}>Drop files to attach</div>}
+        {loading && <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>Loading discussion...</div>}
+        {!loading && messages.length === 0 && <div style={{ textAlign: "center", color: "#64748b", padding: 28 }}><strong>Start the conversation</strong><p>Send a message, mention teammates, attach files, or react.</p></div>}
+        {messages.map((m, i) => (
+          <MessageRow
+            key={m.id}
+            message={m}
+            index={i}
+            messages={messages}
+            currentUserId={currentUserId}
+            currentUserName={currentUserName}
+            compact={compact}
+            reactions={reactions}
+            threadParent={threadParent}
+            editingId={editingId}
+            editingContent={editingContent}
+            onSetEditingId={setEditingId}
+            onSetEditingContent={setEditingContent}
+            onCancelEdit={cancelEdit}
+            onSaveEdit={() => void saveEdit()}
+            onSetReplyingTo={setReplyingTo}
+            onSetThreadParent={setThreadParent}
+            onToggleReaction={(id, emoji) => void toggleReaction(id, emoji)}
+            onRemoveMessage={removeMessage}
+            readByOther={readByOtherCb}
+          />
+        ))}
+        <div ref={endRef} />
+      </div>
+
+      {/* typing indicator */}
+      {activeTypers.length > 0 && <div style={{ padding: "6px 14px", background: "#fff", color: "#64748b", fontSize: 11 }}>{activeTypers.join(", ")} typing ...</div>}
+
+      {/* error */}
+      {error && <div style={{ color: "#b91c1c", background: "#fee2e2", padding: "8px 12px", fontSize: 12 }}>{error}</div>}
+
+      {/* ── COMPOSER ── */}
+      <div style={{ position: "relative", padding: compact ? 10 : 12, borderTop: "1px solid #e2e8f0", background: "#fff" }}>
+        {/* mention popup */}
+        {showMentions && (
+          <div style={{ position: "absolute", bottom: "100%", left: 12, zIndex: 20, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 6, minWidth: 240, maxHeight: 260, overflowY: "auto", boxShadow: "0 16px 40px rgba(15,39,68,.16)" }}>
+            {mentionTargets.length ? mentionTargets.map((m) => (
+              <button key={m.userId} type="button" onMouseDown={(e) => { e.preventDefault(); insertMention(m); }}
+                style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", background: "transparent", padding: 8, cursor: "pointer", textAlign: "left" }}>
+                <span style={{ width: 24, height: 24, borderRadius: 999, background: m.online ? "#279491" : "#64748b", color: "#fff", display: "grid", placeItems: "center", fontSize: 9, fontWeight: 700 }}>{m.initials}</span>
+                <span><strong>{m.name}</strong><br /><small style={{ color: m.online ? "#16a34a" : "#94a3b8" }}>{m.online ? "Online" : "Away"}</small></span>
+              </button>
+            )) : <div style={{ padding: 10, color: "#64748b", fontSize: 12 }}>No active members match this mention.</div>}
+          </div>
+        )}
+
+        {/* reply context + attachments */}
+        {(replyingTo || attachments.length > 0) && (
+          <div style={{ display: "grid", gap: 6, marginBottom: 8 }}>
+            {replyingTo && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f1f5f9", borderRadius: 12, padding: "6px 10px", fontSize: 12, borderLeft: "3px solid #279491" }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Replying to <strong>{replyingTo.sender_name}</strong>: {(replyingTo.content || "Attachment").slice(0, 80)}</span>
+                <button type="button" onClick={() => setReplyingTo(null)} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 14, color: "#94a3b8", flexShrink: 0 }}>✕</button>
+              </div>
+            )}
+            {attachments.length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {attachments.map((f) => (
+                  <span key={f.storage_path} style={{ border: "1px solid #dbe7ea", borderRadius: 999, padding: "4px 8px", fontSize: 11 }}>
+                    {f.name}
+                    <button type="button" onClick={() => setAttachments((cur) => cur.filter((x) => x.storage_path !== f.storage_path))} style={{ border: "none", background: "transparent", cursor: "pointer" }}>x</button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* composer form */}
+        <form onSubmit={send} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <input ref={fileRef} type="file" multiple onChange={(e) => { if (e.target.files) void uploadFiles(e.target.files); }} style={{ display: "none" }} />
+
+          {/* attach button */}
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={!activeConversationId || uploading}
+            style={{ ...pill, width: 36, height: 36, padding: 0, flexShrink: 0, fontSize: 16 }}>
+            📎
+          </button>
+
+          {/* emoji picker for composer */}
+          <div style={{ position: "relative", flexShrink: 0 }} ref={composerEmojiRef}>
+            <button type="button" onClick={() => setShowComposerEmoji(!showComposerEmoji)}
+              style={{ ...pill, width: 36, height: 36, padding: 0, fontSize: 16, background: showComposerEmoji ? "#f1f5f9" : "#fff" }}>
+              😊
+            </button>
+            {showComposerEmoji && (
+              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,39,68,.16)", zIndex: 20, width: 230 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 2 }}>
+                  {COMPOSER_EMOJI.map((e) => (
+                    <button key={e} type="button" onClick={() => insertComposerEmoji(e)}
+                      style={{ border: "none", background: "transparent", cursor: "pointer", borderRadius: 6, padding: "4px 2px", fontSize: 18, lineHeight: 1 }}>
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* textarea composer */}
+          <textarea
+            ref={composerRef}
+            value={message}
+            onChange={(e) => { updateInput(e.target.value); autoResize(); }}
+            onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(e as unknown as FormEvent); } }}
+            placeholder="Message... type @ to mention"
+            rows={1}
+            style={{ flex: 1, border: "1px solid #dbe7ea", borderRadius: 16, padding: "10px 13px", outline: "none", fontSize: 13, fontFamily: "inherit", resize: "none", lineHeight: 1.4, maxHeight: 120, overflowY: "auto" }}
+          />
+
+          {/* send button */}
+          <button type="submit" disabled={(!message.trim() && attachments.length === 0) || sending || !activeConversationId}
+            style={{ border: "none", borderRadius: 999, padding: "10px 18px", background: "#279491", color: "#fff", fontWeight: 700, fontSize: 13, fontFamily: "inherit", opacity: (!message.trim() && attachments.length === 0) || sending || !activeConversationId ? .55 : 1, flexShrink: 0, cursor: "pointer" }}>
+            {uploading ? "Uploading" : "Send"}
+          </button>
+        </form>
+
+        {/* Shift+Enter hint */}
+        <div style={{ textAlign: "center", padding: "4px 0 0", fontSize: 10, color: "#94a3b8" }}>
+          <span style={{ color: "#279491", fontWeight: 600 }}>Shift+Enter</span> starts a new line.
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default ChatThread;
