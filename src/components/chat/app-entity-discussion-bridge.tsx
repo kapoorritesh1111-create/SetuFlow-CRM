@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppEntityDiscussionDrawer } from "@/components/chat/app-entity-discussion-drawer";
-import { CrmChatFab } from "@/components/chat/crm-chat-fab-safe";
+import { CrmChatFab } from "@/components/chat/crm-chat-fab";
 
 type ChatContext = {
   organization_id: string;
