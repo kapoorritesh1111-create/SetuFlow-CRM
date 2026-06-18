@@ -94,22 +94,22 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    messageQuery = parentMessageId
-      ? messageQuery.eq("parent_message_id", parentMessageId)
-      : messageQuery.is("parent_message_id", null);
+    if (parentMessageId) {
+      messageQuery = messageQuery.eq("parent_message_id", parentMessageId);
+    }
 
     const { data } = await messageQuery;
     const messages = (data ?? []).reverse();
-    const messageIds = messages.map((item: any) => item.id).filter(Boolean);
+    const parentIds = messages.filter((item: any) => !item.parent_message_id).map((item: any) => item.id).filter(Boolean);
 
     let replyCounts: Record<string, number> = {};
-    if (!parentMessageId && messageIds.length > 0) {
+    if (!parentMessageId && parentIds.length > 0) {
       const { data: replies } = await admin
         .from("chat_messages")
         .select("parent_message_id")
         .eq("organization_id", organizationId)
         .eq("conversation_id", conversationId)
-        .in("parent_message_id", messageIds);
+        .in("parent_message_id", parentIds);
       replyCounts = (replies ?? []).reduce((acc: Record<string, number>, row: any) => {
         if (row.parent_message_id) acc[row.parent_message_id] = (acc[row.parent_message_id] ?? 0) + 1;
         return acc;
