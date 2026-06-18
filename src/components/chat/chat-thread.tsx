@@ -83,6 +83,8 @@ export function ChatThread({
   const [error, setError] = useState<string | null>(null);
   const [showMentions, setShowMentions] = useState(false);
   const [orgMentions, setOrgMentions] = useState<MentionTarget[]>([]);
+  const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<Record<string, string[]>>({});
   const [mentionIds, setMentionIds] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -165,6 +167,23 @@ export function ChatThread({
     setShowMentions(false);
   }
 
+  async function deleteMessage(msgId: string) {
+    if (!msgId || msgId.startsWith("temp-")) return;
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    try {
+      await fetch(`/api/chat/messages?id=${msgId}`, { method: "DELETE" });
+    } catch {
+      // Best-effort delete — re-fetch will correct state
+    }
+  }
+
+  function toggleReaction(msgId: string, emoji: string) {
+    setReactions(prev => {
+      const current = prev[msgId] ?? [];
+      return { ...prev, [msgId]: current.includes(emoji) ? current.filter(e => e !== emoji) : [...current, emoji] };
+    });
+  }
+
   async function sendMessage(event: FormEvent) {
     event.preventDefault();
     const content = message.trim();
@@ -206,7 +225,7 @@ export function ChatThread({
         const sameSender = previous?.sender_name === item.sender_name && new Date(item.created_at).getTime() - new Date(previous.created_at).getTime() < 300000;
         const showDate = !previous || new Date(item.created_at).toDateString() !== new Date(previous.created_at).toDateString();
         const dateLabel = new Date(item.created_at).toDateString() === new Date().toDateString() ? "Today" : new Date(item.created_at).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-        return <div key={item.id}>{showDate && <div style={{ textAlign: "center", padding: "14px 0 8px" }}><span style={{ background: "#e2e8f0", padding: "3px 12px", borderRadius: 999, fontSize: 10, color: "#64748b", fontWeight: 800 }}>{dateLabel}</span></div>}<div style={{ display: "flex", flexDirection: mine ? "row-reverse" : "row", gap: 8, marginTop: sameSender ? 3 : 14, alignItems: "flex-start" }}>{!sameSender && !mine && <div style={{ width: 30, height: 30, borderRadius: 999, background: item.message_type === "bot" ? "#475569" : "#279491", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900 }}>{item.message_type === "bot" ? "AI" : initials(item.sender_name)}</div>}{sameSender && !mine && <div style={{ width: 30 }} />}<div style={{ maxWidth: compact ? "82%" : "72%", minWidth: 64 }}>{!sameSender && !mine && <div style={{ fontSize: 11, color: "#475569", fontWeight: 800, marginBottom: 3 }}>{item.sender_name}{item.message_type === "bot" ? " bot" : ""}</div>}<div style={{ padding: "10px 14px", borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : "#fff", color: mine ? "#fff" : "#1e293b", fontSize: 13.5, lineHeight: 1.55, boxShadow: mine ? "0 4px 12px rgba(39,148,145,.24)" : "0 2px 8px rgba(15,39,68,.08)", border: mine ? "none" : "1px solid #e2e8f0" }}>{renderContent(item.content, mine)}</div><div style={{ fontSize: 9, color: "#94a3b8", marginTop: 4, textAlign: mine ? "right" : "left" }}>{fmtTime(item.created_at)} {mine ? (item.id.startsWith("temp-") ? "sending" : "sent") : ""}</div></div></div></div>;
+        return <div key={item.id}>{showDate && <div style={{ textAlign: "center", padding: "14px 0 8px" }}><span style={{ background: "#e2e8f0", padding: "3px 12px", borderRadius: 999, fontSize: 10, color: "#64748b", fontWeight: 800 }}>{dateLabel}</span></div>}<div style={{ display: "flex", flexDirection: mine ? "row-reverse" : "row", gap: 8, marginTop: sameSender ? 3 : 14, alignItems: "flex-start", position: "relative" }} onMouseEnter={() => setHoveredMsg(item.id)} onMouseLeave={() => setHoveredMsg(null)}>{!sameSender && !mine && <div style={{ width: 30, height: 30, borderRadius: 999, background: item.message_type === "bot" ? "#475569" : "#279491", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900 }}>{item.message_type === "bot" ? "AI" : initials(item.sender_name)}</div>}{sameSender && !mine && <div style={{ width: 30 }} />}<div style={{ maxWidth: compact ? "82%" : "72%", minWidth: 64 }}>{!sameSender && !mine && <div style={{ fontSize: 11, color: "#475569", fontWeight: 800, marginBottom: 3 }}>{item.sender_name}{item.message_type === "bot" ? " bot" : ""}</div>}<div style={{ padding: "10px 14px", borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: mine ? "linear-gradient(135deg,#279491,#1F8C89)" : "#fff", color: mine ? "#fff" : "#1e293b", fontSize: 13.5, lineHeight: 1.55, boxShadow: mine ? "0 4px 12px rgba(39,148,145,.24)" : "0 2px 8px rgba(15,39,68,.08)", border: mine ? "none" : "1px solid #e2e8f0", position: "relative" }}>{renderContent(item.content, mine)}{hoveredMsg === item.id && !item.id.startsWith("temp-") && <div style={{ position: "absolute", top: -28, [mine ? "left" : "right"]: 0, display: "flex", gap: 2, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 2, boxShadow: "0 4px 12px rgba(0,0,0,.1)" }} onMouseDown={e => e.stopPropagation()}>{["👍","❤️","✅"].map(emoji => <button key={emoji} type="button" onClick={() => toggleReaction(item.id, emoji)} style={{ border: "none", background: (reactions[item.id] ?? []).includes(emoji) ? "#e0f2fe" : "transparent", borderRadius: 8, padding: "3px 6px", cursor: "pointer", fontSize: 13, lineHeight: 1 }}>{emoji}</button>)}{mine && <button type="button" onClick={() => deleteMessage(item.id)} style={{ border: "none", background: "transparent", borderRadius: 8, padding: "3px 6px", cursor: "pointer", fontSize: 12, color: "#ef4444", lineHeight: 1 }}>🗑</button>}</div>}</div>{(reactions[item.id] ?? []).length > 0 && <div style={{ display: "flex", gap: 3, marginTop: 3, flexWrap: "wrap" }}>{(reactions[item.id] ?? []).map(emoji => <span key={emoji} style={{ background: "#e0f2fe", border: "1px solid #bae6fd", borderRadius: 99, padding: "1px 6px", fontSize: 12, cursor: "pointer" }} onClick={() => toggleReaction(item.id, emoji)}>{emoji}</span>)}</div>}<div style={{ fontSize: 9, color: "#94a3b8", marginTop: 4, textAlign: mine ? "right" : "left" }}>{fmtTime(item.created_at)} {mine ? (item.id.startsWith("temp-") ? "sending" : "sent") : ""}</div></div></div></div>;
       })}
       <div ref={endRef} />
     </div>

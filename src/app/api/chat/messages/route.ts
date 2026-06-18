@@ -169,3 +169,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to send" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { userId } = await getAuthenticatedChatUser();
+    if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+    const msgId = request.nextUrl.searchParams.get("id");
+    if (!msgId) return NextResponse.json({ error: "Message ID required" }, { status: 400 });
+
+    const admin = createServiceRoleClient();
+    if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+
+    // Only allow deleting own messages
+    const { data: msg } = await admin
+      .from("chat_messages")
+      .select("id, sender_id")
+      .eq("id", msgId)
+      .maybeSingle();
+
+    if (!msg) return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    if (msg.sender_id !== userId) return NextResponse.json({ error: "Can only delete your own messages" }, { status: 403 });
+
+    await admin.from("chat_messages").delete().eq("id", msgId);
+    return NextResponse.json({ deleted: true });
+  } catch (err) {
+    console.error("Chat messages DELETE error:", err);
+    return NextResponse.json({ error: "Failed to delete message" }, { status: 500 });
+  }
+}

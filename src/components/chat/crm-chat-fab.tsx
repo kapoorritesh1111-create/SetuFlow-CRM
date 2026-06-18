@@ -142,8 +142,8 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
       {open && (
         <div ref={panelRef} style={{
           position:"fixed", bottom:16, left:56,
-          width: expanded ? "min(680px,calc(100vw-72px))" : "min(420px,calc(100vw-72px))",
-          height: expanded ? "min(calc(100vh-32px),800px)" : "min(560px,calc(100vh-100px))",
+          width: expanded ? "min(900px,calc(100vw-72px))" : "min(420px,calc(100vw-72px))",
+          height: expanded ? "calc(100vh-32px)" : "min(560px,calc(100vh-100px))",
           borderRadius:20, overflow:"hidden", background:"#fff", border:"1px solid #dbe7ea",
           boxShadow:"0 20px 60px rgba(15,39,68,.2)", zIndex:9990,
           display:"flex", flexDirection:"column", transition:"width 200ms ease, height 200ms ease",
