@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { AppEntityDiscussionBridge } from '@/components/chat/app-entity-discussion-bridge';
 
 type GuruFeedbackPayload = {
   label?: unknown;
@@ -75,5 +76,5 @@ export function SetuGuruFeedbackBridge() {
     };
   }, []);
 
-  return null;
+  return <AppEntityDiscussionBridge />;
 }
