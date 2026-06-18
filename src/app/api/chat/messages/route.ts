@@ -172,8 +172,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await getAuthenticatedChatUser();
-    if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const chatUser = await getAuthenticatedChatUser();
+    if (!chatUser) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const msgId = request.nextUrl.searchParams.get("id");
     if (!msgId) return NextResponse.json({ error: "Message ID required" }, { status: 400 });
@@ -189,7 +189,7 @@ export async function DELETE(request: NextRequest) {
       .maybeSingle();
 
     if (!msg) return NextResponse.json({ error: "Message not found" }, { status: 404 });
-    if (msg.sender_id !== userId) return NextResponse.json({ error: "Can only delete your own messages" }, { status: 403 });
+    if (msg.sender_id !== chatUser.id) return NextResponse.json({ error: "Can only delete your own messages" }, { status: 403 });
 
     await admin.from("chat_messages").delete().eq("id", msgId);
     return NextResponse.json({ deleted: true });
