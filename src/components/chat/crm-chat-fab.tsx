@@ -235,14 +235,14 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
 
             {/* DM Chat */}
             {view === "dm-chat" && dmTarget?.convId ? (
-              <ChatThread key={dmTarget.convId} conversationId={dmTarget.convId} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} />
+              <ChatThread key={dmTarget.convId} conversationId={dmTarget.convId} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} compact />
             ) : view === "dm-chat" ? (
               <div style={{ padding:24, textAlign:"center", color:"#94a3b8", fontSize:13 }}>Opening conversation...</div>
             ) : null}
 
             {/* Channel Chat */}
             {view === "chat" && activeConvId ? (
-              <ChatThread key={activeConvId} conversationId={activeConvId} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} />
+              <ChatThread key={activeConvId} conversationId={activeConvId} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} compact />
             ) : view === "chat" && !activeConvId ? (
               <div style={{ padding:24, textAlign:"center", color:"#94a3b8", fontSize:13 }}>Loading #{activeChannel}...</div>
             ) : null}
