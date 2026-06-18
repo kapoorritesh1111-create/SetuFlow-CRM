@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -46,9 +47,13 @@ function firstParam(params: SearchParams | undefined, key: string) {
 }
 
 function noticeContent(notice: string | undefined, detail: string | undefined) {
-  if (notice === 'created') return { tone: 'success', title: 'Lead saved', body: 'The internal lead was saved to client_onboarding_requests and added to the SMC pipeline.' };
-  if (notice === 'save-error') return { tone: 'error', title: 'Lead was not saved', body: detail || 'Supabase rejected the lead. Check the required fields and try again.' };
+  if (notice === 'created') return { tone: 'success', title: 'Lead saved', body: 'The lead is ready for review in Client Management.' };
+  if (notice === 'save-error') return { tone: 'error', title: 'Lead was not saved', body: detail || 'The lead could not be saved. Check the required fields and try again.' };
   return null;
+}
+
+function clientManagementHref(lead: Lead) {
+  return `/admin/client-management?client=${encodeURIComponent(lead.id)}`;
 }
 
 async function getLeads() {
@@ -224,6 +229,9 @@ export default async function SmcLeadsPage({ searchParams }: { searchParams?: Se
                       {lead.is_trial_request&&<span className="smc-lb" style={{background:'#fef3c7',color:'#d97706'}}>Trial</span>}
                       {lead.source&&<span className="smc-lb" style={{background:'#ecfdf5',color:'#10b981'}}>{lead.source}</span>}
                     </div>
+                    <Link href={clientManagementHref(lead)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:10,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'7px 9px',fontSize:11,fontWeight:800,textDecoration:'none'}}>
+                      Review / edit in Client Management
+                    </Link>
                     <div className="pf">
                       <span style={{fontSize:10,color:'#94a3b8',fontFamily:"'DM Mono',monospace"}}>{new Date(lead.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
                       <span className="sc" style={{color:(lead.lead_score??0)>=80?'#10b981':(lead.lead_score??0)>=50?'#279491':'#94a3b8'}}>{lead.lead_score??0}</span>
