@@ -36,14 +36,15 @@ export async function startTradeShowTrial(
     };
   }
 
-  if (result.signedIn) {
-    redirect(result.workspacePath);
-  }
-
   const params = new URLSearchParams({
     email: result.email,
     org: result.organizationId,
+    workspace: result.workspacePath,
   });
+
+  if (result.signedIn) {
+    params.set('signedIn', '1');
+  }
 
   if (result.attachedExistingUser) {
     params.set('existing', '1');
