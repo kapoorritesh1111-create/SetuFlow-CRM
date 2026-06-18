@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createBrowserClient } from "@/lib/supabase/client";
 import { ChatThread } from "@/components/chat/chat-thread";
 
 interface CrmChatFabProps {
@@ -41,9 +42,9 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
   const dmUnread = activeDms.reduce((a, b) => a + (b.unread ?? 0), 0);
 
-  useEffect(() => {
-    if (!open || !organizationId) return;
-    const doFetch = () => fetch(`/api/chat/conversations?organization_id=${organizationId}`, { cache: "no-store" })
+  const refreshConversations = useCallback(() => {
+    if (!organizationId) return;
+    fetch(`/api/chat/conversations?organization_id=${organizationId}`, { cache: "no-store" })
       .then(r => r.json())
       .then(d => {
         const convs: ConvRecord[] = d.conversations ?? [];
@@ -66,10 +67,26 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
         if (active && view === "chat") setActiveConvId(active.id);
       })
       .catch(() => {});
-    doFetch();
-    const timer = setInterval(doFetch, 5000);
+  }, [activeChannel, organizationId, view]);
+
+  useEffect(() => {
+    refreshConversations();
+    const timer = setInterval(refreshConversations, open ? 5000 : 15000);
     return () => clearInterval(timer);
-  }, [open, activeChannel, organizationId, view]);
+  }, [open, refreshConversations]);
+
+  useEffect(() => {
+    if (!organizationId) return;
+    const supabase = createBrowserClient();
+    const channel = supabase.channel(`chat-drawer-unread:${organizationId}:${currentUserId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `organization_id=eq.${organizationId}` }, (payload) => {
+        const row = payload.new as { sender_id?: string | null };
+        if (row.sender_id !== currentUserId) refreshConversations();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_participants", filter: `organization_id=eq.${organizationId}` }, refreshConversations)
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [organizationId, currentUserId, refreshConversations]);
 
   function switchChannel(key: string) {
     setView("chat"); setDmTarget(null); setActiveChannel(key); setActiveConvId(null);
@@ -82,7 +99,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
     try {
       const res = await fetch("/api/chat/dm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organization_id: organizationId, recipient_id: memberId, recipient_name: memberName }) });
       const data = await res.json();
-      if (data.conversation_id) { setDmTarget({ name: memberName, convId: data.conversation_id }); setActiveConvId(data.conversation_id); }
+      if (data.conversation_id) { setDmTarget({ name: memberName, convId: data.conversation_id }); setActiveConvId(data.conversation_id); refreshConversations(); }
     } catch {}
   }
 
