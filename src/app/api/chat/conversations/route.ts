@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       const part = parts.find((p: any) => p.conversation_id === conv.id);
       const { data: lastMsg } = await admin
         .from("chat_messages")
-        .select("content, sender_name, created_at")
+        .select("content, sender_name, sender_id, created_at")
         .eq("organization_id", orgId)
         .eq("conversation_id", conv.id)
         .order("created_at", { ascending: false })
@@ -48,8 +48,21 @@ export async function GET(request: NextRequest) {
         .select("id", { count: "exact", head: true })
         .eq("organization_id", orgId)
         .eq("conversation_id", conv.id)
+        .neq("sender_id", user.id)
         .gt("created_at", part?.last_read_at ?? "1970-01-01");
-      return { ...conv, last_message: lastMsg ?? null, unread_count: count ?? 0, muted: part?.muted ?? false };
+
+      const preview = lastMsg?.content
+        ? `${lastMsg.sender_id === user.id ? "You" : (lastMsg.sender_name ?? "Team member")}: ${lastMsg.content}`.slice(0, 140)
+        : null;
+
+      return {
+        ...conv,
+        last_message: lastMsg ?? null,
+        last_message_preview: preview,
+        last_message_at: lastMsg?.created_at ?? conv.updated_at,
+        unread_count: count ?? 0,
+        muted: part?.muted ?? false,
+      };
     }));
 
     return NextResponse.json({ conversations: enriched, organization_id: orgId });
