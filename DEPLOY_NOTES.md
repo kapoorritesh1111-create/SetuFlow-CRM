@@ -1,32 +1,33 @@
-# Docs Hub feels like part of SMC (not a second app)
+# Guest session + guest Chat (S33-GUEST-009) + Docs Hub tabs (S33-DOC-011)
 
-## Problem
-/smc/wiki renders the SMC header + share controls, then iframes the full static
-Documentation Hub. That static app carries its OWN dark top bar (its own brand,
-global search, and cross-app links: Issue Tracker / Roadmap / Pre-Demo / QA Tests /
-Share Doc / Live CRM) plus its own layout offsets. Result inside SMC: two stacked
-headers and a second product chrome -> reads as a separate workspace.
+ALL DB CHANGES ARE ALREADY APPLIED LIVE (tables guest_links, guest_chat_messages + member-select RLS).
 
-## Fix (surgical, additive)
-A new SMC-embedded mode on the docs app, triggered by a URL flag on the iframe.
-- src/app/smc/wiki/page.tsx -> iframe src is now `/internal/setuflow-docs.html?in=smc`.
-  ("Open in new tab" still points at the plain URL = full standalone chrome.)
-- setuflow-docs-workspace.js -> initAuth() adds `smc-embed` to <body> when
-  `?in=smc` (or `?embed=1`) is present.
-- setuflow-docs-surgical-fixes.css -> `body.smc-embed` hides the docs `.topbar`,
-  removes the topbar offsets on `.shell` / `.left-nav` / `.right-rail`, hides the
-  redundant `.nav-footer` cross-links, and matches SMC's content background (#f1f5f9).
-  The docs' dark left-nav stays — it already matches SMC's dark rail.
+## A) Docs Hub tabs  (S33-DOC-011)
+/smc/wiki is now a tabbed workspace (WikiWorkspace): Documentation (embedded docs, full height) /
+Share links (the existing table) / Guest access. Reclaims the vertical space the share table used to eat.
 
-Net: inside SMC you now get one header (the SMC "Documentation Hub" header), the
-share controls, then the docs content flush in the pane — no second app bar.
+## B) Guest session + guest Chat  (S33-GUEST-009)
+Locked design, built with maximal reuse:
+- Entry: /guest/<token> (added to middleware PUBLIC_PREFIXES). A SETU-branded shell with 3 tabs:
+  - Documentation - READ-ONLY, via the proven docs shared-mode token (no new docs code).
+  - QA testing   - READ-WRITE, embeds /qa/run/<paired qa token> (an all-suites tester link minted
+    alongside the guest link; reuses the whole existing tester flow incl. screenshots/findings).
+  - Chat         - a PRIVATE, ISOLATED guest channel (dedicated table). It can never reach
+    #engineering / #incidents because it isn't part of the SMC chat at all.
+- Guest chat is token-validated server actions via service role, RATE LIMITED (<=8 guest msgs/60s,
+  2000-char cap). Polls every 10s for team replies.
+- Internal side: Docs Hub -> "Guest access" tab. Mint (name, email, expiry 3/7/14/30, default 7),
+  copy the /guest/<token> link, see uses/status, revoke (also revokes the paired QA link), and
+  read/reply to each guest's chat thread inline.
 
-## Unaffected
-- Standalone (Open in new tab) keeps full chrome.
-- External shared links (/docs/<token> -> ?share_token=...) keep shared-mode chrome.
-- No DB changes. No behavior changes to navigation, search, or content.
+## Security posture
+- No new anonymous RLS. Guest reads/writes go through service-role server actions AFTER validating
+  the (unguessable UUID) token's revoked/expiry state. SMC reads use member-select RLS.
+- Revoking a guest link immediately stops docs, QA and chat (and revokes the paired QA token).
 
 ## Apply / verify
-Overwrite the 3 files, `tsc --noEmit` (only page.tsx is TS; trivial), deploy.
-Then open /smc/wiki: expect a single header and the docs body sitting in the SMC
-pane with no dark second top bar. Confirm "Open in new tab" still shows the full app.
+Overwrite the files (paths preserved), `tsc --noEmit`, deploy.
+1. Docs Hub: /smc/wiki shows three tabs; Documentation is full-height; Guest access mints a link.
+2. Open /guest/<token> incognito: Documentation (read-only), QA testing (submit a run), Chat (send
+   a message). MOST WORTH VERIFYING: guest chat send + the 10s poll + team reply from SMC appearing
+   in the guest view, and the rate limit. Then revoke and confirm /guest/<token> is blocked.

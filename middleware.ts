@@ -106,6 +106,7 @@ const PUBLIC_PREFIXES = [
   // server-side (revoked / expired) before doing anything; no broad data access.
   '/docs/',
   '/qa/run/',
+  '/guest/',
   '/qa/report/',
   // NOTE: /internal/ is intentionally NOT listed here — all /internal/* pages
   // require an authenticated Supabase session AND SETU Flow org membership.
