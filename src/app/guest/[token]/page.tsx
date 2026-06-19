@@ -28,7 +28,7 @@ export default async function GuestPage({ params }: { params: { token: string } 
   await svc.from('guest_links').update({ use_count: (link.use_count ?? 0) + 1, last_used_at: new Date().toISOString() }).eq('id', link.id);
   const expiryMs = link.expires_at ? new Date(link.expires_at).getTime() : Date.now() + 3650 * 864e5;
   const docsShareToken = Buffer.from(JSON.stringify({ recipient: link.guest_name || 'Guest', expiry: expiryMs, issued: Date.now() })).toString('base64');
-  const { data: msgs } = await svc.from('guest_chat_messages').select('id, sender_kind, sender_name, body, created_at').eq('guest_link_id', link.id).order('created_at', { ascending: true });
+  const { data: msgs } = await svc.from('guest_chat_messages').select('id, sender_kind, sender_name, body, attachment_url, attachment_name, created_at').eq('guest_link_id', link.id).order('created_at', { ascending: true });
 
   return (
     <div className="gwrap"><style dangerouslySetInnerHTML={{ __html: STYLE }} />

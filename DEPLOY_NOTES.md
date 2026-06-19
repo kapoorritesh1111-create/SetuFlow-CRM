@@ -1,33 +1,35 @@
-# Guest session + guest Chat (S33-GUEST-009) + Docs Hub tabs (S33-DOC-011)
+# Guest chat: SMC visibility + attachments + emoji (revision of S33-GUEST-009)
 
-ALL DB CHANGES ARE ALREADY APPLIED LIVE (tables guest_links, guest_chat_messages + member-select RLS).
+DB CHANGE ALREADY APPLIED LIVE (guest_chat_messages.attachment_url, attachment_name).
 
-## A) Docs Hub tabs  (S33-DOC-011)
-/smc/wiki is now a tabbed workspace (WikiWorkspace): Documentation (embedded docs, full height) /
-Share links (the existing table) / Guest access. Reclaims the vertical space the share table used to eat.
+## What this fixes (your feedback)
+- "I can't see the guest message / no Guest session channel in SMC"
+  -> New dedicated SMC console at /smc/guests ("Guest Sessions", new nav item under Intelligence).
+     Two-pane chat: left = list of guest sessions (ONE conversation per guest), right = the selected
+     guest's thread, live-polling every 8s, with copy link / open guest view / revoke. The guest's
+     message ("hello can you help") was saved correctly all along — it just had no good home. It now
+     shows here.
+- "every guest in same chat?" -> No. One separate conversation per guest. The console makes that
+   explicit. This is also why guest chat is NOT inside your internal team chat drawer: guests must
+   never land in #engineering / #incidents / your DMs.
+- "no emoji, no attach file" -> Added an emoji picker and file/image attachments (images render as
+   thumbnails; PDFs/text as links) on BOTH the guest composer and the team console. Uploads go
+   through a new token/session-validated route /api/public/guest-upload (chat-attachments bucket).
 
-## B) Guest session + guest Chat  (S33-GUEST-009)
-Locked design, built with maximal reuse:
-- Entry: /guest/<token> (added to middleware PUBLIC_PREFIXES). A SETU-branded shell with 3 tabs:
-  - Documentation - READ-ONLY, via the proven docs shared-mode token (no new docs code).
-  - QA testing   - READ-WRITE, embeds /qa/run/<paired qa token> (an all-suites tester link minted
-    alongside the guest link; reuses the whole existing tester flow incl. screenshots/findings).
-  - Chat         - a PRIVATE, ISOLATED guest channel (dedicated table). It can never reach
-    #engineering / #incidents because it isn't part of the SMC chat at all.
-- Guest chat is token-validated server actions via service role, RATE LIMITED (<=8 guest msgs/60s,
-  2000-char cap). Polls every 10s for team replies.
-- Internal side: Docs Hub -> "Guest access" tab. Mint (name, email, expiry 3/7/14/30, default 7),
-  copy the /guest/<token> link, see uses/status, revoke (also revokes the paired QA link), and
-  read/reply to each guest's chat thread inline.
+## On @mention (deliberately NOT built this pass)
+The guest channel is collective (guest <-> "the SETU Flow team"), so everyone on the team sees every
+guest message in the console — no routing needed. Letting a guest @mention specific internal users
+would require pulling the internal user directory + a notification path into a guest-visible surface,
+which cuts against the isolation we built on purpose. Happy to add a guest->team notification (e.g.
+email/Slack ping when a guest posts) as a follow-up if you want that instead.
 
-## Security posture
-- No new anonymous RLS. Guest reads/writes go through service-role server actions AFTER validating
-  the (unguessable UUID) token's revoked/expiry state. SMC reads use member-select RLS.
-- Revoking a guest link immediately stops docs, QA and chat (and revokes the paired QA token).
+## Cleanup
+DELETE src/app/smc/wiki/guest-admin.tsx — it's superseded by the console and no longer imported.
+(The Docs Hub is back to two tabs: Documentation + Share links.)
 
 ## Apply / verify
-Overwrite the files (paths preserved), `tsc --noEmit`, deploy.
-1. Docs Hub: /smc/wiki shows three tabs; Documentation is full-height; Guest access mints a link.
-2. Open /guest/<token> incognito: Documentation (read-only), QA testing (submit a run), Chat (send
-   a message). MOST WORTH VERIFYING: guest chat send + the 10s poll + team reply from SMC appearing
-   in the guest view, and the rate limit. Then revoke and confirm /guest/<token> is blocked.
+Overwrite files (paths preserved), delete guest-admin.tsx, `tsc --noEmit`, deploy.
+1. /smc/guests: your existing Alina session shows with "hello can you help"; reply, attach an image,
+   add an emoji.
+2. /guest/<token> (incognito): Chat tab shows the team reply within ~8s; send a message + attachment.
+3. Mint a second guest -> confirm it's a SEPARATE conversation in the console list.

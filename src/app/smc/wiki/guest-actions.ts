@@ -7,6 +7,9 @@ import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 import { randomUUID } from 'crypto';
 import { createShareLink } from '../qa/qa-actions';
 
+export type TeamMessage = { id: string; sender_kind: 'guest' | 'team'; sender_name: string | null; body: string; attachment_url: string | null; attachment_name: string | null; created_at: string };
+type Attachment = { url: string; name: string };
+
 // Mint a guest session: docs read-only + QA read-write (paired all-suites tester link) + guest chat.
 export async function mintGuestLink(input: { label?: string; guestName?: string; guestEmail?: string; expiresInDays?: number }): Promise<{ token: string }> {
   await requireSetuInternalAdminWorkspace();
@@ -24,7 +27,7 @@ export async function mintGuestLink(input: { label?: string; guestName?: string;
     guest_name: input.guestName ?? null, guest_email: input.guestEmail ?? null,
     qa_token: qaToken, created_by: 'SETU Flow', expires_at,
   });
-  revalidatePath('/smc/wiki');
+  revalidatePath('/smc/guests');
   return { token };
 }
 
@@ -34,18 +37,27 @@ export async function revokeGuestLink(id: string): Promise<void> {
   const { data: g } = await admin.from('guest_links').select('qa_token').eq('id', id).maybeSingle();
   await admin.from('guest_links').update({ revoked_at: new Date().toISOString() }).eq('id', id);
   if (g?.qa_token) await admin.from('qa_share_links').update({ revoked_at: new Date().toISOString() }).eq('token', g.qa_token);
-  revalidatePath('/smc/wiki');
+  revalidatePath('/smc/guests');
 }
 
-export async function teamReplyGuest(guestLinkId: string, body: string): Promise<{ ok: true } | { error: string }> {
+export async function teamReplyGuest(guestLinkId: string, body: string, attachment?: Attachment | null): Promise<{ ok: true } | { error: string }> {
   await requireSetuInternalAdminWorkspace();
   const text = (body || '').trim().slice(0, 2000);
-  if (!text) return { error: 'Empty message' };
+  if (!text && !attachment) return { error: 'Empty message' };
   const admin = createAdminSupabaseClient() as any;
   await admin.from('guest_chat_messages').insert({
     organization_id: INTERNAL_ORG_ID, guest_link_id: guestLinkId,
     sender_kind: 'team', sender_name: 'SETU Flow team', body: text,
+    attachment_url: attachment?.url ?? null, attachment_name: attachment?.name ?? null,
   });
-  revalidatePath('/smc/wiki');
+  revalidatePath('/smc/guests');
   return { ok: true };
+}
+
+// Guarded thread loader so the SMC console can poll a guest conversation for live updates.
+export async function teamLoadGuestThread(guestLinkId: string): Promise<{ messages: TeamMessage[] }> {
+  await requireSetuInternalAdminWorkspace();
+  const admin = createAdminSupabaseClient() as any;
+  const { data } = await admin.from('guest_chat_messages').select('id, sender_kind, sender_name, body, attachment_url, attachment_name, created_at').eq('guest_link_id', guestLinkId).order('created_at', { ascending: true });
+  return { messages: (data ?? []) as TeamMessage[] };
 }

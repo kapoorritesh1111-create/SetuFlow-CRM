@@ -38,6 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
   ] },
   { key: "intel", label: "Intelligence", icon: "GrpIntel", items: [
     { id: "wiki", path: "/smc/wiki", icon: "Docs", label: "Docs Hub" },
+    { id: "guests", path: "/smc/guests", icon: "Users", label: "Guest Sessions" },
     { id: "guru", path: "/smc/guru", icon: "Guru", label: "Guru Ops" },
     { id: "seo", path: "/smc/seo", icon: "SEO", label: "SEO" },
   ] },
