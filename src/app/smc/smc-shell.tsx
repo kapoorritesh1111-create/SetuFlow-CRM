@@ -23,6 +23,7 @@ const CORE_NAV: NavItem[] = [
 const TOOL_NAV: NavItem[] = [
   { id: "wiki", path: "/smc/wiki", icon: "Docs", label: "Docs Hub" },
   { id: "roadmap", path: "/smc/roadmap", icon: "Road", label: "Roadmap" },
+  { id: "runbooks", path: "/smc/runbooks", icon: "Docs", label: "Runbooks" },
 ];
 const SECONDARY_NAV: NavItem[] = [
   { id: "seo", path: "/smc/seo", icon: "SEO", label: "SEO" },

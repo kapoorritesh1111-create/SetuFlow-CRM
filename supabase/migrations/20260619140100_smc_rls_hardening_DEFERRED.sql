@@ -1,0 +1,20 @@
+-- S32-SMC-005 — RLS hardening for sprint_issues  ** DO NOT APPLY YET **
+--
+-- Finding: the `anon` role currently holds SELECT, INSERT and UPDATE on public.sprint_issues.
+-- Because the anon key ships publicly in the static /public/internal apps, this is effectively
+-- anonymous read+write access to the internal issue tracker.
+--
+-- IMPORTANT — Share Doc / intern review depends on anon access:
+--   * anon SELECT  -> the Docs Hub live issue counts shown to interns via "Share Doc"
+--   * anon INSERT  -> the QA / e2e app auto-files bugs; the demo checklist files items
+--   * anon UPDATE  -> ONLY the static issue-tracker app (team edits existing issues)
+--
+-- Therefore: KEEP anon SELECT + INSERT for now (removing them breaks Share Doc / QA).
+-- The statement below removes ONLY anon UPDATE — apply it ONLY AFTER the static
+-- issue-tracker edit path has been moved to authenticated server actions/API behind
+-- requireSetuInternalAdminWorkspace, otherwise the team's tracker edits will break.
+--
+-- Target end state (after the S32-SMC-005 route port): replace full-table anon SELECT with a
+-- counts-only view, route all writes through authenticated server actions, and drop anon INSERT.
+
+-- DROP POLICY IF EXISTS anon_update_setu_flow_sprint_issues ON public.sprint_issues;

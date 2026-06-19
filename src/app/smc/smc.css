@@ -1858,3 +1858,14 @@
   padding: 8px 10px;
   font-size: 12px;
 }
+
+/* S32-SMC: form inputs + rendered runbook markdown */
+.smc-input{width:100%;font:inherit;font-size:13px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#1e293b;}
+.smc-input:focus{outline:none;border-color:#1F487C;box-shadow:0 0 0 3px rgba(31,72,124,.12);}
+textarea.smc-input{resize:vertical;line-height:1.45;}
+.smc-md{font-size:13px;color:#334155;line-height:1.55;margin-top:8px;}
+.smc-md h2{font-size:15px;font-weight:700;color:#1e293b;margin:10px 0 4px;}
+.smc-md h3{font-size:13px;font-weight:700;color:#1e293b;margin:8px 0 4px;}
+.smc-md ul{margin:4px 0 4px 18px;}
+.smc-md li{margin:2px 0;}
+.smc-md code{font-family:'DM Mono',monospace;font-size:12px;background:#f1f5f9;padding:1px 5px;border-radius:4px;}
