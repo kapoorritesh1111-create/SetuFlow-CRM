@@ -39,9 +39,10 @@ export async function sendLeadIntroEmailTest(formData: FormData) {
   const leadId = String(formData.get('lead_id') ?? '').trim()
   const workspace = await requireWorkspace()
   if (!workspace?.organization || !workspace?.user || !leadId) redirect('/leads?introEmail=missing-context')
-  const supabase = await createClient()
-  const { data: lead } = await supabase.from('leads').select('*').eq('organization_id', workspace.organization.id).eq('id', leadId).maybeSingle()
-  if (!lead?.id || !lead.email) redirect(`/leads/${leadId}?introEmail=missing-email`)
+  const supabase = (await createClient()) as any
+  const { data: rawLead } = await supabase.from('leads').select('*').eq('organization_id', workspace.organization.id).eq('id', leadId).maybeSingle()
+  const lead = rawLead as any
+  if (!lead?.id || !lead?.email) redirect(`/leads/${leadId}?introEmail=missing-email`)
   const request = capturedRequestFromNotes(lead.notes)
   const eventName = lead.source_label || lead.source_type || 'the trade show'
   const subject = `Great meeting you at ${eventName}`
@@ -127,9 +128,6 @@ export default async function Page({ params, searchParams }: { params: { leadId:
   if (returnToHref === '/documents') snapshot.links.documentsWorkspace = returnToHref
   if (returnToHref === '/contracts') snapshot.links.contractsWorkspace = returnToHref
   const pipelineHref = returnToHref.startsWith('/pipeline') ? returnToHref : `/pipeline?mode=${effectiveMode}`
-  const currentPipeline = data.pipelines.find((pipeline) => pipeline.id === data.lead?.pipeline_id)
-    ?? data.pipelines.find((pipeline) => pipeline.lead_type === leadType || pipeline.lead_type === 'both')
-    ?? null
 
   const selectedProductIds = data.linkedProducts.map((item) => item.id).filter(Boolean)
   const selectedMarketIds = data.linkedMarkets.map((item) => item.id).filter(Boolean)
