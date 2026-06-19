@@ -49,6 +49,10 @@ type IntroContext = {
   vcfUrl: string;
 };
 
+type CommunicationInsertResult = {
+  id?: string | null;
+};
+
 function clean(value: unknown) {
   return String(value ?? '').trim();
 }
@@ -207,20 +211,37 @@ function buildMessageText(ctx: IntroContext) {
   return `Hi ${ctx.recipientName}, great meeting you${where}. This is ${ctx.senderName} from ${ctx.organizationName}.${booth} We specialize in ${ctx.organizationCategory}, and I noted your interest in ${ctx.productInterest}.${followUp}${contactText}${cardText}`;
 }
 
-async function communicationAlreadyExists(db: DbClient, leadId: string) {
-  const { data } = await db.from('communications').select('id').eq('lead_id', leadId).eq('communication_type', 'lead_capture_intro').limit(1);
-  return Array.isArray(data) && data.length > 0;
+function isLeadCaptureIntroRow(row: { metadata?: unknown }) {
+  const metadata = row?.metadata && typeof row.metadata === 'object' ? row.metadata as Record<string, unknown> : {};
+  return metadata.source === 'lead_capture_intro_service' || metadata.communication_type === 'lead_capture_intro';
 }
 
-async function insertCommunication(db: DbClient, row: Record<string, unknown>) {
-  return db.from('communications').insert({
-    related_entity: 'lead',
-    communication_type: 'lead_capture_intro',
-    draft_source: 'lead_capture_intro_service',
-    provider_payload: {},
-    metadata: {},
-    ...row,
-  });
+async function communicationAlreadyExists(db: DbClient, leadId: string) {
+  const { data, error } = await db
+    .from('communications')
+    .select('id, metadata')
+    .eq('lead_id', leadId)
+    .in('communication_type', ['introduction', 'system_note'])
+    .limit(20);
+  if (error) throw error;
+  return Array.isArray(data) && data.some(isLeadCaptureIntroRow);
+}
+
+async function insertCommunication(db: DbClient, row: Record<string, unknown>): Promise<CommunicationInsertResult> {
+  const { data, error } = await db
+    .from('communications')
+    .insert({
+      related_entity: 'lead',
+      draft_source: 'system',
+      provider_payload: {},
+      metadata: {},
+      ...row,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data ?? {};
 }
 
 export async function recordLeadCaptureIntro(params: IntroParams) {
@@ -235,6 +256,7 @@ export async function recordLeadCaptureIntro(params: IntroParams) {
     const nowIso = new Date().toISOString();
     const baseMetadata = {
       source: 'lead_capture_intro_service',
+      communication_type: 'lead_capture_intro',
       event_name: ctx.eventName,
       booth_number: ctx.boothNumber,
       organization_category: ctx.organizationCategory,
@@ -246,37 +268,38 @@ export async function recordLeadCaptureIntro(params: IntroParams) {
 
     let emailStatus = 'not_available';
     let whatsappStatus = 'not_available';
-    let hasCustomerChannel = false;
+    let customerCommunicationCount = 0;
 
     if (clean(lead.email)) {
-      hasCustomerChannel = true;
-      emailStatus = 'queued';
-      await insertCommunication(db, {
+      const emailRow = await insertCommunication(db, {
         organization_id: organization.id,
         lead_id: lead.id,
         related_id: lead.id,
+        communication_type: 'introduction',
         direction: 'outbound',
         channel: 'email',
         subject: emailMessage.subject,
         body: emailMessage.body,
-        summary: 'Intro email queued after lead capture.',
-        status: 'queued',
+        summary: 'Intro email prepared after lead capture.',
+        status: 'draft',
         sent_at: null,
         scheduled_at: lead.next_follow_up_at ?? null,
         created_by: actorUserId,
-        email_delivery_status: 'queued',
-        metadata: { ...baseMetadata, target: clean(lead.email), vcard_available: Boolean(ctx.vcardUrl) },
+        metadata: { ...baseMetadata, target: clean(lead.email), email_delivery_status: 'queued', vcard_available: Boolean(ctx.vcardUrl) },
       });
+      if (emailRow.id) {
+        customerCommunicationCount += 1;
+        emailStatus = 'draft';
+      }
     }
 
     const whatsappTarget = clean(lead.whatsapp_number || lead.phone);
     if (whatsappTarget) {
-      hasCustomerChannel = true;
-      whatsappStatus = 'draft';
-      await insertCommunication(db, {
+      const whatsappRow = await insertCommunication(db, {
         organization_id: organization.id,
         lead_id: lead.id,
         related_id: lead.id,
+        communication_type: 'introduction',
         direction: 'outbound',
         channel: 'whatsapp',
         subject: 'Lead capture intro WhatsApp',
@@ -286,15 +309,19 @@ export async function recordLeadCaptureIntro(params: IntroParams) {
         sent_at: null,
         scheduled_at: lead.next_follow_up_at ?? null,
         created_by: actorUserId,
-        whatsapp_link_type: 'draft',
-        metadata: { ...baseMetadata, target: whatsappTarget, vcard_available: Boolean(ctx.vcardUrl), live_delivery_enabled: false },
+        metadata: { ...baseMetadata, target: whatsappTarget, whatsapp_link_type: 'draft', vcard_available: Boolean(ctx.vcardUrl), live_delivery_enabled: false },
       });
+      if (whatsappRow.id) {
+        customerCommunicationCount += 1;
+        whatsappStatus = 'draft';
+      }
     }
 
     await insertCommunication(db, {
       organization_id: organization.id,
       lead_id: lead.id,
       related_id: lead.id,
+      communication_type: 'system_note',
       direction: 'internal',
       channel: 'system',
       subject: 'Intro message created after lead capture',
@@ -316,18 +343,23 @@ export async function recordLeadCaptureIntro(params: IntroParams) {
         '',
         'Internal note: saved separately for team visibility only. Not included in customer message.',
       ].join('\n'),
-      summary: hasCustomerChannel ? 'Lead capture intro prepared.' : 'Lead capture intro skipped because no customer channel exists.',
+      summary: customerCommunicationCount > 0 ? 'Lead capture intro prepared.' : 'Lead capture intro skipped because no customer channel exists.',
       status: 'sent',
       sent_at: nowIso,
       created_by: actorUserId,
-      metadata: { ...baseMetadata, email_status: emailStatus, whatsapp_status: whatsappStatus },
+      metadata: { ...baseMetadata, email_status: emailStatus, whatsapp_status: whatsappStatus, customer_communication_count: customerCommunicationCount },
     });
 
-    if (hasCustomerChannel) {
-      await db.from('leads').update({ intro_sent: true, last_contacted_at: nowIso }).eq('organization_id', organization.id).eq('id', lead.id);
+    if (customerCommunicationCount > 0) {
+      const { error: updateError } = await db
+        .from('leads')
+        .update({ intro_sent: true, last_contacted_at: nowIso })
+        .eq('organization_id', organization.id)
+        .eq('id', lead.id);
+      if (updateError) throw updateError;
     }
 
-    return { ok: true, emailStatus, whatsappStatus };
+    return { ok: true, emailStatus, whatsappStatus, customerCommunicationCount };
   } catch (error) {
     console.warn('[lead-capture-intro] non-blocking intro failed', error);
     return { ok: false, reason: error instanceof Error ? error.message : 'unknown_error' };
