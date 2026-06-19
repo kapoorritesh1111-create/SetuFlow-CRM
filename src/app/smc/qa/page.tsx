@@ -10,7 +10,7 @@ export default async function SmcQaPage() {
     sb.from('qa_test_suites').select('suite_key, title, area, description, target_sprint, sort_order').order('sort_order', { ascending: true }),
     sb.from('qa_test_cases').select('suite_key, is_critical'),
     sb.from('qa_test_runs').select('id, run_ref, suite_filter, run_type, verdict, pass_rate_pct, total_steps, steps_failed, bugs_filed, completed_at').order('created_at', { ascending: false }).limit(10),
-    sb.from('qa_findings').select('id, finding_ref, title, severity, suite_key, case_key, reporter_kind, reported_by, status, promoted_issue_ref, created_at').order('created_at', { ascending: false }).limit(50),
+    sb.from('qa_findings').select('id, finding_ref, title, severity, suite_key, case_key, reporter_kind, reported_by, status, promoted_issue_ref, evidence_url, created_at').order('created_at', { ascending: false }).limit(50),
     sb.from('qa_share_links').select('id, token, link_type, suite_key, label, tester_email, expires_at, revoked_at, use_count, created_at').order('created_at', { ascending: false }),
     sb.from('qa_report_snapshots').select('id, snapshot_ref, title, release_label, verdict, pass_rate_pct, critical_pass_pct, published_at').order('created_at', { ascending: false }).limit(10),
     sb.from('qa_step_results').select('status, is_critical, suite_id, suite_title'),

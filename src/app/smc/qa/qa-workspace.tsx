@@ -8,7 +8,7 @@ import { CopyLinkModal } from '../wiki/docs-sharing';
 
 type Suite = { suite_key: string; title: string; area: string | null; description: string | null; caseCount: number; criticalCount: number };
 type Run = { id: string; run_ref: string; suite_filter: string | null; run_type: string | null; verdict: string | null; pass_rate_pct: number | null; total_steps: number | null; steps_failed: number | null; bugs_filed: number | null };
-type Finding = { id: string; finding_ref: string | null; title: string; severity: string | null; suite_key: string | null; case_key: string | null; reporter_kind: string | null; reported_by: string | null; status: string | null; promoted_issue_ref: string | null };
+type Finding = { id: string; finding_ref: string | null; title: string; severity: string | null; suite_key: string | null; case_key: string | null; reporter_kind: string | null; reported_by: string | null; status: string | null; promoted_issue_ref: string | null; evidence_url: string | null };
 type ShareLink = { id: string; token: string; link_type: string; suite_key: string | null; label: string | null; tester_email: string | null; expires_at: string | null; revoked_at: string | null; use_count: number | null };
 type Snapshot = { id: string; snapshot_ref: string | null; title: string; release_label: string | null; verdict: string | null; pass_rate_pct: number | null; critical_pass_pct: number | null; published_at: string | null };
 type Rollup = { stepsExecuted: number; passRate: number; criticalPassPct: number; suitesCovered: number; suitesTotal: number; casesTotal: number; findingsOpen: number; findingsTotal: number; breakdown: { title: string; total: number; passed: number; pct: number }[] };
@@ -49,7 +49,7 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
   function copy(text: string) { setCopyUrl(text); }
   function promote(id: string) { start(async () => { const r = await promoteFinding(id); router.refresh(); if ('issueRef' in r) alert(`Promoted to tracker issue ${r.issueRef}`); }); }
   function triage(id: string) { start(async () => { await setFindingStatus(id, 'triaged'); router.refresh(); }); }
-  function mintShare() { start(async () => { const r = await createShareLink({ linkType: 'tester_run', suiteKey: slSuite, label: slLabel || undefined, expiresInDays: Number(slDays) || undefined }); setShowShare(false); setSlLabel(''); router.refresh(); copy(`${origin}/qa/run/${r.token}`); }); }
+  function mintShare() { start(async () => { const r = await createShareLink({ linkType: 'tester_run', suiteKey: slSuite || undefined, label: slLabel || undefined, expiresInDays: Number(slDays) || undefined }); setShowShare(false); setSlLabel(''); router.refresh(); copy(`${origin}/qa/run/${r.token}`); }); }
   function revoke(id: string) { start(async () => { await revokeShareLink(id); router.refresh(); }); }
   function publish() { start(async () => { const r = await publishSnapshot({ title: pubTitle || 'QA Report', releaseLabel: pubRelease || undefined }); setShowPub(false); setPubTitle(''); setPubRelease(''); router.refresh(); copy(`${origin}/qa/report/${r.token}`); }); }
 
@@ -108,7 +108,7 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
               <tbody>
                 {findings.map((f) => (
                   <tr key={f.id}>
-                    <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}><div style={{ fontFamily: 'DM Mono', fontSize: 11, color: '#1f487c' }}>{f.finding_ref}</div>{f.title}</td>
+                    <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}><div style={{ fontFamily: 'DM Mono', fontSize: 11, color: '#1f487c' }}>{f.finding_ref}</div>{f.title}{f.evidence_url && <> · <a href={f.evidence_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0f9d76', fontWeight: 600 }}>📎 screenshot</a></>}</td>
                     <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', fontFamily: 'DM Mono', fontSize: 11 }}>{f.suite_key}{f.case_key ? ` · ${f.case_key}` : ''}</td>
                     <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>{f.severity}</td>
                     <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>{f.reported_by} <span style={{ color: '#94a3b8' }}>({f.reporter_kind})</span></td>
@@ -177,9 +177,9 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
             <div style={{ marginBottom: 12 }}>
               {!showShare ? <button className="smc-btn smc-btn-p" onClick={() => setShowShare(true)}>+ New tester link</button> : (
                 <div style={card}>
-                  <label style={{ fontSize: 12, color: '#475569' }}>Suite<select className="smc-input" value={slSuite} onChange={(e) => setSlSuite(e.target.value)}>{suites.map((s) => <option key={s.suite_key} value={s.suite_key}>{s.title}</option>)}</select></label>
+                  <label style={{ fontSize: 12, color: '#475569' }}>Suite<select className="smc-input" value={slSuite} onChange={(e) => setSlSuite(e.target.value)}><option value="">All suites</option>{suites.map((s) => <option key={s.suite_key} value={s.suite_key}>{s.title}</option>)}</select></label>
                   <input className="smc-input" placeholder="Label (e.g. Beta tester — A. Rao)" value={slLabel} onChange={(e) => setSlLabel(e.target.value)} />
-                  <label style={{ fontSize: 12, color: '#475569' }}>Expires in (days)<input className="smc-input" type="number" value={slDays} onChange={(e) => setSlDays(e.target.value)} /></label>
+                  <label style={{ fontSize: 12, color: '#475569' }}>Expires in (days)<select className="smc-input" value={slDays} onChange={(e) => setSlDays(e.target.value)}>{['3','7','14','30'].map((d) => <option key={d} value={d}>{d} days</option>)}</select></label>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><button className="smc-btn smc-btn-p" disabled={pending || !slSuite} onClick={mintShare}>Create link</button><button className="smc-btn" onClick={() => setShowShare(false)}>Cancel</button></div>
                   <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>Token-scoped to this suite. Testers reach only the guided run and file findings — never the tracker.</div>
                 </div>
@@ -195,7 +195,7 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
                     return <tr key={l.id}>
                       <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>{l.label ?? '—'}</td>
                       <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}><span className="smc-st open" style={{ fontSize: 9 }}>{l.link_type}</span></td>
-                      <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', fontFamily: 'DM Mono', fontSize: 11 }}>{l.suite_key ?? 'report'}</td>
+                      <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', fontFamily: 'DM Mono', fontSize: 11 }}>{l.link_type === 'report_view' ? 'report' : (l.suite_key ?? 'all suites')}</td>
                       <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', fontFamily: 'DM Mono' }}>{l.use_count ?? 0}</td>
                       <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', color: '#94a3b8' }}>{l.expires_at ? new Date(l.expires_at).toLocaleDateString() : 'never'}</td>
                       <td style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>{status === 'active' ? <span className="smc-st resolved">active</span> : <span className="smc-st blocked">{status}</span>}</td>

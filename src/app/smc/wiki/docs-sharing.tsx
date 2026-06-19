@@ -35,7 +35,7 @@ export function DocsSharing({ links, viewCounts }: { links: DocsLink[]; viewCoun
   const [origin, setOrigin] = useState('');
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('');
-  const [days, setDays] = useState('14');
+  const [days, setDays] = useState('7');
   const [copyUrl, setCopyUrl] = useState<string | null>(null);
   useEffect(() => { setOrigin(window.location.origin); }, []);
 
@@ -55,7 +55,7 @@ export function DocsSharing({ links, viewCounts }: { links: DocsLink[]; viewCoun
       {open && (
         <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="smc-input" style={{ width: 240 }} placeholder="Recipient / label (e.g. Alina Kapoor)" value={label} onChange={(e) => setLabel(e.target.value)} />
-          <input className="smc-input" style={{ width: 120 }} type="number" placeholder="Expires (days)" value={days} onChange={(e) => setDays(e.target.value)} />
+          <select className="smc-input" style={{ width: 130 }} value={days} onChange={(e) => setDays(e.target.value)}>{['3','7','14','30'].map((d) => <option key={d} value={d}>{d} days</option>)}</select>
           <button className="smc-btn smc-btn-p" style={{ fontSize: 12 }} disabled={pending} onClick={mint}>Create</button>
           <button className="smc-btn" style={{ fontSize: 12 }} onClick={() => setOpen(false)}>Cancel</button>
         </div>

@@ -7,7 +7,7 @@ import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 import { randomUUID } from 'crypto';
 
 export type RunResult = { caseKey: string; stepTitle: string; status: 'pass' | 'fail' | 'blocked'; isCritical: boolean; expected: string; actual?: string; note?: string };
-export type RunFinding = { caseKey: string; title: string; severity: string; expected: string; actual: string };
+export type RunFinding = { caseKey: string; title: string; severity: string; expected: string; actual: string; evidenceUrl?: string };
 export type RunPayload = {
   suiteKey: string; suiteTitle: string; environment: string; appVersion: string; testerName: string;
   results: RunResult[]; findings: RunFinding[];
@@ -52,7 +52,7 @@ export async function submitRun(payload: RunPayload): Promise<{ ref: string }> {
     await admin.from('qa_findings').insert(payload.findings.map((f) => ({
       organization_id: INTERNAL_ORG_ID, finding_ref: `QA-F-${rnd()}`, run_id: runId,
       suite_key: payload.suiteKey, case_key: f.caseKey, title: f.title, severity: f.severity,
-      expected_result: f.expected, actual_result: f.actual, environment: payload.environment || 'staging',
+      expected_result: f.expected, actual_result: f.actual, evidence_url: f.evidenceUrl ?? null, environment: payload.environment || 'staging',
       app_version: payload.appVersion || null, reported_by: payload.testerName || 'SETU Flow',
       reporter_kind: 'internal', status: 'new',
     })));
@@ -175,3 +175,4 @@ export async function publishSnapshot(input: { title: string; releaseLabel?: str
   revalidatePath('/smc/qa');
   return { token };
 }
+

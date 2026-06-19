@@ -11,7 +11,7 @@ export default async function QaRunPage({ params }: { params: { suiteKey: string
   const { data: suite } = await sb.from('qa_test_suites').select('suite_key, title, area, how_to_test, environment').eq('suite_key', params.suiteKey).maybeSingle();
   if (!suite) notFound();
   const { data: cases } = await sb.from('qa_test_cases')
-    .select('case_key, title, instruction, expected_result, is_critical, sort_order')
+    .select('case_key, title, instruction, expected_result, is_critical, target_path, sort_order')
     .eq('suite_key', params.suiteKey).order('sort_order', { ascending: true });
 
   return (
