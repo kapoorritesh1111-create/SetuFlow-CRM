@@ -23,14 +23,19 @@ const Docs = (() => {
     { id: 'notifications',    group: 'Operations',         icon: '\u25ce',   title: 'Notifications',        tag: 'Alerts',        summary: 'In-app notification centre, workspace-level preference matrix (admin), per-user overrides, 9 alert types, 5 channels including push and WhatsApp.', accent: '#f97316' },
     { id: 'profile',          group: 'Operations',         icon: '\u25cb',   title: 'Profile & My Card',    tag: 'Profile',       summary: 'User profile basics, avatar manager, vCard identity editor, My Card settings, Smart QR vs Offline QR toggle, and share slug.', accent: '#2563eb' },
     { id: 'operator-guides',  group: 'Operations',         icon: '\u2637',   title: 'Operator Guides',      tag: 'Guides',        summary: 'Click-by-click operator guides with expected UI state, expected data writes, and do-not-break rules.',                 accent: '#f97316' },
-    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, live org search, HSN research, pricing defaults, feedback learning loop, and 11 API routes.',    accent: '#db2777' },
+    { id: 'guru-ai',          group: 'Operations',         icon: '\u2726',   title: 'Setu Guru AI',         tag: 'AI Assistant',  summary: 'Context-aware AI panel, live org search, HSN research, pricing defaults, feedback learning loop, and 13 API routes.',    accent: '#db2777' },
     { id: 'mobile',           group: 'Operations',         icon: '\u25af',   title: 'Mobile Workspace',     tag: 'Mobile',        summary: 'Business card scan, Smart vCard architecture, trade-show capture, mobile orders/pipeline/notifications, and role-aware lead workflows.', accent: '#14b8a6' },
     { id: 'data-security',    group: 'Security & Data',    icon: '\u2bcf',   title: 'Data & Security',      tag: 'Security',      summary: 'Organization-scoped data, RLS policies, membership, roles, audit trails, and safe integration boundaries.',               accent: '#059669' },
     { id: 'api-integrations', group: 'Integrations & API', icon: '\u27E8/\u27E9', title: 'API & Integrations', tag: 'Integrations', summary: 'Public APIs, webhook boundaries, WhatsApp/manual tracked links, finance/freight adapters, and provider rules.',           accent: '#2563eb' },
     { id: 'integrations',     group: 'Integrations & API', icon: '\u2b21',   title: 'Integration Hub',      tag: 'Integrations',  summary: 'Status overview of 6 governed connectors: Email, Documents, AI, vCard, Trade Events, Tasks.',                            accent: '#0d9488' },
     { id: 'quick-reference',  group: 'Reference',          icon: '\u2630',   title: 'Quick Reference',      tag: 'Reference',     summary: 'Fast rules, gates, routes, and checks for testers and technical leads.',                                                 accent: '#334155' },
-    { id: 'api-reference',    group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',   tag: 'API',           summary: '94+ app routes, 55+ API endpoints including all /api/setu-guru/* routes, background jobs, and cron reference.',           accent: '#0d9488' },
+    { id: 'api-reference',    group: 'Reference',          icon: '\u27E8/\u27E9', title: 'API Reference',   tag: 'API',           summary: '134 app routes, 90 API endpoints including all /api/setu-guru/* routes, background jobs, and cron reference.',           accent: '#0d9488' },
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Curated screenshot library of every major workspace. Clickable, zoomable, linked to the relevant docs topic.',      accent: '#db2777' },
+    { id: 'trade-show-trial', group: 'Business Workflows', icon: '\u26a1',   title: 'Trade Show Trial',     tag: 'Acquisition',   summary: 'Public no-auth instant-trial flow for trade-show booths: signup, workspace provisioning, trial capability limits, ROI calculator, and auto-created internal lead.', accent: '#f97316' },
+    { id: 'team-chat',        group: 'Operations',         icon: '\u2709',     title: 'Team Chat & Discussions', tag: 'Collaboration', summary: 'Multi-org conversation engine: channels, DMs, entity-linked quote/order/dispatch discussions, system bot posts, reactions, presence, and read tracking.', accent: '#2563eb' },
+    { id: 'mission-control',  group: 'Operations',         icon: '\u2316',     title: 'Mission Control',      tag: 'Internal Ops',  summary: 'SETU-internal operations console (/smc): engineering, incidents, deployments, feature flags, client health, internal leads, revenue, QA, changelog, and team chat.', accent: '#193769' },
+    { id: 'client-management', group: 'Operations',         icon: '\u25c8',   title: 'Client Management & Entitlements', tag: 'Internal Ops', summary: 'How SETU provisions and governs client workspaces: onboarding intake, module grants, plan/seat/usage entitlements, client health, and per-org feature flags.', accent: '#0d9488' },
+    { id: 'roadmap',          group: 'Reference',          icon: '\u2197',   title: 'Roadmap',              tag: 'Product',       summary: 'The live product roadmap: Now / Next / Later horizons, item statuses, community voting signals, value framing, public sharing, and how features are added.', accent: '#2563eb' },
     { id: 'glossary',         group: 'Reference',          icon: '\u25ce',   title: 'Glossary',             tag: 'Glossary',      summary: 'Definitions for every term, table name, status code, field name, and acronym used across SETU Flow CRM.',        accent: '#334155' }
   ];
 
@@ -340,13 +345,13 @@ const Docs = (() => {
 <tr><td><code>/onboarding</code></td><td>Client Onboarding Wizard </td><td>Extended onboarding wizard; public form + admin provisioning; <code>onboarding_wizard_extended</code> migration</td></tr>
 
 </tbody></table></div>
-<div class="section-block"><h2>SF-19: Module Grants & Client Entitlements</h2>
-<p>Sprint 19 introduced a two-layer client access control system that allows SETU to manage which modules each client org can access, and to enforce seat and usage limits without hardcoded config.</p>
+<div class="section-block"><h2>Module Grants & Client Entitlements</h2>
+<p>SETU Flow introduced a two-layer client access control system that allows SETU to manage which modules each client org can access, and to enforce seat and usage limits without hardcoded config.</p>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">org_module_grants </div><ul><li>Maps each organization to the modules it has access to</li><li>Checked at server action level — no module data leaks to unauthorized orgs</li><li>Admin: <code>/admin/client-management</code> manages grants per client</li><li>Migration: <code>20260527000100_sf19_org_module_grants.sql</code></li></ul></div>
-  <div class="doc-card border-blue"><div class="doc-card-title">client_entitlements (Client Management)</div><ul><li>Stores seat limits, feature flags, and plan tier per client org</li><li>Used by DB capability helper (Pass-9-004) for enforcement at DB layer</li><li>SETU admin writes; org member reads own row only</li><li>Migration: <code>20260527020000_sf19_client_entitlements.sql</code></li></ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">Notification Foundation </div><ul><li><code>notifications</code> table added in Sprint 18</li><li>Supports in-app and email notification targets</li><li>RLS: users own their own notifications; INSERT policy for auth members</li><li>Migration: <code>20260523072000_sprint18_notifications_foundation.sql</code></li></ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">client_entitlements (Client Management)</div><ul><li>Stores seat limits, feature flags, and plan tier per client org</li><li>Used by DB capability helper for enforcement at DB layer</li><li>SETU admin writes; org member reads own row only</li><li>Migration: <code>20260527020000_sf19_client_entitlements.sql</code></li></ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">Notification Foundation </div><ul><li><code>notifications</code> table (additive)</li><li>Supports in-app and email notification targets</li><li>RLS: users own their own notifications; INSERT policy for auth members</li><li>Migration: <code>20260523072000_sprint18_notifications_foundation.sql</code></li></ul></div>
 </div></div><div class="arch-panel"><div class="section-block arch-map-intro"><h2>System Architecture — Visual Overview</h2><p>Five-column product map showing operators, frontend route groups, server actions, Supabase, document engine, and integration boundaries. The layout mirrors the deployed product architecture and keeps known gaps visible.</p></div><div class="arch-svg-card"><img src="docs-assets/diagram-architecture.svg" alt="SETU Flow CRM architecture visual overview"></div><div class="arch-legend"><div><span class="arch-legend-line solid"></span>User action / data flow</div><div><span class="arch-legend-line dashed"></span>Integration boundary / adapter needed</div><div><span class="arch-risk">&#9888;</span> Known risk / gap</div></div></div>`;
     map['modules'] = `
 <div class="mod-flow-row">
@@ -2204,7 +2209,7 @@ flowchart LR
     <li>Knowledge base: <code>docs/setu-guru/</code> — chatbot-ready onboarding, workflow, troubleshooting instructions</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Setu Guru — Sprint 18/19 Improvements (DOC-003)</h2>
+<div class="section-block"><h2>Setu Guru — Improvements</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-purple"><div class="doc-card-title">&#128272; Rate Limiting</div><ul>
@@ -2253,13 +2258,13 @@ flowchart LR
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#128202; setu_guru_feedback Table</div><ul>
-    <li>Created by Sprint 21 migration: <code>20260529000001_sprint21_setu_guru_feedback.sql</code></li>
+    <li>Backing migration: <code>20260529000001_sprint21_setu_guru_feedback.sql</code></li>
     <li>Columns: id, org_id, user_id, route (page where feedback given), label ('helpful' or 'missing'), last_message (last AI response), missing_answer (what the user expected), created_at</li>
     <li>RLS: org members insert own rows; SETU admin reads all for analysis</li>
     <li>Thumbs-up → label='helpful'; Thumbs-down → label='missing' + missingAnswer prompt</li>
   </ul></div>
   <div class="doc-card border-teal"><div class="doc-card-title">&#128202; setu_guru_telemetry Table</div><ul>
-    <li>Created by Sprint 21 migration: <code>20260529000002_sprint21_setu_guru_telemetry.sql</code></li>
+    <li>Backing migration: <code>20260529000002_sprint21_setu_guru_telemetry.sql</code></li>
     <li>Records usage events: route visited, Guru opened, query type, response latency, token count</li>
     <li>Used for usage monitoring in <code>/admin/guru-config</code> monthly usage bar</li>
     <li>Powers daily budget enforcement and per-org rate limit tracking</li>
@@ -2782,17 +2787,17 @@ flowchart LR
 <tr><td>Tracker</td><td><code>sprint_issues</code></td><td>Production work loses evidence and accountability.</td></tr>
 <tr><td>Roles</td><td><code>roles</code>, <code>role_permissions</code>, <code>user_roles</code></td><td>Unauthorized users can approve quotes or trigger sends.</td></tr>
 </tbody></table></div>
-<div class="section-block"><h2>Pass-9 RLS Hardening (May 2026)</h2>
+<div class="section-block"><h2>RLS &amp; Security Hardening</h2>
 <p>Four migration passes applied in sequence to resolve all Supabase advisor warnings. Each pass was applied via MCP migration and verified against the live schema before the next pass began.</p>
 </div>
 <div class="doc-card-grid">
-  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-001: RPC Grant Hardening</div><ul><li>Reviewed all SECURITY DEFINER functions</li><li>Explicit <code>GRANT EXECUTE</code> to <code>authenticated</code> only where required</li><li>Revoked execution from <code>anon</code> where no public access needed</li><li>Every function gets an explicit search path</li></ul></div>
-  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-002: Search Path & View Hardening</div><ul><li><code>SET search_path = public, pg_temp</code> added to all functions</li><li><code>active_product_pricing_rules_v</code> view advisor warning resolved</li><li>Security-definer view ownership transferred where required</li></ul></div>
-  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-003: RLS Policy Remediation</div><ul><li>Tables previously missing RLS policies now covered</li><li>All policies are organization-scoped: no cross-org leakage</li><li>Audit tables protected with INSERT-only policies for members</li><li>Rate limit and API key tables: SETU-internal only policies</li></ul></div>
-  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Pass 9-004: DB Capability Helper</div><ul><li>Helper function added to check org module access at DB layer</li><li>Used by <code>client_entitlements</code> enforcement</li><li>Guards module-gated routes at the server action level</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; RPC Grant Hardening</div><ul><li>Reviewed all SECURITY DEFINER functions</li><li>Explicit <code>GRANT EXECUTE</code> to <code>authenticated</code> only where required</li><li>Revoked execution from <code>anon</code> where no public access needed</li><li>Every function gets an explicit search path</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; Search Path & View Hardening</div><ul><li><code>SET search_path = public, pg_temp</code> added to all functions</li><li><code>active_product_pricing_rules_v</code> view advisor warning resolved</li><li>Security-definer view ownership transferred where required</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; RLS Policy Remediation</div><ul><li>Tables previously missing RLS policies now covered</li><li>All policies are organization-scoped: no cross-org leakage</li><li>Audit tables protected with INSERT-only policies for members</li><li>Rate limit and API key tables: SETU-internal only policies</li></ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#10003; DB Capability Helper</div><ul><li>Helper function added to check org module access at DB layer</li><li>Used by <code>client_entitlements</code> enforcement</li><li>Guards module-gated routes at the server action level</li></ul></div>
 </div>
 <div class="tbl-wrap"><table>
-<thead><tr><th>New Table (SF-18/19)</th><th>Purpose</th><th>RLS</th></tr></thead>
+<thead><tr><th>New Table</th><th>Purpose</th><th>RLS</th></tr></thead>
 <tbody>
 <tr><td><code>rate_limit_overrides</code></td><td>Per-org API rate limit overrides (SETU internal)</td><td>SETU admin only</td></tr>
 <tr><td><code>rate_limit_override_audit</code></td><td>Audit log for rate limit changes</td><td>SETU admin read; INSERT all SETU</td></tr>
@@ -2801,7 +2806,7 @@ flowchart LR
 <tr><td><code>client_entitlements</code></td><td>Module access and seat limits per client org </td><td>SETU admin write; org member read own</td></tr>
 <tr><td><code>client_usage_rollups</code></td><td>Aggregated usage by client for billing/limits</td><td>SETU admin only</td></tr>
 <tr><td><code>docs_workspace_screenshots</code></td><td>Live UI screenshot gallery for docs workspace</td><td>Org members read; auth write</td></tr>
-<tr><td><code>notifications</code></td><td>SF-18 notifications foundation — in-app and email targets</td><td>User owns their notifications</td></tr>
+<tr><td><code>notifications</code></td><td>Notifications foundation — in-app and email targets</td><td>User owns their notifications</td></tr>
 </tbody></table></div>
 <div class="section-block"><h2>Audit Trail (/admin/audit)</h2>
 <p>The audit log captures every meaningful administrative and workflow action across the platform. Sensitive payloads (passwords, tokens) are never logged. Attribution to actor is required for every sensitive event.</p>
@@ -2863,7 +2868,7 @@ flowchart LR
     <li>All other mutations: server actions only — no REST endpoints for commercial data</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Webhook Security (DOC-010)</h2>
+<div class="section-block"><h2>Webhook Security</h2>
 <p>All webhook routes at <code>/api/integrations/webhooks/[provider]</code> verify HMAC-SHA256 signatures before processing. Every receive — success or failure — writes to <code>audit_logs</code>.</p>
 </div>
 <div class="doc-card-grid">
@@ -2879,7 +2884,7 @@ flowchart LR
     <li>Must be set in Vercel environment variables before deploying the route</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Data Integrity — Status Field Validation (DOC-011)</h2>
+<div class="section-block"><h2>Data Integrity — Status Field Validation</h2>
 <p>Status fields on core tables are now validated at the database level. Invalid values are rejected before reaching application logic.</p>
 </div>
 <div class="doc-card-grid">
@@ -2948,7 +2953,7 @@ flowchart LR
   </ul></div>
 </div>
 <div class="section-block"><h2>Notifications System </h2>
-<p>The notifications foundation was added in Sprint 18 to support in-app and email notification delivery. The system is additive — existing workflows are not changed. Notifications are user-owned and org-scoped.</p>
+<p>The notifications foundation supports in-app and email notification delivery. The system is additive — existing workflows are not changed. Notifications are user-owned and org-scoped.</p>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#128276; Notification Targets</div><ul>
@@ -2968,7 +2973,7 @@ flowchart LR
     <li><code>/admin/notifications</code> — per-org notification preference controls</li>
     <li><code>/settings/notifications</code> — per-user notification channel preferences</li>
     <li>Email notifications require <code>MAILTRAP_API_KEY</code> to be configured</li>
-    <li>Source table: <code>notifications</code> (SF-18 migration)</li>
+    <li>Source table: <code>notifications</code></li>
   </ul></div>
 </div>`;
     if (id === 'mobile') return `<div class="feature-strip">
@@ -3031,7 +3036,7 @@ flowchart LR
     <li><code>MobileOrdersWorkspace</code> component; no pagination — shows active orders only</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Mobile Redesign — Sprint 19 (DOC-005)</h2>
+<div class="section-block"><h2>Mobile Redesign</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#65291; Quick Lead — Center Tab</div><ul>
@@ -3364,7 +3369,7 @@ flowchart LR
     <li>Org admin can see shared views but cannot delete personal views of other users</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Tasks Workspace — Complete Feature Reference (DOC-004)</h2>
+<div class="section-block"><h2>Tasks Workspace — Complete Feature Reference</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#128197; Calendar View</div><ul>
@@ -3393,7 +3398,7 @@ flowchart LR
     <li>Mobile: swipe right &gt;80px on task row completes the task</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Reports — Upgraded Capabilities (DOC-006)</h2>
+<div class="section-block"><h2>Reports — Upgraded Capabilities</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#128197; Date Range Filtering</div><ul>
@@ -3414,7 +3419,7 @@ flowchart LR
     <li>Built with <code>recharts</code> — already in product stack</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Compliance — Real File Upload &amp; Bulk Waive (DOC-007)</h2>
+<div class="section-block"><h2>Compliance — Real File Upload &amp; Bulk Waive</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-red"><div class="doc-card-title">&#128452; Real File Upload (Critical fix)</div><ul>
@@ -3432,7 +3437,7 @@ flowchart LR
     <li>Critical + High severity items cannot be bulk waived</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Contracts — Search, Filter &amp; Pagination (DOC-008)</h2>
+<div class="section-block"><h2>Contracts — Search, Filter &amp; Pagination</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#128269; Search &amp; Filter</div><ul>
@@ -3446,7 +3451,7 @@ flowchart LR
     <li>"Showing 25 of 143 contracts" count displayed</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>AI Suggestions — Bulk Dismiss, Reasoning &amp; Dismissed Tab (DOC-009)</h2>
+<div class="section-block"><h2>AI Suggestions — Bulk Dismiss, Reasoning &amp; Dismissed Tab</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-purple"><div class="doc-card-title">&#9989; Bulk Dismiss</div><ul>
@@ -3465,7 +3470,7 @@ flowchart LR
     <li>Audit trail: <code>entity_type="ai_suggestion"</code>, <code>action="dismissed"</code></li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Admin Notifications (/admin/notifications) — DOC-013</h2>
+<div class="section-block"><h2>Admin Notifications (/admin/notifications)</h2>
 <p>Workspace-level notification preference matrix. Controls which channels are active per event type for the entire org. Separate from per-user preferences at <code>/settings/notifications</code>.</p>
 </div>
 <div class="doc-card-grid">
@@ -3476,7 +3481,7 @@ flowchart LR
     <li>Distinct from <code>/settings/notifications</code> which is per-user channel preferences</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>RFQ vs Quote — DOC-014</h2>
+<div class="section-block"><h2>RFQ vs Quote</h2>
 <p>The product has two parallel quoting surfaces with different purposes:</p>
 </div>
 <div class="tbl-wrap"><table>
@@ -3489,7 +3494,7 @@ flowchart LR
 <tr><td><b>Gate</b></td><td>Lead must be qualified + at least one product mapped</td><td>Coverage + compliance gates must pass</td></tr>
 <tr><td><b>Approval</b></td><td>No approval threshold — supplier price is input</td><td>Approval gate at &gt;15% override threshold</td></tr>
 </tbody></table></div>
-<div class="section-block"><h2>Background Jobs &amp; Cron — DOC-015</h2>
+<div class="section-block"><h2>Background Jobs &amp; Cron</h2>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">&#9201; Scheduled Jobs</div><ul>
@@ -3503,7 +3508,7 @@ flowchart LR
     <li><code>/api/public/card-analytics</code> — tracks vCard page views and action clicks</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Mobile Routes Reference — DOC-012</h2>
+<div class="section-block"><h2>Mobile Routes Reference</h2>
 </div>
 <div class="tbl-wrap"><table>
 <thead><tr><th>Mobile Route</th><th>Desktop Equivalent</th><th>Notes</th></tr></thead>
@@ -3616,7 +3621,267 @@ flowchart LR
 
   // Central dispatcher - replaces the stub added earlier
   // Remove the stub comment and use the full dispatcher
+  function topicContentLatest(id) {
+    const map = {};
+    map['trade-show-trial'] = `
+<div class="section-block"><h2>Public Trial — Trade-Show Funnel</h2>
+<p>A public, no-authentication instant-trial flow built for the trade-show booth. A prospect signs up at <code>/trade-show-trial</code> (video landing) and is dropped straight into a provisioned trial workspace; on completion they land on <code>/trade-show-trial/success</code>. This is the outward-facing acquisition funnel and is distinct from the internal <b>Trade Events</b> module, which is for SETU's own event capture.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128221; Signup Form</div><ul>
+    <li>Fields: full name, company, work email, WhatsApp phone, trade-show name, booth number, main product category</li>
+    <li>Email and phone validated server-side; no password is asked of the prospect</li>
+    <li>Rate limited: max <strong>5 signups per IP per hour</strong></li>
+  </ul></div>
+  <div class="doc-card border-orange"><div class="doc-card-title">&#9881; Workspace Provisioning</div><ul>
+    <li>A single provisioning RPC creates the org, a trade event, and the workspace path</li>
+    <li>Unique trial slug derived from company name; a temporary credential is generated and the prospect is auto-signed-in</li>
+    <li>An existing user with the same email is attached rather than duplicated</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#127919; Auto Lead + Handoff</div><ul>
+    <li>An internal CRM lead is created so SETU can follow up</li>
+    <li>A <code>client_onboarding_requests</code> row is raised for SETU review before any first admin invitation</li>
+    <li>Prospect activity is tracked via <code>trial_intent_events</code></li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Trial Capabilities &amp; Limits</h2>
+<p>A trial workspace runs in a constrained capability mode. Some capabilities are fully active; others are preview-only. Limits and expiry are enforced at the server-action layer so a trial can never silently exceed its allowance.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">Active vs Preview</div><ul>
+    <li>Active capabilities behave like the paid product within the trial's caps</li>
+    <li>Preview capabilities are visible but gated, used to demonstrate upgrade value</li>
+    <li>Capability state resolves from <code>organization_trial_capabilities</code></li>
+  </ul></div>
+  <div class="doc-card border-purple"><div class="doc-card-title">Enforcement</div><ul>
+    <li>Each guarded action is checked before it runs; expired or over-limit actions return a clear upgrade prompt</li>
+    <li>A persistent trial banner and an in-product guided tour orient the prospect</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Conversion &amp; ROI</h2>
+<p>The funnel is instrumented to turn a booth conversation into a measurable upgrade case.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Surface</th><th>Route / Endpoint</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>ROI calculator</td><td><code>/roi-calculator</code> &middot; <code>/api/roi-report</code></td><td>Builds an ROI case; captured as <code>roi_report_leads</code></td></tr>
+<tr><td>Book a demo</td><td><code>/book-demo</code></td><td>Schedules a follow-up with the SETU team</td></tr>
+<tr><td>Data export</td><td><code>/api/trial/export-csv</code></td><td>Lets a trial export captured leads to CSV</td></tr>
+<tr><td>Upgrade intent</td><td><code>/api/trial/upgrade-intent</code></td><td>Signals readiness to convert; surfaced to SETU</td></tr>
+<tr><td>Client login</td><td><code>/client-login</code></td><td>Returning trial / client sign-in</td></tr>
+</tbody></table></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Source Table</th><th>Holds</th></tr></thead>
+<tbody>
+<tr><td><code>trade_show_trial_workspaces</code></td><td>Provisioned trial workspaces and their source booth context</td></tr>
+<tr><td><code>organization_trial_capabilities</code></td><td>Per-workspace capability mode, caps, and expiry</td></tr>
+<tr><td><code>trade_event_entries</code></td><td>Raw booth intake before qualification and lead conversion</td></tr>
+<tr><td><code>trade_event_terms</code></td><td>Reusable product / category terms captured during intake</td></tr>
+<tr><td><code>trial_intent_events</code></td><td>Prospect behaviour and upgrade-intent signals</td></tr>
+<tr><td><code>roi_report_leads</code></td><td>ROI calculator submissions captured as leads</td></tr>
+<tr><td><code>client_onboarding_requests</code></td><td>Intake reviewed by SETU before workspace go-live</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Known Future Enhancement</h2>
+<p>Offline capture is a planned enhancement rather than a current capability: convention-centre Wi-Fi is unreliable at large shows, so a store-and-sync capture mode is on the roadmap. It is intentionally tracked as a future item rather than silently assumed.</p>
+</div>
+`;
+    map['team-chat'] = `
+<div class="section-block"><h2>Conversation Engine</h2>
+<p>A multi-org conversation engine. Every organization gets its own isolated set of conversations &mdash; there is no cross-org visibility. A conversation is a container that can be a channel, a direct message, a group, an entity-linked thread, or a system feed.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">Conversation Types</div><ul>
+    <li><b>Channels</b> &mdash; team-wide topics</li>
+    <li><b>Direct messages</b> &mdash; one-to-one</li>
+    <li><b>Groups</b> &mdash; ad-hoc multi-person</li>
+    <li><b>Entity threads</b> &mdash; pinned to a quote, order, or dispatch</li>
+    <li><b>System feeds</b> &mdash; automated event posts</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">System Bot</div><ul>
+    <li>A built-in <b>SETU Flow</b> bot posts system and event messages</li>
+    <li>Bot posts can carry entity references (e.g. a linked issue) on the message</li>
+    <li>Used to surface workflow events directly inside the relevant thread</li>
+  </ul></div>
+  <div class="doc-card border-purple"><div class="doc-card-title">Reactions, Presence &amp; Read State</div><ul>
+    <li>Emoji reactions on any message</li>
+    <li>Live presence per conversation</li>
+    <li>Per-participant last-read position powers unread counts</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Entity Discussions</h2>
+<p>Conversations attach to commercial records so a discussion lives next to the thing it is about. A floating discussion drawer activates contextually from the workspace, and full-page threads exist for orders and dispatches.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Where</th><th>Activates on</th><th>Thread</th></tr></thead>
+<tbody>
+<tr><td>Quote discussion</td><td><code>/quotes?quoteId=…</code></td><td>Drawer pinned to the selected quote</td></tr>
+<tr><td>Order discussion</td><td><code>/orders?orderId=…</code></td><td>Drawer + <code>/order-discussions/[orderId]</code></td></tr>
+<tr><td>Dispatch discussion</td><td><code>/orders?shipmentId=…</code></td><td>Drawer + <code>/dispatch-discussions/[shipmentId]</code></td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>API Surface</h2>
+<p>Client-facing chat is served by a focused set of routes; the SETU-internal team chat used in Mission Control has its own scoped routes.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Scope</th><th>Routes</th></tr></thead>
+<tbody>
+<tr><td>Client chat (11)</td><td><code>/api/chat/</code> context, conversations, dm, messages, pin, prefs, presence, reactions, read-state, unread, upload</td></tr>
+<tr><td>Internal team chat (4)</td><td><code>/api/smc/chat/</code> route, conversations, dm, read-state</td></tr>
+</tbody></table></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Source Table</th><th>Holds</th></tr></thead>
+<tbody>
+<tr><td><code>chat_conversations</code></td><td>Containers for channels, DMs, groups, entity threads, system feeds</td></tr>
+<tr><td><code>chat_participants</code></td><td>Membership, role, last-read position, mute state</td></tr>
+<tr><td><code>chat_messages</code></td><td>User, system, and bot messages; entity refs link to records</td></tr>
+<tr><td><code>chat_notifications</code></td><td>Per-user mentions, replies, assignments, approvals with read tracking</td></tr>
+<tr><td><code>chat_reactions</code></td><td>Emoji reactions per message</td></tr>
+<tr><td><code>chat_presence</code></td><td>Live presence state</td></tr>
+<tr><td><code>chat_user_prefs</code></td><td>Per-user chat preferences</td></tr>
+</tbody></table></div>
+`;
+    map['mission-control'] = `
+<div class="callout internal-only"><b>Internal only.</b> Mission Control is for the SETU Flow team and is scoped to the SETU Flow organization. It is not exposed to client orgs.</div>
+<div class="section-block"><h2>Console Overview</h2>
+<p>Setu Mission Control (SMC) is the internal operations console for running SETU Flow as a business and as a product, separate from the client-facing CRM. It lives at <code>/smc</code> and opens on a dashboard of live counts &mdash; open issues, internal leads, client orgs, incidents, current sprint, and sprint completion &mdash; with quick links into each operating area.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">Engineering</div><ul>
+    <li>Issues, sprint board, and agent actions</li>
+    <li><code>/smc/issues</code> &middot; <code>/smc/board</code></li>
+    <li>Reads the issue tracker and sprint metadata</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">Operations</div><ul>
+    <li>Incidents (P0&ndash;P3) &amp; postmortems, API health, deployments</li>
+    <li><code>/smc/incidents</code> &middot; <code>/smc/health</code> &middot; <code>/smc/deploy</code></li>
+  </ul></div>
+  <div class="doc-card border-amber"><div class="doc-card-title">Growth</div><ul>
+    <li>Internal SaaS lead pipeline, client-org health, revenue, SEO</li>
+    <li><code>/smc/leads</code> &middot; <code>/smc/clients</code> &middot; <code>/smc/revenue</code> &middot; <code>/smc/seo</code></li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Console Map</h2>
+<p>SMC is organised into operating areas. Each area is a dedicated workspace inside the console.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Area</th><th>Sections</th></tr></thead>
+<tbody>
+<tr><td>Dashboard</td><td><code>/smc</code> &mdash; live operating snapshot</td></tr>
+<tr><td>Engineering</td><td>Issues, Sprint board, Agents</td></tr>
+<tr><td>Operations</td><td>Incidents, API Health, Deployments</td></tr>
+<tr><td>Quality</td><td>QA &amp; Testing</td></tr>
+<tr><td>Config</td><td>Feature Flags, Settings</td></tr>
+<tr><td>Product</td><td>Changelog, Roadmap</td></tr>
+<tr><td>Knowledge</td><td>Documentation Hub (this workspace)</td></tr>
+<tr><td>Growth</td><td>Internal Leads, Client Orgs, Revenue, SEO</td></tr>
+<tr><td>Mission Control</td><td>Ops Protocol, Demo, Guru</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Source Tables</h2>
+<p>SMC has its own backing tables and also reads shared operational tables. Its own tables are restricted to the SETU Flow org.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>smc_incidents</code></td><td>Production incident tracking (P0 system-down through P3 minor)</td></tr>
+<tr><td><code>smc_feature_flags</code></td><td>Per-client feature toggles with gradual rollout</td></tr>
+<tr><td><code>smc_changelog</code></td><td>Per-release notes; publishable as client-facing release notes</td></tr>
+<tr><td><code>smc_wiki_pages</code></td><td>Internal wiki: decisions, runbooks, onboarding, process</td></tr>
+<tr><td><code>smc_chat_messages</code></td><td>Internal team chat channels (general, engineering, leads, incidents)</td></tr>
+</tbody></table></div>
+<p style="color:#64748b;font-size:13px;margin-top:8px">SMC also reads shared tables including the issue tracker, sprint metadata, organizations, internal leads, and client onboarding requests to assemble its dashboards.</p>
+`;
+    map['client-management'] = `
+<div class="callout internal-only"><b>Internal only.</b> Client Management is a SETU Flow operations surface. Client orgs never see these tools; they only experience the modules and limits granted to them.</div>
+<div class="section-block"><h2>Two-Layer Access Control</h2>
+<p>Every client workspace is governed by two independent layers. <b>Module grants</b> decide which product areas an org can reach at all; <b>entitlement profiles</b> decide the plan, seat count, usage limits, and allowances within those areas. The two are enforced separately, so a client can have a module without unlimited use of it. SETU manages all of this at <code>/admin/client-management</code>, with live client health surfaced in Mission Control at <code>/smc/clients</code>. Prospects enter through the public intake form at <code>/onboarding</code>.</p>
+</div>
+<div class="section-block"><h2>Onboarding &amp; Provisioning</h2>
+<p>A client moves through a defined lifecycle from first contact to a live workspace. Intake is captured as <code>client_onboarding_requests</code>; provisioning builds the workspace from the reviewed draft and then issues the first admin invitation.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Stage</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Submitted</td><td>Public intake received; awaiting SETU review</td></tr>
+<tr><td>Setup in progress</td><td>Workspace being provisioned from the draft</td></tr>
+<tr><td>Admin invite ready</td><td>Workspace built; first admin invite prepared</td></tr>
+<tr><td>Reviewing</td><td>Under SETU review before go-live</td></tr>
+<tr><td>Admin invited</td><td>First admin invitation sent</td></tr>
+<tr><td>Live</td><td>Client active in production</td></tr>
+<tr><td>Paused</td><td>Temporarily suspended</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Module Grants</h2>
+<p>Modules are the units of product access. A grant is checked at the server-action and route level, so module-gated areas never leak to an org that has not been granted them. Grants are stored in <code>org_module_grants</code> (org, module key, enabled).</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Module</th><th>Covers</th></tr></thead>
+<tbody>
+<tr><td><b>Full CRM</b></td><td>Dashboard, leads, pipeline, quotes, tasks, catalog, and core workspaces</td></tr>
+<tr><td><b>Trade Show</b></td><td>Event setup, booth capture, contact exchange, and event conversion</td></tr>
+<tr><td><b>Orders + Compliance</b></td><td>Accepted-quote execution, orders, documents, and compliance readiness</td></tr>
+<tr><td><b>Setu Guru</b></td><td>Embedded, route-aware CRM assistant</td></tr>
+<tr><td><b>Analytics</b></td><td>Dashboard analytics, AI analytics, reporting, leadership insight</td></tr>
+<tr><td><b>vCard</b></td><td>My Card, QR share links, public card pages, vCard download</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Entitlement Profiles</h2>
+<p>The entitlement profile (<code>client_entitlement_profiles</code>) holds the commercial and usage envelope for each org. Live consumption is tracked in <code>client_usage_rollups</code> and compared against these limits.</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-blue"><div class="doc-card-title">Plan &amp; Billing</div><ul>
+    <li>Plan tier: Starter, Growth, Enterprise, or Custom</li>
+    <li>Billing status and renewal date</li>
+    <li>Trial fields: trial end date, trial template, guided mode</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">Seats &amp; Usage Caps</div><ul>
+    <li>Seat limit; caps for leads, quotes, orders, and users</li>
+    <li>Setu Guru monthly request and spend limits</li>
+    <li>Overage policy when a limit is reached</li>
+  </ul></div>
+  <div class="doc-card border-purple"><div class="doc-card-title">Allowances</div><ul>
+    <li>Toggle exports, invites, settings editing, and dispatch per org</li>
+    <li>Lets SETU tailor a workspace without code changes</li>
+  </ul></div>
+</div>
+<div class="section-block"><h2>Client Health &amp; Feature Flags</h2>
+<p>Mission Control scores each client org (healthy / watch / at risk) from active users, pending invites, and usage against limits. <b>Feature flags</b> (<code>smc_feature_flags</code>) are the rollout-control surface: each flag carries an enabled state, a rollout percentage, and explicit allow / block org lists, managed at <code>/smc/flags</code>.</p>
+<p style="color:#64748b;font-size:13px;margin-top:6px"><b>Note:</b> feature flags are currently a management surface &mdash; runtime enforcement that gates live features by flag is a planned enhancement. Until then, flags record intended rollout but do not yet switch features on or off at request time.</p>
+</div>
+`;
+    map['roadmap'] = `
+<div class="section-block"><h2>Board &amp; Horizons</h2>
+<p>The roadmap is a live, customer-facing product board. It is surfaced inside Mission Control at <code>/smc/roadmap</code> and rendered from <code>/internal/setuflow-roadmap.html</code>, driven by the <code>roadmap_items</code> and <code>roadmap_votes</code> tables. Items are organised across three horizons, with a Shipped filter for launched work.</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Horizon</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><b>Now</b></td><td>Active development &mdash; building right now</td></tr>
+<tr><td><b>Next</b></td><td>Up next &mdash; scoped and ready to build</td></tr>
+<tr><td><b>Later</b></td><td>Future &mdash; long-term vision and ideas</td></tr>
+</tbody></table></div>
+<p style="color:#64748b;font-size:13px;margin-top:4px">The board header summarises the portfolio at a glance: features shipped (launched), in progress (in-progress + beta), coming soon (planned + gathering), and total community votes.</p>
+<div class="section-block"><h2>Item Statuses</h2>
+<p>Each item carries a status that drives its badge and, for in-flight work, a progress bar (<code>progress_pct</code>).</p>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Status</th><th>Badge</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td><code>gathering_feedback</code></td><td>Gathering</td><td>Validating the idea and demand</td></tr>
+<tr><td><code>planned</code></td><td>Planned</td><td>Committed and scoped</td></tr>
+<tr><td><code>in_progress</code></td><td>In Progress</td><td>Being built; shows a progress bar</td></tr>
+<tr><td><code>beta</code></td><td>Beta</td><td>Live for early users; hardening</td></tr>
+<tr><td><code>launched</code></td><td>Shipped</td><td>Generally available in production</td></tr>
+</tbody></table></div>
+<div class="section-block"><h2>Voting &amp; Signals</h2>
+<p>Items can collect community votes (<code>roadmap_votes</code>, surfaced as a per-item count) so demand is visible alongside priority. Items are organised by <code>category</code> and <code>tags</code> for filtering, and an optional <code>target_quarter</code> sets a soft timeline. Each item is framed around customer outcome &mdash; a <code>value_statement</code> ("what this lets you do") and a <code>problem_solved</code> &mdash; rather than internal task language.</p>
+</div>
+<div class="section-block"><h2>Sharing &amp; Add Feature</h2>
+<p>The roadmap can be shared externally through a tokenised public link (<code>roadmap_share_tokens</code>), and timelines are presented as indicative and subject to change. New items are added directly from the board via <b>Add Feature</b>, which writes a new <code>roadmap_items</code> row with its horizon, status, value framing, and tags.</p>
+</div>
+`;
+    return map[id] || '';
+  }
+
   function getTopicContent(id) {
+    const cL = topicContentLatest(id);
+    if (cL) return cL;
     const c1 = topicContent(id);
     if (c1) return c1;
     const c2 = topicContentWorkflows(id);
@@ -3674,7 +3939,7 @@ flowchart LR
   <h4>Doc Progress</h4>
   <div class="progress-line"><span>Overall Progress</span><b id="railDocPct">${docPct}%</b></div>
   <div class="bar"><div class="fill" id="railDocFill" style="width:${docPct}%"></div></div>
-  <p style="color:#64748b;font-size:11.5px;margin-top:6px">40 documented areas</p>
+  <p style="color:#64748b;font-size:11.5px;margin-top:6px">45 documented areas</p>
   <a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a>
 </div>
 <div class="rail-block">
@@ -3683,7 +3948,7 @@ flowchart LR
   <div class="rail-change"><span class="rail-change-badge">DOC</span><div><div class="rail-change-text">Documentation: 40 areas complete</div><span class="rail-change-meta">May 28, 2026 &middot; v2026.05.28</span></div></div>
   <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Admin UX overhaul — all modules shipped</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
   <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Client Entitlements &amp; Module Grants</div><span class="rail-change-meta">May 27, 2026 &middot; v2026.05.27</span></div></div>
-  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">Pass-9 RLS Hardening — all 4 passes</div><span class="rail-change-meta">May 23, 2026 &middot; v2026.05.23</span></div></div>
+  <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">RLS & Security Hardening</div><span class="rail-change-meta">May 23, 2026 &middot; v2026.05.23</span></div></div>
   <div class="rail-change"><span class="rail-change-badge">FEAT</span><div><div class="rail-change-text">API Keys, Rate Limits, Guru Config</div><span class="rail-change-meta">May 24, 2026 &middot; v2026.05.24</span></div></div>
   <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
 </div>
@@ -3692,31 +3957,36 @@ flowchart LR
   <button class="rail-toggle-btn" onclick="Docs.toggleRailSection('rail-shipped')" aria-expanded="false"><h4>Shipped</h4><span class="rail-toggle-chevron">›</span></button>
   <div class="rail-collapsible-body" id="rail-shipped">
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Admin UX Overhaul — All Modules</div></div></div>
-  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">SF-19 Client Mgmt &amp; Module Grants</div></div></div>
-  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Pass-9 Security Hardening</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Client Mgmt &amp; Module Grants</div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Security Hardening</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#059669"></div><div><div class="roadmap-label">May 2026 &middot; Complete</div><div class="roadmap-item-title">Setu Guru In-App Widget</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Finance Integration (Xero / QuickBooks)</div></div></div>
   <div class="roadmap-item"><div class="roadmap-dot" style="background:#2563eb"></div><div><div class="roadmap-label">Upcoming</div><div class="roadmap-item-title">Server-side PDF Generation</div></div>
-  <div class="roadmap-item"><div class="roadmap-dot" style="background:#f59e0b"></div><div><div class="roadmap-label">In Progress (Sprint 19)</div><div class="roadmap-item-title">Documentation Sprint — DOC-001 to DOC-011</div></div></div></div>
+  <div class="roadmap-item"><div class="roadmap-dot" style="background:#f59e0b"></div><div><div class="roadmap-label">In Progress</div><div class="roadmap-item-title">Documentation refresh — new subsystems</div></div></div></div>
   <a href="setuflow-roadmap.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full roadmap \u2192</a>
 </div>
 </div>` : '';
 
     // ── Topic-only: current page sections ──────────────────────
     const TOPIC_SECTIONS = {
-      'architecture':     ['Stack Overview','Visual Overview','Route Groups','SF-19 Additions'],
+      'architecture':     ['Stack Overview','Visual Overview','Route Groups','Client Entitlements & Modules'],
       'modules':          ['Core Modules','Admin Workspace','Reports & Analytics'],
       'workflows':        ['Commercial Pipeline','Approval & Send','Quote PDF','Order Execution'],
       'diagrams':         ['System Architecture','Commercial Lifecycle','Mobile Capture','Guru Loop'],
       'operator-guides':  ['Lead \u2192 Quote','Build & Send','Quote \u2192 Order','Documents','Packing & Freight','Dispatch'],
       'guru-ai':          ['Guru Hero','In-App Widget','Capabilities','Guardrails'],
-      'data-security':    ['RLS Policies','Pass-9 Hardening','Audit Trail','Secrets'],
+      'data-security':    ['RLS Policies','RLS Hardening','Audit Trail','Secrets'],
       'api-integrations': ['Integrations','API Keys','AI Suggestions','Notifications'],
       'mobile':           ['Business Card Scan','Smart vCard','Mobile Dashboard','Mobile Orders'],
       'quick-reference':  ['Never Break','Always Verify','Core Routes','Compliance','Contracts','Pricing','Deployment'],
       'documents':        ['Document Control','Expiry Posture','Gate Integration'],
       'trade-events':     ['Event Setup','Field Capture','Post-Event Conversion','Analytics'],
       'integrations':     ['6 Connectors','Status Overview'],
+      'trade-show-trial': ['Public Signup','Workspace Provisioning','Trial Capabilities','Conversion & ROI'],
+      'team-chat':        ['Conversation Engine','Entity Discussions','Channels & DMs','Notifications & Presence'],
+      'mission-control':  ['Console Overview','Engineering & Quality','Operations & Health','Growth & Revenue'],
+      'client-management':['Onboarding & Provisioning','Module Grants','Entitlement Profiles','Health & Feature Flags'],
+      'roadmap':          ['Board & Horizons','Item Statuses','Voting & Signals','Sharing & Add Feature'],
     };
     const sections = TOPIC_SECTIONS[id] || [];
     const topicSections = sections.length ? `
@@ -4023,7 +4293,7 @@ flowchart LR
     'saved-views': 0.95,
     // Bug resolution — 217/217 resolved
     'bug-resolution': 1.00, 'order-detail-panel': 0.97, 'workspace-refactor': 0.97,
-    // DOC-001 to DOC-011 — documented this pass
+    // new-subsystem documentation pass
     'email-delivery-pipeline': 0.96, 'whatsapp-flow': 0.96,
     'guru-rate-limiting': 0.97, 'tasks-full-feature': 0.97,
     'mobile-sprint19-redesign': 0.97, 'reports-upgrades': 0.96,
@@ -4054,6 +4324,8 @@ flowchart LR
     'rfq-workflow-deep': 0.72,
     'background-jobs-deep': 0.82,
     'admin-notifications-deep': 0.78,
+    'trade-show-trial-flow': 0.90, 'team-chat-discussions': 0.90, 'mission-control-console': 0.90,
+    'client-management-entitlements': 0.91, 'product-roadmap': 0.92,
   };
   function calcDocReadiness() {
     const vals = Object.values(DOC_COVERAGE);
