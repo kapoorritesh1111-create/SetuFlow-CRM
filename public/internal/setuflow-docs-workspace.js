@@ -33,7 +33,7 @@ const Docs = (() => {
     { id: 'live-ui',          group: 'Reference',          icon: '\u25a3',   title: 'Live UI Snapshots',    tag: 'Screenshots',   summary: 'Curated screenshot library of every major workspace. Clickable, zoomable, linked to the relevant docs topic.',      accent: '#db2777' },
     { id: 'trade-show-trial', group: 'Business Workflows', icon: '\u26a1',   title: 'Trade Show Trial',     tag: 'Acquisition',   summary: 'Public no-auth instant-trial flow for trade-show booths: signup, workspace provisioning, trial capability limits, ROI calculator, and auto-created internal lead.', accent: '#f97316' },
     { id: 'team-chat',        group: 'Operations',         icon: '\u2709',     title: 'Team Chat & Discussions', tag: 'Collaboration', summary: 'Multi-org conversation engine: channels, DMs, entity-linked quote/order/dispatch discussions, system bot posts, reactions, presence, and read tracking.', accent: '#2563eb' },
-    { id: 'mission-control',  group: 'Operations',         icon: '\u2316',     title: 'Mission Control',      tag: 'Internal Ops',  summary: 'SETU-internal operations console (/smc): engineering, incidents, deployments, feature flags, client health, internal leads, revenue, QA, changelog, and team chat.', accent: '#193769' },
+    { id: 'mission-control',  group: 'Operations',         icon: '\u2316',     title: 'Mission Control',      tag: 'Internal Ops',  summary: 'SETU-internal operations console (/smc), organised into five functional groups (Overview, Delivery, Growth, Intelligence, Config): issues, a native QA workspace, incidents, deployments, feature flags, client health, internal leads, revenue, changelog, and team chat.', accent: '#193769' },
     { id: 'client-management', group: 'Operations',         icon: '\u25c8',   title: 'Client Management & Entitlements', tag: 'Internal Ops', summary: 'How SETU provisions and governs client workspaces: onboarding intake, module grants, plan/seat/usage entitlements, client health, and per-org feature flags.', accent: '#0d9488' },
     { id: 'roadmap',          group: 'Reference',          icon: '\u2197',   title: 'Roadmap',              tag: 'Product',       summary: 'The live product roadmap: Now / Next / Later horizons, item statuses, community voting signals, value framing, public sharing, and how features are added.', accent: '#2563eb' },
     { id: 'glossary',         group: 'Reference',          icon: '\u25ce',   title: 'Glossary',             tag: 'Glossary',      summary: 'Definitions for every term, table name, status code, field name, and acronym used across SETU Flow CRM.',        accent: '#334155' }
@@ -3742,7 +3742,7 @@ flowchart LR
     map['mission-control'] = `
 <div class="callout internal-only"><b>Internal only.</b> Mission Control is for the SETU Flow team and is scoped to the SETU Flow organization. It is not exposed to client orgs.</div>
 <div class="section-block"><h2>Console Overview</h2>
-<p>Setu Mission Control (SMC) is the internal operations console for running SETU Flow as a business and as a product, separate from the client-facing CRM. It lives at <code>/smc</code> and opens on a dashboard of live counts &mdash; open issues, internal leads, client orgs, incidents, current sprint, and sprint completion &mdash; with quick links into each operating area.</p>
+<p>Setu Mission Control (SMC) is the internal operations console for running SETU Flow as a business and as a product, separate from the client-facing CRM. It lives at <code>/smc</code>. Navigation is a collapsible icon rail of five functional groups &mdash; Overview, Delivery, Growth, Intelligence, and Config &mdash; with a grouped sidebar; collapsing the sidebar leaves the rail for quick switching. The dashboard is a dense operating console driven by live data: sprint velocity across recent sprints, the open-issue severity mix, the lead pipeline funnel, QA coverage, and system status, alongside recent issue activity.</p>
 </div>
 <div class="doc-card-grid">
   <div class="doc-card border-blue"><div class="doc-card-title">Engineering</div><ul>
@@ -3759,22 +3759,21 @@ flowchart LR
     <li><code>/smc/leads</code> &middot; <code>/smc/clients</code> &middot; <code>/smc/revenue</code> &middot; <code>/smc/seo</code></li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Console Map</h2>
-<p>SMC is organised into operating areas. Each area is a dedicated workspace inside the console.</p>
+<div class="section-block"><h2>Navigation &amp; Console Map</h2>
+<p>SMC navigation is grouped into five areas. The icon rail anchors each group; the sidebar lists that group&rsquo;s workspaces, and collapsing the sidebar leaves the rail for quick switching.</p>
 </div>
 <div class="tbl-wrap"><table>
-<thead><tr><th>Area</th><th>Sections</th></tr></thead>
+<thead><tr><th>Group</th><th>Workspaces</th></tr></thead>
 <tbody>
-<tr><td>Dashboard</td><td><code>/smc</code> &mdash; live operating snapshot</td></tr>
-<tr><td>Engineering</td><td>Issues, Sprint board, Agents</td></tr>
-<tr><td>Operations</td><td>Incidents, API Health, Deployments</td></tr>
-<tr><td>Quality</td><td>QA &amp; Testing</td></tr>
-<tr><td>Config</td><td>Feature Flags, Settings</td></tr>
-<tr><td>Product</td><td>Changelog, Roadmap</td></tr>
-<tr><td>Knowledge</td><td>Documentation Hub (this workspace)</td></tr>
-<tr><td>Growth</td><td>Internal Leads, Client Orgs, Revenue, SEO</td></tr>
-<tr><td>Mission Control</td><td>Ops Protocol, Demo, Guru</td></tr>
+<tr><td>Overview</td><td>Dashboard (<code>/smc</code>), Health</td></tr>
+<tr><td>Delivery</td><td>Issues, Board View, QA, Incidents, Deployments, Changelog, Runbooks, Protocol</td></tr>
+<tr><td>Growth</td><td>Internal Leads, Client Orgs, Revenue, Roadmap</td></tr>
+<tr><td>Intelligence</td><td>Docs Hub, Guru Ops, SEO</td></tr>
+<tr><td>Config</td><td>Feature Flags, Demo</td></tr>
 </tbody></table></div>
+<div class="section-block"><h2>Quality &mdash; QA Workspace</h2>
+<p>QA is a native workspace at <code>/smc/qa</code>, not an embedded tool. Test suites and their steps are editable database records &mdash; the steps <em>are</em> the testing documentation. A tester opens a suite, steps through each case marking pass / fail / blocked, and a failure captures the suite, case, expected result, environment and build automatically, so every logged issue is reproducible by construction. Findings are triaged in their own lane and an internal admin promotes a finding into the issue tracker with the repro pre-filled and a two-way backlink &mdash; testers never write to the tracker directly. External-tester share links and publishable QA report snapshots are the planned next layer.</p>
+</div>
 <div class="section-block"><h2>Source Tables</h2>
 <p>SMC has its own backing tables and also reads shared operational tables. Its own tables are restricted to the SETU Flow org.</p>
 </div>
@@ -3784,10 +3783,13 @@ flowchart LR
 <tr><td><code>smc_incidents</code></td><td>Production incident tracking (P0 system-down through P3 minor)</td></tr>
 <tr><td><code>smc_feature_flags</code></td><td>Per-client feature toggles with gradual rollout</td></tr>
 <tr><td><code>smc_changelog</code></td><td>Per-release notes; publishable as client-facing release notes</td></tr>
-<tr><td><code>smc_wiki_pages</code></td><td>Internal wiki: decisions, runbooks, onboarding, process</td></tr>
-<tr><td><code>smc_chat_messages</code></td><td>Internal team chat channels (general, engineering, leads, incidents)</td></tr>
+<tr><td><code>smc_wiki_pages</code></td><td>Internal wiki / runbooks: decisions, runbooks, onboarding, process</td></tr>
+<tr><td><code>qa_test_suites</code> &middot; <code>qa_test_cases</code></td><td>Authored QA suites and their guided steps (the testing documentation)</td></tr>
+<tr><td><code>qa_test_runs</code> &middot; <code>qa_step_results</code> &middot; <code>qa_evidence</code></td><td>Recorded runs, per-step results, and uploaded evidence</td></tr>
+<tr><td><code>qa_findings</code></td><td>Structured tester findings; promotable to tracker issues with a backlink</td></tr>
+<tr><td><code>qa_share_links</code> &middot; <code>qa_report_snapshots</code></td><td>Scoped external-tester links and frozen QA report snapshots</td></tr>
 </tbody></table></div>
-<p style="color:#64748b;font-size:13px;margin-top:8px">SMC also reads shared tables including the issue tracker, sprint metadata, organizations, internal leads, and client onboarding requests to assemble its dashboards.</p>
+<p style="color:#64748b;font-size:13px;margin-top:8px">SMC team chat runs on the shared <code>chat_*</code> conversation engine (channels and DMs), not a separate table. SMC also reads shared tables including the issue tracker, sprint metadata, organizations, internal leads, and client onboarding requests to assemble its dashboards.</p>
 `;
     map['client-management'] = `
 <div class="callout internal-only"><b>Internal only.</b> Client Management is a SETU Flow operations surface. Client orgs never see these tools; they only experience the modules and limits granted to them.</div>
