@@ -27,7 +27,7 @@ type EmailAddress = {
   name?: string;
 };
 
-type TransactionalEmail = {
+export type TransactionalEmail = {
   from: string;
   to: string;
   subject: string;
@@ -76,7 +76,7 @@ export function buildOnboardingSetupUrl(requestId: string, existingUrl?: string 
   return `${getSetuFlowBaseUrl()}/admin/client-onboarding?request=${encodeURIComponent(requestId)}`;
 }
 
-function getFromAddress() {
+export function getSetuNotificationFromAddress() {
   return process.env.SETU_NOTIFICATION_FROM_EMAIL ?? process.env.MAILTRAP_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL;
 }
 
@@ -214,7 +214,7 @@ async function sendWithResend(email: TransactionalEmail): Promise<OnboardingNoti
   }
 }
 
-async function sendTransactionalEmail(email: TransactionalEmail): Promise<OnboardingNotificationResult> {
+export async function sendTransactionalEmail(email: TransactionalEmail): Promise<OnboardingNotificationResult> {
   const provider = (process.env.SETU_EMAIL_PROVIDER ?? (process.env.MAILTRAP_API_KEY ? 'mailtrap' : 'resend')).toLowerCase();
 
   if (provider === 'mailtrap') return sendWithMailtrap(email);
@@ -227,7 +227,7 @@ async function sendTransactionalEmail(email: TransactionalEmail): Promise<Onboar
 }
 
 export async function sendClientOnboardingAdminNotification(input: OnboardingNotificationInput): Promise<OnboardingNotificationResult> {
-  const from = getFromAddress();
+  const from = getSetuNotificationFromAddress();
 
   if (!from) {
     return {
@@ -240,7 +240,7 @@ export async function sendClientOnboardingAdminNotification(input: OnboardingNot
 }
 
 export async function sendFirstAdminInviteEmail(input: FirstAdminInviteEmailInput): Promise<OnboardingNotificationResult> {
-  const from = getFromAddress();
+  const from = getSetuNotificationFromAddress();
 
   if (!from) {
     return {

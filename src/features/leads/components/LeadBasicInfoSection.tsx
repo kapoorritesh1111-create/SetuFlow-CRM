@@ -3,18 +3,15 @@
 import React from 'react';
 import NewCountryForm from './NewCountryForm';
 import { ContactScanTrigger } from '@/components/contact-exchange/contact-scan-trigger';
-import Link from 'next/link';
 import type { ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
 
-type TradeEvent = { id: string; name: string };
+type TradeEvent = { id: string; name: string; booth_number?: string | null };
 type Country = { id: string; name: string; phone_code: string | null };
 type Market = { id: string; name: string };
 
 interface LeadBasicInfoSectionProps {
   currentLeadId?: string;
-  /** S24-TRIAL-203: render trial coaching only for guided-trial orgs. */
   guidedTrialCoach?: boolean;
-  /** S24-TRIAL-203: flips coach card to the post-save close-and-continue state. */
   trialLeadSaved?: boolean;
   leadType: 'buyer' | 'supplier';
   setLeadType: (value: 'buyer' | 'supplier') => void;
@@ -61,107 +58,6 @@ interface LeadBasicInfoSectionProps {
   postApplyAssist: ContactPostApplyAssistResult | null;
   setPostApplyAssist: React.Dispatch<React.SetStateAction<ContactPostApplyAssistResult | null>>;
   clearAfterSaveGuidance: () => void;
-}
-
-function AssistCard({ assist }: { assist: ContactPostApplyAssistResult }) {
-  return (
-    <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Post-apply assist</p>
-          <h4 className="mt-2 text-base font-semibold text-slate-900">Guarded duplicate/contact-match suggestions</h4>
-        </div>
-        <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">{assist.lookupMode === 'live' ? 'Live CRM lookup' : 'Heuristic only'}</span>
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-700">{assist.summary}</p>
-      <div className="mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">{assist.saveReadyReview}</div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
-        <div className="rounded-[1.25rem] border border-white/80 bg-white/80 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ranked possible matches</p>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">No auto-merge</span>
-          </div>
-          {assist.duplicateMatches.length ? (
-            <div className="mt-3 space-y-3">
-              {assist.duplicateMatches.map((match) => (
-                <article key={match.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-900">{match.companyName || 'Existing lead'}</p>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">{match.rankingLabel}</span>
-                      </div>
-                      <p className="mt-1 text-slate-600">{match.contactName || 'No contact name'}{match.email ? ` · ${match.email}` : ''}</p>
-                      {match.phone ? <p className="mt-1 text-slate-500">{match.phone}</p> : null}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Match confidence</p>
-                      <p className="mt-1 text-lg font-semibold text-slate-900">{match.normalizedScore}/100</p>
-                      <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${match.strength === 'strong' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>{match.strength === 'strong' ? 'Review first' : 'Review manually'}</span>
-                    </div>
-                  </div>
-                  <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Why it ranked here</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">{match.primaryReason}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">{match.recommendedAction}</p>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {match.reasons.map((reason) => <span key={`${match.id}-${reason}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">{reason}</span>)}
-                  </div>
-                  <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
-                    {match.actionItems.map((item) => <li key={`${match.id}-${item}`}>{item}</li>)}
-                  </ul>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-slate-600">No close duplicate signal surfaced from the current scan. Final save still stays manual.</p>
-          )}
-        </div>
-
-        <div className="space-y-4 rounded-[1.25rem] border border-white/80 bg-white/80 p-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Operator checklist</p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
-              {assist.operatorChecklist.map((item) => <li key={item}>{item}</li>)}
-            </ul>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Workflow handoff suggestions</p>
-            <div className="mt-3 space-y-3">
-              {assist.workflowHandoffSuggestions.map((suggestion) => (
-                <article key={suggestion.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-slate-900">{suggestion.title}</p>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${suggestion.readiness === 'ready_now' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{suggestion.readiness === 'ready_now' ? 'Ready after save' : 'Needs confirmation'}</span>
-                  </div>
-                  <p className="mt-2 leading-6">{suggestion.detail}</p>
-                  <div className="mt-2 grid gap-2 text-[12px] text-slate-500 sm:grid-cols-2">
-                    <p><strong className="text-slate-700">Timing:</strong> {suggestion.timing}</p>
-                    <p><strong className="text-slate-700">Owner:</strong> {suggestion.recommendedOwner}</p>
-                  </div>
-                  <p className="mt-2 text-[12px] text-slate-500"><strong className="text-slate-700">Why:</strong> {suggestion.reason}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Suggested follow-up prompts</p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
-              {assist.followUpPrompts.map((prompt) => <li key={prompt}>{prompt}</li>)}
-            </ul>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Guardrails</p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
-              {assist.guardrails.map((guardrail) => <li key={guardrail}>{guardrail}</li>)}
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function LeadBasicInfoSection({
@@ -214,6 +110,10 @@ export default function LeadBasicInfoSection({
   setPostApplyAssist,
   clearAfterSaveGuidance,
 }: LeadBasicInfoSectionProps) {
+  const [sourceTypeState, setSourceTypeState] = React.useState(tradeEventId ? 'trade_show' : '');
+  const isTradeShowSource = sourceTypeState === 'trade_show';
+  const selectedEvent = tradeEvents.find((event) => event.id === tradeEventId) ?? null;
+
   return (
     <section className="space-y-4 rounded-3xl border border-slate-200 p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -222,64 +122,49 @@ export default function LeadBasicInfoSection({
             trialLeadSaved ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">Lead saved</p>
-                <p className="mt-1 text-sm font-semibold leading-5 text-emerald-900">
-                  Close this drawer to return to the queue, then open the lead to review details and continue to quote.
-                </p>
+                <p className="mt-1 text-sm font-semibold leading-5 text-emerald-900">Close this drawer to return to the queue, then open the lead from the Lead Command Center when ready.</p>
               </div>
             ) : (
               <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-500">Guided trial · Step 1</p>
                 <p className="mt-1 text-sm font-semibold leading-5 text-slate-800">Create your first lead</p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Scan a card, upload a file, or enter details manually. Choose Buyer or Supplier, add company and country, add one contact method, then save.
-                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">Scan a card, upload a file, or enter details manually. Choose Buyer or Supplier, add company and country, add one contact method, then save.</p>
               </div>
             )
           ) : null}
         </div>
         <ContactScanTrigger
-            currentLeadId={currentLeadId}
-            companyName={companyName}
-            contactName={contactName}
-            jobTitle={jobTitle}
-            email={email}
-            phone={phone}
-            phoneSecondary={phoneSecondary}
-            website={website}
-            notes={notes}
-            onApply={(draft, assist) => {
-              setCompanyName(draft.companyName);
-              setContactName(draft.contactName);
-              setJobTitle(draft.jobTitle);
-              setEmail(draft.email);
-              setPhone(draft.phone);
-              setPhoneSecondary(draft.phoneSecondary);
-              setWebsite(draft.website);
-              setNotes(draft.notes);
-              setSourceType(draft.sourceType ?? 'contact_scan_upload');
-              setSourceLabel(draft.sourceLabel ?? 'Quick entry contact scan');
-              setPostApplyAssist(assist);
-              clearAfterSaveGuidance();
-            }}
-          />
+          currentLeadId={currentLeadId}
+          companyName={companyName}
+          contactName={contactName}
+          jobTitle={jobTitle}
+          email={email}
+          phone={phone}
+          phoneSecondary={phoneSecondary}
+          website={website}
+          notes={notes}
+          onApply={(draft, assist) => {
+            setCompanyName(draft.companyName);
+            setContactName(draft.contactName);
+            setJobTitle(draft.jobTitle);
+            setEmail(draft.email);
+            setPhone(draft.phone);
+            setPhoneSecondary(draft.phoneSecondary);
+            setWebsite(draft.website);
+            setNotes(draft.notes);
+            setSourceType(draft.sourceType ?? 'contact_scan_upload');
+            setSourceLabel(draft.sourceLabel ?? 'Quick entry contact scan');
+            setPostApplyAssist(assist);
+            clearAfterSaveGuidance();
+          }}
+        />
       </div>
 
       {postApplyAssist ? (
-        <>
-          <AssistCard assist={postApplyAssist} />
-          <div className="rounded-[1.25rem] border border-sky-200 bg-sky-50/70 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Outbound handoff after save</p>
-                <h4 className="mt-2 text-base font-semibold text-slate-900">Close the capture-to-share loop after the manual save</h4>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The scan stays small and guarded here. After the lead is manually saved, close this drawer, then open the saved lead from the queue to continue details, product interest, and quote setup.</p>
-              </div>
-              <Link href="/contact-exchange/vcard" className="inline-flex items-center rounded-2xl border border-sky-200 bg-white px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100">
-                Open My Digital vCard
-              </Link>
-            </div>
-          </div>
-        </>
+        <div className="rounded-[1.25rem] border border-sky-200 bg-sky-50/70 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Post-apply assist</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{postApplyAssist.summary}</p>
+        </div>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -287,15 +172,7 @@ export default function LeadBasicInfoSection({
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lead type</span>
           <div className="grid gap-2 sm:grid-cols-2">
             {(['buyer', 'supplier'] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setLeadType(type)}
-                className={[
-                  'rounded-2xl border px-4 py-3 text-left transition',
-                  leadType === type ? 'border-slate-900 bg-slate-900 text-white shadow-soft' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
-                ].join(' ')}
-              >
+              <button key={type} type="button" onClick={() => setLeadType(type)} className={['rounded-2xl border px-4 py-3 text-left transition', leadType === type ? 'border-slate-900 bg-slate-900 text-white shadow-soft' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'].join(' ')}>
                 <span className="block text-sm font-semibold">{type === 'buyer' ? 'Buyer' : 'Supplier'}</span>
                 <span className={['mt-1 block text-xs', leadType === type ? 'text-slate-200' : 'text-slate-500'].join(' ')}>{type === 'buyer' ? 'Importing / purchasing' : 'Supplying / sourcing'}</span>
               </button>
@@ -303,17 +180,58 @@ export default function LeadBasicInfoSection({
           </div>
           <input type="hidden" name="lead_type" value={leadType} />
         </div>
+
         <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Trade event</span>
-          <select name="trade_event_id" value={tradeEventId} onChange={(event) => setTradeEventId(event.target.value)} className={inputClassName()}>
-            <option value="">None</option>
-            {tradeEvents.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lead source</span>
+          <select
+            name="source_type"
+            value={sourceTypeState}
+            onChange={(event) => {
+              const next = event.target.value;
+              setSourceTypeState(next);
+              setSourceType(next);
+              if (next !== 'trade_show') setTradeEventId('');
+            }}
+            className={inputClassName()}
+          >
+            <option value="">Select source…</option>
+            <option value="trade_show">Trade show</option>
+            <option value="direct_inquiry">Direct inquiry</option>
+            <option value="referral">Referral</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="website">Website</option>
+            <option value="other">Other</option>
           </select>
         </label>
+
+        {isTradeShowSource ? (
+          <label className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Event / source label</span>
+            <select
+              name="trade_event_id"
+              value={tradeEventId}
+              onChange={(event) => {
+                const nextId = event.target.value;
+                const nextEvent = tradeEvents.find((item) => item.id === nextId) ?? null;
+                setTradeEventId(nextId);
+                setSourceLabel(nextEvent?.name ?? '');
+              }}
+              className={inputClassName()}
+            >
+              <option value="">Select trade event…</option>
+              {tradeEvents.map((event) => (
+                <option key={event.id} value={event.id}>{event.name}</option>
+              ))}
+            </select>
+            {selectedEvent ? <p className="text-xs text-slate-500">Booth context comes from the selected event{selectedEvent.booth_number ? ` · Booth ${selectedEvent.booth_number}` : ''}.</p> : null}
+          </label>
+        ) : (
+          <label className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Event / source label</span>
+            <input name="source_label" onChange={(event) => setSourceLabel(event.target.value)} className={inputClassName()} placeholder="e.g. referral, website, distributor intro" />
+          </label>
+        )}
+
         <label className="space-y-2 sm:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company name</span>
           <input ref={companyInputRef} name="company_name" value={companyName} onChange={(event) => setCompanyName(event.target.value)} className={inputClassName()} required />
@@ -337,23 +255,13 @@ export default function LeadBasicInfoSection({
         <label className="space-y-2">
           <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Country
-            <button
-              type="button"
-              className="ml-2 text-[11px] font-medium text-brand-700 underline-offset-4 hover:underline"
-              onClick={() => setShowNewCountryForm((v) => !v)}
-            >
-              {showNewCountryForm ? 'Cancel' : 'Add new'}
-            </button>
+            <button type="button" className="ml-2 text-[11px] font-medium text-brand-700 underline-offset-4 hover:underline" onClick={() => setShowNewCountryForm((v) => !v)}>{showNewCountryForm ? 'Cancel' : 'Add new'}</button>
           </span>
-          <select value={countryId} onChange={(event) => setCountryId(event.target.value)} className={inputClassName()}>
+          <select name="country_id" value={countryId} onChange={(event) => setCountryId(event.target.value)} className={inputClassName()}>
             <option value="">None</option>
-            {countries.map((country) => (
-              <option key={country.id} value={country.id}>
-                {country.name}{country.phone_code ? ` (${country.phone_code})` : ''}
-              </option>
-            ))}
+            {countries.map((country) => <option key={country.id} value={country.id}>{country.name}{country.phone_code ? ` (${country.phone_code})` : ''}</option>)}
           </select>
-          {showNewCountryForm && (
+          {showNewCountryForm ? (
             <NewCountryForm
               markets={markets}
               newCountryName={newCountryName}
@@ -367,28 +275,15 @@ export default function LeadBasicInfoSection({
               newCountryMarketId={newCountryMarketId}
               setNewCountryMarketId={setNewCountryMarketId}
               inputClassName={inputClassName}
-              onCancel={() => {
-                setNewCountryName('');
-                setNewCountryIso2('');
-                setNewCountryIso3('');
-                setNewCountryPhone('');
-                setNewCountryMarketId('');
-                setShowNewCountryForm(false);
-              }}
+              onCancel={() => setShowNewCountryForm(false)}
               onSave={onAddCountry}
             />
-          )}
+          ) : null}
         </label>
       </div>
 
       <details className="group rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900">
-          <span className="flex items-center justify-between gap-3">
-            More contact fields
-            <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 group-open:hidden">Show</span>
-            <span className="hidden text-xs font-medium uppercase tracking-[0.14em] text-slate-500 group-open:inline">Hide</span>
-          </span>
-        </summary>
+        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900">More contact fields</summary>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone 2</span>

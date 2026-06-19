@@ -7,7 +7,6 @@ import {
   getPremiumCapabilityForPathname,
   isPreviewOnlyTrialCapability,
   normalizeTradeShowTrialCapabilityState,
-  type TradeShowTrialPreviewCapability,
 } from '@/lib/trial/trade-show-trial-capabilities';
 
 type TrialCapabilityRow = {
@@ -49,14 +48,6 @@ function readActiveOrganizationCookie(request: NextRequest, user: User) {
   }
 }
 
-function getTrialLockedRedirect(request: NextRequest, capability: TradeShowTrialPreviewCapability) {
-  const url = request.nextUrl.clone();
-  url.pathname = '/trade-events';
-  url.searchParams.set('mode', TRADE_SHOW_TRIAL_MODE);
-  url.searchParams.set('locked', capability);
-  return url;
-}
-
 export async function middleware(request: NextRequest) {
   const capability = getPremiumCapabilityForPathname(request.nextUrl.pathname);
   if (!capability) return NextResponse.next();
@@ -93,30 +84,26 @@ export async function middleware(request: NextRequest) {
     .maybeSingle();
 
   const state = normalizeTradeShowTrialCapabilityState(organizationId, data as TrialCapabilityRow | null);
+
   if (!isPreviewOnlyTrialCapability(state, capability)) return response;
 
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    return NextResponse.json(
-      {
-        error: 'available_after_upgrade',
-        module: capability,
-        message: 'This Trade Show Trial workspace can preview this module after upgrade, but cannot use the live premium endpoint.',
-      },
-      { status: 403 },
-    );
-  }
-
-  return NextResponse.redirect(getTrialLockedRedirect(request, capability));
+  return NextResponse.json(
+    {
+      error: 'upgrade_required',
+      module: capability,
+      title: 'Preview-only trial space',
+      message: 'Catalog mapping available after upgrade.',
+    },
+    { status: 403 },
+  );
 }
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/analytics/:path*',
-    '/leads/:path*',
-    '/quotes/:path*',
-    '/orders/:path*',
     '/api/quotes/:path*',
     '/api/orders/:path*',
+    '/api/products/:path*',
+    '/api/catalog/:path*',
+    '/api/leads/coverage-resolver/:path*',
   ],
 };

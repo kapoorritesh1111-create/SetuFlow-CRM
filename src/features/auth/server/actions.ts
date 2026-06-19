@@ -8,6 +8,7 @@ import { env } from '@/lib/env';
 import { safeAppUrl } from '@/lib/security/url';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { persistActiveOrganization } from '@/lib/workspace/auth';
 
 type ProfileLoginCandidate = {
   email: string | null;
@@ -28,11 +29,16 @@ function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
 }
 
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function pickProfileEmail(username: string, rows: ProfileLoginCandidate[]): string | null {
   const normalizedUsername = normalizeUsername(username);
   const exactCaseInsensitive = rows.find((row) => row.username?.trim().toLowerCase() === normalizedUsername);
+  const exactEmail = rows.find((row) => row.email?.trim().toLowerCase() === normalizedUsername);
   const firstWithEmail = rows.find((row) => typeof row.email === 'string' && row.email.trim().length > 0);
-  return exactCaseInsensitive?.email?.trim() || firstWithEmail?.email?.trim() || null;
+  return exactCaseInsensitive?.email?.trim() || exactEmail?.email?.trim() || firstWithEmail?.email?.trim() || null;
 }
 
 async function lookupProfileCandidates(username: string) {
@@ -40,6 +46,16 @@ async function lookupProfileCandidates(username: string) {
   const admin = createAdminSupabaseClient();
 
   if (admin) {
+    if (looksLikeEmail(normalizedUsername)) {
+      const { data, error } = await admin
+        .from('profiles')
+        .select('email, username')
+        .ilike('email', normalizedUsername)
+        .limit(10);
+
+      return { data: (data ?? []) as ProfileLoginCandidate[], error };
+    }
+
     const { data, error } = await admin
       .from('profiles')
       .select('email, username')
@@ -50,6 +66,16 @@ async function lookupProfileCandidates(username: string) {
   }
 
   const supabase = await createServerSupabaseClient();
+  if (looksLikeEmail(normalizedUsername)) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email, username')
+      .ilike('email', normalizedUsername)
+      .limit(10);
+
+    return { data: (data ?? []) as ProfileLoginCandidate[], error };
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('email, username')
@@ -66,6 +92,45 @@ function resolveNextPath(raw: string | null) {
   if (!value.startsWith('/')) return fallback;
   if (value.startsWith('//')) return fallback;
   return value;
+}
+
+async function resolveTrialLoginTarget(email: string, requestedNext: string) {
+  if (requestedNext !== '/dashboard' && requestedNext !== '/') return requestedNext;
+  const admin = createAdminSupabaseClient();
+  if (!admin) return requestedNext;
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id')
+    .ilike('email', email)
+    .limit(1)
+    .maybeSingle();
+
+  const profileId = String(profile?.id ?? '').trim();
+  if (!profileId) return requestedNext;
+
+  const { data: membership } = await admin
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', profileId)
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const organizationId = String(membership?.organization_id ?? '').trim();
+  if (!organizationId) return requestedNext;
+
+  const { data: trial } = await (admin as any)
+    .from('organization_trial_capabilities')
+    .select('organization_id, trial_mode')
+    .eq('organization_id', organizationId)
+    .eq('trial_mode', 'trade_show_trial')
+    .maybeSingle();
+
+  if (!trial?.organization_id) return requestedNext;
+  persistActiveOrganization(organizationId, profileId);
+  return '/trade-events?mode=trade_show_trial';
 }
 
 async function createMfaChallenge(next: string): Promise<LoginActionState | null> {
@@ -117,7 +182,7 @@ export async function loginWithUsername(
   if (!matchedEmail) {
     return {
       error:
-        'No profile was found for that username. Check that the profiles table contains the username, the email is filled in, and the row is linked to the Supabase auth user.',
+        'No profile was found for that username or email. Check that the profiles table contains the username or email, and the row is linked to the Supabase auth user.',
     };
   }
 
@@ -125,10 +190,11 @@ export async function loginWithUsername(
   const { error } = await supabase.auth.signInWithPassword({ email: matchedEmail, password });
   if (error) return { error: error.message };
 
-  const mfaState = await createMfaChallenge(next);
+  const targetNext = await resolveTrialLoginTarget(matchedEmail, next);
+  const mfaState = await createMfaChallenge(targetNext);
   if (mfaState) return mfaState;
 
-  redirect(next);
+  redirect(targetNext);
 }
 
 export async function verifyLoginOtp(

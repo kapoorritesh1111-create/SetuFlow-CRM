@@ -8,13 +8,20 @@ export const metadata: Metadata = {
   description: 'Your Setu Flow trade show trial workspace has been created.',
 };
 
+function safeWorkspacePath(value: string | undefined) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/trade-events?mode=trade_show_trial';
+  return value;
+}
+
 export default function TradeShowTrialSuccessPage({
   searchParams,
 }: {
-  searchParams?: { email?: string; existing?: string };
+  searchParams?: { email?: string; existing?: string; signedIn?: string; workspace?: string };
 }) {
   const email = searchParams?.email;
   const existing = searchParams?.existing === '1';
+  const signedIn = searchParams?.signedIn === '1';
+  const workspacePath = safeWorkspacePath(searchParams?.workspace);
 
   return (
     <SiteShell>
@@ -35,20 +42,30 @@ export default function TradeShowTrialSuccessPage({
             <div className="mt-8 rounded-3xl border border-[#1F487C]/10 bg-white/80 px-6 py-5 text-left shadow-sm">
               <p className="text-sm font-bold text-[#06263f]">Signup email</p>
               <p className="mt-1 text-sm text-slate-600">{email}</p>
-              {existing && (
+              {signedIn ? (
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  You are signed in on this browser. To return later, use this same email on the login page. If you have not set a password yet, choose the password reset option from login.
+                </p>
+              ) : null}
+              {existing ? (
                 <p className="mt-3 text-sm leading-6 text-slate-500">
                   This email already has a Setu Flow account. Sign in with your existing credentials to enter the new trial workspace.
                 </p>
-              )}
+              ) : null}
+              {!signedIn && !existing ? (
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Use this email on the login page. If you are returning from another browser, choose the password reset option so the account can be opened again safely.
+                </p>
+              ) : null}
             </div>
           )}
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/client-login"
+              href={signedIn ? workspacePath : '/client-login'}
               className="rounded-full bg-[#06263f] px-7 py-3 text-sm font-bold text-white shadow-[0_18px_42px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a]"
             >
-              Enter workspace
+              {signedIn ? 'Enter workspace' : 'Go to login'}
             </Link>
             <Link
               href="/trade-show-trial"

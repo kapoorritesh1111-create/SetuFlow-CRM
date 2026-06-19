@@ -12,6 +12,10 @@ export const TRADE_SHOW_TRIAL_PREVIEW_CAPABILITIES = [
   'dashboard',
   'analytics',
   'lead_command_center',
+  'pipeline',
+  'send',
+  'documents',
+  'catalog',
   'quotes',
   'orders',
 ] as const;
@@ -133,12 +137,9 @@ export function isPreviewOnlyTrialCapability(
 }
 
 export function getPremiumCapabilityForPathname(pathname: string): TradeShowTrialPreviewCapability | null {
-  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return 'dashboard';
-  if (pathname === '/analytics' || pathname.startsWith('/analytics/')) return 'analytics';
-  if (pathname === '/leads' || pathname.startsWith('/leads/')) return 'lead_command_center';
-  if (pathname === '/quotes' || pathname.startsWith('/quotes/')) return 'quotes';
-  if (pathname === '/orders' || pathname.startsWith('/orders/')) return 'orders';
   if (pathname.startsWith('/api/quotes/')) return 'quotes';
   if (pathname.startsWith('/api/orders/')) return 'orders';
+  if (pathname.startsWith('/api/products') || pathname.startsWith('/api/catalog')) return 'catalog';
+  if (pathname.startsWith('/api/leads/coverage-resolver')) return 'lead_command_center';
   return null;
 }

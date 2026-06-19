@@ -226,6 +226,15 @@ async function seedTrialVCardContext(admin: SupabaseAdminClient, args: {
   if (error) throw error;
 }
 
+async function seedTrialPreviewJourney(admin: SupabaseAdminClient, organizationId: string) {
+  try {
+    const { error } = await admin.rpc('seed_trade_show_trial_preview_data', { p_organization_id: organizationId });
+    if (error) console.warn('Trial preview seed skipped:', error.message);
+  } catch (error) {
+    console.warn('Trial preview seed skipped:', error instanceof Error ? error.message : error);
+  }
+}
+
 async function deleteCreatedTrialUser(admin: SupabaseAdminClient, userId: string | null, created: boolean) {
   if (!created || !userId) return;
   try {
@@ -299,6 +308,7 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
     if (!organizationId) throw new Error('Trial workspace was not created.');
 
     await seedTrialVCardContext(admin, { userId: createdUser.userId, organizationId, input: value });
+    await seedTrialPreviewJourney(admin, organizationId);
     const signedIn = await signInNewTrialUser(value.email, createdUser.temporaryPassword, organizationId);
 
     return {
