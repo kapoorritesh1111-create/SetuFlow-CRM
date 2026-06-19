@@ -89,9 +89,10 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.json(
     {
-      error: 'available_after_upgrade',
+      error: 'upgrade_required',
       module: capability,
-      message: 'This Trade Show Trial workspace can preview this module after upgrade, but cannot use the live premium endpoint.',
+      title: 'Preview-only trial space',
+      message: 'Catalog mapping available after upgrade.',
     },
     { status: 403 },
   );
