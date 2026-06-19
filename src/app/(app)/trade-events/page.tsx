@@ -63,16 +63,16 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   const eventNameById = new Map(events.map((event) => [event.id, event.name]));
 
   const entries = data.entries ?? [];
-  const capturedLeadCount = data.leads?.length ?? 0;
+  const capturedLeadCount = entries.length;
   const pendingEntryCount = entries.filter((entry: any) => String(entry.status ?? '').toLowerCase() !== 'converted').length;
-  const followUpCount = (data.leads ?? []).filter((lead: any) => !lead.next_follow_up_at).length;
-  const uniqueCompanies = new Set((data.leads ?? []).map((lead: any) => String(lead.company_name ?? '').trim()).filter(Boolean)).size;
+  const followUpCount = pendingEntryCount;
+  const uniqueCompanies = new Set(entries.map((entry: any) => String(entry.captured_company_name ?? '').trim()).filter(Boolean)).size;
   const captureHref = activeEvent
     ? `/leads?quickLead=1&sourceType=trade_event&eventId=${activeEvent.id}&sourceLabel=${encodeURIComponent(activeEvent.name)}`
     : '/leads?quickLead=1&sourceType=trade_event';
 
   const metrics = [
-    { label: 'Booth leads', value: capturedLeadCount + entries.length, sub: 'Captured in this trial' },
+    { label: 'Booth leads', value: capturedLeadCount, sub: 'Captured in this trial' },
     { label: 'Need review', value: pendingEntryCount, sub: 'Ready to qualify' },
     { label: 'Companies', value: uniqueCompanies, sub: 'Unique accounts' },
     { label: 'Follow-ups', value: followUpCount, sub: 'Can be created in trial' },
@@ -146,7 +146,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-100 pt-4 text-center">
-                <div><p className="text-xl font-black">{capturedLeadCount + entries.length}</p><p className="text-[10px] font-bold uppercase text-slate-500">Captured</p></div>
+                <div><p className="text-xl font-black">{capturedLeadCount}</p><p className="text-[10px] font-bold uppercase text-slate-500">Captured</p></div>
                 <div><p className="text-xl font-black">{pendingEntryCount}</p><p className="text-[10px] font-bold uppercase text-slate-500">Review</p></div>
                 <div><p className="text-xl font-black">{followUpCount}</p><p className="text-[10px] font-bold uppercase text-slate-500">Follow-up</p></div>
               </div>
