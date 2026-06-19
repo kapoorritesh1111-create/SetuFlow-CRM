@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
@@ -23,20 +22,6 @@ function readModeLeadType(value?: string | string[]): MobileLeadType {
   if (mode === 'buyers' || mode === 'buyer') return 'buyer';
   if (mode === 'suppliers' || mode === 'supplier') return 'supplier';
   return '';
-}
-
-function redirectQuickTrialCapture(searchParams?: { mode?: string | string[]; quickLead?: string | string[]; sourceType?: string | string[]; sourceLabel?: string | string[]; eventId?: string | string[] }) {
-  const quickLead = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
-  const sourceType = readParam(searchParams?.sourceType).trim();
-  const eventId = readParam(searchParams?.eventId).trim();
-  if (!quickLead && sourceType !== 'trade_event' && !eventId) return;
-  const params = new URLSearchParams({ mode: 'trade_show_trial', source: 'type' });
-  if (eventId) params.set('eventId', eventId);
-  const sourceLabel = readParam(searchParams?.sourceLabel).trim();
-  if (sourceLabel) params.set('sourceLabel', sourceLabel);
-  const mode = readParam(searchParams?.mode).trim();
-  params.set('leadType', mode === 'suppliers' ? 'supplier' : 'buyer');
-  redirect('/trade-events/capture?' + params.toString());
 }
 
 export default async function LeadsPage({
@@ -67,14 +52,9 @@ export default async function LeadsPage({
     );
   }
 
-  const { capability: earlyTrialCapability } = await getTrialCapability(workspace.organization.id);
-  if (earlyTrialCapability?.is_trial && earlyTrialCapability.guided_mode_enabled) {
-    redirectQuickTrialCapture(searchParams);
-  }
-
   const data = await getLeadsPageData(workspace.organization.id);
 
-  const { capability: trialCapability } = { capability: earlyTrialCapability };
+  const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
   const guidedTrialCoach = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
   const trialLeadLimitReached = Boolean(
     guidedTrialCoach && trialCapability && trialCapability.remaining_leads !== null && trialCapability.remaining_leads <= 0,
@@ -99,6 +79,7 @@ export default async function LeadsPage({
   const eventId = readParam(searchParams?.eventId).trim();
   const initialFastField = quickLeadEnabled && Boolean(eventId);
   const modeLeadType = readModeLeadType(searchParams?.mode);
+  const isTradeShowQuickLead = quickLeadEnabled && readParam(searchParams?.sourceType).trim() === 'trade_event';
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -109,9 +90,11 @@ export default async function LeadsPage({
         sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
         sourceLabel: readParam(searchParams?.sourceLabel).trim() || 'Trade show fast lane',
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
-        autoOpenQuoteAfterSave: ['1', 'true', 'yes'].includes(readParam(searchParams?.autoQuote).toLowerCase()),
-        title: 'Trade-show quick lead',
-        description: 'Capture the minimum buyer context, keep the product lane pre-linked, and move into Quote faster.',
+        autoOpenQuoteAfterSave: false,
+        title: isTradeShowQuickLead ? 'Trade show booth capture' : 'Quick lead',
+        description: isTradeShowQuickLead
+          ? 'Capture the visitor, company, interest, source event, and follow-up task from the existing Quick Lead drawer. Quotes and orders stay locked during the trial.'
+          : 'Capture the minimum buyer context, keep the product lane pre-linked, and move into Quote faster.',
       }
     : null;
 
@@ -132,6 +115,11 @@ export default async function LeadsPage({
         <QueryIssuesAlert issues={data.queryIssues} />
         {trialLeadLimitReached ? (
           <TrialBlockedNotice message={`Guided trial lead limit reached (${trialCapability?.max_leads}). Remove a test lead or convert the workspace to add more.`} />
+        ) : null}
+        {guidedTrialCoach ? (
+          <div className="rounded-[1.35rem] border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900 shadow-sm">
+            Trade Show Trial mode: this list shows captured booth leads. You can add follow-up tasks, but quotes and orders stay preview-only until upgrade.
+          </div>
         ) : null}
         <LeadEventFilterNarrower
           leads={data.leads.map((lead) => ({
