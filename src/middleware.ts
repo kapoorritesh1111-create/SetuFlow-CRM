@@ -7,7 +7,6 @@ import {
   getPremiumCapabilityForPathname,
   isPreviewOnlyTrialCapability,
   normalizeTradeShowTrialCapabilityState,
-  type TradeShowTrialCapabilityState,
   type TradeShowTrialPreviewCapability,
 } from '@/lib/trial/trade-show-trial-capabilities';
 
@@ -58,41 +57,9 @@ function getTrialLockedRedirect(request: NextRequest, capability: TradeShowTrial
   return url;
 }
 
-function shouldRouteLeadQuickCaptureToTrial(request: NextRequest, state: TradeShowTrialCapabilityState | null) {
-  if (!state?.isTradeShowTrial) return false;
-  if (request.nextUrl.pathname !== '/leads') return false;
-  const quickLead = request.nextUrl.searchParams.get('quickLead') === '1';
-  const sourceType = request.nextUrl.searchParams.get('sourceType') === 'trade_event';
-  const eventId = Boolean(request.nextUrl.searchParams.get('eventId'));
-  const tradeMode = request.nextUrl.searchParams.get('mode') === 'buyers' || request.nextUrl.searchParams.get('mode') === 'suppliers';
-  return quickLead || sourceType || eventId || tradeMode;
-}
-
-function getTrialCaptureRedirect(request: NextRequest) {
-  const url = request.nextUrl.clone();
-  const eventId = request.nextUrl.searchParams.get('eventId');
-  const sourceLabel = request.nextUrl.searchParams.get('sourceLabel');
-  const scan = request.nextUrl.searchParams.get('scan');
-  const note = request.nextUrl.searchParams.get('note');
-  const mode = request.nextUrl.searchParams.get('mode');
-
-  url.pathname = '/trade-events/capture';
-  url.search = '';
-  url.searchParams.set('mode', TRADE_SHOW_TRIAL_MODE);
-  if (eventId) url.searchParams.set('eventId', eventId);
-  if (sourceLabel) url.searchParams.set('sourceLabel', sourceLabel);
-  if (scan === 'card') url.searchParams.set('source', 'scan');
-  else if (note === 'dictate') url.searchParams.set('source', 'dictate');
-  else url.searchParams.set('source', 'type');
-  if (mode === 'suppliers') url.searchParams.set('leadType', 'supplier');
-  else url.searchParams.set('leadType', 'buyer');
-  return url;
-}
-
 export async function middleware(request: NextRequest) {
   const capability = getPremiumCapabilityForPathname(request.nextUrl.pathname);
-  const needsTrialCheck = Boolean(capability) || request.nextUrl.pathname === '/leads';
-  if (!needsTrialCheck) return NextResponse.next();
+  if (!capability) return NextResponse.next();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -127,11 +94,7 @@ export async function middleware(request: NextRequest) {
 
   const state = normalizeTradeShowTrialCapabilityState(organizationId, data as TrialCapabilityRow | null);
 
-  if (shouldRouteLeadQuickCaptureToTrial(request, state)) {
-    return NextResponse.redirect(getTrialCaptureRedirect(request));
-  }
-
-  if (!capability || !isPreviewOnlyTrialCapability(state, capability)) return response;
+  if (!isPreviewOnlyTrialCapability(state, capability)) return response;
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.json(
@@ -149,9 +112,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/analytics/:path*',
-    '/leads/:path*',
     '/quotes/:path*',
     '/orders/:path*',
     '/api/quotes/:path*',
