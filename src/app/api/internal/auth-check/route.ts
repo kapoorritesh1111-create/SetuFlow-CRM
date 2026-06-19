@@ -18,8 +18,9 @@
 
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
-const SETU_FLOW_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+const SETU_FLOW_ORG_ID = INTERNAL_ORG_ID;
 
 export async function GET() {
   try {

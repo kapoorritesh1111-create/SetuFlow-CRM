@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function GET() {
     const { data } = await supabase
       .from("sprint_issues")
       .select("status, issue_type, issue_category, sprint_number")
-      .eq("organization_id", "3327b9a7-aadb-44b0-9793-30c4045d3c92");
+      .eq("organization_id", INTERNAL_ORG_ID);
 
     const issues = (data as { status: string; issue_type: string | null; issue_category: string | null; sprint_number: number }[]) ?? [];
     const total = issues.length;

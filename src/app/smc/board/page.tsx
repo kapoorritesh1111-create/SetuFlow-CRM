@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 type Issue = {
   id: string; issue_ref: string; title: string; status: string; severity: string | null;
@@ -96,7 +97,7 @@ export default function SmcBoardPage() {
           priority: 'Medium',
           story_points: 0,
           reporter_name: 'Ritesh Kapoor',
-          organization_id: '3327b9a7-aadb-44b0-9793-30c4045d3c92',
+          organization_id: INTERNAL_ORG_ID,
           labels: ['sprint-planning'],
         }),
       });

@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CrmChatFab } from "@/components/chat/crm-chat-fab";
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 type NavItem = { id: string; path: string; icon: string; label: string };
 type TeamMember = { userId: string; name: string; initials: string; online: boolean };
 
-const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
+const SETU_ORG_ID = INTERNAL_ORG_ID;
 const CURRENT_USER_ID = "180afa12-6ff6-4e16-b8d1-04b13e508970";
 const CURRENT_USER_NAME = "Ritesh Kapoor";
 

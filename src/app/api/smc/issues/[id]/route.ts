@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = "force-dynamic";
 
-const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
+const SETU_ORG_ID = INTERNAL_ORG_ID;
 const STATUSES = ["Open", "In Progress", "In Review", "Blocked", "Resolved", "Deferred", "Won't Fix"];
 const TYPES = ["Bug", "Feature", "Enhancement", "Docs", "DevOps", "UX", "Task", "Test"];
 const SEVERITIES = ["Critical", "High", "Medium", "Low"];

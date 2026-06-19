@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = "force-dynamic";
 
-const SETU_ORG_ID = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
+const SETU_ORG_ID = INTERNAL_ORG_ID;
 
 export async function PATCH(request: NextRequest) {
   try {

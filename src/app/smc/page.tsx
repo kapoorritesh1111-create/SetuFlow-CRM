@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = 'force-dynamic';
 
-const SETU_ORG = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+const SETU_ORG = INTERNAL_ORG_ID;
 
 type IssueRow = { status: string; sprint_number: number };
 type LeadRow = { id: string; pipeline_stage: string | null };
@@ -21,7 +22,7 @@ async function getStats() {
   ]);
   const issues = (issuesRes.data as IssueRow[]) ?? [];
   const leads = (leadsRes.data as LeadRow[]) ?? [];
-  const latestSprint = (sprintRes.data as SprintMeta[] | null)?.[0]?.sprint_number ?? 27;
+  const latestSprint = (sprintRes.data as SprintMeta[] | null)?.[0]?.sprint_number ?? issues.reduce((m, i) => Math.max(m, i.sprint_number), 0);
   const recent = (recentRes.data as RecentIssue[]) ?? [];
   const sprintIssues = issues.filter(i => i.sprint_number === latestSprint);
   return {

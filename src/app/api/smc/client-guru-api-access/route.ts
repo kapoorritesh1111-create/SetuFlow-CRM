@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { createClient } from "@/lib/supabase/server";
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = "force-dynamic";
 
-const SETU_ORG = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
+const SETU_ORG = INTERNAL_ORG_ID;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const GURU_MODELS = new Set(["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"]);
 

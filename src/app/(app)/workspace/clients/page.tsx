@@ -4,6 +4,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { SmcMetricCard, daysOld, isClosedIssue } from '@/features/workspace/components/smc-shell';
 import { appendSmcQuery, filterIssuesForSmc, normalizeSmcFilters, type SmcFilterInput } from '@/features/workspace/filters';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export default async function ClientsPage({ searchParams }: { searchParams?: Smc
   const [allIssues, orgs] = await Promise.all([getWorkspaceIssues(), getOrganizations()]);
   const filters = normalizeSmcFilters(searchParams);
   const issues = filterIssuesForSmc(allIssues, filters);
-  const setuOrgId = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+  const setuOrgId = INTERNAL_ORG_ID;
   const clientOrgs = orgs.filter((o) => o.id !== setuOrgId);
   const clientIssues = issues.filter((i) => i.client_org_id != null);
   const unlinkedOpen = issues.filter((i) => !i.client_org_id && !isClosedIssue(i.status));

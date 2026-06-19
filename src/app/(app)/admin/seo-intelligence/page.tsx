@@ -8,10 +8,11 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { getLiveGoogleTrends, type LiveTrendResult } from '@/lib/seo/google-trends';
 import { seoChangeProof, seoCompetitors, seoKeywordClusters, seoKeywordGroupSummaries, seoOpportunities, seoUpgradeActions } from '@/lib/seo/seo-intelligence';
 import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const metadata = { title: 'SEO Intelligence | SETU Flow Admin', robots: { index: false, follow: false } };
 
-const SETU_FLOW_INTERNAL_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+const SETU_FLOW_INTERNAL_ORG_ID = INTERNAL_ORG_ID;
 
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
 

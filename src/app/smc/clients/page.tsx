@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { MODULE_DEFINITIONS } from "@/lib/modules/module-grants";
 import { SmcClientsClient, type SmcClientOrg } from "./client-view";
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const dynamic = "force-dynamic";
 
-const SETU_ORG = "3327b9a7-aadb-44b0-9793-30c4045d3c92";
+const SETU_ORG = INTERNAL_ORG_ID;
 const SENSITIVE_KEY_RE = /(token|secret|password|key|api[_-]?key|credential|authorization|bearer|jwt)/i;
 
 type AnyRow = Record<string, any>;

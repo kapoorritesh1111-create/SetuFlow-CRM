@@ -6,8 +6,9 @@ import { KitInternalHeader } from '@/features/admin/components/admin-ui-kit';
 import { getAiAnalyticsData } from '@/lib/queries/ai-analytics';
 import { canViewAuditLogs } from '@/lib/permissionGuards';
 import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
-const SETU_FLOW_INTERNAL_ORG_ID = '3327b9a7-aadb-44b0-9793-30c4045d3c92';
+const SETU_FLOW_INTERNAL_ORG_ID = INTERNAL_ORG_ID;
 
 function isInternalOrg(organizationId: string) {
   const configuredInternalOrgId = process.env.SETU_INTERNAL_ORG_ID?.trim();
