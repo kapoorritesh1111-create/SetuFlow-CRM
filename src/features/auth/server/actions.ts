@@ -28,11 +28,16 @@ function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
 }
 
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function pickProfileEmail(username: string, rows: ProfileLoginCandidate[]): string | null {
   const normalizedUsername = normalizeUsername(username);
   const exactCaseInsensitive = rows.find((row) => row.username?.trim().toLowerCase() === normalizedUsername);
+  const exactEmail = rows.find((row) => row.email?.trim().toLowerCase() === normalizedUsername);
   const firstWithEmail = rows.find((row) => typeof row.email === 'string' && row.email.trim().length > 0);
-  return exactCaseInsensitive?.email?.trim() || firstWithEmail?.email?.trim() || null;
+  return exactCaseInsensitive?.email?.trim() || exactEmail?.email?.trim() || firstWithEmail?.email?.trim() || null;
 }
 
 async function lookupProfileCandidates(username: string) {
@@ -40,6 +45,16 @@ async function lookupProfileCandidates(username: string) {
   const admin = createAdminSupabaseClient();
 
   if (admin) {
+    if (looksLikeEmail(normalizedUsername)) {
+      const { data, error } = await admin
+        .from('profiles')
+        .select('email, username')
+        .ilike('email', normalizedUsername)
+        .limit(10);
+
+      return { data: (data ?? []) as ProfileLoginCandidate[], error };
+    }
+
     const { data, error } = await admin
       .from('profiles')
       .select('email, username')
@@ -50,6 +65,16 @@ async function lookupProfileCandidates(username: string) {
   }
 
   const supabase = await createServerSupabaseClient();
+  if (looksLikeEmail(normalizedUsername)) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email, username')
+      .ilike('email', normalizedUsername)
+      .limit(10);
+
+    return { data: (data ?? []) as ProfileLoginCandidate[], error };
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('email, username')
@@ -117,7 +142,7 @@ export async function loginWithUsername(
   if (!matchedEmail) {
     return {
       error:
-        'No profile was found for that username. Check that the profiles table contains the username, the email is filled in, and the row is linked to the Supabase auth user.',
+        'No profile was found for that username or email. Check that the profiles table contains the username or email, and the row is linked to the Supabase auth user.',
     };
   }
 
