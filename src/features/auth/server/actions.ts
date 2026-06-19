@@ -121,7 +121,7 @@ async function resolveTrialLoginTarget(email: string, requestedNext: string) {
   const organizationId = String(membership?.organization_id ?? '').trim();
   if (!organizationId) return requestedNext;
 
-  const { data: trial } = await admin
+  const { data: trial } = await (admin as any)
     .from('organization_trial_capabilities')
     .select('organization_id, trial_mode')
     .eq('organization_id', organizationId)
