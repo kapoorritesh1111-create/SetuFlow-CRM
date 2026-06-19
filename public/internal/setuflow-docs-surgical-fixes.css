@@ -918,3 +918,21 @@ code { font-weight: 500 !important; }
   .mod-card-grid { grid-template-columns: 1fr; }
   .mod-flow-chain { gap:4px; }
 }
+
+
+/* --- SMC-embedded mode -------------------------------------------------
+   When the Documentation Hub renders inside the SMC content pane
+   (iframe src: setuflow-docs.html?in=smc), suppress the docs app's own
+   top chrome + layout offsets so it reads as part of SMC, not a second app.
+   Standalone and external-shared modes are unaffected. */
+body.smc-embed { background:#f1f5f9; }
+body.smc-embed .topbar { display:none !important; }
+body.smc-embed .shell { padding-top:0; }
+body.smc-embed .left-nav,
+body.smc-embed .right-rail { top:0; height:100vh; }
+body.smc-embed .nav-footer { display:none; }
+@media (max-width:760px){
+  /* topbar (and its nav toggle) is hidden in embed, so stack the topic nav inline */
+  body.smc-embed .shell { display:block; }
+  body.smc-embed .left-nav { position:static; transform:none; width:auto; height:auto; }
+}

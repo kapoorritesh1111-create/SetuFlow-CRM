@@ -21,7 +21,7 @@ export default async function SmcWikiPage() {
       </div>
       <DocsSharing links={(linksRes.data ?? []) as any[]} viewCounts={viewCounts} />
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <iframe src="/internal/setuflow-docs.html" style={{ width: '100%', height: '100%', border: 'none' }} title="Documentation Hub" />
+        <iframe src="/internal/setuflow-docs.html?in=smc" style={{ width: '100%', height: '100%', border: 'none' }} title="Documentation Hub" />
       </div>
     </>
   );

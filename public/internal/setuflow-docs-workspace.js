@@ -48,6 +48,7 @@ const Docs = (() => {
 
   async function initAuth() {
     const p = new URLSearchParams(location.search);
+    if (p.get('in') === 'smc' || p.get('embed') === '1') document.body.classList.add('smc-embed');
     const token = p.get('share_token');
     if (token) {
       const d = validToken(token);

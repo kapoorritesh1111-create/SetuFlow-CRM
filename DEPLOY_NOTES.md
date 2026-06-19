@@ -1,33 +1,32 @@
-# QA tester UX enhancements - deploy bundle
+# Docs Hub feels like part of SMC (not a second app)
 
-Three tester-facing improvements on the live QA flow. ALL DB CHANGES ARE ALREADY APPLIED LIVE.
+## Problem
+/smc/wiki renders the SMC header + share controls, then iframes the full static
+Documentation Hub. That static app carries its OWN dark top bar (its own brand,
+global search, and cross-app links: Issue Tracker / Roadmap / Pre-Demo / QA Tests /
+Share Doc / Live CRM) plus its own layout offsets. Result inside SMC: two stacked
+headers and a second product chrome -> reads as a separate workspace.
 
-## What changed
-1. Per-case "where to test" link - qa_test_cases.target_path (added + seeded). Rendered as
-   "Where to test: setuflowcrm.com/..." in the internal and external run boards. Refine any
-   case's path in the DB and the UI picks it up automatically.
-2. Share all suites - the SMC "Share Links" mint now has an "All suites" option. It creates a
-   tester link with suite_key = NULL; /qa/run/[token] then loads every suite, grouped, and each
-   result/finding carries its own suite. Single-suite links are unchanged.
-3. Screenshot on Fail/Blocked - both now open a finding panel with "Attach screenshot". Uploads
-   go to the existing public qa-evidence bucket through one route: POST /api/public/qa-evidence
-   (external testers authorize with their tester token; internal users with their SETU session).
-   The public URL is stored on qa_findings.evidence_url and shown in the Findings tab.
-4. Share-link expiry standardised to preset 3 / 7 / 14 / 30 days (default 7) on QA tester links
-   and Docs share links.
+## Fix (surgical, additive)
+A new SMC-embedded mode on the docs app, triggered by a URL flag on the iframe.
+- src/app/smc/wiki/page.tsx -> iframe src is now `/internal/setuflow-docs.html?in=smc`.
+  ("Open in new tab" still points at the plain URL = full standalone chrome.)
+- setuflow-docs-workspace.js -> initAuth() adds `smc-embed` to <body> when
+  `?in=smc` (or `?embed=1`) is present.
+- setuflow-docs-surgical-fixes.css -> `body.smc-embed` hides the docs `.topbar`,
+  removes the topbar offsets on `.shell` / `.left-nav` / `.right-rail`, hides the
+  redundant `.nav-footer` cross-links, and matches SMC's content background (#f1f5f9).
+  The docs' dark left-nav stays — it already matches SMC's dark rail.
 
-## Apply
-- Code: overwrite the files in this bundle (paths preserved), run tsc --noEmit, deploy.
-- DB: already applied live (the migration file is included only for repo history).
-- No new buckets, no RLS changes, no anon policy added.
+Net: inside SMC you now get one header (the SMC "Documentation Hub" header), the
+share controls, then the docs content flush in the pane — no second app bar.
 
-## Verify after deploy (most worth a look)
-- SCREENSHOT UPLOAD is the part to smoke-test: on /qa/run/<token> mark a case Failed -> Attach
-  screenshot -> expect "Screenshot attached", then Submit; confirm /smc/qa Findings shows the
-  screenshot link. Repeat from the internal run board. Route enforces 10MB max, images only.
-- ALL-SUITES link: mint with "All suites", open the token URL incognito -> every suite renders
-  with headers; submit -> one run with suite_filter = all.
-- PER-CASE link: each case shows the setuflowcrm.com/... link to the right area.
+## Unaffected
+- Standalone (Open in new tab) keeps full chrome.
+- External shared links (/docs/<token> -> ?share_token=...) keep shared-mode chrome.
+- No DB changes. No behavior changes to navigation, search, or content.
 
-## Tracker
-S33-QA-006 (in_review). Guest-session + guest Chat design locked as S33-GUEST-009 (open) - next PR.
+## Apply / verify
+Overwrite the 3 files, `tsc --noEmit` (only page.tsx is TS; trivial), deploy.
+Then open /smc/wiki: expect a single header and the docs body sitting in the SMC
+pane with no dark second top bar. Confirm "Open in new tab" still shows the full app.
