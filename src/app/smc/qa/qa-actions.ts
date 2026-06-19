@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireSetuInternalAdminWorkspace } from '@/lib/workspace/auth';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { INTERNAL_ORG_ID } from '@/lib/config/internal';
+import { randomUUID } from 'crypto';
 
 export type RunResult = { caseKey: string; stepTitle: string; status: 'pass' | 'fail' | 'blocked'; isCritical: boolean; expected: string; actual?: string; note?: string };
 export type RunFinding = { caseKey: string; title: string; severity: string; expected: string; actual: string };
@@ -99,4 +100,78 @@ export async function promoteFinding(findingId: string): Promise<{ issueRef: str
   await admin.from('qa_findings').update({ status: 'promoted', promoted_issue_ref: issueRef }).eq('id', findingId);
   revalidatePath('/smc/qa');
   return { issueRef };
+}
+
+// ---- S33-QA-003: share links (mint / revoke) ----
+export type ShareLinkInput = { linkType: 'tester_run' | 'report_view'; suiteKey?: string; snapshotId?: string; label?: string; testerEmail?: string; expiresInDays?: number };
+
+export async function createShareLink(input: ShareLinkInput): Promise<{ token: string }> {
+  await requireSetuInternalAdminWorkspace();
+  const admin = createAdminSupabaseClient() as any;
+  const token = randomUUID().replace(/-/g, '');
+  const expires_at = input.expiresInDays && input.expiresInDays > 0
+    ? new Date(Date.now() + input.expiresInDays * 864e5).toISOString() : null;
+  await admin.from('qa_share_links').insert({
+    organization_id: INTERNAL_ORG_ID, token, link_type: input.linkType,
+    suite_key: input.suiteKey ?? null, snapshot_id: input.snapshotId ?? null,
+    label: input.label ?? null, tester_email: input.testerEmail ?? null,
+    created_by: 'SETU Flow', expires_at,
+  });
+  revalidatePath('/smc/qa');
+  return { token };
+}
+
+export async function revokeShareLink(id: string): Promise<void> {
+  await requireSetuInternalAdminWorkspace();
+  const admin = createAdminSupabaseClient() as any;
+  await admin.from('qa_share_links').update({ revoked_at: new Date().toISOString() }).eq('id', id);
+  revalidatePath('/smc/qa');
+}
+
+// ---- S33-QA-004: freeze a publishable report snapshot ----
+export async function publishSnapshot(input: { title: string; releaseLabel?: string; scope?: string }): Promise<{ token: string }> {
+  await requireSetuInternalAdminWorkspace();
+  const admin = createAdminSupabaseClient() as any;
+
+  const [{ data: steps }, { data: findings }, { data: suites }, { data: cases }] = await Promise.all([
+    admin.from('qa_step_results').select('status, is_critical, suite_id, suite_title'),
+    admin.from('qa_findings').select('status'),
+    admin.from('qa_test_suites').select('suite_key, title'),
+    admin.from('qa_test_cases').select('suite_key'),
+  ]);
+  const st = (steps ?? []) as { status: string; is_critical: boolean; suite_id: string | null; suite_title: string | null }[];
+  const total = st.length;
+  const passed = st.filter((s) => s.status === 'pass').length;
+  const crit = st.filter((s) => s.is_critical);
+  const critPassed = crit.filter((s) => s.status === 'pass').length;
+  const passRate = total ? Math.round((passed / total) * 100) : 0;
+  const critPassPct = crit.length ? Math.round((critPassed / crit.length) * 100) : 100;
+  const verdict = total === 0 ? 'no_data' : crit.length && critPassed < crit.length ? 'blocked' : passRate >= 90 ? 'release_ready' : 'review';
+
+  const breakdown: Record<string, { title: string; total: number; passed: number; pct: number }> = {};
+  for (const s of st) {
+    const key = s.suite_id ?? 'unknown';
+    const b = breakdown[key] ?? { title: s.suite_title ?? key, total: 0, passed: 0, pct: 0 };
+    b.total++; if (s.status === 'pass') b.passed++;
+    breakdown[key] = b;
+  }
+  Object.values(breakdown).forEach((b) => { b.pct = b.total ? Math.round((b.passed / b.total) * 100) : 0; });
+
+  const metrics = {
+    suitesTotal: (suites ?? []).length, suitesCovered: Object.keys(breakdown).length,
+    casesTotal: (cases ?? []).length, stepsExecuted: total, passed,
+    findingsTotal: (findings ?? []).length, findingsOpen: ((findings ?? []) as { status: string }[]).filter((f) => f.status !== 'promoted').length,
+  };
+
+  const snapRef = `QAR-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`;
+  const { data: snap } = await admin.from('qa_report_snapshots').insert({
+    organization_id: INTERNAL_ORG_ID, snapshot_ref: snapRef, title: input.title,
+    release_label: input.releaseLabel ?? null, scope: input.scope ?? null, verdict,
+    pass_rate_pct: passRate, critical_pass_pct: critPassPct,
+    metrics, suite_breakdown: breakdown, published_at: new Date().toISOString(), created_by: 'SETU Flow',
+  }).select('id').single();
+
+  const { token } = await createShareLink({ linkType: 'report_view', snapshotId: snap?.id, label: input.title });
+  revalidatePath('/smc/qa');
+  return { token };
 }

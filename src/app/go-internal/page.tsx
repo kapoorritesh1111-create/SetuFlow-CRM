@@ -20,7 +20,6 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 const ALLOWED_FILES = new Set([
-  'setuflow-issue-tracker.html',
   'setuflow-docs.html',
   'setuflow-roadmap.html',
 ]);

@@ -231,8 +231,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
   <nav class="topbar-nav">
     <span style="font-size:10.5px;color:var(--text3);display:flex;align-items:center"><span class="live-dot"></span>Live DB</span>
     <span class="db-sync-badge" id="db-badge">Connecting…</span>
-    <a href="setuflow-e2e-testing.html" class="nav-link">QA Test Suite</a>
-    <a href="setuflow-issue-tracker.html" class="nav-link">Issues <span id="open-ct" style="background:var(--red-d);color:var(--red-hi);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px">—</span></a>
+    <a href="/smc/qa" class="nav-link">QA Test Suite</a>
+    <a href="/smc/issues" class="nav-link">Issues <span id="open-ct" style="background:var(--red-d);color:var(--red-hi);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px">—</span></a>
     <a href="setuflow-docs.html" class="nav-link">Docs</a>
     <a href="https://www.setuflowcrm.com/dashboard" target="_blank" class="nav-link primary">CRM Live ↗</a>
     <button class="theme-btn" onclick="toggleTheme()">☀/☾</button>
@@ -513,7 +513,7 @@ const CL=[
   {id:'pre-3',sec:'prereq',sev:'High',blocker:false,title:'Confirm at least 1 lead, 1 quote, and 1 order exist',desc:'A demo with no data is useless. Verify there is existing pipeline data to show. If empty, run the seed data script before proceeding.',verify:'Dashboard shows non-zero counts for leads, quotes, and orders.'},
   {id:'pre-4',sec:'prereq',sev:'High',blocker:false,title:'Confirm at least 2 products exist in the catalog with pricing',desc:'Quote builder requires products with active pricing rules. No products = cannot demo the quote flow.',verify:'/products shows at least 2 active products with pricing rules configured.'},
   {id:'pre-5',sec:'prereq',sev:'Medium',blocker:false,title:'Org settings are complete (legal name, address, Tax ID)',desc:'This data populates the PDF seller identity box. If org settings are blank, the Quote PDF will show empty seller info even though the PDF generator works correctly.',verify:'/admin/organization shows: legal name, registered address, city, postal code, country, tax ID, contact email — all filled.'},
-  {id:'pre-6',sec:'prereq',sev:'Medium',blocker:false,title:'Check open issues in issue tracker — know what to avoid',desc:'Before the demo, review the live issue tracker for any Critical/High open bugs. Know which features to avoid or work around. Check: SF-23-001 (analytics nav), SF-23-002 (sign-out), SF-23-003/004 (order PDFs).',verify:'You have reviewed the open issues at setuflow-issue-tracker.html and know the current workarounds.'},
+  {id:'pre-6',sec:'prereq',sev:'Medium',blocker:false,title:'Check open issues in issue tracker — know what to avoid',desc:'Before the demo, review the live issue tracker for any Critical/High open bugs. Know which features to avoid or work around. Check: SF-23-001 (analytics nav), SF-23-002 (sign-out), SF-23-003/004 (order PDFs).',verify:'You have reviewed the open issues at /smc/issues and know the current workarounds.'},
 
   // AUTH
   {id:'auth-1',sec:'auth',sev:'Critical',blocker:true,title:'Login page loads at /client-login',desc:'Navigate to https://www.setuflowcrm.com/client-login. Page should render with: SetuFlow logo, email/password fields, "Forgot password?" link, Sign in button, feature points on the right column.',verify:'Page loads in under 3 seconds. No console errors. Fonts and images load correctly.'},
@@ -871,8 +871,15 @@ async function autoReport(item){
     reporter_name:$('tester-name')?.value||'Demo Checklist',
   };
   try{
-    await db.from('sprint_issues').insert(payload);
-    toast('⚠ Blocker auto-reported: '+ref);
+    await db.from('qa_findings').insert({
+      organization_id:'3327b9a7-aadb-44b0-9793-30c4045d3c92',
+      finding_ref:payload.issue_ref, title:payload.title, severity:payload.severity,
+      suite_key:'demo-checklist', case_key:item.id,
+      expected_result:item.verify, actual_result:note||('Blocker failed during demo run '+runRef),
+      environment:'demo-checklist', reported_by:payload.reporter_name,
+      reporter_kind:'external', status:'new', promoted_issue_ref:null,
+    });
+    toast('⚠ Blocker logged to QA findings: '+ref);
   }catch(e){console.warn('Auto-report failed',e);}
 }
 

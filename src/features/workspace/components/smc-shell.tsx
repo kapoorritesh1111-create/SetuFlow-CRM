@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export const DOCS_WORKSPACE_HREF = '/internal/setuflow-docs.html#overview';
-export const E2E_WORKSPACE_HREF = '/internal/setuflow-e2e-testing.html';
+export const E2E_WORKSPACE_HREF = '/smc/qa';
 export const DEMO_CHECKLIST_HREF = '/internal/setuflow-demo-checklist.html';
 
 export type SmcIconName = 'mission' | 'board' | 'sprint' | 'agent' | 'client' | 'docs' | 'qa' | 'demo' | 'risk' | 'bug' | 'trend' | 'shield' | 'target' | 'clock' | 'deploy';

@@ -178,7 +178,7 @@ const Docs = (() => {
     </div>
     <h3>Issue Tracker <span class="quick-card-count" id="issueQuick">${openIssues}</span></h3>
     <p>View open issues, report bugs, or track documentation tasks and improvements.</p>
-    <a href="setuflow-issue-tracker.html">Open issue tracker</a>
+    <a href="/smc/issues">Open issue tracker</a>
     <div class="quick-card-arrow">&#x2192;</div>
   </div>
   <div class="quick-card internal-only">
@@ -214,7 +214,7 @@ const Docs = (() => {
     </div>
     <h3>QA Test Suite</h3>
     <p>9 suites, 49 steps covering the full commercial journey. Failed steps auto-file bugs in the tracker.</p>
-    <a href="setuflow-e2e-testing.html">Open test suite</a>
+    <a href="/smc/qa">Open test suite</a>
     <div class="quick-card-arrow">&#x2192;</div>
   </div>
 </section>
@@ -3772,7 +3772,8 @@ flowchart LR
 <tr><td>Config</td><td>Feature Flags, Demo</td></tr>
 </tbody></table></div>
 <div class="section-block"><h2>Quality &mdash; QA Workspace</h2>
-<p>QA is a native workspace at <code>/smc/qa</code>, not an embedded tool. Test suites and their steps are editable database records &mdash; the steps <em>are</em> the testing documentation. A tester opens a suite, steps through each case marking pass / fail / blocked, and a failure captures the suite, case, expected result, environment and build automatically, so every logged issue is reproducible by construction. Findings are triaged in their own lane and an internal admin promotes a finding into the issue tracker with the repro pre-filled and a two-way backlink &mdash; testers never write to the tracker directly. External-tester share links and publishable QA report snapshots are the planned next layer.</p>
+<p>QA is a native workspace at <code>/smc/qa</code>, not an embedded tool. Test suites and their steps are editable database records &mdash; the steps <em>are</em> the testing documentation. A tester opens a suite, steps through each case marking pass / fail / blocked, and a failure captures the suite, case, expected result, environment and build automatically, so every logged issue is reproducible by construction. Findings are triaged in their own lane and an internal admin promotes a finding into the issue tracker with the repro pre-filled and a two-way backlink &mdash; testers never write to the tracker directly.</p>
+<p>External testers are invited with scoped, expirable share links (<code>/qa/run/&lt;token&gt;</code>): the token is validated server-side, the tester reaches only the one suite it is scoped to, and their results and findings land in the same triage lane marked as external &mdash; they can never read or write the tracker. Release readiness is published as a frozen, read-only report snapshot at <code>/qa/report/&lt;token&gt;</code>, gated on the critical-path pass rate. The Documentation Hub is shareable the same way (<code>/docs/&lt;token&gt;</code>): scoped, expirable links with server-side view tracking and no anonymous-key exposure.</p>
 </div>
 <div class="section-block"><h2>Source Tables</h2>
 <p>SMC has its own backing tables and also reads shared operational tables. Its own tables are restricted to the SETU Flow org.</p>
@@ -3788,6 +3789,7 @@ flowchart LR
 <tr><td><code>qa_test_runs</code> &middot; <code>qa_step_results</code> &middot; <code>qa_evidence</code></td><td>Recorded runs, per-step results, and uploaded evidence</td></tr>
 <tr><td><code>qa_findings</code></td><td>Structured tester findings; promotable to tracker issues with a backlink</td></tr>
 <tr><td><code>qa_share_links</code> &middot; <code>qa_report_snapshots</code></td><td>Scoped external-tester links and frozen QA report snapshots</td></tr>
+<tr><td><code>docs_share_links</code> &middot; <code>docs_share_views</code></td><td>Scoped, expirable Documentation Hub links and server-side view tracking</td></tr>
 </tbody></table></div>
 <p style="color:#64748b;font-size:13px;margin-top:8px">SMC team chat runs on the shared <code>chat_*</code> conversation engine (channels and DMs), not a separate table. SMC also reads shared tables including the issue tracker, sprint metadata, organizations, internal leads, and client onboarding requests to assemble its dashboards.</p>
 `;
@@ -3942,7 +3944,7 @@ flowchart LR
   <div class="progress-line"><span>Overall Progress</span><b id="railDocPct">${docPct}%</b></div>
   <div class="bar"><div class="fill" id="railDocFill" style="width:${docPct}%"></div></div>
   <p style="color:#64748b;font-size:11.5px;margin-top:6px">45 documented areas</p>
-  <a href="setuflow-issue-tracker.html" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a>
+  <a href="/smc/issues" style="display:inline-block;margin-top:8px;font-size:11.5px;color:#2563eb;font-weight:800">View full progress \u2192</a>
 </div>
 <div class="rail-block">
   <button class="rail-toggle-btn" onclick="Docs.toggleRailSection('rail-recent')" aria-expanded="false"><h4>Recent Updates</h4><span class="rail-toggle-chevron">›</span></button>
@@ -4023,7 +4025,7 @@ flowchart LR
     <div class="rail-live-open"><span class="rail-live-val">${metrics.open}</span><span class="rail-live-label">Open issues</span></div>
     <div class="rail-live-resolved"><span class="rail-live-val">${metrics.resolved}</span><span class="rail-live-label">Resolved</span></div>
   </div>
-  <a href="setuflow-issue-tracker.html" style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2563eb;font-weight:800">Open issue tracker \u2192</a>
+  <a href="/smc/issues" style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2563eb;font-weight:800">Open issue tracker \u2192</a>
 </div>` : '';
 
     // ── Contributor (shown once, always at bottom) ───────────────
