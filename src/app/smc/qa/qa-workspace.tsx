@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { promoteFinding, setFindingStatus, createShareLink, revokeShareLink, publishSnapshot } from './qa-actions';
+import { CopyLinkModal } from '../wiki/docs-sharing';
 
 type Suite = { suite_key: string; title: string; area: string | null; description: string | null; caseCount: number; criticalCount: number };
 type Run = { id: string; run_ref: string; suite_filter: string | null; run_type: string | null; verdict: string | null; pass_rate_pct: number | null; total_steps: number | null; steps_failed: number | null; bugs_filed: number | null };
@@ -24,6 +25,7 @@ function verdictPill(v: string | null) {
 export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }: { suites: Suite[]; runs: Run[]; findings: Finding[]; links: ShareLink[]; snapshots: Snapshot[]; rollup: Rollup }) {
   const [tab, setTab] = useState<'suites' | 'runs' | 'findings' | 'reports' | 'share'>('suites');
   const [origin, setOrigin] = useState('');
+  const [copyUrl, setCopyUrl] = useState<string | null>(null);
   useEffect(() => { setOrigin(window.location.origin); }, []);
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -44,7 +46,7 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
     <div onClick={() => setTab(k)} style={{ padding: '11px 14px', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', color: tab === k ? '#1f487c' : '#64748b', borderBottom: `2px solid ${tab === k ? '#279491' : 'transparent'}` }}>{label}{n != null ? ` (${n})` : ''}</div>
   );
   const linkUrl = (l: ShareLink) => `${origin}/qa/${l.link_type === 'report_view' ? 'report' : 'run'}/${l.token}`;
-  function copy(text: string) { navigator.clipboard?.writeText(text); alert('Link copied:\n' + text); }
+  function copy(text: string) { setCopyUrl(text); }
   function promote(id: string) { start(async () => { const r = await promoteFinding(id); router.refresh(); if ('issueRef' in r) alert(`Promoted to tracker issue ${r.issueRef}`); }); }
   function triage(id: string) { start(async () => { await setFindingStatus(id, 'triaged'); router.refresh(); }); }
   function mintShare() { start(async () => { const r = await createShareLink({ linkType: 'tester_run', suiteKey: slSuite, label: slLabel || undefined, expiresInDays: Number(slDays) || undefined }); setShowShare(false); setSlLabel(''); router.refresh(); copy(`${origin}/qa/run/${r.token}`); }); }
@@ -53,6 +55,7 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
 
   return (
     <>
+      {copyUrl && <CopyLinkModal url={copyUrl} onClose={() => setCopyUrl(null)} />}
       <div className="smc-ph">
         <div><div className="bc">Delivery · Quality</div><h1>QA Workspace</h1><p>Authored suites, guided runs, structured findings, external-tester links and publishable reports.</p></div>
         <div className="ha"><span className="smc-st in-progress">staging</span></div>

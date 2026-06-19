@@ -1,8 +1,15 @@
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
 
+const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+
+// Public, token-gated entry to the Documentation Hub. Validates the tracked DB
+// link server-side (revoked / expired), logs the view, then hands off to the
+// proven static shared-mode docs page — the same experience as a Share Doc link,
+// but tracked and revocable from Mission Control.
 export default async function DocsShareView({ params }: { params: { token: string } }) {
   const svc = createServiceRoleClient() as any;
   const { data: link } = await svc.from('docs_share_links').select('*').eq('token', params.token).maybeSingle();
@@ -19,14 +26,16 @@ export default async function DocsShareView({ params }: { params: { token: strin
     );
   }
 
-  // log the view (server-side, service role) — no anon key exposure
+  // log the view (server-side, service role) — no anon-key exposure
   const h = await headers();
   await svc.from('docs_share_views').insert({ organization_id: link.organization_id, token: params.token, user_agent: h.get('user-agent') ?? null, referrer: h.get('referer') ?? null });
   await svc.from('docs_share_links').update({ use_count: (link.use_count ?? 0) + 1, last_viewed_at: new Date().toISOString() }).eq('id', link.id);
 
-  return (
-    <div style={{ position: 'fixed', inset: 0 }}>
-      <iframe src="/internal/setuflow-docs.html" style={{ width: '100%', height: '100%', border: 'none' }} title="SETU Flow Documentation" />
-    </div>
-  );
+  // Build the shared-mode payload the static docs page understands: { recipient, expiry, issued }
+  const expiry = link.expires_at ? new Date(link.expires_at).getTime() : Date.now() + TEN_YEARS_MS;
+  const issued = link.created_at ? new Date(link.created_at).getTime() : Date.now();
+  const payload = { recipient: link.label || 'External reviewer', expiry, issued };
+  const shareToken = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
+
+  redirect(`/internal/setuflow-docs.html?share_token=${encodeURIComponent(shareToken)}`);
 }

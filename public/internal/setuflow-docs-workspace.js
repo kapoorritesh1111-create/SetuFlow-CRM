@@ -85,21 +85,24 @@ const Docs = (() => {
       const s = sessionStorage.getItem('ng_' + g);
       return s !== null ? s === '1' : !PINNED.has(g);
     }
-    let html = '', g = '', gid = 0;
-    topics.forEach(t => {
-      if (t.group !== g) {
-        if (g) html += '</div>';
-        g = t.group; gid++;
-        const id = 'ng' + gid, col = collapsed(g);
-        if (PINNED.has(g)) {
-          html += `<div class="nav-group-static">${g}</div><div class="nav-group-items" id="${id}">`;
-        } else {
-          html += `<button class="nav-group-btn" onclick="Docs.toggleNavGroup('${id}','${g}')" aria-expanded="${col ? 'false' : 'true'}"><span>${g}</span><span class="nav-group-chevron">\u203a</span></button><div class="nav-group-items${col ? ' nav-collapsed' : ''}" id="${id}">`;
-        }
+    // Render each group exactly once, with all of its topics, regardless of
+    // where those topics sit in the array. (Topics added in later sprints reuse
+    // earlier group names; a run-based grouping rendered duplicate headers.)
+    let html = '';
+    const order = [];
+    topics.forEach(t => { if (!order.includes(t.group)) order.push(t.group); });
+    order.forEach((grp, gi) => {
+      const id = 'ng' + (gi + 1), col = collapsed(grp);
+      if (PINNED.has(grp)) {
+        html += `<div class="nav-group-static">${grp}</div><div class="nav-group-items" id="${id}">`;
+      } else {
+        html += `<button class="nav-group-btn" onclick="Docs.toggleNavGroup('${id}','${grp}')" aria-expanded="${col ? 'false' : 'true'}"><span>${grp}</span><span class="nav-group-chevron">\u203a</span></button><div class="nav-group-items${col ? ' nav-collapsed' : ''}" id="${id}">`;
       }
-      html += `<button class="nav-link" data-topic="${t.id}" onclick="Docs.openTopic('${t.id}')"><span class="dot">${t.icon}</span>${t.title}</button>`;
+      topics.filter(t => t.group === grp).forEach(t => {
+        html += `<button class="nav-link" data-topic="${t.id}" onclick="Docs.openTopic('${t.id}')"><span class="dot">${t.icon}</span>${t.title}</button>`;
+      });
+      html += '</div>';
     });
-    if (g) html += '</div>';
     nav.innerHTML = html;
     markActive();
   }
