@@ -40,3 +40,46 @@ where not exists (
     and p.sku = item.sku
     and p.source = 'trade_show_trial_preview'
 );
+
+insert into public.product_variants (
+  product_id,
+  organization_id,
+  name,
+  sku_code,
+  variant_code,
+  pack_size_value,
+  pack_size_unit,
+  pack_label,
+  units_per_case,
+  moq_cases,
+  pricing_mode_default,
+  is_active,
+  is_quoteable,
+  sort_order,
+  source_sheet_name,
+  source_payload
+)
+select
+  p.id,
+  p.organization_id,
+  'Trial preview pack',
+  coalesce(p.sku, 'TRIAL-PREVIEW'),
+  coalesce(p.sku, 'TRIAL-PREVIEW'),
+  1,
+  'case',
+  '1 case preview pack',
+  12,
+  10,
+  'case',
+  true,
+  true,
+  coalesce(p.sort_order, 0),
+  'trade_show_trial_preview',
+  jsonb_build_object('source','trade_show_trial_preview','preview_only',true)
+from public.products p
+where p.source = 'trade_show_trial_preview'
+  and not exists (
+    select 1 from public.product_variants v
+    where v.product_id = p.id
+      and v.source_sheet_name = 'trade_show_trial_preview'
+  );
