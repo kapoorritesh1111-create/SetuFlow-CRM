@@ -79,13 +79,15 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   ];
 
   const allowedSpaces = [
-    { href: '/dashboard', title: 'Dashboard', body: 'See a first-look command view built from trade show activity.' },
-    { href: '/dashboard/analytics', title: 'Analytics', body: 'Understand capture volume, product interest, and follow-up movement.' },
-    { href: '/reports', title: 'Reports', body: 'Review event summaries and shareable activity snapshots.' },
-    { href: '/leads?view=trade-event', title: 'Leads list', body: 'Review every captured booth lead in the existing Leads workspace.' },
-    { href: '/tasks', title: 'Tasks', body: 'Create follow-up tasks only for captured trade show leads.' },
-    { href: '/quotes', title: 'Quotes preview', body: 'Preview the upgrade path. Quote creation remains locked in trial.' },
-    { href: '/orders', title: 'Orders preview', body: 'Preview order execution. Order creation remains locked in trial.' },
+    { href: '/dashboard', title: 'Dashboard preview', body: 'See how trade show capture becomes command-center KPIs and leadership visibility.', preview: true },
+    { href: '/leads?view=trade-event', title: 'Leads list', body: 'Review every captured booth lead in the existing Leads workspace.', preview: false },
+    { href: '/pipeline', title: 'Pipeline preview', body: 'Preview stages, aging, and risk lanes for captured trade show opportunities.', preview: true },
+    { href: '/approval-send', title: 'Send preview', body: 'Preview outbound readiness. Live send actions stay upgrade-only except approved intro/follow-up behavior.', preview: true },
+    { href: '/documents', title: 'Documents preview', body: 'Preview document and compliance readiness connected to future quotes and orders.', preview: true },
+    { href: '/tasks', title: 'Tasks', body: 'Create follow-up tasks only for captured trade show leads.', preview: false },
+    { href: '/products', title: 'Catalog preview', body: 'Preview product and pricing context. Catalog management unlocks after upgrade.', preview: true },
+    { href: '/quotes', title: 'Quotes preview', body: 'Preview the quote workflow. Quote creation remains locked during trial.', preview: true },
+    { href: '/orders', title: 'Orders preview', body: 'Preview execution and order readiness. Order creation remains locked during trial.', preview: true },
   ];
 
   return (
@@ -121,7 +123,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
               Capture booth leads in the existing CRM experience.
             </h1>
             <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-blue-50/90">
-              This trial keeps new clients inside the familiar Setu Flow workspace: vCard sharing, Quick Lead capture, lead list review, dashboard insights, reports, tasks, chat, and limited Setu Guru guidance. Quotes and orders stay preview-only until upgrade.
+              Trial clients can capture leads, share vCard context, review follow-ups, and preview the full Setu Flow module journey: dashboard, pipeline, send, documents, catalog, quotes, and orders. Only approved trial actions are live until upgrade.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link href={captureHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-black text-slate-950 shadow-[0_18px_45px_rgba(255,255,255,0.20)] transition hover:-translate-y-0.5 hover:bg-blue-50">
@@ -173,21 +175,18 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Existing workspace access</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">What trial clients can see</h2>
               </div>
-              <p className="max-w-xl text-sm font-medium text-slate-600">These are existing Setu Flow spaces, limited for the trade show trial.</p>
+              <p className="max-w-xl text-sm font-medium text-slate-600">Existing Setu Flow spaces stay visible so clients understand what they are upgrading into.</p>
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {allowedSpaces.map((space) => {
-                const locked = space.title.includes('preview');
-                return (
-                  <Link key={space.title} href={space.href} className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-black text-slate-950">{space.title}</p>
-                      <span className={locked ? 'rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black uppercase text-amber-700' : 'rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black uppercase text-emerald-700'}>{locked ? 'Preview' : 'Trial'}</span>
-                    </div>
-                    <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{space.body}</p>
-                  </Link>
-                );
-              })}
+              {allowedSpaces.map((space) => (
+                <Link key={space.title} href={space.href} className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-black text-slate-950">{space.title}</p>
+                    <span className={space.preview ? 'rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black uppercase text-amber-700' : 'rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black uppercase text-emerald-700'}>{space.preview ? 'Preview' : 'Trial'}</span>
+                  </div>
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{space.body}</p>
+                </Link>
+              ))}
             </div>
           </section>
 
@@ -268,7 +267,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
           <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Guidance</p>
             <h2 className="mt-1 text-xl font-black text-slate-950">Chat + Setu Guru</h2>
-            <p className="mt-3 text-sm font-medium leading-6 text-slate-600">Trial clients can ask limited workflow questions and create follow-up tasks for captured leads. Setu Guru will not perform quote, order, catalog, or admin actions in trial.</p>
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-600">Trial clients can ask limited workflow questions and create follow-up tasks for captured leads. Setu Guru will not perform quote, order, catalog, send, document, or admin actions in trial.</p>
           </section>
         </aside>
       </div>
