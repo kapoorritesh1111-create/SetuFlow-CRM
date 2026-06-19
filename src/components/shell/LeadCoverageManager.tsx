@@ -2,27 +2,32 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-type ProductOption = { id: string; name: string; sku?: string | null; hasPricing?: boolean };
+type ProductOption = { id: string; name: string; sku?: string | null; hasPricing?: boolean; is_preview?: boolean | null; source?: string | null };
 type MarketOption = { id: string; name: string };
 type ResolverData = { lead: { id: string; company_name: string; lead_type?: string | null }; products: ProductOption[]; markets: MarketOption[]; selectedProductIds: string[]; selectedMarketIds: string[] };
 type LeadCoverageManagerProps = { leadId?: string | null; companyName?: string | null; onClose?: () => void; onSaved?: () => void };
 
+function readCoverageError(payload: any, fallback: string) {
+  const raw = String(payload?.message || payload?.error || fallback || '').trim();
+  if (raw === 'upgrade_required' || raw === 'available_after_upgrade') return 'Catalog mapping available after upgrade.';
+  return raw || fallback;
+}
+
 async function fetchCoverage(leadId: string) {
-  const params = new URLSearchParams({ leadId });
-  const response = await fetch(`/api/leads/coverage-resolver?${params.toString()}`, { cache: 'no-store' });
+  const response = await fetch(`/api/leads/coverage-resolver?${new URLSearchParams({ leadId }).toString()}`, { cache: 'no-store' });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || 'Could not load lead coverage.');
+  if (!response.ok) throw new Error(readCoverageError(payload, 'Could not load lead coverage.'));
   return payload as ResolverData;
 }
 
 async function saveCoverage(leadId: string, productIds: string[], marketIds: string[]) {
   const response = await fetch('/api/leads/coverage-resolver', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, productIds, marketIds }) });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || 'Could not save lead coverage.');
+  if (!response.ok) throw new Error(readCoverageError(payload, 'Could not save lead coverage.'));
   return payload;
 }
 
-export function LeadCoverageManager({ leadId, onClose, onSaved }: LeadCoverageManagerProps) {
+export function LeadCoverageManager({ leadId, companyName, onClose, onSaved }: LeadCoverageManagerProps) {
   const [loading, setLoading] = useState(Boolean(leadId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -39,16 +44,14 @@ export function LeadCoverageManager({ leadId, onClose, onSaved }: LeadCoverageMa
     setLoading(Boolean(resolvedLeadId));
     setError('');
     setSuccess('');
-
     if (!resolvedLeadId) {
       setData(null);
       setProductIds([]);
       setMarketIds([]);
       setLoading(false);
-      setError('Developer setup error: LeadCoverageManager requires leadId. Lead CC and Quote Builder must pass selectedLead.id/lead.id directly.');
+      setError('Lead context is required before mapping coverage.');
       return () => { active = false; };
     }
-
     fetchCoverage(resolvedLeadId).then((nextData) => {
       if (!active) return;
       setData(nextData);
@@ -65,12 +68,12 @@ export function LeadCoverageManager({ leadId, onClose, onSaved }: LeadCoverageMa
 
   const products = data?.products ?? [];
   const selectedProducts = useMemo(() => products.filter((product) => productIds.includes(product.id)), [productIds, products]);
-  const pricedProducts = useMemo(() => products.filter((product) => product.hasPricing), [products]);
+  const pricedProducts = useMemo(() => products.filter((product) => product.hasPricing || product.is_preview || product.source === 'trade_show_trial_preview'), [products]);
   const selectedMarketNames = useMemo(() => (data?.markets ?? []).filter((market) => marketIds.includes(market.id)).map((market) => market.name), [data?.markets, marketIds]);
   const filteredProducts = useMemo(() => {
     const value = query.trim().toLowerCase();
     const source = value ? products : pricedProducts.length ? pricedProducts : products;
-    return source.filter((product) => !productIds.includes(product.id)).filter((product) => !value || `${product.name} ${product.sku ?? ''}`.toLowerCase().includes(value)).sort((a, b) => Number(Boolean(b.hasPricing)) - Number(Boolean(a.hasPricing)) || a.name.localeCompare(b.name)).slice(0, 80);
+    return source.filter((product) => !productIds.includes(product.id)).filter((product) => !value || `${product.name} ${product.sku ?? ''}`.toLowerCase().includes(value)).slice(0, 80);
   }, [pricedProducts, productIds, products, query]);
   const suggestions = query.trim() ? filteredProducts.slice(0, 8) : [];
 
@@ -106,29 +109,17 @@ export function LeadCoverageManager({ leadId, onClose, onSaved }: LeadCoverageMa
 
   if (loading) return <div className="rounded-2xl border border-blue-100 bg-white p-4 text-sm text-slate-600">Loading lead coverage...</div>;
 
+  if (error && !data) {
+    return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-700"><p className="font-black text-amber-800">Captured request saved</p><p>{companyName ? `${companyName}: ` : ''}{error}</p><p className="mt-2">Preview catalog data is available in Catalog for trial walkthroughs. Real catalog mapping unlocks after upgrade.</p>{onClose ? <button type="button" onClick={onClose} className="mt-3 rounded-full border border-amber-200 bg-white px-4 py-2 text-xs font-bold text-amber-700">Close</button> : null}</div>;
+  }
+
   return (
     <div className="space-y-3" data-testid="lead-coverage-manager">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Product required</div>
-          <h3 className="mt-1 text-base font-black text-slate-950">Add products to unlock quote</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-600">{data?.lead?.company_name ? `${data.lead.company_name}: ` : ''}Select products from the active catalog. Existing market coverage or the lead country market is kept automatically.</p>
-        </div>
-        {onClose ? <button type="button" onClick={onClose} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">Close</button> : null}
-      </div>
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Product required</div><h3 className="mt-1 text-base font-black text-slate-950">Add products for quote coverage</h3><p className="mt-1 text-sm leading-6 text-slate-600">{data?.lead?.company_name ? `${data.lead.company_name}: ` : ''}Select products from the active catalog. Preview records are marked as preview-only.</p></div>{onClose ? <button type="button" onClick={onClose} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">Close</button> : null}</div>
       {selectedMarketNames.length ? <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800"><span>Market linked:</span>{selectedMarketNames.map((name) => <span key={name} className="rounded-full bg-white px-2 py-1">{name}</span>)}</div> : null}
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div> : null}
+      {error ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">{error}</div> : null}
       {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{success}</div> : null}
-      <section className="rounded-2xl border border-slate-200 bg-white p-3">
-        <div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Products</label><span className="text-xs font-bold text-slate-500">{productIds.length} selected</span></div>
-        <div className="relative mt-2">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} disabled={!data?.lead?.id} placeholder="Search products or SKU..." className="h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400" />
-          {query.trim() ? <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">{suggestions.length ? suggestions.map((product) => <button key={product.id} type="button" onClick={() => addProduct(product.id)} className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-blue-50"><span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-950">{product.name}</span>{product.sku ? <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">SKU {product.sku}</span> : null}</span><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${product.hasPricing ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{product.hasPricing ? 'Pricing ready' : 'Needs pricing'}</span></button>) : <div className="rounded-xl px-3 py-3 text-sm font-semibold text-slate-500">No matching products found.</div>}</div> : null}
-        </div>
-        <select value={selectValue} disabled={!data?.lead?.id} onChange={(event) => { setSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400"><option value="">Select product...</option>{filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ''}{product.hasPricing ? ' · Pricing ready' : ' · Needs pricing'}</option>)}</select>
-        {selectedProducts.length ? <div className="mt-3 flex flex-wrap gap-2">{selectedProducts.map((product) => <span key={product.id} className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800"><span>{product.name}</span>{product.sku ? <span className="text-blue-500">{product.sku}</span> : null}<button type="button" onClick={() => removeProduct(product.id)} className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-blue-700">Remove</button></span>)}</div> : null}
-        {!filteredProducts.length && !selectedProducts.length && data?.lead?.id ? <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">No active catalog products found for this workspace. Check Product Management if this looks wrong.</div> : null}
-      </section>
+      <section className="rounded-2xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Products</label><span className="text-xs font-bold text-slate-500">{productIds.length} selected</span></div><div className="relative mt-2"><input value={query} onChange={(event) => setQuery(event.target.value)} disabled={!data?.lead?.id} placeholder="Search products or SKU..." className="h-10 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400" />{query.trim() ? <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">{suggestions.length ? suggestions.map((product) => <button key={product.id} type="button" onClick={() => addProduct(product.id)} className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-blue-50"><span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-950">{product.name}</span>{product.sku ? <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">SKU {product.sku}</span> : null}</span><span className="shrink-0 rounded-full bg-sky-50 px-2 py-1 text-[10px] font-black text-sky-700">{product.is_preview || product.source === 'trade_show_trial_preview' ? 'Preview only' : product.hasPricing ? 'Pricing ready' : 'Needs pricing'}</span></button>) : <div className="rounded-xl px-3 py-3 text-sm font-semibold text-slate-500">No matching products found.</div>}</div> : null}</div><select value={selectValue} disabled={!data?.lead?.id} onChange={(event) => { setSelectValue(event.target.value); addProduct(event.target.value); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400"><option value="">Select product...</option>{filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` · ${product.sku}` : ''}{product.is_preview || product.source === 'trade_show_trial_preview' ? ' · Preview only' : product.hasPricing ? ' · Pricing ready' : ' · Needs pricing'}</option>)}</select>{selectedProducts.length ? <div className="mt-3 flex flex-wrap gap-2">{selectedProducts.map((product) => <span key={product.id} className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800"><span>{product.name}</span><button type="button" onClick={() => removeProduct(product.id)} className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-blue-700">Remove</button></span>)}</div> : null}</section>
       {data?.lead?.id ? <section className="rounded-2xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between gap-3"><label className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Market</label><span className="text-xs font-bold text-slate-500">{marketIds.length} selected</span></div><div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-auto pr-1">{(data?.markets ?? []).map((market) => { const checked = marketIds.includes(market.id); return <button key={market.id} type="button" onClick={() => toggleMarket(market.id)} className={`rounded-full border px-3 py-2 text-xs font-bold transition ${checked ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'}`}>{market.name}</button>; })}</div></section> : null}
       <div className="sticky bottom-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur"><div className="text-sm text-slate-600"><strong className="text-slate-950">{productIds.length}</strong> product{productIds.length === 1 ? '' : 's'}{data?.lead?.id ? <> · <strong className="text-slate-950">{marketIds.length}</strong> market{marketIds.length === 1 ? '' : 's'}</> : null}</div><button type="button" onClick={handleSave} disabled={saving || !data?.lead?.id} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save products and unlock quote'}</button></div>
     </div>
