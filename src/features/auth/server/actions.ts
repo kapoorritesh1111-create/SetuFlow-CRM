@@ -8,6 +8,7 @@ import { env } from '@/lib/env';
 import { safeAppUrl } from '@/lib/security/url';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { persistActiveOrganization } from '@/lib/workspace/auth';
 
 type ProfileLoginCandidate = {
   email: string | null;
@@ -93,6 +94,45 @@ function resolveNextPath(raw: string | null) {
   return value;
 }
 
+async function resolveTrialLoginTarget(email: string, requestedNext: string) {
+  if (requestedNext !== '/dashboard' && requestedNext !== '/') return requestedNext;
+  const admin = createAdminSupabaseClient();
+  if (!admin) return requestedNext;
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id')
+    .ilike('email', email)
+    .limit(1)
+    .maybeSingle();
+
+  const profileId = String(profile?.id ?? '').trim();
+  if (!profileId) return requestedNext;
+
+  const { data: membership } = await admin
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', profileId)
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const organizationId = String(membership?.organization_id ?? '').trim();
+  if (!organizationId) return requestedNext;
+
+  const { data: trial } = await admin
+    .from('organization_trial_capabilities')
+    .select('organization_id, trial_mode')
+    .eq('organization_id', organizationId)
+    .eq('trial_mode', 'trade_show_trial')
+    .maybeSingle();
+
+  if (!trial?.organization_id) return requestedNext;
+  persistActiveOrganization(organizationId, profileId);
+  return '/trade-events?mode=trade_show_trial';
+}
+
 async function createMfaChallenge(next: string): Promise<LoginActionState | null> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.mfa.listFactors();
@@ -150,10 +190,11 @@ export async function loginWithUsername(
   const { error } = await supabase.auth.signInWithPassword({ email: matchedEmail, password });
   if (error) return { error: error.message };
 
-  const mfaState = await createMfaChallenge(next);
+  const targetNext = await resolveTrialLoginTarget(matchedEmail, next);
+  const mfaState = await createMfaChallenge(targetNext);
   if (mfaState) return mfaState;
 
-  redirect(next);
+  redirect(targetNext);
 }
 
 export async function verifyLoginOtp(
