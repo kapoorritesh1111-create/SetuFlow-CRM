@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
@@ -22,6 +23,20 @@ function readModeLeadType(value?: string | string[]): MobileLeadType {
   if (mode === 'buyers' || mode === 'buyer') return 'buyer';
   if (mode === 'suppliers' || mode === 'supplier') return 'supplier';
   return '';
+}
+
+function redirectQuickTrialCapture(searchParams?: { mode?: string | string[]; quickLead?: string | string[]; sourceType?: string | string[]; sourceLabel?: string | string[]; eventId?: string | string[] }) {
+  const quickLead = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
+  const sourceType = readParam(searchParams?.sourceType).trim();
+  const eventId = readParam(searchParams?.eventId).trim();
+  if (!quickLead && sourceType !== 'trade_event' && !eventId) return;
+  const params = new URLSearchParams({ mode: 'trade_show_trial', source: 'type' });
+  if (eventId) params.set('eventId', eventId);
+  const sourceLabel = readParam(searchParams?.sourceLabel).trim();
+  if (sourceLabel) params.set('sourceLabel', sourceLabel);
+  const mode = readParam(searchParams?.mode).trim();
+  params.set('leadType', mode === 'suppliers' ? 'supplier' : 'buyer');
+  redirect('/trade-events/capture?' + params.toString());
 }
 
 export default async function LeadsPage({
@@ -52,10 +67,14 @@ export default async function LeadsPage({
     );
   }
 
+  const { capability: earlyTrialCapability } = await getTrialCapability(workspace.organization.id);
+  if (earlyTrialCapability?.is_trial && earlyTrialCapability.guided_mode_enabled) {
+    redirectQuickTrialCapture(searchParams);
+  }
+
   const data = await getLeadsPageData(workspace.organization.id);
 
-  // S24-TRIAL-203 Pass A: trial coaching renders ONLY for guided-trial orgs.
-  const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
+  const { capability: trialCapability } = { capability: earlyTrialCapability };
   const guidedTrialCoach = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
   const trialLeadLimitReached = Boolean(
     guidedTrialCoach && trialCapability && trialCapability.remaining_leads !== null && trialCapability.remaining_leads <= 0,
