@@ -936,3 +936,12 @@ body.smc-embed .nav-footer { display:none; }
   body.smc-embed .shell { display:block; }
   body.smc-embed .left-nav { position:static; transform:none; width:auto; height:auto; }
 }
+
+/* --- Guest/embed shared mode: hide the redundant share banner ---
+   The guest shell already shows the recipient name and expiry in its
+   own header, so the docs-internal shared-review banner is double
+   information. In smc-embed mode the banner is suppressed. */
+body.smc-embed .shared-banner,
+body.smc-embed #sharedBanner {
+  display: none !important;
+}
