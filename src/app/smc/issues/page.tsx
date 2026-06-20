@@ -268,12 +268,12 @@ function SmcIssuesContent() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: "#1f487c", color: "#fff", flexWrap: "wrap" }}>
         <span style={{ fontSize: 12.5, fontWeight: 600, minWidth: 80 }}>{selectedIds.size} selected</span>
         <select value={bulkField} onChange={(e) => { setBulkField(e.target.value); setBulkValue(""); }} style={{ font: "inherit", fontSize: 12, padding: "5px 8px", borderRadius: 7, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.12)", color: "#fff" }}>
-          <option value="">Change field…</option>
-          <option value="status">Status</option>
-          <option value="severity">Severity</option>
-          <option value="issue_type">Type</option>
-          <option value="assigned_to">Assignee</option>
-          <option value="area">Area</option>
+          <option value="" style={{color:"#1e293b",background:"#fff"}}>Change field…</option>
+          <option value="status" style={{color:"#1e293b",background:"#fff"}}>Status</option>
+          <option value="severity" style={{color:"#1e293b",background:"#fff"}}>Severity</option>
+          <option value="issue_type" style={{color:"#1e293b",background:"#fff"}}>Type</option>
+          <option value="assigned_to" style={{color:"#1e293b",background:"#fff"}}>Assignee</option>
+          <option value="area" style={{color:"#1e293b",background:"#fff"}}>Area</option>
         </select>
         {bulkField === "status" && <select value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} style={{ font: "inherit", fontSize: 12, padding: "5px 8px", borderRadius: 7, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.12)", color: "#fff" }}><option value="">Pick status…</option>{STATUSES.map((s) => <option key={s} value={s} style={{color:"#1e293b",background:"#fff"}}>{s}</option>)}</select>}
         {bulkField === "severity" && <select value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} style={{ font: "inherit", fontSize: 12, padding: "5px 8px", borderRadius: 7, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.12)", color: "#fff" }}><option value="">Pick severity…</option>{SEVERITIES.map((s) => <option key={s} value={s} style={{color:"#1e293b",background:"#fff"}}>{s}</option>)}</select>}
