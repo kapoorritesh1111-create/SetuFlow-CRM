@@ -177,7 +177,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
     );
   }
 
-  const showSidebar = expanded && (view === "chat" || view === "list");
+  const showSidebar = expanded && (view === "chat" || view === "list" || view === "dm-chat" || view === "dm-picker");
 
   return <>
     {!open && <button type="button" onClick={() => setOpen(true)} style={{ position: "fixed", bottom: 16, left: 56, zIndex: 50, display: "flex", alignItems: "center", gap: 6, padding: "12px 18px", border: "none", borderRadius: 999, background: "linear-gradient(135deg,#0f2744,#279491)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(15,39,68,.3)", fontFamily: "inherit" }}>Chat{totalUnread > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99, marginLeft: 2 }}>{totalUnread}</span>}</button>}
