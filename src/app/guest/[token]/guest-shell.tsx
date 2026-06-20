@@ -30,7 +30,7 @@ export function GuestShell({ token, guestName, docsShareToken, qaToken, expiresA
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(255,255,255,.6)', paddingRight: 6 }}>{hint}</span>
       </div>
       <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
-        <iframe src={`/internal/setuflow-docs.html?share_token=${encodeURIComponent(docsShareToken)}`} title="Documentation" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: tab === 'docs' ? 'block' : 'none' }} />
+        <iframe src={`/internal/setuflow-docs.html?share_token=${encodeURIComponent(docsShareToken)}&in=smc`} title="Documentation" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: tab === 'docs' ? 'block' : 'none' }} />
         {qaToken ? <iframe src={`/qa/run/${qaToken}`} title="QA testing" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: tab === 'qa' ? 'block' : 'none' }} /> : null}
         <div style={{ position: 'absolute', inset: 0, display: tab === 'chat' ? 'block' : 'none' }}>
           <GuestChat token={token} guestName={guestName} initial={initialMessages} />
