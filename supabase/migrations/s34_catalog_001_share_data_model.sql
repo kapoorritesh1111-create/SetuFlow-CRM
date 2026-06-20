@@ -1,0 +1,7 @@
+-- S34-CATALOG-001: Catalog share data model foundation (APPLIED LIVE via Supabase MCP)
+-- 7 new tables, org-scoped. Buyer public access happens ONLY through service-role token validation in code.
+-- (Full table DDL — see live DB. Kept here for repo history.)
+-- Tables: price_lists, price_list_items, price_list_tiers, catalog_shares,
+--         catalog_share_products, catalog_share_events, buyer_selections
+-- RLS: internal access via is_org_member() TO public; child tables resolve org via parent.
+--      No anon policies — buyer endpoints use the service-role client after validating the share token.
