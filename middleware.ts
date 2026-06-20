@@ -108,6 +108,7 @@ const PUBLIC_PREFIXES = [
   '/qa/run/',
   '/guest/',
   '/qa/report/',
+  '/catalog/share/',
   // NOTE: /internal/ is intentionally NOT listed here — all /internal/* pages
   // require an authenticated Supabase session AND SETU Flow org membership.
   // The HTML files themselves enforce a second client-side auth gate.
