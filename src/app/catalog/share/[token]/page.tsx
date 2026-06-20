@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { validateShareToken, markShareOpened } from '@/lib/catalog-share/validate';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { BuyerShareRoom, type RoomProduct } from './buyer-share-room';
@@ -61,7 +62,8 @@ export default async function BuyerCatalogSharePage({ params, searchParams }: { 
 
   const share = result.share!;
   const productIds = result.productIds ?? [];
-  await markShareOpened(share.id, share.use_count);
+  const hdrs = headers();
+  await markShareOpened(share, { ip: hdrs.get('x-forwarded-for') ?? null, ua: hdrs.get('user-agent') ?? null });
 
   const svc = createServiceRoleClient() as any;
   const [{ data: org }, { data: products }] = await Promise.all([

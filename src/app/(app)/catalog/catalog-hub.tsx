@@ -181,6 +181,10 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
                 </div>
                 <button style={{ ...btnG, padding: '6px 10px', fontSize: 11 }} onClick={() => { navigator.clipboard?.writeText(url); }}>Copy link</button>
                 <a style={{ ...btnG, padding: '6px 10px', fontSize: 11 }} href={url} target="_blank" rel="noreferrer">Open</a>
+                {canManage && !s.quote_id && s.selection_count > 0 && (
+                  <button style={{ ...btnG, padding: '6px 10px', fontSize: 11, background: '#1f487c', color: '#fff', border: 'none' }} onClick={async () => { const r = await fetch(`/api/catalog-shares/${s.id}/create-quote`, { method: 'POST' }); const d = await r.json().catch(() => ({})); if ((r.ok || d.quote_id) && d.quote_id) { window.location.href = `/quotes/${d.quote_id}`; } else { alert(d.error || 'Could not create quote.'); } }}>Create quote</button>
+                )}
+                {s.quote_id && <a style={{ ...btnG, padding: '6px 10px', fontSize: 11, background: '#eef2ff', color: '#1f487c', borderColor: '#c7d2fe' }} href={`/quotes/${s.quote_id}`}>Quote</a>}
                 {canManage && s.status !== 'revoked' && (
                   <>
                     <button style={{ ...btnG, padding: '6px 10px', fontSize: 11 }} onClick={async () => { await fetch(`/api/catalog-shares/${s.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'extend', days: 30 }) }); load(); }}>Extend 30d</button>

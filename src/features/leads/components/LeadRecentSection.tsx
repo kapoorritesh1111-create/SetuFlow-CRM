@@ -3,6 +3,7 @@
 import type { ReactElement } from 'react';
 import { buildLeadActivityTimeline } from '@/lib/activity-timeline';
 import { ActivityTimeline } from '@/components/ui/activity-timeline';
+import LeadCatalogActivity from "./LeadCatalogActivity";
 
 type Lead = { id: string; company_name: string; created_at?: string | null; updated_at?: string | null; notes?: string | null };
 export type LeadFollowUp = { id: string; lead_id: string | null; scheduled_at: string | null; status: string; created_at?: string | null; completed_at?: string | null; notes?: string | null };
@@ -41,6 +42,7 @@ export default function LeadRecentSection({ lead, followUps, activities, stageHi
       <div className="mt-4">
         <ActivityTimeline events={events.slice(0, 8)} emptyLabel="No activity yet." />
       </div>
+      <LeadCatalogActivity leadId={lead.id} leadName={(lead as { company_name?: string | null }).company_name ?? null} />
     </section>
   );
 }

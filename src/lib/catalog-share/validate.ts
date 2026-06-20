@@ -45,8 +45,11 @@ export async function validateShareToken(token: string, pin?: string | null): Pr
   return { ok: true, reason: 'ok', share: share as CatalogShare, productIds: (products ?? []).map((p: any) => p.product_id) };
 }
 
-/** Increment open count + stamp last_opened_at. Safe to call once per successful open. */
-export async function markShareOpened(shareId: string, currentCount: number): Promise<void> {
+/** Increment open count + stamp last_opened_at, and (if tracking) log a link_opened event. */
+export async function markShareOpened(share: Pick<CatalogShare, 'id' | 'use_count' | 'tracking_enabled'>, meta?: Record<string, unknown>): Promise<void> {
   const svc = createServiceRoleClient() as any;
-  await svc.from('catalog_shares').update({ use_count: (currentCount ?? 0) + 1, last_opened_at: new Date().toISOString() }).eq('id', shareId);
+  await svc.from('catalog_shares').update({ use_count: (share.use_count ?? 0) + 1, last_opened_at: new Date().toISOString() }).eq('id', share.id);
+  if (share.tracking_enabled) {
+    await svc.from('catalog_share_events').insert({ catalog_share_id: share.id, event_type: 'link_opened', meta: meta ?? null });
+  }
 }
