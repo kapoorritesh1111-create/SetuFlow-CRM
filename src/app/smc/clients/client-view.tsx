@@ -216,9 +216,9 @@ function activityParts(item: string) {
   return { time: time || "Now", actor: actor || "System", action: action || item, entity: entity || "", related: related || "", summary: rest.join(" · ") };
 }
 
-export function SmcClientsClient({ clients }: { clients: SmcClientOrg[] }) {
+export function SmcClientsClient({ clients, initialSelectedId }: { clients: SmcClientOrg[]; initialSelectedId?: string | null }) {
   const [clientRows, setClientRows] = useState(clients);
-  const [selectedId, setSelectedId] = useState(clients[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(initialSelectedId || clients[0]?.id || "");
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [operationState, setOperationState] = useState<SaveState>({ type: "idle", message: "" });
   const [moduleState, setModuleState] = useState<SaveState>({ type: "idle", message: "" });
