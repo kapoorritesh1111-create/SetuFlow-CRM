@@ -307,10 +307,10 @@ async function getData() {
   return ((orgs.data ?? []) as AnyRow[]).map((org) => buildClient(org, data));
 }
 
-export default async function SmcClientsPage({ searchParams }: { searchParams?: Record<string,string|string[]|undefined> | Promise<Record<string,string|string[]|undefined>> }) {
+export default async function SmcClientsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const clients = await getData();
-  const sp = typeof searchParams !== "undefined" && searchParams ? (await (searchParams as Promise<Record<string,string|string[]|undefined>>).catch?.(() => searchParams) as Record<string,string|string[]|undefined>) : {};
-  const orgSlug = typeof sp.org === "string" ? sp.org : Array.isArray(sp.org) ? sp.org[0] : null;
+  const sp = searchParams ?? {};
+  const orgSlug = typeof sp.org === "string" ? sp.org : null;
   const initialSelectedId = orgSlug ? (clients.find(c => c.slug === orgSlug)?.id ?? null) : null;
   return <SmcClientsClient clients={clients} initialSelectedId={initialSelectedId} />;
 }
