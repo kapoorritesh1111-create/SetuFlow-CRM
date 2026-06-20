@@ -74,17 +74,19 @@ export function RoleAwareLeadList({
   const leads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status, leadType: initialLeadType }), [activeUser, initialLeadType, query, sourceLeads, status]);
 
   return (
-    <section className="space-y-4">
-      <div className="rounded-[1.75rem] bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{leadTypeLabel(initialLeadType)} lead queue</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-          {initialLeadType ? `Filtered to ${leadTypeLabel(initialLeadType).toLowerCase()} leads from the global workspace filter.` : activeUser.role === 'owner' || activeUser.role === 'admin'
-            ? 'Owner and admin can see every lead in the workspace.'
-            : activeUser.role === 'manager'
-              ? 'Managers see assigned, direct-report, and managed-team leads.'
-              : 'Members only see leads assigned to them.'}
-        </p>
+    <section className="sf-mobile-lead-queue space-y-4">
+      <div className="sf-mobile-lead-filter-card rounded-[1.75rem] bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
+        <div className="sf-mobile-lead-heading">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{leadTypeLabel(initialLeadType)} lead queue</h1>
+          <p className="sf-mobile-lead-helper mt-1 text-sm text-slate-500 dark:text-slate-300">
+            {initialLeadType ? `Filtered to ${leadTypeLabel(initialLeadType).toLowerCase()} leads from the global workspace filter.` : activeUser.role === 'owner' || activeUser.role === 'admin'
+              ? 'Owner and admin can see every lead in the workspace.'
+              : activeUser.role === 'manager'
+                ? 'Managers see assigned, direct-report, and managed-team leads.'
+                : 'Members only see leads assigned to them.'}
+          </p>
+        </div>
         {demoMode && allowRolePreview ? (
           <div className="mt-4 grid grid-cols-4 gap-2">
             {(['owner', 'admin', 'manager', 'member'] as MobileUserRole[]).map((item) => (
@@ -94,21 +96,23 @@ export function RoleAwareLeadList({
             ))}
           </div>
         ) : null}
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search company, contact, owner, team, status, next action"
-          className="mt-3 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-        />
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          className="mt-3 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-          aria-label="Filter by lead status"
-        >
-          {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <div className="sf-mobile-lead-controls">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search company, contact, owner, team, status, next action"
+            className="mt-3 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+          />
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="mt-3 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            aria-label="Filter by lead status"
+          >
+            {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </div>
+        <p className="sf-mobile-lead-count mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
           Showing {leads.length} lead{leads.length === 1 ? '' : 's'} for {activeUser.name}.
         </p>
       </div>
