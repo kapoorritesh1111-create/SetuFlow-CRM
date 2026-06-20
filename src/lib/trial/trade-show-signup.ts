@@ -235,6 +235,15 @@ async function seedTrialPreviewJourney(admin: SupabaseAdminClient, organizationI
   }
 }
 
+async function syncTrialOnboardingRequest(admin: SupabaseAdminClient, organizationId: string) {
+  try {
+    const { error } = await admin.rpc('sync_trade_show_trial_onboarding_request', { p_organization_id: organizationId });
+    if (error) console.warn('Trial onboarding request sync skipped:', error.message);
+  } catch (error) {
+    console.warn('Trial onboarding request sync skipped:', error instanceof Error ? error.message : error);
+  }
+}
+
 async function deleteCreatedTrialUser(admin: SupabaseAdminClient, userId: string | null, created: boolean) {
   if (!created || !userId) return;
   try {
@@ -309,6 +318,7 @@ export async function provisionTradeShowTrialSignup(rawInput: TradeShowTrialSign
 
     await seedTrialVCardContext(admin, { userId: createdUser.userId, organizationId, input: value });
     await seedTrialPreviewJourney(admin, organizationId);
+    await syncTrialOnboardingRequest(admin, organizationId);
     const signedIn = await signInNewTrialUser(value.email, createdUser.temporaryPassword, organizationId);
 
     return {
