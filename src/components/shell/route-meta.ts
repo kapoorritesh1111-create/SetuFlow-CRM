@@ -164,6 +164,14 @@ export function getRouteMeta(pathname: string): RouteMeta {
       tabs: PRODUCT_SHELL_TABS,
     };
   }
+  if (pathname.startsWith('/price-lists')) {
+    return {
+      title: 'Price Lists',
+      description: 'Export-ready price lists with MOQ and tier pricing. Build buyer-specific pricing before sharing a catalog.',
+      sectionLabel: 'Catalog',
+      showWorkspaceModeSwitch: false,
+    };
+  }
   if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Trade show command center. Capture leads on the floor, review entries, and track conversion to pipeline.', showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/profile')) return { title: 'Profile Management', description: 'Manage your personal profile, name, avatar, and vCard entry points.', sectionLabel: 'Profile', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/settings/lists')) return { title: 'Admin & Settings', description: 'Settings lists are unified inside the Admin workspace.', sectionLabel: 'Workspace setup', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
