@@ -181,6 +181,12 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
                 </div>
                 <button style={{ ...btnG, padding: '6px 10px', fontSize: 11 }} onClick={() => { navigator.clipboard?.writeText(url); }}>Copy link</button>
                 <a style={{ ...btnG, padding: '6px 10px', fontSize: 11 }} href={url} target="_blank" rel="noreferrer">Open</a>
+                {canManage && s.status !== 'revoked' && (
+                  <>
+                    <button style={{ ...btnG, padding: '6px 10px', fontSize: 11 }} onClick={async () => { await fetch(`/api/catalog-shares/${s.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'extend', days: 30 }) }); load(); }}>Extend 30d</button>
+                    <button style={{ ...btnG, padding: '6px 10px', fontSize: 11, color: '#dc2626', borderColor: '#fca5a5' }} onClick={async () => { if (confirm('Revoke this share link? Buyers will no longer be able to open it.')) { await fetch(`/api/catalog-shares/${s.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'revoke' }) }); load(); } }}>Revoke</button>
+                  </>
+                )}
               </div>
             );
           })}
