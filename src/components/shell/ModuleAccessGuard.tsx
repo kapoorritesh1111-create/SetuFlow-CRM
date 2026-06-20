@@ -104,11 +104,15 @@ function getTradeShowTrialPreviewCopy(pathname: string): TrialPreviewCopy | null
 }
 
 function InlineTrialPreviewBanner({ copy }: { copy: TrialPreviewCopy }) {
+  const classes = copy.active
+    ? 'sf-trial-preview-banner sf-trial-preview-banner-active rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm'
+    : 'sf-trial-preview-banner sf-trial-preview-banner-upgrade rounded-[1.35rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm';
+
   return (
-    <div className={copy.active ? 'rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm' : 'rounded-[1.35rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm'}>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em]">{copy.eyebrow}</p>
-      <p className="mt-1 font-black">{copy.title}</p>
-      <p className="mt-1 max-w-5xl font-medium leading-6 opacity-90">{copy.description}</p>
+    <div className={classes} data-trial-preview-state={copy.active ? 'active' : 'upgrade'}>
+      <p className="sf-trial-preview-eyebrow text-[11px] font-black uppercase tracking-[0.18em]">{copy.eyebrow}</p>
+      <p className="sf-trial-preview-title mt-1 font-black">{copy.title}</p>
+      <p className="sf-trial-preview-description mt-1 max-w-5xl font-medium leading-6 opacity-90">{copy.description}</p>
     </div>
   );
 }
@@ -181,7 +185,7 @@ export function ModuleAccessGuard({ children }: { children: ReactNode }) {
 
   if (previewCopy) {
     return (
-      <div className="space-y-4">
+      <div className="sf-trial-preview-wrap space-y-4">
         <InlineTrialPreviewBanner copy={previewCopy} />
         {children}
       </div>
