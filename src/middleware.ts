@@ -53,6 +53,7 @@ function isTrialPreviewReadRoute(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (/^\/api\/quotes\/[^/]+\/pdf$/.test(pathname)) return true;
   if (pathname === '/api/products/spreadsheet') return true;
+  if (/^\/api\/products\/[^/]+$/.test(pathname)) return true;
   return false;
 }
 
