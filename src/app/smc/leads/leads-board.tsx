@@ -14,12 +14,14 @@ const STAGES = [
 ];
 const ASSIGNEES = ['Ritesh Kapoor','Kumar Mayank','Ankush Arya'];
 
+const CLIENT_ORG_STAGES = new Set(['qualified','trial','negotiating','converted']);
+
 function waLink(phone: string|null, name: string|null) {
   if (!phone) return null;
   const clean = phone.replace(/[^0-9+]/g, '');
   return `https://wa.me/${clean.startsWith('+') ? clean.slice(1) : clean}?text=${encodeURIComponent(`Hi${name ? ' ' + name : ''}, following up regarding SETU Flow CRM.`)}`;
 }
-function clientHref(lead: Lead) { return `/admin/client-management?client=${encodeURIComponent(lead.id)}`; }
+function clientHref(lead: Lead) { return `/smc/clients${lead.company_slug ? `?org=${encodeURIComponent(lead.company_slug)}` : ''}`; }
 function stageOf(l: Lead) {
   if (l.pipeline_stage) return l.pipeline_stage;
   if (l.status === 'live') return 'converted';
@@ -162,6 +164,12 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
                       {lead.is_trial_request&&<span className="smc-lb" style={{background:'#fef3c7',color:'#d97706'}}>Trial</span>}
                       {lead.source&&<span className="smc-lb" style={{background:'#ecfdf5',color:'#10b981'}}>{lead.source}</span>}
                     </div>
+                    {/* Client Orgs link for Qualified+ stages */}
+                    {CLIENT_ORG_STAGES.has(st.key)&&lead.company_slug&&(
+                      <a href={`/smc/clients?org=${encodeURIComponent(lead.company_slug)}`} onClick={e=>e.stopPropagation()} style={{display:'flex',alignItems:'center',gap:5,marginTop:8,fontSize:10.5,fontWeight:700,color:'#1f487c',textDecoration:'none',background:'#eef2ff',border:'1px solid #c7d2fe',borderRadius:7,padding:'4px 9px'}}>
+                        Manage in Client Orgs →
+                      </a>
+                    )}
                     {/* Footer */}
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
                       <span style={{fontSize:10,color:'#94a3b8',fontFamily:"'DM Mono',monospace"}}>{new Date(lead.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
@@ -249,9 +257,16 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
             )}
 
             {/* Full details link */}
-            <a href={clientHref(sel)} target="_blank" rel="noreferrer" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:14,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
-              Full details in Client Management ↗
-            </a>
+            {/* Client Orgs link (for Qualified+ that have an org) */}
+            {CLIENT_ORG_STAGES.has(dStage)&&sel.company_slug?(
+              <a href={clientHref(sel)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:14,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
+                Manage in Client Orgs (SMC) ↗
+              </a>
+            ):(
+              <a href={clientHref(sel)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:14,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
+                View in Client Orgs (SMC) ↗
+              </a>
+            )}
           </div>
 
           {/* Footer actions */}
