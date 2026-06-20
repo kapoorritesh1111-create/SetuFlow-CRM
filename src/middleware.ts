@@ -48,7 +48,17 @@ function readActiveOrganizationCookie(request: NextRequest, user: User) {
   }
 }
 
+function isTrialPreviewReadRoute(request: NextRequest) {
+  if (request.method !== 'GET') return false;
+  const pathname = request.nextUrl.pathname;
+  if (/^\/api\/quotes\/[^/]+\/pdf$/.test(pathname)) return true;
+  if (pathname === '/api/products/spreadsheet') return true;
+  return false;
+}
+
 export async function middleware(request: NextRequest) {
+  if (isTrialPreviewReadRoute(request)) return NextResponse.next();
+
   const capability = getPremiumCapabilityForPathname(request.nextUrl.pathname);
   if (!capability) return NextResponse.next();
 
