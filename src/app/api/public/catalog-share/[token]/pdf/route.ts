@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     await svc.from('catalog_share_events').insert({ catalog_share_id: share.id, event_type: 'pdf_downloaded', meta: { kind: 'catalog_pdf' } });
   }
 
-  return new NextResponse(pdf, {
+  return new Response(new Uint8Array(pdf), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
