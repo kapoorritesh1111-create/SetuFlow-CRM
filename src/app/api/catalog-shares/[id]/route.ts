@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     patch.valid_until = new Date(Date.now() + days * 864e5).toISOString();
     patch.status = 'active';
   } else {
-    for (const k of ['status', 'valid_until', 'pdf_download_allowed', 'tracking_enabled', 'pin_code']) if (k in body) patch[k] = body[k];
+    for (const k of ['status', 'valid_until', 'pdf_download_allowed', 'tracking_enabled', 'pin_code', 'share_channel']) if (k in body) patch[k] = body[k];
   }
 
   const { data, error } = await sb.from('catalog_shares').update(patch).eq('id', params.id).select().single();

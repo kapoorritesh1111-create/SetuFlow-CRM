@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { ReadinessBadge } from '@/components/catalog/readiness-badge';
 import { computeProductReadiness } from '@/lib/catalog-share/types';
+import QRCode from 'qrcode';
 
 type LeadLite = {
   id: string; company_name: string | null; contact_name: string | null; email: string | null;
@@ -56,6 +57,9 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
 
   const [creating, setCreating] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const [createdShareId, setCreatedShareId] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -123,15 +127,27 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
     });
     const d = await res.json().catch(() => ({}));
     setCreating(false);
-    if (res.ok && d.share?.token) { if (asDraft) { close(); } else { setCreatedToken(d.share.token); } }
+    if (res.ok && d.share?.token) { if (asDraft) { close(); } else { setCreatedToken(d.share.token); setCreatedShareId(d.share.id ?? null); } }
   }
 
   function reset() {
     setStep(0); setSelectedLead(null); setBuyer({ buyer_company: '', buyer_name: '', buyer_email: '', buyer_phone: '' });
     setPicked(new Set()); setPriceListId(''); setIncoterm(''); setValidDays('7'); setPin(''); setPdfAllowed(true); setTracking(true);
-    setEmailSubject(''); setEmailBody(''); setWaText(''); setComposeTouched(false); setCreatedToken(null); setCopied(false);
+    setEmailSubject(''); setEmailBody(''); setWaText(''); setComposeTouched(false); setCreatedToken(null); setCreatedShareId(null); setQrDataUrl(null); setShowQr(false); setCopied(false);
   }
   function close() { reset(); onClose(); }
+
+  const recordChannel = useCallback((channel: string) => {
+    if (!createdShareId) return;
+    fetch(`/api/catalog-shares/${createdShareId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ share_channel: channel }) }).catch(() => {});
+  }, [createdShareId]);
+
+  useEffect(() => {
+    if (createdToken && showQr && !qrDataUrl) {
+      const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/catalog/share/${createdToken}`;
+      QRCode.toDataURL(url, { width: 220, margin: 1 }).then(setQrDataUrl).catch(() => {});
+    }
+  }, [createdToken, showQr, qrDataUrl]);
 
   if (!open) return null;
   const shareUrl = createdToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/catalog/share/${createdToken}` : '';
@@ -157,16 +173,23 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <input readOnly value={shareUrl} style={{ ...inp, marginTop: 0, flex: 1, background: '#fff' }} />
-              <button style={btnP} onClick={() => { navigator.clipboard?.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? 'Copied!' : 'Copy'}</button>
+              <button style={btnP} onClick={() => { navigator.clipboard?.writeText(shareUrl); setCopied(true); recordChannel('copy'); setTimeout(() => setCopied(false), 1500); }}>{copied ? 'Copied!' : 'Copy'}</button>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {buyer.buyer_phone && <a href={`https://wa.me/${buyer.buyer_phone.replace(/[^0-9+]/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(waTextFinal)}`} target="_blank" rel="noreferrer" style={{ ...btnG, flex: 1, textAlign: 'center', textDecoration: 'none', background: '#25D366', color: '#fff', border: 'none' }}>WhatsApp</a>}
-              {buyer.buyer_email && <a href={`mailto:${buyer.buyer_email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBodyFinal)}`} style={{ ...btnG, flex: 1, textAlign: 'center', textDecoration: 'none' }}>Email</a>}
+              {buyer.buyer_phone && <a href={`https://wa.me/${buyer.buyer_phone.replace(/[^0-9+]/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(waTextFinal)}`} target="_blank" rel="noreferrer" onClick={() => recordChannel('whatsapp')} style={{ ...btnG, flex: 1, textAlign: 'center', textDecoration: 'none', background: '#25D366', color: '#fff', border: 'none' }}>WhatsApp</a>}
+              {buyer.buyer_email && <a href={`mailto:${buyer.buyer_email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBodyFinal)}`} onClick={() => recordChannel('email')} style={{ ...btnG, flex: 1, textAlign: 'center', textDecoration: 'none' }}>Email</a>}
             </div>
             <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+              <button style={{ ...btnG, flex: 1 }} onClick={() => { setShowQr((v) => !v); recordChannel('qr'); }}>{showQr ? 'Hide QR' : 'Show QR code'}</button>
               <button style={{ ...btnG, flex: 1 }} onClick={reset}>Create another</button>
               <button style={{ ...btnP, flex: 1 }} onClick={close}>Done</button>
             </div>
+            {showQr && (
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
+                {qrDataUrl ? <img src={qrDataUrl} alt="Catalog QR code" width={200} height={200} style={{ borderRadius: 10, border: '1px solid #e2e8f0' }} /> : <div style={{ fontSize: 12, color: '#94a3b8' }}>Generating QR…</div>}
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Scan to open the catalog on a phone.</div>
+              </div>
+            )}
           </div>
         ) : (
           <>

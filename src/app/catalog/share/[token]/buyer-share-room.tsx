@@ -158,6 +158,7 @@ export function BuyerShareRoom(props: RoomProps) {
         <div className="br-actions">
           <button className="br-btn br-btn-white" onClick={() => setQuoteOpen(true)}>Request Quote</button>
           <button className="br-btn br-btn-light" onClick={() => setAskOpen({ productId: null })}>Ask a Question</button>
+          {pdfAllowed && <a className="br-btn br-btn-light" href={`/api/public/catalog-share/${token}/pdf${pin ? `?pin=${encodeURIComponent(pin)}` : ''}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Download PDF</a>}
         </div>
       </div>
 
