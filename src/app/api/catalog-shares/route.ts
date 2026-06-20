@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomBytes } from 'node:crypto';
+import { randomBytes } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasWorkspaceCapability } from '@/lib/workspace/permissions';

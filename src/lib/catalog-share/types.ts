@@ -186,8 +186,9 @@ export function readinessLabel(status: ProductReadiness): string {
 // --- Token helper (mirrors qa_share_links / guest_links pattern) ------------
 export function generateShareToken(): string {
   // 32 hex chars, URL-safe, unguessable. Matches existing token style.
+  // Uses Web Crypto which is available in both the browser and Node 18+ runtimes.
   const bytes = new Uint8Array(16);
-  (globalThis.crypto ?? require('node:crypto').webcrypto).getRandomValues(bytes);
+  globalThis.crypto.getRandomValues(bytes);
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
