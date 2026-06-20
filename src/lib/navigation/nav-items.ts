@@ -25,6 +25,7 @@ export const PRIMARY_NAV_ORDER = [
   '/orders',
   '/tasks',
   '/pipeline',
+  '/catalog',
   '/products',
   '/price-lists',
   '/trade-events',
@@ -38,7 +39,8 @@ export const PRIMARY_NAV_LABELS: Record<string, string> = {
   '/orders': 'Orders',
   '/tasks': 'Tasks',
   '/pipeline': 'Pipeline',
-  '/products': 'Catalog',
+  '/catalog': 'Catalog',
+  '/products': 'Products',
   '/price-lists': 'Price Lists',
   '/trade-events': 'Events',
 };
@@ -55,7 +57,8 @@ const MOBILE_NAV_META: Record<string, Pick<SharedNavItem, 'mobileHref' | 'mobile
   '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: 'orders', mobileMatch: ['/orders', '/mobile/orders'] },
   '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: 'more', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance', '/mobile/settings'] },
   '/pipeline': { mobileHref: null, mobileLabel: 'Pipeline', mobileIcon: 'workflow', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
-  '/products': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: 'box', mobileMatch: ['/products'] },
+  '/catalog': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: 'box', mobileMatch: ['/catalog'] },
+  '/products': { mobileHref: null, mobileLabel: 'Products', mobileIcon: 'box', mobileMatch: ['/products'] },
   '/price-lists': { mobileHref: null, mobileLabel: 'Price Lists', mobileIcon: 'box', mobileMatch: ['/price-lists'] },
   '/trade-events': { mobileHref: null, mobileLabel: 'Events', mobileIcon: 'calendar', mobileMatch: ['/trade-events'] },
 };

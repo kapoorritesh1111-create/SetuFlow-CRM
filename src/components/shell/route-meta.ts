@@ -164,6 +164,14 @@ export function getRouteMeta(pathname: string): RouteMeta {
       tabs: PRODUCT_SHELL_TABS,
     };
   }
+  if (pathname.startsWith('/catalog')) {
+    return {
+      title: 'Catalog Hub',
+      description: 'Manage products, price lists, and buyer catalog shares. Build export-ready catalogs and share them with buyers.',
+      sectionLabel: 'Catalog',
+      showWorkspaceModeSwitch: false,
+    };
+  }
   if (pathname.startsWith('/price-lists')) {
     return {
       title: 'Price Lists',
