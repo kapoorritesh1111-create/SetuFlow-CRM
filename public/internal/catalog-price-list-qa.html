@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Setu Flow | Catalog + Price List QA Guide</title>
+  <style>
+    :root{--navy:#1f487c;--teal:#279491;--cyan:#34b3a8;--ink:#1e293b;--muted:#64748b;--soft:#eef4fb;--line:#dbe6ef;--ok:#059669;--warn:#b45309;--bad:#dc2626;--card:#fff;--bg:#f6f8fb}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45} a{color:var(--navy)}
+    .hero{background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;padding:34px 24px 28px}.wrap{max-width:1180px;margin:0 auto}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;opacity:.82}.hero h1{margin:8px 0 8px;font-size:36px;line-height:1.05}.hero p{max-width:850px;margin:0;color:rgba(255,255,255,.88);font-size:16px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.pill{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.13);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .grid{display:grid;grid-template-columns:280px 1fr;gap:18px;padding:22px 24px}.toc{position:sticky;top:16px;align-self:start;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.toc h3{font-size:13px;margin:0 0 10px;color:var(--navy)}.toc a{display:block;text-decoration:none;color:var(--muted);font-weight:700;font-size:12.5px;padding:7px 8px;border-radius:8px}.toc a:hover{background:var(--soft);color:var(--navy)}.progress{height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--cyan))}.progress-label{font-size:12px;color:var(--muted);font-weight:700}.main{display:grid;gap:18px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 24px rgba(15,23,42,.05)}.card h2{font-size:22px;margin:0 0 8px;color:var(--navy)}.card h3{font-size:16px;margin:18px 0 8px}.note{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;color:var(--muted);font-size:13px}.good{border-color:#bbf7d0;background:#ecfdf5;color:#065f46}.warn{border-color:#fde68a;background:#fffbeb;color:#92400e}.bad{border-color:#fecaca;background:#fef2f2;color:#991b1b}.step{display:grid;grid-template-columns:32px 1fr;gap:12px;padding:10px 0;border-top:1px solid #eef2f7}.step:first-of-type{border-top:none}.num{width:28px;height:28px;border-radius:999px;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;font-size:13px;font-weight:900;display:grid;place-items:center}.step b{color:#0f172a}.checklist{display:grid;gap:8px;margin-top:10px}.check{display:flex;gap:9px;align-items:flex-start;background:#f8fafc;border:1px solid #edf2f7;border-radius:10px;padding:9px 10px}.check input{margin-top:3px;accent-color:var(--teal)}.check span{font-size:13.2px}.kbd{font-family:"DM Mono",ui-monospace,Menlo,Consolas,monospace;background:#0f172a;color:#fff;border-radius:6px;padding:2px 6px;font-size:12px}.route{font-family:"DM Mono",ui-monospace,Menlo,Consolas,monospace;color:var(--navy);background:#eef4fb;border-radius:6px;padding:2px 6px}.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.svgbox{border:1px solid #dbe6ef;border-radius:16px;background:#fff;overflow:hidden;margin-top:12px}.caption{font-size:12px;color:var(--muted);padding:9px 12px;border-top:1px solid #eef2f7;background:#f8fafc}.legend{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.tag{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:#eef4fb;color:var(--navy)}.arrow{color:var(--teal);font-weight:900}.footer{padding:24px;text-align:center;color:var(--muted);font-size:12px}.screen text{font-family:"DM Sans",Inter,Arial,sans-serif}.call{fill:#fff7ed;stroke:#f97316;stroke-width:2}.hit{fill:rgba(39,148,145,.16);stroke:#279491;stroke-width:2}.navhit{fill:#e6f7f4;stroke:#279491;stroke-width:2}.cta{fill:url(#grad)}.small{font-size:11px}.tiny{font-size:9px}.label{font-size:12px;font-weight:800;fill:#1e293b}.muted{fill:#64748b}.white{fill:#fff}.teal{fill:#279491}.navy{fill:#1f487c}.orange{fill:#f97316}.red{fill:#dc2626}.green{fill:#059669}.dash{stroke-dasharray:4 4}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.toc{position:relative;top:0}.split{grid-template-columns:1fr}.hero h1{font-size:28px}}
+    @media print{.toc,.no-print{display:none}.grid{display:block;padding:0}.card{box-shadow:none;break-inside:avoid}.hero{padding:20px}.check{break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Setu Flow Internal QA</div>
+      <h1>Catalog → Price List → Buyer Share → Quote Test Guide</h1>
+      <p>Click-by-click testing guide for the implemented Sprint 34 Catalog workflow. Use this after login from the dashboard to validate price-list setup, Setu Guru recommendations, buyer experience, engagement, and quote conversion.</p>
+      <div class="meta"><span class="pill">Route: /internal/catalog-price-list-qa.html</span><span class="pill">Status: review-ready QA</span><span class="pill">Do not mark resolved until tested</span></div>
+    </div>
+  </header>
+
+  <div class="grid wrap">
+    <aside class="toc no-print">
+      <h3>QA Progress</h3>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="progress-label"><span id="done">0</span>/<span id="total">0</span> checks complete</div>
+      <h3 style="margin-top:16px">Jump to section</h3>
+      <a href="#visual-flow">1. Visual flow</a>
+      <a href="#nav">2. From dashboard</a>
+      <a href="#price-list">3. Create price list</a>
+      <a href="#add-products">4. Add priced products</a>
+      <a href="#share">5. Share catalog</a>
+      <a href="#buyer">6. Buyer room</a>
+      <a href="#convert">7. Convert to quote</a>
+      <a href="#buyer-pricing">8. Buyer-pricing foundation</a>
+      <a href="#pass">9. Pass criteria</a>
+      <button onclick="localStorage.removeItem('sfCatalogQaChecks');location.reload()" style="margin-top:12px;width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px;font-weight:800;color:var(--muted);cursor:pointer">Reset checks</button>
+    </aside>
+
+    <main class="main">
+      <section class="card" id="visual-flow">
+        <h2>1. Visual workflow</h2>
+        <div class="note good">Target happy path: Dashboard → Price Lists → Catalog Share Wizard → Buyer Link → Shared Links / Lead Activity → Quote Draft.</div>
+        <div class="svgbox">
+          <svg class="screen" viewBox="0 0 1080 260" width="100%" role="img" aria-label="Workflow diagram">
+            <defs><linearGradient id="grad" x1="0" x2="1"><stop offset="0" stop-color="#1f487c"/><stop offset="1" stop-color="#279491"/></linearGradient><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#279491"/></marker></defs>
+            <rect x="20" y="45" width="120" height="86" rx="16" fill="#fff" stroke="#dbe6ef"/><text x="80" y="80" text-anchor="middle" class="label">Dashboard</text><text x="80" y="104" text-anchor="middle" class="tiny muted">after login</text>
+            <line x1="140" y1="88" x2="210" y2="88" stroke="#279491" stroke-width="3" marker-end="url(#arr)"/>
+            <rect x="210" y="45" width="140" height="86" rx="16" fill="#fff" stroke="#dbe6ef"/><text x="280" y="76" text-anchor="middle" class="label">Price Lists</text><text x="280" y="99" text-anchor="middle" class="tiny muted">create + add items</text>
+            <line x1="350" y1="88" x2="420" y2="88" stroke="#279491" stroke-width="3" marker-end="url(#arr)"/>
+            <rect x="420" y="45" width="150" height="86" rx="16" fill="#fff" stroke="#dbe6ef"/><text x="495" y="76" text-anchor="middle" class="label">Catalog Hub</text><text x="495" y="99" text-anchor="middle" class="tiny muted">Share Catalog</text>
+            <line x1="570" y1="88" x2="640" y2="88" stroke="#279491" stroke-width="3" marker-end="url(#arr)"/>
+            <rect x="640" y="45" width="150" height="86" rx="16" fill="#fff" stroke="#dbe6ef"/><text x="715" y="76" text-anchor="middle" class="label">Buyer Room</text><text x="715" y="99" text-anchor="middle" class="tiny muted">select + request quote</text>
+            <line x1="790" y1="88" x2="860" y2="88" stroke="#279491" stroke-width="3" marker-end="url(#arr)"/>
+            <rect x="860" y="45" width="170" height="86" rx="16" fill="#fff" stroke="#dbe6ef"/><text x="945" y="76" text-anchor="middle" class="label">Quote Draft</text><text x="945" y="99" text-anchor="middle" class="tiny muted">from buyer selections</text>
+            <rect x="210" y="164" width="650" height="54" rx="16" fill="#eef4fb" stroke="#dbe6ef"/><text x="535" y="186" text-anchor="middle" class="label">Setu Guru assistance points</text><text x="535" y="205" text-anchor="middle" class="tiny muted">product recommendations • price-list fit • buyer message drafting • engagement summary</text>
+          </svg>
+          <div class="caption">Use this exact flow for end-to-end QA before marking any Sprint 34 Catalog issue resolved.</div>
+        </div>
+      </section>
+
+      <section class="card" id="nav">
+        <h2>2. Start after login: dashboard → correct nav item</h2>
+        <div class="split">
+          <div>
+            <div class="step"><div class="num">1</div><div><b>From Dashboard</b><br/>Use the primary navigation. For price-list setup, click <span class="kbd">Price Lists</span>. For share and conversion testing, click <span class="kbd">Catalog</span>.</div></div>
+            <div class="checklist">
+              <label class="check"><input type="checkbox"><span>I am logged in and on <span class="route">/dashboard</span>.</span></label>
+              <label class="check"><input type="checkbox"><span>I can see primary nav items including Catalog and Price Lists.</span></label>
+              <label class="check"><input type="checkbox"><span>I click <b>Price Lists</b> first to create or verify a price list.</span></label>
+            </div>
+          </div>
+          <div class="svgbox">
+            <svg class="screen" viewBox="0 0 560 330" width="100%" role="img" aria-label="Dashboard navigation mock">
+              <defs><linearGradient id="grad2" x1="0" x2="1"><stop offset="0" stop-color="#1f487c"/><stop offset="1" stop-color="#279491"/></linearGradient></defs>
+              <rect width="560" height="330" fill="#f6f8fb"/><rect x="0" y="0" width="560" height="44" fill="#fff"/><rect x="0" y="0" width="88" height="330" fill="#153b64"/><text x="44" y="28" text-anchor="middle" class="white tiny">SETU</text>
+              <g font-size="9" fill="#dbeafe"><text x="16" y="72">Dash</text><text x="16" y="100">Analytics</text><text x="16" y="128">Leads</text><text x="16" y="156">Quotes</text><text x="16" y="184">Orders</text><text x="16" y="212">Tasks</text><text x="16" y="240">Pipeline</text><text x="16" y="268">Catalog</text><text x="16" y="296">Price Lists</text></g>
+              <rect x="8" y="252" width="72" height="24" rx="8" class="navhit"/><text x="44" y="268" text-anchor="middle" class="label teal">Catalog</text>
+              <rect x="8" y="280" width="72" height="24" rx="8" class="call"/><text x="44" y="296" text-anchor="middle" class="label orange">Price Lists</text>
+              <text x="120" y="86" class="label">Dashboard</text><rect x="120" y="106" width="390" height="70" rx="14" fill="#fff" stroke="#dbe6ef"/><rect x="120" y="190" width="180" height="70" rx="14" fill="#fff" stroke="#dbe6ef"/><rect x="320" y="190" width="190" height="70" rx="14" fill="#fff" stroke="#dbe6ef"/>
+              <path d="M86 292 C130 292, 150 260, 190 236" fill="none" stroke="#f97316" stroke-width="3" marker-end="url(#arr)"/><text x="196" y="232" class="label orange">Click Price Lists first</text>
+            </svg>
+            <div class="caption">Primary nav order includes Catalog and Price Lists. Start with Price Lists for setup, then Catalog for sharing.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="price-list">
+        <h2>3. Create the price list</h2>
+        <div class="note">Route: <span class="route">/price-lists</span>. This screen has the heading <b>Price Lists</b> and a <b>+ Create Price List</b> button in the top-right.</div>
+        <div class="svgbox">
+          <svg class="screen" viewBox="0 0 980 460" width="100%" role="img" aria-label="Price list manager mock">
+            <rect width="980" height="460" fill="#f6f8fb"/><rect x="0" y="0" width="92" height="460" fill="#153b64"/><rect x="0" y="0" width="980" height="46" fill="#fff"/>
+            <text x="130" y="92" class="teal tiny" font-weight="800">CATALOG</text><text x="130" y="122" class="label" font-size="24">Price Lists</text><text x="130" y="148" class="muted small">Export-ready price lists with MOQ and tier pricing for buyer catalog shares.</text>
+            <rect x="730" y="92" width="160" height="36" rx="10" class="cta"/><text x="810" y="115" text-anchor="middle" class="white small" font-weight="800">+ Create Price List</text><rect x="722" y="84" width="176" height="52" rx="12" class="hit"/>
+            <rect x="130" y="190" width="650" height="72" rx="14" fill="#fff" stroke="#dbe6ef"/><text x="154" y="220" class="label">2026 FOB USD Export Price List</text><rect x="345" y="203" width="54" height="20" rx="7" fill="#ecfdf5"/><text x="372" y="217" text-anchor="middle" class="tiny green">active</text><text x="154" y="244" class="tiny muted">USD · FOB Nhava Sheva · North America · Retail · Valid dates</text><text x="722" y="225" class="navy" font-size="22" font-weight="900">3</text><text x="710" y="244" class="tiny muted">products</text>
+            <path d="M696 109 C650 112, 612 150, 590 186" fill="none" stroke="#f97316" stroke-width="3" marker-end="url(#arr)"/><text x="520" y="174" class="label orange">1. Click here</text>
+          </svg>
+          <div class="caption">Create Price List opens a right-side drawer. The list cards are clickable for adding products later.</div>
+        </div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Click <b>+ Create Price List</b>.</span></label>
+          <label class="check"><input type="checkbox"><span>Enter name: <span class="kbd">2026 FOB USD Export Price List</span>.</span></label>
+          <label class="check"><input type="checkbox"><span>Set <b>Currency</b> to USD and <b>Status</b> to Active.</span></label>
+          <label class="check"><input type="checkbox"><span>Select <b>Incoterm</b>: FOB, EXW, CIF, or DDP.</span></label>
+          <label class="check"><input type="checkbox"><span>Enter Incoterm Location, for example <span class="kbd">Nhava Sheva</span>.</span></label>
+          <label class="check"><input type="checkbox"><span>Open <b>Market / Region</b> dropdown and confirm options load.</span></label>
+          <label class="check"><input type="checkbox"><span>Open <b>Buyer Segment</b> dropdown and confirm options load.</span></label>
+          <label class="check"><input type="checkbox"><span>Set valid from / valid until dates.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Create</b> and confirm a new price-list card appears.</span></label>
+        </div>
+      </section>
+
+      <section class="card" id="add-products">
+        <h2>4. Add products and verify auto-fill</h2>
+        <div class="svgbox">
+          <svg class="screen" viewBox="0 0 980 500" width="100%" role="img" aria-label="Price list detail drawer mock">
+            <rect width="980" height="500" fill="#eef2f6"/><rect x="0" y="0" width="92" height="500" fill="#153b64"/><rect x="0" y="0" width="980" height="46" fill="#fff"/>
+            <rect x="420" y="0" width="560" height="500" fill="#f8fafc" stroke="#dbe6ef"/><rect x="420" y="0" width="560" height="64" fill="url(#grad)"/><text x="448" y="27" class="white tiny">Price List</text><text x="448" y="48" class="white label">2026 FOB USD Export Price List</text>
+            <rect x="448" y="92" width="504" height="54" rx="12" fill="#fff" stroke="#dbe6ef"/><text x="468" y="123" class="tiny muted">USD · FOB Nhava Sheva · Retail · Valid until 31 Dec 2026</text>
+            <text x="448" y="182" class="label">Products (0)</text><rect x="835" y="158" width="116" height="34" rx="9" class="cta"/><text x="893" y="180" text-anchor="middle" class="white tiny" font-weight="800">+ Add Product</text><rect x="828" y="152" width="130" height="45" rx="12" class="hit"/>
+            <rect x="470" y="225" width="420" height="210" rx="18" fill="#fff" stroke="#dbe6ef"/><text x="496" y="258" class="label">Add Product drawer</text><rect x="496" y="278" width="344" height="32" rx="8" fill="#fff" stroke="#dbe6ef"/><text x="510" y="298" class="tiny muted">Search products by name or SKU...</text><rect x="496" y="324" width="344" height="30" rx="8" fill="#eef4fb" stroke="#279491"/><text x="510" y="344" class="tiny">Sweet Potato Chips · auto price from FOB</text><rect x="496" y="368" width="90" height="34" rx="8" fill="#fff" stroke="#dbe6ef"/><text x="508" y="389" class="tiny muted">MOQ</text><rect x="600" y="368" width="100" height="34" rx="8" fill="#fff" stroke="#dbe6ef"/><text x="612" y="389" class="tiny muted">Unit price</text><rect x="714" y="368" width="126" height="34" rx="8" fill="#fff" stroke="#dbe6ef"/><text x="726" y="389" class="tiny muted">Lead time</text>
+            <path d="M820 196 C780 218, 750 240, 720 274" fill="none" stroke="#f97316" stroke-width="3" marker-end="url(#arr)"/><text x="710" y="226" class="label orange">2. Add products</text>
+          </svg>
+          <div class="caption">Click the price-list card, then + Add Product. Product selection auto-fills price, currency, MOQ, and lead time when source data exists.</div>
+        </div>
+        <div class="legend"><span class="tag">FOB → fob_price</span><span class="tag">EXW/FCA → exw_price</span><span class="tag">CIF/CFR → cif_price</span><span class="tag">DDP/DAP → ddp/cif/fob fallback</span></div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Click the price-list card you created.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>+ Add Product</b>.</span></label>
+          <label class="check"><input type="checkbox"><span>Search and select a product that has pricing data.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm unit price auto-fills based on the price-list Incoterm.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm currency, MOQ, MOQ unit, lead time, and notes populate when data exists.</span></label>
+          <label class="check"><input type="checkbox"><span>Manually override at least one value, then save.</span></label>
+          <label class="check"><input type="checkbox"><span>Add at least 2–3 products.</span></label>
+        </div>
+      </section>
+
+      <section class="card" id="share">
+        <h2>5. Share catalog / send price list to buyer</h2>
+        <div class="note">Route: <span class="route">/catalog</span>. Catalog Hub has <b>+ Add Product</b>, <b>+ Create Price List</b>, and <b>Share Catalog</b>. It also has tabs for Products, Price Lists, Shared Links, and Analytics.</div>
+        <div class="svgbox">
+          <svg class="screen" viewBox="0 0 1040 560" width="100%" role="img" aria-label="Catalog share wizard mock">
+            <rect width="1040" height="560" fill="#f6f8fb"/><rect x="0" y="0" width="92" height="560" fill="#153b64"/><rect x="0" y="0" width="1040" height="46" fill="#fff"/>
+            <text x="130" y="86" class="teal tiny" font-weight="800">CATALOG</text><text x="130" y="116" class="label" font-size="24">Catalog Hub</text><text x="130" y="140" class="muted small">Manage products, price lists, and buyer catalog shares in one place.</text>
+            <rect x="610" y="86" width="110" height="34" rx="9" fill="#fff" stroke="#dbe6ef"/><text x="665" y="108" text-anchor="middle" class="tiny muted">+ Add Product</text><rect x="730" y="86" width="136" height="34" rx="9" fill="#fff" stroke="#dbe6ef"/><text x="798" y="108" text-anchor="middle" class="tiny muted">+ Create Price List</text><rect x="878" y="86" width="120" height="34" rx="9" class="cta"/><text x="938" y="108" text-anchor="middle" class="white tiny" font-weight="800">Share Catalog</text><rect x="870" y="78" width="136" height="50" rx="12" class="hit"/>
+            <rect x="130" y="176" width="180" height="70" rx="14" fill="#fff" stroke="#dbe6ef"/><text x="150" y="215" class="label navy" font-size="22">62</text><text x="150" y="234" class="tiny muted">Total Products</text><rect x="330" y="176" width="180" height="70" rx="14" fill="#fff" stroke="#dbe6ef"/><text x="350" y="215" class="label navy" font-size="22">3</text><text x="350" y="234" class="tiny muted">Active Price Lists</text><rect x="130" y="274" width="460" height="42" fill="#fff" stroke="#dbe6ef"/><text x="154" y="300" class="tiny muted">Products | Price Lists | Shared Links | Analytics</text>
+            <rect x="608" y="0" width="432" height="560" fill="#f8fafc" stroke="#dbe6ef"/><rect x="608" y="0" width="432" height="64" fill="url(#grad)"/><text x="636" y="27" class="white tiny">Catalog</text><text x="636" y="48" class="white label">Share Catalog</text>
+            <g transform="translate(630 86)"><circle cx="15" cy="15" r="13" fill="#279491"/><text x="15" y="19" text-anchor="middle" class="white tiny">1</text><circle cx="91" cy="15" r="13" fill="#279491"/><text x="91" y="19" text-anchor="middle" class="white tiny">2</text><circle cx="167" cy="15" r="13" fill="#f1f5f9"/><text x="167" y="19" text-anchor="middle" class="tiny muted">3</text><circle cx="243" cy="15" r="13" fill="#f1f5f9"/><text x="243" y="19" text-anchor="middle" class="tiny muted">4</text><circle cx="319" cy="15" r="13" fill="#f1f5f9"/><text x="319" y="19" text-anchor="middle" class="tiny muted">5</text><text x="15" y="44" text-anchor="middle" class="tiny muted">Products</text><text x="91" y="44" text-anchor="middle" class="tiny navy">Price List</text><text x="167" y="44" text-anchor="middle" class="tiny muted">Controls</text><text x="243" y="44" text-anchor="middle" class="tiny muted">Message</text><text x="319" y="44" text-anchor="middle" class="tiny muted">Review</text></g>
+            <rect x="636" y="158" width="372" height="86" rx="12" fill="#eef4fb" stroke="#dbe6ef"/><text x="656" y="184" class="label navy">Setu Guru price-list fit</text><rect x="824" y="169" width="90" height="20" rx="10" fill="#ecfdf5"/><text x="869" y="183" text-anchor="middle" class="tiny green">Recommended</text><text x="656" y="208" class="tiny muted">2026 FOB USD Export · Score 91 · covers 3/3 products</text><rect x="656" y="218" width="142" height="24" rx="8" fill="#fff" stroke="#dbe6ef"/><text x="727" y="234" text-anchor="middle" class="tiny navy">Use recommended</text>
+            <rect x="636" y="268" width="372" height="38" rx="9" fill="#fff" stroke="#dbe6ef"/><text x="656" y="292" class="tiny muted">Recommended · 2026 FOB USD Export (USD · FOB)</text><rect x="636" y="332" width="372" height="78" rx="12" fill="#fff" stroke="#dbe6ef"/><text x="656" y="358" class="label">Tier pricing preview</text><text x="656" y="382" class="tiny muted">Product rows show price or price-on-request warning.</text>
+            <path d="M884 128 C850 142, 830 146, 790 156" fill="none" stroke="#f97316" stroke-width="3" marker-end="url(#arr)"/><text x="700" y="140" class="label orange">3. Use recommended</text>
+          </svg>
+          <div class="caption">Share Catalog opens a five-step drawer. The Setu Guru recommendation appears on Step 2 after products are selected.</div>
+        </div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Go to <span class="route">/catalog</span>.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Share Catalog</b>.</span></label>
+          <label class="check"><input type="checkbox"><span>Step 1: select a lead or manually fill buyer details; select 2–3 products.</span></label>
+          <label class="check"><input type="checkbox"><span>Step 2: confirm <b>Setu Guru price-list fit</b> card appears.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Use recommended price list</b>, then confirm manual dropdown still works.</span></label>
+          <label class="check"><input type="checkbox"><span>Step 3: confirm buyer company, name, email, phone, currency, Incoterm, validity, PDF, and tracking settings.</span></label>
+          <label class="check"><input type="checkbox"><span>Step 4: click <b>Draft with Setu Guru</b>, then make a small manual edit.</span></label>
+          <label class="check"><input type="checkbox"><span>Step 5: review summary and click <b>Create share link</b>.</span></label>
+          <label class="check"><input type="checkbox"><span>Copy link, email, WhatsApp, or QR option appears.</span></label>
+        </div>
+      </section>
+
+      <section class="card" id="buyer">
+        <h2>6. Buyer-side test in private window</h2>
+        <div class="note warn">Open the copied link in a private/incognito window so you are acting like the buyer. If PIN was set, enter the PIN first.</div>
+        <div class="svgbox">
+          <svg class="screen" viewBox="0 0 1040 520" width="100%" role="img" aria-label="Buyer share room mock">
+            <rect width="1040" height="520" fill="#eef2f6"/><rect x="0" y="0" width="1040" height="130" fill="url(#grad)"/><text x="40" y="48" class="white label" font-size="22">Supplier / Product Catalog</text><text x="40" y="74" class="white small">Prepared for Buyer Company</text><text x="40" y="104" class="white tiny">Currency: USD · Incoterm: FOB Nhava Sheva · Valid until: 31 Dec 2026 · Products: 3</text>
+            <rect x="720" y="36" width="110" height="34" rx="9" fill="#fff"/><text x="775" y="58" text-anchor="middle" class="tiny navy" font-weight="800">Request Quote</text><rect x="842" y="36" width="120" height="34" rx="9" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.35)"/><text x="902" y="58" text-anchor="middle" class="tiny white">Ask a Question</text><rect x="842" y="80" width="120" height="28" rx="9" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.35)"/><text x="902" y="98" text-anchor="middle" class="tiny white">Download PDF</text><rect x="710" y="28" width="264" height="92" rx="14" class="hit"/>
+            <g transform="translate(40 170)"><rect width="218" height="250" rx="14" fill="#fff" stroke="#dbe6ef"/><rect width="218" height="92" rx="14" fill="#f1f5f9"/><text x="18" y="122" class="label">Sweet Potato Chips</text><text x="18" y="146" class="tiny muted">MOQ 100 cases · 70g pack · India</text><text x="18" y="174" class="label navy">USD 12.50</text><rect x="18" y="194" width="80" height="26" rx="7" fill="#fff" stroke="#dbe6ef"/><text x="58" y="211" text-anchor="middle" class="tiny muted">Qty 100</text><rect x="18" y="226" width="182" height="28" rx="8" fill="#fff" stroke="#279491"/><text x="109" y="245" text-anchor="middle" class="tiny teal" font-weight="800">Select</text></g>
+            <g transform="translate(280 170)"><rect width="218" height="250" rx="14" fill="#fff" stroke="#dbe6ef"/><rect width="218" height="92" rx="14" fill="#f1f5f9"/><text x="18" y="122" class="label">Mango Chips</text><text x="18" y="146" class="tiny muted">MOQ 50 cases · India</text><text x="18" y="174" class="tiny muted">Price on request</text><rect x="18" y="226" width="182" height="28" rx="8" fill="#279491"/><text x="109" y="245" text-anchor="middle" class="tiny white" font-weight="800">Selected</text></g>
+            <g transform="translate(520 170)"><rect width="218" height="250" rx="14" fill="#fff" stroke="#dbe6ef"/><rect width="218" height="92" rx="14" fill="#f1f5f9"/><text x="18" y="122" class="label">Banana Chips</text><text x="18" y="146" class="tiny muted">MOQ 100 cases · India</text><text x="18" y="174" class="label navy">USD 10.80</text><rect x="18" y="226" width="182" height="28" rx="8" fill="#fff" stroke="#279491"/><text x="109" y="245" text-anchor="middle" class="tiny teal" font-weight="800">Select</text></g>
+            <rect x="812" y="404" width="172" height="48" rx="14" fill="#1f487c"/><text x="898" y="432" text-anchor="middle" class="white small" font-weight="800">Request Quote (2)</text>
+            <path d="M802 58 C690 85, 610 124, 522 168" fill="none" stroke="#f97316" stroke-width="3" marker-end="url(#arr)"/><text x="565" y="122" class="label orange">Buyer selects products</text>
+          </svg>
+          <div class="caption">Buyer room header actions are Request Quote, Ask a Question, and Download PDF. Product cards show prices or price-on-request.</div>
+        </div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Open copied buyer link in private window.</span></label>
+          <label class="check"><input type="checkbox"><span>If PIN enabled, enter PIN and confirm buyer room opens.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm product cards show name, MOQ, pack, origin, and price/tier pricing when available.</span></label>
+          <label class="check"><input type="checkbox"><span>Open details on a product; verify description, HSN, certifications if present.</span></label>
+          <label class="check"><input type="checkbox"><span>Select 1–3 products and adjust quantity.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Ask a Question</b> and submit a sample question.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Download PDF</b> and confirm PDF opens/downloads.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Request Quote</b> and submit the quote request.</span></label>
+        </div>
+      </section>
+
+      <section class="card" id="convert">
+        <h2>7. Seller review and convert to quote</h2>
+        <div class="svgbox">
+          <svg class="screen" viewBox="0 0 1040 500" width="100%" role="img" aria-label="Shared Links quote conversion mock">
+            <rect width="1040" height="500" fill="#f6f8fb"/><rect x="0" y="0" width="92" height="500" fill="#153b64"/><rect x="0" y="0" width="1040" height="46" fill="#fff"/>
+            <text x="130" y="86" class="teal tiny" font-weight="800">CATALOG</text><text x="130" y="116" class="label" font-size="24">Catalog Hub</text><rect x="130" y="150" width="520" height="42" fill="#fff" stroke="#dbe6ef"/><text x="155" y="176" class="tiny muted">Products</text><text x="238" y="176" class="tiny muted">Price Lists</text><rect x="330" y="150" width="105" height="42" fill="#eef4fb" stroke="#279491"/><text x="382" y="176" text-anchor="middle" class="tiny navy" font-weight="800">Shared Links</text><text x="462" y="176" class="tiny muted">Analytics</text>
+            <rect x="130" y="230" width="780" height="72" rx="14" fill="#fff" stroke="#dbe6ef"/><text x="154" y="260" class="label">Buyer Company · Active</text><text x="154" y="284" class="tiny muted">Opened 2 times · 2 selected · Price list: 2026 FOB USD Export</text><rect x="716" y="248" width="106" height="32" rx="9" class="cta"/><text x="769" y="269" text-anchor="middle" class="white tiny" font-weight="800">Create Quote</text><rect x="706" y="240" width="126" height="48" rx="12" class="hit"/>
+            <line x1="830" y1="264" x2="930" y2="264" stroke="#279491" stroke-width="3" marker-end="url(#arr)"/><rect x="930" y="222" width="86" height="84" rx="14" fill="#fff" stroke="#dbe6ef"/><text x="973" y="252" text-anchor="middle" class="label navy">Quote</text><text x="973" y="274" text-anchor="middle" class="tiny muted">draft</text><text x="973" y="292" text-anchor="middle" class="tiny muted">line items</text>
+            <path d="M372 196 C404 220, 505 241, 706 258" fill="none" stroke="#f97316" stroke-width="3" marker-end="url(#arr)"/><text x="450" y="222" class="label orange">4. Shared Links → Create Quote</text>
+          </svg>
+          <div class="caption">After buyer request, return to Catalog → Shared Links. Create Quote should open the quote draft generated from buyer selections.</div>
+        </div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Return to logged-in app.</span></label>
+          <label class="check"><input type="checkbox"><span>Go to <span class="route">/catalog</span> and click the <b>Shared Links</b> tab.</span></label>
+          <label class="check"><input type="checkbox"><span>Find the share you sent to yourself.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm engagement counts changed: opened, selected, question, quote request, or PDF activity.</span></label>
+          <label class="check"><input type="checkbox"><span>Click <b>Create Quote</b>.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm you are redirected to a quote draft.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm quote lead/buyer is correct.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm product line items are copied from buyer selections.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm unit price/currency came from the selected price list where coverage exists.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm no placeholder-only line item was created.</span></label>
+        </div>
+      </section>
+
+      <section class="card" id="buyer-pricing">
+        <h2>8. Buyer-specific pricing foundation check</h2>
+        <div class="note warn">This final piece is an internal foundation only. It should <b>not</b> change buyer-facing share pricing or quote conversion yet.</div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Confirm normal price list pricing still appears in buyer room.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm buyer-specific pricing is not automatically applied to public catalog links.</span></label>
+          <label class="check"><input type="checkbox"><span>Confirm buyer-specific pricing is not automatically applied to quote conversion.</span></label>
+          <label class="check"><input type="checkbox"><span>Optional API validation later: <span class="route">/api/buyer-pricing-plans</span> can create draft / pending approval plans.</span></label>
+        </div>
+      </section>
+
+      <section class="card" id="pass">
+        <h2>9. End-to-end pass criteria</h2>
+        <div class="note good">Only after all boxes pass should the Sprint 34 Catalog issues move from <b>in_review</b> to <b>Resolved</b>.</div>
+        <div class="checklist">
+          <label class="check"><input type="checkbox"><span>Price list can be created.</span></label>
+          <label class="check"><input type="checkbox"><span>Market and buyer segment dropdowns load useful options.</span></label>
+          <label class="check"><input type="checkbox"><span>Products can be added to the price list.</span></label>
+          <label class="check"><input type="checkbox"><span>Product pricing auto-fills by Incoterm.</span></label>
+          <label class="check"><input type="checkbox"><span>Manual override works and persists.</span></label>
+          <label class="check"><input type="checkbox"><span>Share Catalog wizard opens.</span></label>
+          <label class="check"><input type="checkbox"><span>Setu Guru recommends a price list and manual selection still works.</span></label>
+          <label class="check"><input type="checkbox"><span>Setu Guru drafts the buyer message.</span></label>
+          <label class="check"><input type="checkbox"><span>Share link is created and can be sent.</span></label>
+          <label class="check"><input type="checkbox"><span>Buyer link opens in private window.</span></label>
+          <label class="check"><input type="checkbox"><span>Buyer can view, select, ask question, download PDF, and request quote.</span></label>
+          <label class="check"><input type="checkbox"><span>Seller sees engagement on Shared Links or Lead Catalog Activity.</span></label>
+          <label class="check"><input type="checkbox"><span>Create Quote creates a usable quote draft with correct line items.</span></label>
+          <label class="check"><input type="checkbox"><span>No existing product, price-list, catalog, buyer link, or quote workflow breaks.</span></label>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer class="footer">Setu Flow internal QA guide · Generated for Sprint 34 Catalog Space testing</footer>
+  <script>
+    const KEY='sfCatalogQaChecks';
+    const boxes=[...document.querySelectorAll('input[type="checkbox"]')];
+    const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    boxes.forEach((box,i)=>{box.checked=!!saved[i];box.addEventListener('change',()=>{const state={};boxes.forEach((b,j)=>state[j]=b.checked);localStorage.setItem(KEY,JSON.stringify(state));update();});});
+    function update(){const done=boxes.filter(b=>b.checked).length;document.getElementById('done').textContent=done;document.getElementById('total').textContent=boxes.length;document.getElementById('bar').style.width=(boxes.length?done/boxes.length*100:0)+'%';}
+    update();
+  </script>
+</body>
+</html>
