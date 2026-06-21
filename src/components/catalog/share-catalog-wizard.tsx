@@ -54,6 +54,10 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
   const [emailBody, setEmailBody] = useState('');
   const [waText, setWaText] = useState('');
   const [composeTouched, setComposeTouched] = useState(false);
+  const [recs, setRecs] = useState<{ product_id: string; reason: string }[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [recsFetched, setRecsFetched] = useState(false);
+  const [guruDrafting, setGuruDrafting] = useState(false);
 
   const [creating, setCreating] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
@@ -112,6 +116,29 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
   }
   // auto-build drafts the first time we reach the compose step
   useEffect(() => { if (step === 3 && !composeTouched) buildDrafts(); /* eslint-disable-next-line */ }, [step]);
+  // fetch Setu Guru product suggestions when a lead is selected
+  useEffect(() => { if (open && selectedLead && !recsFetched) fetchRecs(); /* eslint-disable-next-line */ }, [open, selectedLead]);
+
+  const fetchRecs = useCallback(async () => {
+    setRecsLoading(true); setRecsFetched(true);
+    try {
+      const r = await fetch('/api/catalog-shares/guru/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: selectedLead?.id ?? null }) });
+      const d = await r.json(); setRecs(d.recommendations ?? []);
+    } catch { setRecs([]); } finally { setRecsLoading(false); }
+  }, [selectedLead]);
+
+  async function draftWithGuru() {
+    setGuruDrafting(true);
+    try {
+      const r = await fetch('/api/catalog-shares/guru/draft-message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        buyer_name: buyer.buyer_name, buyer_company: buyer.buyer_company,
+        product_names: pickedProducts.map((p) => p.name), currency, incoterm, valid_days: Number(validDays || '7'),
+        trade_show_name: selectedLead?.trade_show_name ?? null,
+      }) });
+      const d = await r.json();
+      if (d.draft) { setEmailSubject(d.draft.subject || ''); setEmailBody(d.draft.email || ''); setWaText(d.draft.whatsapp || ''); setComposeTouched(true); }
+    } finally { setGuruDrafting(false); }
+  }
 
   async function create(asDraft = false) {
     if (!picked.size) return;
@@ -133,7 +160,7 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
   function reset() {
     setStep(0); setSelectedLead(null); setBuyer({ buyer_company: '', buyer_name: '', buyer_email: '', buyer_phone: '' });
     setPicked(new Set()); setPriceListId(''); setIncoterm(''); setValidDays('7'); setPin(''); setPdfAllowed(true); setTracking(true);
-    setEmailSubject(''); setEmailBody(''); setWaText(''); setComposeTouched(false); setCreatedToken(null); setCreatedShareId(null); setQrDataUrl(null); setShowQr(false); setCopied(false);
+    setEmailSubject(''); setEmailBody(''); setWaText(''); setComposeTouched(false); setCreatedToken(null); setCreatedShareId(null); setQrDataUrl(null); setShowQr(false); setCopied(false); setRecs([]); setRecsFetched(false);
   }
   function close() { reset(); onClose(); }
 
@@ -219,8 +246,35 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
                   </div>
                   <div>
                     <label style={lbl}>Select products ({picked.size} selected)</label>
+                    {(recsLoading || recs.length > 0) && (
+                      <div style={{ marginTop: 6, background: 'linear-gradient(135deg,rgba(31,72,124,.06),rgba(39,148,145,.06))', border: '1px solid #d6e4ee', borderRadius: 10, padding: 10 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#1f487c', marginBottom: 6 }}>✨ Setu Guru suggests{recsLoading ? '…' : ''}</div>
+                        {!recsLoading && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {recs.map((r) => { const p = products.find((x) => x.id === r.product_id); if (!p) return null; const added = picked.has(p.id); return (
+                              <button key={r.product_id} onClick={() => togglePick(p.id)} title={r.reason} style={{ border: `1px solid ${added ? '#279491' : '#cbd5e1'}`, background: added ? '#279491' : '#fff', color: added ? '#fff' : '#1e293b', borderRadius: 999, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>{added ? '✓ ' : '+ '}{p.name} <span style={{ opacity: 0.7, fontWeight: 400 }}>· {r.reason}</span></button>
+                            ); })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <input style={inp} placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} />
-                    {needsDataCount > 0 && <div style={{ marginTop: 8, background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', borderRadius: 9, padding: '8px 10px', fontSize: 12 }}>⚠ {needsDataCount} selected product{needsDataCount > 1 ? 's' : ''} {needsDataCount > 1 ? 'are' : 'is'} missing data buyers will want (price, image, MOQ). You can still share, but consider completing them first.</div>}
+                    {needsDataCount > 0 && (() => {
+                      const agg: Record<string, number> = {};
+                      let noPrice = 0;
+                      for (const p of pickedProducts) {
+                        const r = computeProductReadiness(p);
+                        for (const m of r.missing) agg[m] = (agg[m] ?? 0) + 1;
+                        if (p.fob_price == null && p.exw_price == null && p.cif_price == null && !priceListId) noPrice += 1;
+                      }
+                      const lines = Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([f, n]) => `${n} missing ${f}`);
+                      return (
+                        <div style={{ marginTop: 8 }}>
+                          {noPrice > 0 && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: 9, padding: '8px 10px', fontSize: 12, marginBottom: 6 }}>⛔ {noPrice} selected product{noPrice > 1 ? 's have' : ' has'} no price and no price list — buyers will see “price on request”. Add a price list in step 2 or remove these.</div>}
+                          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', borderRadius: 9, padding: '8px 10px', fontSize: 12 }}>⚠ Buyers will see incomplete cards: {lines.join(' · ')}. You can still share, or complete these in the catalog editor first.</div>
+                        </div>
+                      );
+                    })()}
                     <div style={{ marginTop: 8, display: 'grid', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
                       {loading ? <div style={{ color: '#94a3b8', fontSize: 12, padding: 10 }}>Loading…</div> : filtered.slice(0, 100).map((p) => (
                         <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: `1px solid ${picked.has(p.id) ? '#279491' : '#e2e8f0'}`, borderRadius: 9, padding: '8px 10px', cursor: 'pointer' }}>
@@ -299,7 +353,8 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
                 <div style={{ display: 'grid', gap: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <span style={{ fontSize: 12, color: '#64748b' }}>Draft message — edit freely. The link is inserted automatically when you send.</span>
-                    <button style={{ ...btnG, marginLeft: 'auto', padding: '5px 12px', fontSize: 11.5 }} onClick={() => { buildDrafts(); setComposeTouched(false); }}>Regenerate</button>
+                    <button style={{ ...btnP, marginLeft: 'auto', padding: '5px 12px', fontSize: 11.5, opacity: guruDrafting ? 0.6 : 1 }} disabled={guruDrafting} onClick={draftWithGuru}>{guruDrafting ? 'Drafting…' : '✨ Draft with Setu Guru'}</button>
+                    <button style={{ ...btnG, padding: '5px 12px', fontSize: 11.5 }} onClick={() => { buildDrafts(); setComposeTouched(false); }}>Reset</button>
                   </div>
                   <label style={lbl}>Email subject<input style={inp} value={emailSubject} onChange={(e) => { setEmailSubject(e.target.value); setComposeTouched(true); }} /></label>
                   <label style={lbl}>Email body<textarea style={{ ...inp, minHeight: 150, resize: 'vertical' }} value={emailBody} onChange={(e) => { setEmailBody(e.target.value); setComposeTouched(true); }} /></label>

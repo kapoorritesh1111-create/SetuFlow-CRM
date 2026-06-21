@@ -33,6 +33,18 @@ export default function LeadCatalogActivity({ leadId, leadName }: { leadId: stri
   const [wizardOpen, setWizardOpen] = useState(false);
   const [prefill, setPrefill] = useState<any>(null);
   const [busyQuote, setBusyQuote] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<Record<string, { summary: string; hottest: string[]; next_action: string; loading?: boolean }>>({});
+
+  async function loadSummary(shareId: string) {
+    setSummaries((m) => ({ ...m, [shareId]: { summary: '', hottest: [], next_action: '', loading: true } }));
+    try {
+      const r = await fetch(`/api/catalog-shares/${shareId}/guru-summary`, { method: 'POST' });
+      const d = await r.json();
+      setSummaries((m) => ({ ...m, [shareId]: { summary: d.summary ?? '', hottest: d.hottest ?? [], next_action: d.next_action ?? '', loading: false } }));
+    } catch { setSummaries((m) => ({ ...m, [shareId]: { summary: 'Could not load summary.', hottest: [], next_action: '', loading: false } })); }
+  }
+
+  const NEXT_LABEL: Record<string, string> = { create_quote: 'Create quote', send_follow_up: 'Draft follow-up', resend_catalog: 'Resend catalog', switch_channel: 'Switch channel' };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,7 +109,23 @@ export default function LeadCatalogActivity({ leadId, leadName }: { leadId: stri
                       <button onClick={() => createQuote(s.id)} disabled={busyQuote === s.id} style={{ border: 'none', background: '#1f487c', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', opacity: busyQuote === s.id ? 0.6 : 1 }}>{busyQuote === s.id ? 'Creating…' : 'Create quote'}</button>
                     )}
                     {s.quote_id && <a href={`/quotes/${s.quote_id}`} style={{ border: '1px solid #c7d2fe', background: '#eef2ff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#1f487c', textDecoration: 'none' }}>Open quote</a>}
+                    <button onClick={() => loadSummary(s.id)} style={{ border: '1px solid #d6e4ee', background: 'linear-gradient(135deg,rgba(31,72,124,.08),rgba(39,148,145,.08))', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#1f487c', cursor: 'pointer' }}>✨ AI summary</button>
                   </div>
+                  {summaries[s.id] && (
+                    <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 10 }}>
+                      {summaries[s.id].loading ? <span style={{ fontSize: 12, color: '#94a3b8' }}>Setu Guru is analyzing engagement…</span> : (
+                        <>
+                          <div style={{ fontSize: 12.5, color: '#334155' }}>{summaries[s.id].summary}</div>
+                          {summaries[s.id].hottest.length > 0 && <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Hottest: {summaries[s.id].hottest.join(', ')}</div>}
+                          <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {summaries[s.id].next_action === 'create_quote' && !s.quote_id && s.selection_count > 0 && <button onClick={() => createQuote(s.id)} style={{ border: 'none', background: '#1f487c', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: Create quote</button>}
+                            {(summaries[s.id].next_action === 'send_follow_up' || summaries[s.id].next_action === 'switch_channel') && <button onClick={openWizard} style={{ border: '1px solid #1f487c', background: '#fff', color: '#1f487c', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: {NEXT_LABEL[summaries[s.id].next_action]}</button>}
+                            {summaries[s.id].next_action === 'resend_catalog' && <button onClick={openWizard} style={{ border: '1px solid #1f487c', background: '#fff', color: '#1f487c', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: Resend catalog</button>}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
