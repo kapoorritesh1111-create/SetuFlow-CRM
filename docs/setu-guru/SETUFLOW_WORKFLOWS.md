@@ -299,6 +299,39 @@ From the Lead Command Center, the same three icons appear in the lead hero secti
 
 ---
 
+## CATALOG SHARE / PRICE LIST ISSUES
+
+### Problem: Where do I create a price list?
+Go to **Price Lists** in the sidebar. Create a list, add products, set MOQ and base price, and add up to three quantity tiers per product. Set the status to active to use it in a catalog share.
+
+### Problem: How do I share a catalog with a buyer?
+Open **Catalog** → **Share Catalog**, or open a lead and use **Send Catalog** on the timeline. Pick products, choose a price list, set the buyer details and link controls, optionally let Setu Guru draft the message, then create the link and send it via Copy / WhatsApp / Email / QR.
+
+### Problem: The buyer says the link doesn't work
+**Cause:** The link may have expired or been revoked, or it is PIN-protected.
+**Fix:** Check the Shared Links tab. If the status is Expired, use **Extend** to set a new validity date. If it was Revoked, create a new share. If a PIN was set, make sure the buyer has it. Expired and revoked links intentionally show the buyer a polished "no longer available" page.
+
+### Problem: A product shows "price on request" to the buyer
+**Cause:** The product is not in the selected price list, or has no base price.
+**Fix:** Add the product to the price list with a price, or select a price list that covers it. The wizard warns in step 1 when a selected product has no price and no price list.
+
+### Problem: A warning says products are missing data before sharing
+**Cause:** Selected products are missing fields buyers expect (price, image, MOQ, pack size, etc.).
+**Fix:** You can continue and share anyway, or complete the products in the catalog editor first. Products with no price and no price list raise a stronger error — add pricing or remove them.
+
+### Problem: How do I turn buyer selections into a quote?
+When a buyer has selected products on a shared catalog, use **Create Quote** in the Shared Links tab or on the lead timeline. This creates a draft quote pre-filled with the selected products, quantities, and tier prices. The share must be linked to a lead first (a quote always belongs to a lead).
+
+### Problem: Setu Guru suggestions / drafts didn't appear
+**Cause:** The AI assistant is not configured in this environment.
+**Fix:** Catalog AI (product suggestions, message drafting, engagement summaries) requires the workspace's AI keys to be configured. When unavailable, SetuFlow falls back to template-based drafts and rule-based suggestions so you can still share — nothing is blocked.
+
+### Problem: I can't see the Share Catalog or Create Price List buttons
+**Cause:** These actions require catalog-management permission.
+**Fix:** Ask an owner/admin/manager to share, or to grant the appropriate role. Read-only members can still view the catalog.
+
+---
+
 ## PERFORMANCE / DISPLAY ISSUES
 
 ### Problem: Dashboard is not loading data
@@ -309,4 +342,4 @@ From the Lead Command Center, the same three icons appear in the lead hero secti
 **Cause:** Hydration or authentication state issue.
 **Fix:** Hard refresh, sign out/in, clear cache, or try another browser.
 
-_Updated: June 2026. Includes Sprint 21 Setu Guru capabilities, current Orders PDF guidance, desktop navigation guidance, and document/compliance route cautions._
+_Updated: June 2026. Includes catalog sharing (price lists, secure buyer share rooms, engagement tracking, quote conversion, Setu Guru catalog assistance), Sprint 21 Setu Guru capabilities, current Orders PDF guidance, desktop navigation guidance, and document/compliance route cautions._

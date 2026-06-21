@@ -161,4 +161,7 @@ Use Catalog Admin for full setup and onboarding imports. Use Products for day-to
 ### Delete button stays disabled in Data cleanup
 Run **Check eligibility** first. Then enter a cleanup reason and type the exact confirmation phrase shown by the wizard. Capitalization is accepted either way, but the SKU/text must match.
 
-_Updated: June 2026. Includes Sprint 21 Setu Guru operating copilot guidance and current PDF/navigation troubleshooting notes._
+### Setting up Price Lists and Catalog Sharing
+Price Lists and Catalog Sharing are available once products exist. Create reusable price lists in **Price Lists** (products, MOQ, base price, up to three quantity tiers, currency, incoterm, validity). Then share a curated catalog with a buyer from **Catalog → Share Catalog** or from a lead's **Send Catalog** action. Buyers open a secure, branded link (optionally PIN-protected) and can browse, ask questions, select products, and request a quote. Engagement is tracked on the Shared Links tab and the lead timeline, and buyer selections convert to a draft quote with one click. Sharing and price-list creation require catalog-management permission (owner/admin/manager).
+
+_Updated: June 2026. Includes catalog sharing and price-list setup guidance, Sprint 21 Setu Guru operating copilot guidance, and current PDF/navigation troubleshooting notes._

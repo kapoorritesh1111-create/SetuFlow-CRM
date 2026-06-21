@@ -257,6 +257,35 @@ How to use AI drafts effectively.
 
 ---
 
+## WORKFLOW 7: CATALOG SHARING WORKFLOW
+
+SetuFlow lets a sales user build a curated, buyer-specific catalog, share it as a secure link, track how the buyer engages, and turn the buyer's selections into a draft quote — without leaving the CRM.
+
+### Where it lives
+- **Catalog** (`/catalog`) — the Catalog Hub. KPI strip (total products, active price lists, shares sent, quote conversion) and four tabs: Products (with readiness badges), Price Lists, Shared Links, Analytics. Top actions: Add Product, Create Price List, Share Catalog.
+- **Price Lists** (`/price-lists`) — create reusable price lists with up to three MOQ-based pricing tiers per product, a currency, an incoterm, a market, and a validity date.
+- The **buyer** sees only a clean, branded showroom at a secure link (`/catalog/share/<token>`). They never see the CRM.
+
+### Step-by-step (internal user)
+1. **Build a price list** (optional but recommended) in Price Lists: name it, add products, set MOQ + base price, add up to three quantity tiers. Status active makes it usable.
+2. **Open the Share Catalog wizard** — from the Catalog Hub "Share Catalog" button, or from a lead's timeline via "Send Catalog" (which pre-fills the buyer from the lead).
+3. The wizard is five guided steps: **Products** (multi-select, with Setu Guru suggestions and missing-data warnings) → **Price List** (pick one; preview each product's tiers) → **Controls** (buyer details, currency, incoterm, link validity 3/7/14/30 days, optional PIN, PDF-download and tracking toggles) → **Message** (Setu Guru drafts an email + WhatsApp message you can edit) → **Review** (create the link).
+4. **Send** via the created-link screen: Copy link, WhatsApp, Email, or show a QR code. The chosen channel is recorded.
+5. **Track engagement** in the Shared Links tab and on the lead timeline: opens, products viewed, products selected, quote requests, questions, and PDF downloads.
+6. **Convert** — when the buyer selects products and requests a quote, use **Create Quote** (from the Shared Links tab or the lead timeline) to generate a draft quote pre-filled with the selected products, quantities, and tier prices. Finish and send it through the normal quote flow.
+
+### Buyer experience
+The buyer opens the link (entering a PIN if one was set), browses product cards with tier pricing, expands details, asks questions, selects products with MOQ-validated quantities, and requests a quote. If PDF download is allowed, they can download a watermarked catalog PDF. Expired or revoked links show a polished "no longer available" message, never an error.
+
+### Setu Guru's role in catalog sharing
+- **Product suggestions** in step 1: recommends products matched to the lead's interest and market, each with a short reason; the user adds them with one click and stays in full control.
+- **Missing-data warnings** in step 1: flags products missing price, image, MOQ, pack size, etc., and blocks high-risk shares where a product has no price and no price list.
+- **Message drafting** in step 4: drafts a professional email and a short WhatsApp message; the user can edit or regenerate.
+- **Engagement summary** on the lead timeline: summarizes how a buyer engaged and recommends the next best action (create quote, follow up, resend, or switch channel).
+These are assistive only — the user always confirms the final selection, message, and action.
+
+---
+
 ## SETU GURU CURRENT CAPABILITIES
 
 Setu Guru should answer as an operating copilot grounded in current SetuFlow workflows.
@@ -269,6 +298,7 @@ Current capabilities include:
 - Action guidance that explains where a user should go and what permission is required
 - Feedback and telemetry awareness for improvement and support triage
 - Playbook-style answers for onboarding, Orders, Quotes, Leads, Products, and Admin setup
+- Catalog-sharing assistance: product recommendations for a buyer, missing-data warnings before sharing, draft buyer messages (email + WhatsApp), and post-share engagement summaries with a recommended next action
 
 Current boundaries:
 
@@ -294,7 +324,8 @@ Desktop shell uses a workflow sidebar:
 - Growth: Capture, Leads, Pipeline
 - Commercial: Quotes, Send, Orders
 - Work: Tasks, Events
-- Setup: Catalog, Admin where role allows
+- Commerce/Catalog: Catalog (Catalog Hub — products, price lists, shared links, analytics), Price Lists
+- Setup: Catalog Admin, Admin where role allows
 
 The organization logo remains visible on desktop and links to `/dashboard`. Sidebar can be collapsed, expanded, or hidden. Profile and sign out live in the header avatar menu.
 
@@ -302,7 +333,7 @@ The organization logo remains visible on desktop and links to `/dashboard`. Side
 
 ---
 
-_Updated: June 2026. Includes Sprint 21 Setu Guru operating copilot capabilities, current Orders PDF guidance, and current desktop navigation guidance._
+_Updated: June 2026. Includes catalog sharing (Catalog Hub, price lists, secure buyer share rooms, engagement tracking, quote conversion, and Setu Guru catalog assistance), Sprint 21 Setu Guru operating copilot capabilities, current Orders PDF guidance, and current desktop navigation guidance._
 
 ## Admin Workspace V2 (Sprint 24 redesign)
 
