@@ -8,6 +8,7 @@ export const notificationTypes = [
   { key: 'payment_received', label: 'Payment received', description: 'Payment is recorded against a workflow.' },
   { key: 'approval_request', label: 'Approval request', description: 'A teammate requests approval.' },
   { key: 'quote_opened', label: 'Quote opened', description: 'A recipient opens a quote.' },
+  { key: 'catalog_engagement', label: 'Catalog engagement', description: 'A buyer opens, views, downloads, selects, or requests quote activity from a shared catalog.' },
 ] as const;
 
 export const notificationChannels = [
