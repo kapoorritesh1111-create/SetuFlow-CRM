@@ -50,7 +50,7 @@ export async function GET() {
   return NextResponse.json({ shares: withCounts });
 }
 
-// POST /api/catalog-shares → create a share (catalog_shares + catalog_share_products + 'created' event)
+// POST /api/catalog-shares → create a share (catalog_shares + catalog_share_products + share_created event)
 export async function POST(request: NextRequest) {
   const ws = await getWorkspaceAccess();
   if (!ws.membership || !ws.organization) return NextResponse.json({ error: 'No workspace' }, { status: 401 });
@@ -87,6 +87,18 @@ export async function POST(request: NextRequest) {
 
   const productRows = productIds.map((pid, i) => ({ catalog_share_id: share.id, product_id: pid, sort_order: i }));
   await sb.from('catalog_share_products').insert(productRows);
+
+  await sb.from('catalog_share_events').insert({
+    catalog_share_id: share.id,
+    event_type: 'share_created',
+    meta: {
+      status: share.status,
+      product_count: productIds.length,
+      price_list_id: share.price_list_id,
+      share_channel: share.share_channel,
+      created_by: ws.user?.id ?? null,
+    },
+  });
 
   return NextResponse.json({ share });
 }
