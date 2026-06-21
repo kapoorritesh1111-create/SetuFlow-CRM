@@ -1,7 +1,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import type { CatalogShare } from './types';
 
-export type ShareValidationReason = 'ok' | 'not_found' | 'expired' | 'revoked' | 'pin_required' | 'pin_invalid';
+export type ShareValidationReason = 'ok' | 'not_found' | 'expired' | 'revoked' | 'archived' | 'pin_required' | 'pin_invalid';
 
 export type ShareValidationResult = {
   ok: boolean;
@@ -24,6 +24,7 @@ export async function validateShareToken(token: string, pin?: string | null): Pr
 
   if (!share) return { ok: false, reason: 'not_found' };
   if (share.status === 'revoked') return { ok: false, reason: 'revoked' };
+  if (share.status === 'archived') return { ok: false, reason: 'archived' };
   // Drafts are not publicly visible.
   if (share.status === 'draft') return { ok: false, reason: 'not_found' };
   if (share.valid_until && new Date(share.valid_until).getTime() < Date.now()) {
