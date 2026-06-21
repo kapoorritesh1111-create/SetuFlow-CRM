@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   const ws = await getWorkspaceAccess();
   if (!ws.membership || !ws.organization) return NextResponse.json({ error: 'No workspace' }, { status: 401 });
   const body = await request.json().catch(() => ({}));
-  const productIds = Array.isArray(body.product_ids) ? body.product_ids.map(String).filter(Boolean) : [];
+  const productIds: string[] = Array.isArray(body.product_ids) ? body.product_ids.map(String).filter(Boolean) : [];
   if (!productIds.length) return NextResponse.json({ recommendations: [] });
 
   const sb = (await createClient()) as any;
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   }
 
   const recommendations: Recommendation[] = (lists ?? []).map((pl: any) => {
-    const covered = productIds.filter((id) => itemMap[pl.id]?.has(id)).length;
+    const covered = productIds.filter((productId: string) => itemMap[pl.id]?.has(productId)).length;
     const coveragePct = covered / selectedCount;
     const reasons: string[] = [];
     let score = 0;
