@@ -15,7 +15,8 @@ type PickerProduct = {
   description: string | null; image_url: string | null; certifications: string[] | null; country_of_origin: string | null;
   fob_price: number | null; exw_price: number | null; cif_price: number | null; pricing_currency: string | null;
 };
-type PriceListLite = { id: string; name: string; currency: string; incoterm: string | null; incoterm_location: string | null; market: string | null; valid_until: string | null; status: string; product_count: number };
+type PriceListLite = { id: string; name: string; currency: string; incoterm: string | null; incoterm_location: string | null; market: string | null; buyer_segment: string | null; valid_until: string | null; status: string; product_count: number };
+type PriceListRecommendation = { price_list_id: string; score: number; coverage_count: number; selected_count: number; reasons: string[] };
 type PLItem = { id: string; product_id: string; moq: number | null; moq_unit: string | null; unit_price: number | null; currency: string | null };
 type PLTier = { id: string; price_list_item_id: string; tier_qty_min: number | null; tier_qty_max: number | null; unit_price: number | null; discount_pct: number | null; sort_order: number | null };
 
@@ -58,6 +59,8 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
   const [recsLoading, setRecsLoading] = useState(false);
   const [recsFetched, setRecsFetched] = useState(false);
   const [guruDrafting, setGuruDrafting] = useState(false);
+  const [plRecs, setPlRecs] = useState<PriceListRecommendation[]>([]);
+  const [plRecsLoading, setPlRecsLoading] = useState(false);
 
   const [creating, setCreating] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
@@ -101,8 +104,31 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
 
   const itemByProduct = useMemo(() => { const m: Record<string, PLItem> = {}; for (const it of plItems) m[it.product_id] = it; return m; }, [plItems]);
   const tiersByItem = useMemo(() => { const m: Record<string, PLTier[]> = {}; for (const t of plTiers) (m[t.price_list_item_id] ||= []).push(t); return m; }, [plTiers]);
+  const topPriceListRec = useMemo(() => plRecs[0] ?? null, [plRecs]);
+  const topPriceList = useMemo(() => topPriceListRec ? priceLists.find((pl) => pl.id === topPriceListRec.price_list_id) ?? null : null, [priceLists, topPriceListRec]);
 
   function togglePick(id: string) { setPicked((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function applyPriceList(pl: PriceListLite) {
+    setPriceListId(pl.id);
+    setCurrency(pl.currency);
+    if (pl.incoterm) setIncoterm(pl.incoterm);
+  }
+
+  useEffect(() => {
+    if (!open || picked.size === 0) { setPlRecs([]); return; }
+    let cancelled = false;
+    setPlRecsLoading(true);
+    fetch('/api/price-lists/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_ids: Array.from(picked), lead_id: selectedLead?.id ?? null, currency, incoterm }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setPlRecs(d.recommendations ?? []); })
+      .catch(() => { if (!cancelled) setPlRecs([]); })
+      .finally(() => { if (!cancelled) setPlRecsLoading(false); });
+    return () => { cancelled = true; };
+  }, [currency, incoterm, open, picked, selectedLead]);
 
   // template-generated compose copy (Setu Guru GPT drafting upgrades this in a later chunk)
   function buildDrafts() {
@@ -160,7 +186,7 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
   function reset() {
     setStep(0); setSelectedLead(null); setBuyer({ buyer_company: '', buyer_name: '', buyer_email: '', buyer_phone: '' });
     setPicked(new Set()); setPriceListId(''); setIncoterm(''); setValidDays('7'); setPin(''); setPdfAllowed(true); setTracking(true);
-    setEmailSubject(''); setEmailBody(''); setWaText(''); setComposeTouched(false); setCreatedToken(null); setCreatedShareId(null); setQrDataUrl(null); setShowQr(false); setCopied(false); setRecs([]); setRecsFetched(false);
+    setEmailSubject(''); setEmailBody(''); setWaText(''); setComposeTouched(false); setCreatedToken(null); setCreatedShareId(null); setQrDataUrl(null); setShowQr(false); setCopied(false); setRecs([]); setRecsFetched(false); setPlRecs([]);
   }
   function close() { reset(); onClose(); }
 
@@ -187,36 +213,23 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
       <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.4)', zIndex: 9998 }} />
       <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(620px,100vw)', background: '#f8fafc', zIndex: 9999, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(15,23,42,.18)' }}>
         <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg,#1f487c,#279491)', color: '#fff', display: 'flex', alignItems: 'center' }}>
-          <div><div style={{ fontSize: 11, opacity: 0.85 }}>Catalog</div><h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Share Catalog</h2></div>
-          <button onClick={close} style={{ marginLeft: 'auto', border: 'none', background: 'rgba(255,255,255,.15)', color: '#fff', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 16 }}>✕</button>
+          <div><div style={{ fontSize: 11, opacity: 0.85 }}>Catalog</div><h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>{createdToken ? 'Catalog link created' : 'Share Catalog'}</h2></div>
+          <button onClick={close} style={{ marginLeft: 'auto', border: 'none', background: 'rgba(255,255,255,.15)', color: '#fff', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 16 }}>×</button>
         </div>
 
         {createdToken ? (
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ textAlign: 'center', padding: 20 }}>
-              <div style={{ fontSize: 40 }}>🔗</div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', margin: '8px 0 4px' }}>Share link is ready</h3>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>Send this secure link to {buyer.buyer_company || 'your buyer'}.</p>
+          <div style={{ padding: 22, display: 'grid', gap: 14 }}>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
+              <div style={{ fontSize: 12, color: '#64748b' }}>Secure buyer link</div>
+              <a href={shareUrl} target="_blank" rel="noreferrer" style={{ display: 'block', marginTop: 6, wordBreak: 'break-all', color: '#1f487c', fontWeight: 700 }}>{shareUrl}</a>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input readOnly value={shareUrl} style={{ ...inp, marginTop: 0, flex: 1, background: '#fff' }} />
-              <button style={btnP} onClick={() => { navigator.clipboard?.writeText(shareUrl); setCopied(true); recordChannel('copy'); setTimeout(() => setCopied(false), 1500); }}>{copied ? 'Copied!' : 'Copy'}</button>
+            {showQr && qrDataUrl && <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, textAlign: 'center' }}><img src={qrDataUrl} alt="Share QR" style={{ width: 220, height: 220 }} /></div>}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button style={btnP} onClick={() => { navigator.clipboard?.writeText(shareUrl); setCopied(true); recordChannel('copy'); }}>{copied ? 'Copied' : 'Copy link'}</button>
+              <a style={{ ...btnG, textDecoration: 'none' }} onClick={() => recordChannel('whatsapp')} href={`https://wa.me/?text=${encodeURIComponent(waTextFinal || shareUrl)}`} target="_blank" rel="noreferrer">WhatsApp</a>
+              <a style={{ ...btnG, textDecoration: 'none' }} onClick={() => recordChannel('email')} href={`mailto:${buyer.buyer_email || ''}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBodyFinal || shareUrl)}`}>Email</a>
+              <button style={btnG} onClick={() => { setShowQr(true); recordChannel('qr'); }}>QR</button>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {buyer.buyer_phone && <a href={`https://wa.me/${buyer.buyer_phone.replace(/[^0-9+]/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(waTextFinal)}`} target="_blank" rel="noreferrer" onClick={() => recordChannel('whatsapp')} style={{ ...btnG, flex: 1, textAlign: 'center', textDecoration: 'none', background: '#25D366', color: '#fff', border: 'none' }}>WhatsApp</a>}
-              {buyer.buyer_email && <a href={`mailto:${buyer.buyer_email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBodyFinal)}`} onClick={() => recordChannel('email')} style={{ ...btnG, flex: 1, textAlign: 'center', textDecoration: 'none' }}>Email</a>}
-            </div>
-            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-              <button style={{ ...btnG, flex: 1 }} onClick={() => { setShowQr((v) => !v); recordChannel('qr'); }}>{showQr ? 'Hide QR' : 'Show QR code'}</button>
-              <button style={{ ...btnG, flex: 1 }} onClick={reset}>Create another</button>
-              <button style={{ ...btnP, flex: 1 }} onClick={close}>Done</button>
-            </div>
-            {showQr && (
-              <div style={{ textAlign: 'center', marginTop: 8 }}>
-                {qrDataUrl ? <img src={qrDataUrl} alt="Catalog QR code" width={200} height={200} style={{ borderRadius: 10, border: '1px solid #e2e8f0' }} /> : <div style={{ fontSize: 12, color: '#94a3b8' }}>Generating QR…</div>}
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Scan to open the catalog on a phone.</div>
-              </div>
-            )}
           </div>
         ) : (
           <>
@@ -291,10 +304,29 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
               {/* STEP 2: Price List */}
               {step === 1 && (
                 <div style={{ display: 'grid', gap: 14 }}>
+                  {(plRecsLoading || topPriceList) && (
+                    <div style={{ background: 'linear-gradient(135deg,rgba(31,72,124,.07),rgba(39,148,145,.08))', border: '1px solid #d6e4ee', borderRadius: 12, padding: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#1f487c' }}>✨ Setu Guru price-list fit</div>
+                        {plRecsLoading && <span style={{ color: '#94a3b8', fontSize: 11 }}>scoring…</span>}
+                      </div>
+                      {topPriceList && topPriceListRec && (
+                        <div style={{ marginTop: 8 }}>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <strong style={{ fontSize: 13, color: '#1e293b' }}>{topPriceList.name}</strong>
+                            <span style={{ background: '#ecfdf5', color: '#059669', borderRadius: 999, padding: '2px 8px', fontSize: 10, fontWeight: 800 }}>Recommended</span>
+                            <span style={{ color: '#64748b', fontSize: 11 }}>Score {topPriceListRec.score} · {topPriceListRec.coverage_count}/{topPriceListRec.selected_count} products priced</span>
+                          </div>
+                          <div style={{ marginTop: 5, color: '#64748b', fontSize: 11.5 }}>{topPriceListRec.reasons.slice(0, 3).join(' · ')}</div>
+                          {priceListId !== topPriceList.id && <button style={{ ...btnG, marginTop: 8, padding: '5px 10px', fontSize: 11.5 }} onClick={() => applyPriceList(topPriceList)}>Use recommended price list</button>}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <label style={lbl}>Choose a price list
-                    <select style={inp} value={priceListId} onChange={(e) => { setPriceListId(e.target.value); const pl = priceLists.find((x) => x.id === e.target.value); if (pl) { setCurrency(pl.currency); if (pl.incoterm) setIncoterm(pl.incoterm); } }}>
+                    <select style={inp} value={priceListId} onChange={(e) => { const pl = priceLists.find((x) => x.id === e.target.value); if (pl) applyPriceList(pl); else setPriceListId(''); }}>
                       <option value="">— No price list (prices on request) —</option>
-                      {priceLists.map((pl) => <option key={pl.id} value={pl.id}>{pl.name} ({pl.currency}{pl.incoterm ? ` · ${pl.incoterm}` : ''})</option>)}
+                      {priceLists.map((pl) => <option key={pl.id} value={pl.id}>{topPriceListRec?.price_list_id === pl.id ? 'Recommended · ' : ''}{pl.name} ({pl.currency}{pl.incoterm ? ` · ${pl.incoterm}` : ''})</option>)}
                     </select>
                   </label>
                   {priceListId ? (
