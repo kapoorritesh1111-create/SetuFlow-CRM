@@ -161,8 +161,8 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
   const load = useCallback(() => { fetch('/api/catalog-shares', { cache: 'no-store' }).then((r) => r.json()).then((d) => setShares(d.shares ?? [])).finally(() => setLoading(false)); }, []);
   useEffect(() => { load(); }, [load]);
 
-  const isExpired = (s: ShareLite) => s.status !== 'revoked' && s.valid_until != null && new Date(s.valid_until).getTime() < Date.now();
-  const effStatus = (s: ShareLite) => (s.status === 'revoked' ? 'revoked' : isExpired(s) ? 'expired' : s.status);
+  const isExpired = (s: ShareLite) => !['revoked', 'archived'].includes(s.status) && s.valid_until != null && new Date(s.valid_until).getTime() < Date.now();
+  const effStatus = (s: ShareLite) => (s.status === 'revoked' || s.status === 'archived' ? s.status : isExpired(s) ? 'expired' : s.status);
   const priceLists = Array.from(new Set(shares.map((s) => s.price_list_name).filter(Boolean))) as string[];
   const filtered = shares.filter((s) => (statusFilter === 'all' || effStatus(s) === statusFilter) && (plFilter === 'all' || s.price_list_name === plFilter));
 
@@ -174,7 +174,7 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 12 }}>
-          {['all', 'active', 'expired', 'revoked', 'draft'].map((o) => <option key={o} value={o}>{o === 'all' ? 'All statuses' : o[0].toUpperCase() + o.slice(1)}</option>)}
+          {['all', 'active', 'expired', 'revoked', 'archived', 'draft'].map((o) => <option key={o} value={o}>{o === 'all' ? 'All statuses' : o[0].toUpperCase() + o.slice(1)}</option>)}
         </select>
         {priceLists.length > 0 && (
           <select value={plFilter} onChange={(e) => setPlFilter(e.target.value)} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 12 }}>
@@ -198,10 +198,10 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
               {filtered.map((s) => {
                 const es = effStatus(s);
                 const tone = statusTone[es] ?? statusTone.draft;
-                const struck = es === 'revoked';
+                const isClosed = es === 'revoked' || es === 'archived';
                 const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/catalog/share/${s.token}`;
                 return (
-                  <tr key={s.id} style={{ borderTop: '1px solid #f1f5f9', textDecoration: struck ? 'line-through' : 'none', opacity: struck ? 0.6 : 1 }}>
+                  <tr key={s.id} style={{ borderTop: '1px solid #f1f5f9', textDecoration: es === 'revoked' ? 'line-through' : 'none', opacity: isClosed ? 0.6 : 1 }}>
                     <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>{s.buyer_company || '—'}{s.buyer_name ? <div style={{ fontWeight: 400, color: '#94a3b8' }}>{s.buyer_name}</div> : null}</td>
                     <td style={{ padding: '8px 10px' }}>{s.lead_company || '—'}</td>
                     <td style={{ padding: '8px 10px' }}>{s.price_list_name || '—'}</td>
@@ -215,9 +215,9 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button title="Copy link" onClick={() => navigator.clipboard?.writeText(url)} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5 }}>Copy</button>
                         <a title="Open buyer view" href={url} target="_blank" rel="noreferrer" style={{ ...btnG, padding: '4px 8px', fontSize: 10.5 }}>Open</a>
-                        {canManage && es !== 'revoked' && !s.quote_id && s.selection_count > 0 && <button onClick={() => createQuote(s.id)} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5, background: '#1f487c', color: '#fff', border: 'none' }}>Quote</button>}
-                        {canManage && es !== 'revoked' && <button onClick={() => { setExtendId(s.id); setExtendDate(s.valid_until ? new Date(s.valid_until).toISOString().slice(0, 10) : ''); }} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5 }}>Extend</button>}
-                        {canManage && es !== 'revoked' && <button onClick={() => { if (confirm('Revoke this share link?')) patch(s.id, { action: 'revoke' }); }} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5, color: '#dc2626', borderColor: '#fca5a5' }}>Revoke</button>}
+                        {canManage && !isClosed && !s.quote_id && s.selection_count > 0 && <button onClick={() => createQuote(s.id)} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5, background: '#1f487c', color: '#fff', border: 'none' }}>Quote</button>}
+                        {canManage && !isClosed && <button onClick={() => { setExtendId(s.id); setExtendDate(s.valid_until ? new Date(s.valid_until).toISOString().slice(0, 10) : ''); }} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5 }}>Extend</button>}
+                        {canManage && !isClosed && <button onClick={() => { if (confirm('Revoke this share link?')) patch(s.id, { action: 'revoke' }); }} style={{ ...btnG, padding: '4px 8px', fontSize: 10.5, color: '#dc2626', borderColor: '#fca5a5' }}>Revoke</button>}
                       </div>
                     </td>
                   </tr>
