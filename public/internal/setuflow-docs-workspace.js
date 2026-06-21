@@ -16,7 +16,7 @@ const Docs = (() => {
     { id: 'compliance',       group: 'Business Workflows', icon: '\u2611',   title: 'Compliance',           tag: 'Compliance',    summary: 'Compliance workspace: evidence upload, waive/defer actions, bulk waive panel, document requirement rules, and quote send gate.', accent: '#059669' },
     { id: 'contracts',        group: 'Business Workflows', icon: '\u2696',   title: 'Contracts',            tag: 'Contracts',     summary: 'Contract lifecycle from draft to closeout: status progression, commercial lock, line continuity, audit trail, and search/filter.', accent: '#0d9488' },
     { id: 'trade-events',     group: 'Business Workflows', icon: '\u2605',   title: 'Trade Events',         tag: 'Capture',       summary: 'Trade-show event setup, field capture (scan/quick entry), analytics, and convert-to-lead workflow with full attribution.', accent: '#f97316' },
-    { id: 'products',         group: 'Operations',         icon: '\u25fb',   title: 'Products & Catalog',   tag: 'Catalog',       summary: 'Product management, variants, CSV import/export, pricing calculator, category defaults, and catalog governance workbench.', accent: '#f97316' },
+    { id: 'products',         group: 'Operations',         icon: '\u25fb',   title: 'Products & Catalog',   tag: 'Catalog',       summary: 'Product management, variants, CSV import/export, pricing calculator, category defaults, catalog governance, plus Catalog Sharing: price lists, the share wizard, secure buyer share rooms, engagement tracking, and quote conversion.', accent: '#f97316' },
     { id: 'tasks',            group: 'Operations',         icon: '\u2713',   title: 'Tasks',                tag: 'Tasks',         summary: 'Task workspace: list and calendar views, grouping by due date, entity linking, assignment, swipe-to-complete on mobile.', accent: '#0d9488' },
     { id: 'reports',          group: 'Operations',         icon: '\u25a6',   title: 'Reports & Analytics',  tag: 'Reports',       summary: 'Commercial funnel, quote performance, order execution, document send effectiveness, market and product breakdowns, trend charts, CSV export.', accent: '#7c3aed' },
     { id: 'ai-suggestions',   group: 'Operations',         icon: '\u2736',   title: 'AI Suggestions',       tag: 'AI',            summary: 'AI-drafted follow-up emails, quote cover notes, compliance evidence summaries — all requiring explicit operator approval before use.', accent: '#db2777' },
@@ -2121,6 +2121,7 @@ flowchart LR
       <span class="guru-cap">HSN Research</span>
       <span class="guru-cap">Pricing Defaults</span>
       <span class="guru-cap">Compliance Guidance</span>
+      <span class="guru-cap">Catalog Sharing</span>
       <span class="guru-cap">Human Approval Required</span>
     </div>
   </div>
@@ -2130,6 +2131,11 @@ flowchart LR
     <div class="guru-card-icon" style="background:#eff6ff;font-size:20px">&#x1F916;</div>
     <h3>Page Context Help</h3>
     <p>Guru reads the current route, role, and organization context automatically. Ask "what should I do next?" on any page and Guru surfaces the most relevant workflow guidance &mdash; Leads, Quotes, Orders, or Pipeline.</p>
+  </div>
+  <div class="guru-card" style="--gc1:#f97316;--gc2:#db2777">
+    <div class="guru-card-icon" style="background:#fff7ed;font-size:20px">&#x1F4E6;</div>
+    <h3>Catalog Sharing Assistant</h3>
+    <p>Inside the Share Catalog wizard, Guru recommends products for a specific buyer (matched to the lead&rsquo;s interest), warns about missing product data before sharing, and drafts the buyer email and WhatsApp message. After a catalog is shared, Guru summarizes buyer engagement on the lead timeline and recommends the next action (create quote, follow up, resend, or switch channel). All suggestions are assistive and fall back to deterministic templates when AI keys are not configured.</p>
   </div>
   <div class="guru-card" style="--gc1:#ec4899;--gc2:#7c3aed">
     <div class="guru-card-icon" style="background:#fdf2f8;font-size:20px">&#x1F4F7;</div>
@@ -2533,6 +2539,54 @@ flowchart LR
     <li>Category-level pricing defaults editable inline: Admin &rarr; Categories &rarr; selected category</li>
     <li>Admin help changes from side drawer to centered popup (no more page-surface educational copy)</li>
   </ul></div>
+</div>
+<div class="section-block"><h2>Catalog Sharing, Price Lists &amp; Buyer Share Rooms</h2>
+<p>The catalog-sharing system lets a sales user build a curated, buyer-specific catalog, share it as a secure link, track engagement, and convert buyer selections into a draft quote &mdash; without the buyer ever seeing the CRM. The internal surface is the <strong>Catalog Hub</strong> at <code>/catalog</code> and <strong>Price Lists</strong> at <code>/price-lists</code>; the buyer surface is an anonymous, branded share room at <code>/catalog/share/&lt;token&gt;</code>. All write actions require the <code>catalog.manage</code> capability (owner/admin/manager).</p>
+</div>
+<div class="doc-card-grid">
+  <div class="doc-card border-amber"><div class="doc-card-title">&#128202; Catalog Hub</div><ul>
+    <li>Route: <code>/catalog</code> &mdash; KPI strip (total products, active price lists, shares sent, quote conversion)</li>
+    <li>Four tabs: Products (with readiness badges), Price Lists, Shared Links, Analytics</li>
+    <li>Actions: Add Product, Create Price List, Share Catalog</li>
+    <li>The existing <code>/products</code> spreadsheet is preserved and linked &mdash; not replaced</li>
+  </ul></div>
+  <div class="doc-card border-teal"><div class="doc-card-title">&#128181; Price Lists</div><ul>
+    <li>Route: <code>/price-lists</code> &mdash; reusable price lists (<code>price_lists</code>)</li>
+    <li>Per product: MOQ + base price; up to three quantity tiers (<code>price_list_items</code>, <code>price_list_tiers</code>)</li>
+    <li>Each list has a currency, incoterm, market, and validity date; status <code>draft / active / expired / archived</code></li>
+    <li>A selected price list drives the pricing shown to the buyer; products not in it show &ldquo;price on request&rdquo;</li>
+  </ul></div>
+  <div class="doc-card border-blue"><div class="doc-card-title">&#129534; Share Wizard</div><ul>
+    <li>Five guided steps: Products &rarr; Price List &rarr; Controls &rarr; Message &rarr; Review</li>
+    <li>Opens from the Catalog Hub or from a lead&rsquo;s timeline (<strong>Send Catalog</strong>, pre-filled from the lead)</li>
+    <li>Controls: buyer details, currency, incoterm, link validity (3/7/14/30 days), optional PIN, PDF-download and tracking toggles</li>
+    <li>Created-link screen offers Copy, WhatsApp, Email, and a QR code; the chosen channel is recorded (<code>share_channel</code>)</li>
+    <li>Save-as-draft is available at any step</li>
+  </ul></div>
+  <div class="doc-card border-purple"><div class="doc-card-title">&#128722; Buyer Share Room</div><ul>
+    <li>Public, anonymous, branded showroom at <code>/catalog/share/&lt;token&gt;</code> (separate from the CRM)</li>
+    <li>PIN gate when set; polished &ldquo;no longer available&rdquo; pages for expired / revoked / not-found links</li>
+    <li>Product cards with tier pricing, expandable details, Ask-a-Question, and Select-for-Quote</li>
+    <li>Cart with MOQ-validated quantity, automatic tier selection, estimated total, and Request Quote</li>
+    <li>Watermarked catalog PDF download when allowed; mobile-responsive (4&rarr;3&rarr;2 columns + sticky CTA)</li>
+  </ul></div>
+  <div class="doc-card border-green"><div class="doc-card-title">&#128200; Engagement &amp; Conversion</div><ul>
+    <li>Every buyer action is tracked in <code>catalog_share_events</code> (opened, viewed, selected, requested quote, asked, downloaded)</li>
+    <li>Shared Links tab: full table with filters; expired rows show amber, revoked rows struck through; Copy / Open / Extend / Revoke / Create Quote</li>
+    <li>Lead timeline surfaces shares + an engagement feed so sales need not open the Catalog</li>
+    <li><strong>Create Quote</strong> converts buyer selections into a draft quote (tier-priced line items, linked back to the share); the share must be linked to a lead</li>
+    <li>Analytics tab: open / view / download / quote-request / conversion rates + top viewed and selected products</li>
+  </ul></div>
+  <div class="doc-card border-pink"><div class="doc-card-title">&#10038; Setu Guru in Catalog Sharing</div><ul>
+    <li>Product recommendations for a buyer (matched to the lead&rsquo;s interest), with one-click add</li>
+    <li>Missing-data warnings before sharing; a high-risk block when a product has no price and no price list</li>
+    <li>Draft buyer messages (email + WhatsApp) in the compose step</li>
+    <li>Post-share engagement summaries with a recommended next action on the lead timeline</li>
+    <li>All AI is assistive and degrades gracefully to deterministic templates when AI keys are not configured</li>
+  </ul></div>
+</div>
+<div class="section-block">
+<p><strong>Security model:</strong> internal records are protected by organization-scoped RLS (<code>is_org_member</code>); the buyer surface is anonymous and reaches data only through token-validated <strong>service-role</strong> endpoints under <code>/api/public/catalog-share/&lt;token&gt;/</code>. No internal CRM data is exposed to buyers.</p>
 </div>`;
 
     if (id === 'tasks') return `
