@@ -7,6 +7,7 @@ export type CatalogShareStatus = 'draft' | 'active' | 'expired' | 'revoked' | 'a
 export type MoqUnit = 'kg' | 'cases' | 'units';
 
 export type CatalogShareEventType =
+  | 'share_created'
   | 'link_opened'
   | 'product_viewed'
   | 'product_detail_opened'
