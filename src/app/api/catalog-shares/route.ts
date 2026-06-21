@@ -18,11 +18,35 @@ export async function GET() {
   // selection counts per share
   const ids = (shares ?? []).map((s: any) => s.id);
   const selCounts: Record<string, number> = {};
+  const lastActivity: Record<string, string> = {};
   if (ids.length) {
     const { data: sels } = await sb.from('buyer_selections').select('catalog_share_id').in('catalog_share_id', ids);
     for (const s of (sels ?? []) as any[]) selCounts[s.catalog_share_id] = (selCounts[s.catalog_share_id] ?? 0) + 1;
+    const { data: ev } = await sb.from('catalog_share_events').select('catalog_share_id, occurred_at').in('catalog_share_id', ids).order('occurred_at', { ascending: false });
+    for (const e of (ev ?? []) as any[]) if (!lastActivity[e.catalog_share_id]) lastActivity[e.catalog_share_id] = e.occurred_at;
   }
-  const withCounts = (shares ?? []).map((s: any) => ({ ...s, selection_count: selCounts[s.id] ?? 0 }));
+
+  // enrich: lead company, price list name, quote status
+  const leadIds = Array.from(new Set((shares ?? []).map((s: any) => s.lead_id).filter(Boolean)));
+  const plIds = Array.from(new Set((shares ?? []).map((s: any) => s.price_list_id).filter(Boolean)));
+  const quoteIds = Array.from(new Set((shares ?? []).map((s: any) => s.quote_id).filter(Boolean)));
+  const leadName: Record<string, string> = {};
+  const plName: Record<string, string> = {};
+  const quoteStatus: Record<string, string> = {};
+  await Promise.all([
+    leadIds.length ? sb.from('leads').select('id, company_name').in('id', leadIds).then(({ data }: any) => { for (const l of data ?? []) leadName[l.id] = l.company_name; }) : Promise.resolve(),
+    plIds.length ? sb.from('price_lists').select('id, name').in('id', plIds).then(({ data }: any) => { for (const p of data ?? []) plName[p.id] = p.name; }) : Promise.resolve(),
+    quoteIds.length ? sb.from('quotes').select('id, status').in('id', quoteIds).then(({ data }: any) => { for (const q of data ?? []) quoteStatus[q.id] = q.status; }) : Promise.resolve(),
+  ]);
+
+  const withCounts = (shares ?? []).map((s: any) => ({
+    ...s,
+    selection_count: selCounts[s.id] ?? 0,
+    lead_company: s.lead_id ? (leadName[s.lead_id] ?? null) : null,
+    price_list_name: s.price_list_id ? (plName[s.price_list_id] ?? null) : null,
+    quote_status: s.quote_id ? (quoteStatus[s.quote_id] ?? 'draft') : null,
+    last_activity: lastActivity[s.id] ?? s.last_opened_at ?? null,
+  }));
   return NextResponse.json({ shares: withCounts });
 }
 
