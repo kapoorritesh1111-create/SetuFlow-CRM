@@ -7,8 +7,10 @@ type ListRow = PriceList & { product_count: number };
 type PickerProduct = {
   id: string; name: string; sku_code: string | null; hsn_code: string | null; pack_size: string | null;
   description: string | null; image_url: string | null; certifications: string[] | null; country_of_origin: string | null;
-  fob_price: number | null; exw_price: number | null; cif_price: number | null; pricing_currency: string | null;
+  fob_price: number | null; exw_price: number | null; cif_price: number | null; ddp_price?: number | null; pricing_currency: string | null;
+  moq_cases?: number | null; moq_kg?: number | null; lead_time_days?: number | null; variant_pack_label?: string | null; variant_pack_size?: string | null;
 };
+type PriceListOptions = { markets: string[]; buyerSegments: string[] };
 
 const STATUSES: PriceListStatus[] = ['draft', 'active', 'expired', 'archived'];
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'AED', 'AUD', 'CAD', 'SGD'];
@@ -29,6 +31,16 @@ function fmtDate(v: string | null) {
   if (!v) return '—';
   const d = new Date(v.includes('T') ? v : `${v}T00:00:00`);
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function uniqueWithCurrent(options: string[], current: string) {
+  return Array.from(new Set([current, ...options].map((v) => String(v ?? '').trim()).filter(Boolean)));
+}
+function priceForIncoterm(product: PickerProduct, incoterm: string | null | undefined) {
+  const key = String(incoterm ?? '').toUpperCase();
+  if (key === 'EXW' || key === 'FCA') return product.exw_price ?? product.fob_price ?? product.cif_price ?? product.ddp_price ?? null;
+  if (key === 'CIF' || key === 'CFR') return product.cif_price ?? product.fob_price ?? product.exw_price ?? product.ddp_price ?? null;
+  if (key === 'DAP' || key === 'DDP') return product.ddp_price ?? product.cif_price ?? product.fob_price ?? product.exw_price ?? null;
+  return product.fob_price ?? product.exw_price ?? product.cif_price ?? product.ddp_price ?? null;
 }
 
 const inp: CSSProperties = { width: '100%', border: '1px solid #dbe6ef', borderRadius: 9, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', outline: 'none', marginTop: 4 };
@@ -126,7 +138,12 @@ function EditPanel({ list, onClose, onSaved }: { list: ListRow | null; onClose: 
     status: (list?.status ?? 'draft') as PriceListStatus, notes: list?.notes ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [options, setOptions] = useState<PriceListOptions>({ markets: [], buyerSegments: [] });
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    fetch('/api/price-lists/options', { cache: 'no-store' }).then((r) => r.json()).then((d) => setOptions({ markets: d.markets ?? [], buyerSegments: d.buyerSegments ?? [] })).catch(() => {});
+  }, []);
 
   async function save() {
     setSaving(true);
@@ -135,6 +152,9 @@ function EditPanel({ list, onClose, onSaved }: { list: ListRow | null; onClose: 
     setSaving(false);
     if (res.ok) onSaved();
   }
+
+  const marketOptions = uniqueWithCurrent(options.markets, f.market);
+  const segmentOptions = uniqueWithCurrent(options.buyerSegments, f.buyer_segment);
 
   return (
     <>
@@ -148,16 +168,17 @@ function EditPanel({ list, onClose, onSaved }: { list: ListRow | null; onClose: 
           <label style={lbl}>Name<input style={inp} value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="2026 USD FOB Export" /></label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <label style={lbl}>Currency<select style={inp} value={f.currency} onChange={(e) => set('currency', e.target.value)}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select></label>
-            <label style={lbl}>Status<select style={inp} value={f.status} onChange={(e) => set('status', e.target.value)}>{STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}</select></label>
+            <label style={lbl}>Status<select style={inp} value={f.status} onChange={(e) => set('status', e.target.value as PriceListStatus)}>{STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}</select></label>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <label style={lbl}>Incoterm<select style={inp} value={f.incoterm} onChange={(e) => set('incoterm', e.target.value)}><option value="">—</option>{INCOTERMS.map((i) => <option key={i}>{i}</option>)}</select></label>
             <label style={lbl}>Incoterm Location<input style={inp} value={f.incoterm_location} onChange={(e) => set('incoterm_location', e.target.value)} placeholder="Nhava Sheva" /></label>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <label style={lbl}>Market / Region<input style={inp} value={f.market} onChange={(e) => set('market', e.target.value)} placeholder="Middle East" /></label>
-            <label style={lbl}>Buyer Segment<input style={inp} value={f.buyer_segment} onChange={(e) => set('buyer_segment', e.target.value)} placeholder="Distributor" /></label>
+            <label style={lbl}>Market / Region<select style={inp} value={f.market} onChange={(e) => set('market', e.target.value)}><option value="">—</option>{marketOptions.map((m) => <option key={m} value={m}>{m}</option>)}</select></label>
+            <label style={lbl}>Buyer Segment<select style={inp} value={f.buyer_segment} onChange={(e) => set('buyer_segment', e.target.value)}><option value="">—</option>{segmentOptions.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
           </div>
+          <p style={{ margin: '-6px 0 0', color: '#94a3b8', fontSize: 11 }}>Options are reused from active markets, existing price lists, and lead data. Existing saved values remain selectable.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <label style={lbl}>Valid From<input type="date" style={inp} value={f.valid_from ?? ''} onChange={(e) => set('valid_from', e.target.value)} /></label>
             <label style={lbl}>Valid Until<input type="date" style={inp} value={f.valid_until ?? ''} onChange={(e) => set('valid_until', e.target.value)} /></label>
@@ -222,6 +243,7 @@ function DetailPanel({ listId, canManage, onClose, onEdit, onChanged }: { listId
               <span><strong>{list.currency}</strong></span>
               {list.incoterm && <span>{list.incoterm}{list.incoterm_location ? ` · ${list.incoterm_location}` : ''}</span>}
               {list.market && <span>{list.market}</span>}
+              {list.buyer_segment && <span>{list.buyer_segment}</span>}
               {list.valid_until && <span>Valid until {fmtDate(list.valid_until)}</span>}
               {isExpired(list) && <span style={{ color: '#dc2626', fontWeight: 700 }}>⚠ Expired</span>}
             </div>
@@ -290,6 +312,7 @@ function DetailPanel({ listId, canManage, onClose, onEdit, onChanged }: { listId
           existing={editItem}
           existingTiers={editItem ? (tiersByItem[editItem.id] ?? []) : []}
           defaultCurrency={list?.currency ?? 'USD'}
+          priceListIncoterm={list?.incoterm ?? ''}
           onClose={() => { setAdding(false); setEditItem(null); }}
           onSaved={async () => { setAdding(false); setEditItem(null); await load(); onChanged(); }}
         />
@@ -300,8 +323,8 @@ function DetailPanel({ listId, canManage, onClose, onEdit, onChanged }: { listId
 
 // ---- Item + tier editor ----------------------------------------------------
 type TierForm = { tier_qty_min: string; tier_qty_max: string; unit_price: string; discount_pct: string };
-function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency, onClose, onSaved }: {
-  listId: string; products: PickerProduct[]; existing: PriceListItem | null; existingTiers: PriceListTier[]; defaultCurrency: string; onClose: () => void; onSaved: () => void;
+function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency, priceListIncoterm, onClose, onSaved }: {
+  listId: string; products: PickerProduct[]; existing: PriceListItem | null; existingTiers: PriceListTier[]; defaultCurrency: string; priceListIncoterm: string; onClose: () => void; onSaved: () => void;
 }) {
   const [productId, setProductId] = useState(existing?.product_id ?? '');
   const [search, setSearch] = useState('');
@@ -311,6 +334,7 @@ function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency
   const [currency, setCurrency] = useState(existing?.currency ?? defaultCurrency);
   const [leadTime, setLeadTime] = useState(existing?.lead_time_days != null ? String(existing.lead_time_days) : '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [autoNote, setAutoNote] = useState('');
   const [tierForms, setTierForms] = useState<TierForm[]>(
     existingTiers.length
       ? existingTiers.slice(0, 3).map((t) => ({ tier_qty_min: t.tier_qty_min != null ? String(t.tier_qty_min) : '', tier_qty_max: t.tier_qty_max != null ? String(t.tier_qty_max) : '', unit_price: t.unit_price != null ? String(t.unit_price) : '', discount_pct: t.discount_pct != null ? String(t.discount_pct) : '' }))
@@ -318,11 +342,26 @@ function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency
   );
   const [saving, setSaving] = useState(false);
 
+  const selectedProduct = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId]);
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return products.filter((p) => !q || p.name.toLowerCase().includes(q) || (p.sku_code ?? '').toLowerCase().includes(q)).slice(0, 50);
   }, [products, search]);
 
+  function applyProduct(p: PickerProduct) {
+    setProductId(p.id);
+    if (existing) return;
+    const price = priceForIncoterm(p, priceListIncoterm);
+    if (price != null) setUnitPrice(String(price));
+    setCurrency(p.pricing_currency || defaultCurrency);
+    if (p.moq_kg != null) { setMoq(String(p.moq_kg)); setMoqUnit('kg'); }
+    else if (p.moq_cases != null) { setMoq(String(p.moq_cases)); setMoqUnit('cases'); }
+    else { setMoq(''); setMoqUnit('kg'); }
+    if (p.lead_time_days != null) setLeadTime(String(p.lead_time_days));
+    const noteParts = [p.pack_size || p.variant_pack_label || p.variant_pack_size, p.country_of_origin ? `Origin: ${p.country_of_origin}` : null, Array.isArray(p.certifications) && p.certifications.length ? `Certs: ${p.certifications.join(', ')}` : null].filter(Boolean);
+    if (!notes && noteParts.length) setNotes(noteParts.join(' · '));
+    setAutoNote(price != null ? `Auto-filled from ${priceListIncoterm || 'default'} product pricing.` : 'Product selected. No matching price was available, so price can be entered manually.');
+  }
   function setTier(i: number, k: keyof TierForm, v: string) { setTierForms((p) => p.map((t, idx) => idx === i ? { ...t, [k]: v } : t)); }
   function addTier() { setTierForms((p) => p.length >= 3 ? p : [...p, { tier_qty_min: '', tier_qty_max: '', unit_price: '', discount_pct: '' }]); }
   function removeTier(i: number) { setTierForms((p) => p.filter((_, idx) => idx !== i)); }
@@ -355,14 +394,19 @@ function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency
               <input style={inp} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products by name or SKU…" />
               <div style={{ marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 9 }}>
                 {filtered.map((p) => (
-                  <div key={p.id} onClick={() => setProductId(p.id)} style={{ padding: '8px 10px', cursor: 'pointer', background: productId === p.id ? '#eef4fb' : '#fff', borderBottom: '1px solid #f1f5f9', fontSize: 12.5 }}>
+                  <div key={p.id} onClick={() => applyProduct(p)} style={{ padding: '8px 10px', cursor: 'pointer', background: productId === p.id ? '#eef4fb' : '#fff', borderBottom: '1px solid #f1f5f9', fontSize: 12.5 }}>
                     <strong>{p.name}</strong> <span style={{ color: '#94a3b8' }}>{p.sku_code ?? ''}</span>
+                    <div style={{ color: '#94a3b8', fontSize: 11 }}>{p.pricing_currency || defaultCurrency} {priceForIncoterm(p, priceListIncoterm) ?? 'price on request'}{p.moq_kg ? ` · MOQ ${p.moq_kg} kg` : p.moq_cases ? ` · MOQ ${p.moq_cases} cases` : ''}</div>
                   </div>
                 ))}
                 {filtered.length === 0 && <div style={{ padding: 12, color: '#94a3b8', fontSize: 12 }}>No products found.</div>}
               </div>
             </label>
           )}
+          {selectedProduct && <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 10, fontSize: 12, color: '#475569' }}>
+            <strong>{selectedProduct.name}</strong>{selectedProduct.pack_size ? ` · ${selectedProduct.pack_size}` : ''}{selectedProduct.country_of_origin ? ` · ${selectedProduct.country_of_origin}` : ''}
+            {autoNote && <div style={{ marginTop: 4, color: '#279491', fontWeight: 700 }}>{autoNote}</div>}
+          </div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <label style={lbl}>MOQ<input style={inp} type="number" value={moq} onChange={(e) => setMoq(e.target.value)} /></label>
             <label style={lbl}>MOQ Unit<select style={inp} value={moqUnit} onChange={(e) => setMoqUnit(e.target.value as MoqUnit)}>{MOQ_UNITS.map((u) => <option key={u}>{u}</option>)}</select></label>
