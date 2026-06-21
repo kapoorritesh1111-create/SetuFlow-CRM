@@ -7,6 +7,7 @@ type Share = { id: string; token: string; buyer_company: string | null; buyer_na
 type Event = { id: string; catalog_share_id: string; event_type: string; product_id: string | null; meta: any; occurred_at: string };
 
 const EVENT_LABEL: Record<string, string> = {
+  share_created: 'Catalog share created',
   link_opened: 'Opened the catalog',
   product_viewed: 'Viewed a product',
   product_detail_opened: 'Opened product details',
@@ -75,6 +76,7 @@ export default function LeadCatalogActivity({ leadId, leadName }: { leadId: stri
   const tone: Record<string, { bg: string; fg: string }> = {
     active: { bg: '#ecfdf5', fg: '#059669' }, draft: { bg: '#f1f5f9', fg: '#475569' },
     expired: { bg: '#fef2f2', fg: '#dc2626' }, revoked: { bg: '#fef2f2', fg: '#dc2626' },
+    archived: { bg: '#f8fafc', fg: '#94a3b8' },
   };
 
   return (
@@ -105,7 +107,7 @@ export default function LeadCatalogActivity({ leadId, leadName }: { leadId: stri
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     <a href={url} target="_blank" rel="noreferrer" style={{ border: '1px solid #dbe6ef', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 600, color: '#475569', textDecoration: 'none' }}>View share</a>
-                    {!s.quote_id && s.selection_count > 0 && (
+                    {!s.quote_id && s.status !== 'archived' && s.selection_count > 0 && (
                       <button onClick={() => createQuote(s.id)} disabled={busyQuote === s.id} style={{ border: 'none', background: '#1f487c', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', opacity: busyQuote === s.id ? 0.6 : 1 }}>{busyQuote === s.id ? 'Creating…' : 'Create quote'}</button>
                     )}
                     {s.quote_id && <a href={`/quotes/${s.quote_id}`} style={{ border: '1px solid #c7d2fe', background: '#eef2ff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#1f487c', textDecoration: 'none' }}>Open quote</a>}
@@ -118,7 +120,7 @@ export default function LeadCatalogActivity({ leadId, leadName }: { leadId: stri
                           <div style={{ fontSize: 12.5, color: '#334155' }}>{summaries[s.id].summary}</div>
                           {summaries[s.id].hottest.length > 0 && <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Hottest: {summaries[s.id].hottest.join(', ')}</div>}
                           <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            {summaries[s.id].next_action === 'create_quote' && !s.quote_id && s.selection_count > 0 && <button onClick={() => createQuote(s.id)} style={{ border: 'none', background: '#1f487c', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: Create quote</button>}
+                            {summaries[s.id].next_action === 'create_quote' && !s.quote_id && s.status !== 'archived' && s.selection_count > 0 && <button onClick={() => createQuote(s.id)} style={{ border: 'none', background: '#1f487c', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: Create quote</button>}
                             {(summaries[s.id].next_action === 'send_follow_up' || summaries[s.id].next_action === 'switch_channel') && <button onClick={openWizard} style={{ border: '1px solid #1f487c', background: '#fff', color: '#1f487c', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: {NEXT_LABEL[summaries[s.id].next_action]}</button>}
                             {summaries[s.id].next_action === 'resend_catalog' && <button onClick={openWizard} style={{ border: '1px solid #1f487c', background: '#fff', color: '#1f487c', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Recommended: Resend catalog</button>}
                           </div>
