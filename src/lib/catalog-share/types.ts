@@ -3,7 +3,7 @@
 // Aligns with catalog-pricing-model.ts CatalogProductOption — do NOT create parallel pricing types.
 
 export type PriceListStatus = 'draft' | 'active' | 'expired' | 'archived';
-export type CatalogShareStatus = 'draft' | 'active' | 'expired' | 'revoked';
+export type CatalogShareStatus = 'draft' | 'active' | 'expired' | 'revoked' | 'archived';
 export type MoqUnit = 'kg' | 'cases' | 'units';
 
 export type CatalogShareEventType =
@@ -195,9 +195,10 @@ export function generateShareToken(): string {
 // Validate a share is openable by a buyer (used server-side with service role).
 export function isShareOpenable(share: Pick<CatalogShare, 'status' | 'valid_until'>): {
   ok: boolean;
-  reason: 'ok' | 'revoked' | 'expired' | 'draft';
+  reason: 'ok' | 'revoked' | 'expired' | 'draft' | 'archived';
 } {
   if (share.status === 'revoked') return { ok: false, reason: 'revoked' };
+  if (share.status === 'archived') return { ok: false, reason: 'archived' };
   if (share.status === 'draft') return { ok: false, reason: 'draft' };
   if (share.valid_until && new Date(share.valid_until).getTime() < Date.now()) {
     return { ok: false, reason: 'expired' };
