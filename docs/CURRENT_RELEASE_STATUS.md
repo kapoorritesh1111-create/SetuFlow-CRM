@@ -1,6 +1,6 @@
 # Current Release Status
 
-_Last updated: 2026-05-06_
+_Last updated: 2026-06-20_
 
 ## Status
 
@@ -58,3 +58,33 @@ This cleanup improves handoff quality and removes stale static artifacts, but it
 - Added source migration for `client_entitlements` and `client_usage_rollups`.
 - Kept `/admin/modules` and `/admin/client-onboarding` as guarded redirects to the unified internal route.
 - Added module direct-route access guard for client workspaces.
+
+## 2026-06-20 Sprint 34 — Catalog Sharing, Price Lists & Buyer Experience
+
+Catalog sharing shipped end to end and deployed green to production across ten atomic commits. The feature lets a sales user build buyer-specific price lists, share a curated catalog as a secure link, track buyer engagement, and convert buyer selections into a draft quote — with an anonymous, branded buyer surface that never exposes the CRM.
+
+### Delivered (all 25 sprint issues)
+- **Price Lists** (`/price-lists`) — reusable lists with MOQ-based tiers, currency, incoterm, validity.
+- **Catalog Hub** (`/catalog`) — KPI strip + Products (readiness badges), Price Lists, Shared Links manager, Analytics dashboard (recharts).
+- **Share wizard** — 5 steps (products → price list → controls → message → review); Copy/WhatsApp/Email/QR; save-as-draft; launchable from a lead ("Send Catalog").
+- **Buyer share room** (`/catalog/share/[token]`) — token validation, PIN gate, branded expired/revoked/not-found pages, tier-priced cards, MOQ-validated cart, Ask-a-Question, Request Quote, watermarked catalog PDF (gated), mobile-responsive.
+- **Engagement tracking** — full event taxonomy in `catalog_share_events`; lead-timeline activity feed; Shared Links manager (filters, extend/revoke, statuses).
+- **Quote conversion** — buyer selections → draft `quotes` + `quote_line_items` (tier-priced), linked back to the share; rejoins the standard quote pipeline.
+- **Setu Guru catalog AI** — product recommendations, missing-data warnings, message drafting, engagement summaries; all assistive and degrade gracefully to deterministic templates when AI keys are absent.
+
+### New tables (additive, RLS-on)
+`price_lists`, `price_list_items`, `price_list_tiers`, `catalog_shares`, `catalog_share_products`, `catalog_share_events`, `buyer_selections`. Each has one `is_org_member` policy (parents direct, children via parent `EXISTS`); no inline `organization_members` subqueries; no anon policies. The buyer surface reaches data only through token-validated service-role endpoints under `/api/public/catalog-share/<token>/`. `products` and `product_variants` gained export-ready fields; `quotes`/`quote_line_items` reused for conversion.
+
+### Verification posture (honest)
+- All ten chunk builds are green in production, so the full sprint type-checks under `next build`.
+- A programmatic QA pass verified RLS on all seven tables, the public/internal boundary, capability gating on writes, schema integrity of every written column, and the absence of build-killers.
+- The 25 tracker issues are `in_review`, not resolved — they await the owner's manual interactive confirmation (incognito buyer room, PIN gate, expired/revoked pages, channel rendering, mobile at 375/768/1280, and regression of categories/product-import/pricing/leads/quotes).
+
+### Known follow-ups for this feature
+- Set `OPENAI_API_KEY` and `SETU_GURU_MODEL` in Vercel to switch the catalog AI from deterministic fallback to live GPT (`gpt-4.1-mini` via the server-side `/v1/responses` pattern — not the spec's outdated `NEXT_PUBLIC_SETU_GURU_URL`).
+- Product category matching uses product name + country_of_origin: `products` has `category_id` (FK), not `category_type`.
+- Backlog: DB-enforced expiry (cron), clone price list/share, CSV import/export of price-list items, per-variant spec-sheet downloads in the buyer room, Analytics filter UI, tier-overlap validation.
+
+### Documentation refreshed alongside the sprint
+- Setu Guru knowledge files (`docs/setu-guru/`) — catalog-sharing workflow, troubleshooting, and setup guidance.
+- SMC internal docs workspace (`public/internal/setuflow-docs-workspace.js`) — Products & Catalog catalog-sharing section, a Catalog Sharing workflow in Commercial Workflows, a Catalog Sharing flowchart in Flow Diagrams, and a Setu Guru catalog assistant card.

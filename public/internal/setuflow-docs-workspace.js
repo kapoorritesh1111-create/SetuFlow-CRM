@@ -270,7 +270,7 @@ const Docs = (() => {
     const links = {
       'architecture':     ['High-Level Architecture','Component Diagram','Deployment Topology','Tech Stack'],
       'workflows':        ['Lead to Opportunity','Quote to Contract','Order to Cash','Renewal & Upsell'],
-      'diagrams':         ['Lead Flowchart','Quote Flowchart','Order Execution','Swimlane Diagrams'],
+      'diagrams':         ['Lead Flowchart','Quote Flowchart','Order Execution','Catalog Sharing','Swimlane Diagrams'],
       'operator-guides':  ['Lead to Quote','Quote Build & Send','Order Execution','Finance Closeout'],
       'guru-ai':          ['Page Context Help','Business Card Scan','Smart vCard','Live Org Search'],
       'live-ui':          ['Dashboard Snapshots','Pipeline Workspace','Orders Cockpit','Mobile Capture'],
@@ -1368,7 +1368,33 @@ const Docs = (() => {
 <tr><td><b>Digital vCard</b></td><td><span class="badge badge-green">Live</span></td><td><code>/contact-exchange/vcard</code></td><td>Public contact exchange and vCard intake for trade-show lead capture</td></tr>
 <tr><td><b>Trade event capture</b></td><td><span class="badge badge-blue">Configured</span></td><td><code>/trade-events</code></td><td>Trade-show event defaults, source labels, and capture flows for lead intake</td></tr>
 <tr><td><b>Operational tasks</b></td><td><span class="badge badge-slate">Internal</span></td><td><code>/tasks</code></td><td>Scheduled task creation and completion for follow-ups and order execution milestones</td></tr>
-</tbody></table></div>`;
+</tbody></table></div>
+<div class="section-block"><h2>Catalog Sharing Workflow</h2>
+<p>A parallel, buyer-facing workflow that runs alongside the commercial spine. A sales user curates a buyer-specific catalog, shares it as a secure link, tracks how the buyer engages, and converts the buyer&rsquo;s selections into a draft quote &mdash; which then rejoins the standard Quote &rarr; Approval &amp; Send pipeline. The buyer never sees the CRM.</p>
+</div>
+<div class="doc-alert doc-alert-teal">Catalog spine: <strong>Price List &rarr; Build Share &rarr; Buyer Share Room &rarr; Engagement &rarr; Convert to Quote</strong>. Sharing and price-list creation require the <code>catalog.manage</code> capability. The buyer surface is anonymous and reaches data only through token-validated service-role endpoints.</div>
+<div class="wf-pipeline">
+  <div class="wf-stage st-complete"><div class="wf-stage-label">Price List</div><div class="wf-stage-route">/price-lists</div></div>
+  <div class="wf-stage st-complete"><div class="wf-stage-label">Build Share</div><div class="wf-stage-route">/catalog</div></div>
+  <div class="wf-stage st-active"><div class="wf-stage-label">Buyer Room</div><div class="wf-stage-route">/catalog/share/[token]</div></div>
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Engagement</div><div class="wf-stage-route">/catalog [Shared Links]</div></div>
+  <div class="wf-stage st-pending"><div class="wf-stage-label">Convert to Quote</div><div class="wf-stage-route">/quotes</div></div>
+</div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Stage</th><th>Route</th><th>Primary CTAs</th><th>System Behavior</th><th>Blockers</th><th>Main Tables</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-teal">Price List</span></td><td><code>/price-lists</code></td><td>Create list, Add products, Add tiers</td><td>Reusable price list: MOQ + base price + up to 3 quantity tiers, currency, incoterm, validity</td><td>No active price list means products show &ldquo;price on request&rdquo;</td><td><code>price_lists</code>, <code>price_list_items</code>, <code>price_list_tiers</code></td></tr>
+<tr><td><span class="badge badge-blue">Build Share</span></td><td><code>/catalog</code></td><td>Share Catalog (5-step wizard), Send Catalog (from lead)</td><td>Select products + price list, set buyer + controls (validity, PIN, PDF/tracking), draft message, create link</td><td>No products selected; no price and no price list (high-risk block)</td><td><code>catalog_shares</code>, <code>catalog_share_products</code></td></tr>
+<tr><td><span class="badge badge-amber">Buyer Room</span></td><td><code>/catalog/share/[token]</code></td><td>Browse, Ask question, Select for quote, Request quote, Download PDF</td><td>Anonymous branded showroom; PIN gate; tier pricing; MOQ-validated cart; watermarked PDF when allowed</td><td>Expired / revoked / wrong PIN show branded unavailable pages</td><td><code>buyer_selections</code>, <code>catalog_share_events</code></td></tr>
+<tr><td><span class="badge badge-blue">Engagement</span></td><td><code>/catalog</code> [Shared Links / Analytics]</td><td>Copy, Open, Extend, Revoke, AI summary</td><td>Tracks opens, views, selections, questions, downloads; Shared Links manager + Analytics; lead timeline feed</td><td>None &mdash; read/track only</td><td><code>catalog_share_events</code>, <code>catalog_shares</code></td></tr>
+<tr><td><span class="badge badge-green">Convert to Quote</span></td><td><code>/quotes</code></td><td>Create Quote (from selections)</td><td>Draft quote pre-filled with selected products, quantities, and tier prices; links back to the share; rejoins the standard quote pipeline</td><td>Share must be linked to a lead (<code>quotes.lead_id</code> is NOT NULL)</td><td><code>quotes</code>, <code>quote_line_items</code></td></tr>
+</tbody></table></div>
+<div class="doc-alert doc-alert-amber"><strong>Setu Guru (assistive, non-blocking):</strong> recommends products for the buyer, warns about missing product data, drafts the buyer email + WhatsApp message, and summarizes engagement with a recommended next action. All AI degrades gracefully to deterministic templates when AI keys are not configured.</div>
+<div class="swimlane" style="margin:16px 0">
+  <div class="swimlane-row"><div class="swimlane-label"><small>Internal</small><b>Curate &amp; send</b></div><div class="swimlane-steps"><div class="lane-step"><b>Build price list</b><span>Products, MOQ, tiers</span></div><div class="lane-step"><b>Share wizard</b><span>Products &rarr; price list &rarr; controls &rarr; message &rarr; review</span></div><div class="lane-step system"><b>Link created</b><span>Copy / WhatsApp / Email / QR</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Buyer</small><b>Browse &amp; select</b></div><div class="swimlane-steps"><div class="lane-step"><b>Open link</b><span>PIN if set; tracked</span></div><div class="lane-step"><b>Select products</b><span>MOQ-validated, tier-priced</span></div><div class="lane-step"><b>Request quote</b><span>or ask a question</span></div></div></div>
+  <div class="swimlane-row"><div class="swimlane-label"><small>Internal</small><b>Track &amp; convert</b></div><div class="swimlane-steps"><div class="lane-step"><b>See engagement</b><span>Shared Links + lead timeline</span></div><div class="lane-step system"><b>Create Quote</b><span>tier-priced draft</span></div><div class="lane-step"><b>Approval &amp; Send</b><span>standard quote pipeline</span></div></div></div>
+</div>`;
     return null;
   }
 
@@ -1531,6 +1557,40 @@ flowchart LR
   W --> X[Stage 6 Invoice Closeout]
   X --> Y[Approve Final Invoice]
   Y --> Z([Paid and Closed])
+  </pre>
+</div>
+
+<div class="mermaid-wrap">
+  <div class="diagram-title">Catalog Sharing Flowchart</div>
+  <pre class="mermaid">
+flowchart LR
+  A([Build Price List]) --> B[Open Share Wizard]
+  B --> C{Products + Price List}
+  C -->|Missing price, no list| C1[Fix or Remove]
+  C1 --> C
+  C -->|Ready| D[Set Controls]
+  D --> E[Validity, PIN, PDF, Tracking]
+  E --> F[Draft Message]
+  F --> G([Create Link])
+  G --> H{Send Channel}
+  H -->|Copy| I[Link]
+  H -->|WhatsApp| I
+  H -->|Email| I
+  H -->|QR| I
+  I --> J[Buyer Opens Room]
+  J --> K{PIN Required?}
+  K -->|Invalid| K1([Blocked])
+  K -->|Valid or none| L[Browse Tier-Priced Cards]
+  L --> M[Select Products]
+  M --> N{Buyer Action}
+  N -->|Ask Question| O[Question Logged]
+  N -->|Request Quote| P[Selections Saved]
+  O --> Q[Engagement Tracked]
+  P --> Q
+  Q --> R{Has Selections?}
+  R -->|Yes| S[Create Quote]
+  R -->|No| T[Follow-up or Resend]
+  S --> U([Draft Quote - Approval and Send])
   </pre>
 </div>
 
