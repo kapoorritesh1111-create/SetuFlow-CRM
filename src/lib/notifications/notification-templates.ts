@@ -7,7 +7,8 @@ export type NotifType =
   | 'rfq_received'
   | 'payment_received'
   | 'approval_request'
-  | 'quote_opened';
+  | 'quote_opened'
+  | 'catalog_engagement';
 
 export type NotificationPriority = 'normal' | 'high' | 'critical';
 
@@ -135,6 +136,15 @@ export function getNotificationTemplate(
         icon: 'eye',
         priority: 'normal',
         entityType: 'quote'
+      };
+    case 'catalog_engagement':
+      return {
+        type,
+        title: withRef('Catalog engagement', context.entityRef),
+        body: `${context.companyName || 'A buyer'} engaged with a shared catalog. Review activity and follow up while interest is warm.`,
+        icon: 'bar-chart-3',
+        priority: 'high',
+        entityType: 'lead'
       };
   }
 }
