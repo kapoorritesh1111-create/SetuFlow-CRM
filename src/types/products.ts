@@ -68,6 +68,8 @@ export type ProductDetailVariant = {
   variant_name: string;
   pack_label: string | null;
   units_per_case: number | null;
+  moq_cases: number | null;
+  moq_kg: number | null;
   moq_display: string | null;
   is_quoteable: boolean;
   pricing_mode_default: PricingBasis;
@@ -147,6 +149,13 @@ export type ProductDetailResponse = {
 
 export type UpdateProductVariantPayload = {
   product_variant_id: string;
+  variant_name?: string | null;
+  sku_code?: string | null;
+  pack_label?: string | null;
+  units_per_case?: number | null;
+  moq_cases?: number | null;
+  moq_kg?: number | null;
+  pricing_mode_default?: "unit" | "case" | "kg" | null;
   is_quoteable?: boolean;
   ex_factory_value?: number | null;
   ex_factory_unit?: "unit" | "case" | "kg" | null;
