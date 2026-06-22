@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PRODUCT_ROUTES } from "@/lib/product-contract";
 import { deleteProduct } from "@/features/products/api/delete-product";
 import { updateProductDetail } from "@/features/products/api/update-product-detail";
@@ -48,7 +48,7 @@ function firstVariant(detail: ProductDetailResponse | null) { return detail?.var
 function fileNameFromUrl(value: string | null | undefined) { if (!value) return "No image saved"; try { const parsed = new URL(value); return decodeURIComponent(parsed.pathname.split("/").filter(Boolean).at(-1) ?? value); } catch { return value.split("/").filter(Boolean).at(-1) ?? value; } }
 
 function FieldCard({ label, value, hint, wide = false }: { label: string; value: unknown; hint?: string; wide?: boolean }) { return <div className={`rounded-2xl border border-slate-200 bg-slate-50/80 p-3 ${wide ? "md:col-span-2" : ""}`}><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div><div className="mt-1 text-sm font-black text-slate-950">{valueOrDash(value)}</div>{hint ? <div className="mt-1 text-[11px] text-slate-500">{hint}</div> : null}</div>; }
-function SectionCard({ title, eyebrow, action, children }: { title: string; eyebrow?: string; action?: React.ReactNode; children: React.ReactNode }) { return <section className="rounded-[1.4rem] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]"><div className="mb-4 flex items-start justify-between gap-3"><div>{eyebrow ? <p className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600">{eyebrow}</p> : null}<h3 className="mt-1 text-base font-black tracking-[-0.02em] text-slate-950">{title}</h3></div>{action}</div>{children}</section>; }
+function SectionCard({ title, eyebrow, action, children }: { title: string; eyebrow?: string; action?: ReactNode; children: ReactNode }) { return <section className="rounded-[1.4rem] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]"><div className="mb-4 flex items-start justify-between gap-3"><div>{eyebrow ? <p className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600">{eyebrow}</p> : null}<h3 className="mt-1 text-base font-black tracking-[-0.02em] text-slate-950">{title}</h3></div>{action}</div>{children}</section>; }
 function QuickMetric({ label, value, hint }: { label: string; value: string; hint: string }) { return <div className="rounded-2xl border border-slate-200 bg-white/85 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div><div className="mt-1 text-lg font-black tracking-[-0.04em] text-slate-950">{value}</div><div className="text-[11px] text-slate-500">{hint}</div></div>; }
 
 function ProductImageBlock({ detail, onSaved, canManageCatalog, onActionBlocked }: { detail: ProductDetailResponse; onSaved: (detail: ProductDetailResponse) => Promise<void> | void; canManageCatalog: boolean; onActionBlocked?: (message: string) => void }) {
