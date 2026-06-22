@@ -8,6 +8,7 @@ export type ProductsSpreadsheetRow = {
   product_name: string | null;
   category_name: string | null;
   brand_name: string | null;
+  image_url: string | null;
   pack_label: string | null;
   units_per_case: number | null;
   moq_value: number | null;
@@ -129,6 +130,7 @@ export type ProductDetailResponse = {
     name: string;
     category_name: string | null;
     brand_name: string | null;
+    image_url: string | null;
     pricing_type: string | null;
     description: string | null;
     is_active: boolean;
@@ -161,6 +163,7 @@ export type UpdateProductVariantPayload = {
 export type UpdateProductPayload = {
   name?: string;
   brand_name?: string | null;
+  image_url?: string | null;
   description?: string | null;
   is_active?: boolean;
   variants?: UpdateProductVariantPayload[];
