@@ -274,17 +274,18 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
                     <input style={inp} placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} />
                     {needsDataCount > 0 && (() => {
                       const agg: Record<string, number> = {};
-                      let noPrice = 0;
+                      let noPrice = 0; let noImage = 0;
                       for (const p of pickedProducts) {
                         const r = computeProductReadiness(p);
-                        for (const m of r.missing) agg[m] = (agg[m] ?? 0) + 1;
+                        for (const m of r.missing) { if (m === 'image') { noImage += 1; continue; } agg[m] = (agg[m] ?? 0) + 1; }
                         if (p.fob_price == null && p.exw_price == null && p.cif_price == null && !priceListId) noPrice += 1;
                       }
                       const lines = Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([f, n]) => `${n} missing ${f}`);
                       return (
                         <div style={{ marginTop: 8 }}>
                           {noPrice > 0 && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: 9, padding: '8px 10px', fontSize: 12, marginBottom: 6 }}>⛔ {noPrice} selected product{noPrice > 1 ? 's have' : ' has'} no price and no price list — buyers will see “price on request”. Add a price list in step 2 or remove these.</div>}
-                          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', borderRadius: 9, padding: '8px 10px', fontSize: 12 }}>⚠ Buyers will see incomplete cards: {lines.join(' · ')}. You can still share, or complete these in the catalog editor first.</div>
+                          {lines.length > 0 && <div style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', borderRadius: 9, padding: '8px 10px', fontSize: 12 }}>⚠ Buyers will see incomplete cards: {lines.join(' · ')}. You can still share, or complete these in the catalog editor first.</div>}
+                          {noImage > 0 && <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', borderRadius: 9, padding: '7px 10px', fontSize: 11.5, marginTop: 6 }}>🖼 {noImage} product{noImage > 1 ? 's' : ''} without an image — optional. Buyers still see a clean card; add images anytime.</div>}
                         </div>
                       );
                     })()}
@@ -339,7 +340,13 @@ export function ShareCatalogWizard({ open, onClose, leadPrefill }: { open: boole
                           return (
                             <div key={p.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 10 }}>
                               <div style={{ fontSize: 12.5, fontWeight: 700 }}>{p.name}</div>
-                              {!it ? <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>Not in this price list — buyer will see “price on request”.</div>
+                              {!it ? (() => {
+                                  const base = p.fob_price ?? p.exw_price ?? p.cif_price ?? null;
+                                  const baseCcy = p.pricing_currency || currency || 'USD';
+                                  return base != null
+                                    ? <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Not in this list — buyer sees the product base price <strong>{baseCcy} {Number(base).toFixed(2)}</strong>. Add to the list to set MOQ / tiers.</div>
+                                    : <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>Not in this price list and no base price — buyer will see “price on request”.</div>;
+                                })()
                                 : tiers.length > 0 ? (
                                   <table style={{ width: '100%', marginTop: 6, fontSize: 11, borderCollapse: 'collapse' }}>
                                     <thead><tr style={{ color: '#94a3b8', textAlign: 'left' }}><th style={{ padding: '2px 5px' }}>Qty</th><th style={{ padding: '2px 5px' }}>Price ({it.currency || currency})</th><th style={{ padding: '2px 5px' }}>Disc</th></tr></thead>

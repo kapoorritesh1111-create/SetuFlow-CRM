@@ -31,10 +31,10 @@ export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const KPI = [
-    { label: 'Total Products', value: kpis.products, sub: '' },
-    { label: 'Active Price Lists', value: kpis.activePriceLists, sub: '' },
-    { label: 'Shares Sent', value: kpis.sharesSent, sub: '' },
-    { label: 'Quote Conversion', value: `${kpis.conversionPct}%`, sub: '' },
+    { label: 'Total Products', value: kpis.products, sub: 'in catalog', icon: '📦', accent: '#1f487c' },
+    { label: 'Active Price Lists', value: kpis.activePriceLists, sub: 'ready to share', icon: '🏷', accent: '#279491' },
+    { label: 'Shares Sent', value: kpis.sharesSent, sub: 'to buyers', icon: '📨', accent: '#7c3aed' },
+    { label: 'Quote Conversion', value: `${kpis.conversionPct}%`, sub: 'shares → quotes', icon: '📈', accent: '#059669' },
   ];
   // Products are edited on /products (single source of truth). This space is the
   // buyer-sharing command center only — no duplicate product editor (S34-CATALOG-038).
@@ -61,26 +61,33 @@ export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis
       </div>
 
       {/* KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 14, marginBottom: 22 }}>
         {KPI.map((k) => (
-          <div key={k.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#1f487c', fontFamily: "'DM Mono',monospace" }}>{k.value}</div>
-            <div style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600, marginTop: 2 }}>{k.label}</div>
+          <div key={k.label} style={{ position: 'relative', background: '#fff', border: '1px solid #e8eef5', borderRadius: 16, padding: '16px 18px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px -16px rgba(15,23,42,.18)', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: k.accent }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.label}</div>
+              <div style={{ width: 30, height: 30, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 15, background: `${k.accent}14` }}>{k.icon}</div>
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 800, color: k.accent, fontFamily: "'DM Mono',monospace", marginTop: 8, lineHeight: 1 }}>{k.value}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 5 }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0', marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {tabs.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ border: 'none', background: 'transparent', padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: tab === t.id ? '#1f487c' : '#94a3b8', borderBottom: tab === t.id ? '2px solid #279491' : '2px solid transparent', marginBottom: -1 }}>{t.label}</button>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ border: tab === t.id ? '1px solid #cde0db' : '1px solid transparent', background: tab === t.id ? 'linear-gradient(135deg,rgba(31,72,124,.06),rgba(39,148,145,.08))' : 'transparent', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: tab === t.id ? '#1f487c' : '#94a3b8', borderRadius: 999, transition: 'all .15s' }}>{t.label}</button>
         ))}
       </div>
 
-      {tab === 'products' && <ProductsTab />}
-      {tab === 'price-lists' && <PriceListsTab />}
-      {tab === 'shared-links' && <SharedLinksTab canManage={canManage} onShare={() => setWizardOpen(true)} />}
-      {tab === 'analytics' && <AnalyticsTab kpis={kpis} />}
+      <div style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 18, padding: 18, boxShadow: '0 1px 2px rgba(15,23,42,.03)', minHeight: 360 }}>
+        {tab === 'products' && <ProductsTab />}
+        {tab === 'price-lists' && <PriceListsTab />}
+        {tab === 'shared-links' && <SharedLinksTab canManage={canManage} onShare={() => setWizardOpen(true)} />}
+        {tab === 'analytics' && <AnalyticsTab kpis={kpis} />}
+      </div>
 
       <ShareCatalogWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
@@ -188,8 +195,15 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
         {canManage && <button style={{ ...btnP, marginLeft: 'auto' }} onClick={onShare}>Share Catalog</button>}
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 16, alignItems: 'start' }}>
+        <div style={{ minWidth: 0 }}>
       {filtered.length === 0 ? (
-        <div style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>No catalog shares match.</div>
+        <div style={{ border: '1px dashed #cbd9e6', borderRadius: 14, padding: '44px 28px', textAlign: 'center', background: 'linear-gradient(180deg,#fbfdff,#f5f9fd)' }}>
+          <div style={{ fontSize: 34 }}>📨</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', marginTop: 8 }}>{shares.length === 0 ? 'No buyer shares yet' : 'No shares match these filters'}</div>
+          <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 6, maxWidth: 360, marginInline: 'auto' }}>{shares.length === 0 ? 'Share a curated set of products and a price list with a buyer, then track opens, selections and quote conversion here.' : 'Try clearing the status or price-list filter.'}</div>
+          {canManage && shares.length === 0 && <button style={{ ...btnP, marginTop: 16 }} onClick={onShare}>Share your first catalog</button>}
+        </div>
       ) : (
         <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -229,6 +243,31 @@ function SharedLinksTab({ canManage, onShare }: { canManage: boolean; onShare: (
           </table>
         </div>
       )}
+        </div>
+        <aside style={{ display: 'grid', gap: 12, position: 'sticky', top: 8 }}>
+          <div style={{ background: 'linear-gradient(135deg,#0b2545,#1f487c)', color: '#fff', borderRadius: 16, padding: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', opacity: .85 }}>Sharing playbook</div>
+            <ol style={{ margin: '10px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 9 }}>
+              {[['Pick products', 'Curate the set this buyer cares about.'], ['Attach a price list', 'MOQ + tier pricing auto-fill from your products.'], ['Set controls', 'Expiry, watermark and access for the buyer link.'], ['Share & track', 'See opens, selections and convert to a quote.']].map(([t, d], i) => (
+                <li key={i} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+                  <span style={{ flex: '0 0 20px', height: 20, borderRadius: 999, background: 'rgba(255,255,255,.15)', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 800 }}>{i + 1}</span>
+                  <span><span style={{ fontSize: 12.5, fontWeight: 700 }}>{t}</span><br /><span style={{ fontSize: 11.5, opacity: .8 }}>{d}</span></span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          {canManage && (
+            <div style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 16, padding: 16 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: '#1e293b' }}>Quick actions</div>
+              <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+                <Link href="/products" style={btnG}>Manage products →</Link>
+                <Link href="/price-lists" style={btnG}>Build a price list →</Link>
+                <button style={btnP} onClick={onShare}>Share catalog</button>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
 
       {extendId && (
         <div onClick={() => setExtendId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

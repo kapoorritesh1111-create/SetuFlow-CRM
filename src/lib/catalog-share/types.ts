@@ -164,12 +164,13 @@ export function computeProductReadiness(p: ProductReadinessInput): {
   const missing = checks.filter((c) => !c.ok).map((c) => c.key);
 
   const hasPrice = checks.find((c) => c.key === 'price')?.ok ?? false;
-  const hasImage = checks.find((c) => c.key === 'image')?.ok ?? false;
+  // Image is optional — a product missing only an image is still shareable and
+  // should not be flagged as a blocker (S34-CATALOG-047). Price is the only hard gate.
+  const hardMissing = missing.filter((k) => k !== 'image');
 
   let status: ProductReadiness;
   if (!hasPrice) status = 'missing_price';
-  else if (!hasImage) status = 'missing_image';
-  else if (missing.length > 0) status = 'needs_data';
+  else if (hardMissing.length > 0) status = 'needs_data';
   else status = 'ready';
 
   return { status, score, missing };
