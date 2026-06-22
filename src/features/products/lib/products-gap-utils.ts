@@ -9,10 +9,6 @@ function hasAnyDisplay(...values: Array<string | null | undefined>) {
 export function getProductGapState(row: ProductsSpreadsheetRow): ProductGapState {
   if (!row.is_active) return 'inactive';
 
-  // S34-CATALOG-053: base pricing is the default market-active price.
-  // Do not mark a row as a market pricing gap just because a normalized
-  // per-unit display is missing; case/kg/default display pricing is enough
-  // to make the variant shareable unless every usable base price is absent.
   const hasExFactoryPrice = hasAnyDisplay(
     row.ex_factory_display,
     row.ex_factory_per_unit_display,
@@ -23,14 +19,16 @@ export function getProductGapState(row: ProductsSpreadsheetRow): ProductGapState
     row.fob_per_unit_display,
     row.fob_per_case_display,
   );
+  const hasCifPrice = hasAnyDisplay(row.cif_display);
   const hasBulkPrice = hasAnyDisplay(row.bulk_display);
+  const hasAnyPrice = hasExFactoryPrice || hasFobPrice || hasCifPrice || hasBulkPrice;
 
   if (row.pricing_mode_default === 'kg') {
-    if (!hasBulkPrice && !hasExFactoryPrice && !hasFobPrice) return 'bulk_gap';
+    if (!hasAnyPrice) return 'bulk_gap';
     return 'complete';
   }
 
-  if (!hasExFactoryPrice && !hasFobPrice) return 'pricing_gap';
+  if (!hasAnyPrice) return 'pricing_gap';
   return 'complete';
 }
 
