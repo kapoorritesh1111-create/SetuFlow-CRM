@@ -58,6 +58,14 @@ function categoryAccent(category: string | null) {
   return 'bg-blue-500 text-blue-700';
 }
 
+function ProductThumb({ row }: { row: ProductsSpreadsheetRow }) {
+  return (
+    <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
+      <img src={`/api/products/${encodeURIComponent(row.product_id)}/image`} alt="" className="h-full w-full object-cover" loading="lazy" />
+    </span>
+  );
+}
+
 function EditablePriceCell({
   row,
   field,
@@ -164,7 +172,7 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
 
   return (
     <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-      <div className="grid grid-cols-[28px_minmax(260px,1fr)_140px_90px_120px_120px_110px_150px_170px] gap-0 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+      <div className="grid grid-cols-[28px_minmax(280px,1fr)_140px_90px_120px_120px_110px_150px_170px] gap-0 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
         <div />
         <div><SortButton label="Product / SKU" active={sortBy === 'product_name'} direction={sortOrder} onClick={() => onSortChange('product_name')} /></div>
         <div>Category</div>
@@ -177,7 +185,7 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
       </div>
       <div className="max-h-[64vh] overflow-auto">
         {loading ? skeletonRows.map((row) => (
-          <div key={row} className="grid grid-cols-[28px_minmax(260px,1fr)_140px_90px_120px_120px_110px_150px_170px] border-b border-slate-100 px-4 py-3">
+          <div key={row} className="grid grid-cols-[28px_minmax(280px,1fr)_140px_90px_120px_120px_110px_150px_170px] border-b border-slate-100 px-4 py-3">
             {Array.from({ length: 9 }).map((_, index) => <div key={index} className="px-2"><div className="h-5 animate-pulse rounded bg-slate-100" /></div>)}
           </div>
         )) : rows.map((row) => {
@@ -185,10 +193,10 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
           const accent = categoryAccent(row.category_name);
           const quickQuoteReady = row.is_active && row.is_quoteable && (row.ex_factory_value != null || row.fob_value != null);
           return (
-            <div key={row.product_variant_id} role="button" tabIndex={0} className={`grid grid-cols-[28px_minmax(260px,1fr)_140px_90px_120px_120px_110px_150px_170px] items-center border-b border-slate-100 px-4 py-3 transition last:border-b-0 hover:bg-slate-50 ${gapState !== 'complete' ? 'bg-amber-50/30' : 'bg-white'}`} onClick={() => onOpenProduct(row.product_id, 'overview', row.product_variant_id)} onKeyDown={(event) => { if (event.key === 'Enter') onOpenProduct(row.product_id, 'overview', row.product_variant_id); }}>
+            <div key={row.product_variant_id} role="button" tabIndex={0} className={`grid grid-cols-[28px_minmax(280px,1fr)_140px_90px_120px_120px_110px_150px_170px] items-center border-b border-slate-100 px-4 py-3 transition last:border-b-0 hover:bg-slate-50 ${gapState !== 'complete' ? 'bg-amber-50/30' : 'bg-white'}`} onClick={() => onOpenProduct(row.product_id, 'overview', row.product_variant_id)} onKeyDown={(event) => { if (event.key === 'Enter') onOpenProduct(row.product_id, 'overview', row.product_variant_id); }}>
               <div><input type="checkbox" className="h-4 w-4 rounded border-slate-300" onClick={(event) => event.stopPropagation()} aria-label={`Select ${row.product_name ?? 'product'}`} /></div>
               <div className="flex min-w-0 items-center gap-3">
-                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${accent.split(' ')[0]}`} />
+                <ProductThumb row={row} />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-black text-slate-950">{row.product_name ?? 'Untitled product'}</div>
                   <div className="truncate font-mono text-[11px] text-slate-400">{row.sku_code ?? 'No SKU'} · {row.brand_name ?? 'Roohted'} · MOQ {row.moq_display ?? 'Not set'}</div>
