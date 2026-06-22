@@ -10,7 +10,7 @@ type PickerProduct = {
   fob_price: number | null; exw_price: number | null; cif_price: number | null; ddp_price?: number | null; pricing_currency: string | null;
   moq_cases?: number | null; moq_kg?: number | null; lead_time_days?: number | null; variant_pack_label?: string | null; variant_pack_size?: string | null;
 };
-type PriceListOptions = { markets: string[]; buyerSegments: string[] };
+type PriceListOptions = { markets: string[]; buyerSegments: string[]; fxRates: Record<string, number> };
 
 const STATUSES: PriceListStatus[] = ['draft', 'active', 'expired', 'archived'];
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'AED', 'AUD', 'CAD', 'SGD'];
@@ -65,8 +65,9 @@ export function PriceListManager({ initialLists, canManage }: { initialLists: Li
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#279491', letterSpacing: 0.5, textTransform: 'uppercase' }}>Catalog</div>
+          <div style={{ fontSize: 11.5, margin: '2px 0 0' }}><a href="/products" style={{ color: '#1f487c', fontWeight: 700, textDecoration: 'none' }}>← Products</a> <span style={{ color: '#cbd5e1' }}>/</span> <span style={{ color: '#64748b' }}>Price Lists</span></div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1e293b', margin: '2px 0 0' }}>Price Lists</h1>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Export-ready price lists with MOQ and tier pricing for buyer catalog shares.</p>
+          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Export-ready price lists with MOQ and tier pricing for buyer catalog shares. Products are the source of truth — a list references products and snapshots adjustable pricing.</p>
         </div>
         {canManage && (
           <button style={{ ...btnP, marginLeft: 'auto' }} onClick={() => setCreating(true)}>+ Create Price List</button>
@@ -138,11 +139,11 @@ function EditPanel({ list, onClose, onSaved }: { list: ListRow | null; onClose: 
     status: (list?.status ?? 'draft') as PriceListStatus, notes: list?.notes ?? '',
   });
   const [saving, setSaving] = useState(false);
-  const [options, setOptions] = useState<PriceListOptions>({ markets: [], buyerSegments: [] });
+  const [options, setOptions] = useState<PriceListOptions>({ markets: [], buyerSegments: [], fxRates: { USD: 1 } });
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
-    fetch('/api/price-lists/options', { cache: 'no-store' }).then((r) => r.json()).then((d) => setOptions({ markets: d.markets ?? [], buyerSegments: d.buyerSegments ?? [] })).catch(() => {});
+    fetch('/api/price-lists/options', { cache: 'no-store' }).then((r) => r.json()).then((d) => setOptions({ markets: d.markets ?? [], buyerSegments: d.buyerSegments ?? [], fxRates: d.fxRates ?? { USD: 1 } })).catch(() => {});
   }, []);
 
   async function save() {
@@ -341,6 +342,11 @@ function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency
       : [{ tier_qty_min: '', tier_qty_max: '', unit_price: '', discount_pct: '' }]
   );
   const [saving, setSaving] = useState(false);
+  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1 });
+
+  useEffect(() => {
+    fetch('/api/price-lists/options', { cache: 'no-store' }).then((r) => r.json()).then((d) => setFxRates(d.fxRates ?? { USD: 1 })).catch(() => {});
+  }, []);
 
   const selectedProduct = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId]);
   const filtered = useMemo(() => {
@@ -351,16 +357,30 @@ function ItemEditor({ listId, products, existing, existingTiers, defaultCurrency
   function applyProduct(p: PickerProduct) {
     setProductId(p.id);
     if (existing) return;
-    const price = priceForIncoterm(p, priceListIncoterm);
+    const basePrice = priceForIncoterm(p, priceListIncoterm);
+    const prodCcy = p.pricing_currency || defaultCurrency;
+    // Convert the product's price into the list currency using the most recent
+    // market-average FX rate. fxRates are units-of-currency per 1 USD; passthrough
+    // when a rate is unavailable (S34-CATALOG-045).
+    let price = basePrice;
+    let fxMsg = '';
+    if (basePrice != null && prodCcy !== defaultCurrency) {
+      const from = fxRates[prodCcy];
+      const to = fxRates[defaultCurrency];
+      if (from && to) {
+        price = Number(((basePrice / from) * to).toFixed(4));
+        fxMsg = ` · FX ${prodCcy}→${defaultCurrency} @ ${(to / from).toFixed(4)} (market avg)`;
+      }
+    }
     if (price != null) setUnitPrice(String(price));
-    setCurrency(p.pricing_currency || defaultCurrency);
+    setCurrency(defaultCurrency);
     if (p.moq_kg != null) { setMoq(String(p.moq_kg)); setMoqUnit('kg'); }
     else if (p.moq_cases != null) { setMoq(String(p.moq_cases)); setMoqUnit('cases'); }
     else { setMoq(''); setMoqUnit('kg'); }
     if (p.lead_time_days != null) setLeadTime(String(p.lead_time_days));
     const noteParts = [p.pack_size || p.variant_pack_label || p.variant_pack_size, p.country_of_origin ? `Origin: ${p.country_of_origin}` : null, Array.isArray(p.certifications) && p.certifications.length ? `Certs: ${p.certifications.join(', ')}` : null].filter(Boolean);
     if (!notes && noteParts.length) setNotes(noteParts.join(' · '));
-    setAutoNote(price != null ? `Auto-filled from ${priceListIncoterm || 'default'} product pricing.` : 'Product selected. No matching price was available, so price can be entered manually.');
+    setAutoNote(basePrice != null ? `Auto-filled from ${priceListIncoterm || 'default'} product pricing${fxMsg}.` : 'Product selected. No matching price was available, so price can be entered manually.');
   }
   function setTier(i: number, k: keyof TierForm, v: string) { setTierForms((p) => p.map((t, idx) => idx === i ? { ...t, [k]: v } : t)); }
   function addTier() { setTierForms((p) => p.length >= 3 ? p : [...p, { tier_qty_min: '', tier_qty_max: '', unit_price: '', discount_pct: '' }]); }

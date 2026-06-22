@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Setu Flow | Products → Price Lists — Corrected Workflow Prototype</title>
+<style>
+  :root{--navy:#1f487c;--teal:#279491;--cyan:#34b3a8;--ink:#1e293b;--muted:#64748b;--soft:#eef4fb;--line:#dbe6ef;--ok:#059669;--okbg:#ecfdf5;--warn:#b45309;--warnbg:#fffbeb;--bad:#dc2626;--badbg:#fef2f2;--bg:#f4f7fb}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45;font-size:13px}
+  .mono{font-family:"DM Mono",ui-monospace,Menlo,Consolas,monospace}
+  a{color:var(--navy)}
+  /* shell */
+  .app{display:grid;grid-template-columns:60px 1fr;min-height:100vh}
+  .rail{background:#0b2545;color:#cbd5e1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 0}
+  .rail .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--teal));margin-bottom:10px}
+  .rail .nav{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%}
+  .rail .item{width:100%;text-align:center;padding:8px 0;font-size:9.5px;font-weight:700;color:#90a4bd;cursor:pointer;border-left:3px solid transparent}
+  .rail .item .ic{display:block;font-size:15px;margin-bottom:2px}
+  .rail .item:hover{color:#fff;background:rgba(255,255,255,.05)}
+  .rail .item.active{color:#fff;background:rgba(39,148,145,.18);border-left-color:var(--teal)}
+  .main{min-width:0;display:flex;flex-direction:column}
+  /* topbar */
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;gap:12px}
+  .top .eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+  .top h1{margin:1px 0 0;font-size:20px;color:var(--ink)}
+  .crumbs{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+  .crumbs a{cursor:pointer;text-decoration:none;font-weight:700}
+  .crumbs .sep{opacity:.5}
+  .modetoggle{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;font-size:12px;font-weight:700}
+  .modetoggle button{border:none;background:#fff;color:var(--muted);padding:6px 14px;cursor:pointer}
+  .modetoggle button.on{background:var(--navy);color:#fff}
+  .body{padding:22px 26px;max-width:1240px;width:100%;margin:0 auto}
+  /* tabs */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 18px}
+  .tab{padding:10px 16px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--navy);border-bottom-color:var(--teal)}
+  .tab .badge{display:inline-block;margin-left:6px;background:var(--soft);color:var(--navy);border-radius:999px;padding:1px 7px;font-size:10.5px}
+  /* cards / grid */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .kpi .n{font-size:26px;font-weight:800;color:var(--navy)}
+  .kpi .l{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #eef2f7}
+  .inp{border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12.5px;font-family:inherit;outline:none}
+  .inp:focus{border-color:var(--teal)}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .btn:hover{background:#f8fafc}
+  .btnP{border:none;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;border-radius:9px;padding:8px 16px;font-size:12.5px;font-weight:800;cursor:pointer}
+  .row{display:grid;grid-template-columns:2.4fr 1.3fr .6fr .9fr .9fr .9fr 1.1fr;gap:10px;align-items:center;padding:11px 16px;border-top:1px solid #f1f5f9;font-size:12.5px}
+  .row.head{color:#94a3b8;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-top:none;background:#fbfdff}
+  .row .name{font-weight:700;color:var(--ink)}
+  .row .sub{font-size:10.5px;color:#94a3b8}
+  .price{font-family:"DM Mono",monospace;text-align:right}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:6px}
+  .chip .dot{width:6px;height:6px;border-radius:50%}
+  .ready{background:var(--okbg);color:var(--ok)} .ready .dot{background:#10b981}
+  .gap{background:var(--badbg);color:var(--bad)} .gap .dot{background:#ef4444}
+  .needs{background:var(--warnbg);color:var(--warn)} .needs .dot{background:#f59e0b}
+  .pl-card{display:flex;align-items:center;gap:16px;padding:16px;border-top:1px solid #f1f5f9;cursor:pointer}
+  .pl-card:hover{background:#f8fafc}
+  .pl-card .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:7px;font-size:11.5px;color:var(--muted)}
+  .pl-card .cnt{margin-left:auto;text-align:right}
+  .pl-card .cnt .n{font-size:22px;font-weight:800;color:var(--navy);font-family:"DM Mono",monospace}
+  .status{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:capitalize}
+  .st-draft{background:#f1f5f9;color:#475569}.st-active{background:var(--okbg);color:var(--ok)}.st-expired{background:var(--badbg);color:var(--bad)}
+  .empty{border:2px dashed #e2e8f0;border-radius:14px;padding:42px;text-align:center;color:#94a3b8;margin:16px}
+  /* slide-over */
+  .scrim{position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:40;opacity:0;pointer-events:none;transition:.2s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:#f8fafc;z-index:50;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(15,23,42,.18);transform:translateX(100%);transition:.24s}
+  .sheet.show{transform:translateX(0)}
+  .sheet.wide{width:min(680px,100vw)}
+  .sheet .hd{padding:15px 18px;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;display:flex;align-items:center;gap:10px}
+  .sheet .hd h2{font-size:16px;margin:0}
+  .sheet .hd .x{margin-left:auto;border:none;background:rgba(255,255,255,.16);color:#fff;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer}
+  .sheet .bd{flex:1;overflow:auto;padding:18px;display:grid;gap:14px;align-content:start}
+  .sheet .ft{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:10px;background:#fff}
+  label.fld{display:block;font-size:11px;color:#475569;font-weight:700}
+  label.fld>.inp,label.fld>select.inp{width:100%;margin-top:4px}
+  select.inp{border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12.5px;font-family:inherit;background:#fff}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pickrow{padding:9px 11px;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:12.5px}
+  .pickrow:hover,.pickrow.sel{background:var(--soft)}
+  .autofill{background:#e6f7f4;border:1px solid #b6e3dd;border-radius:10px;padding:10px 12px;font-size:12px;color:#0f5f57}
+  .autofill b{color:#0b463f}
+  .src{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px;background:#dbeafe;color:#1e40af;margin-left:6px}
+  .pl-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px}
+  .pl-item .n{font-weight:700}
+  .pl-item .s{font-size:11px;color:#64748b}
+  .fxnote{font-size:11px;color:var(--muted)}
+  .banner{border-radius:12px;padding:11px 14px;font-size:12.5px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+  .banner.good{background:var(--okbg);border:1px solid #bbf7d0;color:#065f46}
+  .banner.warn{background:var(--warnbg);border:1px solid #fde68a;color:#92400e}
+  .help{font-size:11.5px;color:var(--muted);background:#fbfdff;border:1px dashed #dbe6ef;border-radius:10px;padding:10px 12px}
+  .legendbar{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin:0 0 12px}
+  .miniflow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;font-weight:700;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px}
+  .miniflow .step{background:var(--soft);border-radius:8px;padding:4px 9px}
+  .miniflow .ar{color:var(--teal);font-weight:900}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:10px 18px;border-radius:10px;font-size:12.5px;font-weight:700;opacity:0;transition:.2s;z-index:80}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media(max-width:820px){.kpis{grid-template-columns:1fr 1fr}.row{grid-template-columns:2fr 1fr 1fr;}.row .hide{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- left rail: ONE Catalog entry; Price Lists is reachable as a tab inside it -->
+  <nav class="rail">
+    <div class="logo"></div>
+    <div class="nav">
+      <div class="item"><span class="ic">▦</span>Dash</div>
+      <div class="item"><span class="ic">◎</span>Leads</div>
+      <div class="item"><span class="ic">⛛</span>Pipeline</div>
+      <div class="item"><span class="ic">❝</span>Quotes</div>
+      <div class="item"><span class="ic">▤</span>Orders</div>
+      <div class="item active" onclick="go('products')"><span class="ic">🏷</span>Catalog</div>
+      <div class="item"><span class="ic">🔒</span>Admin</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="top">
+      <div>
+        <div class="eyebrow">Trade Command Center</div>
+        <h1 id="topTitle">Products &amp; Pricing</h1>
+      </div>
+      <div class="modetoggle" id="modeToggle" style="margin-left:24px">
+        <button class="on">Products</button>
+        <button>Pricing view</button>
+        <button>Spreadsheet</button>
+      </div>
+      <div class="crumbs" id="crumbs">
+        <a onclick="go('products')">Catalog</a>
+      </div>
+    </header>
+
+    <div class="body">
+      <div class="miniflow">
+        <span class="step">Products (source of truth)</span><span class="ar">→</span>
+        <span class="step">Price Lists tab</span><span class="ar">→</span>
+        <span class="step">Create list (currency + incoterm)</span><span class="ar">→</span>
+        <span class="step">Add products → auto‑fill FOB + MOQ</span><span class="ar">→</span>
+        <span class="step">Adjust per list</span><span class="ar">→</span>
+        <span class="step">Share / Quote</span>
+      </div>
+
+      <!-- Shared tab bar: Products page IS the catalog. Price Lists is a tab here, not a separate universe. -->
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-tab="products" onclick="go('products')">Products <span class="badge" id="tbProducts">40</span></div>
+        <div class="tab" data-tab="price-lists" onclick="go('price-lists')">Price Lists <span class="badge" id="tbLists">1</span></div>
+        <div class="tab" data-tab="shares" onclick="go('shares')">Buyer Shares <span class="badge">0</span></div>
+      </div>
+
+      <!-- ============ PRODUCTS TAB ============ -->
+      <section id="view-products">
+        <div class="banner good">
+          <span>✔</span>
+          <div><b>Pricing is read from the canonical source</b> (<span class="mono">product_pricing_rules</span> / <span class="mono">product_prices</span>) — the same engine the Products table uses. Every active priced product shows the same FOB here, in Price Lists, in the Share Wizard, and on the buyer PDF. No more “Missing Price” on products that are actually priced.</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="n">40</div><div class="l">Total products</div></div>
+          <div class="kpi"><div class="n" style="color:var(--ok)">38</div><div class="l">Quote‑ready (priced)</div></div>
+          <div class="kpi"><div class="n" style="color:var(--bad)">2</div><div class="l">True pricing gaps</div></div>
+          <div class="kpi"><div class="n">1</div><div class="l">Active price lists</div></div>
+        </div>
+        <div class="card">
+          <div class="toolbar">
+            <input class="inp" placeholder="Search product, SKU, pack…" style="width:280px" oninput="filterProducts(this.value)">
+            <span class="fxnote" id="prodCount">40 products</span>
+            <button class="btnP" style="margin-left:auto" onclick="openCreateList()">+ Create Price List</button>
+            <button class="btn" onclick="toast('Opens the Add Product drawer on the real page')">+ Add product</button>
+          </div>
+          <div class="row head"><div>Product / SKU</div><div>Category</div><div class="hide">Var.</div><div class="price">Ex‑Factory</div><div class="price">FOB</div><div class="hide">CIF</div><div>Readiness / Action</div></div>
+          <div id="prodRows"></div>
+        </div>
+        <p class="help" style="margin-top:14px">This is <span class="mono">/products</span> — the single entry point for product &amp; catalog management. <b>Price Lists</b> live as a tab right here (and as a sub‑entry under the Catalog rail item), so there is no separate “Catalog Hub” universe to get lost in. Use <b>+ Create Price List</b> or the Price Lists tab to build a sharable, adjustable view over these products.</p>
+      </section>
+
+      <!-- ============ PRICE LISTS TAB ============ -->
+      <section id="view-price-lists" style="display:none">
+        <div class="card">
+          <div class="toolbar">
+            <strong style="font-size:14px;color:var(--ink)">Price Lists</strong>
+            <span class="fxnote">Export‑ready lists with MOQ &amp; tier pricing for buyer shares — built from your products.</span>
+            <button class="btnP" style="margin-left:auto" onclick="openCreateList()">+ Create Price List</button>
+          </div>
+          <div id="listRows"></div>
+        </div>
+        <p class="help" style="margin-top:14px">A <b>Price List → Products</b> (one‑way). A list never becomes part of a product record; it’s a container that <i>references</i> products and snapshots adjustable pricing. <a onclick="go('products')">← Back to Products</a></p>
+      </section>
+
+      <!-- ============ PRICE LIST DETAIL ============ -->
+      <section id="view-detail" style="display:none">
+        <a class="btn" style="display:inline-block;margin-bottom:14px" onclick="go('price-lists')">← All price lists</a>
+        <div class="card" style="margin-bottom:16px">
+          <div style="padding:16px 18px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;gap:10px">
+            <div>
+              <div class="eyebrow" style="color:var(--teal)">Price List</div>
+              <div id="dName" style="font-size:18px;font-weight:800;color:var(--ink)">2026 USD FOB · North America</div>
+              <div class="pl-card meta" id="dMeta" style="margin-top:6px"></div>
+            </div>
+            <button class="btn" style="margin-left:auto" onclick="openCreateList(true)">Edit details</button>
+          </div>
+          <div style="padding:13px 18px;display:flex;align-items:center">
+            <strong id="dItemsTitle">Products (0)</strong>
+            <button class="btnP" style="margin-left:auto" onclick="openAddProduct()">+ Add Product</button>
+          </div>
+          <div id="detailItems"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Create / edit list slide-over ===== -->
+<div class="scrim" id="scrimList" onclick="closeSheets()"></div>
+<aside class="sheet" id="sheetList">
+  <div class="hd"><h2 id="listSheetTitle">New Price List</h2><button class="x" onclick="closeSheets()">✕</button></div>
+  <div class="bd">
+    <label class="fld">Name<input class="inp" id="fName" placeholder="2026 USD FOB Export"></label>
+    <div class="two">
+      <label class="fld">Currency
+        <select class="inp" id="fCcy"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option><option>AED</option></select>
+      </label>
+      <label class="fld">Status
+        <select class="inp" id="fStatus"><option value="draft">Draft</option><option value="active">Active</option></select>
+      </label>
+    </div>
+    <div class="two">
+      <label class="fld">Pricing basis (Incoterm)
+        <select class="inp" id="fIncoterm" onchange="basisHint()"><option>FOB</option><option>EXW</option><option>CIF</option><option>DDP</option></select>
+      </label>
+      <label class="fld">Incoterm location<input class="inp" id="fLoc" placeholder="FOB Savannah"></label>
+    </div>
+    <div class="autofill" id="basisHint"><b>FOB selected.</b> When you add products, each row auto‑fills its <b>FOB unit price</b> and <b>MOQ</b> from the product’s canonical pricing. Switch basis to pull EXW / CIF / DDP instead.</div>
+    <div class="two">
+      <label class="fld">Market / Region
+        <select class="inp" id="fMarket"><option>North America</option><option>European Union</option><option>Middle East</option><option>South Asia</option></select>
+      </label>
+      <label class="fld">Buyer segment
+        <select class="inp" id="fSegment"><option value="">—</option><option>Distributor</option><option>Importer</option><option>Retail chain</option><option>Foodservice</option></select>
+      </label>
+    </div>
+    <p class="fxnote" style="margin:-6px 0 0">Market &amp; segment options come from active markets, buyer/lead data and existing lists — <b>not</b> product categories. (Fixes the polluted dropdown.)</p>
+    <div class="two">
+      <label class="fld">Valid from<input class="inp" type="date" id="fFrom"></label>
+      <label class="fld">Valid until<input class="inp" type="date" id="fUntil"></label>
+    </div>
+    <label class="fld">Notes<textarea class="inp" id="fNotes" style="min-height:64px;width:100%;resize:vertical"></textarea></label>
+  </div>
+  <div class="ft">
+    <button class="btn" style="flex:1" onclick="closeSheets()">Cancel</button>
+    <button class="btnP" style="flex:2" onclick="saveList()">Save &amp; open list</button>
+  </div>
+</aside>
+
+<!-- ===== Add product slide-over ===== -->
+<div class="scrim" id="scrimAdd" onclick="closeSheets()"></div>
+<aside class="sheet wide" id="sheetAdd">
+  <div class="hd"><h2>Add Product to List</h2><button class="x" onclick="closeSheets()">✕</button></div>
+  <div class="bd">
+    <div class="autofill">Pick a product — its <b>FOB price</b>, <b>MOQ</b>, pack and origin auto‑fill from the canonical product record for the list’s <b id="hintBasis">FOB</b> basis. Adjust any field <b>for this list only</b>; the underlying product is never changed.</div>
+    <label class="fld">Product
+      <input class="inp" id="pSearch" placeholder="Search products by name or SKU…" oninput="renderPicker(this.value)" autocomplete="off">
+    </label>
+    <div style="border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:190px" id="picker"></div>
+
+    <div id="selectedBox" style="display:none">
+      <div class="autofill" id="autoNote"></div>
+      <div class="two">
+        <label class="fld">MOQ<input class="inp" id="aMoq" type="number"></label>
+        <label class="fld">MOQ unit<select class="inp" id="aMoqUnit"><option>kg</option><option>cases</option><option>units</option></select></label>
+      </div>
+      <div class="two">
+        <label class="fld">Unit price <span class="src" id="aPriceSrc">auto</span><input class="inp" id="aPrice" type="number" step="0.01"></label>
+        <label class="fld">Currency<select class="inp" id="aCcy"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select></label>
+      </div>
+      <div class="fxnote" id="fxLine"></div>
+      <label class="fld">Lead time (days)<input class="inp" id="aLead" type="number"></label>
+      <label class="fld">Notes (pack / origin / certs)<textarea class="inp" id="aNotes" style="min-height:54px;width:100%"></textarea></label>
+      <div class="help">Tier pricing (up to 3 qty breaks) is available on the real editor — omitted from the mock for clarity.</div>
+    </div>
+  </div>
+  <div class="ft">
+    <button class="btn" style="flex:1" onclick="closeSheets()">Cancel</button>
+    <button class="btnP" id="addBtn" style="flex:2;opacity:.5" disabled onclick="commitItem()">Add to list</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---- realistic dataset: canonical per-unit pricing from product_pricing_rules (the FIX) ---- */
+const PRODUCTS = [
+  {id:'p1', name:'Banana Chips', sku:'RH-CS-BC-100', cat:'Vacuum-Cooked Chips', vars:2, exw:1.50, fob:1.75, cif:1.95, moq:15, moqUnit:'cases', lead:21, origin:'India', pack:'72 × 100 g', ccy:'USD', ready:'ready'},
+  {id:'p2', name:'Banana Chips', sku:'RH-CS-BC-120', cat:'Vacuum-Cooked Chips', vars:2, exw:1.48, fob:1.45, cif:1.65, moq:10, moqUnit:'cases', lead:21, origin:'India', pack:'48 × 100 g', ccy:'USD', ready:'ready'},
+  {id:'p3', name:'Banana Powder', sku:'RH-PW-005', cat:'Fruit Powders', vars:1, exw:5.25, fob:8.25, cif:8.95, moq:10, moqUnit:'kg', lead:28, origin:'India', pack:'10 kg', ccy:'USD', ready:'ready'},
+  {id:'p4', name:'Beetroot Chips', sku:'RH-CS-BC-050', cat:'Vacuum-Cooked Chips', vars:2, exw:1.60, fob:1.85, cif:2.05, moq:15, moqUnit:'cases', lead:21, origin:'India', pack:'72 × 100 g', ccy:'USD', ready:'ready'},
+  {id:'p5', name:'Beetroot Powder', sku:'RH-PW-004', cat:'Vegetable Powders', vars:1, exw:2.75, fob:5.75, cif:6.20, moq:10, moqUnit:'kg', lead:28, origin:'India', pack:'10 kg', ccy:'USD', ready:'ready'},
+  {id:'p6', name:'Carrot Powder', sku:'RH-PW-006', cat:'Vegetable Powders', vars:1, exw:3.00, fob:5.75, cif:6.10, moq:10, moqUnit:'kg', lead:28, origin:'India', pack:'10 kg', ccy:'USD', ready:'ready'},
+  {id:'p7', name:'Chana Kabuli', sku:'RR-CP-WH-01', cat:'Pulses', vars:1, exw:0.95, fob:1.20, cif:1.40, moq:1000, moqUnit:'kg', lead:30, origin:'India', pack:'1000 g', ccy:'USD', ready:'ready'},
+  {id:'p8', name:'Dehydrated Garlic Flakes', sku:'RR-DG-FL-01', cat:'Dehydrated Garlic', vars:1, exw:2.10, fob:2.65, cif:2.90, moq:500, moqUnit:'kg', lead:25, origin:'India', pack:'25 kg', ccy:'USD', ready:'ready'},
+  {id:'p9', name:'Jaggery Cube', sku:'RR-JG-CB-01', cat:'Natural Sweeteners', vars:1, exw:null, fob:null, cif:null, moq:null, moqUnit:'kg', lead:null, origin:'India', pack:'500 g', ccy:'USD', ready:'gap'},
+];
+const FX = {USD:1, EUR:0.92, GBP:0.79, INR:83.2, AED:3.67};
+let LISTS = [
+  {id:'l1', name:'2026 USD FOB · North America', ccy:'USD', incoterm:'FOB', loc:'FOB Savannah', market:'North America', segment:'Distributor', from:'2026-06-20', until:'2026-12-31', status:'active', items:[
+     {pid:'p1', moq:10, moqUnit:'cases', price:1.75, ccy:'USD', lead:21, notes:'72 × 100 g · Origin: India'}
+  ]}
+];
+
+/* ---- state ---- */
+let curList=null, curBasis='FOB', selProd=null, editingList=false;
+const $=id=>document.getElementById(id);
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1900);}
+function fmt(n){return n==null?'—':Number(n).toFixed(2);}
+function priceFor(p,basis){const k=(basis||'FOB').toUpperCase();
+  if(k==='EXW') return p.exw??p.fob??p.cif;
+  if(k==='CIF') return p.cif??p.fob??p.exw;
+  if(k==='DDP') return p.cif!=null?Number((p.cif*1.06).toFixed(2)):(p.fob??p.exw);
+  return p.fob??p.exw??p.cif;}
+
+/* ---- navigation ---- */
+function go(view){
+  ['products','price-lists','detail'].forEach(v=>{const el=$('view-'+v);if(el)el.style.display='none';});
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===view));
+  const titles={products:'Products & Pricing','price-lists':'Catalog · Price Lists',shares:'Catalog · Buyer Shares'};
+  $('modeToggle').style.display = view==='products'?'flex':'none';
+  if(view==='shares'){toast('Buyer Shares tab — share wizard lives here (out of scope for this mock)');return;}
+  $('view-'+view).style.display='block';
+  $('topTitle').textContent=titles[view]||'Products & Pricing';
+  $('crumbs').innerHTML = view==='products'
+    ? '<a onclick="go(\'products\')">Catalog</a>'
+    : '<a onclick="go(\'products\')">Catalog</a> <span class="sep">/</span> <a onclick="go(\'price-lists\')">Price Lists</a>';
+  if(view==='products')renderProducts();
+  if(view==='price-lists')renderLists();
+}
+
+/* ---- products tab ---- */
+function readinessChip(p){
+  if(p.ready==='gap')return '<span class="chip gap"><span class="dot"></span>Missing Price</span>';
+  if(p.ready==='needs')return '<span class="chip needs"><span class="dot"></span>Needs data</span>';
+  return '<span class="chip ready"><span class="dot"></span>Quote‑ready</span>';
+}
+function renderProducts(filter=''){
+  const f=filter.toLowerCase();
+  const rows=PRODUCTS.filter(p=>!f||p.name.toLowerCase().includes(f)||p.sku.toLowerCase().includes(f));
+  $('prodCount').textContent=rows.length+' products';
+  $('prodRows').innerHTML=rows.map(p=>`
+    <div class="row">
+      <div><div class="name">${p.name}</div><div class="sub mono">${p.sku} · ${p.cat} · MOQ ${p.moq??'—'} ${p.moqUnit}</div></div>
+      <div style="color:var(--teal);font-weight:700;font-size:11.5px">${p.cat}</div>
+      <div class="hide">${p.vars}</div>
+      <div class="price">${p.exw!=null?fmt(p.exw):'—'}</div>
+      <div class="price"><b>${p.fob!=null?fmt(p.fob):'—'}</b></div>
+      <div class="price hide">${p.cif!=null?fmt(p.cif):'—'}</div>
+      <div>${readinessChip(p)}</div>
+    </div>`).join('');
+}
+function filterProducts(v){renderProducts(v);}
+
+/* ---- lists tab ---- */
+function renderLists(){
+  $('tbLists').textContent=LISTS.length;
+  if(!LISTS.length){$('listRows').innerHTML='<div class="empty"><b style="color:#475569">No price lists yet</b><div style="margin-top:6px">Create your first export price list to share buyer‑specific catalogs.</div></div>';return;}
+  $('listRows').innerHTML=LISTS.map(l=>{
+    const st=l.status==='active'?'st-active':l.status==='expired'?'st-expired':'st-draft';
+    return `<div class="pl-card" onclick="openDetail('${l.id}')">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px"><strong style="font-size:14px;color:var(--ink)">${l.name}</strong><span class="status ${st}">${l.status}</span></div>
+        <div class="meta"><span class="mono"><b>${l.ccy}</b></span><span>${l.incoterm}${l.loc?' · '+l.loc:''}</span><span>${l.market}</span>${l.segment?'<span>'+l.segment+'</span>':''}<span>Valid: ${l.from} → ${l.until}</span></div>
+      </div>
+      <div class="cnt"><div class="n">${l.items.length}</div><div class="sub">products</div></div>
+    </div>`;}).join('');
+}
+
+/* ---- detail ---- */
+function openDetail(id){curList=LISTS.find(l=>l.id===id);go('detail');renderDetail();}
+function renderDetail(){
+  const l=curList;
+  $('view-products').style.display='none';$('view-price-lists').style.display='none';$('view-detail').style.display='block';
+  $('modeToggle').style.display='none';
+  $('topTitle').textContent='Catalog · Price List';
+  $('crumbs').innerHTML='<a onclick="go(\'products\')">Catalog</a> <span class="sep">/</span> <a onclick="go(\'price-lists\')">Price Lists</a> <span class="sep">/</span> <span>'+l.name+'</span>';
+  $('dName').textContent=l.name;
+  $('dMeta').innerHTML=`<span class="mono"><b>${l.ccy}</b></span><span>${l.incoterm}${l.loc?' · '+l.loc:''}</span><span>${l.market}</span>${l.segment?'<span>'+l.segment+'</span>':''}<span>Valid until ${l.until}</span>`;
+  $('dItemsTitle').textContent=`Products (${l.items.length})`;
+  if(!l.items.length){$('detailItems').innerHTML='<div class="empty">No products yet. Add products to define MOQ and tier pricing.</div>';return;}
+  $('detailItems').innerHTML='<div style="padding:13px 18px;display:grid;gap:10px">'+l.items.map((it,i)=>{
+    const p=PRODUCTS.find(x=>x.id===it.pid);
+    return `<div class="pl-item">
+      <div style="flex:1"><div class="n">${p?p.name:'Product'}</div>
+      <div class="s mono">${p?p.sku:''} · MOQ ${it.moq??'—'} ${it.moqUnit} · ${it.ccy} ${fmt(it.price)}${it.lead?(' · '+it.lead+'d lead'):''}</div></div>
+      <button class="btn" style="padding:5px 11px">Edit</button>
+      <button class="btn" style="padding:5px 9px;color:var(--bad);border-color:#fecaca" onclick="rmItem(${i})">×</button>
+    </div>`;}).join('')+'</div>';
+}
+function rmItem(i){curList.items.splice(i,1);renderDetail();renderLists();toast('Removed from list (product record untouched)');}
+
+/* ---- create/edit list ---- */
+function openCreateList(edit=false){
+  editingList=edit;
+  $('listSheetTitle').textContent=edit?'Edit Price List':'New Price List';
+  if(edit&&curList){$('fName').value=curList.name;$('fCcy').value=curList.ccy;$('fStatus').value=curList.status;$('fIncoterm').value=curList.incoterm;$('fLoc').value=curList.loc;$('fMarket').value=curList.market;$('fSegment').value=curList.segment||'';$('fFrom').value=curList.from;$('fUntil').value=curList.until;}
+  else{$('fName').value='';$('fLoc').value='FOB Savannah';$('fFrom').value='2026-06-22';$('fUntil').value='2026-12-31';$('fIncoterm').value='FOB';$('fCcy').value='USD';}
+  basisHint();
+  $('scrimList').classList.add('show');$('sheetList').classList.add('show');
+}
+function basisHint(){const b=$('fIncoterm').value;
+  $('basisHint').innerHTML=`<b>${b} selected.</b> When you add products, each row auto‑fills its <b>${b} unit price</b> and <b>MOQ</b> from the product’s canonical pricing. Adjustments stay on this list only.`;}
+function saveList(){
+  const name=$('fName').value.trim();if(!name){toast('Name is required');return;}
+  const data={name,ccy:$('fCcy').value,incoterm:$('fIncoterm').value,loc:$('fLoc').value,market:$('fMarket').value,segment:$('fSegment').value,from:$('fFrom').value,until:$('fUntil').value,status:$('fStatus').value};
+  if(editingList&&curList){Object.assign(curList,data);closeSheets();renderDetail();renderLists();toast('List updated');return;}
+  const l={id:'l'+(LISTS.length+1),...data,items:[]};LISTS.push(l);curList=l;closeSheets();openDetail(l.id);toast('Price list created — now add products');
+}
+
+/* ---- add product (auto-fill from canonical source) ---- */
+function openAddProduct(){selProd=null;$('pSearch').value='';$('selectedBox').style.display='none';$('addBtn').disabled=true;$('addBtn').style.opacity=.5;$('hintBasis').textContent=curList.incoterm;renderPicker('');$('scrimAdd').classList.add('show');$('sheetAdd').classList.add('show');}
+function renderPicker(q){
+  const f=(q||'').toLowerCase();
+  const inList=new Set(curList.items.map(i=>i.pid));
+  const rows=PRODUCTS.filter(p=>!f||p.name.toLowerCase().includes(f)||p.sku.toLowerCase().includes(f));
+  $('picker').innerHTML=rows.map(p=>{
+    const pr=priceFor(p,curList.incoterm);
+    const dis=inList.has(p.id);
+    return `<div class="pickrow ${selProd&&selProd.id===p.id?'sel':''}" style="${dis?'opacity:.4;pointer-events:none':''}" onclick="pick('${p.id}')">
+      <b>${p.name}</b> <span class="mono" style="color:#94a3b8">${p.sku}</span> ${dis?'<span style="float:right;font-size:10px;color:#94a3b8">already in list</span>':''}
+      <div style="color:#94a3b8;font-size:11px">${p.ccy} ${pr!=null?fmt(pr):'price on request'} (${curList.incoterm})${p.moq?(' · MOQ '+p.moq+' '+p.moqUnit):''}</div>
+    </div>`;}).join('')||'<div style="padding:12px;color:#94a3b8">No products found.</div>';
+}
+function pick(id){
+  selProd=PRODUCTS.find(p=>p.id===id);
+  const basis=curList.incoterm, pr=priceFor(selProd,basis);
+  $('selectedBox').style.display='block';
+  $('aMoq').value=selProd.moq??'';$('aMoqUnit').value=selProd.moqUnit||'kg';
+  $('aCcy').value=curList.ccy;$('aLead').value=selProd.lead??'';
+  // FX: convert product USD price into list currency using market average rate (exchange_rates)
+  let price=pr, fxLine='';
+  if(pr!=null && curList.ccy!==selProd.ccy){
+    const rate=FX[curList.ccy]/FX[selProd.ccy];
+    price=Number((pr*rate).toFixed(2));
+    fxLine=`FX applied: ${selProd.ccy} ${fmt(pr)} × ${rate.toFixed(3)} (market avg) → ${curList.ccy} ${fmt(price)}. Editable.`;
+  }
+  $('aPrice').value=price!=null?price:'';
+  $('aPriceSrc').textContent = pr!=null ? ('auto · '+basis) : 'manual';
+  $('aPriceSrc').style.background = pr!=null ? '#dbeafe':'#fee2e2';
+  $('aPriceSrc').style.color = pr!=null ? '#1e40af':'#b91c1c';
+  $('fxLine').textContent=fxLine;
+  const notes=[selProd.pack, selProd.origin?('Origin: '+selProd.origin):null].filter(Boolean).join(' · ');
+  $('aNotes').value=notes;
+  $('autoNote').innerHTML = pr!=null
+    ? `<b>Auto‑filled from ${basis} product pricing.</b> ${selProd.name} → ${selProd.ccy} ${fmt(pr)} ${basis}, MOQ ${selProd.moq} ${selProd.moqUnit}. ${fxLine?'<br>'+fxLine:''}`
+    : `<b>${selProd.name} has no ${basis} price.</b> Enter a price manually for this list, or fix the product’s pricing first.`;
+  $('addBtn').disabled=false;$('addBtn').style.opacity=1;
+  renderPicker($('pSearch').value);
+}
+function commitItem(){
+  if(!selProd)return;
+  curList.items.push({pid:selProd.id,moq:Number($('aMoq').value)||null,moqUnit:$('aMoqUnit').value,price:Number($('aPrice').value)||null,ccy:$('aCcy').value,lead:Number($('aLead').value)||null,notes:$('aNotes').value});
+  closeSheets();renderDetail();renderLists();toast(selProd.name+' added — pricing pulled from product source');
+}
+
+function closeSheets(){document.querySelectorAll('.scrim,.sheet').forEach(e=>e.classList.remove('show'));}
+
+/* init */
+renderProducts();renderLists();
+</script>
+</body>
+</html>

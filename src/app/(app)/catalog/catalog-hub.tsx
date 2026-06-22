@@ -27,7 +27,7 @@ const statusTone: Record<string, { bg: string; fg: string }> = {
 };
 
 export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis }) {
-  const [tab, setTab] = useState<Tab>('products');
+  const [tab, setTab] = useState<Tab>('shared-links');
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const KPI = [
@@ -36,9 +36,10 @@ export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis
     { label: 'Shares Sent', value: kpis.sharesSent, sub: '' },
     { label: 'Quote Conversion', value: `${kpis.conversionPct}%`, sub: '' },
   ];
+  // Products are edited on /products (single source of truth). This space is the
+  // buyer-sharing command center only — no duplicate product editor (S34-CATALOG-038).
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'products', label: 'Products' }, { id: 'price-lists', label: 'Price Lists' },
-    { id: 'shared-links', label: 'Shared Links' }, { id: 'analytics', label: 'Analytics' },
+    { id: 'shared-links', label: 'Shared Links' }, { id: 'price-lists', label: 'Price Lists' }, { id: 'analytics', label: 'Analytics' },
   ];
 
   return (
@@ -46,12 +47,13 @@ export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis
       <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#279491', letterSpacing: 0.5, textTransform: 'uppercase' }}>Catalog</div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1e293b', margin: '2px 0 0' }}>Catalog Hub</h1>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Manage products, price lists, and buyer catalog shares in one place.</p>
+          <div style={{ fontSize: 11.5, margin: '2px 0 0' }}><a href="/products" style={{ color: '#1f487c', fontWeight: 700, textDecoration: 'none' }}>← Products</a> <span style={{ color: '#cbd5e1' }}>/</span> <span style={{ color: '#64748b' }}>Buyer Shares</span></div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1e293b', margin: '2px 0 0' }}>Buyer Shares</h1>
+          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Share products and price lists with buyers, then track engagement and convert to quotes. Manage products on <a href="/products" style={{ color: '#1f487c', fontWeight: 600 }}>Products</a>.</p>
         </div>
         {canManage && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link href="/products" style={btnG}>+ Add Product</Link>
+            <Link href="/products" style={btnG}>Open products →</Link>
             <Link href="/price-lists" style={btnG}>+ Create Price List</Link>
             <button style={btnP} onClick={() => setWizardOpen(true)}>Share Catalog</button>
           </div>
