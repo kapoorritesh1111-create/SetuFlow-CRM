@@ -8,7 +8,7 @@ export type ProductsSpreadsheetRow = {
   product_name: string | null;
   category_name: string | null;
   brand_name: string | null;
-  image_url: string | null;
+  image_url?: string | null;
   pack_label: string | null;
   units_per_case: number | null;
   moq_value: number | null;
@@ -130,7 +130,7 @@ export type ProductDetailResponse = {
     name: string;
     category_name: string | null;
     brand_name: string | null;
-    image_url: string | null;
+    image_url?: string | null;
     pricing_type: string | null;
     description: string | null;
     is_active: boolean;
@@ -153,9 +153,6 @@ export type UpdateProductVariantPayload = {
   fob_value?: number | null;
   fob_unit?: "unit" | "case" | "kg" | null;
   bulk_value?: number | null;
-  /** Direct CIF reference price — stored in source_payload for catalog display.
-   *  Actual quote CIF is computed from FOB + freight profile. This field is for
-   *  reference/display only and does not gate quote compilation. */
   cif_value?: number | null;
   cif_unit?: "unit" | "case" | null;
 };
