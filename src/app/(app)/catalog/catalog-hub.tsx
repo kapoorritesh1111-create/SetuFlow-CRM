@@ -77,7 +77,33 @@ function PriceListsTab({ onShare }: { onShare: () => void }) {
   const [loading, setLoading] = useState(true);
   useEffect(() => { fetch('/api/price-lists', { cache: 'no-store' }).then((r) => r.json()).then((d) => setLists(d.priceLists ?? [])).finally(() => setLoading(false)); }, []);
   if (loading) return <div style={{ color: '#94a3b8', padding: 20 }}>Loading price lists...</div>;
-  return <div><div style={{ display: 'flex', marginBottom: 10, gap: 8 }}><span style={{ fontSize: 11.5, color: '#94a3b8' }}>{lists.length} price lists</span><button style={{ ...btnP, marginLeft: 'auto' }} onClick={onShare}>Continue to Share</button><Link href="/price-lists" style={btnG}>Manage price lists</Link></div>{lists.length === 0 ? <div style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>No price lists yet. <Link href="/price-lists" style={{ color: '#1f487c', fontWeight: 600 }}>Create one</Link></div> : <div style={{ display: 'grid', gap: 8 }}>{lists.map((l) => { const tone = statusTone[l.status] ?? statusTone.draft; return <div key={l.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}><div style={{ flex: 1 }}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{l.name}</span><span style={{ background: tone.bg, color: tone.fg, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, textTransform: 'capitalize' }}>{l.status}</span></div><div style={{ fontSize: 11.5, color: '#64748b', marginTop: 4 }}>{l.currency}{l.incoterm ? ` - ${l.incoterm}` : ''}{l.market ? ` - ${l.market}` : ''} - valid until {fmtDate(l.valid_until)}</div></div><div style={{ textAlign: 'right' }}><div style={{ fontSize: 18, fontWeight: 800, color: '#1f487c', fontFamily: "'DM Mono',monospace" }}>{l.product_count}</div><div style={{ fontSize: 10, color: '#94a3b8' }}>products</div></div></div>; })}</div>}</div>;
+  const chip = (text: string) => <span style={{ fontSize: 10.5, fontWeight: 700, color: '#475569', background: '#f1f5f9', borderRadius: 6, padding: '2px 8px' }}>{text}</span>;
+  return <div>
+    <div style={{ display: 'flex', marginBottom: 12, gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{lists.length} price list{lists.length === 1 ? '' : 's'}</span>
+      <Link href="/price-lists" style={{ ...btnG, marginLeft: 'auto' }}>Manage price lists</Link>
+      <button style={btnP} onClick={onShare}>Continue to Share</button>
+    </div>
+    {lists.length === 0
+      ? <div style={{ border: '1px dashed #cbd9e6', borderRadius: 14, padding: '44px 28px', textAlign: 'center', background: 'linear-gradient(180deg,#fbfdff,#f5f9fd)' }}><div style={{ fontSize: 32 }}>🏷</div><div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', marginTop: 8 }}>No price lists yet</div><div style={{ fontSize: 12.5, color: '#64748b', marginTop: 6, maxWidth: 360, marginInline: 'auto' }}>Build a sharable price list over your products — MOQ and tier pricing auto-fill from the catalog.</div><Link href="/price-lists" style={{ ...btnP, marginTop: 16, display: 'inline-flex' }}>Create your first price list</Link></div>
+      : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 12 }}>{lists.map((l) => { const tone = statusTone[l.status] ?? statusTone.draft; return (
+        <div key={l.id} style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 14, padding: 16, boxShadow: '0 1px 2px rgba(15,23,42,.04)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.name}</div></div>
+            <span style={{ background: tone.bg, color: tone.fg, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, textTransform: 'capitalize' }}>{l.status}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{chip(l.currency)}{l.incoterm && chip(l.incoterm)}{l.market && chip(l.market)}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+            <div><span style={{ fontSize: 20, fontWeight: 800, color: '#1f487c', fontFamily: "'DM Mono',monospace" }}>{l.product_count}</span> <span style={{ fontSize: 10.5, color: '#94a3b8' }}>products</span></div>
+            <span style={{ fontSize: 10.5, color: '#94a3b8', marginLeft: 'auto' }}>until {fmtDate(l.valid_until)}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Link href="/price-lists" style={{ ...btnG, flex: 1, justifyContent: 'center', padding: '6px 10px', fontSize: 11.5 }}>Open</Link>
+            <button onClick={onShare} style={{ ...btnP, flex: 1, justifyContent: 'center', padding: '6px 10px', fontSize: 11.5 }}>Share</button>
+          </div>
+        </div>
+      ); })}</div>}
+  </div>;
 }
 
 function SharedLinksTab({ canManage, onShare, refreshKey }: { canManage: boolean; onShare: () => void; refreshKey: number }) {
@@ -133,18 +159,94 @@ function ShareEditModal({ share, onClose, onSave }: { share: ShareLite; onClose:
   return <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(15,23,42,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div onClick={(e) => e.stopPropagation()} style={{ width: 'min(560px,92vw)', background: '#fff', borderRadius: 18, padding: 20, boxShadow: '0 24px 80px rgba(15,23,42,.25)' }}><div style={{ fontSize: 11, color: '#279491', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 800 }}>{isDraft ? 'Draft catalog review' : 'Edit shared catalog'}</div><h3 style={{ margin: '4px 0 4px', fontSize: 20, color: '#1e293b' }}>{share.buyer_company || share.buyer_name || 'Buyer share'}</h3><p style={{ margin: '0 0 14px', color: '#64748b', fontSize: 12.5 }}>{isDraft ? 'Drafts stay internal until activated. Edit details here before sending the buyer link.' : 'Update safe share details without leaving Buyer Shares.'}</p><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Buyer company<input value={buyerCompany} onChange={(e) => setBuyerCompany(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} /></label><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Buyer name<input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} /></label><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Email<input value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} /></label><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Phone<input value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} /></label><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Currency<input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} style={{ ...inputStyle, marginTop: 4 }} /></label><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Incoterm<input value={incoterm} onChange={(e) => setIncoterm(e.target.value.toUpperCase())} style={{ ...inputStyle, marginTop: 4 }} /></label><label style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>Expiry<input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} /></label><div style={{ display: 'grid', gap: 8, alignContent: 'end' }}><label style={{ fontSize: 12, color: '#475569', fontWeight: 700 }}><input type="checkbox" checked={pdfAllowed} onChange={(e) => setPdfAllowed(e.target.checked)} /> Allow PDF download</label><label style={{ fontSize: 12, color: '#475569', fontWeight: 700 }}><input type="checkbox" checked={tracking} onChange={(e) => setTracking(e.target.checked)} /> Track engagement</label></div></div><div style={{ marginTop: 12, padding: 10, background: '#f8fafc', borderRadius: 12, color: '#64748b', fontSize: 12 }}>Price list: <strong style={{ color: '#1e293b' }}>{share.price_list_name || 'Not set'}</strong></div><div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}><button style={btnG} onClick={onClose}>Cancel</button><button disabled={saving} style={btnG} onClick={() => void save()}>{saving ? 'Saving...' : 'Save'}</button>{isDraft && <button disabled={saving} style={btnP} onClick={() => void save('active')}>{saving ? 'Activating...' : 'Activate share'}</button>}</div></div></div>;
 }
 
+type TopProduct = { name: string; value: number };
+function TopList({ title, accent, items, unit }: { title: string; accent: string; items: TopProduct[]; unit: string }) {
+  const max = Math.max(1, ...items.map((i) => i.value));
+  return (
+    <div style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 16, padding: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#1e293b', marginBottom: 12 }}>{title}</div>
+      {items.length === 0 ? <div style={{ fontSize: 12, color: '#94a3b8', padding: '14px 0', textAlign: 'center' }}>No {unit} yet</div> : (
+        <div style={{ display: 'grid', gap: 9 }}>
+          {items.slice(0, 6).map((it, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: '#334155', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</div>
+                <div style={{ height: 6, background: '#eef2f7', borderRadius: 999, marginTop: 4, overflow: 'hidden' }}><div style={{ width: `${Math.max(6, (it.value / max) * 100)}%`, height: '100%', background: accent, borderRadius: 999 }} /></div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: accent, fontFamily: "'DM Mono',monospace" }}>{it.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AnalyticsTab({ kpis }: { kpis: Kpis }) {
-  const [data, setData] = useState<{ metrics: any } | null>(null);
+  const [data, setData] = useState<{ metrics: any; topViewed: TopProduct[]; topSelected: TopProduct[] } | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => { fetch('/api/catalog-shares/analytics', { cache: 'no-store' }).then((r) => r.json()).then(setData).finally(() => setLoading(false)); }, []);
   const m = data?.metrics;
-  const cards = [
-    { label: 'Shares sent', value: m?.sharesSent ?? kpis.sharesSent, sub: m ? `${m.sharesThisMonth} this month` : '' },
-    { label: 'Open rate', value: `${m?.openRate ?? 0}%`, sub: 'unique opens / sent' },
-    { label: 'Product view rate', value: `${m?.productViewRate ?? 0}%`, sub: 'views / opened' },
-    { label: 'Download rate', value: `${m?.downloadRate ?? 0}%`, sub: 'PDF / opened' },
-    { label: 'Quote request rate', value: `${m?.quoteRequestRate ?? 0}%`, sub: 'requests / opened' },
-    { label: 'Quote conversion', value: `${m?.quoteConversionRate ?? kpis.conversionPct}%`, sub: 'quotes / sent' },
+  const sharesSent = m?.sharesSent ?? kpis.sharesSent;
+
+  const funnel = [
+    { label: 'Shares sent', pct: 100, rate: null as number | null, count: sharesSent, color: '#1f487c' },
+    { label: 'Opened', pct: m?.openRate ?? 0, rate: m?.openRate ?? 0, color: '#2563eb', sub: 'of sent' },
+    { label: 'Viewed products', pct: m?.productViewRate ?? 0, rate: m?.productViewRate ?? 0, color: '#0891b2', sub: 'of opened' },
+    { label: 'Downloaded PDF', pct: m?.downloadRate ?? 0, rate: m?.downloadRate ?? 0, color: '#7c3aed', sub: 'of opened' },
+    { label: 'Requested quote', pct: m?.quoteRequestRate ?? 0, rate: m?.quoteRequestRate ?? 0, color: '#c026d3', sub: 'of opened' },
+    { label: 'Converted to quote', pct: m?.quoteConversionRate ?? kpis.conversionPct, rate: m?.quoteConversionRate ?? kpis.conversionPct, color: '#059669', sub: 'of sent' },
   ];
-  return <div>{loading && <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 0 }}>Loading analytics...</p>}<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>{cards.map((c) => <div key={c.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}><div style={{ fontSize: 24, fontWeight: 800, color: '#1f487c', fontFamily: "'DM Mono',monospace" }}>{c.value}</div><div style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600, marginTop: 2 }}>{c.label}</div>{c.sub && <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>{c.sub}</div>}</div>)}</div></div>;
+  const hasData = sharesSent > 0 || (data?.topViewed?.length ?? 0) > 0 || (data?.topSelected?.length ?? 0) > 0;
+
+  if (loading) return <div style={{ color: '#94a3b8', padding: 20 }}>Loading analytics...</div>;
+  if (!hasData) return (
+    <div style={{ border: '1px dashed #cbd9e6', borderRadius: 14, padding: '48px 28px', textAlign: 'center', background: 'linear-gradient(180deg,#fbfdff,#f5f9fd)' }}>
+      <div style={{ fontSize: 34 }}>📊</div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', marginTop: 8 }}>No engagement yet</div>
+      <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 6, maxWidth: 380, marginInline: 'auto' }}>Once buyers open your shared catalogs, you&apos;ll see the open → view → quote funnel and your most-viewed products here.</div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      {/* Headline metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12 }}>
+        {[
+          { l: 'Shares sent', v: sharesSent, s: m ? `${m.sharesThisMonth} this month` : '', c: '#1f487c' },
+          { l: 'Open rate', v: `${m?.openRate ?? 0}%`, s: 'unique opens / sent', c: '#2563eb' },
+          { l: 'Product views', v: `${m?.productViewRate ?? 0}%`, s: 'views / opened', c: '#0891b2' },
+          { l: 'Quote conversion', v: `${m?.quoteConversionRate ?? kpis.conversionPct}%`, s: 'quotes / sent', c: '#059669' },
+        ].map((c) => (
+          <div key={c.l} style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 14, padding: '14px 16px' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: c.c, fontFamily: "'DM Mono',monospace", lineHeight: 1 }}>{c.v}</div>
+            <div style={{ fontSize: 11.5, color: '#475569', fontWeight: 700, marginTop: 6 }}>{c.l}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>{c.s}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Funnel */}
+      <div style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 16, padding: 18 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#1e293b', marginBottom: 14 }}>Buyer engagement funnel</div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {funnel.map((f) => (
+            <div key={f.label} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 64px', gap: 12, alignItems: 'center' }}>
+              <div style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>{f.label}{f.sub && <span style={{ color: '#cbd5e1', fontWeight: 400 }}> · {f.sub}</span>}</div>
+              <div style={{ height: 22, background: '#f1f5f9', borderRadius: 7, overflow: 'hidden' }}>
+                <div style={{ width: `${Math.max(2, Math.min(100, f.pct))}%`, height: '100%', background: `linear-gradient(90deg,${f.color},${f.color}cc)`, borderRadius: 7, transition: 'width .4s' }} />
+              </div>
+              <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 800, color: f.color, fontFamily: "'DM Mono',monospace" }}>{f.count != null ? f.count : `${f.rate}%`}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top products */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 14 }}>
+        <TopList title="Most viewed products" accent="#2563eb" items={data?.topViewed ?? []} unit="views" />
+        <TopList title="Most selected products" accent="#059669" items={data?.topSelected ?? []} unit="selections" />
+      </div>
+    </div>
+  );
 }
