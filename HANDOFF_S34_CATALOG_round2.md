@@ -32,3 +32,12 @@ All three live in `src/app/(app)/catalog/catalog-hub.tsx`:
 ## 4. Status
 
 Tracker: **57 Resolved, 0 open** for S34-CATALOG. Only unrelated, intentionally-**Deferred** items remain on the board (S24/S26 packaging vertical, trial planning) — those are out of this workstream.
+
+## 5. UI cohesion pass (follow-up)
+
+Feedback: Buyer Shares lacked the premium feel and all three tabs wasted screen space (content was locked to a centered 1200px column on wide displays, leaving large empty margins).
+
+- **Wider workspace** — container `maxWidth` 1200 → **1520** with roomier padding, so the KPI strip, tabs and all tab content use the available width. Price Lists cards now flow 3–4 across; Analytics funnel/cards/top-lists fill the row.
+- **Buyer Shares → premium two-column layout** — the shares table now sits beside a sticky **insights rail**: *Share health* (active/draft/expired/revoked counts), an *Engagement* panel (total views, selections, quotes + most-engaged buyer), and *Quick actions*. Table gained an uppercase header and row hover. Collapses to one column under 960px.
+
+All in `src/app/(app)/catalog/catalog-hub.tsx`. esbuild clean; contract tests pass (same 2 pre-existing unrelated failures).
