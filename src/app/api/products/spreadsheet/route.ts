@@ -4,7 +4,21 @@ import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import type { ProductsSpreadsheetResponse, ProductsSpreadsheetRow } from '@/types/products';
 
-type ProductRow = { id: string; organization_id: string; category_id: string | null; name: string | null; brand_name: string | null; pricing_type: string | null; is_active: boolean | null; updated_at: string | null; sort_order: number | null };
+type ProductRow = {
+  id: string;
+  organization_id: string;
+  category_id: string | null;
+  name: string | null;
+  brand_name: string | null;
+  pricing_type: string | null;
+  is_active: boolean | null;
+  updated_at: string | null;
+  sort_order: number | null;
+  exw_price: number | null;
+  fob_price: number | null;
+  cif_price: number | null;
+  pricing_currency: string | null;
+};
 type CategoryRow = { id: string; name: string; sort_order: number | null };
 type VariantRow = { id: string; product_id: string; organization_id: string | null; sku_code: string | null; pack_label: string | null; units_per_case: number | null; moq_cases: number | null; moq_kg: number | null; pricing_mode_default: string | null; is_quoteable: boolean | null; is_active: boolean | null; pack_size_value: number | null; updated_at: string | null };
 type RuleSetRow = { id: string; name: string; status: string; is_default: boolean | null; created_at?: string | null; updated_at?: string | null };
@@ -13,6 +27,8 @@ type PricingRuleRow = { id: string; pricing_rule_set_id: string; product_id: str
 function parseBooleanParam(value: string | null): boolean | null { if (value === 'true') return true; if (value === 'false') return false; return null; }
 function parsePositiveInt(value: string | null, fallback: number) { const parsed = Number(value); if (!Number.isFinite(parsed) || parsed <= 0) return fallback; return Math.floor(parsed); }
 function formatMoneyWithUnit(amount: number | null, unit: string | null) { if (amount == null || !unit) return null; return `${Number(amount).toFixed(2)} / ${unit}`; }
+function toNumber(value: number | null | undefined) { return typeof value === 'number' && Number.isFinite(value) ? value : null; }
+function perUnit(caseValue: number | null, unitsPerCase: number | null) { return caseValue != null && unitsPerCase != null && Number(unitsPerCase) > 0 ? Number((caseValue / Number(unitsPerCase)).toFixed(2)) : null; }
 
 function pickCurrentRules(rules: PricingRuleRow[], today: string) {
   const map = new Map<string, PricingRuleRow>();
@@ -38,8 +54,8 @@ function compareRows(a: ProductsSpreadsheetRow & { category_sort_order:number; p
   if (sortBy === 'product_name') { const diff = cmpString(a.product_name, b.product_name); if (diff !== 0) return diff * direction; }
   if (sortBy === 'pack_label') { const diff = cmpNumber(a.pack_sort_value, b.pack_sort_value); if (diff !== 0) return diff * direction; }
   if (sortBy === 'moq') { const diff = cmpNumber(a.moq_value, b.moq_value); if (diff !== 0) return diff * direction; }
-  if (sortBy === 'ex_factory') { const diff = cmpNumber(a.ex_factory_per_unit_value, b.ex_factory_per_unit_value); if (diff !== 0) return diff * direction; }
-  if (sortBy === 'fob') { const diff = cmpNumber(a.fob_per_unit_value, b.fob_per_unit_value); if (diff !== 0) return diff * direction; }
+  if (sortBy === 'ex_factory') { const diff = cmpNumber(a.ex_factory_value, b.ex_factory_value); if (diff !== 0) return diff * direction; }
+  if (sortBy === 'fob') { const diff = cmpNumber(a.fob_value, b.fob_value); if (diff !== 0) return diff * direction; }
   return cmpNumber(a.category_sort_order, b.category_sort_order) || cmpString(a.product_name, b.product_name) || cmpNumber(a.pack_sort_value, b.pack_sort_value) || cmpString(a.sku_code, b.sku_code);
 }
 
@@ -75,7 +91,7 @@ export async function GET(request: NextRequest) {
   const page = parsePositiveInt(searchParams.get('page'), 1);
   const pageSize = parsePositiveInt(searchParams.get('page_size'), 25);
 
-  const productsResult = await db.from('products').select('id,organization_id,category_id,name,brand_name,pricing_type,is_active,updated_at,sort_order').eq('organization_id', organizationId).order('sort_order', { ascending: true }).order('name', { ascending: true });
+  const productsResult = await db.from('products').select('id,organization_id,category_id,name,brand_name,pricing_type,is_active,updated_at,sort_order,exw_price,fob_price,cif_price,pricing_currency').eq('organization_id', organizationId).order('sort_order', { ascending: true }).order('name', { ascending: true });
   if (productsResult.error) return NextResponse.json({ error: productsResult.error.message }, { status: 500 });
   const categoriesResult = await db.from('product_categories').select('id,name,sort_order').eq('organization_id', organizationId);
   if (categoriesResult.error) return NextResponse.json({ error: categoriesResult.error.message }, { status: 500 });
@@ -111,11 +127,15 @@ export async function GET(request: NextRequest) {
     const moqUnit = variant.moq_cases != null ? 'cases' : variant.moq_kg != null ? 'kg' : null;
     const moqDisplay = variant.moq_cases != null ? `${variant.moq_cases} cases` : variant.moq_kg != null ? `${variant.moq_kg} kg` : null;
 
-    const exUnit = rule?.ex_factory_usd_per_unit ?? (variant.pricing_mode_default === 'kg' ? rule?.bulk_usd_per_kg : null) ?? null;
-    const exCase = rule?.ex_factory_usd_per_case ?? (exUnit != null && variant.units_per_case != null ? Number((exUnit * Number(variant.units_per_case)).toFixed(2)) : null);
-    const fobUnit = rule?.fob_usd_per_unit ?? null;
-    const fobCase = rule?.fob_usd_per_case ?? (fobUnit != null && variant.units_per_case != null ? Number((fobUnit * Number(variant.units_per_case)).toFixed(2)) : null);
-    const bulk = rule?.bulk_usd_per_kg ?? null;
+    const productExCase = toNumber(product.exw_price);
+    const productFobCase = toNumber(product.fob_price);
+    const productCifCase = toNumber(product.cif_price);
+    const exUnit = rule?.ex_factory_usd_per_unit ?? (variant.pricing_mode_default === 'kg' ? rule?.bulk_usd_per_kg : null) ?? perUnit(productExCase, variant.units_per_case);
+    const exCase = rule?.ex_factory_usd_per_case ?? (exUnit != null && variant.units_per_case != null ? Number((exUnit * Number(variant.units_per_case)).toFixed(2)) : null) ?? productExCase;
+    const fobUnit = rule?.fob_usd_per_unit ?? perUnit(productFobCase, variant.units_per_case);
+    const fobCase = rule?.fob_usd_per_case ?? (fobUnit != null && variant.units_per_case != null ? Number((fobUnit * Number(variant.units_per_case)).toFixed(2)) : null) ?? productFobCase;
+    const bulk = rule?.bulk_usd_per_kg ?? (variant.pricing_mode_default === 'kg' ? productExCase : null);
+    const cifCase = productCifCase;
     const exDefaultValue = variant.pricing_mode_default === 'kg' ? bulk ?? exUnit : exCase ?? exUnit;
     const exDefaultUnit = variant.pricing_mode_default === 'kg' ? (bulk != null ? 'kg' : exUnit != null ? 'unit' : null) : exCase != null ? 'case' : exUnit != null ? 'unit' : null;
     const fobDefaultValue = variant.pricing_mode_default === 'kg' ? fobUnit ?? bulk : fobCase ?? fobUnit;
@@ -148,16 +168,16 @@ export async function GET(request: NextRequest) {
       fob_per_unit_display: formatMoneyWithUnit(fobUnit, variant.pricing_mode_default === 'kg' ? 'kg' : 'unit'),
       fob_per_case_value: fobCase,
       fob_per_case_display: formatMoneyWithUnit(fobCase, 'case'),
-      cif_value: null,
-      cif_unit: null,
-      cif_display: null,
+      cif_value: cifCase,
+      cif_unit: cifCase != null ? 'case' : null,
+      cif_display: formatMoneyWithUnit(cifCase, cifCase != null ? 'case' : null),
       bulk_value: bulk,
       bulk_unit: bulk != null ? 'kg' : null,
       bulk_display: formatMoneyWithUnit(bulk, bulk != null ? 'kg' : null),
       pricing_mode_default: variant.pricing_mode_default as any,
-      pricing_rule_set_id: activeRuleSet?.id ?? null,
-      pricing_rule_set_name: activeRuleSet?.name ?? null,
-      source_sheet_name: rule?.source_sheet_name ?? null,
+      pricing_rule_set_id: activeRuleSet?.id ?? (exDefaultValue != null || fobDefaultValue != null || bulk != null ? 'product-base-price' : null),
+      pricing_rule_set_name: activeRuleSet?.name ?? (exDefaultValue != null || fobDefaultValue != null || bulk != null ? 'Product base price' : null),
+      source_sheet_name: rule?.source_sheet_name ?? (exDefaultValue != null || fobDefaultValue != null || bulk != null ? 'Product base price' : null),
       updated_at: rule?.updated_at ?? variant.updated_at ?? product.updated_at ?? null,
       is_active: Boolean(product.is_active && variant.is_active),
       category_sort_order: Number(categoryRow?.sort_order ?? 0),
@@ -182,7 +202,7 @@ export async function GET(request: NextRequest) {
   const totalRows = filtered.length;
   const startIndex = (page - 1) * pageSize;
   const pagedRows = filtered.slice(startIndex, startIndex + pageSize).map(({ category_sort_order, pack_sort_value, ...row }) => row);
-  const pricedVariants = filtered.filter((row) => Boolean(row.pricing_rule_set_id && (row.ex_factory_value != null || row.fob_value != null || row.bulk_value != null))).length;
+  const pricedVariants = filtered.filter((row) => Boolean(row.ex_factory_value != null || row.fob_value != null || row.bulk_value != null)).length;
   const summary: ProductsSpreadsheetResponse['summary'] = {
     visible_products: new Set(filtered.map((row) => row.product_id)).size,
     visible_variants: filtered.length,
@@ -190,8 +210,8 @@ export async function GET(request: NextRequest) {
     quote_ready_variants: filtered.filter((row) => row.is_quoteable).length,
     inactive_variants: filtered.filter((row) => !row.is_active).length,
     categories_visible: new Set(filtered.map((row) => row.category_name).filter(Boolean)).size,
-    has_pricing_rule_set: Boolean(activeRuleSet?.id),
-    pricing_rule_set_name: activeRuleSet?.name ?? null,
+    has_pricing_rule_set: Boolean(activeRuleSet?.id) || pricedVariants > 0,
+    pricing_rule_set_name: activeRuleSet?.name ?? (pricedVariants > 0 ? 'Product base price' : null),
   };
 
   return NextResponse.json({
@@ -211,6 +231,7 @@ export async function GET(request: NextRequest) {
       user_pricing_rules_found: userPricing.data.length,
       final_pricing_rules_found: pricingRules.length,
       pricing_rules_source: pricingRulesSource,
+      product_base_priced_variants: filtered.filter((row) => row.pricing_rule_set_id === 'product-base-price').length,
       has_service_role: Boolean(admin),
     },
   });
