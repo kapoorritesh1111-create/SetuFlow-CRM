@@ -65,18 +65,5 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  await sb.from('catalog_share_events').insert({
-    catalog_share_id: params.id,
-    event_type: body.action === 'revoke' ? 'share_updated' : 'share_updated',
-    meta: {
-      action: body.action ?? 'update',
-      updated_fields: Object.keys(patch).filter((field) => field !== 'updated_at'),
-      previous_status: existing.status,
-      next_status: data.status,
-      updated_by: ws.user?.id ?? null,
-    },
-  }).throwOnError?.();
-
   return NextResponse.json({ share: data });
 }
