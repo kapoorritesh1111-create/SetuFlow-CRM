@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { ProductImageEditor } from './product-image-editor';
 import { ProductsGapBadge } from './products-gap-badge';
 import type { DrawerTab } from './product-detail-drawer';
 import { getProductGapActionLabel, getProductGapLabel, getProductGapState, type ProductGapState } from '@/features/products/lib/products-gap-utils';
@@ -24,32 +25,14 @@ type Props = {
 };
 
 type EditableKey = 'ex_factory' | 'fob';
-
 function priceText(row: ProductsSpreadsheetRow, key: EditableKey, viewMode: PricingViewMode) { if (key === 'ex_factory') return viewMode === 'unit' ? row.ex_factory_per_unit_display : row.ex_factory_per_case_display; return viewMode === 'unit' ? row.fob_per_unit_display : row.fob_per_case_display; }
 function priceValue(row: ProductsSpreadsheetRow, key: EditableKey, viewMode: PricingViewMode) { if (key === 'ex_factory') return viewMode === 'unit' ? row.ex_factory_per_unit_value : row.ex_factory_per_case_value; return viewMode === 'unit' ? row.fob_per_unit_value : row.fob_per_case_value; }
 function SortButton({ label, active, direction, onClick }: { label: string; active: boolean; direction: 'asc' | 'desc'; onClick: () => void }) { return <button type="button" onClick={onClick} className="inline-flex items-center gap-1 font-bold text-slate-700">{label}<span className="text-[10px] text-slate-400">{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span></button>; }
 function readinessClass(state: ProductGapState) { if (state === 'complete') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'; if (state === 'inactive') return 'bg-slate-100 text-slate-600 ring-slate-200'; return 'bg-amber-50 text-amber-700 ring-amber-200'; }
 function StatusDot({ active }: { active: boolean }) { return <span className={`block h-2.5 w-2.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-slate-300'}`} title={active ? 'Active product' : 'Inactive product'} />; }
 function categoryAccent(category: string | null) { const value = category?.toLowerCase() ?? ''; if (value.includes('powder')) return 'bg-emerald-500 text-emerald-700'; if (value.includes('chip') || value.includes('crisp') || value.includes('snack')) return 'bg-violet-500 text-violet-700'; if (value.includes('sweet')) return 'bg-amber-500 text-amber-700'; if (value.includes('onion') || value.includes('garlic')) return 'bg-rose-500 text-rose-700'; return 'bg-blue-500 text-blue-700'; }
-
 function ProductThumb({ row }: { row: ProductsSpreadsheetRow }) { return <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm"><img src={`/api/products/${encodeURIComponent(row.product_id)}/image`} alt="" className="h-full w-full object-cover" loading="lazy" /></span>; }
-function ImageAction({ row, canManageCatalog, onSaved, onActionBlocked }: { row: ProductsSpreadsheetRow; canManageCatalog: boolean; onSaved: () => Promise<void> | void; onActionBlocked?: (message: string) => void }) {
-  const [saving, setSaving] = useState(false);
-  async function editImage(event: any) {
-    event.stopPropagation();
-    if (!canManageCatalog) { onActionBlocked?.('Catalog manager access required.'); return; }
-    const next = window.prompt('Paste product image URL. Leave blank to remove image.', row.image_url ?? '');
-    if (next === null) return;
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/products/${encodeURIComponent(row.product_id)}/image`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_url: next.trim() || null }) });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Image update failed.');
-      await onSaved();
-    } catch (error) { onActionBlocked?.(error instanceof Error ? error.message : 'Image update failed.'); } finally { setSaving(false); }
-  }
-  return <button type="button" onClick={editImage} disabled={saving} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${workspaceSecondaryButtonClass}`}>{saving ? 'Saving' : 'Image'}</button>;
-}
+function ImageAction({ row, canManageCatalog, onSaved, onActionBlocked }: { row: ProductsSpreadsheetRow; canManageCatalog: boolean; onSaved: () => Promise<void> | void; onActionBlocked?: (message: string) => void }) { const [open, setOpen] = useState(false); return <><button type="button" onClick={(event) => { event.stopPropagation(); if (!canManageCatalog) { onActionBlocked?.('Catalog manager access required.'); return; } setOpen(true); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${workspaceSecondaryButtonClass}`}>Image</button>{open ? <ProductImageEditor row={row} onClose={() => setOpen(false)} onSaved={onSaved} onActionBlocked={onActionBlocked} /> : null}</>; }
 function EditablePriceCell({ row, field, viewMode, onSaved, canManageCatalog, onActionBlocked }: { row: ProductsSpreadsheetRow; field: EditableKey; viewMode: PricingViewMode; onSaved: () => Promise<void> | void; canManageCatalog: boolean; onActionBlocked?: (message: string) => void }) {
   const editable = viewMode === 'unit'; const initialValue = priceValue(row, field, viewMode); const [editing, setEditing] = useState(false); const [value, setValue] = useState(initialValue != null ? String(initialValue) : ''); const [saving, setSaving] = useState(false);
   const save = async () => { if (!canManageCatalog) { onActionBlocked?.('Catalog manager access required.'); setEditing(false); return; } if (!editable) { onActionBlocked?.('Switch to unit view for inline price edits.'); setEditing(false); return; } setSaving(true); try { const numericValue = value.trim() === '' ? null : Number(value); if (value.trim() !== '' && Number.isNaN(numericValue)) { onActionBlocked?.('Enter a valid numeric price.'); return; } await updateProductDetail(row.product_id, { variants: [{ product_variant_id: row.product_variant_id, [`${field}_value`]: numericValue, [`${field}_unit`]: row.pricing_mode_default === 'kg' ? 'kg' : 'unit' } as any] }); await onSaved(); setEditing(false); } catch (error) { onActionBlocked?.(error instanceof Error ? error.message : 'Catalog price update failed.'); } finally { setSaving(false); } };
