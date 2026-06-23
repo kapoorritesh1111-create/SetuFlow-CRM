@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
-import { SmcMobileIssues, type MobileIssue } from "./mobile-issues";
 import { useSearchParams } from "next/navigation";
 
 type Attachment = { url: string; name: string; type?: string; size?: number; path?: string };
@@ -99,7 +98,6 @@ function SmcIssuesContent() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sprintFilter, setSprintFilter] = useState<number | null>(null);
   const [viewFilter, setViewFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [drawerIssue, setDrawerIssue] = useState<Issue | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editIssue, setEditIssue] = useState<Partial<Issue>>({});
@@ -152,13 +150,8 @@ function SmcIssuesContent() {
     if (typeFilter) list = list.filter((i) => (i.issue_type ?? i.issue_category ?? "").toLowerCase() === typeFilter.toLowerCase());
     if (sprintFilter !== null) list = list.filter((i) => Number(i.sprint_number) === sprintFilter);
     if (viewFilter === "backlog") list = list.filter((i) => !["resolved", "deferred"].includes(i.status.toLowerCase()) && Number(i.sprint_number) < 27);
-    if (statusFilter) {
-      list = list.filter((i) => i.status === statusFilter);
-    } else {
-      if (hideRes && kpiF !== "resolved") list = list.filter((i) => i.status !== "Resolved");
-      if (hideDef && kpiF !== "deferred") list = list.filter((i) => i.status !== "Deferred");
-      list = list.filter((i) => i.status !== "Won't Fix");
-    }
+    if (hideRes && kpiF !== "resolved") list = list.filter((i) => i.status !== "Resolved");
+    if (hideDef && kpiF !== "deferred") list = list.filter((i) => i.status !== "Deferred");
     if (kpiF === "open") list = list.filter((i) => i.status === "Open" || i.status === "open");
     if (kpiF === "critical") list = list.filter((i) => i.severity?.toLowerCase().includes("critical"));
     if (kpiF === "high") list = list.filter((i) => i.severity?.toLowerCase().includes("high"));
@@ -168,7 +161,7 @@ function SmcIssuesContent() {
     if (search) { const q = search.toLowerCase(); list = list.filter((i) => i.title.toLowerCase().includes(q) || i.issue_ref.toLowerCase().includes(q) || (i.area ?? "").toLowerCase().includes(q) || (i.assigned_to ?? "").toLowerCase().includes(q)); }
     list.sort((a, b) => { const av = a[sortKey] ?? ""; const bv = b[sortKey] ?? ""; if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av; return sortDir === "asc" ? String(av).localeCompare(String(bv)) : -String(av).localeCompare(String(bv)); });
     return list;
-  }, [issues, hideRes, hideDef, kpiF, search, sortKey, sortDir, typeFilter, sprintFilter, viewFilter, statusFilter]);
+  }, [issues, hideRes, hideDef, kpiF, search, sortKey, sortDir, typeFilter, sprintFilter, viewFilter]);
 
   // ---- inline patch helper ----
   async function inlinePatch(id: string, patch: Record<string, unknown>) {
@@ -186,13 +179,6 @@ function SmcIssuesContent() {
   }
 
   // ---- bulk selection helpers ----
-  async function quickCreate(fields: { title: string; severity: string; area: string | null; assigned_to: string | null; sprint_number: number }) {
-    try {
-      const res = await fetch("/api/smc/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...fields, issue_type: "Bug", reporter_name: "Ritesh Kapoor" }) });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.issue) setIssues((prev) => [data.issue as Issue, ...prev]);
-    } catch { /* swallow — mobile quick add is best-effort */ }
-  }
   function toggleRow(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -304,10 +290,6 @@ function SmcIssuesContent() {
       <div className="smc-sp" />
       <button className={`smc-chip ${hideRes ? "hide-active" : ""}`} onClick={() => { setHideRes(!hideRes); setKpiF(null); }}>{hideRes ? "Hiding resolved" : "Show resolved"}</button>
       <button className={`smc-chip ${hideDef ? "hide-active" : ""}`} onClick={() => { setHideDef(!hideDef); setKpiF(null); }}>{hideDef ? "Hiding deferred" : "Show deferred"}</button>
-      <select value={statusFilter ?? ""} onChange={(e) => { setStatusFilter(e.target.value || null); setKpiF(null); }} className="smc-chip" style={{ font: "inherit", fontSize: 12, padding: "5px 10px", borderRadius: 7, cursor: "pointer" }} title="Filter by status">
-        <option value="">All statuses</option>
-        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-      </select>
       <span style={{ fontSize: 11, color: "#64748b", fontFamily: "'DM Mono',monospace" }}>{filtered.length} issues</span>
     </div>
 
@@ -342,13 +324,6 @@ function SmcIssuesContent() {
       </table>
     </div>
 
-    <SmcMobileIssues
-      issues={filtered as unknown as MobileIssue[]}
-      statuses={STATUSES}
-      onOpen={(id) => { const it = filtered.find((i) => i.id === id); if (it) setDrawerIssue(it); }}
-      onSetStatus={(id, status) => { void inlinePatch(id, { status }); }}
-      onCreate={quickCreate}
-    />
     {/* ---- detail drawer ---- */}
     <div className={`smc-drawer-bg ${drawerIssue ? "open" : ""}`} onClick={() => setDrawerIssue(null)} />
     <div className={`smc-drawer ${drawerIssue ? "open" : ""}`}>
