@@ -16,6 +16,8 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'SMC — Setu Mission Control',
   description: 'Internal operations workspace for SETU Flow',
+  manifest: '/smc.webmanifest',
+  appleWebApp: { title: 'SETU Flow SMC' },
 };
 
 export default async function SmcLayout({ children }: { children: ReactNode }) {
@@ -23,7 +25,7 @@ export default async function SmcLayout({ children }: { children: ReactNode }) {
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.user || !workspace.organization || !workspace.membership) {
-    redirect('/login');
+    redirect('/login?next=/smc');
   }
 
   if (!isSetuInternalOrganization(workspace.organization)) {
@@ -41,6 +43,7 @@ export default async function SmcLayout({ children }: { children: ReactNode }) {
         initials={getInitials(displayName)}
         orgName={orgName}
         roleLabel="HQ"
+        userId={workspace.user?.id ?? ''}
       />
     </div>
   );

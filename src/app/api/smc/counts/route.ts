@@ -17,11 +17,12 @@ export async function GET() {
 
     const issues = (data as { status: string; issue_type: string | null; issue_category: string | null; sprint_number: number }[]) ?? [];
     const total = issues.length;
+    const open = issues.filter(i => i.status === "Open" || i.status === "open").length;
     const t = (type: string) => issues.filter(i => (i.issue_type ?? i.issue_category ?? "").toLowerCase().includes(type)).length;
     const backlog = issues.filter(i => !["Resolved", "Deferred"].includes(i.status) && i.sprint_number < 27).length;
 
-    return NextResponse.json({ total, bugs: t("bug"), enhancement: t("enh"), ux: t("ux"), backlog });
+    return NextResponse.json({ total, open, bugs: t("bug"), enhancement: t("enh"), ux: t("ux"), backlog });
   } catch {
-    return NextResponse.json({ total: 0, bugs: 0, enhancement: 0, ux: 0, backlog: 0 });
+    return NextResponse.json({ total: 0, open: 0, bugs: 0, enhancement: 0, ux: 0, backlog: 0 });
   }
 }

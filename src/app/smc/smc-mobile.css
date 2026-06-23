@@ -128,3 +128,94 @@
   .smc-msheet-cic { width: 30px; height: 30px; border-radius: 8px; flex: 0 0 auto; display: grid; place-items: center; color: var(--teal); background: rgba(39, 148, 145, 0.08); }
   .smc-msheet-cic svg { width: 16px; height: 16px; }
 }
+
+/* S36-MOBILE-377 — mobile top bar (notifications), content offset, chat FAB lift */
+.smc-mtop { display: none; }
+
+@media (max-width: 767px) {
+  .smc-mtop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(50px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 14px 0;
+    z-index: 79;
+    background: var(--navy-9, #0e1f38);
+    color: #fff;
+  }
+  .smc-mtop-brand {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #cfe0f5;
+  }
+  .smc-mtop-bell { display: flex; align-items: center; }
+
+  /* offset SMC content below the fixed top bar */
+  .smc-main { padding-top: calc(50px + env(safe-area-inset-top)) !important; }
+
+  /* lift the chat launch button clear of the bottom tab bar (it uses inline styles -> need !important) */
+  .smc-root .crm-chat-fab-launch {
+    bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+    left: 14px !important;
+    z-index: 85 !important;
+  }
+}
+
+/* S36-MOBILE-363/364/365 — mobile issues card list */
+.smc-issues-mobile { display: none; }
+
+@media (max-width: 767px) {
+  .smc-cs { display: none !important; }            /* hide desktop table on mobile */
+  .smc-issues-mobile { display: block; padding: 4px 0 90px; }
+
+  .smc-mi-hint {
+    display: flex; align-items: center; gap: 6px;
+    background: #eaf4f3; border: 1px solid #cde7e5; color: var(--teal-600, #1f7e7b);
+    border-radius: 10px; padding: 8px 11px; margin: 4px 2px 12px; font-size: 11.5px; font-weight: 600;
+  }
+  .smc-mi-row { position: relative; overflow: hidden; border-radius: 14px; margin-bottom: 9px; }
+  .smc-mi-act {
+    position: absolute; top: 0; bottom: 0; display: flex; align-items: center;
+    font-size: 12px; font-weight: 700; color: #fff; padding: 0 18px;
+  }
+  .smc-mi-act-l { left: 0; right: 0; justify-content: flex-start; background: #16a34a; border-radius: 14px; }
+  .smc-mi-act-r { left: 0; right: 0; justify-content: flex-end; background: var(--navy, #1f487c); border-radius: 14px; }
+  .smc-mi-card {
+    position: relative; display: flex; gap: 11px; padding: 13px 14px;
+    background: #fff; border: 1px solid var(--border, #e4e9f1); border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(16,27,45,.04); cursor: pointer; touch-action: pan-y;
+    transition: transform .26s cubic-bezier(.32,.72,0,1); will-change: transform;
+  }
+  .smc-mi-sev { width: 4px; border-radius: 99px; flex: 0 0 auto; align-self: stretch; background: #94a3b8; }
+  .smc-mi-sev.critical { background: #dc2626; } .smc-mi-sev.high { background: #d97706; }
+  .smc-mi-sev.medium { background: #2563eb; } .smc-mi-sev.low { background: #64748b; }
+  .smc-mi-body { flex: 1; min-width: 0; }
+  .smc-mi-ref { font-family: 'DM Mono', monospace; font-size: 10.5px; color: #6b7b92; }
+  .smc-mi-title { font-size: 13.5px; font-weight: 600; line-height: 1.32; color: #14223a; margin-top: 2px; }
+  .smc-mi-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .smc-mi-meta .smc-st { border: 0; cursor: pointer; font: inherit; }
+  .smc-mi-area { font-size: 11px; color: #6b7b92; font-weight: 500; }
+  .smc-mi-av { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 9.5px; font-weight: 700; color: #fff; background: #279491; margin-left: auto; }
+  .smc-mi-empty { text-align: center; padding: 36px 16px; color: #6b7b92; font-size: 13px; }
+
+  .smc-mi-fab {
+    position: fixed; right: 16px; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 60;
+    width: 52px; height: 52px; border-radius: 17px; border: 0; cursor: pointer;
+    background: linear-gradient(135deg, var(--teal, #279491), var(--navy, #1f487c));
+    color: #fff; font-size: 28px; line-height: 1; display: grid; place-items: center;
+    box-shadow: 0 8px 22px rgba(31,72,124,.4);
+  }
+  .smc-mi-sheet-h { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+  .smc-mi-sheet-d { margin: 0 0 14px; font-size: 12px; color: #6b7b92; line-height: 1.5; }
+  .smc-mi-input { width: 100%; border: 1px solid var(--border, #e4e9f1); border-radius: 11px;
+    padding: 11px 13px; font-family: inherit; font-size: 14px; color: #14223a; background: #fafbfd; }
+  .smc-mi-create { width: 100%; border: 0; background: var(--teal, #279491); color: #fff;
+    font-family: inherit; font-size: 14.5px; font-weight: 700; padding: 13px; border-radius: 12px;
+    cursor: pointer; margin-top: 13px; }
+  .smc-mi-stwrap { display: flex; flex-wrap: wrap; gap: 9px; }
+  .smc-mi-stwrap .smc-st { border: 0; cursor: pointer; font: inherit; font-size: 13px; padding: 9px 13px; }
+  .smc-mi-stwrap .smc-st.sel { outline: 2px solid var(--navy, #1f487c); outline-offset: 1px; }
+}

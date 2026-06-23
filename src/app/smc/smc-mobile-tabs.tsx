@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { InAppNotificationCenter } from "@/components/notifications/in-app-notification-center";
+import { INTERNAL_ORG_ID } from "@/lib/config/internal";
 
-// S36-MOBILE-361 / S36-MOBILE-375
-// Additive mobile bottom tab bar + More sheet for the SMC console.
+// S36-MOBILE-361 / S36-MOBILE-375 / S36-MOBILE-377
+// Additive mobile bottom tab bar + More sheet + top bar (notifications) for the SMC console.
 // Renders only at <=767px (see smc-mobile.css); desktop is untouched.
 
 type Props = {
@@ -13,6 +15,7 @@ type Props = {
   initials: string;
   orgName: string;
   roleLabel?: string;
+  userId: string;
 };
 
 type Tab = { id: string; path: string; label: string; icon: string };
@@ -90,16 +93,16 @@ function Ico({ name }: { name: string }): ReactNode {
   );
 }
 
-export function SmcMobileTabs({ userName, initials, orgName, roleLabel }: Props) {
+export function SmcMobileTabs({ userName, initials, orgName, roleLabel, userId }: Props) {
   const pathname = usePathname();
   const [more, setMore] = useState(false);
-  const [total, setTotal] = useState<number | null>(null);
+  const [openCount, setOpenCount] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
     fetch("/api/smc/counts")
       .then((r) => r.json())
-      .then((d) => { if (active) setTotal(typeof d?.total === "number" ? d.total : null); })
+      .then((d) => { if (active) setOpenCount(typeof d?.open === "number" ? d.open : null); })
       .catch(() => {});
     return () => { active = false; };
   }, [pathname]);
@@ -114,12 +117,18 @@ export function SmcMobileTabs({ userName, initials, orgName, roleLabel }: Props)
 
   return (
     <>
+      <header className="smc-mtop">
+        <span className="smc-mtop-brand">SETU Mission Control</span>
+        <div className="smc-mtop-bell">
+          <InAppNotificationCenter organizationId={INTERNAL_ORG_ID} userId={userId} variant="inline" />
+        </div>
+      </header>
       <nav className="smc-mtabs" aria-label="SMC mobile navigation">
         {PRIMARY.map((t) => (
           <Link key={t.id} href={t.path} className={`smc-mtab ${isActive(t.path) ? "active" : ""}`}>
             <span className="smc-mtab-ic">
               <Ico name={t.icon} />
-              {t.id === "issues" && total ? <span className="smc-mtab-badge">{total > 99 ? "99+" : total}</span> : null}
+              {t.id === "issues" && openCount ? <span className="smc-mtab-badge">{openCount > 99 ? "99+" : openCount}</span> : null}
             </span>
             <span className="smc-mtab-lb">{t.label}</span>
           </Link>
