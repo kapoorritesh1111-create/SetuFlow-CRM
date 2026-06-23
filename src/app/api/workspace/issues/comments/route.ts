@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { SETU_FLOW_ORG_ID } from '@/lib/queries/workspace';
+import { notifySmc, resolveMentionUserIds } from '@/lib/notifications/smc-notify';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -27,6 +28,23 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify @mentioned teammates (in-app + push). Best-effort.
+  try {
+    const mentioned = await resolveMentionUserIds(String(body.body ?? ''));
+    if (mentioned.length) {
+      await notifySmc({
+        userIds: mentioned,
+        title: `${body.author_name ?? 'Someone'} mentioned you`,
+        body: String(body.body).slice(0, 140),
+        actionUrl: '/smc/issues',
+        type: 'smc_mention',
+        priority: 'high',
+        entityRef: body.issue_id,
+      });
+    }
+  } catch { /* mention notify is best-effort */ }
+
   return NextResponse.json(data, { status: 201 });
 }
 

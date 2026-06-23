@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
 import { INTERNAL_ORG_ID } from '@/lib/config/internal';
+import { notifySmc, getSmcRecipientIds } from '@/lib/notifications/smc-notify';
 
 export const dynamic = "force-dynamic";
 
@@ -157,6 +158,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       .single();
 
     if (error) throw error;
+    if (has(body, "status")) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const recipients = await getSmcRecipientIds(user?.id);
+        await notifySmc({
+          userIds: recipients,
+          title: `${data.issue_ref ?? "Issue"} → ${data.status}`,
+          body: String(data.title ?? "Issue status changed."),
+          actionUrl: "/smc/issues",
+          type: "smc_issue_status",
+          priority: "normal",
+          entityRef: data.issue_ref ? String(data.issue_ref) : null,
+        });
+      } catch { /* notification is best-effort */ }
+    }
     return NextResponse.json({ issue: data });
   } catch (err) {
     console.error("SMC update issue error:", err);

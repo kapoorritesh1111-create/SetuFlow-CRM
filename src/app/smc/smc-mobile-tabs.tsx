@@ -96,6 +96,14 @@ function Ico({ name }: { name: string }): ReactNode {
 export function SmcMobileTabs({ userName, initials, orgName, roleLabel, userId }: Props) {
   const pathname = usePathname();
   const [more, setMore] = useState(false);
+  const [shared, setShared] = useState(false);
+  const shareCurrent = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "https://setuflowcrm.com/smc";
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) { await navigator.share({ title: "SETU Mission Control", url }); setMore(false); return; }
+      if (typeof navigator !== "undefined" && navigator.clipboard) { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1800); }
+    } catch { /* user cancelled the share */ }
+  };
   const [openCount, setOpenCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -150,6 +158,7 @@ export function SmcMobileTabs({ userName, initials, orgName, roleLabel, userId }
           </div>
           <span className="smc-msheet-tag">Internal</span>
         </div>
+        <button type="button" className="smc-msheet-share" onClick={shareCurrent}>{shared ? "Link copied ✓" : "Share this page"}</button>
         <div className="smc-msheet-scroll">
           {MORE_GROUPS.map((g) => (
             <div key={g.label} className="smc-msheet-grp">

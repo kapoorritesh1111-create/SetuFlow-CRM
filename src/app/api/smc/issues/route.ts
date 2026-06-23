@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
 import { INTERNAL_ORG_ID } from '@/lib/config/internal';
+import { notifySmc, getSmcRecipientIds } from '@/lib/notifications/smc-notify';
 
 export const dynamic = "force-dynamic";
 
@@ -217,6 +218,19 @@ export async function POST(request: NextRequest) {
     const { data, error } = await smcSupabase.from("sprint_issues").insert(payload).select("*").single();
 
     if (error) throw error;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const recipients = await getSmcRecipientIds(user?.id);
+      await notifySmc({
+        userIds: recipients,
+        title: `New issue · ${data.issue_ref ?? "SMC"}`,
+        body: String(data.title ?? "A new SMC issue was created."),
+        actionUrl: "/smc/issues",
+        type: "smc_issue_new",
+        priority: String(data.severity ?? "").toLowerCase().includes("critical") ? "critical" : "normal",
+        entityRef: data.issue_ref ? String(data.issue_ref) : null,
+      });
+    } catch { /* notification is best-effort */ }
     return NextResponse.json({ issue: data }, { status: 201 });
   } catch (err) {
     console.error("SMC create issue error:", err);
