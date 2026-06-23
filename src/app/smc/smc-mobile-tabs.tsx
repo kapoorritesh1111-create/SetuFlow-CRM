@@ -120,7 +120,7 @@ export function SmcMobileTabs({ userName, initials, orgName, roleLabel, userId }
       <header className="smc-mtop">
         <span className="smc-mtop-brand">SETU Mission Control</span>
         <div className="smc-mtop-bell">
-          <InAppNotificationCenter organizationId={INTERNAL_ORG_ID} userId={userId} variant="inline" />
+          <InAppNotificationCenter organizationId={INTERNAL_ORG_ID} userId={userId} variant="inline" showDerived={false} />
         </div>
       </header>
       <nav className="smc-mtabs" aria-label="SMC mobile navigation">

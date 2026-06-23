@@ -186,15 +186,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
   useEffect(() => { setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
-  useEffect(() => {
-    const target = scrollRef.current;
-    if (!target) return;
-    const scrollToBottom = () => target.scrollTo({ top: target.scrollHeight, behavior: drawerOpen ? 'smooth' : 'auto' });
-    requestAnimationFrame(() => {
-      scrollToBottom();
-      requestAnimationFrame(scrollToBottom);
-    });
-  }, [messages, isThinking, drawerOpen]);
+  useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
 
   function appendAssistant(content: string, tone: ChatMessage['tone'] = 'normal', extra?: Partial<ChatMessage>) {
     setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: 'assistant', content, tone, ...extra }]);
@@ -337,8 +329,8 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   return (
     <>
       {launcher}
-      <RightDrawer open={drawerOpen} onClose={closeDrawer} title={undefined} widthClassName="sm:max-w-[430px]" bodyClassName="!min-h-0 !overflow-hidden !p-0" hideHeader>
-        <div className="flex h-full min-h-0 max-h-[100dvh] flex-col bg-[#F8FBFF] sm:max-h-[calc(100dvh-1.5rem)]">
+      <RightDrawer open={drawerOpen} onClose={closeDrawer} title={undefined} widthClassName="sm:max-w-[430px]" bodyClassName="!p-0" hideHeader>
+        <div className="flex h-full min-h-[100dvh] flex-col bg-[#F8FBFF] sm:min-h-[calc(100dvh-1.5rem)]">
           <header className="shrink-0 border-b border-slate-200 bg-white px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -354,13 +346,13 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
               <button type="button" onClick={closeDrawer} className="rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50">Hide</button>
             </div>
           </header>
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-pb-6 px-4 py-4">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
             <div className="rounded-[22px] border border-sky-100 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Quick starts</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">{routeHelp.summary}</p>
               <div className="mt-3 grid grid-cols-2 gap-2">{quickPrompts.map((topic) => <button key={topic.id} type="button" onClick={() => askTopic(topic)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900">{topic.title}</button>)}</div>
             </div>
-            <div className="mt-4 space-y-3 pb-6">
+            <div className="mt-4 space-y-3 pb-2">
               {messages.map((message) => (
                 <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className={cn('max-w-[88%]', message.role === 'assistant' ? 'pr-8' : 'pl-8')}>

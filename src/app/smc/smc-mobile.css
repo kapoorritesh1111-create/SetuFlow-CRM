@@ -153,7 +153,7 @@
   .smc-mtop-bell { display: flex; align-items: center; }
 
   /* offset SMC content below the fixed top bar */
-  .smc-main { padding-top: calc(50px + env(safe-area-inset-top)) !important; }
+  .smc-main { padding-top: calc(50px + env(safe-area-inset-top)) !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
 
   /* lift the chat launch button clear of the bottom tab bar (it uses inline styles -> need !important) */
   .smc-root .crm-chat-fab-launch {
@@ -162,3 +162,6 @@
     z-index: 85 !important;
   }
 }
+
+/* S36-MOBILE-366 — @mention highlight in issue comments */
+.smc-mention { color: #1f487c; font-weight: 600; }

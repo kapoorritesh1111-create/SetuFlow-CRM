@@ -41,6 +41,8 @@ const sevCls = (s: string | null) => { const l = (s ?? "").toLowerCase(); return
 const stCls = (s: string) => { const l = s.toLowerCase(); return l === "resolved" ? "resolved" : l.includes("review") ? "review" : l.includes("progress") ? "in-progress" : l === "blocked" ? "blocked" : l === "deferred" ? "deferred" : "open"; };
 const typCls = (t: string | null) => { const l = (t ?? "").toLowerCase(); return l.includes("bug") ? "bug" : l.includes("doc") ? "doc" : l.includes("ux") ? "ux" : l.includes("enh") ? "enhancement" : l.includes("test") ? "test" : l.includes("devops") ? "devops" : "feat"; };
 const ini = (n: string | null) => n ? n.split(" ").map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase() : "";
+const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const highlightMentions = (body: string) => escapeHtml(body).replace(/@([A-Za-z][\w-]*)/g, '<span class="smc-mention">@$1</span>');
 const ago = (d: string) => { const days = Math.floor((Date.now() - new Date(d).getTime()) / 864e5); return days === 0 ? "today" : days < 30 ? `${days}d ago` : new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
 const emptyToNull = (v: FormDataEntryValue | null) => { const text = typeof v === "string" ? v.trim() : ""; return text.length ? text : null; };
 const parseOptionalInt = (v: FormDataEntryValue | null) => { const text = typeof v === "string" ? v.trim() : ""; if (!text) return null; const n = Number(text); return Number.isFinite(n) ? n : null; };
@@ -98,6 +100,7 @@ function SmcIssuesContent() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sprintFilter, setSprintFilter] = useState<number | null>(null);
   const [viewFilter, setViewFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [drawerIssue, setDrawerIssue] = useState<Issue | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editIssue, setEditIssue] = useState<Partial<Issue>>({});
@@ -111,6 +114,10 @@ function SmcIssuesContent() {
   const [bulkField, setBulkField] = useState("");
   const [bulkValue, setBulkValue] = useState("");
   const [bulkApplying, setBulkApplying] = useState(false);
+  // issue comments
+  const [comments, setComments] = useState<{ id: string; author_name: string | null; body: string; created_at: string }[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
 
   const refreshIssues = useCallback(async () => {
     const res = await fetch("/api/smc/issues?limit=1000", { cache: "no-store" });
@@ -136,6 +143,28 @@ function SmcIssuesContent() {
   // When drawer opens, initialise area edit value
   useEffect(() => { setAreaEdit(drawerIssue?.area ?? null); }, [drawerIssue?.id]);
 
+  // Load comments for the open issue
+  useEffect(() => {
+    if (!drawerIssue?.id) { setComments([]); setCommentText(""); return; }
+    let active = true;
+    fetch(`/api/workspace/issues/comments?issue_id=${drawerIssue.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (active) setComments(Array.isArray(d) ? d : []); })
+      .catch(() => { if (active) setComments([]); });
+    return () => { active = false; };
+  }, [drawerIssue?.id]);
+
+  async function postComment() {
+    const text = commentText.trim();
+    if (!drawerIssue?.id || !text || postingComment) return;
+    setPostingComment(true);
+    try {
+      const res = await fetch("/api/workspace/issues/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ issue_id: drawerIssue.id, body: text, author_name: "Ritesh Kapoor" }) });
+      const row = await res.json().catch(() => null);
+      if (res.ok && row?.id) { setComments((prev) => [...prev, row]); setCommentText(""); }
+    } finally { setPostingComment(false); }
+  }
+
   const counts = useMemo(() => ({
     total: issues.length, open: issues.filter((i) => i.status === "Open" || i.status === "open").length,
     critical: issues.filter((i) => i.severity?.toLowerCase().includes("critical")).length,
@@ -150,8 +179,13 @@ function SmcIssuesContent() {
     if (typeFilter) list = list.filter((i) => (i.issue_type ?? i.issue_category ?? "").toLowerCase() === typeFilter.toLowerCase());
     if (sprintFilter !== null) list = list.filter((i) => Number(i.sprint_number) === sprintFilter);
     if (viewFilter === "backlog") list = list.filter((i) => !["resolved", "deferred"].includes(i.status.toLowerCase()) && Number(i.sprint_number) < 27);
-    if (hideRes && kpiF !== "resolved") list = list.filter((i) => i.status !== "Resolved");
-    if (hideDef && kpiF !== "deferred") list = list.filter((i) => i.status !== "Deferred");
+    if (statusFilter) {
+      list = list.filter((i) => i.status === statusFilter);
+    } else {
+      if (hideRes && kpiF !== "resolved") list = list.filter((i) => i.status !== "Resolved");
+      if (hideDef && kpiF !== "deferred") list = list.filter((i) => i.status !== "Deferred");
+      list = list.filter((i) => i.status !== "Won't Fix");
+    }
     if (kpiF === "open") list = list.filter((i) => i.status === "Open" || i.status === "open");
     if (kpiF === "critical") list = list.filter((i) => i.severity?.toLowerCase().includes("critical"));
     if (kpiF === "high") list = list.filter((i) => i.severity?.toLowerCase().includes("high"));
@@ -161,7 +195,7 @@ function SmcIssuesContent() {
     if (search) { const q = search.toLowerCase(); list = list.filter((i) => i.title.toLowerCase().includes(q) || i.issue_ref.toLowerCase().includes(q) || (i.area ?? "").toLowerCase().includes(q) || (i.assigned_to ?? "").toLowerCase().includes(q)); }
     list.sort((a, b) => { const av = a[sortKey] ?? ""; const bv = b[sortKey] ?? ""; if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av; return sortDir === "asc" ? String(av).localeCompare(String(bv)) : -String(av).localeCompare(String(bv)); });
     return list;
-  }, [issues, hideRes, hideDef, kpiF, search, sortKey, sortDir, typeFilter, sprintFilter, viewFilter]);
+  }, [issues, hideRes, hideDef, kpiF, search, sortKey, sortDir, typeFilter, sprintFilter, viewFilter, statusFilter]);
 
   // ---- inline patch helper ----
   async function inlinePatch(id: string, patch: Record<string, unknown>) {
@@ -290,6 +324,10 @@ function SmcIssuesContent() {
       <div className="smc-sp" />
       <button className={`smc-chip ${hideRes ? "hide-active" : ""}`} onClick={() => { setHideRes(!hideRes); setKpiF(null); }}>{hideRes ? "Hiding resolved" : "Show resolved"}</button>
       <button className={`smc-chip ${hideDef ? "hide-active" : ""}`} onClick={() => { setHideDef(!hideDef); setKpiF(null); }}>{hideDef ? "Hiding deferred" : "Show deferred"}</button>
+      <select value={statusFilter ?? ""} onChange={(e) => { setStatusFilter(e.target.value || null); setKpiF(null); }} className="smc-chip" style={{ font: "inherit", fontSize: 12, padding: "5px 10px", borderRadius: 7, cursor: "pointer" }} title="Filter by status">
+        <option value="">All statuses</option>
+        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
       <span style={{ fontSize: 11, color: "#64748b", fontFamily: "'DM Mono',monospace" }}>{filtered.length} issues</span>
     </div>
 
@@ -411,12 +449,21 @@ function SmcIssuesContent() {
                 <div className="smc-comment-text">Created this issue{drawerIssue.assigned_to ? ` and assigned to ${drawerIssue.assigned_to}` : ""}</div>
               </div>
             </div>
+            {comments.map((c) => (
+              <div key={c.id} className="smc-comment">
+                <div className="smc-comment-av" style={{ background: "#1f487c" }}>{ini(c.author_name) || "—"}</div>
+                <div className="smc-comment-body">
+                  <div className="smc-comment-head"><span className="nm">{c.author_name ?? "Member"}</span><span className="tm">{ago(c.created_at)}</span></div>
+                  <div className="smc-comment-text" dangerouslySetInnerHTML={{ __html: highlightMentions(c.body) }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="smc-composer">
-          <textarea placeholder="Add a comment… @ to mention teammates" />
-          <div className="smc-composer-bar"><button className="smc-btn smc-btn-p" style={{ fontSize: 11, padding: "5px 14px" }}>Send</button></div>
+          <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void postComment(); } }} placeholder="Add a comment… @ to mention teammates" />
+          <div className="smc-composer-bar"><button className="smc-btn smc-btn-p" style={{ fontSize: 11, padding: "5px 14px" }} onClick={postComment} disabled={postingComment || !commentText.trim()}>{postingComment ? "Posting…" : "Send"}</button></div>
         </div>
       </>}
     </div>

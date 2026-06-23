@@ -6,6 +6,7 @@ import {
   type NotificationTemplateContext
 } from './notification-templates';
 import { sendImmediateNotificationEmails } from './email-service';
+import { sendWebPushToUsers } from './web-push';
 
 type JsonRecord = Record<string, string | number | boolean | null>;
 
@@ -254,6 +255,23 @@ export async function triggerNotification(
 
   if (error) {
     throw new Error(`Unable to create notification records: ${error.message}`);
+  }
+
+  // Deliver browser/PWA push to recipients who have the push channel enabled.
+  // No-ops safely until WEB_PUSH_PUBLIC_KEY + WEB_PUSH_PRIVATE_KEY are configured.
+  const pushUserIds = Object.entries(channelsByUserId)
+    .filter(([, ch]) => ch.includes('push'))
+    .map(([uid]) => uid);
+  if (pushUserIds.length) {
+    try {
+      await sendWebPushToUsers(
+        supabase as unknown as { from: (table: string) => unknown },
+        pushUserIds,
+        { title, body, action_url: actionUrl ?? undefined, priority: template.priority, type: input.type }
+      );
+    } catch {
+      // push delivery is best-effort and must not block in-app notifications
+    }
   }
 
   return {
