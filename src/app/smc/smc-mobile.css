@@ -1,0 +1,130 @@
+/* S36-MOBILE-361 / S36-MOBILE-375 — SMC mobile bottom tab bar + More sheet.
+   Loaded last so it overrides the legacy rail-as-bottom-bar at <=767px.
+   Desktop (>=768px) is entirely unaffected: .smc-mtabs stays display:none. */
+
+.smc-mtabs { display: none; }
+.smc-msheet, .smc-msheet-scrim { display: none; }
+
+@media (max-width: 767px) {
+  /* Replace the repurposed icon rail with a proper app tab bar */
+  .smc-rail { display: none !important; }
+  .smc-main { padding-bottom: calc(66px + env(safe-area-inset-bottom)) !important; }
+
+  /* Lift the chat FAB clear of the tab bar */
+  .smc-premium-chat-fab,
+  .smc-chat-pro { bottom: calc(78px + env(safe-area-inset-bottom)) !important; }
+
+  .smc-mtabs {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 64px;
+    z-index: 80;
+    background: rgba(255, 255, 255, 0.96);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #e4e9f1;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .smc-mtab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .smc-mtab-ic { position: relative; display: grid; place-items: center; }
+  .smc-mtab-ic svg { width: 22px; height: 22px; }
+  .smc-mtab-lb { font-size: 10px; font-weight: 600; letter-spacing: 0.1px; }
+  .smc-mtab.active { color: var(--navy); }
+  .smc-mtab.active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 26px;
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+    background: var(--navy);
+  }
+  .smc-mtab-badge {
+    position: absolute;
+    top: -5px;
+    left: 12px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--teal);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+  }
+
+  /* More sheet */
+  .smc-msheet-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 27, 45, 0.5);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .smc-msheet-scrim.open { opacity: 1; pointer-events: auto; }
+  .smc-msheet {
+    display: block;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 91;
+    background: #fff;
+    border-radius: 22px 22px 0 0;
+    padding: 8px 16px calc(18px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 82%;
+    overflow-y: auto;
+    box-shadow: 0 -10px 40px rgba(15, 27, 45, 0.18);
+  }
+  .smc-msheet.open { transform: translateY(0); }
+  .smc-msheet-grab { width: 38px; height: 4px; border-radius: 99px; background: #d4dbe6; margin: 6px auto 14px; }
+  .smc-msheet-prof { display: flex; align-items: center; gap: 12px; padding: 4px 4px 14px; }
+  .smc-msheet-av {
+    width: 46px; height: 46px; border-radius: 14px; flex: 0 0 auto;
+    display: grid; place-items: center; font-size: 15px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, var(--teal), var(--navy));
+  }
+  .smc-msheet-id { flex: 1; min-width: 0; }
+  .smc-msheet-id strong { display: block; font-size: 15px; font-weight: 700; color: var(--navy-d, #152f52); }
+  .smc-msheet-id span { font-size: 12px; color: #64748b; }
+  .smc-msheet-tag {
+    font-size: 10px; font-weight: 700; color: var(--teal); background: var(--teal-l, #e6f5f4);
+    padding: 3px 9px; border-radius: 99px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .smc-msheet-grp { margin-top: 6px; }
+  .smc-msheet-grp h5 {
+    margin: 12px 4px 9px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #9aa8bc;
+  }
+  .smc-msheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .smc-msheet-cell {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px; border-radius: 12px; border: 1px solid #e4e9f1; background: #fafbfd;
+    text-decoration: none; color: #1e293b; font-size: 13px; font-weight: 600;
+  }
+  .smc-msheet-cell:active { background: #f1f4f8; }
+  .smc-msheet-cell.active { border-color: var(--teal); background: var(--teal-l, #e6f5f4); color: var(--navy); }
+  .smc-msheet-cic { width: 30px; height: 30px; border-radius: 8px; flex: 0 0 auto; display: grid; place-items: center; color: var(--teal); background: rgba(39, 148, 145, 0.08); }
+  .smc-msheet-cic svg { width: 16px; height: 16px; }
+}
