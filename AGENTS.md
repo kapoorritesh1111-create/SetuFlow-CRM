@@ -1,15 +1,17 @@
 # SETU Flow CRM — AI Agent Instructions
 
-This file is auto-read by Cursor. Claude and OpenAI agents should call `/api/workspace/agent` for live context.
+This file is auto-read by Cursor. Claude and OpenAI agents should call the Setu Mission Control APIs for live issue context.
 
 ## Quick Start
 
 ```bash
-# Get your next issue with full context (marks it In Progress automatically)
-curl https://setuflowcrm.com/api/workspace/agent?agent=cursor
+# List Sprint / SMC issues with full context
+curl https://setuflowcrm.com/api/smc/issues
 
-# Dry run — see context without marking In Progress
-curl https://setuflowcrm.com/api/workspace/agent?agent=cursor&dry_run=true
+# Update an issue after work is deployed and ready for review
+curl -X PATCH https://setuflowcrm.com/api/smc/issues/{ISSUE_ID} \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"In Review"}'
 ```
 
 ## Codebase
@@ -34,44 +36,44 @@ public/internal/        — Legacy HTML workspace tools (issue-tracker, docs, ro
 
 ## Critical Rules
 
-0. **Admin UX rebuild priority (S24-ADMUX series)** — While any `S24-ADMUX-*` issue is Open or In Progress, agents MUST select from that series before any other issue, in dependency order: foundation (21) → Admin Home (22) → Workspace (23) → Trade Setup (24) → Commerce & Governance (25) → SETU Internal (26) → protocol (27). Work ONE issue at a time, keep every change scoped to that issue's pages, and never start a broad multi-page admin rewrite that the tracker did not ask for. The Admin UX V2 design contract is `setu-admin-complete.html`; the shared component kit is `src/features/admin/components/admin-ui-kit.tsx` + `admin-kit-tabs.tsx` — reuse it, do not fork new card/tab styles per page.
-1. **Never skip org scope** — all Supabase queries must include `.eq('organization_id', SETU_FLOW_ORG_ID)`
-2. **Admin client for reads** — use `createAdminSupabaseClient()` to bypass RLS for server reads
-3. **Smallest safe change** — only touch files related to the issue. No refactors.
-4. **Commit format** — `SF-{sprint}-{num}: concise fix title` (e.g. `SF-23-011: Fix dashboard modal close button`)
-5. **Typecheck before resolving** — run `npx tsc --noEmit` before marking an issue Resolved
+0. **SMC is the active tracker** — Setu Mission Control has replaced the retired Workspace agent protocol. Read issues from `GET /api/smc/issues`. Update with `PATCH /api/smc/issues/{id}` or `PATCH /api/smc/issues/bulk`.
+1. **Never skip org scope** — all Supabase queries must include `.eq('organization_id', SETU_FLOW_ORG_ID)` unless the request explicitly needs cross-org administrative diagnostics.
+2. **Admin client for internal reads** — use `createAdminSupabaseClient()` for server reads that must bypass RLS.
+3. **Smallest safe change** — only touch files related to the issue. No drive-by refactors.
+4. **Commit format** — use `S{sprint}-{TYPE}-{num}: concise title`, for example `S37-TASK-001: Add approval requests table`.
+5. **Typecheck before review** — run `npx tsc --noEmit` before marking an issue ready for review.
+6. **Never auto-resolve** — after deployment proof is attached, set SMC issues to `In Review`. Ritesh manually verifies and resolves.
 
 ## API Endpoints for Agents
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/workspace/agent` | GET | Get next issue + context packet |
-| `/api/workspace/agent` | POST | Log a checkpoint/action |
-| `/api/workspace/issues` | GET | List all issues |
-| `/api/workspace/issues` | POST | Create new issue |
-| `/api/workspace/issues/:id` | PATCH | Update issue (status, fix_applied, pr_link) |
-| `/api/workspace/issues/comments` | POST | Add comment/checkpoint |
+| `/api/smc/issues` | GET | List issues and live tracker context |
+| `/api/smc/issues` | POST | Create a new SMC issue |
+| `/api/smc/issues/:id` | PATCH | Update issue status, fix details, files, commit, and regression proof |
+| `/api/smc/issues/bulk` | PATCH | Bulk update issue metadata when explicitly requested |
 
-## Resolving an Issue
+## Completing an Issue for Review
 
 ```bash
-# After fixing, mark resolved with proof:
-curl -X PATCH https://setuflowcrm.com/api/workspace/issues/{ISSUE_ID} \
+curl -X PATCH https://setuflowcrm.com/api/smc/issues/{ISSUE_ID} \
   -H 'Content-Type: application/json' \
   -d '{
-    "status": "Resolved",
-    "fix_applied": "Description of what was changed and why",
-    "pr_link": "https://github.com/org/repo/commit/abc123",
-    "updated_at": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
+    "status": "In Review",
+    "fix_applied": "Description of what changed and why",
+    "commit_url": "https://github.com/kapoorritesh1111-create/SetuFlow-CRM/commit/abc123",
+    "regression_test": "PASS — typecheck and targeted validation completed"
   }'
 ```
 
-## Workspace UI
+## Setu Mission Control UI
 
-The internal workspace is at `https://setuflowcrm.com/workspace` — requires SETU Flow org login.
+The internal workspace is Setu Mission Control (SMC). It requires SETU Flow org login.
 
-- `/workspace` — Sprint health dashboard
-- `/workspace/issues` — Issues board (table, kanban, backlog views)
-- `/workspace/sprints` — Sprint planning
-- `/workspace/agents` — AI agent queue and action log
-- `/workspace/clients` — Per-client issue tracking
+- `/smc` — Sprint health dashboard / command center
+- `/smc/issues` — Issues board and implementation tracker
+- `/smc/sprints` — Sprint planning
+- `/smc/agents` — AI agent queue and action log
+- `/smc/clients` — Per-client issue tracking
+
+Legacy `/workspace/*` pages may still exist for compatibility, but new agent work should use SMC routes and APIs.
