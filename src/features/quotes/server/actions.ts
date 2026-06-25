@@ -107,7 +107,6 @@ async function createQuoteDirect(db: any, params: {
       lead_id: params.leadId,
       rfq_id: params.rfqId,
       created_by: params.createdBy,
-      status: params.status,
       currency: params.currency,
       display_currency: safeDisplayCurrency,
       pricing_basis: params.pricingBasis,
@@ -207,7 +206,7 @@ async function updateQuoteDirect(db: any, params: {
 }) {
   const nowIso = new Date().toISOString();
   const safeDisplayCurrency = safeQuoteDisplayCurrency(params.currency);
-  const { error: quoteError} = await db.from('quotes').update({ status: params.status, currency: params.currency, display_currency: safeDisplayCurrency, pricing_basis: params.pricingBasis, approval_required: params.approvalRequired, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, notes: params.notes, updated_at: nowIso }).eq('organization_id', params.organizationId).eq('id', params.quoteId);
+  const { error: quoteError} = await db.from('quotes').update({ currency: params.currency, display_currency: safeDisplayCurrency, pricing_basis: params.pricingBasis, approval_required: params.approvalRequired, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, notes: params.notes, updated_at: nowIso }).eq('organization_id', params.organizationId).eq('id', params.quoteId);
   if (quoteError) return { data: null, error: quoteError };
 
   const { error: deleteLinesError } = await db.from('quote_line_items').delete().eq('quote_id', params.quoteId);
@@ -259,11 +258,7 @@ async function updateQuoteDirect(db: any, params: {
     const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
     if (versionLineError) return { data: null, error: versionLineError };
   }
-  // Set current_version_id and sent_version_id atomically. Acceptance is handled only by acceptance workflows.
-  const versionUpdatePayload: Record<string, unknown> = { current_version_id: versionId, updated_at: nowIso };
-  if (params.status === 'sent') versionUpdatePayload.sent_version_id = versionId;
-  const { error: quoteVersionUpdateError } = await db.from('quotes').update(versionUpdatePayload).eq('id', params.quoteId);
-  if (quoteVersionUpdateError) return { data: null, error: quoteVersionUpdateError };
+  // Parent quote status and version pointers are derived by the quote_versions sync trigger.
 
   await insertNegotiationEvent(db, { quote_id: params.quoteId, quote_version_id: versionId, event_type: nextVersionNo === 1 ? 'version_created' : 'version_revised', actor_user_id: params.actorUserId, message: 'Quote version v' + nextVersionNo + ' saved without overwriting earlier versions.', payload: { source: 'updateQuoteDirect', previous_version_id: params.quoteVersionId, version_no: nextVersionNo } });
   return { data: { quote_id: params.quoteId, lead_id: params.leadId, quote_version_id: versionId, version_no: nextVersionNo }, error: null };
@@ -1431,11 +1426,10 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
       if (sendFanoutError) {
         if (!isMissingRpcFunction(sendFanoutError)) return { error: quoteActionError('updateQuoteWorkflow.send-rpc', sendFanoutError, 'Quote could not be sent. Please refresh and try again.') };
         const sentAt = new Date().toISOString();
-        const [{ error: quoteSendError }, { error: versionSendError }] = await Promise.all([
-          db.from('quotes').update({ status: 'sent', current_version_id: existing.current_version_id, sent_version_id: existing.current_version_id, updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
-          db.from('quote_versions').update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt }).eq('id', existing.current_version_id),
-        ]);
-        if (quoteSendError) return { error: quoteActionError('updateQuoteWorkflow.send-fallback-quote', quoteSendError, 'Quote could not be sent. Please refresh and try again.') };
+        const { error: versionSendError } = await db
+          .from('quote_versions')
+          .update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt })
+          .eq('id', existing.current_version_id);
         if (versionSendError) return { error: quoteActionError('updateQuoteWorkflow.send-fallback-version', versionSendError, 'Quote could not be sent. Please refresh and try again.') };
         const sendCommunication = await insertCommunication(db, {
           organization_id: organization.id,
@@ -1727,11 +1721,11 @@ export async function markQuoteAsDirectOrder(_: QuoteActionState | undefined, fo
         return { error: quoteActionError('markQuoteAsDirectOrder.send-rpc', sendFanoutError, 'Quote could not be marked as sent before closing. Please refresh and try again.') };
       }
       const sentAt = new Date().toISOString();
-      const [{ error: quoteSendError }, { error: versionSendError }] = await Promise.all([
-        db.from('quotes').update({ status: 'sent', current_version_id: versionId, sent_version_id: versionId, updated_at: sentAt }).eq('organization_id', organization.id).eq('id', quoteId),
-        db.from('quote_versions').update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt }).eq('id', versionId).eq('quote_id', quoteId),
-      ]);
-      if (quoteSendError) return { error: quoteActionError('markQuoteAsDirectOrder.send-fallback-quote', quoteSendError, 'Quote could not be marked as sent before closing. Please refresh and try again.') };
+      const { error: versionSendError } = await db
+        .from('quote_versions')
+        .update({ status: 'sent', sent_at: sentAt, sent_by: currentUser.id, updated_at: sentAt })
+        .eq('id', versionId)
+        .eq('quote_id', quoteId);
       if (versionSendError) return { error: quoteActionError('markQuoteAsDirectOrder.send-fallback-version', versionSendError, 'Quote could not be marked as sent before closing. Please refresh and try again.') };
     }
   }
