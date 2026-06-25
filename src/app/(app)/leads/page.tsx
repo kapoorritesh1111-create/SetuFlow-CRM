@@ -12,6 +12,7 @@ import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { buildLeadsPageViewModel } from '@/features/leads/logic/build-leads-page-view-model';
 import { buildMobileLeadCardsFromAppData, buildMobileSignedInSummary, buildMobileUserContextFromWorkspace } from '@/features/mobile/lib/app-mobile-leads';
 import type { MobileLeadType } from '@/features/mobile/lib/role-aware-leads';
+import { redirect } from 'next/navigation';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -36,8 +37,23 @@ export default async function LeadsPage({
     autoQuote?: string | string[];
     handoff?: string | string[];
     eventId?: string | string[];
+    leadId?: string | string[];
+    view?: string | string[];
+    quoteId?: string | string[];
   };
 }) {
+  const requestedLeadId = readParam(searchParams?.leadId).trim();
+  const requestedView = readParam(searchParams?.view).trim();
+  if (requestedLeadId && (requestedView === 'cc' || requestedView === 'quote')) {
+    const legacyParams = new URLSearchParams();
+    const requestedQuoteId = readParam(searchParams?.quoteId).trim();
+    const requestedHandoff = readParam(searchParams?.handoff).trim();
+    if (requestedQuoteId) legacyParams.set('quoteId', requestedQuoteId);
+    if (requestedHandoff) legacyParams.set('handoff', requestedHandoff);
+    const legacyQuery = legacyParams.toString();
+    redirect(requestedView === 'quote' ? `/leads/${requestedLeadId}/quote${legacyQuery ? `?${legacyQuery}` : ''}` : `/leads/${requestedLeadId}${legacyQuery ? `?${legacyQuery}` : ''}`);
+  }
+
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {
