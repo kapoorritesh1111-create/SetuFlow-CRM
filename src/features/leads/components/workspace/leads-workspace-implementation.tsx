@@ -924,7 +924,8 @@ export function LeadsWorkspace({
     const needsCoverageAfterQuickLead = drawerState.mode === 'quick' && lead && (!selectedProductIds || selectedProductIds.length === 0);
     if (needsCoverageAfterQuickLead) {
       setActiveLeadId(lead.id);
-      setActiveView('cc');
+      // S37-UX-009: keep the list visible and open the coverage drawer over it rather than
+      // dropping into the retired inline command-center view.
       setDrawerState({ open: true, mode: 'full', leadId: lead.id, initialStepId: 'coverage' });
       return;
     }
@@ -1057,13 +1058,15 @@ export function LeadsWorkspace({
   const openLeadInlineCommandCenter = (leadId: string) => {
     setActiveLeadId(leadId);
     setSpotlightLeadId(leadId);
-    setActiveView('cc');
+    // S37-UX-009: open the dedicated Lead Detail route instead of the retired inline workspace.
+    navigateToLeadCommandCenter(router, getLeadCommandCenterHref(leadId));
   };
 
   const openLeadInlineQuoteBuilder = (leadId: string) => {
     setActiveLeadId(leadId);
     setSpotlightLeadId(leadId);
-    setActiveView('quote');
+    // S37-UX-010: open the dedicated Quote Builder route.
+    navigateToLeadCommandCenter(router, `/leads/${leadId}/quote`);
   };
 
   const openLeadEditDrawer = (leadId: string, stepId: LeadOpenStep = 'basics') => {
@@ -1121,13 +1124,19 @@ export function LeadsWorkspace({
   };
 
   const handleInlineOpenOrCreateQuote = (leadId: string, preview?: QuotePreviewSavePayload) => {
-    openLeadInlineQuoteBuilder(leadId);
     setInlineActionState({});
     startInlineActionTransition(() => {
       const action = preview ? saveLeadQuoteDraftPreview({ leadId, ...preview }) : openOrCreateLeadQuoteDraft(leadId);
       void action.then((result) => {
         setInlineActionState(result ?? {});
-        if (result?.success) router.refresh();
+        // S37-UX-010: after the draft is created/opened, land on the dedicated Quote Builder route
+        // with the resolved quote id so the new page renders the correct version.
+        if (result && !(result as { error?: string }).error) {
+          const quoteId = (result as { quoteId?: string | null; quote?: { id?: string | null } }).quoteId
+            ?? (result as { quote?: { id?: string | null } }).quote?.id
+            ?? null;
+          navigateToLeadCommandCenter(router, quoteId ? `/leads/${leadId}/quote?quoteId=${quoteId}` : `/leads/${leadId}/quote`);
+        }
       });
     });
   };
@@ -1256,14 +1265,13 @@ export function LeadsWorkspace({
     const requestedLeadId = searchParams.get('leadId');
     const requestedView = searchParams.get('view');
     if (!requestedLeadId || (requestedView !== 'cc' && requestedView !== 'quote')) return;
+    // S37-UX-009/010: legacy ?leadId&view deep-links now route to the dedicated
+    // Lead Detail (/leads/[leadId]) and Quote Builder (/leads/[leadId]/quote) pages
+    // instead of re-entering the retired inline workspace.
     setActiveLeadId(requestedLeadId);
     setSpotlightLeadId(requestedLeadId);
-    setActiveView(requestedView);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('leadId');
-    params.delete('view');
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    const target = requestedView === 'quote' ? `/leads/${requestedLeadId}/quote` : getLeadCommandCenterHref(requestedLeadId);
+    navigateToLeadCommandCenter(router, target);
   }, [pathname, router, searchParams]);
 
   // S24-TRIAL-206 Pass D: LeadsWorkspace is the SOLE owner of the Quick Lead
@@ -1392,15 +1400,15 @@ export function LeadsWorkspace({
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
         </button>
-        <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; setActiveLeadId(spotlightLead.id); setActiveView('cc'); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'cc' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'cc' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
+        <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; openLeadInlineCommandCenter(spotlightLead.id); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'cc' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'cc' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
           🎯 Command Center
           <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spotlightLead?.company_name ?? 'Select a lead →'}</span>
         </button>
-        <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; setActiveLeadId(spotlightLead.id); setActiveView('quote'); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'quote' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'quote' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
+        <button type="button" disabled={!spotlightLead} onClick={() => { if (!spotlightLead) return; openLeadInlineQuoteBuilder(spotlightLead.id); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'quote' ? '#0b2e4a' : spotlightLead ? '#94a3b8' : '#cbd5e1', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'quote' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: spotlightLead ? 'pointer' : 'not-allowed', opacity: spotlightLead ? 1 : .65 }}>
           ◇ Quote Preview
           <span style={{ background: spotlightLead ? '#0c7fff' : '#e2e8f0', color: spotlightLead ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>5 steps</span>
         </button>
-        <button type="button" onClick={() => setActiveView('quote')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#92400e' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
+        <button type="button" onClick={() => { if (spotlightLead) openLeadInlineQuoteBuilder(spotlightLead.id); }} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#92400e' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
           ✅ Approval Queue
           <span style={{ background: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#f59e0b' : '#e2e8f0', color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{quotes.filter((quote) => quote.approval_required && !quote.approved_at).length}</span>
         </button>
@@ -1712,8 +1720,8 @@ export function LeadsWorkspace({
           onRejectQuoteAdjustment={handleInlineRejectQuoteAdjustment}
           onMarkDirectOrder={handleInlineMarkDirectOrder}
           onBackToList={() => setActiveView('list')}
-          onOpenCommandCenter={() => setActiveView('cc')}
-          onOpenQuoteBuilder={() => setActiveView('quote')}
+          onOpenCommandCenter={() => { if (spotlightLead) openLeadInlineCommandCenter(spotlightLead.id); }}
+          onOpenQuoteBuilder={() => { if (spotlightLead) openLeadInlineQuoteBuilder(spotlightLead.id); }}
         />
       ) : (
         <>
@@ -1871,22 +1879,24 @@ export function LeadsWorkspace({
                           if (match?.[1]) {
                             setActiveLeadId(match[1]);
                             setSpotlightLeadId(match[1]);
-                            setActiveView('cc');
-                          } else {
-                            openLeadCommandCenter(_router, href);
                           }
+                          // S37-UX-009: navigate to the dedicated Lead Detail route.
+                          navigateToLeadCommandCenter(_router, href);
                         }}
                         openQuoteBuilder={openLeadInlineQuoteBuilder}
                         openQuickEdit={(leadId) => openLeadEditDrawer(leadId, 'basics')}
                         onDeleteLead={canManageLeads ? handleDeleteLead : undefined}
                         shouldIgnoreLeadNavigationTarget={shouldIgnoreLeadNavigationTarget}
-                        handleLeadCommandCenterKeyDown={(_event, _router, href) => {
+                        handleLeadCommandCenterKeyDown={(event, _router, href) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
                           const match = /\/leads\/([^/?#]+)/.exec(href);
                           if (match?.[1]) {
                             setActiveLeadId(match[1]);
                             setSpotlightLeadId(match[1]);
-                            setActiveView('cc');
                           }
+                          // S37-UX-009: navigate to the dedicated Lead Detail route.
+                          navigateToLeadCommandCenter(_router, href);
                         }}
                       />
                     ))}
@@ -1939,7 +1949,8 @@ export function LeadsWorkspace({
           setDrawerState((current) => ({ ...current, open: false }));
           setActiveLeadId(leadId);
           setSpotlightLeadId(leadId);
-          setActiveView('quote');
+          // S37-UX-010: open the dedicated Quote Builder route from the lead drawer.
+          navigateToLeadCommandCenter(router, `/leads/${leadId}/quote`);
         }}
         mode={drawerState.mode}
         lead={drawerState.leadId ? selectedLead : initialEventLead}

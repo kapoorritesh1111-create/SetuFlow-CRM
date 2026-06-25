@@ -6,6 +6,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import QuotePrintButton from '@/features/leads/components/quote-print-button';
 import { QuoteWorkspace } from '@/features/quotes/components/quote-workspace';
+import QuoteVersionRail from '@/features/quotes/quote-builder/QuoteVersionRail';
 import { ComplianceCheckPopover } from '@/features/compliance/components/compliance-check-popover';
 import { buildLeadActivityTimeline } from '@/lib/activity-timeline';
 import { ActivityTimeline } from '@/components/ui/activity-timeline';
@@ -210,7 +211,8 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   // Admin and owner can approve any quote regardless of approval posture
   const canApproveAsAdmin = (workspace.currentRoles ?? []).some((r: string) => ['owner', 'admin'].includes(r));
   const requestedQuoteId = readSearchParam(searchParams?.quoteId).trim() || null;
-  const leadCommandHref = `/leads?leadId=&view=quote`;
+  // S37-UX-010: point back to the dedicated Lead Detail route, not the retired inline view.
+  const leadCommandHref = `/leads/${params.leadId}`;
 
   if (qualificationStatus !== 'qualified') {
     return (
@@ -474,7 +476,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           products={catalogProducts}
           savedViews={quoteSavedViews}
           initialSavedView={quotePreference?.savedViewId ?? quotePreference?.builtInViewKey ?? 'all'}
-          redirectPath={`/leads?leadId=${leadId}&view=quote`}
+          redirectPath={`/leads/${leadId}/quote`}
           leadCommandHref={leadCommandHref}
           initialQuoteId={requestedQuoteId}
           canManageQuotes={canManageQuotes}
@@ -492,6 +494,14 @@ export default async function QuotePage({ params, searchParams }: { params: { le
             subject: item.subject, summary: item.summary, status: item.status, created_at: item.created_at,
             sent_at: item.sent_at, draft_source: item.draft_source, metadata: item.metadata,
           }))}
+        />
+
+        {/* S37-UX-010: premium version history + approval posture + Setu Guru rail */}
+        <QuoteVersionRail
+          versions={quoteVersionsWithApproval}
+          leadId={leadId}
+          currentVersionId={activeQuote?.current_version_id ?? null}
+          sentVersionId={activeQuote?.sent_version_id ?? null}
         />
 
         {/* Commercial timeline */}

@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { hasSupabaseEnv } from '@/lib/env'
 import { getLeadProfileData } from '@/lib/queries/leads'
 import { requireWorkspace } from '@/lib/workspace/auth'
-import LeadCommandCenterPage from '@/features/leads/command-center/LeadCommandCenterPage'
+import LeadDetailPremium from '@/features/leads/lead-detail/LeadDetailPremium'
 import { toLeadProfileSnapshot } from '@/features/leads/command-center/adapters'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
@@ -180,23 +180,8 @@ export default async function Page({ params, searchParams }: { params: { leadId:
     <div className="space-y-4">
       {introEmailStatus ? <StateMessage title={introEmailStatus === 'sent' ? 'Intro email sent' : 'Intro email test needs attention'} description={introEmailStatus === 'sent' ? 'Mailtrap accepted the intro email and the communication row was saved as sent.' : introEmailStatus === 'missing-email' ? 'Add an email address to this lead before sending a test intro.' : introEmailStatus === 'mailtrap-missing' ? 'Mailtrap sender settings are missing in this environment.' : 'The intro email was not sent. Check Mailtrap configuration and try again.'} tone={introEmailStatus === 'sent' ? 'success' : 'warning'} /> : null}
       {capturedRequest ? <div className="rounded-3xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-slate-700"><p className="text-xs font-black uppercase tracking-[0.16em] text-sky-700">Captured request</p><p className="mt-2 text-base font-semibold text-slate-950">New buyer request: {capturedRequest}</p><p className="mt-1 text-slate-600">Catalog mapping available after upgrade. The request remains visible on this lead until it is mapped.</p></div> : null}
-      <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-soft"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Intro email test</p><p className="mt-1 text-slate-600">Send a safe manual intro email through Mailtrap for this existing lead.</p></div><form action={sendLeadIntroEmailTest}><input type="hidden" name="lead_id" value={data.lead.id} /><button type="submit" className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800">Send intro email test</button></form></div></div>
       {handoff ? <StateMessage title={handoff === 'capture-converted' ? 'Capture handoff is complete' : handoff === 'quote-live-follow-up' ? 'Quote response work continues here' : handoff === 'quote-requalify' ? 'Quote decision now needs follow-up' : handoff === 'approval-send-fix-blocker' ? 'Sending blocker needs follow-up' : 'Workflow handoff is active'} description={handoff === 'capture-converted' ? 'This record was just created from Capture. Qualify it here first, then open Quote only when the commercial path is explicit.' : handoff === 'quote-live-follow-up' ? 'The quote is already live. Stay in this lead workflow to manage the buyer response and next commercial move.' : handoff === 'quote-requalify' ? 'This quote is no longer active. Make the next qualification or close decision here instead of lingering in Quote.' : handoff === 'approval-send-fix-blocker' ? 'Approvals & Sending found a blocker. Use this lead view to fix the missing context before another send attempt.' : 'The route transition preserved context so the next working step stays obvious.'} tone="success" /> : null}
-      <LeadCommandCenterPage
-        snapshot={snapshot}
-        availableProducts={data.products.map((product) => ({ id: product.id, name: product.name }))}
-        availableMarkets={data.markets.map((market) => ({ id: market.id, name: market.name }))}
-        selectedProductIds={selectedProductIds}
-        selectedMarketIds={selectedMarketIds}
-        initialOpsHistory={initialOpsHistory}
-        quoteVersions={snapshot.quoteVersions}
-        latestQuoteId={latestQuote?.id ?? null}
-        pendingFollowUpId={pendingFollowUp?.id ?? null}
-        aiReviewHref={aiReviewHref}
-        leadQueue={leadQueue}
-        initialTab={requestedTab}
-        todayContext={{ mode: effectiveMode, activeFilter: todayState.activeFilter, urgency: todayState.items[0]?.urgency ?? 'normal', nextActionAt: snapshot.nextAction.dueAt ?? data.lead.next_follow_up_at ?? null, nextActionLabel: snapshot.nextAction.title, blockedReason: todayState.items[0]?.blockedReason ?? null, backHref: `/leads?mode=${effectiveMode}`, pipelineHref, queueHref: `/tasks?mode=${effectiveMode}` }}
-      />
+      <LeadDetailPremium data={data} snapshot={snapshot} />
     </div>
   )
 }
