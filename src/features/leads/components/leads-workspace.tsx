@@ -7,18 +7,26 @@ function modeHref(mode: 'all' | 'buyers' | 'suppliers') {
   return '/leads';
 }
 
-function stageName(stages: LeadsWorkspaceProps['stages'], stageId?: string | null) {
+function stageName(stages: LeadsWorkspaceProps['stages'] = [], stageId?: string | null) {
   return stages.find((stage) => stage.id === stageId)?.name ?? 'New Lead';
 }
 
-function ownerName(profiles: LeadsWorkspaceProps['profiles'], ownerId?: string | null) {
+function ownerName(profiles: LeadsWorkspaceProps['profiles'] = [], ownerId?: string | null) {
   const profile = profiles.find((item) => item.id === ownerId);
   return profile?.full_name ?? profile?.username ?? 'Unassigned';
 }
 
 export function LeadsWorkspace(props: LeadsWorkspaceProps) {
+  const allLeads = props.leads ?? [];
+  const quotes = props.quotes ?? [];
+  const leadProductInterests = props.leadProductInterests ?? [];
+  const products = props.products ?? [];
+  const leadMarkets = props.leadMarkets ?? [];
+  const markets = props.markets ?? [];
+  const stages = props.stages ?? [];
+  const profiles = props.profiles ?? [];
   const mode = props.initialLeadType === 'buyer' ? 'buyers' : props.initialLeadType === 'supplier' ? 'suppliers' : 'all';
-  const leads = props.leads.filter((lead) => {
+  const leads = allLeads.filter((lead) => {
     if (props.initialLeadType === 'buyer') return lead.lead_type === 'buyer';
     if (props.initialLeadType === 'supplier') return lead.lead_type === 'supplier';
     return true;
@@ -41,22 +49,22 @@ export function LeadsWorkspace(props: LeadsWorkspaceProps) {
 
       <div className="divide-y divide-slate-100">
         {leads.length ? leads.map((lead) => {
-          const leadQuotes = props.quotes.filter((quote) => quote.lead_id === lead.id);
+          const leadQuotes = quotes.filter((quote) => quote.lead_id === lead.id);
           const latestQuote = [...leadQuotes].sort((a, b) => String(b.updated_at ?? b.created_at ?? '').localeCompare(String(a.updated_at ?? a.created_at ?? '')))[0] ?? null;
-          const productNames = props.leadProductInterests
+          const productNames = leadProductInterests
             .filter((item) => item.lead_id === lead.id)
-            .map((item) => props.products.find((product) => product.id === item.product_id)?.name)
+            .map((item) => products.find((product) => product.id === item.product_id)?.name)
             .filter((name): name is string => Boolean(name));
-          const marketNames = props.leadMarkets
+          const marketNames = leadMarkets
             .filter((item) => item.lead_id === lead.id)
-            .map((item) => props.markets.find((market) => market.id === item.market_id)?.name)
+            .map((item) => markets.find((market) => market.id === item.market_id)?.name)
             .filter((name): name is string => Boolean(name));
           return (
             <article key={lead.id} className="grid gap-4 px-6 py-5 transition hover:bg-slate-50 xl:grid-cols-[1.25fr_0.8fr_0.8fr_auto] xl:items-center">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">{lead.lead_type}</p>
                 <Link href={`/leads/${lead.id}`} className="mt-1 block text-xl font-black text-slate-950 hover:text-blue-700">{lead.company_name}</Link>
-                <p className="mt-1 text-sm text-slate-500">Owner: {ownerName(props.profiles, lead.owner_user_id)} · Stage: {stageName(props.stages, lead.stage_id)}</p>
+                <p className="mt-1 text-sm text-slate-500">Owner: {ownerName(profiles, lead.owner_user_id)} · Stage: {stageName(stages, lead.stage_id)}</p>
               </div>
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Products</p>
