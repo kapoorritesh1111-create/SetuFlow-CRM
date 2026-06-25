@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { hasSupabaseEnv } from '@/lib/env'
 import { getLeadProfileData } from '@/lib/queries/leads'
 import { requireWorkspace } from '@/lib/workspace/auth'
-import LeadDetailPremium from '@/features/leads/lead-detail/LeadDetailPremium'
+import LeadCommandCenterPage from '@/features/leads/command-center/LeadCommandCenterPage'
 import { toLeadProfileSnapshot } from '@/features/leads/command-center/adapters'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
@@ -127,7 +127,6 @@ export default async function Page({ params, searchParams }: { params: { leadId:
   if (returnToHref === '/compliance') snapshot.links.complianceWorkspace = returnToHref
   if (returnToHref === '/documents') snapshot.links.documentsWorkspace = returnToHref
   if (returnToHref === '/contracts') snapshot.links.contractsWorkspace = returnToHref
-  const pipelineHref = returnToHref.startsWith('/pipeline') ? returnToHref : `/pipeline?mode=${effectiveMode}`
 
   const selectedProductIds = data.linkedProducts.map((item) => item.id).filter(Boolean)
   const selectedMarketIds = data.linkedMarkets.map((item) => item.id).filter(Boolean)
@@ -181,7 +180,21 @@ export default async function Page({ params, searchParams }: { params: { leadId:
       {introEmailStatus ? <StateMessage title={introEmailStatus === 'sent' ? 'Intro email sent' : 'Intro email test needs attention'} description={introEmailStatus === 'sent' ? 'Mailtrap accepted the intro email and the communication row was saved as sent.' : introEmailStatus === 'missing-email' ? 'Add an email address to this lead before sending a test intro.' : introEmailStatus === 'mailtrap-missing' ? 'Mailtrap sender settings are missing in this environment.' : 'The intro email was not sent. Check Mailtrap configuration and try again.'} tone={introEmailStatus === 'sent' ? 'success' : 'warning'} /> : null}
       {capturedRequest ? <div className="rounded-3xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-slate-700"><p className="text-xs font-black uppercase tracking-[0.16em] text-sky-700">Captured request</p><p className="mt-2 text-base font-semibold text-slate-950">New buyer request: {capturedRequest}</p><p className="mt-1 text-slate-600">Catalog mapping available after upgrade. The request remains visible on this lead until it is mapped.</p></div> : null}
       {handoff ? <StateMessage title={handoff === 'capture-converted' ? 'Capture handoff is complete' : handoff === 'quote-live-follow-up' ? 'Quote response work continues here' : handoff === 'quote-requalify' ? 'Quote decision now needs follow-up' : handoff === 'approval-send-fix-blocker' ? 'Sending blocker needs follow-up' : 'Workflow handoff is active'} description={handoff === 'capture-converted' ? 'This record was just created from Capture. Qualify it here first, then open Quote only when the commercial path is explicit.' : handoff === 'quote-live-follow-up' ? 'The quote is already live. Stay in this lead workflow to manage the buyer response and next commercial move.' : handoff === 'quote-requalify' ? 'This quote is no longer active. Make the next qualification or close decision here instead of lingering in Quote.' : handoff === 'approval-send-fix-blocker' ? 'Approvals & Sending found a blocker. Use this lead view to fix the missing context before another send attempt.' : 'The route transition preserved context so the next working step stays obvious.'} tone="success" /> : null}
-      <LeadDetailPremium data={data} snapshot={snapshot} currentUserId={workspace.user?.id} />
+      <LeadCommandCenterPage
+        snapshot={snapshot}
+        availableProducts={data.products.map((product) => ({ id: product.id, name: product.name, categoryName: product.category_name ?? null }))}
+        availableMarkets={data.markets.map((market) => ({ id: market.id, name: market.name }))}
+        selectedProductIds={selectedProductIds}
+        selectedMarketIds={selectedMarketIds}
+        initialOpsHistory={initialOpsHistory}
+        quoteVersions={snapshot.quoteVersions}
+        latestQuoteId={latestQuote?.id ?? null}
+        pendingFollowUpId={pendingFollowUp?.id ?? null}
+        aiReviewHref={aiReviewHref}
+        leadQueue={leadQueue}
+        todayContext={todayState}
+        initialTab={requestedTab}
+      />
     </div>
   )
 }
