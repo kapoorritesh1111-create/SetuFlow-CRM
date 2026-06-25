@@ -214,20 +214,25 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   // S37-UX-010: point back to the dedicated Lead Detail route, not the retired inline view.
   const leadCommandHref = `/leads/${params.leadId}`;
 
-  if (qualificationStatus !== 'qualified') {
+  // S37-UX-010 (fix): the qualification + product-mapping gates apply to CREATING a first quote.
+  // If the lead already has a quote, "Open Current Quote" must always work — viewing an existing
+  // version is never blocked. New-quote creation stays gated server-side by app_create_lead_quote_draft_tx.
+  const hasExistingQuote = Array.isArray(data.quotes) && data.quotes.length > 0;
+
+  if (!hasExistingQuote && qualificationStatus !== 'qualified') {
     return (
       <EmptyState
         title="Qualification required"
-        description="This lead must be qualified before the quote workspace can be opened. Update qualification and confirm product/category interest on the lead profile, then return here."
+        description="This lead must be qualified before the first quote can be created. Open the lead, use Qualify & Map to confirm qualification and product/category interest, then return here."
       />
     );
   }
 
-  if (mappedProductCount === 0) {
+  if (!hasExistingQuote && mappedProductCount === 0) {
     return (
       <EmptyState
         title="Product mapping required"
-        description="Link at least one structured product or category-backed product interest to this qualified lead before entering the quote workspace."
+        description="Link at least one structured product or category-backed product interest to this qualified lead before creating its first quote."
       />
     );
   }

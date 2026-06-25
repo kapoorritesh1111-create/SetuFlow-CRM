@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { LeadProfileData } from '@/lib/queries/leads';
 import type { LeadProfileSnapshot, QuoteVersionTimelineItem } from '@/features/leads/command-center/types';
+import LeadDetailActionBar from '@/features/leads/lead-detail/LeadDetailActionBar';
 
 // S37-UX-009: premium Lead Detail surface. Renders the dedicated /leads/[leadId] route to match the
 // approved design — lead header, readiness stat strip, status timeline, About Buyer, Quotes on this
@@ -65,7 +66,7 @@ const cardStyle: React.CSSProperties = { background: 'white', border: '1px solid
 const sectionTitle: React.CSSProperties = { fontSize: '13px', fontWeight: 800, color: '#0f172a', letterSpacing: '-.2px', marginBottom: '14px' };
 const kicker: React.CSSProperties = { fontSize: '9px', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: '#94a3b8' };
 
-export default function LeadDetailPremium({ data, snapshot }: { data: LeadProfileData; snapshot: LeadProfileSnapshot }) {
+export default function LeadDetailPremium({ data, snapshot, currentUserId }: { data: LeadProfileData; snapshot: LeadProfileSnapshot; currentUserId?: string }) {
   const lead = data.lead;
   if (!lead) return null;
   const leadId = lead.id;
@@ -117,11 +118,13 @@ export default function LeadDetailPremium({ data, snapshot }: { data: LeadProfil
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '9px', flexShrink: 0 }}>
-              <Link href={`/leads/${leadId}/share-price-list`} style={{ padding: '9px 15px', borderRadius: '10px', background: 'white', border: '1px solid #d6e0ea', color: '#334155', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>Share Price List</Link>
-              <Link href={quoteHref} style={{ padding: '9px 15px', borderRadius: '10px', background: TEAL, border: `1px solid ${TEAL}`, color: 'white', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>Create Quote</Link>
-              <Link href={quoteHref} style={{ padding: '9px 15px', borderRadius: '10px', background: NAVY, border: `1px solid ${NAVY}`, color: 'white', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>Open Current Quote</Link>
-            </div>
+            <LeadDetailActionBar
+              data={data}
+              currentUserId={currentUserId}
+              quoteHref={quoteHref}
+              shareHref={`/leads/${leadId}/share-price-list`}
+              isQualified={snapshot.qualification.status === 'qualified'}
+            />
           </div>
 
           {/* Stat strip */}
