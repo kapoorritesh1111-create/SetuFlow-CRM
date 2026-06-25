@@ -40,6 +40,31 @@ async function getLeadQuoteGate(db: any, organizationId: string, leadId: string)
   return { ok: true as const, workflow };
 }
 
+// S37-BUG-006/007: translate canonical app_create_lead_quote_draft_tx RPC failures into
+// clean, user-facing messages. The RPC raises with specific SQLSTATE codes; P0001 messages
+// are already buyer-safe and surfaced verbatim, while infra/permission codes get friendly copy.
+function mapLeadQuoteDraftRpcError(error: any): string {
+  const code = String(error?.code ?? '').trim();
+  const rawMessage = String(error?.message ?? '').trim();
+  switch (code) {
+    case '42501':
+      return 'You do not have access to create quotes in this workspace.';
+    case 'P0002':
+      return 'This lead is no longer available in your workspace. Refresh and try again.';
+    case '22023':
+      return 'Some required lead information is missing, so the quote draft could not be created.';
+    case 'P0001':
+      // Business-rule blockers (disqualified lead / missing company name / no active product interest)
+      // already carry buyer-safe wording from the RPC.
+      return rawMessage || 'This lead is not ready for a quote yet.';
+    default:
+      if (rawMessage.toLowerCase().includes('could not find the function')) {
+        return 'Quote creation is temporarily unavailable. Please refresh and try again, and contact support if this persists.';
+      }
+      return 'Quote draft could not be created. Please refresh and try again.';
+  }
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isUuidLike(value: string | null | undefined) {
@@ -1193,76 +1218,52 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     };
   }
 
-  const { data: quoteData, error: insertError } = await db
+  // S37-BUG-006: brand-new drafts flow exclusively through the canonical transactional RPC
+  // app_create_lead_quote_draft_tx. The RPC gates (org membership, lead existence, disqualified,
+  // company name, active product interest), creates quote + v1 + line items + version line items,
+  // seeds lead_activities / communications / audit_logs, and is idempotent per (org, lead).
+  // Parent quotes.status and version pointers stay DB-derived by the quote_versions sync trigger.
+  const { data: rpcData, error: rpcError } = await db.rpc('app_create_lead_quote_draft_tx', {
+    p_organization_id: organization.id,
+    p_lead_id: leadId,
+    p_actor_user_id: currentUser.id,
+    p_idempotency_key: null,
+  });
+  if (rpcError) return { error: mapLeadQuoteDraftRpcError(rpcError) };
+
+  const rpcRow = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+  if (!rpcRow?.quote_id) return { error: 'Quote draft could not be created. Please refresh and try again.' };
+
+  const { data: createdQuote, error: createdQuoteError } = await db
     .from('quotes')
-    .insert({
-      organization_id: organization.id,
-      lead_id: leadId,
-      created_by: currentUser.id,
-      currency: String(leadRecord.deal_currency ?? 'USD').trim() || 'USD',
-      status: 'draft',
-      notes: null,
-    })
     .select('id, lead_id, status, currency, notes, created_at, updated_at, quote_number, current_version_id')
-    .single();
-  const quote = quoteData as QuoteDraftRecord | null;
+    .eq('organization_id', organization.id)
+    .eq('id', rpcRow.quote_id)
+    .maybeSingle();
+  if (createdQuoteError) return { error: createdQuoteError.message };
+  const quote = createdQuote as QuoteDraftRecord | null;
+  if (!quote?.id) return { error: 'Quote draft was created but could not be loaded. Please refresh.' };
 
-  if (insertError) return { error: insertError.message };
-  if (!quote?.id) return { error: 'Failed to create quote draft.' };
+  const { data: createdVersion } = await db
+    .from('quote_versions')
+    .select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id')
+    .eq('id', rpcRow.quote_version_id ?? quote.current_version_id)
+    .maybeSingle();
 
-  const ensured = await ensureDraftQuoteVersion(db, quote, currentUser.id);
-  if (ensured.error) return { error: ensured.error };
-
-  const seeded = await ensureQuoteLineItemsFromLeadCoverage(db, organization.id, quote, ensured.version?.id ?? quote.current_version_id ?? null, leadId);
-  if (seeded.error) return { error: seeded.error };
-
-  await insertActivity(db, {
-    organization_id: organization.id,
-    lead_id: leadId,
-    actor_user_id: currentUser.id,
-    kind: 'quote_created',
-    message: `Quote draft created for ${leadRecord.company_name ?? 'lead'}.`,
-  });
-
-  const { error: communicationError } = await insertCommunication(db, {
-    organization_id: organization.id,
-    lead_id: leadId,
-    related_entity: 'quote',
-    related_id: quote.id,
-    communication_type: 'system_note',
-    direction: 'internal',
-    channel: 'system',
-    subject: 'Quote draft created',
-    body: `Quote draft ${quote.id.slice(0, 8)} was created from a qualified lead with mapped products.`,
-    summary: 'Quote draft created',
-    created_by: currentUser.id,
-    metadata: { source: 'openOrCreateLeadQuoteDraft', mode: 'create' },
-  });
-  if (communicationError?.message) return { error: communicationError.message };
-
-  await writeLeadAuditLog({
-    organizationId: organization.id,
-    actorUserId: currentUser.id,
-    action: 'quote_created',
-    entityType: 'quote',
-    entityId: quote.id,
-    next: {
-      status: 'draft',
-      currency: quote.currency,
-    },
-    metadata: {
-      lead_id: leadId,
-      source: 'openOrCreateLeadQuoteDraft',
-    },
-  });
+  const { data: createdLineItems } = await db
+    .from('quote_line_items')
+    .select('id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes')
+    .eq('quote_id', quote.id);
 
   revalidatePath(`/leads`);
   revalidateLeadSurfaces(leadId);
   return {
-    success: 'Lead converted to quote workflow. Draft quote created.',
+    success: rpcRow.created === false
+      ? 'Lead is already in quote workflow. Opened the active quote draft.'
+      : 'Lead converted to quote workflow. Draft quote created.',
     quoteId: quote.id,
-    quote: { ...quote, current_version_id: ensured.version?.id ?? quote.current_version_id ?? null, lineItems: seeded.lineItems },
-    version: ensured.version ?? undefined,
+    quote: { ...quote, current_version_id: createdVersion?.id ?? quote.current_version_id ?? null, lineItems: Array.isArray(createdLineItems) ? createdLineItems : [] },
+    version: createdVersion ?? undefined,
   };
 }
 

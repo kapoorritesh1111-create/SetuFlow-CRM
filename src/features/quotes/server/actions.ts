@@ -86,109 +86,10 @@ function normalizeQuotePricingBasis(value: unknown, fallback: QuotePricingBasis 
   return normalizePricingBasis(value, fallback);
 }
 
-async function createQuoteDirect(db: any, params: {
-  organizationId: string;
-  leadId: string;
-  rfqId: string | null;
-  createdBy: string;
-  currency: string;
-  status: string;
-  notes: string | null;
-  pricingBasis: QuotePricingBasis;
-  lineItems: any[];
-  approvalRequired: boolean;
-  approvalState: string;
-}) {
-  const safeDisplayCurrency = safeQuoteDisplayCurrency(params.currency);
-  const { data: quote, error: quoteError } = await db
-    .from('quotes')
-    .insert({
-      organization_id: params.organizationId,
-      lead_id: params.leadId,
-      rfq_id: params.rfqId,
-      created_by: params.createdBy,
-      currency: params.currency,
-      display_currency: safeDisplayCurrency,
-      pricing_basis: params.pricingBasis,
-      approval_required: params.approvalRequired,
-      approved_at: params.approvalState === 'approved' ? new Date().toISOString() : null,
-      approved_by: params.approvalState === 'approved' ? params.createdBy : null,
-      notes: params.notes,
-      source_type: params.rfqId ? 'rfq' : 'lead',
-    })
-    .select('id, lead_id, status, currency, current_version_id')
-    .single();
-
-  if (quoteError) return { data: null, error: quoteError };
-
-  const quoteId = quote.id;
-  if (params.lineItems.length) {
-    const { error: lineError } = await db.from('quote_line_items').insert(params.lineItems.map((line) => ({ ...line, quote_id: quoteId })));
-    if (lineError) return { data: null, error: lineError };
-  }
-
-  const { data: version, error: versionError } = await db
-    .from('quote_versions')
-    .insert({
-      quote_id: quoteId,
-      version_no: 1,
-      status: params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalRequired ? 'approval_pending' : 'draft',
-      pricing_basis: params.pricingBasis,
-      display_currency: safeDisplayCurrency,
-      internal_notes: params.notes,
-      total_line_count: params.lineItems.length,
-      created_by: params.createdBy,
-      approved_at: params.approvalState === 'approved' ? new Date().toISOString() : null,
-      approved_by: params.approvalState === 'approved' ? params.createdBy : null,
-      sent_at: params.status === 'sent' ? new Date().toISOString() : null,
-      sent_by: params.status === 'sent' ? params.createdBy : null,
-    })
-    .select('id')
-    .single();
-
-  if (versionError) return { data: null, error: versionError };
-
-  if (version?.id) {
-    const versionLines = params.lineItems.map((line, index) => ({
-      quote_version_id: version.id,
-      product_id: line.product_id,
-      product_variant_id: line.product_variant_id,
-      sku_code: `LINE-${index + 1}`,
-      product_name: line.notes || `Product ${index + 1}`,
-      category_type: line.category_type ?? '',  // set from product catalog at call site
-      basis_applied: params.pricingBasis,
-      pricing_mode: 'case',
-      moq: line.quantity,
-      source_ex_factory_usd: line.source_ex_factory_usd ?? null,
-      source_fob_usd: line.source_fob_usd ?? null,
-      source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null,
-      freight_add_on_usd: line.freight_add_on_usd ?? null,
-      final_unit_price: line.unit_price ?? 0,
-      display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency),
-      is_overridden: Boolean(line.is_price_overridden),
-      override_reason: line.override_reason,
-      overridden_by: line.overridden_by,
-      overridden_at: line.overridden_at,
-      line_notes: line.notes,
-      sort_order: index,
-    }));
-    if (versionLines.length) {
-      const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
-      if (versionLineError) return { data: null, error: versionLineError };
-    }
-  }
-
-  const activity = await db.from('lead_activities').insert({
-    organization_id: params.organizationId,
-    lead_id: params.leadId,
-    actor_user_id: params.createdBy,
-    kind: 'quote_created',
-    message: 'Quote draft created.',
-  });
-  if (activity.error) return { data: null, error: activity.error };
-
-  return { data: { quote_id: quoteId, lead_id: params.leadId }, error: null };
-}
+// S37-BUG-006: createQuoteDirect (legacy app-side direct quote insert fallback) was removed.
+// Quote creation now flows exclusively through transactional RPCs so parent quotes.status
+// and version pointers remain DB-derived. Lead-draft creation uses app_create_lead_quote_draft_tx;
+// full wizard creation uses app_create_quote_with_line_items_and_fanout_tx.
 
 async function updateQuoteDirect(db: any, params: {
   organizationId: string;
@@ -899,24 +800,16 @@ export async function createQuote(_: QuoteActionState | undefined, formData: For
     p_action_source: 'createQuote',
   });
 
-  let quote = Array.isArray(createdQuoteResult) ? createdQuoteResult[0] : createdQuoteResult;
+  const quote = Array.isArray(createdQuoteResult) ? createdQuoteResult[0] : createdQuoteResult;
   if (createQuoteTxError) {
-    if (!isMissingRpcFunction(createQuoteTxError)) return { error: quoteActionError('createQuote.rpc', createQuoteTxError, 'Quote could not be created. Please refresh and try again.') };
-    const fallback = await createQuoteDirect(db, {
-      organizationId: organization.id,
-      leadId,
-      rfqId,
-      createdBy: currentUser.id,
-      currency: currency ?? 'USD',
-      status,
-      notes,
-      pricingBasis,
-      lineItems: lineItemsPayload,
-      approvalRequired,
-      approvalState,
-    });
-    if (fallback.error) return { error: quoteActionError('createQuote.fallback', fallback.error, 'Quote could not be created. Please refresh and try again.') };
-    quote = fallback.data;
+    // S37-BUG-006: the canonical transactional RPC is the single quote-creation authority.
+    // The legacy app-side direct-insert fallback (createQuoteDirect) was removed so that parent
+    // quotes.status / version pointers stay DB-derived and creation stays transactional.
+    if (isMissingRpcFunction(createQuoteTxError)) {
+      logServerError('createQuote.rpc.missing', createQuoteTxError);
+      return { error: 'Quote creation is temporarily unavailable. Please refresh and try again, and contact support if this persists.' };
+    }
+    return { error: quoteActionError('createQuote.rpc', createQuoteTxError, 'Quote could not be created. Please refresh and try again.') };
   }
 
   if (!quote?.quote_id || !quote?.lead_id) return { error: 'Failed to create quote.' };
