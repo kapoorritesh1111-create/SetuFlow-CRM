@@ -182,7 +182,7 @@ export default async function Page({ params, searchParams }: { params: { leadId:
       {handoff ? <StateMessage title={handoff === 'capture-converted' ? 'Capture handoff is complete' : handoff === 'quote-live-follow-up' ? 'Quote response work continues here' : handoff === 'quote-requalify' ? 'Quote decision now needs follow-up' : handoff === 'approval-send-fix-blocker' ? 'Sending blocker needs follow-up' : 'Workflow handoff is active'} description={handoff === 'capture-converted' ? 'This record was just created from Capture. Qualify it here first, then open Quote only when the commercial path is explicit.' : handoff === 'quote-live-follow-up' ? 'The quote is already live. Stay in this lead workflow to manage the buyer response and next commercial move.' : handoff === 'quote-requalify' ? 'This quote is no longer active. Make the next qualification or close decision here instead of lingering in Quote.' : handoff === 'approval-send-fix-blocker' ? 'Approvals & Sending found a blocker. Use this lead view to fix the missing context before another send attempt.' : 'The route transition preserved context so the next working step stays obvious.'} tone="success" /> : null}
       <LeadCommandCenterPage
         snapshot={snapshot}
-        availableProducts={data.products.map((product) => ({ id: product.id, name: product.name, categoryName: product.category_name ?? null }))}
+        availableProducts={data.products.map((product) => ({ id: product.id, name: product.name }))}
         availableMarkets={data.markets.map((market) => ({ id: market.id, name: market.name }))}
         selectedProductIds={selectedProductIds}
         selectedMarketIds={selectedMarketIds}
