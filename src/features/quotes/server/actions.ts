@@ -18,6 +18,7 @@ import { buildLineContinuityNote, parseTradeAttributes } from '@/lib/trade-attri
 import { getLeadProgressionGuard } from '@/lib/document-requirements';
 import { writeAuditLog } from '@/lib/auditLog';
 import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
+import { leadQuoteGateMessage, quoteApprovalBlocker, type QuoteApprovalState } from '@/lib/quote-gate';
 
 export type QuoteActionState = { error?: string; success?: string; record?: any; mode?: 'create' | 'update' };
 
@@ -249,6 +250,7 @@ function buildQuoteSendDecisionSnapshot(input: {
   approvalRequired: boolean;
   approvalState: ApprovalState;
   thresholdPercent: number | null;
+  approvalRequestState?: QuoteApprovalState;
 }) {
   const overrideReasons = Array.from(new Set(input.lineItems.map((item) => String(item.override_reason ?? '').trim()).filter(Boolean)));
   const overrideDeltas = input.lineItems
@@ -269,6 +271,14 @@ function buildQuoteSendDecisionSnapshot(input: {
         ? 'Approval was rejected at send time.'
         : 'Approval was still required at send time.',
     });
+  }
+  // S37-ENH-008: first-class approval_requests are authoritative. A pending or rejected request for
+  // the current version blocks send regardless of the legacy approval flag. Deduped by code.
+  if (input.approvalRequestState) {
+    const approvalBlocker = quoteApprovalBlocker(input.approvalRequestState);
+    if (approvalBlocker && !blockers.some((b) => b.code === approvalBlocker.code)) {
+      blockers.push(approvalBlocker);
+    }
   }
 
   const threshold = input.thresholdPercent != null
@@ -324,16 +334,16 @@ async function ensureLeadCommercialReadiness(db: any, organizationId: string, le
     db.from('lead_product_interests').select('id').eq('lead_id', leadId).limit(1),
   ]);
 
-  if (leadError) return { error: leadError.message, ok: false as const };
-  if (productsError) return { error: productsError.message, ok: false as const };
-  if (!leadRecord?.id) return { error: 'Lead not found for commercial readiness checks.', ok: false as const };
+  if (leadError) { logServerError('ensureLeadCommercialReadiness.load-lead', leadError); return { error: leadQuoteGateMessage('LOAD_FAILED'), ok: false as const }; }
+  if (productsError) { logServerError('ensureLeadCommercialReadiness.load-products', productsError); return { error: leadQuoteGateMessage('LOAD_FAILED'), ok: false as const }; }
+  if (!leadRecord?.id) return { error: leadQuoteGateMessage('LEAD_NOT_FOUND'), ok: false as const };
 
   const workflow = parseLeadWorkflow(leadRecord.notes).workflow;
   if (workflow.qualificationStatus === 'disqualified') {
-    return { error: 'Lead is disqualified. Reopen qualification before entering quote workflow.', ok: false as const };
+    return { error: leadQuoteGateMessage('LEAD_DISQUALIFIED'), ok: false as const };
   }
   if (!Array.isArray(linkedProducts) || linkedProducts.length === 0) {
-    return { error: 'Lead needs at least one linked product before entering quote workflow.', ok: false as const };
+    return { error: leadQuoteGateMessage('NO_PRODUCT_COVERAGE'), ok: false as const };
   }
 
   return { ok: true as const, workflow };
@@ -1254,6 +1264,23 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
       .maybeSingle();
     if (pricingEngineSettingsError) return { error: quoteActionError('updateQuoteWorkflow.load-pricing-settings', pricingEngineSettingsError, 'Quote send readiness could not be checked. Please refresh and try again.') };
 
+    // S37-ENH-008: read the first-class approval posture for the current version so a pending or
+    // rejected approval_requests row blocks send even when the legacy approval flag says otherwise.
+    let approvalRequestState: QuoteApprovalState = 'none';
+    if (existing.current_version_id) {
+      const { data: approvalStateData, error: approvalStateError } = await db.rpc('app_quote_version_approval_state', {
+        p_quote_version_id: existing.current_version_id,
+      });
+      if (approvalStateError) {
+        logServerError('updateQuoteWorkflow.approval-state', approvalStateError);
+      } else {
+        const resolvedState = (Array.isArray(approvalStateData) ? approvalStateData[0] : approvalStateData) as unknown;
+        if (resolvedState === 'pending' || resolvedState === 'approved' || resolvedState === 'rejected' || resolvedState === 'none') {
+          approvalRequestState = resolvedState;
+        }
+      }
+    }
+
     const sendSnapshot = buildQuoteSendDecisionSnapshot({
       quoteId,
       quoteVersionId: existing.current_version_id ?? null,
@@ -1261,6 +1288,7 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
       lineItems,
       approvalRequired,
       approvalState,
+      approvalRequestState,
       thresholdPercent:
         typeof pricingEngineSettings?.approval_threshold_percent === 'number'
           ? pricingEngineSettings.approval_threshold_percent

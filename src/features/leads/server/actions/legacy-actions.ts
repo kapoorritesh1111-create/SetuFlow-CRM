@@ -15,6 +15,8 @@ import { type ActionState, type LeadRecord, type QuoteDraftActionState, normaliz
 import { convertQuoteLinePrice, getQuoteFxLockFromNotes, resolveWeeklyQuoteFxLock, type QuoteFxLock } from '@/lib/quote-fx';
 import { parseQuoteWorkflow, serializeQuoteWorkflow } from '@/lib/quoteWorkflow';
 import { normalizeQuoteDisplayCurrency } from '@/lib/catalog-pricing-model';
+import { mapLeadQuoteDraftRpcError, leadQuoteGateMessage, type LeadQuoteGateCode } from '@/lib/quote-gate';
+import { logServerError } from '@/lib/safe-error';
 import { leadWorkflowError, replaceLeadCoverageRelations, replaceLeadFollowUp, recordLeadTimelineFanout, recordLeadAudit } from '../workflow-services';
 
 import type {
@@ -31,39 +33,19 @@ async function getLeadQuoteGate(db: any, organizationId: string, leadId: string)
     db.from('leads').select('id, notes').eq('organization_id', organizationId).eq('id', leadId).maybeSingle(),
     db.from('lead_product_interests').select('id').eq('lead_id', leadId).limit(1),
   ]);
-  if (leadError) return { ok: false as const, error: leadError.message };
-  if (productsError) return { ok: false as const, error: productsError.message };
-  if (!leadRecord?.id) return { ok: false as const, error: 'Lead not found in the active workspace.' };
+  // S37-BUG-007: never surface raw SQL errors to the UI; log + return a typed gate code.
+  if (leadError) { logServerError('getLeadQuoteGate.load-lead', leadError); return { ok: false as const, code: 'LOAD_FAILED' as LeadQuoteGateCode, error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (productsError) { logServerError('getLeadQuoteGate.load-products', productsError); return { ok: false as const, code: 'LOAD_FAILED' as LeadQuoteGateCode, error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!leadRecord?.id) return { ok: false as const, code: 'LEAD_NOT_FOUND' as LeadQuoteGateCode, error: leadQuoteGateMessage('LEAD_NOT_FOUND') };
   const workflow = parseLeadWorkflow(leadRecord.notes).workflow;
-  if (workflow.qualificationStatus === 'disqualified') return { ok: false as const, error: 'Lead is disqualified. Reopen qualification before quote drafting can start.' };
-  if (!Array.isArray(linkedProducts) || linkedProducts.length === 0) return { ok: false as const, error: 'Link at least one product before opening the quote workspace.' };
+  if (workflow.qualificationStatus === 'disqualified') return { ok: false as const, code: 'LEAD_DISQUALIFIED' as LeadQuoteGateCode, error: leadQuoteGateMessage('LEAD_DISQUALIFIED') };
+  if (!Array.isArray(linkedProducts) || linkedProducts.length === 0) return { ok: false as const, code: 'NO_PRODUCT_COVERAGE' as LeadQuoteGateCode, error: leadQuoteGateMessage('NO_PRODUCT_COVERAGE') };
   return { ok: true as const, workflow };
 }
 
-// S37-BUG-006/007: translate canonical app_create_lead_quote_draft_tx RPC failures into
-// clean, user-facing messages. The RPC raises with specific SQLSTATE codes; P0001 messages
-// are already buyer-safe and surfaced verbatim, while infra/permission codes get friendly copy.
-function mapLeadQuoteDraftRpcError(error: any): string {
-  const code = String(error?.code ?? '').trim();
-  const rawMessage = String(error?.message ?? '').trim();
-  switch (code) {
-    case '42501':
-      return 'You do not have access to create quotes in this workspace.';
-    case 'P0002':
-      return 'This lead is no longer available in your workspace. Refresh and try again.';
-    case '22023':
-      return 'Some required lead information is missing, so the quote draft could not be created.';
-    case 'P0001':
-      // Business-rule blockers (disqualified lead / missing company name / no active product interest)
-      // already carry buyer-safe wording from the RPC.
-      return rawMessage || 'This lead is not ready for a quote yet.';
-    default:
-      if (rawMessage.toLowerCase().includes('could not find the function')) {
-        return 'Quote creation is temporarily unavailable. Please refresh and try again, and contact support if this persists.';
-      }
-      return 'Quote draft could not be created. Please refresh and try again.';
-  }
-}
+// S37-BUG-007: quote-gate messaging is centralized in @/lib/quote-gate (mapLeadQuoteDraftRpcError,
+// leadQuoteGateMessage) so the lead-draft RPC path, the wizard createQuote path, and the launcher
+// actions all surface identical buyer-safe copy and never leak raw SQL errors.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -1171,8 +1153,8 @@ export async function openOrCreateLeadQuoteDraft(leadId: string): Promise<QuoteD
     .maybeSingle();
   const leadRecord = leadRecordData as QuoteDraftLeadRecord | null;
 
-  if (leadError) return { error: leadError.message };
-  if (!leadRecord?.id) return { error: 'Lead not found in the active workspace.' };
+  if (leadError) { logServerError('legacy-actions.load-lead', leadError); return { error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!leadRecord?.id) return { error: leadQuoteGateMessage('LEAD_NOT_FOUND') };
 
   const quoteGate = await getLeadQuoteGate(db, organization.id, leadId);
   if (!quoteGate.ok) return { error: quoteGate.error };
@@ -3125,6 +3107,27 @@ export async function recordLeadCommunicationSent(input: {
   };
 }
 
+// S37-ENH-008: resolve the quote + its current version for first-class approval actions.
+// Uses the explicit quoteId when provided, otherwise the lead's most recently updated quote.
+async function resolveLeadQuoteForApproval(
+  db: any,
+  organizationId: string,
+  leadId: string,
+  quoteId: string | null,
+): Promise<{ quoteId: string; quoteVersionId: string } | { error: string }> {
+  let query = db
+    .from('quotes')
+    .select('id, current_version_id, updated_at')
+    .eq('organization_id', organizationId)
+    .eq('lead_id', leadId);
+  query = quoteId ? query.eq('id', quoteId).maybeSingle() : query.order('updated_at', { ascending: false }).limit(1).maybeSingle();
+  const { data: quote, error } = await query;
+  if (error) { logServerError('resolveLeadQuoteForApproval', error); return { error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!quote?.id) return { error: leadQuoteGateMessage('QUOTE_NOT_FOUND') };
+  if (!quote.current_version_id) return { error: 'Open the quote and create a draft version before requesting approval.' };
+  return { quoteId: quote.id, quoteVersionId: quote.current_version_id };
+}
+
 export async function recordLeadQuoteApprovalRequest(input: {
   leadId: string;
   note: string;
@@ -3149,16 +3152,33 @@ export async function recordLeadQuoteApprovalRequest(input: {
     .eq('id', leadId)
     .eq('organization_id', organization.id)
     .maybeSingle();
-  if (leadError || !lead) return { error: leadError?.message ?? 'Lead not found.' };
+  if (leadError) { logServerError('recordLeadQuoteApprovalRequest.load-lead', leadError); return { error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!lead) return { error: leadQuoteGateMessage('LEAD_NOT_FOUND') };
+
+  // S37-ENH-008: resolve the quote + its current version so the approval becomes a first-class
+  // approval_requests row (no longer just a note in the timeline).
+  const resolved = await resolveLeadQuoteForApproval(db, organization.id, leadId, input.quoteId ?? null);
+  if ('error' in resolved) return { error: resolved.error };
+
+  const { data: submitData, error: submitError } = await db.rpc('app_submit_quote_approval_tx', {
+    p_organization_id: organization.id,
+    p_quote_id: resolved.quoteId,
+    p_quote_version_id: resolved.quoteVersionId,
+    p_actor_user_id: currentUser.id,
+    p_rule: 'manual_review',
+    p_reason: note,
+  });
+  if (submitError) { logServerError('recordLeadQuoteApprovalRequest.submit', submitError); return { error: mapLeadQuoteDraftRpcError(submitError) }; }
+  const submitRow = Array.isArray(submitData) ? submitData[0] : submitData;
 
   const happenedAt = new Date().toISOString();
   const [{ error: communicationError }, { error: activityError }] = await Promise.all([
     insertCommunication(db, {
       organization_id: organization.id,
       lead_id: leadId,
-      quote_id: input.quoteId ?? null,
-      related_entity: input.quoteId ? 'quote' : 'lead',
-      related_id: input.quoteId ?? leadId,
+      quote_id: resolved.quoteId,
+      related_entity: 'quote',
+      related_id: resolved.quoteId,
       communication_type: 'system_note',
       direction: 'internal',
       channel: 'system',
@@ -3166,11 +3186,9 @@ export async function recordLeadQuoteApprovalRequest(input: {
       body: note,
       summary: 'Approval requested for quote changes',
       draft_source: 'manual',
-      status: 'approved',
-      approved_at: happenedAt,
-      approved_by: currentUser.id,
+      status: 'sent',
       created_by: currentUser.id,
-      metadata: { source: 'recordLeadQuoteApprovalRequest', test_mode: true },
+      metadata: { source: 'recordLeadQuoteApprovalRequest', approval_request_id: submitRow?.approval_request_id ?? null, quote_version_id: resolved.quoteVersionId },
     }),
     insertActivity(db, {
       organization_id: organization.id,
@@ -3180,19 +3198,19 @@ export async function recordLeadQuoteApprovalRequest(input: {
       message: `Quote approval requested for ${lead.company_name}.`,
     }),
   ]);
-  if (communicationError?.message) return { error: communicationError.message };
-  if (activityError?.message) return { error: activityError.message };
+  if (communicationError?.message) { logServerError('recordLeadQuoteApprovalRequest.comm', communicationError); }
+  if (activityError?.message) { logServerError('recordLeadQuoteApprovalRequest.activity', activityError); }
 
   revalidateLeadSurfaces(leadId);
   return {
-    success: 'Approval request recorded.',
+    success: submitRow?.created === false ? 'Approval already pending for this quote version.' : 'Approval requested. The quote is waiting on a decision before it can be sent.',
     item: {
       kind: 'approval_request',
       label: 'Approval requested',
       detail: note,
       happenedAt,
       statusTone: 'amber',
-      quoteId: input.quoteId ?? null,
+      quoteId: resolved.quoteId,
     },
   };
 }
@@ -3214,20 +3232,33 @@ export async function approveLeadQuoteAdjustment(input: { leadId: string; quoteI
 
   const { data: quote, error: quoteError } = await db
     .from('quotes')
-    .select('id, lead_id, quote_number')
+    .select('id, lead_id, quote_number, current_version_id')
     .eq('organization_id', organization.id)
     .eq('id', quoteId)
     .eq('lead_id', leadId)
     .maybeSingle();
-  if (quoteError) return { error: quoteError.message };
-  if (!quote?.id) return { error: 'Quote not found for approval.' };
+  if (quoteError) { logServerError('approveLeadQuoteAdjustment.load-quote', quoteError); return { error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!quote?.id) return { error: leadQuoteGateMessage('QUOTE_NOT_FOUND') };
+  if (!quote.current_version_id) return { error: 'Open the quote and create a draft version before approving.' };
 
+  // S37-ENH-008: record the decision in approval_requests (source of truth).
+  const { error: decideError } = await db.rpc('app_decide_quote_approval_tx', {
+    p_organization_id: organization.id,
+    p_quote_id: quoteId,
+    p_quote_version_id: quote.current_version_id,
+    p_actor_user_id: currentUser.id,
+    p_decision: 'approved',
+    p_reason: input.note ?? null,
+  });
+  if (decideError) { logServerError('approveLeadQuoteAdjustment.decide', decideError); return { error: mapLeadQuoteDraftRpcError(decideError) }; }
+
+  // Backward-compatible denormalized display fields on the quote (status stays DB-derived).
   const { error: updateError } = await db
     .from('quotes')
     .update({ approval_required: false, approved_at: nowIso, approved_by: currentUser.id, notes_internal: input.note || 'Quote-only pricing adjustment approved.', updated_at: nowIso })
     .eq('organization_id', organization.id)
     .eq('id', quoteId);
-  if (updateError) return { error: updateError.message };
+  if (updateError) { logServerError('approveLeadQuoteAdjustment.quote-display', updateError); }
 
   await insertCommunication(db, {
     organization_id: organization.id,
@@ -3281,20 +3312,34 @@ export async function rejectLeadQuoteAdjustment(input: { leadId: string; quoteId
 
   const { data: quote, error: quoteError } = await db
     .from('quotes')
-    .select('id, lead_id, quote_number')
+    .select('id, lead_id, quote_number, current_version_id')
     .eq('organization_id', organization.id)
     .eq('id', quoteId)
     .eq('lead_id', leadId)
     .maybeSingle();
-  if (quoteError) return { error: quoteError.message };
-  if (!quote?.id) return { error: 'Quote not found for rejection.' };
+  if (quoteError) { logServerError('rejectLeadQuoteAdjustment.load-quote', quoteError); return { error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!quote?.id) return { error: leadQuoteGateMessage('QUOTE_NOT_FOUND') };
+  if (!quote.current_version_id) return { error: 'Open the quote and create a draft version before rejecting.' };
 
+  // S37-ENH-008: record the rejection in approval_requests (source of truth). The RPC also
+  // returns the working version to 'draft' so it can be revised before another submit.
+  const { error: decideError } = await db.rpc('app_decide_quote_approval_tx', {
+    p_organization_id: organization.id,
+    p_quote_id: quoteId,
+    p_quote_version_id: quote.current_version_id,
+    p_actor_user_id: currentUser.id,
+    p_decision: 'rejected',
+    p_reason: reason,
+  });
+  if (decideError) { logServerError('rejectLeadQuoteAdjustment.decide', decideError); return { error: mapLeadQuoteDraftRpcError(decideError) }; }
+
+  // Backward-compatible denormalized display fields on the quote (status stays DB-derived).
   const { error: updateError } = await db
     .from('quotes')
     .update({ approval_required: true, approved_at: null, approved_by: null, notes_internal: `Approval rejected: ${reason}`, updated_at: nowIso })
     .eq('organization_id', organization.id)
     .eq('id', quoteId);
-  if (updateError) return { error: updateError.message };
+  if (updateError) { logServerError('rejectLeadQuoteAdjustment.quote-display', updateError); }
 
   await insertCommunication(db, {
     organization_id: organization.id,
@@ -3441,8 +3486,8 @@ async function createLeadQuoteDraftFromSource(input: {
     .eq('id', input.leadId)
     .maybeSingle();
 
-  if (leadError) return { error: leadError.message };
-  if (!leadRecord?.id) return { error: 'Lead not found in the active workspace.' };
+  if (leadError) { logServerError('legacy-actions.load-lead', leadError); return { error: leadQuoteGateMessage('LOAD_FAILED') }; }
+  if (!leadRecord?.id) return { error: leadQuoteGateMessage('LEAD_NOT_FOUND') };
 
   const quoteGate = await getLeadQuoteGate(db, organization.id, input.leadId);
   if (!quoteGate.ok) return { error: quoteGate.error };
