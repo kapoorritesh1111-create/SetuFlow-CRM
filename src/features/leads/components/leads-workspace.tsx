@@ -68,7 +68,7 @@ export function LeadsWorkspace(props: LeadsWorkspaceProps) {
               </div>
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Products</p>
-                <p className="mt-1 text-sm font-semibold text-slate-800">{productNames.length ? productNames.slice(0, 4).join(', ') : lead.products_or_needs || 'Not mapped yet'}</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{productNames.length ? productNames.slice(0, 4).join(', ') : 'Not mapped yet'}</p>
               </div>
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Markets / quote</p>
