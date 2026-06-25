@@ -344,7 +344,7 @@ export default function LeadCommandCenterPage({
 
       if (mode === 'continue') {
         if (commercialState.latestQuoteId) {
-          window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${commercialState.latestQuoteId}`)
+          window.location.assign(`/leads/${leadState.id}/quote?quoteId=${commercialState.latestQuoteId}`)
           return
         }
         const result = await openOrCreateLeadQuoteDraft(leadState.id)
@@ -354,7 +354,7 @@ export default function LeadCommandCenterPage({
         }
         const nextQuoteId = result.quoteId ?? result.quote?.id ?? null
         if (nextQuoteId) {
-          window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${nextQuoteId}`)
+          window.location.assign(`/leads/${leadState.id}/quote?quoteId=${nextQuoteId}`)
           return
         }
         setQuoteMessage(result.success ?? 'Quote workspace is ready.')
@@ -385,7 +385,7 @@ export default function LeadCommandCenterPage({
           activePricingBasis: nextBasis ?? current.activePricingBasis,
         }))
         setQuoteLauncherOpen(false)
-        window.location.assign(`/leads?leadId=${leadState.id}&view=quote&quoteId=${nextQuoteId}`)
+        window.location.assign(`/leads/${leadState.id}/quote?quoteId=${nextQuoteId}`)
         return
       }
 
@@ -651,7 +651,7 @@ export default function LeadCommandCenterPage({
         availableMarkets={availableMarkets}
         selectedProductIds={selectedProductIdState}
         selectedMarketIds={selectedMarketIdState}
-        quoteWorkspaceHref={commercialState.latestQuoteId ? `/leads?leadId=${leadState.id}&view=quote&quoteId=${commercialState.latestQuoteId}` : liveSnapshot.links.quoteWorkspace}
+        quoteWorkspaceHref={commercialState.latestQuoteId ? `/leads/${leadState.id}/quote?quoteId=${commercialState.latestQuoteId}` : liveSnapshot.links.quoteWorkspace}
         quoteCount={commercialState.quoteCount}
         latestQuoteNumber={commercialState.latestQuoteNumber}
         pendingFollowUpId={workflowState.pendingFollowUpId}

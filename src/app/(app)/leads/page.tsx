@@ -44,7 +44,10 @@ export default async function LeadsPage({
 }) {
   const requestedLeadId = readParam(searchParams?.leadId).trim();
   const requestedView = readParam(searchParams?.view).trim();
-  if (requestedLeadId && (requestedView === 'cc' || requestedView === 'quote')) {
+  // S37 CANONICAL WORKFLOW: nested /leads?leadId=&view=* surfaces are deprecated.
+  // Keep this redirect while old links are being removed from the repo, but route users to the
+  // single canonical Lead Detail or Quote Builder path.
+  if (requestedLeadId && requestedView) {
     const legacyParams = new URLSearchParams();
     const requestedQuoteId = readParam(searchParams?.quoteId).trim();
     const requestedHandoff = readParam(searchParams?.handoff).trim();

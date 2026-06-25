@@ -1,3 +1,4 @@
+// S37_DEPRECATED: QuoteWorkspace is legacy support only. The canonical active quote route is /leads/[leadId]/quote.
 "use client";
 
 import Link from "next/link";
@@ -1344,7 +1345,7 @@ export function QuoteWorkspace({
   negotiationEvents = [],
   quoteVersions = [],
   communications = [],
-  leadCommandHref = `/leads?leadId=&view=quote`,
+  leadCommandHref = `/leads`,
   rfqWorkspaceHref = `/leads/${leadId}/rfq/new`,
   initialQuoteId = null,
   canManageQuotes = true,

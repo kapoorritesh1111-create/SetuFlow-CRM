@@ -42,7 +42,7 @@ export default async function CreateRfqPage({ params }: { params: { leadId: stri
   const lead = data.lead;
   const canManageRfqs = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
   const readOnlyMessage = getReadOnlyWorkspaceMessage(workspace.currentRoles, 'lead.manage');
-  const leadCommandHref = `/leads?leadId=&view=quote`;
+  const leadCommandHref = `/leads`; // S37 deprecated old /leads?leadId=&view=quote handoff
 
   const workflow = data.workflow ?? {};
   const qualificationStatus = String(workflow.qualificationStatus ?? 'not_started');
@@ -109,7 +109,7 @@ export default async function CreateRfqPage({ params }: { params: { leadId: stri
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={leadCommandHref} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Lead</Link>
-          <Link href={`/leads?leadId=${leadId}&view=quote`} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Quotes</Link>
+          <Link href={`/leads/${leadId}/quote`} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Quotes</Link>
           <Link href="/pipeline" className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Pipeline</Link>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default async function CreateRfqPage({ params }: { params: { leadId: stri
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Next best actions</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href={`/leads?leadId=${leadId}&view=quote`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Open quote workspace</Link>
+            <Link href={`/leads/${leadId}/quote`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Open quote workspace</Link>
             <Link href={`/leads/${leadId}#timeline`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Review timeline</Link>
             <Link href="/tasks" className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Follow-ups</Link>
           </div>

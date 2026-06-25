@@ -24,7 +24,7 @@ function normalizeStatus(value: unknown) { return String(value ?? '').trim().toL
 function isApproved(value: unknown) { return APPROVED_STATUSES.has(normalizeStatus(value)); }
 function isPending(value: unknown) { return PENDING_STATUSES.has(normalizeStatus(value)); }
 function quoteLabel(quote?: QuoteContext | null) { return quote?.quote_number ? `Quote ${quote.quote_number}` : quote?.id ? `Quote ${quote.id.slice(0, 8)}` : 'Active quote'; }
-function reviewReturnHref(leadId: string, quoteId: string) { return quoteId ? `/leads?leadId=${encodeURIComponent(leadId)}&view=quote&quoteId=${encodeURIComponent(quoteId)}&quoteStep=review#quote-review` : `/leads?leadId=${encodeURIComponent(leadId)}&view=quote`; }
+function reviewReturnHref(leadId: string, quoteId: string) { return quoteId ? `/leads/${encodeURIComponent(leadId)}/quote?quoteId=${encodeURIComponent(quoteId)}&step=4#quote-review` : `/leads/${encodeURIComponent(leadId)}/quote`; }
 function assistReturnPath(leadId: string, quoteId: string) { return quoteId ? `/compliance/assist?quoteId=${quoteId}` : `/compliance/assist?leadId=${leadId}`; }
 function latestQuoteDoc(docs: QuoteDocument[]) { return [...docs].sort((a, b) => String(b.uploaded_at ?? '').localeCompare(String(a.uploaded_at ?? '')))[0] ?? null; }
 function storagePathFromUrl(value: string | null) { return value?.startsWith(COMPLIANCE_DOCS_PREFIX) ? value.slice(COMPLIANCE_DOCS_PREFIX.length) : null; }
@@ -148,7 +148,7 @@ export default async function ComplianceAssistPage({ searchParams }: { searchPar
           <p className="mt-2 text-sm leading-6 text-slate-600"><strong>{leadName}</strong>{quoteContext ? ` · ${quoteLabel(quoteContext)}` : ''}. This panel shows the same quote-review document blocker and the shortest safe way to clear or defer it.</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-700">Return target: Review step</span>{quoteContext ? <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sky-700">{quoteLabel(quoteContext)}</span> : null}<span className={`rounded-full px-3 py-1.5 ${headerBadgeClass}`}>{headerBadgeLabel}</span></div>
         </div>
-        <div className="flex flex-wrap gap-2"><Link href={returnHref} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Back to review</Link><Link href={`/leads?leadId=${encodeURIComponent(lead.id)}&view=workflow`} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open command center</Link></div>
+        <div className="flex flex-wrap gap-2"><Link href={returnHref} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Back to review</Link><Link href={`/leads/${encodeURIComponent(lead.id)}`} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open command center</Link></div>
       </div>
     </section>
 
