@@ -5,20 +5,43 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LeadDrawer } from '@/features/leads/components/lead-drawer';
 import { scheduleLeadFollowUp } from '@/features/leads/server/actions';
+import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draft-actions';
 import type { LeadProfileData } from '@/lib/queries/leads';
 import type { LeadOpenStep } from '@/features/leads/types/workspace';
 
-// S37-UX-009 (fix): the premium Lead Detail page was display-only. This client action bar restores the
-// interactive actions the old command center had — Edit Lead, Qualify & Map (which clears the quote
-// workspace gate), and Schedule follow-up — by mounting the existing full LeadDrawer and wiring the
-// follow-up server action. Quote/Share remain plain navigations.
+// S37-UX-009/010: the premium Lead Detail action bar keeps the full workspace actions,
+// but quote CTAs now respect terminal quote states. Accepted/rejected/expired/cancelled
+// quotes are preserved as locked records and get a fresh create-new-draft path.
 
 const TEAL = '#0d9488';
 const NAVY = '#0b2e4a';
 const GREEN = '#059669';
+const AMBER = '#f59e0b';
+const TERMINAL_QUOTE_STATUSES = new Set(['accepted', 'rejected', 'expired', 'cancelled']);
 
 const btnBase: CSSProperties = { padding: '9px 15px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', border: '1px solid transparent', whiteSpace: 'nowrap' };
 const ghost: CSSProperties = { ...btnBase, background: 'white', border: '1px solid #d6e0ea', color: '#334155' };
+const primary: CSSProperties = { ...btnBase, background: TEAL, border: `1px solid ${TEAL}`, color: 'white' };
+const amber: CSSProperties = { ...btnBase, background: AMBER, border: `1px solid ${AMBER}`, color: '#1f2937' };
+
+function getLatestQuote(quotes: any[]) {
+  return [...(quotes ?? [])].sort((left, right) => {
+    const leftTime = Date.parse(String(left?.updated_at ?? left?.created_at ?? '')) || 0;
+    const rightTime = Date.parse(String(right?.updated_at ?? right?.created_at ?? '')) || 0;
+    return rightTime - leftTime;
+  })[0] ?? null;
+}
+
+function QuoteDraftForm({ leadId, sourceQuoteId, label, forceNew, style }: { leadId: string; sourceQuoteId?: string | null; label: string; forceNew?: boolean; style: CSSProperties }) {
+  return (
+    <form action={createLeadQuoteDraftFromLead} style={{ display: 'inline-flex' }}>
+      <input type="hidden" name="lead_id" value={leadId} />
+      {sourceQuoteId ? <input type="hidden" name="source_quote_id" value={sourceQuoteId} /> : null}
+      <input type="hidden" name="force_new" value={forceNew ? 'true' : 'false'} />
+      <button type="submit" style={style}>{label}</button>
+    </form>
+  );
+}
 
 export default function LeadDetailActionBar({ data, currentUserId, quoteHref, shareHref, isQualified }: { data: LeadProfileData; currentUserId?: string; quoteHref: string; shareHref: string; isQualified: boolean }) {
   const router = useRouter();
@@ -30,6 +53,11 @@ export default function LeadDetailActionBar({ data, currentUserId, quoteHref, sh
   const [pending, startTransition] = useTransition();
 
   if (!lead) return null;
+
+  const latestQuote = getLatestQuote(data.quotes as any[]);
+  const latestQuoteStatus = String(latestQuote?.status ?? '').toLowerCase();
+  const latestQuoteIsTerminal = latestQuote ? TERMINAL_QUOTE_STATUSES.has(latestQuoteStatus) : false;
+  const latestQuoteHref = latestQuote?.id ? `/leads/${lead.id}/quote?quoteId=${latestQuote.id}` : quoteHref;
 
   const selectedProductIds = (data.linkedProducts ?? []).map((p) => p.id).filter(Boolean);
   const selectedMarketIds = (data.linkedMarkets ?? []).map((m) => m.id).filter(Boolean);
@@ -61,10 +89,19 @@ export default function LeadDetailActionBar({ data, currentUserId, quoteHref, sh
         <button type="button" onClick={() => openDrawer('basics')} style={ghost}>Edit Lead</button>
         <button type="button" onClick={() => setFollowOpen((v) => !v)} style={ghost}>Schedule Follow-up</button>
         {!isQualified ? (
-          <button type="button" onClick={() => openDrawer('workflow')} style={{ ...btnBase, background: '#f59e0b', border: '1px solid #f59e0b', color: '#1f2937' }}>Qualify &amp; Map</button>
+          <button type="button" onClick={() => openDrawer('workflow')} style={amber}>Qualify &amp; Map</button>
         ) : null}
         <Link href={shareHref} style={ghost}>Share Price List</Link>
-        <Link href={quoteHref} style={{ ...btnBase, background: TEAL, border: `1px solid ${TEAL}`, color: 'white' }}>{data.quotes.length ? 'Open Current Quote' : 'Create Quote'}</Link>
+        {latestQuoteIsTerminal ? (
+          <>
+            <Link href={latestQuoteHref} style={ghost}>View Locked Quote</Link>
+            <QuoteDraftForm leadId={lead.id} sourceQuoteId={latestQuote?.id ?? null} label="Create New Quote" forceNew style={primary} />
+          </>
+        ) : latestQuote ? (
+          <Link href={latestQuoteHref} style={primary}>Open Current Quote</Link>
+        ) : (
+          <QuoteDraftForm leadId={lead.id} label="Create Quote" style={primary} />
+        )}
       </div>
 
       {followOpen ? (
