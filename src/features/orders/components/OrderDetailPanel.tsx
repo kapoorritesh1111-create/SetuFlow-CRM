@@ -194,7 +194,7 @@ export async function OrderDetailPanel({
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <Link href={`${PRODUCT_ROUTES.app.quotes}?quoteId=${quoteId}`} style={buttonStyle('white')}>View quote</Link>
-          <Link href={`${PRODUCT_ROUTES.app.leads}?leadId=${leadId}&view=cc`} style={buttonStyle('primary')}>Lead record →</Link>
+          <Link href={`${PRODUCT_ROUTES.app.leads}/${leadId}`} style={buttonStyle('primary')}>Lead record →</Link>
           <Link href={`${PRODUCT_ROUTES.app.orders}?mode=buyers`} style={buttonStyle('white')}>Back to queue</Link>
         </div>
       </div>

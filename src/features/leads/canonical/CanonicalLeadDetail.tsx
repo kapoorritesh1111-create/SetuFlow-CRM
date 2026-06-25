@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { LeadProfileData } from '@/lib/queries/leads';
 import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draft-actions';
-import { moveCanonicalLeadStage, saveCanonicalLeadDetails, scheduleCanonicalLeadFollowUp } from './actions';
+import { completeCanonicalLeadFollowUp, moveCanonicalLeadStage, saveCanonicalLeadDetails, saveCanonicalQualificationMapping, scheduleCanonicalLeadFollowUp } from './actions';
 
 type Props = { data: LeadProfileData };
 
@@ -176,17 +176,24 @@ export default function CanonicalLeadDetail({ data }: Props) {
             <input type="hidden" name="lead_id" value={lead.id} />
             <input name="scheduled_at" type="datetime-local" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700" />
             <textarea name="notes" placeholder="Agenda: pricing, MOQs, delivery timelines..." className="min-h-24 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700" />
-            <div className="flex flex-wrap gap-2"><button className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-black text-white">Schedule Follow-up</button><button type="button" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700">Mark Completed</button></div>
+            <div className="flex flex-wrap gap-2"><button className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-black text-white">Schedule Follow-up</button></div>
           </form>
+          {pendingFollowUp ? <form action={completeCanonicalLeadFollowUp} className="mt-3"><input type="hidden" name="lead_id" value={lead.id} /><input type="hidden" name="follow_up_id" value={pendingFollowUp.id} /><button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700">✓ Mark Completed</button></form> : null}
         </div>
 
-        <div id="qualification" className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <form id="qualification" action={saveCanonicalQualificationMapping} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <input type="hidden" name="lead_id" value={lead.id} />
+          {data.linkedProducts.map((product) => <input key={product.id} type="hidden" name="product_ids" value={product.id} />)}
+          {data.linkedMarkets.map((market) => <input key={market.id} type="hidden" name="market_ids" value={market.id} />)}
           <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-600">2. Qualification</p>
           <h3 className="mt-4 text-xl font-black text-slate-950">{data.workflow?.qualificationStatus === 'qualified' ? 'Qualified' : 'Qualification in progress'}</h3>
           <div className="mt-4 grid gap-3 text-sm font-semibold text-slate-700">
-            {['Buyer type confirmed', 'Source validated', 'Budget indicated', 'Authority confirmed', 'Timeline confirmed'].map((item, index) => <div key={item} className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><span>{item}</span><span className={index < 4 ? 'text-emerald-600' : 'text-amber-600'}>{index < 4 ? '✓' : 'In progress'}</span></div>)}
+            <label className="grid gap-1 text-xs font-black uppercase tracking-[0.12em] text-slate-400">Readiness<select name="readiness" defaultValue="high" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-700"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+            <textarea name="qualification_notes" defaultValue={data.workflow?.qualificationNotes ?? lead.notes ?? ''} className="min-h-24 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700" />
+            {['Buyer type confirmed', 'Source validated', 'Budget indicated', 'Authority confirmed', 'Timeline confirmed'].map((item) => <div key={item} className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><span>{item}</span><span className="text-emerald-600">✓</span></div>)}
           </div>
-        </div>
+          <button className="mt-4 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white">Save qualification</button>
+        </form>
 
         <aside className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
           <div className="flex items-center gap-2"><span className="rounded-xl bg-emerald-600 px-2 py-1 text-xs font-black text-white">G</span><h3 className="font-black text-slate-950">Setu Guru</h3></div>
@@ -196,6 +203,16 @@ export default function CanonicalLeadDetail({ data }: Props) {
           <p className="mt-1 text-sm leading-6 text-slate-600">Edits stay on the current draft until the quote is sent. Locked quotes are preserved.</p>
         </aside>
       </section>
+
+      <form action={saveCanonicalQualificationMapping} className="rounded-[1.5rem] border border-blue-100 bg-white p-5 shadow-sm">
+        <input type="hidden" name="lead_id" value={lead.id} />
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Map Products & Markets</p><h3 className="mt-1 text-xl font-black text-slate-950">Coverage for quote creation</h3></div><button className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white">Save mapping</button></div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-400">Products<select name="product_ids" multiple defaultValue={data.linkedProducts.map((product) => product.id)} className="min-h-36 rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-700">{data.products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-400">Markets<select name="market_ids" multiple defaultValue={data.linkedMarkets.map((market) => market.id)} className="min-h-36 rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-700">{data.markets.map((market) => <option key={market.id} value={market.id}>{market.name}</option>)}</select></label>
+        </div>
+        <p className="mt-3 text-sm font-semibold text-slate-500">Hold Ctrl/Cmd to select multiple values. Saved mappings seed new quote drafts and readiness scoring.</p>
+      </form>
 
       <section id="mapping" className="grid gap-4 xl:grid-cols-[1fr_1.25fr_1fr]">
         <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">

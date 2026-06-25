@@ -172,7 +172,7 @@ export function RfqWorkspace({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href={`/leads/${leadId}`} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Lead</Link>
-            <Link href={`/leads?leadId=${leadId}&view=quote`} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Quotes</Link>
+            <Link href={`/leads/${leadId}/quote`} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Quotes</Link>
             <Link href="/pipeline" className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Pipeline</Link>
             <button type="button" onClick={() => setCreateOpen(true)} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">New RFQ</button>
           </div>
@@ -236,7 +236,7 @@ export function RfqWorkspace({
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Next best actions</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Link href={`/leads?leadId=${leadId}&view=quote`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Open quote workspace</Link>
+              <Link href={`/leads/${leadId}/quote`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Open quote workspace</Link>
               <Link href={`/leads/${leadId}#timeline`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Review timeline</Link>
               <Link href="/tasks" className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white">Follow-ups</Link>
             </div>

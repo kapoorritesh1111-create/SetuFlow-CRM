@@ -29,14 +29,14 @@ function nextContractStatuses(status: string | null | undefined) {
 }
 
 function buildLeadHref(leadId: string | null | undefined) {
-  return leadId ? `/leads?leadId=&view=quote&returnTo=/contracts` : '/leads';
+  return leadId ? `/leads/${leadId}/quote?returnTo=/contracts` : '/leads';
 }
 
 function buildQuoteHref(leadId: string | null | undefined, quoteId: string | null | undefined) {
   if (!leadId) return '/quotes';
   const query = new URLSearchParams({ returnTo: '/contracts' });
   if (quoteId) query.set('quoteId', quoteId);
-  return `/leads?leadId=${leadId}&view=quote&${query.toString()}`;
+  return `/leads/${leadId}/quote?${query.toString()}`;
 }
 
 function getAuditLabel(action: string | null | undefined) {
