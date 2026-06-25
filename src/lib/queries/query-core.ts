@@ -400,6 +400,12 @@ export type LeadsPageData = QueryIssuePayload & {
     notes: string | null;
     quote_number?: string | null;
     current_version_id?: string | null;
+    sent_version_id?: string | null;
+    accepted_version_id?: string | null;
+    pricing_basis?: string | null;
+    approval_required?: boolean | null;
+    approved_at?: string | null;
+    approved_by?: string | null;
     lineItems: Pick<
       QuoteLineItemRow,
       | 'id'
@@ -669,6 +675,12 @@ export type LeadProfileData = QueryIssuePayload & {
     notes: string | null;
     quote_number?: string | null;
     current_version_id?: string | null;
+    sent_version_id?: string | null;
+    accepted_version_id?: string | null;
+    pricing_basis?: string | null;
+    approval_required?: boolean | null;
+    approved_at?: string | null;
+    approved_by?: string | null;
     lineItems: Pick<
       QuoteLineItemRow,
       | 'id'
@@ -697,6 +709,19 @@ export type LeadProfileData = QueryIssuePayload & {
     approved_at: string | null;
     sent_at: string | null;
     pdf_document_id: string | null;
+  }>;
+  approvalRequests: Array<{
+    id: string;
+    quote_id: string | null;
+    quote_version_id: string | null;
+    rule: string;
+    reason: string | null;
+    status: string;
+    requested_by: string | null;
+    decided_by: string | null;
+    decided_at: string | null;
+    created_at: string;
+    updated_at: string;
   }>;
   negotiationEvents: Pick<
     QuoteNegotiationEventRow,
@@ -2267,7 +2292,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
     leadIds.length
       ? supabase
           .from('quotes')
-          .select('id, lead_id, rfq_id, status, currency, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, approval_required, approved_at, approved_by')
+          .select('id, lead_id, rfq_id, status, currency, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, sent_version_id, accepted_version_id, approval_required, approved_at, approved_by')
           .eq('organization_id', organizationId)
           .in('lead_id', leadIds)
           .order('created_at', { ascending: false })
@@ -2597,7 +2622,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     supabase.from('lead_markets').select('lead_id, market_id').eq('lead_id', leadId),
     supabase.from('lead_product_interests').select('lead_id, product_id, label, interest_type, source_context').eq('lead_id', leadId),
     supabase.from('rfqs').select('id, lead_id, status, currency, validity_date, created_at, updated_at, notes').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
-    supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, pricing_basis, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, approval_required, approved_at, approved_by').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
+    supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, pricing_basis, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, sent_version_id, accepted_version_id, approval_required, approved_at, approved_by').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('lead_compliance_items').select('id, lead_id, compliance_item_id, document_id, status, created_at, submitted_at, approved_at, due_at, severity, reviewed_at').eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('compliance_checklist_items').select('id, code, description').order('created_at', { ascending: false }),
     supabase.from('documents').select('id, related_entity, related_id, file_name, doc_type, status, uploaded_at, uploaded_by, reviewer_user_id, reviewed_at, review_notes, expires_at, version, version_label, requirement_code').eq('organization_id', organizationId).eq('related_entity', 'lead').eq('related_id', leadId).order('uploaded_at', { ascending: false }),
@@ -2680,7 +2705,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     : { data: [], error: null };
   addIssue(issues, 'profile negotiation events', negotiationEventsResult.error);
 
-  const [rfqLineItemsResult, quoteLineItemsResult, versionLineItemsResult, quoteDocumentsResult, quoteVersionsResult] = await Promise.all([
+  const [rfqLineItemsResult, quoteLineItemsResult, versionLineItemsResult, quoteDocumentsResult, quoteVersionsResult, approvalRequestsResult] = await Promise.all([
     rfqIds.length
       ? supabase.from('rfq_line_items').select('id, rfq_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes').in('rfq_id', rfqIds)
       : Promise.resolve({ data: [], error: null }),
@@ -2693,8 +2718,11 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     quoteIds.length
       ? supabase.from('documents').select('id, related_entity, related_id, file_name, doc_type, status, uploaded_at, uploaded_by, reviewer_user_id, reviewed_at, review_notes, expires_at, version, version_label, requirement_code').eq('organization_id', organizationId).eq('related_entity', 'quote').in('related_id', quoteIds).order('uploaded_at', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
-    currentVersionIds.length
-      ? supabase.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id').in('id', currentVersionIds)
+    quoteIds.length
+      ? supabase.from('quote_versions').select('id, quote_id, version_no, status, created_at, approved_at, sent_at, pdf_document_id').in('quote_id', quoteIds).order('version_no', { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+    quoteIds.length
+      ? supabase.from('approval_requests').select('id, quote_id, quote_version_id, rule, reason, status, requested_by, decided_by, decided_at, created_at, updated_at').eq('organization_id', organizationId).in('quote_id', quoteIds).order('created_at', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -2703,6 +2731,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
   addIssue(issues, 'profile version line items', versionLineItemsResult.error);
   addIssue(issues, 'profile quote documents', quoteDocumentsResult.error);
   addIssue(issues, 'profile quote versions', quoteVersionsResult.error);
+  addIssue(issues, 'profile approval requests', approvalRequestsResult.error);
 
   const quoteRows = rows(quotesResult.data) as Array<any>;
   const versionedQuoteRows = quoteRows.filter((item) => item.current_version_id);
@@ -2822,6 +2851,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
       lineItems: quoteLineItemsById.get(quote.id) ?? [],
     })) as LeadProfileData['quotes'],
     quoteVersions: quoteVersionRows as LeadProfileData['quoteVersions'],
+    approvalRequests: rows(approvalRequestsResult.data) as LeadProfileData['approvalRequests'],
     negotiationEvents: rows(negotiationEventsResult.data) as LeadProfileData['negotiationEvents'],
     complianceItems: rows(complianceItemsResult.data) as LeadProfileData['complianceItems'],
     complianceDefinitions: rows(complianceDefinitionsResult.data) as LeadProfileData['complianceDefinitions'],

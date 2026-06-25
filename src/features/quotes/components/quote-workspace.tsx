@@ -180,6 +180,10 @@ type QuoteVersionRecord = {
   approved_at: string | null;
   sent_at: string | null;
   pdf_document_id?: string | null;
+  approval_state?: 'none' | 'pending' | 'approved' | 'rejected' | string | null;
+  approval_reason?: string | null;
+  approval_requested_at?: string | null;
+  approval_decided_at?: string | null;
 };
 type QuoteSavedViewId =
   | "all"
@@ -290,6 +294,14 @@ function getQuoteApprovalStateValue(quote: QuoteRecord) {
     approvalRequired: Boolean(parsed.meta.approval?.required),
     status: getQuoteWorkflowStatus(quote, parsed.meta.approval),
   };
+}
+
+function getVersionApprovalBadge(version: QuoteVersionRecord) {
+  const state = String(version.approval_state ?? (version.approved_at ? 'approved' : 'none')).toLowerCase();
+  if (state === 'approved') return { label: 'Approval approved', classes: 'border-teal-200 bg-teal-50 text-teal-800' };
+  if (state === 'pending') return { label: 'Approval pending', classes: 'border-amber-200 bg-amber-50 text-amber-800' };
+  if (state === 'rejected') return { label: 'Approval rejected', classes: 'border-rose-200 bg-rose-50 text-rose-800' };
+  return { label: 'No approval request', classes: 'border-slate-200 bg-slate-50 text-slate-600' };
 }
 
 function getQuoteAttentionRank(quote: QuoteRecord) {
@@ -2483,13 +2495,17 @@ export function QuoteWorkspace({
                                   </span>
                                 </div>
                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-500">
-                                  <span>{version.approved_at ? "Approved" : "Awaiting approval"}</span>
+                                  <span className={`rounded-full border px-2 py-0.5 ${getVersionApprovalBadge(version).classes}`}>{getVersionApprovalBadge(version).label}</span>
                                   <span>{version.sent_at ? "Sent" : "Not sent"}</span>
                                   <span>{isCurrentVersion ? "Current version" : "Prior version"}</span>
                                   {isLatestSentVersion ? <span>Latest customer-facing version</span> : null}
                                   {isSupersededSentVersion ? <span>Superseded by {currentFocusedVersionLabel}</span> : null}
+                                  {version.approval_reason ? <span>Approval note saved</span> : null}
                                   {snapshotForVersion ? <span>Snapshot recorded</span> : isSentVersion ? <span>Legacy send without snapshot</span> : null}
                                 </div>
+                                {version.approval_reason ? (
+                                  <p className="mt-2 rounded-[0.75rem] bg-white px-3 py-2 text-xs text-slate-600">Approval note: {version.approval_reason}</p>
+                                ) : null}
                                 <p className="mt-2 text-xs text-slate-500">
                                   {isCurrentVersion && isLatestSentVersion
                                     ? "This is both the current internal version and the latest customer-facing version."

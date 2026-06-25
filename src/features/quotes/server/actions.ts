@@ -1019,7 +1019,6 @@ export async function recordQuoteOutcomeWorkflow(_: QuoteActionState | undefined
     const { error: quoteUpdateError } = await db
       .from('quotes')
       .update({
-        status: nextStatus,
         lifecycle_outcome: lifecycleOutcome,
         archived_at: nowIso,
         archive_reason: archiveReason,

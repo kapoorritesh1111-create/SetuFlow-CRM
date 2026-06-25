@@ -26,6 +26,33 @@ function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
 
+function getApprovalStateForVersion(approvalRequests: any[], versionId: string) {
+  const requests = approvalRequests
+    .filter((request) => request.quote_version_id === versionId)
+    .sort((left, right) => String(right.decided_at ?? right.created_at ?? '').localeCompare(String(left.decided_at ?? left.created_at ?? '')));
+  if (requests.some((request) => String(request.status ?? '').toLowerCase() === 'pending')) return 'pending';
+  const latestDecision = requests.find((request) => ['approved', 'rejected'].includes(String(request.status ?? '').toLowerCase()));
+  if (String(latestDecision?.status ?? '').toLowerCase() === 'approved') return 'approved';
+  if (String(latestDecision?.status ?? '').toLowerCase() === 'rejected') return 'rejected';
+  return 'none';
+}
+
+function enrichQuoteVersionsWithApprovals(quoteVersions: any[], approvalRequests: any[]) {
+  return quoteVersions.map((version) => {
+    const requests = approvalRequests
+      .filter((request) => request.quote_version_id === version.id)
+      .sort((left, right) => String(right.decided_at ?? right.created_at ?? '').localeCompare(String(left.decided_at ?? left.created_at ?? '')));
+    const latestRequest = requests[0] ?? null;
+    return {
+      ...version,
+      approval_state: getApprovalStateForVersion(approvalRequests, version.id),
+      approval_reason: latestRequest?.reason ?? null,
+      approval_requested_at: latestRequest?.created_at ?? null,
+      approval_decided_at: latestRequest?.decided_at ?? null,
+    };
+  });
+}
+
 function MobileSafeLeadQuoteSurface({
   lead,
   linkedProducts,
@@ -314,6 +341,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
   const activeQuote = requestedQuoteId ? data.quotes.find((quote) => quote.id === requestedQuoteId) ?? data.quotes[0] ?? null : data.quotes[0] ?? null;
   const activeQuoteId = activeQuote?.id ?? requestedQuoteId;
   const activeQuoteLabel = activeQuoteId ? activeQuoteId.slice(0, 8) : 'current quote';
+  const quoteVersionsWithApproval = enrichQuoteVersionsWithApprovals(data.quoteVersions, data.approvalRequests ?? []);
 
   return (
     <>
@@ -456,7 +484,7 @@ export default async function QuotePage({ params, searchParams }: { params: { le
           sendReadOnlyMessage={sendReadOnlyMessage}
           rfqWorkspaceHref={`/leads/${leadId}/rfq/new`}
           pricingSnapshot={pricingSnapshot}
-          quoteVersions={data.quoteVersions}
+          quoteVersions={quoteVersionsWithApproval}
           negotiationEvents={data.negotiationEvents}
           pricingEngineThresholdPercent={pricingEngineThresholdPercent}
           communications={data.communications.filter((item: any) => item.quote_id || item.related_entity === 'quote').map((item: any) => ({

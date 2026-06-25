@@ -7,7 +7,7 @@ import { normalizePricingBasis, type QuotePricingBasis } from '@/lib/pricing-bas
 import { cloneQuoteForRepeatBusiness, createNewLeadQuoteDraft, createQuoteRevisionFromQuote, openOrCreateLeadQuoteDraft } from '@/features/leads/server/actions'
 import { moveLeadToStage } from '@/features/pipeline/server/actions'
 import type { LeadQualificationStatus } from '@/lib/lead-workflow'
-import type { LeadCommandCenterTabKey, LeadProfileSnapshot, PipelineStageItem, WorkflowActionKey } from './types'
+import type { LeadCommandCenterTabKey, LeadProfileSnapshot, PipelineStageItem, QuoteVersionTimelineItem, WorkflowActionKey } from './types'
 import { LeadCommandHeader } from './LeadCommandHeader'
 import { LeadPipelineStageStrip } from './LeadPipelineStageStrip'
 import LeadQuickEditDrawer, { type LeadQuickEditDrawerSection } from './LeadQuickEditDrawer'
@@ -47,6 +47,7 @@ type Props = {
   selectedProductIds: string[]
   selectedMarketIds: string[]
   initialOpsHistory: OperationItem[]
+  quoteVersions?: QuoteVersionTimelineItem[]
   latestQuoteId?: string | null
   pendingFollowUpId?: string | null
   aiReviewHref?: string
@@ -141,6 +142,7 @@ export default function LeadCommandCenterPage({
   selectedProductIds,
   selectedMarketIds,
   initialOpsHistory,
+  quoteVersions = [],
   latestQuoteId,
   pendingFollowUpId,
   aiReviewHref,
@@ -268,6 +270,7 @@ export default function LeadCommandCenterPage({
       latestQuoteNumber: commercialState.latestQuoteNumber,
       activePricingBasis: commercialState.activePricingBasis ?? snapshot.commercial.activePricingBasis ?? null,
     },
+    quoteVersions: quoteVersions.length ? quoteVersions : snapshot.quoteVersions,
     quoteFocus: {
       ...snapshot.quoteFocus,
       quoteId: commercialState.latestQuoteId,
@@ -295,7 +298,7 @@ export default function LeadCommandCenterPage({
       overdueCount: workflowState.overdueCount,
       dueSoonCount: workflowState.dueSoonCount,
     }),
-  }), [commercialState, leadState, mappingState, snapshot, workflowState])
+  }), [commercialState, leadState, mappingState, quoteVersions, snapshot, workflowState])
 
   const hasActiveQuoteRecord = liveSnapshot.quoteFocus.hasActiveQuote
   const wonStageId = liveSnapshot.pipeline.stages.find((stage) => stage.state === 'won' || stage.label.toLowerCase().includes('won'))?.id ?? null
@@ -494,6 +497,7 @@ export default function LeadCommandCenterPage({
                 quoteFocus={liveSnapshot.quoteFocus}
                 commercial={liveSnapshot.commercial}
                 activity={liveSnapshot.activity}
+                quoteVersions={liveSnapshot.quoteVersions}
                 onOpenQuote={handleOpenQuoteWorkspace}
               />
             ) : activeTab === 'activity' ? (

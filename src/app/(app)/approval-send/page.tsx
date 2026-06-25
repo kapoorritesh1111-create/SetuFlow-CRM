@@ -89,7 +89,7 @@ async function confirmAndSendQuote(formData: FormData): Promise<void> {
   const sentAt = new Date().toISOString();
   await typedSupabase
     .from('quotes')
-    .update({ status: 'sent', sent_at: sentAt, updated_at: sentAt })
+    .update({ sent_at: sentAt, updated_at: sentAt })
     .eq('organization_id', workspace.organization.id)
     .eq('id', quoteId);
 

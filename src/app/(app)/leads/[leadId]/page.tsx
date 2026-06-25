@@ -189,6 +189,7 @@ export default async function Page({ params, searchParams }: { params: { leadId:
         selectedProductIds={selectedProductIds}
         selectedMarketIds={selectedMarketIds}
         initialOpsHistory={initialOpsHistory}
+        quoteVersions={snapshot.quoteVersions}
         latestQuoteId={latestQuote?.id ?? null}
         pendingFollowUpId={pendingFollowUp?.id ?? null}
         aiReviewHref={aiReviewHref}

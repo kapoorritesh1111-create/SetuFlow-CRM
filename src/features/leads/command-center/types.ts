@@ -54,6 +54,23 @@ export type QuoteFocusSummary = {
   updatedAt?: string | null
 }
 
+export type QuoteVersionTimelineItem = {
+  id: string
+  quoteId: string | null
+  versionNo: number | null
+  status: string | null
+  createdAt: string | null
+  approvedAt: string | null
+  sentAt: string | null
+  approvalState: 'none' | 'pending' | 'approved' | 'rejected'
+  approvalRequestedAt?: string | null
+  approvalDecidedAt?: string | null
+  approvalReason?: string | null
+  isCurrent: boolean
+  isSent: boolean
+  isAccepted: boolean
+}
+
 export type AiAssistSummary = {
   pendingReviewCount: number
   readyDraftCount: number
@@ -117,6 +134,7 @@ export type LeadProfileSnapshot = {
   nextAction: NextActionSummary
   workflowCards: WorkflowActionCardState[]
   quoteFocus: QuoteFocusSummary
+  quoteVersions: QuoteVersionTimelineItem[]
   aiAssist: AiAssistSummary
   qualification: {
     status: 'not_started' | 'in_review' | 'qualified' | 'disqualified'

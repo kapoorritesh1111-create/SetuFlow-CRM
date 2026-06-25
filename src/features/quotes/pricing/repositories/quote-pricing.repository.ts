@@ -899,7 +899,7 @@ export class SupabaseQuotePricingRepository implements QuotePricingRepository {
 
     const { error: quoteError } = await this.db
       .from('quotes')
-      .update({ status: 'sent', updated_at: now })
+      .update({ updated_at: now })
       .eq('id', version.quote_id);
     if (quoteError) {
       throw new Error(`Failed to mark quote ${version.quote_id} as sent: ${quoteError.message}`);

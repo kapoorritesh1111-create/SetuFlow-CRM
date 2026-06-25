@@ -22,6 +22,7 @@ import type {
   NextActionSummary,
   PipelineStageItem,
   QuoteFocusSummary,
+  QuoteVersionTimelineItem,
   WorkflowActionCardState,
 } from './types'
 
@@ -329,6 +330,50 @@ function buildQuoteFocusSummary(data: LeadProfileData): QuoteFocusSummary {
   }
 }
 
+function getApprovalStateForVersion(data: LeadProfileData, versionId: string): QuoteVersionTimelineItem['approvalState'] {
+  const requests = [...(data.approvalRequests ?? [])]
+    .filter((request) => request.quote_version_id === versionId)
+    .sort((left, right) => String(right.decided_at ?? right.created_at ?? '').localeCompare(String(left.decided_at ?? left.created_at ?? '')))
+  if (requests.some((request) => String(request.status ?? '').toLowerCase() === 'pending')) return 'pending'
+  const latestDecision = requests.find((request) => ['approved', 'rejected'].includes(String(request.status ?? '').toLowerCase()))
+  if (String(latestDecision?.status ?? '').toLowerCase() === 'approved') return 'approved'
+  if (String(latestDecision?.status ?? '').toLowerCase() === 'rejected') return 'rejected'
+  return 'none'
+}
+
+function buildQuoteVersionTimeline(data: LeadProfileData): QuoteVersionTimelineItem[] {
+  const quoteById = new Map(data.quotes.map((quote) => [quote.id, quote]))
+  return [...(data.quoteVersions ?? [])]
+    .sort((left, right) => {
+      const quoteCompare = String(quoteById.get(right.quote_id ?? '')?.updated_at ?? '').localeCompare(String(quoteById.get(left.quote_id ?? '')?.updated_at ?? ''))
+      if (quoteCompare !== 0) return quoteCompare
+      return Number(right.version_no ?? 0) - Number(left.version_no ?? 0)
+    })
+    .map((version) => {
+      const quote = quoteById.get(version.quote_id ?? '')
+      const requests = [...(data.approvalRequests ?? [])]
+        .filter((request) => request.quote_version_id === version.id)
+        .sort((left, right) => String(right.decided_at ?? right.created_at ?? '').localeCompare(String(left.decided_at ?? left.created_at ?? '')))
+      const latestRequest = requests[0] ?? null
+      return {
+        id: version.id,
+        quoteId: version.quote_id ?? null,
+        versionNo: version.version_no ?? null,
+        status: version.status ?? null,
+        createdAt: version.created_at ?? null,
+        approvedAt: version.approved_at ?? null,
+        sentAt: version.sent_at ?? null,
+        approvalState: getApprovalStateForVersion(data, version.id),
+        approvalRequestedAt: latestRequest?.created_at ?? null,
+        approvalDecidedAt: latestRequest?.decided_at ?? null,
+        approvalReason: latestRequest?.reason ?? null,
+        isCurrent: Boolean(quote?.current_version_id && quote.current_version_id === version.id),
+        isSent: Boolean(quote?.sent_version_id && quote.sent_version_id === version.id),
+        isAccepted: Boolean(quote?.accepted_version_id && quote.accepted_version_id === version.id),
+      }
+    })
+}
+
 function buildAiAssistSummary(data: LeadProfileData): AiAssistSummary {
   const ai = getAiQueueStatus(data)
   return {
@@ -352,6 +397,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
   const quote = latestQuote(data)
   const pipeline = buildPipelineStageItems(data, pricingReadiness)
   const quoteFocus = buildQuoteFocusSummary(data)
+  const quoteVersions = buildQuoteVersionTimeline(data)
   const aiAssist = buildAiAssistSummary(data)
 
   return {
@@ -387,6 +433,7 @@ export function toLeadProfileSnapshot(data: LeadProfileData): LeadProfileSnapsho
     nextAction: buildNextActionSummary(data),
     workflowCards: buildWorkflowActionCards(data),
     quoteFocus,
+    quoteVersions,
     aiAssist,
     qualification,
     mapping,
