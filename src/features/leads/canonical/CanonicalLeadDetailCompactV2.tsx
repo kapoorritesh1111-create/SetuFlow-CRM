@@ -45,6 +45,12 @@ function quoteTotal(quote: any | null) {
 function quoteCurrency(data: LeadProfileData, quote: any | null) {
   return quote?.display_currency || quote?.currency || data.lead?.deal_currency || 'USD';
 }
+function quoteLastSavedStep(quote: any | null) {
+  const status = String(quote?.status || '').toLowerCase();
+  if (status === 'approval_pending' || status === 'in_review' || status === 'sent') return 5;
+  if ((quote?.lineItems || []).length) return 2;
+  return 1;
+}
 function readinessScore(data: LeadProfileData) {
   let score = 25;
   if (data.lead?.email || data.lead?.phone) score += 15;
@@ -61,15 +67,35 @@ function ContactChip({ href, children, disabled }: { href: string; children: Rea
   const cls = 'inline-flex min-h-10 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm';
   return disabled ? <span className={`${cls} opacity-45`}>{children}</span> : <a href={href} className={cls}>{children}</a>;
 }
-function QuoteActions({ leadId, quote }: { leadId: string; quote: any | null }) {
+function NewQuoteButton({ leadId, quote, label = 'New Quote' }: { leadId: string; quote?: any | null; label?: string }) {
+  return (
+    <form action={createLeadQuoteDraftFromLead}>
+      <input type="hidden" name="lead_id" value={leadId} />
+      {quote?.id ? <input type="hidden" name="source_quote_id" value={quote.id} /> : null}
+      {quote?.id ? <input type="hidden" name="force_new" value="true" /> : null}
+      <button className="rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-semibold text-blue-700">{label}</button>
+    </form>
+  );
+}
+function QuoteActions({ leadId, quote, compact = false }: { leadId: string; quote: any | null; compact?: boolean }) {
   const locked = quote ? TERMINAL.has(String(quote.status || '').toLowerCase()) : false;
-  if (!quote) {
-    return <form action={createLeadQuoteDraftFromLead}><input type="hidden" name="lead_id" value={leadId} /><button className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white">Create Quote</button></form>;
-  }
+  if (!quote) return <NewQuoteButton leadId={leadId} label="Create Quote" />;
   if (locked) {
-    return <div className="flex flex-wrap gap-2"><Link href={`/leads/${leadId}/quote?quoteId=${quote.id}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700">View Locked Quote</Link><form action={createLeadQuoteDraftFromLead}><input type="hidden" name="lead_id" value={leadId} /><input type="hidden" name="source_quote_id" value={quote.id} /><input type="hidden" name="force_new" value="true" /><button className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white">Create New Quote</button></form></div>;
+    return (
+      <div className="flex flex-wrap gap-2">
+        <Link href={`/leads/${leadId}/quote?quoteId=${quote.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">View Locked Quote</Link>
+        <NewQuoteButton leadId={leadId} quote={quote} label="Create New Quote" />
+      </div>
+    );
   }
-  return <Link href={`/leads/${leadId}/quote?quoteId=${quote.id}&step=1`} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white">Open Current Quote</Link>;
+  const step = quoteLastSavedStep(quote);
+  return (
+    <div className={`flex flex-wrap gap-2 ${compact ? 'justify-end' : ''}`}>
+      <Link href={`/leads/${leadId}/quote?quoteId=${quote.id}&step=${step}`} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">Open Current Quote</Link>
+      <Link href={`/leads/${leadId}/quote?quoteId=${quote.id}&step=${step}&mode=revise`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Edit / Revise</Link>
+      <NewQuoteButton leadId={leadId} quote={quote} label="New Quote" />
+    </div>
+  );
 }
 function StageStrip({ data }: { data: LeadProfileData }) {
   const leadType = String(data.lead?.lead_type || '').toLowerCase();
@@ -89,7 +115,6 @@ function StageStrip({ data }: { data: LeadProfileData }) {
           const stage = stageMap.get(normalize(label)) || null;
           const active = index === currentIndex;
           const completed = index < currentIndex;
-          const future = index > currentIndex;
           const isWon = /won/i.test(label);
           const isLost = /lost/i.test(label);
           const dot = active ? 'bg-blue-600 ring-4 ring-blue-100' : completed ? 'bg-emerald-500' : isWon ? 'bg-emerald-500' : isLost ? 'bg-rose-500' : 'bg-slate-300';
@@ -144,17 +169,18 @@ export default function CanonicalLeadDetailCompactV2({ data, saved, stageError, 
       <section id="work" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_320px]">
         <div id="follow-up" className="rounded-[1.35rem] border border-rose-100 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-500">Follow-up</p><h3 className="mt-1 text-lg font-semibold text-slate-950">{pendingFollowUp ? fmtDate(pendingFollowUp.scheduled_at) : 'Schedule next touchpoint'}</h3></div><span className="rounded-full bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-600">{pendingFollowUp ? 'Active' : 'Needed'}</span></div>
-          <FollowUpComposer leadId={lead.id} email={lead.email} whatsapp={lead.whatsapp_number || lead.phone} action={scheduleCanonicalLeadFollowUp} />
+          <FollowUpComposer leadId={lead.id} clientName={lead.company_name} senderName="Ritesh Kapoor" senderCompany="SETU Flow CRM" email={lead.email} whatsapp={lead.whatsapp_number || lead.phone} action={scheduleCanonicalLeadFollowUp} />
           {pendingFollowUp ? <form action={completeCanonicalLeadFollowUp} className="mt-2"><input type="hidden" name="lead_id" value={lead.id} /><input type="hidden" name="follow_up_id" value={pendingFollowUp.id} /><button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Mark Completed</button></form> : null}
         </div>
 
         <div id="commercial" className="rounded-[1.35rem] border border-blue-100 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600">Commercial</p><h3 className="mt-1 text-lg font-semibold text-slate-950">{latestQuote ? `${latestQuote.quote_number || 'Quote'} · ${title(latestQuote.status)}` : 'No quote yet'}</h3></div><QuoteActions leadId={lead.id} quote={latestQuote} /></div>
+          <div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600">Commercial</p><h3 className="mt-1 text-lg font-semibold text-slate-950">{latestQuote ? `${latestQuote.quote_number || 'Quote'} · ${title(latestQuote.status)}` : 'No quote yet'}</h3><p className="mt-1 text-xs font-medium text-slate-500">Open the current quote at its last saved builder state, revise it, or start a new quote.</p></div></div>
+          <div className="mt-4"><QuoteActions leadId={lead.id} quote={latestQuote} compact /></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Buyer</p><p className="mt-2 text-sm font-medium text-slate-700">Stage: <span className="font-semibold">{currentStageName(data)}</span></p><p className="text-sm font-medium text-slate-700">Deal: <span className="font-semibold">{money(dealValue, lead.deal_currency || quoteCurrency(data, latestQuote))}</span></p><p className="text-sm font-medium text-slate-700">Market: <span className="font-semibold">{data.linkedMarkets.map((m) => m.name).join(', ') || lead.country || '—'}</span></p></div><div className="rounded-2xl bg-blue-50 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">Quotes</p><p className="mt-2 text-sm font-medium text-blue-900">{quotes.length} total</p><p className="text-sm font-medium text-blue-900">{quotes.filter((q) => TERMINAL.has(String(q.status).toLowerCase())).length} locked</p><p className="text-sm font-medium text-blue-900">{quotes.filter((q) => !TERMINAL.has(String(q.status).toLowerCase())).length} open</p></div></div>
           <div className="mt-4 rounded-2xl border border-slate-100 p-3"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Mapped coverage</p><div className="mt-2 flex flex-wrap gap-2">{data.linkedProducts.slice(0, 5).map((p) => <span key={p.id} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{p.name}</span>)}</div></div>
         </div>
 
-        <aside className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm"><div className="flex items-center gap-2"><span className="rounded-xl bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">G</span><h3 className="font-semibold text-slate-950">Setu Guru</h3></div><p className="mt-4 text-sm font-semibold text-slate-800">Recommended action</p><p className="mt-1 text-sm leading-6 text-slate-600">{latestQuote ? 'Continue the current quote or complete the approval decision. Keep follow-up clear and short.' : 'Finish qualification and create a quote from mapped product interests.'}</p><p className="mt-4 text-sm font-semibold text-emerald-700">Premium workflow</p><p className="mt-1 text-sm leading-6 text-slate-600">Follow-up and commercial work now sit side by side. Use deeper panels only when editing details.</p></aside>
+        <aside className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm"><div className="flex items-center gap-2"><span className="rounded-xl bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">G</span><h3 className="font-semibold text-slate-950">Setu Guru</h3></div><p className="mt-4 text-sm font-semibold text-slate-800">Recommended action</p><p className="mt-1 text-sm leading-6 text-slate-600">{latestQuote ? 'Continue the current quote or complete the approval decision. Use Edit / Revise when you need to move backward and change quote details.' : 'Finish qualification and create a quote from mapped product interests.'}</p><p className="mt-4 text-sm font-semibold text-emerald-700">Premium workflow</p><p className="mt-1 text-sm leading-6 text-slate-600">Follow-up and commercial work sit side by side. Deeper edit panels stay below the fold.</p></aside>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
