@@ -2,8 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import CanonicalLeadDetailCompactV2 from '@/features/leads/canonical/CanonicalLeadDetailCompactV2';
-import LeadQuotesMiniList from '@/features/leads/canonical/LeadQuotesMiniList';
+import LeadCommandCenterPremium from '@/features/leads/canonical/LeadCommandCenterPremium';
 import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 
 function readParam(value?: string | string[]) {
@@ -21,6 +20,7 @@ function savedMessage(value?: string | string[]) {
   if (saved === 'follow-up') return 'Follow-up updated.';
   if (saved === 'qualification') return 'Qualification and mapping saved.';
   if (saved === 'stage') return 'Lead stage updated.';
+  if (saved === 'owner') return 'Lead owner reassigned.';
   return '';
 }
 
@@ -53,18 +53,21 @@ export default async function Page({
 
   const toastMessage = savedMessage(searchParams?.saved);
   const hasStageError = Boolean(readParam(searchParams?.stageError).trim());
+  const teamMembers = data.profiles.map((profile: any) => ({
+    id: profile.id,
+    name: profile.full_name || profile.username || 'Team member',
+  }));
 
   return (
     <>
       {toastMessage ? <WorkflowToast kind="success" message={toastMessage} /> : null}
-      {hasStageError ? <WorkflowToast kind="warning" message="Stage could not update. Try again or refresh before moving stage." /> : null}
-      <CanonicalLeadDetailCompactV2
+      {hasStageError ? <WorkflowToast kind="warning" message="Lead action needs attention. Please refresh and try again." /> : null}
+      <LeadCommandCenterPremium
         data={data}
-        saved={null}
-        stageError={null}
+        canReassignOwner={workspace.canAccessAdmin}
+        teamMembers={teamMembers}
         backHref={leadsBackHref(searchParams?.mode)}
       />
-      <LeadQuotesMiniList data={data} />
     </>
   );
 }
