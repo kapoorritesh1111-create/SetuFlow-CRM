@@ -12,12 +12,40 @@ import FollowUpComposer from './FollowUpComposer';
 
 type TeamMember = { id: string; name: string; email?: string | null };
 type Props = { data: LeadProfileData; canReassignOwner?: boolean; teamMembers?: TeamMember[]; backHref?: string };
+type IconName = 'mail' | 'phone' | 'message' | 'target' | 'file' | 'package' | 'calendar' | 'chart' | 'clock' | 'bot' | 'chevron' | 'plus' | 'edit' | 'arrowLeft' | 'check' | 'circle' | 'trend' | 'x' | 'pdf';
 
 const LIFECYCLE = new Set(['sent', 'accepted', 'rejected', 'expired', 'cancelled', 'declined']);
 const LOCKED = new Set(['accepted', 'rejected', 'expired', 'cancelled', 'declined']);
 const BUILDER = new Set(['draft', 'in_review', 'approval_pending', 'approved']);
 const BUYER_STAGES = ['New Lead', 'Qualified', 'Contacted', 'Samples Sent', 'Negotiation', 'Won', 'Lost'];
 const SUPPLIER_STAGES = ['New Supplier', 'Qualified', 'Contacted', 'Samples Sent', 'Negotiation', 'Won', 'Lost'];
+
+function Icon({ name, className = 'h-4 w-4' }: { name: IconName; className?: string }) {
+  const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...common}>
+      {name === 'mail' ? <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></> : null}
+      {name === 'phone' ? <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.4 2.5a2 2 0 0 1-.6 1.8L7.6 9.3a16 16 0 0 0 7.1 7.1l1.3-1.3a2 2 0 0 1 1.8-.6l2.5.4A2 2 0 0 1 22 16.9Z" /> : null}
+      {name === 'message' ? <><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.7 8.7 0 0 1-3-.7L3 21l1.8-5.5a8.3 8.3 0 1 1 16.2-4Z" /><path d="M8.5 9.5h7" /><path d="M8.5 13h4.5" /></> : null}
+      {name === 'target' ? <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></> : null}
+      {name === 'file' ? <><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z" /><path d="M14 2v5h5" /><path d="M9 13h6" /><path d="M9 17h4" /></> : null}
+      {name === 'package' ? <><path d="m12 2 8 4.5v9L12 20l-8-4.5v-9Z" /><path d="m4 6.5 8 4.5 8-4.5" /><path d="M12 11v9" /></> : null}
+      {name === 'calendar' ? <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /><path d="m9 16 2 2 4-5" /></> : null}
+      {name === 'chart' ? <><path d="M3 20h18" /><path d="M7 16v-5" /><path d="M12 16V8" /><path d="M17 16v-9" /><path d="m7 11 5-3 5-1" /></> : null}
+      {name === 'clock' ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : null}
+      {name === 'bot' ? <><rect x="5" y="8" width="14" height="11" rx="3" /><path d="M12 5V3" /><path d="M9 13h.01" /><path d="M15 13h.01" /><path d="M9 17h6" /></> : null}
+      {name === 'chevron' ? <path d="m9 18 6-6-6-6" /> : null}
+      {name === 'plus' ? <><path d="M12 5v14" /><path d="M5 12h14" /></> : null}
+      {name === 'edit' ? <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></> : null}
+      {name === 'arrowLeft' ? <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></> : null}
+      {name === 'check' ? <path d="m5 12 4 4L19 6" /> : null}
+      {name === 'circle' ? <circle cx="12" cy="12" r="5" /> : null}
+      {name === 'trend' ? <><path d="M3 17 9 11l4 4 8-8" /><path d="M14 7h7v7" /></> : null}
+      {name === 'x' ? <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></> : null}
+      {name === 'pdf' ? <><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z" /><path d="M14 2v5h5" /><path d="M8 15h8" /><path d="M8 18h5" /></> : null}
+    </svg>
+  );
+}
 
 function title(value?: string | null) {
   return String(value || 'draft').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -50,6 +78,7 @@ function quoteHref(data: LeadProfileData, quote: any) {
 function primaryQuoteAction(data: LeadProfileData, quote: any | null) {
   if (!quote) return { label: 'Create Quote', href: '' };
   const status = normalize(quote.status);
+  if (status === 'accepted') return { label: 'View Locked Quote', href: quoteHref(data, quote) };
   if (LIFECYCLE.has(status)) return { label: 'Open Lifecycle', href: quoteHref(data, quote) };
   if (status === 'approval_pending') return { label: 'Review Approval', href: `/approval-queue?quoteId=${quote.id}` };
   return { label: 'Open Builder', href: `/leads/${data.lead!.id}/quote?quoteId=${quote.id}&step=1` };
@@ -86,7 +115,10 @@ function NewQuoteButton({ leadId, sourceQuoteId, label = 'Create New Quote', com
       <input type="hidden" name="lead_id" value={leadId} />
       {sourceQuoteId ? <input type="hidden" name="source_quote_id" value={sourceQuoteId} /> : null}
       <input type="hidden" name="force_new" value="true" />
-      <button className={compact ? 'inline-flex h-11 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-blue-200 hover:text-blue-700' : 'inline-flex h-11 items-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700'}>{label}</button>
+      <button className={compact ? 'inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700' : 'inline-flex h-10 items-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700'}>
+        <Icon name="plus" />
+        {label}
+      </button>
     </form>
   );
 }
@@ -96,14 +128,14 @@ function OwnerControl({ data, members, canReassign }: { data: LeadProfileData; m
   const currentOwner = ownerName(data, members);
   if (!canReassign) return <span id="lead-owner">Owner: <span className="font-semibold text-slate-700">{currentOwner}</span></span>;
   return (
-    <form id="lead-owner" action={reassignCanonicalLeadOwner} className="inline-flex items-center gap-1.5">
+    <form id="lead-owner" action={reassignCanonicalLeadOwner} className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1">
       <input type="hidden" name="lead_id" value={lead.id} />
-      <span>Owner:</span>
-      <select name="owner_user_id" defaultValue={lead.owner_user_id || ''} className="h-8 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm">
+      <span className="text-slate-500">Owner:</span>
+      <select name="owner_user_id" defaultValue={lead.owner_user_id || ''} className="h-7 max-w-[150px] rounded-full border-0 bg-transparent px-1 text-xs font-semibold text-slate-700 outline-none">
         <option value="">Unassigned</option>
         {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select>
-      <button className="h-8 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm hover:border-blue-200 hover:text-blue-700">Save</button>
+      <button className="h-7 rounded-full bg-white px-2.5 text-[11px] font-semibold text-blue-700 shadow-sm ring-1 ring-slate-200 transition hover:ring-blue-200">Save</button>
     </form>
   );
 }
@@ -119,8 +151,8 @@ function StageStrip({ data }: { data: LeadProfileData }) {
     if (key && !stageMap.has(key)) stageMap.set(key, stage);
   });
   return (
-    <div id="stage-strip" className="w-full min-w-[560px]">
-      <div className="grid grid-cols-7 items-start gap-1">
+    <div id="stage-strip" className="w-full overflow-x-auto pb-1">
+      <div className="grid min-w-[520px] grid-cols-7 items-start gap-1">
         {labels.map((label, index) => {
           const stage = stageMap.get(normalize(label));
           const active = index === currentIndex;
@@ -138,14 +170,14 @@ function StageStrip({ data }: { data: LeadProfileData }) {
                   : 'border border-slate-200 bg-white text-slate-400';
           const line = index === labels.length - 1 ? 'bg-transparent' : completed || active ? 'bg-emerald-500' : 'border-t border-dashed border-slate-300 bg-transparent';
           const text = active ? 'text-emerald-700' : completed ? 'text-emerald-700' : isWon ? 'text-emerald-700' : isLost ? 'text-rose-600' : 'text-slate-500';
-          const icon = completed ? '✓' : active ? '●' : isWon ? '↗' : isLost ? '×' : '○';
+          const iconName: IconName = completed ? 'check' : active ? 'target' : isWon ? 'trend' : isLost ? 'x' : 'circle';
           const content = (
             <>
               <span className="flex items-center">
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm ${dot}`}>{icon}</span>
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm ${dot}`}><Icon name={iconName} className="h-3.5 w-3.5" /></span>
                 <span className={`ml-2 h-0.5 flex-1 ${line}`} />
               </span>
-              <span className={`mt-3 block text-center text-xs font-semibold ${text}`}>{label}</span>
+              <span className={`mt-2 block text-center text-[11px] font-semibold leading-tight ${text}`}>{label}</span>
             </>
           );
           if (!stage) return <div key={label} className="opacity-80">{content}</div>;
@@ -162,16 +194,15 @@ function StageStrip({ data }: { data: LeadProfileData }) {
   );
 }
 
-function SummaryCard({ label, value, helper, href, accent = 'blue' }: { label: string; value: string; helper: string; href?: string; accent?: 'blue' | 'purple' | 'emerald' | 'amber' }) {
+function SummaryCard({ label, value, helper, href, accent = 'blue', icon }: { label: string; value: string; helper: string; href?: string; accent?: 'blue' | 'purple' | 'emerald' | 'amber'; icon: IconName }) {
   const tone = accent === 'purple' ? 'bg-purple-500' : accent === 'emerald' ? 'bg-emerald-500' : accent === 'amber' ? 'bg-amber-400' : 'bg-blue-600';
-  const icon = accent === 'purple' ? '▣' : accent === 'emerald' ? '◇' : accent === 'amber' ? '▦' : '◎';
   return (
-    <div className="flex min-h-28 items-center gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-sm ${tone}`}>{icon}</span>
-      <div>
-        <p className="text-sm font-medium text-slate-500">{label}</p>
-        <p className="mt-1 text-xl font-bold text-slate-950">{value}</p>
-        {href ? <Link href={href} className="mt-2 inline-flex text-sm font-semibold text-blue-600">{helper} →</Link> : <p className="mt-2 text-sm font-semibold text-blue-600">{helper}</p>}
+    <div className="flex min-h-[92px] items-center gap-3.5 rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
+      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm ${tone}`}><Icon name={icon} className="h-5 w-5" /></span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <p className="mt-1 truncate text-lg font-bold text-slate-950">{value}</p>
+        {href ? <Link href={href} className="mt-1 inline-flex text-xs font-semibold text-blue-600">{helper} <span className="ml-1">→</span></Link> : <p className="mt-1 text-xs font-semibold text-blue-600">{helper}</p>}
       </div>
     </div>
   );
@@ -179,16 +210,16 @@ function SummaryCard({ label, value, helper, href, accent = 'blue' }: { label: s
 
 function QuoteBadge({ status }: { status: string }) {
   const s = normalize(status);
-  const cls = LIFECYCLE.has(s) ? 'bg-blue-100 text-blue-700' : LOCKED.has(s) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
-  return <span className={`rounded-full px-4 py-1.5 text-xs font-semibold ${cls}`}>{LIFECYCLE.has(s) ? 'Lifecycle' : LOCKED.has(s) ? 'Locked' : 'Builder'}</span>;
+  const cls = LOCKED.has(s) ? 'bg-emerald-100 text-emerald-700' : LIFECYCLE.has(s) ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
+  return <span className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${cls}`}>{LOCKED.has(s) ? 'Locked' : LIFECYCLE.has(s) ? 'Lifecycle' : 'Builder'}</span>;
 }
 
 function QuotesList({ data, quotes }: { data: LeadProfileData; quotes: any[] }) {
   return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">▤</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Icon name="file" /></span>
           <h2 className="text-lg font-bold text-slate-950">Quotes on this Lead</h2>
         </div>
         <NewQuoteButton leadId={data.lead!.id} sourceQuoteId={quotes[0]?.id} label="Create New Quote" compact />
@@ -197,8 +228,8 @@ function QuotesList({ data, quotes }: { data: LeadProfileData; quotes: any[] }) 
         {quotes.map((quote: any) => {
           const amount = quoteValue(quote);
           return (
-            <Link key={quote.id} href={quoteHref(data, quote)} className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md">
-              <div>
+            <Link key={quote.id} href={quoteHref(data, quote)} className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md">
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-base font-bold text-slate-950">{quote.quote_number || `Quote ${quote.id.slice(0, 8)}`}</p>
                   <span className="text-slate-300">·</span>
@@ -206,9 +237,9 @@ function QuotesList({ data, quotes }: { data: LeadProfileData; quotes: any[] }) 
                 </div>
                 <p className="mt-2 text-sm font-medium text-slate-600">{(quote.lineItems || []).length} products · {amount ? money(amount, currency(data, quote)) : 'No value'}</p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex shrink-0 items-center gap-3">
                 <QuoteBadge status={quote.status} />
-                <span className="text-2xl text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-600">›</span>
+                <span className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-600"><Icon name="chevron" className="h-5 w-5" /></span>
               </div>
             </Link>
           );
@@ -223,12 +254,12 @@ function GuruCard({ activeQuote }: { activeQuote: any | null }) {
   return (
     <aside className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
       <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-xs font-bold text-white">✦</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white"><Icon name="bot" className="h-4 w-4" /></span>
         <h3 className="font-bold text-slate-950">Setu Guru</h3>
       </div>
       <p className="mt-4 text-sm font-semibold text-slate-800">Recommended action</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{sent ? 'Follow-up and commercial work sit side by side. Track buyer response from lifecycle, then schedule a short pricing/MOQ follow-up if needed.' : 'Keep qualification, quote builder, and follow-up in one path. Create a fresh quote only when scope or terms change.'}</p>
-      <Link href="/training" className="mt-4 inline-flex text-sm font-semibold text-emerald-700">Learn more →</Link>
+      <Link href="/training" className="mt-4 inline-flex text-sm font-semibold text-emerald-700">Learn more <span className="ml-1">→</span></Link>
     </aside>
   );
 }
@@ -282,36 +313,31 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
   const members = teamMembers.length ? teamMembers : data.profiles.map((p: any) => ({ id: p.id, name: p.full_name || p.username || 'Team member' }));
   const activeStatus = normalize(activeQuote?.status);
   const builderHref = activeQuote ? `/leads/${lead.id}/quote?quoteId=${activeQuote.id}&mode=revise` : `/leads/${lead.id}/quote`;
+  const showEditRevise = activeStatus !== 'sent' && !LOCKED.has(activeStatus);
+  const whatsAppValue = lead.whatsapp_number || lead.phone;
 
   return (
-    <div className="mx-auto max-w-[1680px] space-y-5 pb-40">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Trade Command Center</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Lead Detail</h1>
-        </div>
-      </header>
-
-      <section className="rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-sm">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(560px,1.25fr)] xl:items-center">
-          <div className="flex min-w-0 gap-5">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-2xl font-bold text-slate-800">{initials(lead.company_name)}</div>
+    <div className="mx-auto max-w-[1560px] space-y-4 pb-48">
+      <section className="rounded-[1.65rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] xl:items-center">
+          <div className="flex min-w-0 gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xl font-bold text-slate-800">{initials(lead.company_name)}</div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-3xl font-bold tracking-tight text-slate-950">{lead.company_name}</h2>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-950">{lead.company_name}</h2>
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{title(lead.lead_type)}</span>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium text-slate-600">
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-slate-600">
                 <OwnerControl data={data} members={members} canReassign={canReassignOwner} />
                 <span className="text-slate-300">|</span>
                 <span>Source: {lead.source_label || lead.source_type || 'Manual'}</span>
                 <span className="text-slate-300">|</span>
                 <span>Market: {data.linkedMarkets.map((m) => m.name).join(', ') || lead.country || '—'}</span>
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <a href={`mailto:${lead.email || ''}`} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm">✉ {lead.email || 'No email'}</a>
-                <a href={`tel:${phoneForUrl(lead.phone)}`} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm">☎ {lead.phone || 'No phone'}</a>
-                <a href={`https://wa.me/${phoneForUrl(lead.whatsapp_number || lead.phone).replace('+', '')}`} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm">☘ {lead.whatsapp_number || lead.phone || 'Chat on WhatsApp'}</a>
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <a href={`mailto:${lead.email || ''}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm"><Icon name="mail" className="h-4 w-4 text-blue-600" />{lead.email || 'No email'}</a>
+                <a href={`tel:${phoneForUrl(lead.phone)}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm"><Icon name="phone" className="h-4 w-4 text-slate-500" />{lead.phone || 'No phone'}</a>
+                <a href={`https://wa.me/${phoneForUrl(whatsAppValue).replace('+', '')}`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-700 shadow-sm"><Icon name="message" className="h-4 w-4" />{whatsAppValue || 'Chat on WhatsApp'}</a>
               </div>
             </div>
           </div>
@@ -319,51 +345,51 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Readiness Score" value={`${readinessScore(data)} / 100`} helper="Excellent" />
-        <SummaryCard label="Active Quote" value={activeQuote ? `${activeQuote.quote_number || 'Quote'} · ${title(activeQuote.status)}` : 'No quote'} helper="View Quote" href={activeQuote ? quoteHref(data, activeQuote) : undefined} accent="purple" />
-        <SummaryCard label="Products Selected" value={`${data.linkedProducts.length} selected`} helper="Manage Products" href="#qualification" accent="emerald" />
-        <SummaryCard label="Next Action" value={nextActionLabel(activeQuote)} helper="View Tasks" href="/tasks" accent="amber" />
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard label="Readiness Score" value={`${readinessScore(data)} / 100`} helper="Excellent" icon="target" />
+        <SummaryCard label="Active Quote" value={activeQuote ? `${activeQuote.quote_number || 'Quote'} · ${title(activeQuote.status)}` : 'No quote'} helper="View Quote" href={activeQuote ? quoteHref(data, activeQuote) : undefined} accent="purple" icon="file" />
+        <SummaryCard label="Products Selected" value={`${data.linkedProducts.length} selected`} helper="Manage Products" href="#qualification" accent="emerald" icon="package" />
+        <SummaryCard label="Next Action" value={nextActionLabel(activeQuote)} helper="View Tasks" href="/tasks" accent="amber" icon="calendar" />
       </section>
 
-      <section id="work" className="grid gap-5 xl:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
-        <div id="follow-up" className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <section id="work" className="grid gap-4 xl:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
+        <div id="follow-up" className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">▣</span>
-            <h2 className="text-xl font-bold text-slate-950">Next Touchpoint</h2>
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Icon name="clock" /></span>
+            <h2 className="text-lg font-bold text-slate-950">Next Touchpoint</h2>
           </div>
           <FollowUpComposer leadId={lead.id} clientName={lead.company_name} senderName="Ritesh Kapoor" senderCompany="SETU Flow CRM" email={lead.email} whatsapp={lead.whatsapp_number || lead.phone} action={scheduleCanonicalLeadFollowUp} />
         </div>
 
-        <div id="commercial" className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div id="commercial" className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">▥</span>
-              <div>
-                <h2 className="text-xl font-bold text-slate-950">Commercial</h2>
-                <p className="mt-3 text-lg font-bold text-slate-950">{activeQuote ? `${activeQuote.quote_number || 'Quote'} · ${title(activeQuote.status)}` : 'No quote yet'}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500">Open the current quote at its last saved builder state, revise it, or start a new quote.</p>
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Icon name="chart" /></span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-slate-950">Commercial</h2>
+                <p className="mt-2 text-base font-bold text-slate-950">{activeQuote ? `${activeQuote.quote_number || 'Quote'} · ${title(activeQuote.status)}` : 'No quote yet'}</p>
+                <p className="mt-1.5 text-sm font-medium text-slate-500">Open the current quote at its last saved builder state, revise it, or start a new quote.</p>
               </div>
             </div>
-            <div className="flex flex-wrap justify-end gap-3">
-              {primary.href ? <Link href={primary.href} className="inline-flex h-12 items-center rounded-2xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">{primary.label}</Link> : null}
-              {activeQuote ? <Link href={`/api/quotes/${activeQuote.id}/pdf`} className="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm">Customer PDF</Link> : null}
+            <div className="flex flex-wrap justify-end gap-2">
+              {primary.href ? <Link href={primary.href} className="inline-flex h-10 items-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">{primary.label}</Link> : null}
+              {activeQuote ? <Link href={`/api/quotes/${activeQuote.id}/pdf`} className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm"><Icon name="pdf" />Customer PDF</Link> : null}
               <NewQuoteButton leadId={lead.id} sourceQuoteId={activeQuote?.id} label="Create New Quote" compact />
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Buyer</p>
-              <dl className="mt-4 grid gap-2 text-sm">
+              <dl className="mt-3 grid gap-2 text-sm">
                 <div className="grid grid-cols-[90px_1fr]"><dt className="text-slate-500">Stage</dt><dd className="font-semibold text-slate-700">{activeStageName(data)}</dd></div>
                 <div className="grid grid-cols-[90px_1fr]"><dt className="text-slate-500">Deal Value</dt><dd className="font-semibold text-slate-700">{money(activeValue, currency(data, activeQuote))}</dd></div>
                 <div className="grid grid-cols-[90px_1fr]"><dt className="text-slate-500">Market</dt><dd className="font-semibold text-slate-700">{data.linkedMarkets.map((m) => m.name).join(', ') || lead.country || '—'}</dd></div>
               </dl>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">Quotes</p>
-              <div className="mt-4 grid gap-1 text-sm font-semibold text-blue-900">
+              <div className="mt-3 grid gap-1 text-sm font-semibold text-blue-900">
                 <p>{quotes.length} total</p>
                 <p>{quotes.filter((q: any) => LOCKED.has(normalize(q.status))).length} locked</p>
                 <p>{quotes.filter((q: any) => !LOCKED.has(normalize(q.status))).length} open</p>
@@ -371,27 +397,27 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
             </div>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-4">
             <p className="text-sm font-semibold text-slate-700">Mapped Coverage</p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2.5 flex flex-wrap gap-2">
               {data.linkedProducts.slice(0, 6).map((p) => <span key={p.id} className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">{p.name}</span>)}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <QuotesList data={data} quotes={quotes} />
         <GuruCard activeQuote={activeQuote} />
       </section>
 
       <SecondaryPanels data={data} />
 
-      <div className="fixed bottom-4 left-[calc(8rem+1rem)] right-4 z-30 hidden rounded-[1.5rem] border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur md:flex md:items-center md:justify-between">
-        <div className="flex flex-wrap gap-3">
-          <Link href={backHref} className="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700">← Back to Leads</Link>
-          {primary.href ? <Link href={primary.href} className="inline-flex h-12 items-center rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white">{primary.label}</Link> : <NewQuoteButton leadId={lead.id} />}
-          <Link href={builderHref} className="inline-flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700">Edit / Revise</Link>
+      <div className="fixed bottom-3 left-[calc(8rem+1rem)] right-4 z-30 hidden rounded-[1.35rem] border border-slate-200 bg-white/95 p-2.5 shadow-2xl backdrop-blur md:flex md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-2.5">
+          <Link href={backHref} className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"><Icon name="arrowLeft" />Back to Leads</Link>
+          {primary.href ? <Link href={primary.href} className="inline-flex h-10 items-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white">{primary.label}</Link> : <NewQuoteButton leadId={lead.id} />}
+          {showEditRevise ? <Link href={builderHref} className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"><Icon name="edit" />Edit / Revise</Link> : null}
           <NewQuoteButton leadId={lead.id} sourceQuoteId={activeQuote?.id} label="New Quote" compact />
         </div>
         <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Command Center · Premium <span className="text-emerald-500">●</span></span>
