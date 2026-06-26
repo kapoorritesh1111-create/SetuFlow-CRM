@@ -11,6 +11,7 @@ function clean(value: FormDataEntryValue | null) { return String(value ?? '').tr
 function nullable(value: FormDataEntryValue | null) { const next = clean(value); return next ? next : null; }
 function numberOrNull(value: FormDataEntryValue | null) { const raw = clean(value).replace(/,/g, ''); if (!raw) return null; const parsed = Number(raw); return Number.isFinite(parsed) ? parsed : null; }
 function goLead(leadId: string, params: Record<string, string>, hash?: string) { const search = new URLSearchParams(params); redirect(`/leads/${leadId}?${search.toString()}${hash ? `#${hash}` : ''}`); }
+function canReassignOwner(roles: string[] | undefined) { return (roles ?? []).some((role) => ['owner', 'admin', 'manager'].includes(String(role).toLowerCase())); }
 
 export async function saveCanonicalLeadDetails(formData: FormData) {
   if (!hasSupabaseEnv) return;
@@ -24,6 +25,29 @@ export async function saveCanonicalLeadDetails(formData: FormData) {
   await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'lead_updated', message: 'Lead details updated from the canonical Lead Detail page.', occurred_at: new Date().toISOString() });
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`); revalidatePath(`/leads/${leadId}/quote`);
   goLead(leadId, { saved: 'lead' }, 'edit-lead');
+}
+
+export async function reassignCanonicalLeadOwner(formData: FormData) {
+  if (!hasSupabaseEnv) return;
+  const workspace = await requireWorkspace();
+  if (!workspace?.organization || !workspace?.user) return;
+  const leadId = clean(formData.get('lead_id'));
+  const ownerUserId = clean(formData.get('owner_user_id'));
+  if (!leadId || !ownerUserId) return;
+  if (!canReassignOwner(workspace.currentRoles)) goLead(leadId, { stageError: 'owner-permission' }, 'lead-owner');
+  const supabase = (await createClient()) as any;
+  const { data: lead } = await supabase.from('leads').select('owner_user_id').eq('organization_id', workspace.organization!.id).eq('id', leadId).maybeSingle();
+  const { data: member } = await supabase.from('organization_members').select('user_id').eq('organization_id', workspace.organization!.id).eq('user_id', ownerUserId).eq('is_active', true).maybeSingle();
+  if (!member?.user_id) goLead(leadId, { stageError: 'owner-invalid' }, 'lead-owner');
+  const { data: oldProfile } = lead?.owner_user_id ? await supabase.from('profiles').select('full_name, email').eq('id', lead.owner_user_id).maybeSingle() : { data: null };
+  const { data: newProfile } = await supabase.from('profiles').select('full_name, email').eq('id', ownerUserId).maybeSingle();
+  const oldName = oldProfile?.full_name || oldProfile?.email || 'Unassigned';
+  const newName = newProfile?.full_name || newProfile?.email || 'New owner';
+  const { error } = await supabase.from('leads').update({ owner_user_id: ownerUserId, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
+  if (error) goLead(leadId, { stageError: 'owner-update' }, 'lead-owner');
+  await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'owner_changed', message: `Lead owner changed from ${oldName} to ${newName}.`, occurred_at: new Date().toISOString() });
+  revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
+  goLead(leadId, { saved: 'owner' }, 'lead-owner');
 }
 
 export async function moveCanonicalLeadStage(formData: FormData) {
