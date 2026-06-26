@@ -8,7 +8,12 @@ function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
 
-export default async function Page({ params, searchParams }: { params: { leadId: string }; searchParams?: { saved?: string | string[] } }) {
+function leadsBackHref(value?: string | string[]) {
+  const mode = readParam(value).trim();
+  return mode ? `/leads?mode=${encodeURIComponent(mode)}` : '/leads';
+}
+
+export default async function Page({ params, searchParams }: { params: { leadId: string }; searchParams?: { saved?: string | string[]; mode?: string | string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
   try {
     workspace = await getWorkspaceAccess();
@@ -29,5 +34,5 @@ export default async function Page({ params, searchParams }: { params: { leadId:
     return <EmptyState title="Lead not found" description="The requested lead could not be loaded from the active workspace." />;
   }
 
-  return <CanonicalLeadDetail data={data} saved={readParam(searchParams?.saved).trim() || null} />;
+  return <CanonicalLeadDetail data={data} saved={readParam(searchParams?.saved).trim() || null} backHref={leadsBackHref(searchParams?.mode)} />;
 }

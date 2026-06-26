@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Setu Flow Boardroom Buyer Site</title>
+    <style>
+      :root {
+        --ink: #121417;
+        --ink-2: #232931;
+        --muted: #66717f;
+        --line: #dfe3e8;
+        --paper: #f6f4ef;
+        --paper-2: #ebe8df;
+        --white: #ffffff;
+        --green: #237d73;
+        --green-soft: #e4f4f1;
+        --gold: #b9904f;
+        --red: #b94a48;
+        --blue: #274c77;
+        --shadow: 0 24px 70px rgba(18, 20, 23, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        background:
+          linear-gradient(180deg, rgba(246, 244, 239, 0.94), rgba(246, 244, 239, 0.98)),
+          url("../../public/marketing/dashboard-command-center.png");
+        background-size: cover;
+        background-position: center top;
+        color: var(--ink);
+        font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1440px, calc(100% - 28px));
+        min-height: calc(100svh - 28px);
+        margin: 14px auto;
+        border: 1px solid rgba(255, 255, 255, 0.76);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 28px 90px rgba(18, 20, 23, 0.12);
+        backdrop-filter: blur(22px);
+        overflow: clip;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 20px;
+        align-items: center;
+        min-height: 76px;
+        border-bottom: 1px solid rgba(18, 20, 23, 0.09);
+        padding: 0 22px;
+      }
+
+      .brand img {
+        width: 142px;
+      }
+
+      .nav {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .nav button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #465160;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 800;
+        padding: 0 14px;
+      }
+
+      .nav button.active,
+      .nav button:hover {
+        background: var(--ink);
+        color: white;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 850;
+        padding: 0 18px;
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        white-space: nowrap;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+      }
+
+      .button-dark {
+        background: var(--ink);
+        color: white;
+      }
+
+      .button-white {
+        border-color: var(--line);
+        background: white;
+        color: var(--ink);
+      }
+
+      .button-green {
+        background: var(--green);
+        color: white;
+      }
+
+      .menu {
+        display: none;
+        width: 44px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .menu span {
+        display: block;
+        width: 18px;
+        height: 2px;
+        margin: 4px auto;
+        background: currentColor;
+      }
+
+      .mobile-nav {
+        display: none;
+        border-bottom: 1px solid rgba(18, 20, 23, 0.09);
+        background: rgba(255, 255, 255, 0.94);
+        padding: 8px;
+      }
+
+      .mobile-nav.open {
+        display: grid;
+      }
+
+      .mobile-nav button {
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: #465160;
+        cursor: pointer;
+        padding: 14px;
+        text-align: left;
+        font-weight: 800;
+      }
+
+      .mobile-nav button.active {
+        background: var(--ink);
+        color: white;
+      }
+
+      .buyer-shell {
+        display: grid;
+        grid-template-columns: minmax(420px, 0.92fr) minmax(0, 1.08fr);
+        min-height: calc(100svh - 118px);
+      }
+
+      .left {
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid rgba(18, 20, 23, 0.09);
+        padding: 34px;
+      }
+
+      .kicker {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(18, 20, 23, 0.12);
+        border-radius: 999px;
+        background: white;
+        color: var(--green);
+        font-size: 12px;
+        font-weight: 900;
+        padding: 8px 12px;
+        text-transform: uppercase;
+      }
+
+      .kicker::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      h1 {
+        max-width: 680px;
+        margin: 22px 0 0;
+        color: var(--ink);
+        font-size: clamp(44px, 5.5vw, 76px);
+        font-weight: 780;
+        letter-spacing: -0.018em;
+        line-height: 0.98;
+        overflow-wrap: break-word;
+      }
+
+      .lead {
+        max-width: 620px;
+        margin: 22px 0 0;
+        color: #485464;
+        font-size: 17px;
+        line-height: 1.72;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 26px;
+      }
+
+      .route-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: auto;
+        padding-top: 32px;
+      }
+
+      .route-card {
+        min-height: 126px;
+        border: 1px solid rgba(18, 20, 23, 0.1);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--ink);
+        cursor: pointer;
+        padding: 18px;
+        text-align: left;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .route-card:hover,
+      .route-card.active {
+        transform: translateY(-2px);
+        background: var(--ink);
+        color: white;
+        box-shadow: 0 18px 44px rgba(18, 20, 23, 0.18);
+      }
+
+      .route-card strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .route-card span {
+        display: block;
+        margin-top: 10px;
+        color: inherit;
+        font-size: 13px;
+        line-height: 1.45;
+        opacity: 0.72;
+      }
+
+      .right {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: rgba(246, 244, 239, 0.68);
+      }
+
+      .right-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+        border-bottom: 1px solid rgba(18, 20, 23, 0.09);
+        padding: 18px 24px;
+      }
+
+      .trust-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .trust-row span {
+        border: 1px solid rgba(18, 20, 23, 0.1);
+        border-radius: 999px;
+        background: white;
+        color: #4d5968;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 8px 10px;
+      }
+
+      .panel {
+        display: none;
+        min-height: 0;
+        flex: 1;
+        padding: 24px;
+      }
+
+      .panel.active {
+        display: block;
+      }
+
+      .panel-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 18px;
+        height: 100%;
+      }
+
+      .surface {
+        border: 1px solid rgba(18, 20, 23, 0.1);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow);
+        overflow: clip;
+      }
+
+      .product-window {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 520px;
+      }
+
+      .window-top {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        border-bottom: 1px solid rgba(18, 20, 23, 0.09);
+        background: #fafafa;
+        padding: 13px 16px;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #c7ced6;
+      }
+
+      .product-window img {
+        width: 100%;
+        height: 100%;
+        min-height: 470px;
+        object-fit: cover;
+        object-position: left top;
+      }
+
+      .decision-card {
+        display: grid;
+        align-content: start;
+        gap: 14px;
+        padding: 22px;
+      }
+
+      .decision-card h2,
+      .compact-card h2,
+      .compare-card h2 {
+        margin: 0;
+        color: var(--ink);
+        font-size: 28px;
+        line-height: 1.12;
+      }
+
+      .decision-card p,
+      .compact-card p,
+      .compare-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .mini-list {
+        display: grid;
+        gap: 10px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .mini-list li {
+        display: flex;
+        gap: 10px;
+        color: #465160;
+        font-size: 14px;
+        font-weight: 720;
+        line-height: 1.45;
+      }
+
+      .mini-list li::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        flex: 0 0 8px;
+        border-radius: 50%;
+        background: var(--green);
+        margin-top: 7px;
+      }
+
+      .split-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .compact-card,
+      .compare-card {
+        border: 1px solid rgba(18, 20, 23, 0.1);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 22px;
+        box-shadow: 0 16px 45px rgba(18, 20, 23, 0.06);
+      }
+
+      .document-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .doc-card {
+        min-height: 190px;
+        border: 1px solid rgba(18, 20, 23, 0.1);
+        border-radius: 18px;
+        background: white;
+        padding: 20px;
+        box-shadow: 0 16px 45px rgba(18, 20, 23, 0.06);
+      }
+
+      .doc-type {
+        display: inline-flex;
+        border-radius: 999px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 900;
+        padding: 7px 10px;
+        text-transform: uppercase;
+      }
+
+      .doc-card h3 {
+        margin: 18px 0 0;
+        font-size: 21px;
+      }
+
+      .doc-card p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 18px;
+        background: white;
+        box-shadow: var(--shadow);
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        border-bottom: 1px solid rgba(18, 20, 23, 0.09);
+        padding: 16px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .comparison-table th {
+        background: var(--ink);
+        color: white;
+        font-size: 13px;
+      }
+
+      .comparison-table td {
+        color: #465160;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .comparison-table td:first-child {
+        color: var(--ink);
+        font-weight: 850;
+      }
+
+      .yes {
+        color: var(--green);
+        font-weight: 900;
+      }
+
+      .no {
+        color: var(--red);
+        font-weight: 900;
+      }
+
+      .fit-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .fit-card {
+        border: 1px solid rgba(18, 20, 23, 0.1);
+        border-radius: 18px;
+        background: white;
+        padding: 22px;
+      }
+
+      .fit-card.good {
+        border-color: rgba(35, 125, 115, 0.24);
+        background: #f3fbf9;
+      }
+
+      .fit-card.bad {
+        border-color: rgba(185, 74, 72, 0.24);
+        background: #fff7f6;
+      }
+
+      .fit-card h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .contact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .contact-form {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: #444f5e;
+        font-size: 13px;
+        font-weight: 820;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid rgba(18, 20, 23, 0.14);
+        border-radius: 10px;
+        background: white;
+        color: var(--ink);
+        outline: none;
+        padding: 11px 12px;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 4px rgba(35, 125, 115, 0.12);
+      }
+
+      .form-message {
+        display: none;
+        border-radius: 10px;
+        background: var(--green-soft);
+        color: var(--green);
+        padding: 12px;
+        font-weight: 820;
+      }
+
+      .form-message.show {
+        display: block;
+      }
+
+      .mobile-actions {
+        display: none;
+      }
+
+      @media (max-width: 1120px) {
+        .buyer-shell,
+        .panel-grid,
+        .contact-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .left {
+          border-right: 0;
+          border-bottom: 1px solid rgba(18, 20, 23, 0.09);
+        }
+
+        .route-grid {
+          margin-top: 24px;
+        }
+
+        .right {
+          min-height: auto;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body {
+          background: var(--paper);
+        }
+
+        .page {
+          width: 100%;
+          min-height: 100svh;
+          margin: 0;
+          border: 0;
+          border-radius: 0;
+        }
+
+        .topbar {
+          grid-template-columns: auto 1fr auto;
+          min-height: 74px;
+          padding: 0 14px;
+        }
+
+        .brand img {
+          width: 112px;
+        }
+
+        .nav,
+        .topbar > .button {
+          display: none;
+        }
+
+        .menu {
+          display: inline-block;
+        }
+
+        .buyer-shell {
+          display: block;
+          min-height: auto;
+        }
+
+        .left {
+          padding: 22px 14px;
+        }
+
+        h1 {
+          max-width: 362px;
+          font-size: 30px;
+          line-height: 1.05;
+        }
+
+        .lead {
+          max-width: 362px;
+          font-size: 15px;
+        }
+
+        .hero-actions .button-white {
+          display: none;
+        }
+
+        .hero-actions .button {
+          width: 100%;
+        }
+
+        .route-grid {
+          display: none;
+        }
+
+        .mobile-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin: 24px 0 0;
+        }
+
+        .mobile-actions button {
+          min-height: 74px;
+          border: 1px solid rgba(18, 20, 23, 0.1);
+          border-radius: 14px;
+          background: white;
+          color: var(--ink);
+          cursor: pointer;
+          font-weight: 850;
+          padding: 12px;
+          text-align: left;
+        }
+
+        .mobile-actions button.active {
+          background: var(--ink);
+          color: white;
+        }
+
+        .right-head {
+          position: sticky;
+          top: 0;
+          z-index: 4;
+          display: block;
+          background: rgba(246, 244, 239, 0.94);
+          padding: 12px 14px;
+          backdrop-filter: blur(14px);
+        }
+
+        .right-head .button {
+          display: none;
+        }
+
+        .trust-row {
+          flex-wrap: wrap;
+          overflow: visible;
+        }
+
+        .trust-row span {
+          flex: 0 1 auto;
+        }
+
+        .panel {
+          padding: 14px;
+        }
+
+        .product-window {
+          min-height: 0;
+        }
+
+        .product-window img {
+          min-height: 260px;
+        }
+
+        .decision-card h2,
+        .compact-card h2,
+        .compare-card h2 {
+          font-size: 24px;
+        }
+
+        .split-grid,
+        .document-grid,
+        .fit-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .comparison-table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+          min-width: 150px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Setu Flow home">
+          <img src="../../public/logos/setu-flow-logo.png" alt="Setu Flow" />
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <button class="active" data-view="overview" type="button">Overview</button>
+          <button data-view="compare" type="button">Compare</button>
+          <button data-view="docs" type="button">Documents</button>
+          <button data-view="company" type="button">Company</button>
+          <button data-view="contact" type="button">Contact</button>
+        </nav>
+        <button class="button button-dark" data-view="demo" type="button">Request demo</button>
+        <button class="menu" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </header>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <button class="active" data-view="overview" type="button">Overview</button>
+        <button data-view="compare" type="button">Compare</button>
+        <button data-view="docs" type="button">Documents</button>
+        <button data-view="company" type="button">Company</button>
+        <button data-view="contact" type="button">Contact</button>
+        <button data-view="demo" type="button">Request demo</button>
+      </nav>
+
+      <main class="buyer-shell">
+        <section class="left" aria-label="Setu Flow introduction">
+          <span class="kicker">Buyer decision center</span>
+          <h1>Trade CRM for teams that need more than a pipeline.</h1>
+          <p class="lead">
+            A premium Setu Flow site should help a serious buyer decide fast:
+            what it does, why it is better than generic CRM, what documents they can request,
+            how to contact you, and when it is not the right fit.
+          </p>
+          <div class="hero-actions">
+            <button class="button button-dark" data-view="demo" type="button">Request guided demo</button>
+            <button class="button button-white" data-view="compare" type="button">Compare CRM options</button>
+          </div>
+
+          <div class="mobile-actions" aria-label="Quick actions">
+            <button class="active" data-view="overview" type="button">Overview</button>
+            <button data-view="compare" type="button">Compare</button>
+            <button data-view="docs" type="button">Documents</button>
+            <button data-view="fit" type="button">Fit check</button>
+            <button data-view="contact" type="button">Contact</button>
+            <button data-view="demo" type="button">Demo</button>
+          </div>
+
+          <div class="route-grid">
+            <button class="route-card active" data-view="overview" type="button"><strong>Product overview</strong><span>What Setu Flow does in one screen.</span></button>
+            <button class="route-card" data-view="compare" type="button"><strong>Compare CRM</strong><span>Why not Salesforce, HubSpot, Zoho, or Pipedrive?</span></button>
+            <button class="route-card" data-view="docs" type="button"><strong>Documents</strong><span>One-pager, security, implementation, comparison.</span></button>
+            <button class="route-card" data-view="company" type="button"><strong>Company</strong><span>Who you are, markets served, rollout approach.</span></button>
+            <button class="route-card" data-view="fit" type="button"><strong>Fit check</strong><span>Who should buy, who should not buy yet.</span></button>
+            <button class="route-card" data-view="contact" type="button"><strong>Contact</strong><span>Email, demo, sales, partner questions.</span></button>
+          </div>
+        </section>
+
+        <section class="right" aria-label="Buyer information panels">
+          <div class="right-head">
+            <div class="trust-row">
+              <span>Import-export CRM</span>
+              <span>Quote governance</span>
+              <span>Order execution</span>
+              <span>Mobile field capture</span>
+              <span>Guided rollout</span>
+            </div>
+            <button class="button button-green" data-view="demo" type="button">Book walkthrough</button>
+          </div>
+
+          <article class="panel active" data-panel="overview">
+            <div class="panel-grid">
+              <div class="surface product-window">
+                <div class="window-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <img src="../../public/marketing/dashboard-command-center.png" alt="Setu Flow command center dashboard" />
+              </div>
+              <aside class="surface decision-card">
+                <h2>One operating layer for trade revenue.</h2>
+                <p>Setu Flow should be positioned as the bridge between CRM and trade execution.</p>
+                <ul class="mini-list">
+                  <li>Buyer and supplier pipelines in one workspace</li>
+                  <li>Quote pricing, terms, FX, freight, and approvals</li>
+                  <li>Order documents, blockers, dispatch, and payment visibility</li>
+                  <li>Mobile capture for events, field sales, and sourcing</li>
+                </ul>
+                <button class="button button-dark" data-view="demo" type="button">Request demo</button>
+              </aside>
+            </div>
+          </article>
+
+          <article class="panel" data-panel="compare">
+            <div class="split-grid">
+              <div class="compare-card">
+                <h2>Why Setu Flow vs large CRM?</h2>
+                <p>Salesforce and HubSpot are broad platforms. Setu Flow should win by being specific to international trade workflows.</p>
+              </div>
+              <div class="compare-card">
+                <h2>Position honestly.</h2>
+                <p>Do not claim to beat enterprise CRMs at everything. Claim the trade workflow they do not provide out of the box.</p>
+              </div>
+            </div>
+            <div style="height:14px"></div>
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Buyer question</th>
+                  <th>Large CRM</th>
+                  <th>Setu Flow</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Can it manage generic sales?</td>
+                  <td><span class="yes">Yes.</span> Very strong.</td>
+                  <td><span class="yes">Yes.</span> Focused on trade sales.</td>
+                </tr>
+                <tr>
+                  <td>Does it understand FOB/CIF, freight, FX, and quote approvals?</td>
+                  <td>Usually custom fields, apps, or consulting.</td>
+                  <td><span class="yes">Native positioning.</span> This is the core story.</td>
+                </tr>
+                <tr>
+                  <td>Does it continue into order execution?</td>
+                  <td>Often separate tools or custom implementation.</td>
+                  <td><span class="yes">Yes.</span> Quotes, documents, blockers, dispatch.</td>
+                </tr>
+                <tr>
+                  <td>Best for huge enterprise ecosystems?</td>
+                  <td><span class="yes">Yes.</span> Salesforce/HubSpot win here.</td>
+                  <td><span class="no">Not yet.</span> Better for focused trade teams.</td>
+                </tr>
+                <tr>
+                  <td>Fast guided setup without a consultant project?</td>
+                  <td>Can be slower depending on scope.</td>
+                  <td><span class="yes">Yes.</span> Make this a clear promise.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="panel" data-panel="docs">
+            <div class="document-grid">
+              <button class="doc-card" data-view="demo" type="button">
+                <span class="doc-type">PDF</span>
+                <h3>Product one-pager</h3>
+                <p>Short executive summary for owners, commercial leaders, and export managers.</p>
+              </button>
+              <button class="doc-card" data-view="demo" type="button">
+                <span class="doc-type">PDF</span>
+                <h3>CRM comparison brief</h3>
+                <p>Setu Flow vs Salesforce, HubSpot, Zoho, Pipedrive, and spreadsheets.</p>
+              </button>
+              <button class="doc-card" data-view="demo" type="button">
+                <span class="doc-type">Guide</span>
+                <h3>Implementation plan</h3>
+                <p>What happens from demo to workspace launch, including data and team setup.</p>
+              </button>
+              <button class="doc-card" data-view="demo" type="button">
+                <span class="doc-type">Security</span>
+                <h3>Security overview</h3>
+                <p>Access model, roles, data isolation direction, audit posture, and admin controls.</p>
+              </button>
+            </div>
+          </article>
+
+          <article class="panel" data-panel="company">
+            <div class="split-grid">
+              <div class="compact-card">
+                <h2>About Setu Flow</h2>
+                <p>Setu Flow is a trade execution CRM for import-export teams across India, Ireland, United Kingdom, Germany, and the United States.</p>
+                <ul class="mini-list">
+                  <li>Built around buyer and supplier workflows</li>
+                  <li>Designed for quote-to-order visibility</li>
+                  <li>Guided rollout instead of self-serve confusion</li>
+                </ul>
+              </div>
+              <div class="surface product-window">
+                <div class="window-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <img src="../../public/marketing/quote-workflow.png" alt="Setu Flow quote workflow" />
+              </div>
+            </div>
+          </article>
+
+          <article class="panel" data-panel="fit">
+            <div class="fit-grid">
+              <div class="fit-card good">
+                <h3>Good fit</h3>
+                <ul class="mini-list">
+                  <li>Importers, exporters, sourcing teams, trading companies</li>
+                  <li>Teams losing context across spreadsheets, WhatsApp, email, and PDFs</li>
+                  <li>Companies that need quote governance and order visibility</li>
+                  <li>Teams who want guided setup and focused trade workflows</li>
+                </ul>
+              </div>
+              <div class="fit-card bad">
+                <h3>Not the right fit yet</h3>
+                <ul class="mini-list">
+                  <li>Companies needing a full marketing automation suite today</li>
+                  <li>Enterprise teams requiring hundreds of marketplace integrations immediately</li>
+                  <li>Support-ticket-first companies looking for a service desk</li>
+                  <li>Teams that only need a generic contact database</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel" data-panel="contact">
+            <div class="contact-grid">
+              <div class="compact-card">
+                <h2>Contact Setu Flow</h2>
+                <p>Give buyers a clear contact path instead of hiding everything behind one demo button.</p>
+                <ul class="mini-list">
+                  <li>Sales and demos: admin@setugroups.com</li>
+                  <li>Support: help@setugroups.com</li>
+                  <li>Markets: India, Ireland, UK, Germany, United States</li>
+                </ul>
+                <button class="button button-dark" data-view="demo" type="button">Request a call</button>
+              </div>
+              <div class="compact-card">
+                <h2>Buyer questions to answer</h2>
+                <ul class="mini-list">
+                  <li>Can I see quote-to-order flow?</li>
+                  <li>Can you migrate spreadsheet data?</li>
+                  <li>How fast can my team launch?</li>
+                  <li>What features are ready now vs coming later?</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel" data-panel="demo">
+            <div class="contact-grid">
+              <div class="compact-card">
+                <h2>Request a guided demo.</h2>
+                <p>A premium buyer flow should feel like a consultation, not a generic form submission.</p>
+                <ul class="mini-list">
+                  <li>Show command center and mobile capture</li>
+                  <li>Walk through quote governance</li>
+                  <li>Discuss documents and order execution</li>
+                  <li>Be transparent on what is not ready yet</li>
+                </ul>
+              </div>
+              <form class="compact-card contact-form">
+                <label>Name <input required placeholder="Full name" /></label>
+                <label>Work email <input required type="email" placeholder="you@company.com" /></label>
+                <label>Company <input required placeholder="Company name" /></label>
+                <label>Primary interest
+                  <select required>
+                    <option value="">Select focus</option>
+                    <option>CRM and pipeline</option>
+                    <option>Quote governance</option>
+                    <option>Order execution</option>
+                    <option>Mobile capture</option>
+                    <option>Full trade workflow</option>
+                  </select>
+                </label>
+                <label>What should we prepare? <textarea placeholder="Tell us about your trade workflow..."></textarea></label>
+                <button class="button button-dark" type="submit">Send demo request</button>
+                <div class="form-message">Prototype request captured.</div>
+              </form>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const buttons = document.querySelectorAll("[data-view]");
+      const panels = document.querySelectorAll("[data-panel]");
+      const navGroups = [document.querySelector(".nav"), document.querySelector(".mobile-nav"), document.querySelector(".route-grid"), document.querySelector(".mobile-actions")];
+      const menu = document.querySelector(".menu");
+      const mobileNav = document.querySelector(".mobile-nav");
+
+      function setView(view) {
+        panels.forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === view));
+        buttons.forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+        mobileNav.classList.remove("open");
+        menu.setAttribute("aria-expanded", "false");
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => setView(button.dataset.view));
+      });
+
+      menu.addEventListener("click", () => {
+        const open = mobileNav.classList.toggle("open");
+        menu.setAttribute("aria-expanded", String(open));
+      });
+
+      document.querySelector(".contact-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        event.currentTarget.querySelector(".form-message").classList.add("show");
+      });
+    </script>
+  </body>
+</html>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+// S37_DELETE_CANDIDATE: legacy premium detail surface. Canonical lead detail is /leads/[leadId].
 import type { LeadProfileData } from '@/lib/queries/leads';
 import type { LeadProfileSnapshot, QuoteVersionTimelineItem } from '@/features/leads/command-center/types';
 import LeadDetailActionBar from '@/features/leads/lead-detail/LeadDetailActionBar';

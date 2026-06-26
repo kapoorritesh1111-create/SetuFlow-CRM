@@ -28,6 +28,7 @@ function all(formData: FormData, key: string) { return formData.getAll(key).map(
 function currency(value: string | null | undefined, fallback = 'USD') { return String(value || fallback || 'USD').trim().toUpperCase().slice(0, 3) || 'USD'; }
 
 function parseLines(formData: FormData): DraftLine[] {
+  const removed = new Set(all(formData, 'remove_index').map((value) => Number(value)).filter((value) => Number.isFinite(value)));
   const productIds = all(formData, 'product_id');
   const quantities = all(formData, 'quantity');
   const unitPrices = all(formData, 'unit_price');
@@ -50,7 +51,7 @@ function parseLines(formData: FormData): DraftLine[] {
       freight: numText(freight[index]),
       priceSource: priceSource[index] || null,
     };
-  }).filter((line) => line.productId || line.notes);
+  }).filter((line, index) => !removed.has(index) && (line.productId || line.notes));
 }
 
 async function getMutableQuote(formData: FormData) {
@@ -160,7 +161,6 @@ export async function saveCanonicalQuoteProducts(formData: FormData) {
   const { workspace, supabase, quote, quoteId, leadId } = await getMutableQuote(formData);
   const quoteCurrency = currency(text(formData.get('quote_currency')), quote.display_currency || quote.currency || 'USD');
   await replaceQuoteLines({ supabase, quote, lines: parseLines(formData), quoteCurrency, userId: workspace.user!.id });
-  await supabase.from('quotes').update({ currency: quoteCurrency, display_currency: quoteCurrency, updated_at: new Date().toISOString() }).eq('organization_id', workspace.organization!.id).eq('id', quoteId);
   await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote products saved from the canonical builder.');
   finish(leadId, quoteId, 2);
 }
@@ -169,9 +169,7 @@ export async function saveCanonicalQuotePricing(formData: FormData) {
   const { workspace, supabase, quote, quoteId, leadId } = await getMutableQuote(formData);
   const quoteCurrency = currency(text(formData.get('quote_currency')), quote.display_currency || quote.currency || 'USD');
   const lines = parseLines(formData);
-  const approvalRequired = lines.some((line) => line.priceSource === 'Manual' || Number(line.unitPrice || 0) <= 0);
   await replaceQuoteLines({ supabase, quote, lines, quoteCurrency, userId: workspace.user!.id });
-  await supabase.from('quotes').update({ currency: quoteCurrency, display_currency: quoteCurrency, approval_required: approvalRequired, notes_internal: approvalRequired ? 'Canonical builder pricing needs review before send.' : null, updated_at: new Date().toISOString() }).eq('organization_id', workspace.organization!.id).eq('id', quoteId);
   await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote pricing saved from the canonical builder.');
   finish(leadId, quoteId, 3);
 }
@@ -196,7 +194,6 @@ export async function saveCanonicalQuoteTerms(formData: FormData) {
     const { error } = await supabase.from('quote_versions').update({ display_currency: quoteCurrency, pricing_basis: pricingBasis.toLowerCase(), valid_until: validUntil, customer_message: customerMessage, internal_notes: nullable(formData.get('internal_notes')), updated_at: new Date().toISOString() }).eq('quote_id', quoteId).eq('id', quote.current_version_id);
     if (error) throw new Error(error.message);
   }
-  await supabase.from('quotes').update({ currency: quoteCurrency, display_currency: quoteCurrency, pricing_basis: pricingBasis.toLowerCase(), notes: customerMessage, updated_at: new Date().toISOString() }).eq('organization_id', workspace.organization!.id).eq('id', quoteId);
   await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote terms saved from the canonical builder.');
   finish(leadId, quoteId, 4);
 }
@@ -213,7 +210,8 @@ export async function submitCanonicalQuoteApproval(formData: FormData) {
 export async function sendCanonicalQuote(formData: FormData) {
   const { workspace, supabase, quote, quoteId, leadId } = await getMutableQuote(formData);
   if (!quote.current_version_id) throw new Error('Current quote version is required.');
-  const { error } = await supabase.rpc('app_send_quote_version_with_fanout_tx', { p_quote_version_id: quote.current_version_id, p_actor_user_id: workspace.user!.id, p_actor_name: workspace.user!.email || 'Setu Flow user', p_plain_notes: text(formData.get('plain_notes')) || 'Quote sent from canonical send gate.', p_approval_required: Boolean(quote.approval_required), p_approval_state: 'none', p_action_source: 'canonical_quote_builder' });
+  const approvalRequired = text(formData.get('approval_required')) === 'true' || Boolean(quote.approval_required);
+  const { error } = await supabase.rpc('app_send_quote_version_with_fanout_tx', { p_quote_version_id: quote.current_version_id, p_actor_user_id: workspace.user!.id, p_actor_name: workspace.user!.email || 'Setu Flow user', p_plain_notes: text(formData.get('plain_notes')) || 'Quote sent from canonical send gate.', p_approval_required: approvalRequired, p_approval_state: 'none', p_action_source: 'canonical_quote_builder' });
   if (error) throw new Error(error.message);
   await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote sent from the canonical send gate.', 'quote_sent');
   revalidatePath('/leads');

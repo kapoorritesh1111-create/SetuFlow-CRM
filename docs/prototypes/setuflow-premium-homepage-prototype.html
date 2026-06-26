@@ -1,0 +1,1715 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Setu Flow Premium Homepage Prototype</title>
+    <style>
+      :root {
+        --navy: #071927;
+        --navy-2: #0d2b42;
+        --ink: #102033;
+        --muted: #5e6b7a;
+        --line: #d9e2ea;
+        --paper: #f6f9fb;
+        --panel: #ffffff;
+        --teal: #1f766e;
+        --teal-2: #dff6f2;
+        --cyan: #9be7df;
+        --blue: #2f6fbd;
+        --gold: #f4c95d;
+        --shadow: 0 20px 55px rgba(16, 32, 51, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        background: var(--panel);
+        color: var(--ink);
+        font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(18px);
+      }
+
+      .header-inner,
+      .section-inner,
+      .hero-inner {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .header-inner {
+        display: flex;
+        min-height: 68px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .brand img {
+        width: 142px;
+        height: auto;
+      }
+
+      .desktop-nav {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        color: #465465;
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      .desktop-nav a {
+        white-space: nowrap;
+      }
+
+      .desktop-nav a:hover {
+        color: var(--ink);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 0 18px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 750;
+        line-height: 1;
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: var(--navy);
+        color: white;
+        box-shadow: 0 14px 30px rgba(7, 25, 39, 0.18);
+      }
+
+      .btn-primary:hover {
+        background: var(--navy-2);
+      }
+
+      .btn-light {
+        background: white;
+        color: var(--navy);
+        box-shadow: 0 16px 38px rgba(7, 25, 39, 0.22);
+      }
+
+      .btn-outline {
+        border-color: rgba(255, 255, 255, 0.26);
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+      }
+
+      .btn-ghost {
+        border-color: var(--line);
+        background: white;
+        color: var(--ink);
+      }
+
+      .menu-toggle {
+        display: none;
+        width: 44px;
+        min-width: 44px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .menu-toggle span {
+        display: block;
+        width: 18px;
+        height: 2px;
+        margin: 4px auto;
+        background: currentColor;
+      }
+
+      .mobile-nav {
+        display: none;
+        border-top: 1px solid var(--line);
+        background: white;
+      }
+
+      .mobile-nav.open {
+        display: block;
+      }
+
+      .mobile-nav a {
+        display: block;
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+        border-bottom: 1px solid #edf2f6;
+        padding: 15px 0;
+        color: #465465;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .hero {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        min-height: min(760px, calc(100svh - 84px));
+        background: var(--navy);
+        color: white;
+      }
+
+      .hero-media {
+        position: absolute;
+        inset: 0;
+        z-index: -3;
+      }
+
+      .hero-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 66% 50%;
+        opacity: 0.62;
+      }
+
+      .hero::before {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        content: "";
+        background:
+          linear-gradient(90deg, rgba(7, 25, 39, 0.98) 0%, rgba(7, 25, 39, 0.9) 42%, rgba(7, 25, 39, 0.5) 75%, rgba(7, 25, 39, 0.28) 100%),
+          linear-gradient(180deg, rgba(7, 25, 39, 0.08) 0%, rgba(7, 25, 39, 0.26) 56%, rgba(7, 25, 39, 0.9) 100%);
+      }
+
+      .hero-inner {
+        display: flex;
+        min-height: inherit;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 34px;
+        padding: 78px 0 34px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 8px;
+        background: rgba(155, 231, 223, 0.12);
+        color: var(--cyan);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 8px 11px;
+        text-transform: uppercase;
+      }
+
+      .hero h1 {
+        width: min(780px, 100%);
+        margin: 22px 0 0;
+        color: white;
+        font-size: clamp(42px, 6.1vw, 76px);
+        font-weight: 760;
+        line-height: 1.03;
+        overflow-wrap: break-word;
+      }
+
+      .hero-copy {
+        width: min(650px, 100%);
+        margin: 24px 0 0;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: clamp(16px, 2vw, 19px);
+        line-height: 1.75;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+
+      .hero-checks {
+        display: grid;
+        width: min(720px, 100%);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 30px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .hero-checks li,
+      .check-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .check-mark {
+        display: inline-flex;
+        width: 20px;
+        height: 20px;
+        flex: 0 0 20px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(155, 231, 223, 0.15);
+        color: var(--cyan);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .hero-bottom {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
+        gap: 34px;
+        align-items: end;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        padding-top: 26px;
+      }
+
+      .region-label {
+        margin: 0 0 10px;
+        color: rgba(255, 255, 255, 0.46);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .regions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .regions span {
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 12px;
+        font-weight: 750;
+        padding: 8px 10px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .metric {
+        border-left: 1px solid rgba(155, 231, 223, 0.3);
+        padding-left: 14px;
+      }
+
+      .metric strong {
+        display: block;
+        color: var(--cyan);
+        font-size: 26px;
+        line-height: 1;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.54);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .audience-strip {
+        border-bottom: 1px solid var(--line);
+        background: white;
+        padding: 24px 0;
+      }
+
+      .audience-grid {
+        display: grid;
+        grid-template-columns: 0.9fr 1.4fr;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .audience-grid p {
+        margin: 0;
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .audience-list {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .audience-list span {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 13px 10px;
+        color: #435160;
+        font-size: 13px;
+        font-weight: 750;
+        text-align: center;
+      }
+
+      section {
+        scroll-margin-top: 84px;
+      }
+
+      .section {
+        padding: 86px 0;
+      }
+
+      .section.paper {
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+      }
+
+      .section.dark {
+        background: var(--navy);
+        color: white;
+      }
+
+      .section-header {
+        width: min(740px, 100%);
+        margin: 0 auto 42px;
+        text-align: center;
+      }
+
+      .section-header.left {
+        margin-left: 0;
+        text-align: left;
+      }
+
+      .section-kicker {
+        margin: 0;
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .dark .section-kicker {
+        color: var(--cyan);
+      }
+
+      .section-title {
+        margin: 14px 0 0;
+        color: var(--ink);
+        font-size: clamp(32px, 4vw, 52px);
+        font-weight: 760;
+        line-height: 1.12;
+      }
+
+      .dark .section-title {
+        color: white;
+      }
+
+      .section-copy {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.75;
+      }
+
+      .dark .section-copy {
+        color: rgba(255, 255, 255, 0.68);
+      }
+
+      .workflow-grid {
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        gap: 28px;
+        align-items: stretch;
+      }
+
+      .workflow-steps {
+        display: grid;
+        gap: 10px;
+      }
+
+      .workflow-button {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 14px;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        padding: 16px;
+        color: var(--ink);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+      }
+
+      .workflow-button:hover,
+      .workflow-button.active {
+        border-color: rgba(31, 118, 110, 0.4);
+        box-shadow: 0 16px 42px rgba(16, 32, 51, 0.08);
+        transform: translateY(-1px);
+      }
+
+      .step-number {
+        display: flex;
+        width: 42px;
+        height: 42px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--teal-2);
+        color: var(--teal);
+        font-weight: 850;
+      }
+
+      .workflow-button h3,
+      .product-copy h3,
+      .governance-card h3,
+      .plan h3 {
+        margin: 0;
+      }
+
+      .workflow-button p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .workflow-display {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        box-shadow: var(--shadow);
+      }
+
+      .workflow-display img {
+        width: 100%;
+        height: 100%;
+        min-height: 430px;
+        object-fit: cover;
+        object-position: left top;
+      }
+
+      .workflow-caption {
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        bottom: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        border-radius: 8px;
+        background: rgba(7, 25, 39, 0.82);
+        padding: 18px;
+        color: white;
+        backdrop-filter: blur(12px);
+      }
+
+      .workflow-caption p {
+        margin: 8px 0 0;
+        color: rgba(255, 255, 255, 0.72);
+        line-height: 1.55;
+      }
+
+      .product-layout {
+        display: grid;
+        grid-template-columns: 0.82fr 1.18fr;
+        gap: 42px;
+        align-items: start;
+      }
+
+      .product-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 28px;
+      }
+
+      .tab-button {
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        color: #455364;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 800;
+        padding: 0 14px;
+      }
+
+      .tab-button.active {
+        border-color: var(--teal);
+        background: var(--navy);
+        color: white;
+      }
+
+      .product-frame {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        box-shadow: var(--shadow);
+      }
+
+      .product-frame-top {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        border-bottom: 1px solid var(--line);
+        padding: 12px 14px;
+        background: #f8fafc;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #c5d0dc;
+      }
+
+      .product-frame img {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        object-fit: cover;
+        object-position: left top;
+      }
+
+      .product-copy {
+        display: grid;
+        gap: 16px;
+      }
+
+      .product-panel {
+        display: none;
+      }
+
+      .product-panel.active {
+        display: block;
+      }
+
+      .product-panel h3 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.18;
+      }
+
+      .product-panel p {
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .capability-grid,
+      .governance-grid,
+      .plans-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .capability-card,
+      .governance-card,
+      .plan {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 24px;
+      }
+
+      .capability-card h3,
+      .governance-card h3,
+      .plan h3 {
+        font-size: 20px;
+      }
+
+      .capability-card ul,
+      .plan ul {
+        display: grid;
+        gap: 12px;
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .capability-card li,
+      .plan li {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .governance-grid {
+        margin-top: 36px;
+      }
+
+      .governance-card {
+        border-color: var(--line);
+        background: white;
+        box-shadow: 0 16px 42px rgba(16, 32, 51, 0.06);
+      }
+
+      .governance-icon {
+        display: inline-flex;
+        border-radius: 8px;
+        background: var(--navy);
+        color: var(--cyan);
+        font-size: 13px;
+        font-weight: 850;
+        padding: 10px 12px;
+      }
+
+      .governance-card h3 {
+        margin-top: 24px;
+      }
+
+      .governance-card p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .mobile-layout {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 50px;
+        align-items: center;
+      }
+
+      .phone-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .phone {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--navy);
+        padding: 5px;
+        box-shadow: 0 20px 46px rgba(16, 32, 51, 0.12);
+      }
+
+      .phone:nth-child(2) {
+        transform: translateY(28px);
+      }
+
+      .phone img {
+        border-radius: 6px;
+      }
+
+      .light-checks {
+        display: grid;
+        gap: 12px;
+        margin: 26px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .light-checks li {
+        display: flex;
+        gap: 10px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .light-checks .check-mark {
+        background: var(--teal-2);
+        color: var(--teal);
+      }
+
+      .pricing-note {
+        display: flex;
+        width: fit-content;
+        margin: 0 auto 28px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        padding: 4px;
+      }
+
+      .toggle-price {
+        min-height: 38px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: #526070;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 800;
+        padding: 0 14px;
+      }
+
+      .toggle-price.active {
+        background: var(--navy);
+        color: white;
+      }
+
+      .plan {
+        border-color: var(--line);
+        background: white;
+        color: var(--ink);
+        box-shadow: 0 16px 42px rgba(16, 32, 51, 0.06);
+      }
+
+      .plan.featured {
+        border: 2px solid var(--teal);
+        background: var(--navy);
+        color: white;
+      }
+
+      .plan-top {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .badge {
+        border-radius: 8px;
+        background: var(--cyan);
+        color: var(--navy);
+        font-size: 12px;
+        font-weight: 850;
+        padding: 8px 10px;
+      }
+
+      .price {
+        margin: 26px 0 0;
+        font-size: 42px;
+        font-weight: 800;
+      }
+
+      .price small {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      .featured .price small,
+      .featured .plan-copy,
+      .featured .plan li {
+        color: rgba(255, 255, 255, 0.68);
+      }
+
+      .plan-copy {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .plan li {
+        color: var(--muted);
+      }
+
+      .demo-layout {
+        display: grid;
+        grid-template-columns: 0.82fr 1.18fr;
+        gap: 42px;
+        align-items: start;
+      }
+
+      .contact-panel {
+        margin-top: 26px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 20px;
+      }
+
+      .contact-panel strong {
+        display: block;
+      }
+
+      .contact-panel a {
+        display: inline-flex;
+        margin-top: 7px;
+        color: var(--teal);
+        font-weight: 800;
+      }
+
+      .demo-form {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        color: #3f4c5b;
+        font-size: 14px;
+        font-weight: 750;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        color: var(--ink);
+        outline: none;
+        padding: 11px 12px;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 4px rgba(31, 118, 110, 0.12);
+      }
+
+      textarea {
+        min-height: 118px;
+        resize: vertical;
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      .form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .form-footer p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .form-message {
+        display: none;
+        margin-top: 16px;
+        border: 1px solid #a9e4ce;
+        border-radius: 8px;
+        background: #ecfff6;
+        color: #17634d;
+        padding: 12px 14px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .form-message.show {
+        display: block;
+      }
+
+      .final-cta {
+        background: var(--navy);
+        color: white;
+        padding: 70px 0;
+      }
+
+      .final-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 28px;
+        align-items: center;
+      }
+
+      .final-grid h2 {
+        margin: 0;
+        max-width: 760px;
+        font-size: clamp(32px, 4vw, 50px);
+        line-height: 1.12;
+      }
+
+      .footer {
+        border-top: 1px solid var(--line);
+        background: white;
+        padding: 44px 0;
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 1.4fr repeat(3, 1fr);
+        gap: 34px;
+      }
+
+      .footer img {
+        width: 130px;
+      }
+
+      .footer p,
+      .footer a {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .footer h3 {
+        margin: 0 0 14px;
+        font-size: 13px;
+        text-transform: uppercase;
+      }
+
+      .footer a {
+        display: block;
+        margin-top: 9px;
+      }
+
+      @media (max-width: 980px) {
+        .desktop-nav {
+          display: none;
+        }
+
+        .menu-toggle {
+          display: inline-block;
+        }
+
+        .hero {
+          min-height: auto;
+        }
+
+        .hero-inner {
+          min-height: auto;
+          padding: 54px 0 30px;
+        }
+
+        .hero-bottom,
+        .workflow-grid,
+        .product-layout,
+        .mobile-layout,
+        .demo-layout,
+        .final-grid,
+        .audience-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-bottom {
+          align-items: start;
+        }
+
+        .capability-grid,
+        .governance-grid,
+        .plans-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 680px) {
+        .header-inner,
+        .section-inner,
+        .hero-inner {
+          width: min(362px, calc(100% - 28px));
+        }
+
+        .brand img {
+          width: 116px;
+        }
+
+        .header-actions .btn-primary {
+          display: none;
+        }
+
+        .hero::before {
+          background:
+            linear-gradient(90deg, rgba(7, 25, 39, 0.97) 0%, rgba(7, 25, 39, 0.86) 100%),
+            linear-gradient(180deg, rgba(7, 25, 39, 0.08) 0%, rgba(7, 25, 39, 0.9) 100%);
+        }
+
+        .hero-media img {
+          object-position: 55% 50%;
+          opacity: 0.32;
+        }
+
+        .hero h1 {
+          font-size: clamp(35px, 9.8vw, 42px);
+          line-height: 1.08;
+        }
+
+        .hero-copy {
+          font-size: 15px;
+        }
+
+        .regions span {
+          max-width: 100%;
+        }
+
+        .hero-actions,
+        .form-footer {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .hero-actions .btn,
+        .form-footer .btn {
+          width: 100%;
+        }
+
+        .hero-checks,
+        .metrics,
+        .audience-list,
+        .form-grid,
+        .footer-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .section {
+          padding: 64px 0;
+        }
+
+        .workflow-display img {
+          min-height: 300px;
+        }
+
+        .workflow-caption {
+          position: static;
+          border-radius: 0;
+        }
+
+        .phone-row {
+          gap: 8px;
+        }
+
+        .phone:nth-child(2) {
+          transform: translateY(16px);
+        }
+      }
+
+      @media (max-width: 520px) {
+        .header-inner,
+        .section-inner,
+        .hero-inner {
+          width: min(348px, calc(100% - 28px));
+          margin-left: 14px;
+          margin-right: auto;
+        }
+
+        .hero h1,
+        .hero-copy,
+        .hero-actions,
+        .hero-checks,
+        .hero-bottom {
+          max-width: 348px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#top" aria-label="Setu Flow home">
+          <img src="../../public/logos/setu-flow-logo.png" alt="Setu Flow" />
+        </a>
+
+        <nav class="desktop-nav" aria-label="Primary navigation">
+          <a href="#platform">Platform</a>
+          <a href="#product">Product</a>
+          <a href="#governance">Governance</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#demo">Book demo</a>
+        </nav>
+
+        <div class="header-actions">
+          <a class="btn btn-primary" href="#demo">Book demo</a>
+          <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="#platform">Platform</a>
+        <a href="#product">Product</a>
+        <a href="#governance">Governance</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#demo">Book demo</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-label="Setu Flow homepage hero">
+        <div class="hero-media" aria-hidden="true">
+          <img src="../../public/marketing/dashboard-command-center.png" alt="" />
+        </div>
+
+        <div class="hero-inner">
+          <div>
+            <span class="eyebrow">Trade execution CRM</span>
+            <h1>International trade operations, governed from first lead to final shipment.</h1>
+            <p class="hero-copy">
+              Setu Flow gives import-export teams one operating layer for buyer and supplier pipelines,
+              quote governance, approvals, order execution, documents, and mobile capture.
+            </p>
+
+            <div class="hero-actions">
+              <a class="btn btn-light" href="#demo">Book a guided demo</a>
+              <a class="btn btn-outline" href="#product">View the platform</a>
+            </div>
+
+            <ul class="hero-checks">
+              <li><span class="check-mark">✓</span><span>Built for import-export teams</span></li>
+              <li><span class="check-mark">✓</span><span>Guided setup in days</span></li>
+              <li><span class="check-mark">✓</span><span>Mobile-ready field workflow</span></li>
+            </ul>
+          </div>
+
+          <div class="hero-bottom">
+            <div>
+              <p class="region-label">Active operating regions</p>
+              <div class="regions">
+                <span>India</span>
+                <span>Ireland</span>
+                <span>United Kingdom</span>
+                <span>Germany</span>
+                <span>United States</span>
+              </div>
+            </div>
+            <div class="metrics" aria-label="Setu Flow proof metrics">
+              <div class="metric"><strong>&lt; 5 days</strong><span>typical guided launch window</span></div>
+              <div class="metric"><strong>$0</strong><span>standard implementation fee</span></div>
+              <div class="metric"><strong>15+</strong><span>trade corridors in the command layer</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="audience-strip" aria-label="Audience">
+        <div class="section-inner audience-grid">
+          <p>Designed for serious trade teams</p>
+          <div class="audience-list">
+            <span>Exporters</span>
+            <span>Importers</span>
+            <span>Trading companies</span>
+            <span>Sourcing teams</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="platform" class="section paper">
+        <div class="section-inner">
+          <div class="section-header">
+            <p class="section-kicker">Operating model</p>
+            <h2 class="section-title">A CRM that follows the real trade workflow.</h2>
+            <p class="section-copy">
+              Generic CRMs track activity. Setu Flow connects the commercial and operational moments
+              that decide whether international revenue actually moves.
+            </p>
+          </div>
+
+          <div class="workflow-grid">
+            <div class="workflow-steps" role="tablist" aria-label="Workflow stages">
+              <button class="workflow-button active" type="button" data-workflow="capture" role="tab" aria-selected="true">
+                <span class="step-number">01</span>
+                <span>
+                  <strong>Capture demand</strong>
+                  <p>Trade shows, business cards, inbound enquiries, and buyer requests become structured records.</p>
+                </span>
+              </button>
+              <button class="workflow-button" type="button" data-workflow="quote" role="tab" aria-selected="false">
+                <span class="step-number">02</span>
+                <span>
+                  <strong>Control quotes</strong>
+                  <p>Pricing basis, freight, FX, terms, versions, and approvals stay governed before sending.</p>
+                </span>
+              </button>
+              <button class="workflow-button" type="button" data-workflow="execute" role="tab" aria-selected="false">
+                <span class="step-number">03</span>
+                <span>
+                  <strong>Execute orders</strong>
+                  <p>Accepted quotes move into documents, dispatch readiness, payment state, and blockers.</p>
+                </span>
+              </button>
+            </div>
+
+            <div class="workflow-display">
+              <img id="workflowImage" src="../../public/marketing/mobile-quick-lead.png" alt="Setu Flow lead capture workflow" />
+              <div class="workflow-caption">
+                <strong id="workflowTitle">Capture demand before context disappears.</strong>
+                <p id="workflowText">Field teams can capture new buyer or supplier context directly from mobile, scan cards, and keep trade show source context attached.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="product" class="section">
+        <div class="section-inner product-layout">
+          <div>
+            <div class="section-header left">
+              <p class="section-kicker">Product proof</p>
+              <h2 class="section-title">Lead with the product, not abstract claims.</h2>
+              <p class="section-copy">
+                A premium SaaS first impression should show operational depth immediately:
+                command center, quote workflow, execution desk, and mobile capture.
+              </p>
+            </div>
+
+            <div class="product-tabs" role="tablist" aria-label="Product modules">
+              <button class="tab-button active" type="button" data-product="command" role="tab" aria-selected="true">Command center</button>
+              <button class="tab-button" type="button" data-product="quotes" role="tab" aria-selected="false">Quote governance</button>
+              <button class="tab-button" type="button" data-product="orders" role="tab" aria-selected="false">Order execution</button>
+            </div>
+
+            <div class="product-copy">
+              <div class="product-panel active" data-panel="command">
+                <h3>A live operating view for international trade teams.</h3>
+                <p>Market coverage, active pipeline, quote readiness, blocked revenue, and follow-ups are visible in one leadership-grade workspace.</p>
+              </div>
+              <div class="product-panel" data-panel="quotes">
+                <h3>Quote governance that replaces spreadsheet drift.</h3>
+                <p>Teams build quote versions with product, pricing, freight, FX, terms, and approval context before sending anything to buyers.</p>
+              </div>
+              <div class="product-panel" data-panel="orders">
+                <h3>Documents, dispatch, and payment blockers stay visible after close.</h3>
+                <p>Orders carry commercial context forward so operations can resolve gaps before shipments are at risk.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-frame">
+            <div class="product-frame-top" aria-hidden="true">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+            <img id="productImage" src="../../public/marketing/dashboard-command-center.png" alt="Setu Flow command center dashboard" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section dark">
+        <div class="section-inner">
+          <div class="section-header">
+            <p class="section-kicker">Platform coverage</p>
+            <h2 class="section-title">One commercial system across sales, quoting, and execution.</h2>
+            <p class="section-copy">
+              Keep the message concise: Setu Flow is not just a lead tracker. It is the operating layer for cross-border trade.
+            </p>
+          </div>
+
+          <div class="capability-grid">
+            <article class="capability-card">
+              <h3>CRM for trade revenue</h3>
+              <ul>
+                <li>Buyer and supplier pipelines</li>
+                <li>Role-aware lead ownership</li>
+                <li>Trade event capture</li>
+                <li>Follow-up queue</li>
+              </ul>
+            </article>
+            <article class="capability-card">
+              <h3>Quote and margin control</h3>
+              <ul>
+                <li>FOB, CIF, and Ex-Factory basis</li>
+                <li>FX rate lock at quote time</li>
+                <li>Freight profile support</li>
+                <li>Approval handoff</li>
+              </ul>
+            </article>
+            <article class="capability-card">
+              <h3>Execution readiness</h3>
+              <ul>
+                <li>Order workspace</li>
+                <li>Document requirements</li>
+                <li>Dispatch blockers</li>
+                <li>Payment visibility</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-inner mobile-layout">
+          <div class="phone-row" aria-label="Mobile product screenshots">
+            <div class="phone"><img src="../../public/marketing/mobile-dashboard.png" alt="Setu Flow mobile dashboard" /></div>
+            <div class="phone"><img src="../../public/marketing/mobile-leads.png" alt="Setu Flow mobile leads" /></div>
+            <div class="phone"><img src="../../public/marketing/mobile-quick-lead.png" alt="Setu Flow mobile quick lead" /></div>
+          </div>
+          <div>
+            <div class="section-header left">
+              <p class="section-kicker">Field ready</p>
+              <h2 class="section-title">Mobile workflows for people who meet buyers away from the desk.</h2>
+              <p class="section-copy">
+                Sales, sourcing, and event teams can capture conversations, scan cards, manage follow-ups,
+                and move pipeline actions without rebuilding context later.
+              </p>
+            </div>
+            <ul class="light-checks">
+              <li><span class="check-mark">✓</span><span>Trade show lead capture</span></li>
+              <li><span class="check-mark">✓</span><span>Business card scan and quick entry</span></li>
+              <li><span class="check-mark">✓</span><span>Digital vCard and QR follow-through</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="governance" class="section paper">
+        <div class="section-inner">
+          <div class="section-header">
+            <p class="section-kicker">Enterprise signals</p>
+            <h2 class="section-title">Project control, governance, and rollout confidence.</h2>
+            <p class="section-copy">
+              Larger buyers look for signs that the product can support real teams:
+              access control, approval discipline, audit visibility, and guided onboarding.
+            </p>
+          </div>
+
+          <div class="governance-grid">
+            <article class="governance-card">
+              <span class="governance-icon">Access</span>
+              <h3>Workspace security foundation</h3>
+              <p>Tenant-aware workspaces, role based access patterns, and audit-ready activity surfaces for controlled growth.</p>
+            </article>
+            <article class="governance-card">
+              <span class="governance-icon">Approvals</span>
+              <h3>Commercial approval discipline</h3>
+              <p>Quote and stage movement can be governed before pricing, terms, or operational state move forward.</p>
+            </article>
+            <article class="governance-card">
+              <span class="governance-icon">Markets</span>
+              <h3>International operating context</h3>
+              <p>Built around buyer, supplier, market, product, and shipment workflows instead of generic sales stages.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" class="section">
+        <div class="section-inner">
+          <div class="section-header">
+            <p class="section-kicker">Packages</p>
+            <h2 class="section-title">Simple entry points while the platform keeps evolving.</h2>
+            <p class="section-copy">
+              Keep pricing clear enough for serious buyers to qualify themselves, then use demos to map their exact trade workflow.
+            </p>
+          </div>
+
+          <div class="pricing-note" aria-label="Price display toggle">
+            <button class="toggle-price active" type="button" data-cycle="monthly">Monthly</button>
+            <button class="toggle-price" type="button" data-cycle="annual">Annual</button>
+          </div>
+
+          <div class="plans-grid">
+            <article class="plan">
+              <div class="plan-top">
+                <h3>Starter</h3>
+              </div>
+              <p class="price" data-monthly="$199" data-annual="$169">$199 <small>/ month</small></p>
+              <p class="plan-copy">For smaller teams formalizing trade CRM and quote workflows.</p>
+              <ul>
+                <li>Up to 5 users</li>
+                <li>Lead and pipeline workspace</li>
+                <li>Quote workflow foundation</li>
+                <li>Mobile capture</li>
+                <li>Guided setup</li>
+              </ul>
+            </article>
+            <article class="plan featured">
+              <div class="plan-top">
+                <h3>Growth</h3>
+                <span class="badge">Popular</span>
+              </div>
+              <p class="price" data-monthly="$499" data-annual="$424">$499 <small>/ month</small></p>
+              <p class="plan-copy">For teams running higher volume across markets and orders.</p>
+              <ul>
+                <li>Up to 10 users</li>
+                <li>Advanced quote approvals</li>
+                <li>Orders execution desk</li>
+                <li>Trade events workspace</li>
+                <li>Priority onboarding</li>
+              </ul>
+            </article>
+            <article class="plan">
+              <div class="plan-top">
+                <h3>Enterprise</h3>
+              </div>
+              <p class="price" data-monthly="Custom" data-annual="Custom">Custom</p>
+              <p class="plan-copy">For multi-team trade operations with process mapping needs.</p>
+              <ul>
+                <li>Custom roles</li>
+                <li>Workflow configuration</li>
+                <li>Dedicated onboarding</li>
+                <li>Security review support</li>
+                <li>Commercial rollout plan</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo" class="section paper">
+        <div class="section-inner demo-layout">
+          <div>
+            <div class="section-header left">
+              <p class="section-kicker">Next step</p>
+              <h2 class="section-title">Book a guided Setu Flow walkthrough.</h2>
+              <p class="section-copy">
+                Use the demo to position Setu Flow as a serious international system:
+                command center, quote governance, mobile capture, and order execution in one narrative.
+              </p>
+            </div>
+            <div class="contact-panel">
+              <strong>Support email</strong>
+              <a href="mailto:help@setugroups.com">help@setugroups.com</a>
+              <p>Demo requests should stay consultative while you finish the full product build.</p>
+            </div>
+          </div>
+
+          <form class="demo-form">
+            <div class="form-grid">
+              <label>
+                Name
+                <input required name="name" placeholder="Full name" />
+              </label>
+              <label>
+                Work email
+                <input required name="email" type="email" placeholder="you@company.com" />
+              </label>
+              <label>
+                Company
+                <input required name="company" placeholder="Company name" />
+              </label>
+              <label>
+                Team size
+                <select required name="team">
+                  <option value="">Select team size</option>
+                  <option>1-5 users</option>
+                  <option>6-10 users</option>
+                  <option>11-25 users</option>
+                  <option>25+ users</option>
+                </select>
+              </label>
+              <label class="full">
+                What should the demo focus on?
+                <textarea name="notes" placeholder="Quotes, approvals, mobile lead capture, orders, documents, trade events..."></textarea>
+              </label>
+            </div>
+            <div class="form-footer">
+              <p>This prototype form shows the intended interaction only.</p>
+              <button class="btn btn-primary" type="submit">Send demo request</button>
+            </div>
+            <div class="form-message" role="status">Demo request captured for the prototype.</div>
+          </form>
+        </div>
+      </section>
+
+      <section class="final-cta">
+        <div class="section-inner final-grid">
+          <h2>Make the first impression feel as serious as the product you are building.</h2>
+          <a class="btn btn-light" href="#demo">Book demo</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="section-inner footer-grid">
+        <div>
+          <img src="../../public/logos/setu-flow-logo.png" alt="Setu Flow" />
+          <p>Trade execution CRM for global import-export teams.</p>
+        </div>
+        <div>
+          <h3>Platform</h3>
+          <a href="#platform">Operating model</a>
+          <a href="#product">Product proof</a>
+          <a href="#governance">Governance</a>
+        </div>
+        <div>
+          <h3>Use cases</h3>
+          <a href="#demo">Exporters</a>
+          <a href="#demo">Importers</a>
+          <a href="#demo">Trading teams</a>
+        </div>
+        <div>
+          <h3>Company</h3>
+          <a href="mailto:help@setugroups.com">Contact</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#demo">Book demo</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const menuButton = document.querySelector(".menu-toggle");
+      const mobileNav = document.querySelector(".mobile-nav");
+
+      menuButton.addEventListener("click", () => {
+        const isOpen = mobileNav.classList.toggle("open");
+        menuButton.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      mobileNav.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          mobileNav.classList.remove("open");
+          menuButton.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      const workflowContent = {
+        capture: {
+          image: "../../public/marketing/mobile-quick-lead.png",
+          alt: "Setu Flow lead capture workflow",
+          title: "Capture demand before context disappears.",
+          text: "Field teams can capture new buyer or supplier context directly from mobile, scan cards, and keep trade show source context attached."
+        },
+        quote: {
+          image: "../../public/marketing/quote-workflow.png",
+          alt: "Setu Flow quote governance workflow",
+          title: "Control pricing, terms, and approvals before sending.",
+          text: "Product, freight, FX, terms, approval gates, and quote versions stay inside the same commercial workflow."
+        },
+        execute: {
+          image: "../../public/marketing/orders-execution.png",
+          alt: "Setu Flow order execution workspace",
+          title: "Carry accepted quotes into execution.",
+          text: "Documents, dispatch blockers, payment state, and order progress stay connected to the commercial record."
+        }
+      };
+
+      document.querySelectorAll(".workflow-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".workflow-button").forEach((item) => {
+            item.classList.remove("active");
+            item.setAttribute("aria-selected", "false");
+          });
+          button.classList.add("active");
+          button.setAttribute("aria-selected", "true");
+
+          const content = workflowContent[button.dataset.workflow];
+          document.querySelector("#workflowImage").src = content.image;
+          document.querySelector("#workflowImage").alt = content.alt;
+          document.querySelector("#workflowTitle").textContent = content.title;
+          document.querySelector("#workflowText").textContent = content.text;
+        });
+      });
+
+      const productContent = {
+        command: {
+          image: "../../public/marketing/dashboard-command-center.png",
+          alt: "Setu Flow command center dashboard"
+        },
+        quotes: {
+          image: "../../public/marketing/quote-workflow.png",
+          alt: "Setu Flow quote workflow"
+        },
+        orders: {
+          image: "../../public/marketing/orders-execution.png",
+          alt: "Setu Flow order execution desk"
+        }
+      };
+
+      document.querySelectorAll(".tab-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".tab-button").forEach((item) => {
+            item.classList.remove("active");
+            item.setAttribute("aria-selected", "false");
+          });
+          document.querySelectorAll(".product-panel").forEach((panel) => panel.classList.remove("active"));
+
+          button.classList.add("active");
+          button.setAttribute("aria-selected", "true");
+          document.querySelector(`[data-panel="${button.dataset.product}"]`).classList.add("active");
+
+          const content = productContent[button.dataset.product];
+          const productImage = document.querySelector("#productImage");
+          productImage.src = content.image;
+          productImage.alt = content.alt;
+        });
+      });
+
+      document.querySelectorAll(".toggle-price").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".toggle-price").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          const cycle = button.dataset.cycle;
+
+          document.querySelectorAll(".price").forEach((price) => {
+            const value = price.dataset[cycle];
+            if (value === "Custom") {
+              price.textContent = "Custom";
+              return;
+            }
+            price.innerHTML = `${value} <small>/ month</small>`;
+          });
+        });
+      });
+
+      document.querySelector(".demo-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        document.querySelector(".form-message").classList.add("show");
+      });
+    </script>
+  </body>
+</html>

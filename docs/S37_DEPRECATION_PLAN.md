@@ -16,6 +16,8 @@
 - `src/app/(app)/leads/page.tsx` redirects legacy nested `view` routes.
 - `src/features/quotes/components/quote-workspace.tsx` is marked `S37_DEPRECATED` / legacy support only.
 - `src/features/leads/components/buyer-detail-page.tsx` is marked `S37_DEPRECATED`.
+- `src/features/leads/command-center/LeadCommandCenterPage.tsx` is marked `S37_DELETE_CANDIDATE`.
+- `src/features/leads/lead-detail/LeadDetailPremium.tsx` is marked `S37_DELETE_CANDIDATE`.
 - Command-center quote links were updated to `/leads/[leadId]/quote`.
 - Compliance-assist return links now return to canonical quote review step.
 - RFQ quote links now return to canonical quote builder.

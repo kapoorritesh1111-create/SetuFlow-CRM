@@ -1,4 +1,5 @@
 'use client'
+// S37_DELETE_CANDIDATE: legacy command-center detail surface. Canonical lead detail is /leads/[leadId].
 
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'

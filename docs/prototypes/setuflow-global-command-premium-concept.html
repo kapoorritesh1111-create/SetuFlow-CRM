@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Setu Flow Global Command Concept</title>
+    <style>
+      :root {
+        --black: #070707;
+        --charcoal: #111417;
+        --ink: #1b2430;
+        --muted: #697586;
+        --soft: #f3f1ec;
+        --paper: #fbfaf7;
+        --line: rgba(27, 36, 48, 0.12);
+        --gold: #c9a45f;
+        --teal: #2f9f91;
+        --blue: #2d5f93;
+        --white: #ffffff;
+        --shadow: 0 28px 90px rgba(7, 7, 7, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .shell {
+        min-height: 100svh;
+        background:
+          linear-gradient(90deg, rgba(251, 250, 247, 0.94), rgba(251, 250, 247, 0.76)),
+          url("../../public/marketing/dashboard-command-center.png");
+        background-attachment: fixed;
+        background-position: center;
+        background-size: cover;
+      }
+
+      .topbar {
+        position: fixed;
+        inset: 18px 22px auto;
+        z-index: 80;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 18px;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.64);
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: 0 20px 60px rgba(7, 7, 7, 0.08);
+        backdrop-filter: blur(22px);
+        border-radius: 14px;
+        padding: 10px 12px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 6px;
+      }
+
+      .brand img {
+        width: 132px;
+      }
+
+      .nav {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .nav a,
+      .nav button {
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: #384352;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 760;
+        padding: 12px 14px;
+        transition: background 180ms ease, color 180ms ease;
+      }
+
+      .nav a:hover,
+      .nav button:hover {
+        background: rgba(27, 36, 48, 0.07);
+        color: var(--black);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 820;
+        padding: 0 18px;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
+        white-space: nowrap;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+      }
+
+      .button-dark {
+        background: var(--black);
+        color: white;
+        box-shadow: 0 18px 45px rgba(7, 7, 7, 0.2);
+      }
+
+      .button-light {
+        border-color: rgba(255, 255, 255, 0.3);
+        background: white;
+        color: var(--black);
+      }
+
+      .button-outline {
+        border-color: rgba(255, 255, 255, 0.22);
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+      }
+
+      .menu {
+        display: none;
+        width: 46px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        color: var(--black);
+        cursor: pointer;
+      }
+
+      .menu span {
+        display: block;
+        width: 18px;
+        height: 2px;
+        margin: 4px auto;
+        background: currentColor;
+      }
+
+      .mobile-nav {
+        position: fixed;
+        inset: 86px 22px auto;
+        z-index: 79;
+        display: none;
+        border: 1px solid rgba(255, 255, 255, 0.64);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 24px 60px rgba(7, 7, 7, 0.12);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .mobile-nav.open {
+        display: block;
+      }
+
+      .mobile-nav a,
+      .mobile-nav button {
+        display: block;
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid rgba(27, 36, 48, 0.08);
+        background: transparent;
+        color: #384352;
+        cursor: pointer;
+        padding: 16px;
+        text-align: left;
+        font-weight: 760;
+      }
+
+      .hero {
+        min-height: 100svh;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(420px, 520px);
+        gap: 34px;
+        align-items: end;
+        width: min(1280px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 132px 0 38px;
+      }
+
+      .hero-copy {
+        max-width: 850px;
+        padding-bottom: 28px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid rgba(27, 36, 48, 0.14);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.76);
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 850;
+        padding: 8px 12px;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      h1 {
+        margin: 22px 0 0;
+        color: var(--black);
+        font-size: clamp(54px, 8vw, 116px);
+        font-weight: 760;
+        letter-spacing: -0.02em;
+        line-height: 0.94;
+        overflow-wrap: break-word;
+      }
+
+      .hero-copy p {
+        width: min(680px, 100%);
+        margin: 26px 0 0;
+        color: #374252;
+        font-size: clamp(17px, 1.6vw, 21px);
+        line-height: 1.75;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+
+      .executive-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 20px;
+        background: rgba(17, 20, 23, 0.92);
+        color: white;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .executive-card img {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        object-position: left top;
+        opacity: 0.72;
+      }
+
+      .executive-body {
+        padding: 24px;
+      }
+
+      .executive-label {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.52);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .executive-body h2 {
+        margin: 12px 0 0;
+        font-size: 28px;
+        line-height: 1.12;
+      }
+
+      .executive-body p {
+        margin: 14px 0 0;
+        color: rgba(255, 255, 255, 0.68);
+        line-height: 1.65;
+      }
+
+      .signal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        margin-top: 22px;
+        padding-top: 18px;
+      }
+
+      .signal {
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 0 14px;
+      }
+
+      .signal:first-child {
+        border-left: 0;
+        padding-left: 0;
+      }
+
+      .signal strong {
+        display: block;
+        color: var(--gold);
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .signal span {
+        display: block;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .market-rail {
+        display: flex;
+        width: min(1280px, calc(100% - 48px));
+        margin: 0 auto;
+        transform: translateY(-18px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 20px 70px rgba(7, 7, 7, 0.08);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .market-rail button {
+        flex: 1;
+        min-height: 70px;
+        border: 0;
+        border-left: 1px solid rgba(27, 36, 48, 0.09);
+        background: transparent;
+        color: #3d4856;
+        cursor: pointer;
+        font-weight: 820;
+      }
+
+      .market-rail button:first-child {
+        border-left: 0;
+      }
+
+      .market-rail button.active {
+        background: var(--black);
+        color: white;
+      }
+
+      .command-deck {
+        width: min(1280px, calc(100% - 48px));
+        margin: 54px auto 86px;
+        display: grid;
+        grid-template-columns: 310px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .deck-nav,
+      .deck-stage {
+        border: 1px solid rgba(27, 36, 48, 0.12);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 24px 80px rgba(7, 7, 7, 0.08);
+        backdrop-filter: blur(18px);
+      }
+
+      .deck-nav {
+        padding: 18px;
+        align-self: start;
+      }
+
+      .deck-kicker {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 840;
+        text-transform: uppercase;
+      }
+
+      .deck-button {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 12px;
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #3f4955;
+        cursor: pointer;
+        margin-top: 6px;
+        padding: 13px;
+        text-align: left;
+      }
+
+      .deck-button.active {
+        background: var(--black);
+        color: white;
+      }
+
+      .deck-button span:first-child {
+        color: var(--gold);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .deck-button strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .deck-button small {
+        display: block;
+        margin-top: 4px;
+        color: inherit;
+        opacity: 0.62;
+        line-height: 1.35;
+      }
+
+      .deck-stage {
+        overflow: hidden;
+      }
+
+      .stage-grid {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        min-height: 620px;
+      }
+
+      .stage-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 38px;
+      }
+
+      .stage-copy h2 {
+        margin: 0;
+        color: var(--black);
+        font-size: clamp(34px, 4vw, 58px);
+        letter-spacing: -0.015em;
+        line-height: 1.02;
+      }
+
+      .stage-copy p {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.75;
+      }
+
+      .stage-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 26px;
+      }
+
+      .stage-list div {
+        display: flex;
+        gap: 10px;
+        color: #475365;
+        font-weight: 700;
+        line-height: 1.5;
+      }
+
+      .stage-list div::before {
+        content: "";
+        flex: 0 0 8px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--teal);
+        margin-top: 9px;
+      }
+
+      .stage-proof {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .stage-proof article {
+        border: 1px solid rgba(27, 36, 48, 0.1);
+        border-radius: 14px;
+        background: var(--paper);
+        padding: 16px;
+      }
+
+      .stage-proof strong {
+        display: block;
+        font-size: 24px;
+      }
+
+      .stage-proof span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 5px;
+      }
+
+      .stage-media {
+        position: relative;
+        overflow: hidden;
+        min-height: 620px;
+        background: var(--charcoal);
+      }
+
+      .stage-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: left top;
+        opacity: 0.9;
+      }
+
+      .stage-badge {
+        position: absolute;
+        top: 26px;
+        right: 26px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        background: rgba(7, 7, 7, 0.68);
+        color: white;
+        padding: 14px 16px;
+        backdrop-filter: blur(18px);
+      }
+
+      .stage-badge strong {
+        display: block;
+        color: var(--gold);
+        font-size: 20px;
+      }
+
+      .stage-badge span {
+        display: block;
+        margin-top: 5px;
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+      }
+
+      .market-panel {
+        width: min(1280px, calc(100% - 48px));
+        margin: 0 auto 90px;
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+      }
+
+      .world-card,
+      .rollout-card {
+        border: 1px solid rgba(27, 36, 48, 0.12);
+        border-radius: 20px;
+        background: var(--black);
+        color: white;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .world-card {
+        position: relative;
+        min-height: 500px;
+        padding: 28px;
+      }
+
+      .world-card h2,
+      .rollout-card h2 {
+        margin: 0;
+        max-width: 660px;
+        font-size: clamp(32px, 4vw, 58px);
+        letter-spacing: -0.015em;
+        line-height: 1.05;
+      }
+
+      .world-card p,
+      .rollout-card p {
+        margin: 18px 0 0;
+        color: rgba(255, 255, 255, 0.66);
+        line-height: 1.75;
+      }
+
+      .map-grid {
+        position: absolute;
+        inset: 170px 28px 28px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+      }
+
+      .pin {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border: 2px solid white;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 0 10px rgba(201, 164, 95, 0.14);
+      }
+
+      .pin::after {
+        position: absolute;
+        left: 16px;
+        top: -7px;
+        content: attr(data-label);
+        color: white;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .pin.india { left: 66%; top: 57%; }
+      .pin.ireland { left: 43%; top: 34%; }
+      .pin.uk { left: 46%; top: 32%; }
+      .pin.germany { left: 50%; top: 36%; }
+      .pin.us { left: 22%; top: 45%; }
+
+      .rollout-card {
+        background: white;
+        color: var(--ink);
+        padding: 28px;
+      }
+
+      .rollout-card h2 {
+        color: var(--black);
+      }
+
+      .rollout-card p {
+        color: var(--muted);
+      }
+
+      .rollout-steps {
+        display: grid;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .rollout-steps article {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 14px;
+        border: 1px solid rgba(27, 36, 48, 0.11);
+        border-radius: 14px;
+        background: var(--paper);
+        padding: 16px;
+      }
+
+      .rollout-steps strong:first-child {
+        display: flex;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: var(--black);
+        color: var(--gold);
+      }
+
+      .rollout-steps h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .rollout-steps p {
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+
+      .final {
+        width: min(1280px, calc(100% - 48px));
+        margin: 0 auto 42px;
+        border: 1px solid rgba(27, 36, 48, 0.1);
+        border-radius: 22px;
+        background: var(--paper);
+        padding: 36px;
+      }
+
+      .final-inner {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: center;
+      }
+
+      .final h2 {
+        margin: 0;
+        max-width: 780px;
+        color: var(--black);
+        font-size: clamp(34px, 4.8vw, 64px);
+        line-height: 1;
+      }
+
+      .final p {
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.7;
+      }
+
+      .drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: none;
+        background: rgba(7, 7, 7, 0.54);
+        backdrop-filter: blur(8px);
+      }
+
+      .drawer-backdrop.open {
+        display: block;
+      }
+
+      .drawer {
+        position: fixed;
+        inset: 16px 16px 16px auto;
+        z-index: 101;
+        display: flex;
+        width: min(520px, calc(100% - 32px));
+        transform: translateX(calc(100% + 24px));
+        flex-direction: column;
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.28);
+        transition: transform 240ms ease;
+        overflow: hidden;
+      }
+
+      .drawer.open {
+        transform: translateX(0);
+      }
+
+      .drawer-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 18px;
+        border-bottom: 1px solid rgba(27, 36, 48, 0.1);
+        padding: 24px;
+      }
+
+      .drawer-head p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .close {
+        width: 42px;
+        height: 42px;
+        border: 1px solid rgba(27, 36, 48, 0.12);
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        font-size: 20px;
+      }
+
+      .drawer form {
+        display: grid;
+        gap: 14px;
+        padding: 24px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        color: #414b59;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid rgba(27, 36, 48, 0.14);
+        border-radius: 10px;
+        background: white;
+        color: var(--ink);
+        outline: none;
+        padding: 12px;
+      }
+
+      textarea {
+        min-height: 116px;
+        resize: vertical;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 4px rgba(47, 159, 145, 0.13);
+      }
+
+      .form-message {
+        display: none;
+        border-radius: 10px;
+        background: #e9fbf7;
+        color: #12685d;
+        padding: 12px;
+        font-weight: 760;
+      }
+
+      .form-message.show {
+        display: block;
+      }
+
+      @media (max-width: 1120px) {
+        .hero,
+        .command-deck,
+        .market-panel,
+        .final-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .executive-card {
+          max-width: 760px;
+        }
+
+        .deck-nav {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+          overflow-x: auto;
+        }
+
+        .deck-kicker {
+          grid-column: 1 / -1;
+        }
+
+        .stage-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stage-media {
+          min-height: 420px;
+        }
+      }
+
+      @media (max-width: 820px) {
+        .topbar {
+          inset: 12px 12px auto;
+          grid-template-columns: auto 1fr auto;
+        }
+
+        .nav {
+          display: none;
+        }
+
+        .actions .button-dark {
+          display: none;
+        }
+
+        .menu {
+          display: inline-block;
+        }
+
+        .hero,
+        .market-rail,
+        .command-deck,
+        .market-panel,
+        .final {
+          width: calc(100% - 28px);
+        }
+
+        .hero {
+          padding-top: 116px;
+        }
+
+        h1 {
+          font-size: clamp(46px, 13vw, 76px);
+        }
+
+        .market-rail {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          transform: none;
+          margin-top: 18px;
+        }
+
+        .market-rail button {
+          border-top: 1px solid rgba(27, 36, 48, 0.09);
+        }
+
+        .deck-nav {
+          grid-template-columns: 1fr;
+        }
+
+        .stage-copy,
+        .final,
+        .world-card,
+        .rollout-card {
+          padding: 22px;
+        }
+
+        .stage-proof,
+        .signal-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .signal {
+          border-left: 0;
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          padding: 14px 0 0;
+        }
+
+        .signal:first-child {
+          border-top: 0;
+          padding-top: 0;
+        }
+
+        .map-grid {
+          position: relative;
+          inset: auto;
+          height: 300px;
+          margin-top: 26px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .hero,
+        .market-rail,
+        .command-deck,
+        .market-panel,
+        .final {
+          width: min(362px, calc(100% - 28px));
+          margin-left: 14px;
+          margin-right: auto;
+        }
+
+        .brand img {
+          width: 112px;
+        }
+
+        .hero-copy,
+        .executive-card {
+          max-width: 362px;
+        }
+
+        h1 {
+          max-width: 362px;
+          font-size: 38px;
+          line-height: 1.04;
+        }
+
+        .hero-copy p {
+          font-size: 16px;
+        }
+
+        .hero-actions,
+        .final .actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .executive-card img {
+          height: 220px;
+        }
+
+        .stage-media {
+          min-height: 310px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="Setu Flow home">
+          <img src="../../public/logos/setu-flow-logo.png" alt="Setu Flow" />
+        </a>
+        <nav class="nav" aria-label="Primary navigation">
+          <a href="#command">Command</a>
+          <a href="#markets">Markets</a>
+          <a href="#rollout">Rollout</a>
+          <button type="button" data-open-demo>Book demo</button>
+        </nav>
+        <div class="actions">
+          <button class="button button-dark" type="button" data-open-demo>Book strategy call</button>
+          <button class="menu" type="button" aria-label="Open menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </header>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="#command">Command</a>
+        <a href="#markets">Markets</a>
+        <a href="#rollout">Rollout</a>
+        <button type="button" data-open-demo>Book demo</button>
+      </nav>
+
+      <main id="top">
+        <section class="hero" aria-label="Premium Setu Flow concept hero">
+          <div class="hero-copy">
+            <span class="eyebrow">Global trade operating layer</span>
+            <h1>Built for the companies moving trade across borders.</h1>
+            <p>
+              Setu Flow should feel less like a CRM website and more like an international operating platform:
+              commercial command, quote governance, market coverage, and execution control in one executive-grade product.
+            </p>
+            <div class="hero-actions">
+              <button class="button button-dark" type="button" data-open-demo>Book strategy call</button>
+              <a class="button button-light" href="#command">Open command deck</a>
+            </div>
+          </div>
+
+          <aside class="executive-card" aria-label="Executive product preview">
+            <img src="../../public/marketing/dashboard-command-center.png" alt="Setu Flow command center dashboard" />
+            <div class="executive-body">
+              <p class="executive-label">Executive workspace</p>
+              <h2>Market, quote, order, and blocker visibility before the first sales call.</h2>
+              <p>
+                A premium first impression should prove that Setu Flow understands revenue and operations together.
+              </p>
+              <div class="signal-grid">
+                <div class="signal"><strong>&lt; 5d</strong><span>guided launch motion</span></div>
+                <div class="signal"><strong>5</strong><span>priority regions</span></div>
+                <div class="signal"><strong>1</strong><span>trade operating system</span></div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <div class="market-rail" aria-label="Market region selector">
+          <button class="active" type="button" data-market="India">India</button>
+          <button type="button" data-market="Ireland">Ireland</button>
+          <button type="button" data-market="United Kingdom">United Kingdom</button>
+          <button type="button" data-market="Germany">Germany</button>
+          <button type="button" data-market="United States">United States</button>
+        </div>
+
+        <section id="command" class="command-deck" aria-label="Interactive command deck">
+          <aside class="deck-nav">
+            <p class="deck-kicker">Command deck</p>
+            <button class="deck-button active" type="button" data-stage="board">
+              <span>01</span>
+              <span><strong>Boardroom view</strong><small>Lead with executive control and product proof.</small></span>
+            </button>
+            <button class="deck-button" type="button" data-stage="quote">
+              <span>02</span>
+              <span><strong>Quote governance</strong><small>Show quote control as a serious commercial capability.</small></span>
+            </button>
+            <button class="deck-button" type="button" data-stage="execution">
+              <span>03</span>
+              <span><strong>Execution control</strong><small>Connect orders, documents, blockers, and dispatch.</small></span>
+            </button>
+            <button class="deck-button" type="button" data-stage="mobile">
+              <span>04</span>
+              <span><strong>Field capture</strong><small>Make the mobile experience feel premium, not secondary.</small></span>
+            </button>
+          </aside>
+
+          <article class="deck-stage">
+            <div class="stage-grid">
+              <div class="stage-copy">
+                <div>
+                  <span class="eyebrow" id="stageEyebrow">Boardroom view</span>
+                  <h2 id="stageTitle">Replace the long SaaS scroll with a global command narrative.</h2>
+                  <p id="stageText">
+                    The homepage can behave like a product command room: big product evidence, clear region positioning,
+                    and focused panels that make Setu Flow feel larger than a feature list.
+                  </p>
+                  <div class="stage-list" id="stageList">
+                    <div>Make product proof the central visual language</div>
+                    <div>Use concise executive copy instead of many repeated cards</div>
+                    <div>Position the company around global trade operations</div>
+                  </div>
+                </div>
+
+                <div class="stage-proof">
+                  <article><strong id="proofOne">Global</strong><span>market positioning</span></article>
+                  <article><strong id="proofTwo">Premium</strong><span>product-led impression</span></article>
+                </div>
+              </div>
+              <div class="stage-media">
+                <img id="stageImage" src="../../public/marketing/dashboard-command-center.png" alt="Setu Flow command center dashboard" />
+                <div class="stage-badge">
+                  <strong id="stageBadge">Command center</strong>
+                  <span id="stageBadgeText">Executive-grade operating view</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section id="markets" class="market-panel">
+          <article class="world-card">
+            <h2 id="marketTitle">India corridor command</h2>
+            <p id="marketText">
+              Show markets as operating regions, not decorative text. Each region can carry a tailored buyer, supplier,
+              quote, or compliance narrative later.
+            </p>
+            <div class="map-grid" aria-label="Priority market map">
+              <span class="pin india" data-label="India"></span>
+              <span class="pin ireland" data-label="Ireland"></span>
+              <span class="pin uk" data-label="UK"></span>
+              <span class="pin germany" data-label="Germany"></span>
+              <span class="pin us" data-label="US"></span>
+            </div>
+          </article>
+
+          <article id="rollout" class="rollout-card">
+            <span class="eyebrow">Premium rollout story</span>
+            <h2>From demo to operating rhythm.</h2>
+            <p>
+              International buyers want confidence that the product can be adopted, not just admired.
+              Make implementation feel precise and managed.
+            </p>
+            <div class="rollout-steps">
+              <article>
+                <strong>1</strong>
+                <div><h3>Map the trade workflow</h3><p>Buyer, supplier, product, quote, approval, order, and document handoffs.</p></div>
+              </article>
+              <article>
+                <strong>2</strong>
+                <div><h3>Configure the command layer</h3><p>Markets, roles, pricing behavior, quote controls, and operating views.</p></div>
+              </article>
+              <article>
+                <strong>3</strong>
+                <div><h3>Launch with guided adoption</h3><p>A clear executive narrative, mobile capture, and team operating cadence.</p></div>
+              </article>
+            </div>
+          </article>
+        </section>
+
+        <section class="final">
+          <div class="final-inner">
+            <div>
+              <h2>This should feel like an international trade platform, not a CRM template.</h2>
+              <p>
+                The next design step is to turn this command concept into your real content system:
+                sharper claims, better product screenshots, security proof, and region-specific positioning.
+              </p>
+            </div>
+            <div class="actions">
+              <button class="button button-dark" type="button" data-open-demo>Book strategy call</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" data-close-demo></div>
+    <aside class="drawer" aria-label="Book a strategy call" aria-hidden="true">
+      <div class="drawer-head">
+        <div>
+          <span class="eyebrow">Private walkthrough</span>
+          <h2>Book a Setu Flow strategy call.</h2>
+          <p>Use a high-touch demo flow for premium buyers while the full product build continues.</p>
+        </div>
+        <button class="close" type="button" data-close-demo aria-label="Close">×</button>
+      </div>
+      <form>
+        <label>
+          Name
+          <input required placeholder="Full name" />
+        </label>
+        <label>
+          Work email
+          <input required type="email" placeholder="you@company.com" />
+        </label>
+        <label>
+          Company
+          <input required placeholder="Company name" />
+        </label>
+        <label>
+          Region focus
+          <select required>
+            <option value="">Select region</option>
+            <option>India</option>
+            <option>Ireland</option>
+            <option>United Kingdom</option>
+            <option>Germany</option>
+            <option>United States</option>
+            <option>Multi-region</option>
+          </select>
+        </label>
+        <label>
+          What should we show?
+          <textarea placeholder="Command center, quotes, approvals, mobile capture, order execution..."></textarea>
+        </label>
+        <button class="button button-dark" type="submit">Request walkthrough</button>
+        <div class="form-message">Prototype request captured.</div>
+      </form>
+    </aside>
+
+    <script>
+      const menuButton = document.querySelector(".menu");
+      const mobileNav = document.querySelector(".mobile-nav");
+      const drawer = document.querySelector(".drawer");
+      const backdrop = document.querySelector(".drawer-backdrop");
+
+      menuButton.addEventListener("click", () => {
+        const isOpen = mobileNav.classList.toggle("open");
+        menuButton.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      mobileNav.querySelectorAll("a, button").forEach((item) => {
+        item.addEventListener("click", () => {
+          mobileNav.classList.remove("open");
+          menuButton.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      function openDrawer() {
+        drawer.classList.add("open");
+        backdrop.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+      }
+
+      function closeDrawer() {
+        drawer.classList.remove("open");
+        backdrop.classList.remove("open");
+        drawer.setAttribute("aria-hidden", "true");
+      }
+
+      document.querySelectorAll("[data-open-demo]").forEach((button) => button.addEventListener("click", openDrawer));
+      document.querySelectorAll("[data-close-demo]").forEach((button) => button.addEventListener("click", closeDrawer));
+
+      const stageData = {
+        board: {
+          eyebrow: "Boardroom view",
+          title: "Replace the long SaaS scroll with a global command narrative.",
+          text: "The homepage can behave like a product command room: big product evidence, clear region positioning, and focused panels that make Setu Flow feel larger than a feature list.",
+          image: "../../public/marketing/dashboard-command-center.png",
+          alt: "Setu Flow command center dashboard",
+          badge: "Command center",
+          badgeText: "Executive-grade operating view",
+          proofOne: "Global",
+          proofTwo: "Premium",
+          list: [
+            "Make product proof the central visual language",
+            "Use concise executive copy instead of many repeated cards",
+            "Position the company around global trade operations"
+          ]
+        },
+        quote: {
+          eyebrow: "Quote governance",
+          title: "Make quote control the premium commercial story.",
+          text: "International trade teams care about terms, freight, FX, approval risk, and version control. This is where Setu Flow can look deeper than ordinary CRM products.",
+          image: "../../public/marketing/quote-workflow.png",
+          alt: "Setu Flow quote workflow",
+          badge: "Quote control",
+          badgeText: "Pricing, terms, and approval context",
+          proofOne: "FX",
+          proofTwo: "Approvals",
+          list: [
+            "Pricing basis and freight assumptions visible",
+            "Approval workflow before buyer delivery",
+            "Quote history shown as controlled commercial memory"
+          ]
+        },
+        execution: {
+          eyebrow: "Execution control",
+          title: "Show that the product continues after the deal is won.",
+          text: "A premium trade platform should not stop at pipeline. It should show documents, blockers, dispatch readiness, payment visibility, and the path from accepted quote to shipment.",
+          image: "../../public/marketing/orders-execution.png",
+          alt: "Setu Flow order execution workspace",
+          badge: "Order desk",
+          badgeText: "Documents and shipment readiness",
+          proofOne: "Orders",
+          proofTwo: "Docs",
+          list: [
+            "Accepted quotes move into operational work",
+            "Document and dispatch blockers are visible",
+            "Payment and shipment readiness stay connected"
+          ]
+        },
+        mobile: {
+          eyebrow: "Field capture",
+          title: "Give mobile capture the same premium treatment as desktop.",
+          text: "Trade teams meet buyers at events, in factories, and on the move. Mobile should feel like a core command surface, not a responsive afterthought.",
+          image: "../../public/marketing/mobile-leads.png",
+          alt: "Setu Flow mobile leads workspace",
+          badge: "Mobile command",
+          badgeText: "Field-ready lead and follow-up flow",
+          proofOne: "Scan",
+          proofTwo: "vCard",
+          list: [
+            "Business card scan and quick lead creation",
+            "Digital vCard and QR contact exchange",
+            "Follow-up queue for field teams"
+          ]
+        }
+      };
+
+      document.querySelectorAll(".deck-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".deck-button").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          const data = stageData[button.dataset.stage];
+
+          document.querySelector("#stageEyebrow").textContent = data.eyebrow;
+          document.querySelector("#stageTitle").textContent = data.title;
+          document.querySelector("#stageText").textContent = data.text;
+          document.querySelector("#stageImage").src = data.image;
+          document.querySelector("#stageImage").alt = data.alt;
+          document.querySelector("#stageBadge").textContent = data.badge;
+          document.querySelector("#stageBadgeText").textContent = data.badgeText;
+          document.querySelector("#proofOne").textContent = data.proofOne;
+          document.querySelector("#proofTwo").textContent = data.proofTwo;
+          document.querySelector("#stageList").innerHTML = data.list.map((item) => `<div>${item}</div>`).join("");
+        });
+      });
+
+      const marketText = {
+        India: "India corridor command",
+        Ireland: "Ireland market expansion",
+        "United Kingdom": "United Kingdom trade desk",
+        Germany: "Germany buyer and supplier coverage",
+        "United States": "United States commercial pipeline"
+      };
+
+      document.querySelectorAll("[data-market]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-market]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          const market = button.dataset.market;
+          document.querySelector("#marketTitle").textContent = marketText[market];
+          document.querySelector("#marketText").textContent =
+            `${market} can become a tailored landing narrative later: buyer motion, supplier coverage, quote requirements, and rollout context for that region.`;
+        });
+      });
+
+      document.querySelector(".drawer form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        document.querySelector(".form-message").classList.add("show");
+      });
+    </script>
+  </body>
+</html>

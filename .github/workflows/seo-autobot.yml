@@ -3,15 +3,11 @@ name: SEO Autobot
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '15 10 * * *'
 
 permissions:
   contents: write
   pull-requests: write
-
-concurrency:
-  group: seo-autobot
-  cancel-in-progress: false
 
 jobs:
   seo-autobot:
@@ -20,8 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -49,11 +43,10 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: seo/autobot-updates
-          base: main
+          branch: seo/autobot-report
           delete-branch: true
-          commit-message: 'chore(seo): refresh weekly autobot report'
-          title: 'chore(seo): refresh weekly SEO intelligence report'
+          commit-message: 'chore(seo): refresh daily autobot report'
+          title: 'chore(seo): refresh daily SEO intelligence report'
           body: |
             Automated SEO monitoring update.
 
@@ -63,7 +56,6 @@ jobs:
             - Competitor descriptions and detected metadata
             - Keyword cluster recommendations
             - Any generated content or schema recommendations before publishing
-            - Confirm the PR targets `main` from the dedicated `seo/autobot-updates` branch
           labels: |
             seo
             automation

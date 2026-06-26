@@ -3,9 +3,11 @@ import type { LeadProfileData } from '@/lib/queries/leads';
 import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draft-actions';
 import { completeCanonicalLeadFollowUp, moveCanonicalLeadStage, saveCanonicalLeadDetails, saveCanonicalQualificationMapping, scheduleCanonicalLeadFollowUp } from './actions';
 
-type Props = { data: LeadProfileData; saved?: string | null };
+type Props = { data: LeadProfileData; saved?: string | null; backHref?: string };
 
 const TERMINAL = new Set(['accepted', 'rejected', 'expired', 'cancelled', 'declined']);
+const BUYER_STAGES = ['New Lead', 'Qualified', 'Contacted', 'Samples Sent', 'Negotiation', 'Won', 'Lost'];
+const SUPPLIER_STAGES = ['New Supplier', 'Qualified', 'Contacted', 'Samples Sent', 'Negotiation', 'Won', 'Lost'];
 
 function fmtDate(value?: string | null) {
   if (!value) return 'No follow-up';
@@ -50,6 +52,10 @@ function currentStageName(data: LeadProfileData) {
   return data.stages.find((stage) => stage.id === data.lead?.stage_id)?.name || 'New Lead';
 }
 
+function normalizeStageName(value?: string | null) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 function ContactChip({ href, icon, children, disabled }: { href: string; icon: string; children: React.ReactNode; disabled?: boolean }) {
   const cls = 'inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700';
   return disabled ? <span className={`${cls} opacity-45`}>{icon} {children}</span> : <a href={href} className={cls}>{icon} {children}</a>;
@@ -83,22 +89,42 @@ function QuotePrimaryActions({ leadId, quote }: { leadId: string; quote: any | n
 }
 
 function StageStrip({ data }: { data: LeadProfileData }) {
-  const stages = data.stages.length ? data.stages : [];
+  const leadType = String(data.lead?.lead_type || '').toLowerCase();
+  const wantedLabels = leadType === 'supplier' ? SUPPLIER_STAGES : BUYER_STAGES;
+  const currentStage = data.stages.find((stage) => stage.id === data.lead?.stage_id) || null;
+  const pipelineId = currentStage?.pipeline_id || null;
+  const stageMap = new Map<string, (typeof data.stages)[number]>();
+  data.stages
+    .filter((stage) => !pipelineId || stage.pipeline_id === pipelineId)
+    .forEach((stage) => {
+      const key = normalizeStageName(stage.name);
+      if (key && !stageMap.has(key)) stageMap.set(key, stage);
+    });
+  const stages = wantedLabels.map((label) => ({ label, stage: stageMap.get(normalizeStageName(label)) || null }));
   const currentId = data.lead?.stage_id;
   return (
     <div className="border-t border-slate-100 px-6 py-5">
       <div className="grid grid-cols-7 gap-3">
-        {stages.slice(0, 7).map((stage, index) => {
-          const active = stage.id === currentId;
-          const isWon = /won/i.test(stage.name || '');
-          const isLost = /lost/i.test(stage.name || '');
+        {stages.map(({ label, stage }, index) => {
+          const active = stage?.id === currentId || (!stage && normalizeStageName(currentStage?.name) === normalizeStageName(label));
+          const isWon = /won/i.test(label);
+          const isLost = /lost/i.test(label);
+          const marker = <><span className={`h-3 w-3 rounded-full ${active ? 'bg-blue-600 ring-4 ring-blue-100' : isWon ? 'bg-emerald-500' : isLost ? 'bg-rose-500' : 'bg-slate-300'}`} /><span className={`h-0.5 flex-1 ${index === stages.length - 1 ? 'bg-transparent' : active ? 'bg-blue-500' : 'bg-slate-200'}`} /></>;
+          if (!stage) {
+            return (
+              <div key={label} className="text-center opacity-70">
+                <span className="mb-2 flex items-center">{marker}</span>
+                <span className={`text-xs font-black ${active ? 'text-blue-700' : isWon ? 'text-emerald-700' : isLost ? 'text-rose-600' : 'text-slate-500'}`}>{label}</span>
+              </div>
+            );
+          }
           return (
             <form key={stage.id} action={moveCanonicalLeadStage} className="text-center">
               <input type="hidden" name="lead_id" value={data.lead?.id || ''} />
               <input type="hidden" name="stage_id" value={stage.id} />
-              <button type="submit" title={`Move to ${stage.name}`} className="group w-full">
-                <span className="mb-2 flex items-center"><span className={`h-3 w-3 rounded-full ${active ? 'bg-blue-600 ring-4 ring-blue-100' : isWon ? 'bg-emerald-500' : isLost ? 'bg-rose-500' : 'bg-slate-300'}`} /><span className={`h-0.5 flex-1 ${index === stages.length - 1 ? 'bg-transparent' : active ? 'bg-blue-500' : 'bg-slate-200'}`} /></span>
-                <span className={`text-xs font-black ${active ? 'text-blue-700' : isWon ? 'text-emerald-700' : isLost ? 'text-rose-600' : 'text-slate-500'}`}>{stage.name}</span>
+              <button type="submit" title={`Move to ${label}`} className="group w-full">
+                <span className="mb-2 flex items-center">{marker}</span>
+                <span className={`text-xs font-black ${active ? 'text-blue-700' : isWon ? 'text-emerald-700' : isLost ? 'text-rose-600' : 'text-slate-500'}`}>{label}</span>
               </button>
             </form>
           );
@@ -112,7 +138,7 @@ function Kpi({ icon, label, value, helper }: { icon: string; label: string; valu
   return <div className="flex items-center gap-4 border-r border-slate-100 px-5 last:border-r-0"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl text-white shadow-sm">{icon}</div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{label}</p><p className="mt-1 text-lg font-black text-slate-950">{value}</p>{helper ? <p className="text-xs font-semibold text-slate-400">{helper}</p> : null}</div></div>;
 }
 
-export default function CanonicalLeadDetail({ data, saved }: Props) {
+export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }: Props) {
   const lead = data.lead!;
   const quotes = sortedQuotes(data);
   const latestQuote = quotes[0] || null;
@@ -134,6 +160,7 @@ export default function CanonicalLeadDetail({ data, saved }: Props) {
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Lead Detail</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href={backHref} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm">Back to Leads</Link>
           <a href="#edit-lead" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm">✎ Edit Lead</a>
           <a href="#follow-up" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm">▣ Schedule Follow-up</a>
           <a href="#qualification" className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-sm">Qualify Lead</a>
@@ -248,7 +275,7 @@ export default function CanonicalLeadDetail({ data, saved }: Props) {
       </section>
 
       <div className="fixed bottom-4 left-[calc(8rem+1rem)] right-4 z-20 hidden rounded-[1.5rem] border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur md:flex md:items-center md:justify-between">
-        <div className="flex gap-2"><QuotePrimaryActions leadId={lead.id} quote={latestQuote} /><a href="#follow-up" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Schedule Follow-up</a><a href="#edit-lead" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Quick Edit</a></div>
+        <div className="flex gap-2"><Link href={backHref} className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Back to Leads</Link><QuotePrimaryActions leadId={lead.id} quote={latestQuote} /><a href="#follow-up" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Schedule Follow-up</a><a href="#edit-lead" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Quick Edit</a></div>
         <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-blue-600">Command Center · One Page Workspace</span>
       </div>
     </div>
