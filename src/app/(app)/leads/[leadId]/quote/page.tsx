@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import CanonicalQuoteBuilderApprovalAware from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalAware';
+import CanonicalQuoteBuilderApprovalQueueV2 from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -36,7 +36,7 @@ export default async function QuotePage({
   }
 
   return (
-    <CanonicalQuoteBuilderApprovalAware
+    <CanonicalQuoteBuilderApprovalQueueV2
       data={data}
       quoteId={readParam(searchParams?.quoteId).trim() || null}
       step={readParam(searchParams?.step).trim() || null}
