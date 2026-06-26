@@ -13,7 +13,7 @@ export default async function QuotePage({
   searchParams,
 }: {
   params: { leadId: string };
-  searchParams?: { quoteId?: string | string[]; step?: string | string[]; quoteDraftError?: string | string[] };
+  searchParams?: { quoteId?: string | string[]; step?: string | string[]; quoteDraftError?: string | string[]; quoteActionError?: string | string[]; saved?: string | string[] };
 }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
   try {
@@ -41,6 +41,8 @@ export default async function QuotePage({
       quoteId={readParam(searchParams?.quoteId).trim() || null}
       step={readParam(searchParams?.step).trim() || null}
       quoteDraftError={readParam(searchParams?.quoteDraftError).trim() || null}
+      quoteActionError={readParam(searchParams?.quoteActionError).trim() || null}
+      saved={readParam(searchParams?.saved).trim() || null}
     />
   );
 }
