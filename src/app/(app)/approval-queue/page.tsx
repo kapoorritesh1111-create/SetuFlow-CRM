@@ -40,6 +40,37 @@ function fmtDate(value?: string | null) {
   return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+async function syncQuoteVersionAfterDecision(input: {
+  supabase: any;
+  organizationId: string;
+  quoteId: string;
+  quoteVersionId: string;
+  actorUserId: string;
+  decision: string;
+}) {
+  const now = new Date().toISOString();
+  const approved = input.decision === 'approved';
+  const nextStatus = approved ? 'approved' : 'draft';
+  const { error: versionError } = await input.supabase
+    .from('quote_versions')
+    .update({
+      status: nextStatus,
+      approved_at: approved ? now : null,
+      approved_by: approved ? input.actorUserId : null,
+      updated_at: now,
+    })
+    .eq('quote_id', input.quoteId)
+    .eq('id', input.quoteVersionId);
+
+  if (versionError) throw versionError;
+
+  await input.supabase
+    .from('quotes')
+    .update({ approval_required: false, updated_at: now })
+    .eq('organization_id', input.organizationId)
+    .eq('id', input.quoteId);
+}
+
 async function decideApproval(formData: FormData): Promise<void> {
   'use server';
 
@@ -65,9 +96,36 @@ async function decideApproval(formData: FormData): Promise<void> {
 
   if (error) redirect(`/approval-queue?quoteId=${quoteId}&error=${encodeURIComponent(error.message ?? 'approval-decision-failed')}`);
 
+  try {
+    await syncQuoteVersionAfterDecision({
+      supabase,
+      organizationId: workspace.organization.id,
+      quoteId,
+      quoteVersionId,
+      actorUserId: workspace.user.id,
+      decision,
+    });
+  } catch (syncError) {
+    const message = syncError instanceof Error ? syncError.message : 'approval-sync-failed';
+    redirect(`/approval-queue?quoteId=${quoteId}&error=${encodeURIComponent(message)}`);
+  }
+
+  const { data: quote } = await supabase
+    .from('quotes')
+    .select('lead_id')
+    .eq('organization_id', workspace.organization.id)
+    .eq('id', quoteId)
+    .maybeSingle();
+
   revalidatePath('/approval-queue');
   revalidatePath('/quotes');
   revalidatePath(`/leads`);
+  if (quote?.lead_id) {
+    revalidatePath(`/leads/${quote.lead_id}`);
+    revalidatePath(`/leads/${quote.lead_id}/quote`);
+  }
+
+  if (quote?.lead_id) redirect(`/leads/${quote.lead_id}/quote?quoteId=${quoteId}&step=5&saved=approval-${decision}`);
   redirect(`/approval-queue?quoteId=${quoteId}&saved=${decision}`);
 }
 
