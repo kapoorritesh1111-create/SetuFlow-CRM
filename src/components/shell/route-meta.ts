@@ -90,7 +90,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
         description: 'Review commercial output, approvals, and pricing detail for this lead without losing the surrounding follow-up context.',
         sectionLabel: 'Primary operating flow',
         backHref: pathname.replace(/\/quote.*/, ''),
-        backLabel: 'Back to Follow-up',
+        backLabel: 'Back to Lead Detail',
       };
     }
     if (/^\/leads\/[^/]+\/rfq/.test(pathname)) {
@@ -99,13 +99,13 @@ export function getRouteMeta(pathname: string): RouteMeta {
         description: 'Manage RFQ work for the selected lead without breaking the normal sales sequence.',
         sectionLabel: 'Primary operating flow',
         backHref: pathname.replace(/\/rfq.*/, ''),
-        backLabel: 'Back to Follow-up',
+        backLabel: 'Back to Lead Detail',
       };
     }
     if (/^\/leads\/[^/]+$/.test(pathname)) {
       return {
-        title: 'Follow-up',
-        description: 'Work one focused page for qualification, blockers, next step, and quote progress without bouncing between tools.',
+        title: 'Lead Detail',
+        description: 'Work one focused command center for qualification, next touchpoint, commercial progress, and quote lifecycle.',
         sectionLabel: 'Primary operating flow',
         tabs: PRODUCT_SHELL_TABS,
         backHref: PRODUCT_ROUTES.app.leads,
@@ -187,6 +187,6 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname.startsWith('/contact-exchange/vcard')) return { title: 'My Card', description: 'Personal sharing tool for lightweight contact exchange.', sectionLabel: 'Supporting tools' };
   if (pathname.startsWith('/tasks')) return { title: 'Tasks', description: 'Supporting work tracker that should not outrank the core trade flow.', sectionLabel: 'Supporting tools' };
   if (pathname.startsWith('/documents')) return { title: 'Documents', description: 'Review files, documentary completeness, expiry, and evidence gaps close to the core workflow.', sectionLabel: 'Risk and control' };
-  if (pathname.startsWith('/compliance')) return { title: 'Compliance', description: 'Keep compliance blockers visible before commercial or execution moves go too far.', sectionLabel: 'Risk and control' };
+  if (pathname.startsWith('/compliance')) return { title: 'Compliance', description: 'Keep compliance blockers visible before commercial or execution moves too far.', sectionLabel: 'Risk and control' };
   return { title: 'Workspace', description: 'Operate daily work from a cleaner shell that matches how the team actually works.', sectionLabel: 'SETU Flow workspace' };
 }
