@@ -3,6 +3,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import CanonicalLeadDetailCompactV2 from '@/features/leads/canonical/CanonicalLeadDetailCompactV2';
+import LeadQuotesMiniList from '@/features/leads/canonical/LeadQuotesMiniList';
 import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 
 function readParam(value?: string | string[]) {
@@ -63,6 +64,7 @@ export default async function Page({
         stageError={null}
         backHref={leadsBackHref(searchParams?.mode)}
       />
+      <LeadQuotesMiniList data={data} />
     </>
   );
 }
