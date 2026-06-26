@@ -4,34 +4,43 @@ import { useMemo, useState } from 'react';
 
 type Props = {
   leadId: string;
+  clientName?: string | null;
+  senderName?: string | null;
+  senderCompany?: string | null;
   email?: string | null;
   whatsapp?: string | null;
   action: (formData: FormData) => void | Promise<void>;
 };
 
-const TEMPLATES: Record<string, string> = {
-  pricing: 'Share pricing, MOQ, and delivery timeline. Confirm target quantity and expected order window.',
-  sample: 'Confirm sample requirement, delivery address, and preferred courier timeline.',
-  documents: 'Share requested documents and confirm if any compliance or label details are still needed.',
-  decision: 'Confirm next decision date, decision maker, and remaining blockers before quote acceptance.',
-};
+function draftTemplate(kind: string, clientName?: string | null, senderName?: string | null, senderCompany?: string | null) {
+  const client = clientName || 'there';
+  const sender = senderName || 'Ritesh Kapoor';
+  const company = senderCompany || 'Setu Flow';
+  const body: Record<string, string> = {
+    pricing: `Hi ${client},\n\nThank you for your interest. I wanted to follow up with the pricing, MOQ, and delivery timeline details we discussed. Please confirm the target quantity and expected order window so we can align the quote correctly.\n\nBest regards,\n${sender}\n${company}`,
+    sample: `Hi ${client},\n\nFollowing up on the sample request. Please confirm the delivery address, preferred courier timeline, and any specific product variants you would like us to include.\n\nBest regards,\n${sender}\n${company}`,
+    documents: `Hi ${client},\n\nI am following up to share the requested documents and confirm whether any compliance, label, or import details are still needed from our side.\n\nBest regards,\n${sender}\n${company}`,
+    decision: `Hi ${client},\n\nI wanted to check in on the quote review and confirm the next decision timeline. Please let me know if there are any open questions or blockers we should address.\n\nBest regards,\n${sender}\n${company}`,
+  };
+  return body[kind] || body.pricing;
+}
 
 function cleanPhone(value?: string | null) {
   return String(value || '').replace(/[^+\d]/g, '').replace(/^\+/, '');
 }
 
-export default function FollowUpComposer({ leadId, email, whatsapp, action }: Props) {
+export default function FollowUpComposer({ leadId, clientName, senderName, senderCompany, email, whatsapp, action }: Props) {
   const [purpose, setPurpose] = useState('pricing');
   const [channel, setChannel] = useState('whatsapp');
-  const [notes, setNotes] = useState(TEMPLATES.pricing);
+  const [notes, setNotes] = useState(() => draftTemplate('pricing', clientName, senderName, senderCompany));
   const encodedNotes = encodeURIComponent(notes);
   const waNumber = cleanPhone(whatsapp);
-  const emailHref = useMemo(() => `mailto:${email || ''}?subject=${encodeURIComponent('Follow-up from Setu Flow')}&body=${encodedNotes}`, [email, encodedNotes]);
+  const emailHref = useMemo(() => `mailto:${email || ''}?subject=${encodeURIComponent(`Follow-up for ${clientName || 'your request'}`)}&body=${encodedNotes}`, [email, encodedNotes, clientName]);
   const whatsappHref = useMemo(() => waNumber ? `https://wa.me/${waNumber}?text=${encodedNotes}` : '#', [waNumber, encodedNotes]);
 
   function onPurposeChange(next: string) {
     setPurpose(next);
-    setNotes(TEMPLATES[next] || TEMPLATES.pricing);
+    setNotes(draftTemplate(next, clientName, senderName, senderCompany));
   }
 
   return (
@@ -57,7 +66,7 @@ export default function FollowUpComposer({ leadId, email, whatsapp, action }: Pr
         </label>
       </div>
       <input name="scheduled_at" type="datetime-local" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700" />
-      <textarea name="notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-700" />
+      <textarea name="notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-32 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-700" />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white">Schedule Follow-up</button>
         <div className="flex gap-2">
