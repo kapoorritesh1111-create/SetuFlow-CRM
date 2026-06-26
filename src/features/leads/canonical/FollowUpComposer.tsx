@@ -44,35 +44,36 @@ export default function FollowUpComposer({ leadId, clientName, senderName, sende
   }
 
   return (
-    <form action={action} className="mt-3 grid gap-3">
+    <form action={action} className="mt-5 grid gap-4">
       <input type="hidden" name="lead_id" value={leadId} />
-      <div className="grid gap-2 sm:grid-cols-[1fr_1fr]">
-        <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-          Follow-up for
-          <select name="follow_up_type" value={purpose} onChange={(event) => onPurposeChange(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-700">
+      <div className="grid gap-3 md:grid-cols-[1fr_0.8fr_1.1fr]">
+        <label className="grid gap-2 text-xs font-semibold text-slate-500">
+          Follow-up For
+          <select name="follow_up_type" value={purpose} onChange={(event) => onPurposeChange(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm">
             <option value="pricing">Pricing / MOQ</option>
             <option value="sample">Samples</option>
             <option value="documents">Documents</option>
             <option value="decision">Decision timeline</option>
           </select>
         </label>
-        <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+        <label className="grid gap-2 text-xs font-semibold text-slate-500">
           Channel
-          <select name="channel" value={channel} onChange={(event) => setChannel(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-700">
+          <select name="channel" value={channel} onChange={(event) => setChannel(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm">
             <option value="whatsapp">WhatsApp</option>
             <option value="email">Email</option>
             <option value="phone">Phone call</option>
           </select>
         </label>
+        <label className="grid gap-2 text-xs font-semibold text-slate-500">
+          Date & Time
+          <input name="scheduled_at" type="datetime-local" className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm" />
+        </label>
       </div>
-      <input name="scheduled_at" type="datetime-local" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700" />
-      <textarea name="notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-32 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-700" />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white">Schedule Follow-up</button>
-        <div className="flex gap-2">
-          <a aria-disabled={!email} href={email ? emailHref : '#'} className={`rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 ${!email ? 'pointer-events-none opacity-40' : ''}`}>Send Email</a>
-          <a aria-disabled={!waNumber} href={waNumber ? whatsappHref : '#'} className={`rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 ${!waNumber ? 'pointer-events-none opacity-40' : ''}`}>Send WhatsApp</a>
-        </div>
+      <textarea name="notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-36 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-medium leading-6 text-slate-700 shadow-sm" />
+      <div className="grid gap-3 md:grid-cols-3">
+        <button className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm">▣ Schedule Follow-up</button>
+        <a aria-disabled={!email} href={email ? emailHref : '#'} className={`inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm ${!email ? 'pointer-events-none opacity-40' : ''}`}>✉ Send Email</a>
+        <a aria-disabled={!waNumber} href={waNumber ? whatsappHref : '#'} className={`inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-700 shadow-sm ${!waNumber ? 'pointer-events-none opacity-40' : ''}`}>☘ Send WhatsApp</a>
       </div>
     </form>
   );
