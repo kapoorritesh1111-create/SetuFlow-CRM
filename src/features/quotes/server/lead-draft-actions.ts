@@ -11,8 +11,6 @@ import { enforceTrialAction } from '@/lib/trial/enforcement';
 import { safeUserError, logServerError } from '@/lib/safe-error';
 import { writeAuditLog } from '@/lib/auditLog';
 
-const TERMINAL_QUOTE_STATUSES = new Set(['accepted', 'rejected', 'expired', 'cancelled']);
-
 type LeadQuoteDraftResult = {
   quote_id?: string;
   quote_version_id?: string;
@@ -88,11 +86,6 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
     if (!sourceQuote || sourceQuote.lead_id !== leadId) {
       redirect(`/leads/${leadId}/quote?quoteDraftError=source-mismatch`);
     }
-
-    const sourceStatus = String(sourceQuote.status ?? '').toLowerCase();
-    if (forceNew && !TERMINAL_QUOTE_STATUSES.has(sourceStatus)) {
-      redirect(`/leads/${leadId}/quote?quoteId=${sourceQuoteId}`);
-    }
   }
 
   const trialDecision = await enforceTrialAction({
@@ -149,5 +142,5 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
   });
 
   await revalidateLeadQuotePaths(leadId);
-  redirect(`/leads/${leadId}/quote?quoteId=${draft.quote_id}`);
+  redirect(`/leads/${leadId}/quote?quoteId=${draft.quote_id}&step=1`);
 }
