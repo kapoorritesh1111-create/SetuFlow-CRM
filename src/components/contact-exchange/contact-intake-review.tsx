@@ -420,7 +420,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
                   <Link href={`/leads/${createdLead.id}?tab=workflow&handoff=capture-review-open-lead`} className="inline-flex rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
                     Open lead
                   </Link>
-                  <Link href={`/leads?leadId=${createdLead.id}&view=quote&handoff=capture-review-open-quote`} className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
+                  <Link href={`/leads/${createdLead.id}/quote?handoff=capture-review-open-quote`} className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
                     Open quote prep
                   </Link>
                 </div>

@@ -4,7 +4,11 @@ import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import CanonicalLeadDetail from '@/features/leads/canonical/CanonicalLeadDetail';
 
-export default async function Page({ params }: { params: { leadId: string } }) {
+function readParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+export default async function Page({ params, searchParams }: { params: { leadId: string }; searchParams?: { saved?: string | string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
   try {
     workspace = await getWorkspaceAccess();
@@ -25,5 +29,5 @@ export default async function Page({ params }: { params: { leadId: string } }) {
     return <EmptyState title="Lead not found" description="The requested lead could not be loaded from the active workspace." />;
   }
 
-  return <CanonicalLeadDetail data={data} />;
+  return <CanonicalLeadDetail data={data} saved={readParam(searchParams?.saved).trim() || null} />;
 }

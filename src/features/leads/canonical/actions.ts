@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -64,6 +65,7 @@ export async function saveCanonicalLeadDetails(formData: FormData) {
   revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
   revalidatePath(`/leads/${leadId}/quote`);
+  redirect(`/leads/${leadId}?saved=lead#edit-lead`);
 }
 
 import { moveLeadToStage } from '@/features/pipeline/server/actions';
@@ -73,8 +75,10 @@ export async function moveCanonicalLeadStage(formData: FormData) {
   await moveLeadToStage(undefined, formData);
 }
 
-export async function scheduleCanonicalLeadFollowUp(formData: FormData) {
+export async function scheduleCanonicalLeadFollowUp(formData: FormData): Promise<void> {
+  const leadId = clean(formData.get('lead_id'));
   await scheduleLeadFollowUp(undefined, formData);
+  if (leadId) redirect(`/leads/${leadId}?saved=follow-up#follow-up`);
 }
 
 export async function completeCanonicalLeadFollowUp(formData: FormData) {
@@ -91,6 +95,7 @@ export async function completeCanonicalLeadFollowUp(formData: FormData) {
   await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'follow_up_completed', message: 'Follow-up marked completed from canonical Lead Detail.', occurred_at: now });
   revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
+  redirect(`/leads/${leadId}?saved=follow-up#follow-up`);
 }
 
 export async function saveCanonicalQualificationMapping(formData: FormData) {
@@ -119,4 +124,5 @@ export async function saveCanonicalQualificationMapping(formData: FormData) {
   revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
   revalidatePath(`/leads/${leadId}/quote`);
+  redirect(`/leads/${leadId}?saved=qualification#qualification`);
 }

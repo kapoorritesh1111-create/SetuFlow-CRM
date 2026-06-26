@@ -3,7 +3,7 @@ import type { LeadProfileData } from '@/lib/queries/leads';
 import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draft-actions';
 import { completeCanonicalLeadFollowUp, moveCanonicalLeadStage, saveCanonicalLeadDetails, saveCanonicalQualificationMapping, scheduleCanonicalLeadFollowUp } from './actions';
 
-type Props = { data: LeadProfileData };
+type Props = { data: LeadProfileData; saved?: string | null };
 
 const TERMINAL = new Set(['accepted', 'rejected', 'expired', 'cancelled', 'declined']);
 
@@ -112,7 +112,7 @@ function Kpi({ icon, label, value, helper }: { icon: string; label: string; valu
   return <div className="flex items-center gap-4 border-r border-slate-100 px-5 last:border-r-0"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl text-white shadow-sm">{icon}</div><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{label}</p><p className="mt-1 text-lg font-black text-slate-950">{value}</p>{helper ? <p className="text-xs font-semibold text-slate-400">{helper}</p> : null}</div></div>;
 }
 
-export default function CanonicalLeadDetail({ data }: Props) {
+export default function CanonicalLeadDetail({ data, saved }: Props) {
   const lead = data.lead!;
   const quotes = sortedQuotes(data);
   const latestQuote = quotes[0] || null;
@@ -123,8 +123,11 @@ export default function CanonicalLeadDetail({ data }: Props) {
   const phone = phoneForUrl(lead.phone);
   const whatsapp = phoneForUrl(lead.whatsapp_number || lead.phone);
 
+  const savedMessage = saved === 'lead' ? 'Lead details saved.' : saved === 'follow-up' ? 'Follow-up updated.' : saved === 'qualification' ? 'Qualification and mapping saved.' : null;
+
   return (
     <div className="space-y-5 pb-24">
+      {savedMessage ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800">✓ {savedMessage}</div> : null}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Trade Command Center</p>
