@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import CanonicalLeadDetailCompact from '@/features/leads/canonical/CanonicalLeadDetailCompact';
+import CanonicalLeadDetailCompactV2 from '@/features/leads/canonical/CanonicalLeadDetailCompactV2';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -41,7 +41,7 @@ export default async function Page({
   }
 
   return (
-    <CanonicalLeadDetailCompact
+    <CanonicalLeadDetailCompactV2
       data={data}
       saved={readParam(searchParams?.saved).trim() || null}
       stageError={readParam(searchParams?.stageError).trim() || null}
