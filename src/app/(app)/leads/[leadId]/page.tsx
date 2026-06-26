@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import CanonicalLeadDetail from '@/features/leads/canonical/CanonicalLeadDetail';
+import CanonicalLeadDetailCompact from '@/features/leads/canonical/CanonicalLeadDetailCompact';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -13,7 +13,13 @@ function leadsBackHref(value?: string | string[]) {
   return mode ? `/leads?mode=${encodeURIComponent(mode)}` : '/leads';
 }
 
-export default async function Page({ params, searchParams }: { params: { leadId: string }; searchParams?: { saved?: string | string[]; mode?: string | string[] } }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: { leadId: string };
+  searchParams?: { saved?: string | string[]; stageError?: string | string[]; mode?: string | string[] };
+}) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
   try {
     workspace = await getWorkspaceAccess();
@@ -34,5 +40,12 @@ export default async function Page({ params, searchParams }: { params: { leadId:
     return <EmptyState title="Lead not found" description="The requested lead could not be loaded from the active workspace." />;
   }
 
-  return <CanonicalLeadDetail data={data} saved={readParam(searchParams?.saved).trim() || null} backHref={leadsBackHref(searchParams?.mode)} />;
+  return (
+    <CanonicalLeadDetailCompact
+      data={data}
+      saved={readParam(searchParams?.saved).trim() || null}
+      stageError={readParam(searchParams?.stageError).trim() || null}
+      backHref={leadsBackHref(searchParams?.mode)}
+    />
+  );
 }
