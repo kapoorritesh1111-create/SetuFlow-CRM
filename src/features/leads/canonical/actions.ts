@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
-import { moveLeadToStage } from '@/features/pipeline/server/actions';
 import { scheduleLeadFollowUp } from '@/features/leads/server/actions';
 
 function clean(value: FormDataEntryValue | null) { return String(value ?? '').trim(); }
@@ -28,11 +27,19 @@ export async function saveCanonicalLeadDetails(formData: FormData) {
 }
 
 export async function moveCanonicalLeadStage(formData: FormData) {
+  if (!hasSupabaseEnv) return;
+  const workspace = await requireWorkspace();
+  if (!workspace?.organization || !workspace?.user) return;
   const leadId = clean(formData.get('lead_id'));
-  if (!leadId) return;
-  const result = await moveLeadToStage(undefined, formData);
+  const stageId = clean(formData.get('stage_id'));
+  if (!leadId || !stageId) return;
+  const supabase = (await createClient()) as any;
+  const { data: stage, error: stageError } = await supabase.from('pipeline_stages').select('id, name, pipeline_id').eq('id', stageId).maybeSingle();
+  if (stageError || !stage?.id) goLead(leadId, { stageError: 'stage-not-found' }, 'stage-strip');
+  const { error } = await supabase.from('leads').update({ stage_id: stageId, pipeline_id: stage.pipeline_id, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
+  if (error) goLead(leadId, { stageError: 'db-update-failed' }, 'stage-strip');
+  await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'stage_changed', message: `Lead stage moved to ${stage.name} from canonical Lead Detail.`, occurred_at: new Date().toISOString() });
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
-  if (result?.error) goLead(leadId, { stageError: 'blocked' }, 'stage-strip');
   goLead(leadId, { saved: 'stage' }, 'stage-strip');
 }
 
