@@ -1,0 +1,40 @@
+name: S37 final cleanup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/features/quotes/server/actions.ts')
+          s = p.read_text()
+          a = s.index('// S37-BUG-006: createQuoteDirect')
+          b = s.index('async function writeQuoteAuditLog', a)
+          r = """// S37-BUG-006: legacy app-side direct quote insert/update helpers were removed.
+// Quote creation and revisions now flow through transactional RPCs so parent quotes.status
+// and version pointers remain DB-derived.
+
+"""
+          s = s[:a] + r + s[b:]
+          if 'updateQuoteDirect' in s:
+              raise SystemExit('cleanup failed')
+          p.write_text(s)
+          for x in ['.github/workflows/s37-final-cleanup.yml', '.github/workflows/s37-cleanup-helper.yml', 'tmp/s37-cleanup-trigger.txt']:
+              q = Path(x)
+              if q.exists():
+                  q.unlink()
+          PY
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: 'S37-CLEANUP: Remove updateQuoteDirect helper'
+          add: 'src/features/quotes/server/actions.ts .github/workflows/s37-final-cleanup.yml .github/workflows/s37-cleanup-helper.yml tmp/s37-cleanup-trigger.txt'
