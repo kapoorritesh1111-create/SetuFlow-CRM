@@ -52,6 +52,7 @@ type DesktopNavGroup = {
 const GLOBAL_SCOPE_KEY = 'setuflow-global-workspace-scope';
 const DESKTOP_SIDEBAR_KEY = 'setuflow-desktop-sidebar-mode';
 const MODE_AWARE_PREFIXES = ['/dashboard', '/leads', '/pipeline', '/quotes', '/orders', '/compliance'];
+const FALLBACK_LOGO = '/logos/setu-flow-logo.svg';
 
 function normalizeScope(value?: string | null): WorkspaceScope {
   if (value === 'buyer' || value === 'buyers') return 'buyers';
@@ -82,6 +83,11 @@ function addShareSafeAssetParam(params: URLSearchParams, key: string, value?: st
   if (!trimmed || /^data:/i.test(trimmed) || /^blob:/i.test(trimmed) || trimmed.length > 500) return;
   if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('/')) return;
   params.set(key, trimmed);
+}
+
+function getOrgLogoUrl(organization: Organization) {
+  const logoUrl = String((organization as any)?.logo_url ?? '').trim();
+  return logoUrl.length > 0 ? logoUrl : FALLBACK_LOGO;
 }
 
 function shareLinkFor(profile: Profile, organization: Organization, cardSettings?: MyCardSettingsInput | null, cardShareSlug?: string | null, roleLabel = 'Member') {
@@ -140,7 +146,8 @@ function GlobalWorkspaceFilter({ scope, onScopeChange }: { scope: WorkspaceScope
   );
 }
 
-function DesktopLogo({ organizationName, expanded }: { organizationName?: string | null; expanded: boolean }) {
+function DesktopLogo({ organizationName, logoUrl, expanded }: { organizationName?: string | null; logoUrl?: string | null; expanded: boolean }) {
+  const imageUrl = logoUrl || FALLBACK_LOGO;
   return (
     <Link
       href="/dashboard"
@@ -148,12 +155,12 @@ function DesktopLogo({ organizationName, expanded }: { organizationName?: string
       title="Go to dashboard"
       className={cn('flex items-center gap-3 rounded-2xl p-2 text-white transition hover:bg-white/8', expanded ? 'justify-start' : 'justify-center')}
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.9rem] bg-white/8 ring-1 ring-white/10">
-        <img src="/logos/setu-flow-logo.svg" alt="SETU Flow" className="h-7 w-7 object-contain" />
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] bg-white ring-1 ring-white/20 shadow-sm">
+        <img src={imageUrl} alt={organizationName ? `${organizationName} logo` : 'Workspace logo'} className="h-full w-full object-contain p-1.5" />
       </span>
       {expanded ? (
         <span className="min-w-0">
-          <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/55">SetuFlow</span>
+          <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Workspace</span>
           <span className="block truncate text-xs font-black text-white">{organizationName ?? 'Dashboard'}</span>
         </span>
       ) : null}
@@ -164,45 +171,30 @@ function DesktopLogo({ organizationName, expanded }: { organizationName?: string
 function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: string; scope: WorkspaceScope; mode: Exclude<DesktopSidebarMode, 'hidden'>; canAccessAdmin: boolean }) {
   const expanded = mode === 'expanded';
   const groups: DesktopNavGroup[] = [
-    {
-      title: 'Command',
-      items: [
-        { href: PRODUCT_ROUTES.app.dashboard, label: 'Dash', expandedLabel: 'Dashboard', icon: 'home' },
-        { href: '/dashboard/analytics', label: 'Analytics', expandedLabel: 'Analytics', icon: 'line-chart' },
-        { href: '/reports', label: 'Reports', expandedLabel: 'Reports', icon: 'bar-chart' },
-      ],
-    },
-    {
-      title: 'Growth',
-      items: [
-        { href: PRODUCT_ROUTES.app.capture, label: 'Capture', expandedLabel: 'Capture', icon: 'qrcode' },
-        { href: PRODUCT_ROUTES.app.leads, label: 'Leads', expandedLabel: 'Leads', icon: 'users' },
-        { href: PRODUCT_ROUTES.app.pipeline, label: 'Pipeline', expandedLabel: 'Pipeline', icon: 'filter' },
-      ],
-    },
-    {
-      title: 'Commercial',
-      items: [
-        { href: PRODUCT_ROUTES.app.quotes, label: 'Quotes', expandedLabel: 'Quotes', icon: 'comments-o' },
-        { href: PRODUCT_ROUTES.app.integrations, label: 'Send', expandedLabel: 'Send', icon: 'paper-plane-o' },
-        { href: PRODUCT_ROUTES.app.orders, label: 'Orders', expandedLabel: 'Orders', icon: 'archive' },
-      ],
-    },
-    {
-      title: 'Work',
-      items: [
-        { href: PRODUCT_ROUTES.app.tasks, label: 'Tasks', expandedLabel: 'Tasks', icon: 'check-square-o' },
-        { href: '/trade-events', label: 'Events', expandedLabel: 'Events', icon: 'calendar' },
-        { href: '/documents', label: 'Docs', expandedLabel: 'Documents', icon: 'file-text-o' },
-      ],
-    },
-    {
-      title: 'Setup',
-      items: [
-        { href: PRODUCT_ROUTES.app.products, label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' },
-        ...(canAccessAdmin ? [{ href: '/admin', label: 'Admin', expandedLabel: 'Admin', icon: 'lock' }] : []),
-      ],
-    },
+    { title: 'Command', items: [
+      { href: PRODUCT_ROUTES.app.dashboard, label: 'Dash', expandedLabel: 'Dashboard', icon: 'home' },
+      { href: '/dashboard/analytics', label: 'Analytics', expandedLabel: 'Analytics', icon: 'line-chart' },
+      { href: '/reports', label: 'Reports', expandedLabel: 'Reports', icon: 'bar-chart' },
+    ] },
+    { title: 'Growth', items: [
+      { href: PRODUCT_ROUTES.app.capture, label: 'Capture', expandedLabel: 'Capture', icon: 'qrcode' },
+      { href: PRODUCT_ROUTES.app.leads, label: 'Leads', expandedLabel: 'Leads', icon: 'users' },
+      { href: PRODUCT_ROUTES.app.pipeline, label: 'Pipeline', expandedLabel: 'Pipeline', icon: 'filter' },
+    ] },
+    { title: 'Commercial', items: [
+      { href: PRODUCT_ROUTES.app.quotes, label: 'Quotes', expandedLabel: 'Quotes', icon: 'comments-o' },
+      { href: PRODUCT_ROUTES.app.integrations, label: 'Send', expandedLabel: 'Send', icon: 'paper-plane-o' },
+      { href: PRODUCT_ROUTES.app.orders, label: 'Orders', expandedLabel: 'Orders', icon: 'archive' },
+    ] },
+    { title: 'Work', items: [
+      { href: PRODUCT_ROUTES.app.tasks, label: 'Tasks', expandedLabel: 'Tasks', icon: 'check-square-o' },
+      { href: '/trade-events', label: 'Events', expandedLabel: 'Events', icon: 'calendar' },
+      { href: '/documents', label: 'Docs', expandedLabel: 'Documents', icon: 'file-text-o' },
+    ] },
+    { title: 'Setup', items: [
+      { href: PRODUCT_ROUTES.app.products, label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' },
+      ...(canAccessAdmin ? [{ href: '/admin', label: 'Admin', expandedLabel: 'Admin', icon: 'lock' }] : []),
+    ] },
   ];
 
   return (
@@ -236,12 +228,12 @@ function DesktopNav({ pathname, scope, mode, canAccessAdmin }: { pathname: strin
   );
 }
 
-function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmin, onModeChange }: { organizationName?: string | null; pathname: string; scope: WorkspaceScope; mode: DesktopSidebarMode; canAccessAdmin: boolean; onModeChange: (mode: DesktopSidebarMode) => void }) {
+function DesktopSidebar({ organizationName, logoUrl, pathname, scope, mode, canAccessAdmin, onModeChange }: { organizationName?: string | null; logoUrl?: string | null; pathname: string; scope: WorkspaceScope; mode: DesktopSidebarMode; canAccessAdmin: boolean; onModeChange: (mode: DesktopSidebarMode) => void }) {
   if (mode === 'hidden') {
     return (
       <aside className="sticky top-0 hidden h-screen w-16 shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white md:flex">
         <div className="shrink-0 space-y-3">
-          <DesktopLogo organizationName={organizationName} expanded={false} />
+          <DesktopLogo organizationName={organizationName} logoUrl={logoUrl} expanded={false} />
           <button type="button" onClick={() => onModeChange('collapsed')} className="flex h-10 w-full items-center justify-center rounded-2xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Show desktop navigation" title="Show navigation">
             <FaIcon icon="bars" fixedWidth />
           </button>
@@ -255,7 +247,7 @@ function DesktopSidebar({ organizationName, pathname, scope, mode, canAccessAdmi
     <aside className={cn('sticky top-0 hidden h-screen shrink-0 flex-col bg-[linear-gradient(180deg,#061c2e_0%,#0b2e4a_100%)] px-2 py-5 text-white transition-[width] duration-200 md:flex', expanded ? 'w-[232px]' : 'w-[104px]')}>
       <div className="shrink-0 border-b border-white/10 pb-3">
         <div className={cn('flex items-center gap-2', expanded ? 'justify-between' : 'justify-center')}>
-          <DesktopLogo organizationName={organizationName} expanded={expanded} />
+          <DesktopLogo organizationName={organizationName} logoUrl={logoUrl} expanded={expanded} />
           {expanded ? (
             <div className="flex shrink-0 items-center gap-2">
               <button type="button" onClick={() => onModeChange('collapsed')} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white transition hover:bg-white/14" aria-label="Collapse desktop sidebar" title="Collapse sidebar">
@@ -288,10 +280,7 @@ function DesktopUserMenu({ profileName, profileEmail, avatarUrl, onOpenMenu }: {
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
+  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) return;
     function closeIfOutside(event: PointerEvent) {
@@ -308,17 +297,9 @@ function DesktopUserMenu({ profileName, profileEmail, avatarUrl, onOpenMenu }: {
     };
   }, [open]);
 
-  function toggleMenu() {
-    setOpen((current) => {
-      const next = !current;
-      if (next) onOpenMenu?.();
-      return next;
-    });
-  }
-
   return (
     <div ref={menuRef} className="relative">
-      <button type="button" onClick={toggleMenu} aria-expanded={open} aria-haspopup="menu" className="rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2">
+      <button type="button" onClick={() => { setOpen((current) => !current); onOpenMenu?.(); }} aria-expanded={open} aria-haspopup="menu" className="rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2">
         <span className="sr-only">Open user menu</span>
         <UserAvatar name={profileName} email={profileEmail} avatarUrl={avatarUrl} initials={getInitials(profileName)} size="md" />
       </button>
@@ -329,13 +310,9 @@ function DesktopUserMenu({ profileName, profileEmail, avatarUrl, onOpenMenu }: {
             <p className="truncate text-xs font-semibold text-slate-500">{profileEmail}</p>
           </div>
           <div className="my-1 h-px bg-slate-100" />
-          <Link href="/profile" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50" role="menuitem">
-            Profile
-          </Link>
+          <Link href="/profile" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50" role="menuitem">Profile</Link>
           <form action="/api/logout" method="post">
-            <button type="submit" className="block w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50" role="menuitem">
-              Sign out
-            </button>
+            <button type="submit" className="block w-full rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 transition hover:bg-red-50" role="menuitem">Sign out</button>
           </form>
         </div>
       ) : null}
@@ -354,6 +331,7 @@ export function AppShell({ children, profile, organization, membership, currentR
   const profileName = profile?.full_name ?? profile?.username ?? 'SETU Flow user';
   const profileEmail = profile?.email ?? 'Signed in via Supabase';
   const canAccessAdmin = normalizedRoles.includes('owner') || normalizedRoles.includes('admin');
+  const organizationLogoUrl = getOrgLogoUrl(organization);
   const [globalScope, setGlobalScope] = useState<WorkspaceScope>(() => normalizeScope(searchParams.get('mode')));
   const [desktopSidebarMode, setDesktopSidebarMode] = useState<DesktopSidebarMode>('collapsed');
   const [notificationResetKey, setNotificationResetKey] = useState(0);
@@ -370,18 +348,16 @@ export function AppShell({ children, profile, organization, membership, currentR
       secondaryPhone: cardSettings?.secondaryPhone ?? null,
       website: cardSettings?.website ?? null,
       address: cardSettings?.address ?? null,
-      avatarUrl: profile?.avatar_url ?? null,
+      avatarUrl: profile?.avatar_url ?? organizationLogoUrl ?? null,
       shareHref,
       downloadVcfHref,
     }),
-    [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, downloadVcfHref, organization?.name, profile?.avatar_url, profile?.email, profileName, roleLabel, shareHref],
+    [cardSettings?.address, cardSettings?.primaryPhone, cardSettings?.secondaryPhone, cardSettings?.website, downloadVcfHref, organization?.name, organizationLogoUrl, profile?.avatar_url, profile?.email, profileName, roleLabel, shareHref],
   );
   const canonicalMobileRoutes = ['/dashboard', '/leads', '/orders', '/tasks'];
   const shouldUseCanonicalMobileShell = canonicalMobileRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const desktopOnlyRoutes = ['/pipeline', '/quotes', '/products', '/admin', '/approval-send', '/reports'];
   const isDesktopOnlyRoute = desktopOnlyRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-  // S24-ADMUX-38: /admin/* renders full-bleed — the Admin UX V2 chrome (dark org/page
-  // rows + 204px sidebar) owns the viewport; the app header and icon rail are suppressed.
   const isAdminFullBleed = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
@@ -429,92 +405,81 @@ export function AppShell({ children, profile, organization, membership, currentR
     setNotificationResetKey((current) => current + 1);
   }
 
+  const desktopSidebar = (
+    <DesktopSidebar
+      organizationName={organization?.name}
+      logoUrl={organizationLogoUrl}
+      pathname={pathname}
+      scope={globalScope}
+      mode={desktopSidebarMode}
+      canAccessAdmin={canAccessAdmin}
+      onModeChange={changeDesktopSidebarMode}
+    />
+  );
+
   return (
     <>
       {isAdminFullBleed ? (
         <div className="min-h-screen bg-[#eef2f7]">
-          <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">
-            Skip to content
-          </a>
+          <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">Skip to content</a>
           <div className="flex min-h-screen">
-            <DesktopSidebar organizationName={organization?.name} pathname={pathname} scope={globalScope} mode={desktopSidebarMode} canAccessAdmin={canAccessAdmin} onModeChange={changeDesktopSidebarMode} />
+            {desktopSidebar}
             <main id="app-content" className="min-w-0 flex-1">
-              {/* S24-ADMUX-38: no app header here — the admin shell dark chrome IS the header */}
               <DesktopRedirect />
               <div className="hidden md:block">{children}</div>
             </main>
           </div>
-          <div className="md:hidden">
-            <MobileTabBar />
-          </div>
+          <div className="md:hidden"><MobileTabBar /></div>
         </div>
       ) : (
-      <>
-      {shouldUseCanonicalMobileShell ? (
-        <div className="md:hidden">
-          <MobileShell signedIn={signedInForMobile} canonical>
-            {children}
-          </MobileShell>
-        </div>
-      ) : null}
-      <div className={cn('min-h-screen bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]', shouldUseCanonicalMobileShell ? 'hidden md:block' : undefined)}>
-        <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">
-          Skip to content
-        </a>
-        <div className="flex min-h-screen">
-          <DesktopSidebar organizationName={organization?.name} pathname={pathname} scope={globalScope} mode={desktopSidebarMode} canAccessAdmin={canAccessAdmin} onModeChange={changeDesktopSidebarMode} />
-          <main id="app-content" className="min-w-0 flex-1">
-            <header className="sticky top-0 z-30 hidden border-b border-slate-200/70 bg-white/85 px-6 py-4 backdrop-blur-xl md:block">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0c7fff]">Trade command center</p>
-                  <h1 className="mt-1 text-2xl font-black text-slate-950">{routeMeta.title}</h1>
-                </div>
-                <div className="flex items-center gap-2">
-                  <GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} />
-                  <OfflineIndicator />
-                  <a href={shareHref} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)]">
-                    <FaIcon icon="address-card-o" fixedWidth />Share vCard
-                  </a>
-                  {pathname.startsWith('/leads') ? (
-                    /* S24-TRIAL-206: on /leads, signal the single drawer owner (LeadsWorkspace)
-                       instead of re-navigating — the root fix for the duplicate-drawer bug. */
-                    <button type="button" onClick={openQuickLeadDrawer} data-tour="quick-lead-button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
-                      ＋ Quick Lead
-                    </button>
-                  ) : (
-                    <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} data-tour="quick-lead-button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">
-                    ＋ Quick Lead
-                  </Link>
-                  )}
-                  {pathname.startsWith('/dashboard') ? (
-                    <button
-                      type="button"
-                      aria-label="Customize Dashboard"
-                      title="Customize Dashboard"
-                      onClick={() => window.dispatchEvent(new CustomEvent('setu:dashboard:toggle-customize'))}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      <FaIcon icon="cog" fixedWidth />
-                    </button>
-                  ) : null}
-                  {organizationId && userId ? <InAppNotificationCenter key={`${organizationId}-${userId}-${pathname}-${notificationResetKey}`} organizationId={organizationId} userId={userId} variant="inline" /> : null}
-                  <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} onOpenMenu={closeNotificationCard} />
-                </div>
-              </div>
-            </header>
-            <div className="px-4 py-5 pb-[calc(80px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
-              {isDesktopOnlyRoute ? <DesktopRedirect /> : null}
-              <div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div>
+        <>
+          {shouldUseCanonicalMobileShell ? (
+            <div className="md:hidden">
+              <MobileShell signedIn={signedInForMobile} canonical>{children}</MobileShell>
             </div>
-          </main>
-        </div>
-        <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} aria-label="Quick Lead" className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-[#0c7fff] to-[#0052cc] text-3xl font-black text-white shadow-[0_6px_22px_rgba(12,127,255,0.5)] ring-2 ring-white/80 md:hidden">
-          +
-        </Link>
-        <MobileTabBar />
-      </div>
-      </>
+          ) : null}
+          <div className={cn('min-h-screen bg-[#f0f4f8] md:bg-[radial-gradient(circle_at_top_left,rgba(12,127,255,0.12),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_48%,#f8fafc_100%)]', shouldUseCanonicalMobileShell ? 'hidden md:block' : undefined)}>
+            <a href="#app-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold text-slate-900">Skip to content</a>
+            <div className="flex min-h-screen">
+              {desktopSidebar}
+              <main id="app-content" className="min-w-0 flex-1">
+                <header className="sticky top-0 z-30 hidden border-b border-slate-200/70 bg-white/85 px-6 py-4 backdrop-blur-xl md:block">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0c7fff]">Trade command center</p>
+                      <h1 className="mt-1 text-2xl font-black text-slate-950">{routeMeta.title}</h1>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} />
+                      <OfflineIndicator />
+                      <a href={shareHref} className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[linear-gradient(135deg,#0b2e4a_0%,#0c7fff_160%)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(12,127,255,0.3)]">
+                        <FaIcon icon="address-card-o" fixedWidth />Share vCard
+                      </a>
+                      {pathname.startsWith('/leads') ? (
+                        <button type="button" onClick={openQuickLeadDrawer} data-tour="quick-lead-button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">＋ Quick Lead</button>
+                      ) : (
+                        <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} data-tour="quick-lead-button" className="inline-flex h-11 items-center gap-2 rounded-[0.9rem] bg-[#0b2e4a] px-4 text-sm font-semibold text-white">＋ Quick Lead</Link>
+                      )}
+                      {pathname.startsWith('/dashboard') ? (
+                        <button type="button" aria-label="Customize Dashboard" title="Customize Dashboard" onClick={() => window.dispatchEvent(new CustomEvent('setu:dashboard:toggle-customize'))} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                          <FaIcon icon="cog" fixedWidth />
+                        </button>
+                      ) : null}
+                      {organizationId && userId ? <InAppNotificationCenter key={`${organizationId}-${userId}-${pathname}-${notificationResetKey}`} organizationId={organizationId} userId={userId} variant="inline" /> : null}
+                      <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} onOpenMenu={closeNotificationCard} />
+                    </div>
+                  </div>
+                </header>
+                <div className="px-4 py-5 pb-[calc(80px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">
+                  {isDesktopOnlyRoute ? <DesktopRedirect /> : null}
+                  <div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div>
+                </div>
+              </main>
+            </div>
+            <Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} aria-label="Quick Lead" className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-[#0c7fff] to-[#0052cc] text-3xl font-black text-white shadow-[0_6px_22px_rgba(12,127,255,0.5)] ring-2 ring-white/80 md:hidden">+</Link>
+            <MobileTabBar />
+          </div>
+        </>
       )}
       <SetuGuruWidget pathname={pathname} routeTitle={routeMeta.title} organizationName={organization?.name} roleLabel={roleLabel} />
     </>
