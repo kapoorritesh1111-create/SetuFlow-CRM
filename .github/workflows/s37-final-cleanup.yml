@@ -1,4 +1,4 @@
-name: S37 share catalog patch
+name: S37 share access code patch
 
 on:
   push:
@@ -14,65 +14,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch share catalog mapping defaults
+      - name: Patch share access code visibility
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          # Product readiness: for buyer share, only missing price should block readiness.
-          p = Path('src/lib/catalog-share/types.ts')
+          p = Path('src/features/leads/share-price-list/SharePriceListPremium.tsx')
           s = p.read_text()
-          s = s.replace("""  let status: ProductReadiness;
-  if (!hasPrice) status = 'missing_price';
-  else if (hardMissing.length > 0) status = 'needs_data';
-  else status = 'ready';
-
-  return { status, score, missing };""", """  let status: ProductReadiness;
-  if (!hasPrice) status = 'missing_price';
-  else status = 'ready';
-
-  return { status, score, missing };""")
-          s = s.replace("case 'needs_data': return 'Needs Data';", "case 'needs_data': return 'Curated';")
+          s = s.replace("const [shareUrl, setShareUrl] = useState<string | null>(null);\n  const [shareError", "const [shareUrl, setShareUrl] = useState<string | null>(null);\n  const [shareAccessCode, setShareAccessCode] = useState<string | null>(null);\n  const [shareError")
+          s = s.replace("const text = sharePin ? `${url}\\nPIN: ${sharePin}` : url;", "const text = shareAccessCode ? `${url}\\nAccess code: ${shareAccessCode}` : url;")
+          s = s.replace("const pinCode = options.pin ? Math.floor(1000 + Math.random() * 9000).toString() : null;", "const accessCode = options.pin ? Math.floor(1000 + Math.random() * 9000).toString() : null;")
+          s = s.replace("pin_code: options.pin ? Math.floor(1000 + Math.random() * 9000).toString() : null,", "pin_code: accessCode,")
+          s = s.replace("setShareUrl(url);\n    if (options.link", "setShareUrl(url);\n    setShareAccessCode(accessCode);\n    if (options.link")
+          s = s.replace("navigator.clipboard.writeText(url).then(() => setCopied(true))", "navigator.clipboard.writeText(accessCode ? `${url}\\nAccess code: ${accessCode}` : url).then(() => setCopied(true))")
+          s = s.replace("{copied ? 'Copied ✓' : 'Copy Link'}", "{copied ? 'Copied ✓' : shareAccessCode ? 'Copy Link + Code' : 'Copy Link'}")
+          s = s.replace("{shareUrl ? <div style={{ ...card, borderColor: '#bbf7d0', background: '#ecfdf5' }}><div style={{ fontSize: 13, fontWeight: 800, color: '#065f46' }}>Share link created from the buyer-selected items.</div><a href={shareUrl} target=\"_blank\" rel=\"noreferrer\" style={{ display: 'block', marginTop: 6, color: '#047857', fontWeight: 700, wordBreak: 'break-all' }}>{shareUrl}</a></div> : null}", "{shareUrl ? <div style={{ ...card, borderColor: '#bbf7d0', background: '#ecfdf5' }}><div style={{ fontSize: 13, fontWeight: 800, color: '#065f46' }}>Share link created from the buyer-selected items.</div><a href={shareUrl} target=\"_blank\" rel=\"noreferrer\" style={{ display: 'block', marginTop: 6, color: '#047857', fontWeight: 700, wordBreak: 'break-all' }}>{shareUrl}</a>{shareAccessCode ? <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 10, borderRadius: 12, border: '1px solid #86efac', background: 'white', padding: '8px 12px' }}><span style={{ fontSize: 11, fontWeight: 800, color: '#047857', letterSpacing: '.12em', textTransform: 'uppercase' }}>Buyer access code</span><strong style={{ fontSize: 18, color: '#064e3b', letterSpacing: '.16em' }}>{shareAccessCode}</strong></div> : <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: '#047857' }}>Access code is off for this share.</div>}<div style={{ marginTop: 8, fontSize: 12, color: '#047857' }}>Send the buyer both the link and code if protection is enabled.</div></div> : null}")
+          s = s.replace("<div style={sectionTitle}>Share Options</div>", "<div style={sectionTitle}>Share Options</div>")
+          s = s.replace("{options.pin ? 'PIN protected' : 'No PIN'}", "{options.pin ? 'Code protected' : 'No code'}")
+          s = s.replace("{options.pin ? 'PIN protected' : 'no PIN'}", "{options.pin ? 'code protected' : 'no code'}")
+          s = s.replace("<ShareCatalogWizard open={wizardOpen}", "<ShareCatalogWizard open={wizardOpen}")
           p.write_text(s)
-
-          # Share wizard: preselect products already mapped to the lead / category flow.
-          w = Path('src/components/catalog/share-catalog-wizard.tsx')
-          s = w.read_text()
-          s = s.replace("""type LeadLite = {
-  id: string; company_name: string | null; contact_name: string | null; email: string | null;
-  phone: string | null; whatsapp_number: string | null; trade_show_name: string | null;
-  trade_event_id: string | null; products_or_needs: string | null; main_product_category: string | null; market_id: string | null;
-};""", """type LeadLite = {
-  id: string; company_name: string | null; contact_name: string | null; email: string | null;
-  phone: string | null; whatsapp_number: string | null; trade_show_name: string | null;
-  trade_event_id: string | null; products_or_needs: string | null; main_product_category: string | null; market_id: string | null;
-  product_ids?: string[];
-};""")
-          s = s.replace("""  function applyLead(l: Partial<LeadLite>) {
-    setSelectedLead(l as LeadLite);
-    setBuyer({ buyer_company: l.company_name ?? '', buyer_name: l.contact_name ?? '', buyer_email: l.email ?? '', buyer_phone: l.whatsapp_number ?? l.phone ?? '' });
-  }""", """  function applyLead(l: Partial<LeadLite>) {
-    setSelectedLead(l as LeadLite);
-    setBuyer({ buyer_company: l.company_name ?? '', buyer_name: l.contact_name ?? '', buyer_email: l.email ?? '', buyer_phone: l.whatsapp_number ?? l.phone ?? '' });
-    const mappedProductIds = Array.isArray(l.product_ids) ? l.product_ids.filter(Boolean) : [];
-    if (mappedProductIds.length) setPicked(new Set(mappedProductIds));
-  }""")
-          s = s.replace("""                        if (p.fob_price == null && p.exw_price == null && p.cif_price == null && !priceListId) noPrice += 1;""", """                        if (p.fob_price == null && p.exw_price == null && p.cif_price == null && !priceListId) noPrice += 1;""")
-          w.write_text(s)
-
-          # Lead share page: pass the products already mapped on the lead into the drawer.
-          sp = Path('src/features/leads/share-price-list/SharePriceListPremium.tsx')
-          s = sp.read_text()
-          s = s.replace("""  const leadPrefill = { id: lead.id, company_name: lead.company_name, contact_name: lead.contact_name, email: lead.email, phone: lead.phone, whatsapp_number: lead.whatsapp_number };""", """  const leadPrefill = { id: lead.id, company_name: lead.company_name, contact_name: lead.contact_name, email: lead.email, phone: lead.phone, whatsapp_number: lead.whatsapp_number, product_ids: products.map((product) => product.id) };""")
-          sp.write_text(s)
-
-          # Leave this temporary workflow disabled after it patches the repo.
-          Path('.github/workflows/s37-final-cleanup.yml').write_text("name: S37 final cleanup disabled\non: workflow_dispatch\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo disabled\n")
+          Path('.github/workflows/s37-final-cleanup.yml').write_text('name: S37 final cleanup disabled\non: workflow_dispatch\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo disabled\n')
           PY
-      - name: Commit share catalog patch
+      - name: Commit access code patch
         run: |
           git config user.name "setu-flow-cleanup-bot"
           git config user.email "actions@github.com"
-          git add src/lib/catalog-share/types.ts src/components/catalog/share-catalog-wizard.tsx src/features/leads/share-price-list/SharePriceListPremium.tsx .github/workflows/s37-final-cleanup.yml
-          git commit -m "S37-SHARE: Preselect mapped products in share catalog"
+          git add src/features/leads/share-price-list/SharePriceListPremium.tsx .github/workflows/s37-final-cleanup.yml
+          git commit -m "S37-SHARE: Show buyer access code after sharing"
           git push
