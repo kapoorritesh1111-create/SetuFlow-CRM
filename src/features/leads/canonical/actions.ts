@@ -96,12 +96,18 @@ export async function saveCanonicalQualificationMapping(formData: FormData) {
   const leadId = clean(formData.get('lead_id'));
   if (!leadId) return;
   const supabase = (await createClient()) as any;
-  const productIds = formData.getAll('product_ids').map((value) => String(value).trim()).filter(Boolean);
+  const explicitProductIds = formData.getAll('product_ids').map((value) => String(value).trim()).filter(Boolean);
+  const categoryIds = formData.getAll('category_ids').map((value) => String(value).trim()).filter(Boolean);
   const marketIds = formData.getAll('market_ids').map((value) => String(value).trim()).filter(Boolean);
   const qualificationNotes = nullable(formData.get('qualification_notes'));
   const now = new Date().toISOString();
+  const categoryProductResult = categoryIds.length
+    ? await supabase.from('products').select('id, category_id').eq('organization_id', workspace.organization!.id).in('category_id', categoryIds)
+    : { data: [], error: null };
+  const categoryProductIds = (categoryProductResult.data ?? []).map((item: any) => item.id).filter(Boolean);
+  const productIds = Array.from(new Set([...explicitProductIds, ...categoryProductIds]));
   await supabase.from('lead_product_interests').delete().eq('organization_id', workspace.organization!.id).eq('lead_id', leadId);
-  if (productIds.length) await supabase.from('lead_product_interests').insert(productIds.map((productId) => ({ organization_id: workspace.organization!.id, lead_id: leadId, product_id: productId, interest_type: 'mapped', source_context: { source: 'canonical_lead_detail' } })));
+  if (productIds.length) await supabase.from('lead_product_interests').insert(productIds.map((productId) => ({ organization_id: workspace.organization!.id, lead_id: leadId, product_id: productId, interest_type: categoryProductIds.includes(productId) && !explicitProductIds.includes(productId) ? 'category_mapped' : 'mapped', source_context: { source: 'canonical_lead_detail', categoryIds } })));
   await supabase.from('lead_markets').delete().eq('organization_id', workspace.organization!.id).eq('lead_id', leadId);
   if (marketIds.length) await supabase.from('lead_markets').insert(marketIds.map((marketId) => ({ organization_id: workspace.organization!.id, lead_id: leadId, market_id: marketId })));
   await supabase.from('leads').update({ notes: qualificationNotes ?? undefined, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
