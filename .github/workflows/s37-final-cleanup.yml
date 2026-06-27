@@ -1,4 +1,4 @@
-name: S37 lead mapping patch
+name: S37 share catalog patch
 
 on:
   push:
@@ -14,87 +14,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch lead qualification mapping UI
+      - name: Patch share catalog mapping defaults
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          q = Path('src/lib/queries/query-core.ts')
-          s = q.read_text()
-          s = s.replace("  linkedProducts: Pick<ProductRow, 'id' | 'name' | 'sku' | 'category_id'>[];\n  pipelines:", "  linkedProducts: Pick<ProductRow, 'id' | 'name' | 'sku' | 'category_id'>[];\n  productCategories: Pick<ProductCategoryRow, 'id' | 'name' | 'is_active' | 'sort_order' | 'parent_id'>[];\n  pipelines:")
-          s = s.replace("    productsResult,\n    marketsResult,", "    productCategoriesResult,\n    productsResult,\n    marketsResult,")
-          s = s.replace("    supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes').eq('organization_id', organizationId).order('starts_on', { ascending: false }),\n    supabase.from('products').select('id, name, sku, category_id').eq('organization_id', organizationId).eq('is_active', true).order('name'),", "    supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes').eq('organization_id', organizationId).order('starts_on', { ascending: false }),\n    supabase.from('product_categories').select('id, name, is_active, sort_order, parent_id').eq('organization_id', organizationId).eq('is_active', true).order('sort_order', { ascending: true }),\n    supabase.from('products').select('id, name, sku, category_id').eq('organization_id', organizationId).eq('is_active', true).order('name'),")
-          s = s.replace("  addIssue(issues, 'profile trade events', tradeEventsResult.error);\n  addIssue(issues, 'profile products', productsResult.error);", "  addIssue(issues, 'profile trade events', tradeEventsResult.error);\n  addIssue(issues, 'profile product categories', productCategoriesResult.error);\n  addIssue(issues, 'profile products', productsResult.error);")
-          s = s.replace("    linkedMarkets,\n    linkedProducts,", "    linkedMarkets,\n    linkedProducts,\n    productCategories: rows(productCategoriesResult.data) as LeadProfileData['productCategories'],")
-          q.write_text(s)
-
-          p = Path('src/features/leads/canonical/LeadCommandCenterPremium.tsx')
+          # Product readiness: for buyer share, only missing price should block readiness.
+          p = Path('src/lib/catalog-share/types.ts')
           s = p.read_text()
-          old = '''function SecondaryPanels({ data }: { data: LeadProfileData }) {
-  const lead = data.lead!;
-  return (
-    <section className="grid gap-4 xl:grid-cols-2">
-      <details id="qualification" className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
-        <summary className="cursor-pointer list-none">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Qualification & Mapping</p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-950">{data.linkedProducts.length} products · {data.linkedMarkets.length} markets</h3>
-        </summary>
-        <form action={saveCanonicalQualificationMapping} className="mt-4 grid gap-4 border-t border-slate-100 pt-4">
-          <input type="hidden" name="lead_id" value={lead.id} />
-          <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Qualification notes<textarea name="qualification_notes" defaultValue={data.workflow?.qualificationNotes ?? lead.notes ?? ''} className="min-h-20 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-700" /></label>
-          <button className="w-fit rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">Save qualification</button>
-        </form>
-      </details>'''
-          new = '''function SecondaryPanels({ data }: { data: LeadProfileData }) {
-  const lead = data.lead!;
-  const selectedProductIds = new Set(data.linkedProducts.map((product) => product.id));
-  const selectedMarketIds = new Set(data.linkedMarkets.map((market) => market.id));
-  const categories = ((data as any).productCategories || []) as Array<{ id: string; name: string }>;
-  const categoryName = (categoryId?: string | null) => categories.find((category) => category.id === categoryId)?.name || (categoryId ? `Category ${categoryId.slice(0, 8)}` : 'Uncategorized');
-  const groupedCategories = Array.from(new Set(data.products.map((product: any) => product.category_id).filter(Boolean))).map((categoryId: string) => ({ id: categoryId, name: categoryName(categoryId), count: data.products.filter((product: any) => product.category_id === categoryId).length }));
-  return (
-    <section className="grid gap-4 xl:grid-cols-2">
-      <details id="qualification" open className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
-        <summary className="cursor-pointer list-none">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Qualification & Mapping</p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-950">{data.linkedProducts.length} products · {data.linkedMarkets.length} markets</h3>
-        </summary>
-        <form action={saveCanonicalQualificationMapping} className="mt-4 grid gap-4 border-t border-slate-100 pt-4">
-          <input type="hidden" name="lead_id" value={lead.id} />
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pick categories</p>
-              <div className="mt-3 grid max-h-44 gap-2 overflow-auto pr-1">
-                {groupedCategories.map((category) => <label key={category.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm"><span>{category.name} <span className="text-xs text-slate-400">({category.count})</span></span><input type="checkbox" name="category_ids" value={category.id} /></label>)}
-                {!groupedCategories.length ? <p className="text-sm font-medium text-slate-500">No categories available.</p> : null}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pick products</p>
-              <div className="mt-3 grid max-h-44 gap-2 overflow-auto pr-1">
-                {data.products.map((product: any) => <label key={product.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm"><span>{product.name}<span className="ml-2 text-xs text-slate-400">{product.sku || categoryName(product.category_id)}</span></span><input type="checkbox" name="product_ids" value={product.id} defaultChecked={selectedProductIds.has(product.id)} /></label>)}
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pick markets</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {data.markets.map((market) => <label key={market.id} className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm"><input type="checkbox" name="market_ids" value={market.id} defaultChecked={selectedMarketIds.has(market.id)} />{market.name}</label>)}
-            </div>
-          </div>
-          <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Qualification notes<textarea name="qualification_notes" defaultValue={data.workflow?.qualificationNotes ?? lead.notes ?? ''} className="min-h-20 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-700" /></label>
-          <button className="w-fit rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">Save qualification & mapping</button>
-        </form>
-      </details>'''
-          if old not in s:
-              raise SystemExit('qualification block not found')
-          p.write_text(s.replace(old, new))
-          Path('.github/workflows/s37-final-cleanup.yml').write_text('name: S37 final cleanup disabled\non: workflow_dispatch\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo disabled\n')
+          s = s.replace("""  let status: ProductReadiness;
+  if (!hasPrice) status = 'missing_price';
+  else if (hardMissing.length > 0) status = 'needs_data';
+  else status = 'ready';
+
+  return { status, score, missing };""", """  let status: ProductReadiness;
+  if (!hasPrice) status = 'missing_price';
+  else status = 'ready';
+
+  return { status, score, missing };""")
+          s = s.replace("case 'needs_data': return 'Needs Data';", "case 'needs_data': return 'Curated';")
+          p.write_text(s)
+
+          # Share wizard: preselect products already mapped to the lead / category flow.
+          w = Path('src/components/catalog/share-catalog-wizard.tsx')
+          s = w.read_text()
+          s = s.replace("""type LeadLite = {
+  id: string; company_name: string | null; contact_name: string | null; email: string | null;
+  phone: string | null; whatsapp_number: string | null; trade_show_name: string | null;
+  trade_event_id: string | null; products_or_needs: string | null; main_product_category: string | null; market_id: string | null;
+};""", """type LeadLite = {
+  id: string; company_name: string | null; contact_name: string | null; email: string | null;
+  phone: string | null; whatsapp_number: string | null; trade_show_name: string | null;
+  trade_event_id: string | null; products_or_needs: string | null; main_product_category: string | null; market_id: string | null;
+  product_ids?: string[];
+};""")
+          s = s.replace("""  function applyLead(l: Partial<LeadLite>) {
+    setSelectedLead(l as LeadLite);
+    setBuyer({ buyer_company: l.company_name ?? '', buyer_name: l.contact_name ?? '', buyer_email: l.email ?? '', buyer_phone: l.whatsapp_number ?? l.phone ?? '' });
+  }""", """  function applyLead(l: Partial<LeadLite>) {
+    setSelectedLead(l as LeadLite);
+    setBuyer({ buyer_company: l.company_name ?? '', buyer_name: l.contact_name ?? '', buyer_email: l.email ?? '', buyer_phone: l.whatsapp_number ?? l.phone ?? '' });
+    const mappedProductIds = Array.isArray(l.product_ids) ? l.product_ids.filter(Boolean) : [];
+    if (mappedProductIds.length) setPicked(new Set(mappedProductIds));
+  }""")
+          s = s.replace("""                        if (p.fob_price == null && p.exw_price == null && p.cif_price == null && !priceListId) noPrice += 1;""", """                        if (p.fob_price == null && p.exw_price == null && p.cif_price == null && !priceListId) noPrice += 1;""")
+          w.write_text(s)
+
+          # Lead share page: pass the products already mapped on the lead into the drawer.
+          sp = Path('src/features/leads/share-price-list/SharePriceListPremium.tsx')
+          s = sp.read_text()
+          s = s.replace("""  const leadPrefill = { id: lead.id, company_name: lead.company_name, contact_name: lead.contact_name, email: lead.email, phone: lead.phone, whatsapp_number: lead.whatsapp_number };""", """  const leadPrefill = { id: lead.id, company_name: lead.company_name, contact_name: lead.contact_name, email: lead.email, phone: lead.phone, whatsapp_number: lead.whatsapp_number, product_ids: products.map((product) => product.id) };""")
+          sp.write_text(s)
+
+          # Leave this temporary workflow disabled after it patches the repo.
+          Path('.github/workflows/s37-final-cleanup.yml').write_text("name: S37 final cleanup disabled\non: workflow_dispatch\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo disabled\n")
           PY
-      - name: Commit patch
+      - name: Commit share catalog patch
         run: |
           git config user.name "setu-flow-cleanup-bot"
           git config user.email "actions@github.com"
-          git add src/lib/queries/query-core.ts src/features/leads/canonical/LeadCommandCenterPremium.tsx .github/workflows/s37-final-cleanup.yml
-          git commit -m "S37-QUAL: Add qualification product and category selector"
+          git add src/lib/catalog-share/types.ts src/components/catalog/share-catalog-wizard.tsx src/features/leads/share-price-list/SharePriceListPremium.tsx .github/workflows/s37-final-cleanup.yml
+          git commit -m "S37-SHARE: Preselect mapped products in share catalog"
           git push
