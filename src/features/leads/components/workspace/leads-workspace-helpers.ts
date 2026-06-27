@@ -2,7 +2,7 @@ import type { KeyboardEvent } from "react";
 import type { useRouter } from "next/navigation";
 import type { LeadCommercialReadiness } from "@/lib/catalog-pricing-model";
 import type { TodayLayerState } from "@/features/workspace/types";
-import { AlertTriangle, BadgeCheck, CalendarCheck, Clock, Handshake, Package, Phone, Snowflake, Sparkles, Trophy, XCircle } from "@/features/leads/command-center/ui-system";
+import { AlertTriangle, BadgeCheck, CalendarCheck, Clock, Handshake, Package, Phone, Snowflake, Sparkles, Trophy, XCircle } from "@/features/leads/ui/lead-workspace-icons";
 import type { IconComponent, LeadOpenStep, LeadRow, Profile, SignalTone, Variant } from "./leads-workspace-types";
 
 const COUNTRY_CURRENCY: Record<string, string> = {

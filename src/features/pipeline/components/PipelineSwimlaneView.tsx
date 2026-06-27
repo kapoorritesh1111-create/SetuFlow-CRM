@@ -1,5 +1,5 @@
 import type { Lead, Stage } from '@/features/pipeline/types/board';
-import { getStageAccent } from '@/features/leads/command-center/ui-system';
+import { getStageAccent } from '@/features/leads/ui/lead-workspace-icons';
 
 type StageGroup = {
   name: string;

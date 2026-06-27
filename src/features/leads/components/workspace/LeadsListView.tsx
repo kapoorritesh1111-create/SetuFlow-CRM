@@ -1,5 +1,5 @@
 'use client';
-import { AlertTriangle, CheckCircle, Clock } from '@/features/leads/command-center/ui-system';
+import { AlertTriangle, CheckCircle, Clock } from '@/features/leads/ui/lead-workspace-icons';
 // SF-18-007C: LeadsListView — extracted list UI components
 // Extracted from leads-workspace-implementation.tsx to reduce file size.
 

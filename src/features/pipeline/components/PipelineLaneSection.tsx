@@ -3,7 +3,7 @@
 import React from 'react';
 
 import { cn } from '@/lib/utils';
-import { ICON_CONTAINER_CLASS, getStageAccent, getStageIcon } from '@/features/leads/command-center/ui-system';
+import { ICON_CONTAINER_CLASS, getStageAccent, getStageIcon } from '@/features/leads/ui/lead-workspace-icons';
 
 type Tone = 'default' | 'danger' | 'warning' | 'success' | 'info';
 

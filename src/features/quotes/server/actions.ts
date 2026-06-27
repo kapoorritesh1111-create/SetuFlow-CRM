@@ -87,84 +87,9 @@ function normalizeQuotePricingBasis(value: unknown, fallback: QuotePricingBasis 
   return normalizePricingBasis(value, fallback);
 }
 
-// S37-BUG-006: createQuoteDirect (legacy app-side direct quote insert fallback) was removed.
-// Quote creation now flows exclusively through transactional RPCs so parent quotes.status
-// and version pointers remain DB-derived. Lead-draft creation uses app_create_lead_quote_draft_tx;
-// full wizard creation uses app_create_quote_with_line_items_and_fanout_tx.
-
-async function updateQuoteDirect(db: any, params: {
-  organizationId: string;
-  quoteId: string;
-  leadId: string;
-  actorUserId: string;
-  status: string;
-  currency: string;
-  notes: string | null;
-  pricingBasis: QuotePricingBasis;
-  quoteVersionId: string | null;
-  lineItems: any[];
-  approvalRequired: boolean;
-  approvalState: string;
-}) {
-  const nowIso = new Date().toISOString();
-  const safeDisplayCurrency = safeQuoteDisplayCurrency(params.currency);
-  const { error: quoteError} = await db.from('quotes').update({ currency: params.currency, display_currency: safeDisplayCurrency, pricing_basis: params.pricingBasis, approval_required: params.approvalRequired, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, notes: params.notes, updated_at: nowIso }).eq('organization_id', params.organizationId).eq('id', params.quoteId);
-  if (quoteError) return { data: null, error: quoteError };
-
-  const { error: deleteLinesError } = await db.from('quote_line_items').delete().eq('quote_id', params.quoteId);
-  if (deleteLinesError) return { data: null, error: deleteLinesError };
-  if (params.lineItems.length) {
-    const { error: insertLinesError } = await db.from('quote_line_items').insert(params.lineItems.map((line) => ({ ...line, quote_id: params.quoteId })));
-    if (insertLinesError) return { data: null, error: insertLinesError };
-  }
-
-  const { data: latestVersion, error: latestVersionError } = await db.from('quote_versions').select('version_no').eq('quote_id', params.quoteId).order('version_no', { ascending: false }).limit(1).maybeSingle();
-  if (latestVersionError) return { data: null, error: latestVersionError };
-  const nextVersionNo = Number.isFinite(Number(latestVersion?.version_no)) ? Number(latestVersion.version_no) + 1 : 1;
-  const resolvedVersionStatus = params.status === 'sent' ? 'sent' : params.approvalState === 'approved' ? 'approved' : params.approvalState === 'rejected' ? 'rejected' : params.status === 'expired' ? 'expired' : params.approvalRequired ? 'approval_pending' : 'draft';
-
-  const { data: version, error: versionError } = await db.from('quote_versions').insert({ quote_id: params.quoteId, version_no: nextVersionNo, status: resolvedVersionStatus, pricing_basis: params.pricingBasis, display_currency: safeDisplayCurrency, internal_notes: params.notes, total_line_count: params.lineItems.length, created_by: params.actorUserId, approved_at: params.approvalState === 'approved' ? nowIso : null, approved_by: params.approvalState === 'approved' ? params.actorUserId : null, sent_at: params.status === 'sent' ? nowIso : null, sent_by: params.status === 'sent' ? params.actorUserId : null }).select('id').single();
-  if (versionError) return { data: null, error: versionError };
-
-  const versionId = version.id;
-
-  // Derive category_type from product catalog — uses the real category name from product_categories.
-  // No fallback to 'chips' — if no category is found, use empty string.
-  const productIds = params.lineItems.map((l) => l.product_id).filter(Boolean);
-  let productCategoryMap: Record<string, string> = {};
-  if (productIds.length > 0) {
-    const { data: productRows } = await db
-      .from('products')
-      .select('id, category_id')
-      .in('id', productIds);
-    const categoryIds = (productRows ?? []).map((p: any) => p.category_id).filter(Boolean);
-    if (categoryIds.length > 0) {
-      const { data: catRows } = await db
-        .from('product_categories')
-        .select('id, name')
-        .in('id', categoryIds);
-      const catMap: Record<string, string> = {};
-      for (const cat of (catRows ?? [])) {
-        if (cat.id && cat.name) catMap[cat.id] = cat.name;
-      }
-      for (const prod of (productRows ?? [])) {
-        if (prod.category_id && catMap[prod.category_id]) {
-          productCategoryMap[prod.id] = catMap[prod.category_id];
-        }
-      }
-    }
-  }
-
-  const versionLines = params.lineItems.map((line, index) => ({ quote_version_id: versionId, product_id: line.product_id, product_variant_id: line.product_variant_id, sku_code: 'LINE-' + (index + 1), product_name: line.notes || 'Product ' + (index + 1), category_type: (line.product_id && productCategoryMap[line.product_id]) ? productCategoryMap[line.product_id] : '', basis_applied: params.pricingBasis, pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: line.source_ex_factory_usd ?? null, source_fob_usd: line.source_fob_usd ?? null, source_bulk_usd_per_kg: line.source_bulk_usd_per_kg ?? null, freight_add_on_usd: line.freight_add_on_usd ?? null, final_unit_price: line.unit_price ?? 0, display_currency: safeQuoteDisplayCurrency(line.currency, safeDisplayCurrency), is_overridden: Boolean(line.is_price_overridden), override_reason: line.override_reason, overridden_by: line.overridden_by, overridden_at: line.overridden_at, line_notes: line.notes, sort_order: index }));
-  if (versionLines.length) {
-    const { error: versionLineError } = await db.from('quote_version_line_items').insert(versionLines);
-    if (versionLineError) return { data: null, error: versionLineError };
-  }
-  // Parent quote status and version pointers are derived by the quote_versions sync trigger.
-
-  await insertNegotiationEvent(db, { quote_id: params.quoteId, quote_version_id: versionId, event_type: nextVersionNo === 1 ? 'version_created' : 'version_revised', actor_user_id: params.actorUserId, message: 'Quote version v' + nextVersionNo + ' saved without overwriting earlier versions.', payload: { source: 'updateQuoteDirect', previous_version_id: params.quoteVersionId, version_no: nextVersionNo } });
-  return { data: { quote_id: params.quoteId, lead_id: params.leadId, quote_version_id: versionId, version_no: nextVersionNo }, error: null };
-}
+// S37-BUG-006: legacy app-side direct quote insert/update helpers were removed.
+// Quote creation and revisions now flow through transactional RPCs so parent quotes.status
+// and version pointers remain DB-derived.
 
 async function writeQuoteAuditLog(input: {
   organizationId: string;
@@ -1537,25 +1462,13 @@ export async function updateQuoteWorkflow(_: QuoteActionState | undefined, formD
     p_action_source: 'updateQuoteWorkflow',
   });
 
-  let updatedQuote = Array.isArray(updatedQuoteResult) ? updatedQuoteResult[0] : updatedQuoteResult;
+  const updatedQuote = Array.isArray(updatedQuoteResult) ? updatedQuoteResult[0] : updatedQuoteResult;
   if (updateQuoteTxError) {
-    if (!isMissingRpcFunction(updateQuoteTxError)) return { error: quoteActionError('updateQuoteWorkflow.rpc', updateQuoteTxError, 'Quote workflow could not be updated. Please refresh and try again.') };
-    const fallback = await updateQuoteDirect(db, {
-      organizationId: organization.id,
-      quoteId,
-      leadId: existing.lead_id,
-      actorUserId: currentUser.id,
-      status,
-      currency: currency ?? 'USD',
-      notes,
-      pricingBasis,
-      quoteVersionId: existing.current_version_id ?? null,
-      lineItems: lineItemsPayload,
-      approvalRequired,
-      approvalState,
-    });
-    if (fallback.error) return { error: quoteActionError('updateQuoteWorkflow.fallback', fallback.error, 'Quote workflow could not be updated. Please refresh and try again.') };
-    updatedQuote = fallback.data;
+    if (isMissingRpcFunction(updateQuoteTxError)) {
+      logServerError('updateQuoteWorkflow.rpc.missing', updateQuoteTxError);
+      return { error: 'Quote update is temporarily unavailable. Please refresh and try again, and contact support if this persists.' };
+    }
+    return { error: quoteActionError('updateQuoteWorkflow.rpc', updateQuoteTxError, 'Quote workflow could not be updated. Please refresh and try again.') };
   }
 
   if (!updatedQuote?.quote_id) return { error: 'Failed to update quote.' };

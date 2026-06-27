@@ -1,5 +1,7 @@
 import type { ReactNode, SVGProps } from 'react'
-import type { LeadCommandCenterTabKey, TaskUrgency, WorkflowActionKey } from './types'
+type LeadCommandCenterTabKey = 'workflow' | 'quotes' | 'activity'
+type WorkflowActionKey = 'qualification' | 'coverage' | 'commercial' | 'follow_up'
+type TaskUrgency = 'ON_TRACK' | 'DUE' | 'OVERDUE'
 
 export type IconComponent = (props: SVGProps<SVGSVGElement>) => JSX.Element
 

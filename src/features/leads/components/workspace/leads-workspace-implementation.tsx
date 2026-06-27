@@ -24,7 +24,7 @@ import { formatDateTime } from '@/lib/utils';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
 import { buildLeadCommercialReadiness, getPricingReadinessLabel, type LeadCommercialReadiness } from '@/lib/catalog-pricing-model';
 import { buildLeadDocumentRequirementState, type DocumentRequirementRule, type LeadRequirementDocument } from '@/lib/document-requirements';
-import { AlertTriangle, ArrowUpRight, BadgeCheck, CalendarCheck, CheckCircle, Clock, ExternalLink, Handshake, Package, Phone, Snowflake, Sparkles, Trophy, XCircle } from '@/features/leads/command-center/ui-system';
+import { AlertTriangle, ArrowUpRight, BadgeCheck, CalendarCheck, CheckCircle, Clock, ExternalLink, Handshake, Package, Phone, Snowflake, Sparkles, Trophy, XCircle } from '@/features/leads/ui/lead-workspace-icons';
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
 import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceInsetClass, workspaceTableShellClass } from '@/components/ui/workspace-surfaces';

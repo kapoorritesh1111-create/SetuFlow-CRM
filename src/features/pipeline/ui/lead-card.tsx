@@ -8,7 +8,7 @@ import { StateMessage } from '@/components/ui/state-message';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { navigateToLeadCommandCenter } from '@/lib/lead-command-center-navigation';
 import { formatDateTime, cn } from '@/lib/utils';
-import { ICON_CONTAINER_CLASS, getActionIcon, getStageAccent, getStatusIcon } from '@/features/leads/command-center/ui-system';
+import { ICON_CONTAINER_CLASS, getActionIcon, getStageAccent, getStatusIcon } from '@/features/leads/ui/lead-workspace-icons';
 import { getPipelineStageActionLabel } from '@/features/pipeline/logic/board';
 import type { LeadCardProps, FollowUpVisualState } from '@/features/pipeline/types/board';
 

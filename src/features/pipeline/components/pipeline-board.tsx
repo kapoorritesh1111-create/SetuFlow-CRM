@@ -23,7 +23,7 @@ import PipelineBoardFilters from './PipelineBoardFilters';
 import { ToolbarActionButton, ToolbarField, ToolbarSearchInput, ToolbarSelect, ToolbarStat } from '@/components/ui/workspace-toolbar';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { ICON_CONTAINER_CLASS, getActionIcon, getStageAccent, getStageIcon, getStatusIcon } from '@/features/leads/command-center/ui-system';
+import { ICON_CONTAINER_CLASS, getActionIcon, getStageAccent, getStageIcon, getStatusIcon } from '@/features/leads/ui/lead-workspace-icons';
 import { PipelineAIStrip } from './PipelineAIStrip';
 import { WorkspaceWorkflowShell } from '@/features/workspace/components/WorkspaceWorkflowShell';
 import { buildTodayLayerState } from '@/features/workspace/today';
