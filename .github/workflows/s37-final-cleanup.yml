@@ -1,4 +1,4 @@
-name: S37 quote builder patch
+name: S37 lead mapping patch
 
 on:
   push:
@@ -14,122 +14,87 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch quote builder flow
+      - name: Patch lead qualification mapping UI
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          client = r'''"use client";
+          q = Path('src/lib/queries/query-core.ts')
+          s = q.read_text()
+          s = s.replace("  linkedProducts: Pick<ProductRow, 'id' | 'name' | 'sku' | 'category_id'>[];\n  pipelines:", "  linkedProducts: Pick<ProductRow, 'id' | 'name' | 'sku' | 'category_id'>[];\n  productCategories: Pick<ProductCategoryRow, 'id' | 'name' | 'is_active' | 'sort_order' | 'parent_id'>[];\n  pipelines:")
+          s = s.replace("    productsResult,\n    marketsResult,", "    productCategoriesResult,\n    productsResult,\n    marketsResult,")
+          s = s.replace("    supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes').eq('organization_id', organizationId).order('starts_on', { ascending: false }),\n    supabase.from('products').select('id, name, sku, category_id').eq('organization_id', organizationId).eq('is_active', true).order('name'),", "    supabase.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes').eq('organization_id', organizationId).order('starts_on', { ascending: false }),\n    supabase.from('product_categories').select('id, name, is_active, sort_order, parent_id').eq('organization_id', organizationId).eq('is_active', true).order('sort_order', { ascending: true }),\n    supabase.from('products').select('id, name, sku, category_id').eq('organization_id', organizationId).eq('is_active', true).order('name'),")
+          s = s.replace("  addIssue(issues, 'profile trade events', tradeEventsResult.error);\n  addIssue(issues, 'profile products', productsResult.error);", "  addIssue(issues, 'profile trade events', tradeEventsResult.error);\n  addIssue(issues, 'profile product categories', productCategoriesResult.error);\n  addIssue(issues, 'profile products', productsResult.error);")
+          s = s.replace("    linkedMarkets,\n    linkedProducts,", "    linkedMarkets,\n    linkedProducts,\n    productCategories: rows(productCategoriesResult.data) as LeadProfileData['productCategories'],")
+          q.write_text(s)
 
-import { useMemo, useState } from "react";
-
-type Option = { productId:string; variantId?:string|null; label:string; pack?:string|null; unit?:string|null; currency?:string|null; moq?:number|null; casePrice?:number|null; unitPrice?:number|null; basis?:string|null; sku?:string|null };
-type Row = { id?:string|null; product_id?:string|null; product_variant_id?:string|null; quantity?:any; unit_price?:any; final_unit_price?:any; catalog_price_amount?:any; currency?:string|null; notes?:string|null; line_notes?:string|null; pack_label?:string|null; packLabel?:string|null; calculation_meta?:Record<string,any>|null; basis_applied?:string|null };
-type State = { id:string; productId:string; variantId:string; lookup:string; pack:string; qty:string; unit:string; currency:string; notes:string; casePrice:string; unitPrice:string; basis:string; source:string; discountType:string; discountValue:string; freight:string; blank:boolean };
-
-function n(value: unknown) { const parsed = typeof value === "number" ? value : Number(String(value ?? "").replace(/,/g, "")); return Number.isFinite(parsed) ? parsed : null; }
-function money(value: unknown, currency = "USD") { const parsed = n(value); return parsed != null && parsed > 0 ? `${currency} ${parsed.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : "-"; }
-function findOption(options: Option[], row: Row) { return options.find((o)=>o.productId===row.product_id&&o.variantId===row.product_variant_id) ?? options.find((o)=>o.productId===row.product_id) ?? null; }
-function toState(row: Row, index: number, options: Option[], quoteCurrency: string): State { const option=findOption(options,row); const meta=row.calculation_meta??{}; const rowPrice=n(row.unit_price??row.final_unit_price??row.catalog_price_amount); const qty=n(row.quantity??(row as any).moq??option?.moq??1)??1; const casePrice=rowPrice??option?.casePrice??null; return { id:String(row.id??`blank-${index}`), productId:String(row.product_id??option?.productId??""), variantId:String(row.product_variant_id??option?.variantId??""), lookup:option?.label??"", pack:String(row.pack_label??row.packLabel??option?.pack??"Case"), qty:String(qty), unit:String(option?.unit??"Case"), currency:String(row.currency??option?.currency??quoteCurrency), notes:String(row.notes??row.line_notes??""), casePrice:casePrice?String(casePrice):"", unitPrice:option?.unitPrice?String(option.unitPrice):"", basis:String(row.basis_applied??option?.basis??"FOB").toUpperCase(), source:String(meta.price_source??"Price List"), discountType:String(meta.discount_type??"none"), discountValue:meta.discount_value!=null?String(meta.discount_value):"", freight:meta.freight!=null?String(meta.freight):"0.20", blank:String(row.id??"").startsWith("blank-") }; }
-function withOption(row: State, option: Option, quoteCurrency: string): State { return { ...row, productId:option.productId, variantId:String(option.variantId??""), lookup:option.label, pack:option.pack||"Case", qty:String(option.moq||1), unit:option.unit||"Case", currency:option.currency||quoteCurrency, casePrice:option.casePrice?String(option.casePrice):"", unitPrice:option.unitPrice?String(option.unitPrice):"", basis:String(option.basis||"FOB").toUpperCase(), source:"Price List" }; }
-
-export default function QuoteProductRowsClient({ rows, options, quoteCurrency, includePricing=false }: { rows: Row[]; options: Option[]; quoteCurrency:string; includePricing?:boolean }) {
-  const listId = useMemo(()=>`quote-product-${Math.random().toString(36).slice(2)}`, []);
-  const optionMap = useMemo(()=>new Map(options.map((o)=>[o.label,o])), [options]);
-  const [items,setItems] = useState<State[]>(()=>rows.map((row,index)=>toState(row,index,options,quoteCurrency)));
-  const update = (index:number, patch:Partial<State>) => setItems((current)=>current.map((row,rowIndex)=>rowIndex===index?{...row,...patch}:row));
-  const choose = (index:number, value:string) => { const exact=optionMap.get(value); const fuzzy=exact ?? options.find((o)=>o.label.toLowerCase().includes(value.toLowerCase())); if (fuzzy) setItems((current)=>current.map((row,rowIndex)=>rowIndex===index?withOption(row,fuzzy,quoteCurrency):row)); else update(index,{ lookup:value, productId:"", variantId:"", casePrice:"", unitPrice:"" }); };
-  return <>
-    <datalist id={listId}>{options.map((o)=><option key={`${o.productId}-${o.variantId??"product"}`} value={o.label} />)}</datalist>
-    {items.map((row,index)=>{ const qty=n(row.qty)??1; const casePrice=n(row.casePrice)??0; const unitPrice=n(row.unitPrice)??0; const discount=n(row.discountValue)??0; const discountAmount=row.discountType==="percent"?casePrice*discount/100:row.discountType==="amount"?discount:0; const finalCase=Math.max(0,casePrice-discountAmount); return <tr key={row.id||index} className="border-t border-slate-100 align-top">
-      <td className="py-2 font-black">{index+1}</td>
-      <td className="py-2">{includePricing?<div className="min-w-64 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"><p className="font-black text-slate-900">{row.lookup||"Product not selected"}</p><p className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">{row.pack} · {row.unit}</p></div>:<input list={listId} value={row.lookup} onChange={(event)=>choose(index,event.target.value)} onBlur={(event)=>choose(index,event.target.value)} placeholder="Type product, SKU, pack, or variant" className="min-w-72 rounded-xl border border-slate-200 px-3 py-1.5 font-bold" />}<input type="hidden" name="product_id" value={row.productId}/><input type="hidden" name="product_variant_id" value={row.variantId}/></td>
-      <td className="py-2"><input name="pack_label" value={row.pack} readOnly className="w-40 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-bold"/></td>
-      <td className="py-2"><input name="quantity" value={row.qty} onChange={(event)=>update(index,{qty:event.target.value})} readOnly={includePricing} className="w-20 rounded-xl border border-slate-200 px-3 py-1.5 font-bold read-only:bg-slate-50"/></td>
-      <td className="py-2 text-xs font-bold text-slate-500">{row.unit}<input type="hidden" name="sell_unit" value={row.unit}/></td>
-      <td className="py-2"><input name="currency" value={row.currency} readOnly className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-bold uppercase"/></td>
-      {includePricing? <>
-        <td className="py-2"><input name="unit_price" value={row.casePrice} readOnly className="w-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-bold"/></td>
-        <td className="py-2"><div className="w-24 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 font-black text-slate-700">{unitPrice?money(unitPrice,row.currency):"-"}</div></td>
-        <td className="py-2"><select name="discount_type" value={row.discountType} onChange={(event)=>update(index,{discountType:event.target.value})} className="w-24 rounded-xl border border-slate-200 px-3 py-1.5"><option value="none">None</option><option value="percent">%</option><option value="amount">$</option></select></td>
-        <td className="py-2"><input name="discount_value" value={row.discountValue} onChange={(event)=>update(index,{discountValue:event.target.value})} placeholder="0" className="w-24 rounded-xl border border-slate-200 px-3 py-1.5"/></td>
-        <td className="py-2"><input name="basis" value={row.basis} readOnly className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-bold"/></td>
-        <td className="py-2"><input name="price_source" value={row.source} readOnly className="w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-bold"/></td>
-        <td className="py-2"><input name="freight" value={row.freight} onChange={(event)=>update(index,{freight:event.target.value})} className="w-20 rounded-xl border border-slate-200 px-3 py-1.5"/></td>
-        <td className="py-2"><div className="font-black text-slate-950">{money(finalCase*qty,row.currency)}</div>{discount>15&&row.discountType==="percent"?<div className="text-[10px] font-black text-amber-700">approval required</div>:null}</td>
-      </> : <>
-        <input type="hidden" name="unit_price" value={row.casePrice}/><input type="hidden" name="basis" value={row.basis}/><input type="hidden" name="price_source" value={row.source}/><input type="hidden" name="freight" value={row.freight}/><input type="hidden" name="discount_type" value="none"/><input type="hidden" name="discount_value" value=""/>
-        <td className="py-2"><input name="line_notes" value={row.notes} onChange={(event)=>update(index,{notes:event.target.value})} placeholder="Notes" className="rounded-xl border border-slate-200 px-3 py-1.5"/></td>
-        <td className="py-2 font-black text-slate-700">{money(casePrice,row.currency)}</td><td className="py-2 font-black text-slate-700">{money(unitPrice,row.currency)}</td><td className="py-2 font-black text-slate-700">{money(casePrice*qty,row.currency)}</td>
-      </>}
-      <td className="py-2">{!row.blank?<label className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-600"><input type="checkbox" name="remove_index" value={index}/> Remove</label>:null}</td>
-    </tr>;})}
-  </>;
-}
-'''
-
-          Path('src/features/quotes/canonical/QuoteProductRowsClient.tsx').write_text(client)
-
-          p = Path('src/features/quotes/canonical/CanonicalQuoteBuilder.tsx')
+          p = Path('src/features/leads/canonical/LeadCommandCenterPremium.tsx')
           s = p.read_text()
-          if "QuoteProductRowsClient" not in s:
-              s = s.replace("import Link from 'next/link';\n", "import Link from 'next/link';\nimport QuoteProductRowsClient from './QuoteProductRowsClient';\n")
-          start = s.index('function ProductRows(')
-          end = s.index('\n\nfunction ProductStep', start)
-          replacement = r'''function productOptions(data: LeadProfileData) {
-  const products = [...(data.products as any[]), ...(data.linkedProducts as any[])];
-  const productMap = new Map(products.filter((product: any) => product?.id).map((product: any) => [product.id, product]));
-  const variants = (data.variants as any[]).filter((variant: any) => variant?.product_id && productMap.has(variant.product_id));
-  const rules = data.pricingRules as any[];
-  const priceFor = (productId?: string | null, variantId?: string | null) => {
-    const matching = rules.find((rule: any) => rule.product_id === productId && (rule.product_variant_id === variantId || (!rule.product_variant_id && !variantId))) ?? rules.find((rule: any) => rule.product_id === productId && !rule.product_variant_id) ?? null;
-    const casePrice = Number(matching?.fob_usd_per_case ?? matching?.fob_usd ?? matching?.ex_factory_usd_per_case ?? matching?.ex_factory_usd ?? 0) || null;
-    const unitPrice = Number(matching?.fob_usd_per_unit ?? matching?.ex_factory_usd_per_unit ?? 0) || null;
-    return { rule: matching, casePrice, unitPrice };
-  };
-  const optionRows = variants.map((variant: any) => {
-    const product: any = productMap.get(variant.product_id);
-    const priced = priceFor(product.id, variant.id);
-    const units = Number(variant.units_per_case ?? 0) || null;
-    const unitPrice = priced.unitPrice || (priced.casePrice && units ? priced.casePrice / units : null);
-    const packLabel = variant.pack_label || product.pack_size || 'Case';
-    const label = [product.name, variant.name, packLabel, variant.sku_code || product.sku].filter(Boolean).join(' · ');
-    return { productId: product.id, variantId: variant.id, label, pack: packLabel, unit: variant.pricing_mode_default || 'Case', currency: 'USD', moq: Number(variant.moq_cases ?? variant.moq_kg ?? 1) || 1, casePrice: priced.casePrice, unitPrice, basis: priced.rule?.pricing_type || 'FOB', sku: variant.sku_code || product.sku };
-  });
-  const variantProductIds = new Set(optionRows.map((option: any) => option.productId));
-  const productOnlyRows = products.filter((product: any) => product?.id && !variantProductIds.has(product.id)).map((product: any) => {
-    const priced = priceFor(product.id, null);
-    const packLabel = product.pack_size || 'Case';
-    return { productId: product.id, variantId: null, label: [product.name, product.sku, packLabel].filter(Boolean).join(' · '), pack: packLabel, unit: 'Case', currency: 'USD', moq: Number(product.moq ?? product.minimum_order_quantity ?? 1) || 1, casePrice: priced.casePrice, unitPrice: priced.unitPrice, basis: priced.rule?.pricing_type || 'FOB', sku: product.sku };
-  });
-  return [...optionRows, ...productOnlyRows].sort((a: any, b: any) => a.label.localeCompare(b.label));
-}
-
-function ProductRows({ data, quote, includePricing = false }: { data: LeadProfileData; quote: any; includePricing?: boolean }) {
-  const rows = [...lineItems(quote, data), ...(includePricing ? [] : Array.from({ length: 2 }, (_, index) => ({ id: `blank-${index}`, product_id: '', product_variant_id: '', quantity: 1, unit_price: null, currency: quoteCurrency(data, quote), notes: '', pack_label: '' })))];
-  return <QuoteProductRowsClient rows={rows as any[]} options={productOptions(data) as any[]} quoteCurrency={quoteCurrency(data, quote)} includePricing={includePricing} />;
-}'''
-          s = s[:start] + replacement + s[end:]
-          s = s.replace("['2', 'Terms', 'Currency, FX, Incoterm']", "['2', 'Terms', 'Currency, FX, Pricing Type']")
-          s = s.replace('<th>Notes</th><th>Est. Unit Price</th><th>Line Total</th><th>Remove</th>', '<th>Notes</th><th>Case Price</th><th>Unit Price</th><th>Line Total</th><th>Remove</th>')
-          s = s.replace('Currency, FX, Incoterm, port, validity, and packaging drive final pricing.', 'Currency, FX, Pricing Type, port, validity, and packaging drive final pricing.')
-          s = s.replace('Products and MOQ are captured first. Terms, FX, and Incoterms are next because pricing depends on them.', 'Products, variants, MOQ, and price list are captured first. Terms, FX, and Pricing Type are next because pricing depends on them.')
-          s = s.replace("[['incoterm', 'Incoterm', 'FOB'], ['port_loading', 'Port of Loading', 'Nhava Sheva (JNPT), India'], ['payment_terms', 'Payment Terms', '30% Advance, 70% Against B/L Copy'], ['lead_time', 'Lead Time', '20 - 25 Days After Order Confirmation'], ['port_discharge', 'Port of Discharge', 'Hamburg, Germany'], ['currency', 'Currency', quoteCurrency(data, quote)], ['fx_rate', 'FX Rate / Lock', 'Weekly average · 7 days'], ['packaging', 'Packaging', 'Export cartons / as per product'], ['validity_days', 'Validity Days', '30']].map(([name, label, value]) => <label key={name} className=\"grid gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-400\">{label}<input name={name} defaultValue={value} className=\"rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold normal-case tracking-normal text-slate-700\" /></label>)", "[['port_loading', 'Port of Loading', 'Nhava Sheva (JNPT), India'], ['payment_terms', 'Payment Terms', '30% Advance, 70% Against B/L Copy'], ['lead_time', 'Lead Time', '20 - 25 Days After Order Confirmation'], ['port_discharge', 'Port of Discharge', 'Hamburg, Germany'], ['currency', 'Currency', quoteCurrency(data, quote)], ['packaging', 'Packaging', 'Export cartons / as per product'], ['validity_days', 'Validity Days', '30']].map(([name, label, value]) => <label key={name} className=\"grid gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-400\">{label}<input name={name} defaultValue={value} className=\"rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold normal-case tracking-normal text-slate-700\" /></label>)")
-          s = s.replace('<div className="mt-6 grid gap-4 md:grid-cols-2">{[[\'port_loading\'', '<div className="mt-6 grid gap-4 md:grid-cols-2"><label className="grid gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-400">Pricing Type<select name="incoterm" defaultValue="FOB" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold normal-case tracking-normal text-slate-700"><option value="FOB">FOB</option><option value="EXW">EXW / Ex-Factory</option><option value="CIF">CIF</option><option value="CNF">CNF</option><option value="DAP">DAP</option></select></label><label className="grid gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-400">FX Lock<select name="fx_rate" defaultValue="weekly_7" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold normal-case tracking-normal text-slate-700"><option value="weekly_7">Weekly average · 7 days</option><option value="daily_spot">Daily spot</option><option value="manual_lock">Manual locked rate</option><option value="not_required">Not required</option></select></label>{[[\'port_loading\'')
-          s = s.replace('<h2 className="mt-2 text-xl font-black text-slate-950">Set price list value, MOQ, discounts, and freight</h2>', '<h2 className="mt-2 text-xl font-black text-slate-950">Confirm price list, discount, and freight</h2>')
-          s = s.replace('<th>Price List</th><th>Disc Type</th>', '<th>Case Price</th><th>Unit Price</th><th>Disc Type</th>')
-          s = s.replace('Use Price List as the default. Choose Manual only when overriding the product-configured value.', 'Product, pack, MOQ, currency, and price list are locked from Product step. Change only discount and freight here.')
-          p.write_text(s)
-
-          a = Path('src/features/quotes/canonical/actions-stabilized.ts')
-          s = a.read_text()
-          s = s.replace("type DraftLine = { productId: string | null; quantity: number; unitPrice: number | null; currency: string; notes: string | null; packLabel: string | null; basis: string; freight: number | null; priceSource: string | null; discountType: string; discountValue: number | null };", "type DraftLine = { productId: string | null; productVariantId: string | null; quantity: number; unitPrice: number | null; currency: string; notes: string | null; packLabel: string | null; basis: string; freight: number | null; priceSource: string | null; discountType: string; discountValue: number | null };")
-          s = s.replace("const productIds = all(formData, 'product_id');\n  const quantities", "const productIds = all(formData, 'product_id');\n  const productVariantIds = all(formData, 'product_variant_id');\n  const quantities")
-          s = s.replace("return productIds.map((productId, index) => ({ productId: productId || null, quantity:", "return productIds.map((productId, index) => ({ productId: productId || null, productVariantId: productVariantIds[index] || null, quantity:")
-          s = s.replace("product_variant_id: null, catalog_price_id", "product_variant_id: line.productVariantId, catalog_price_id")
-          a.write_text(s)
+          old = '''function SecondaryPanels({ data }: { data: LeadProfileData }) {
+  const lead = data.lead!;
+  return (
+    <section className="grid gap-4 xl:grid-cols-2">
+      <details id="qualification" className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer list-none">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Qualification & Mapping</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-950">{data.linkedProducts.length} products · {data.linkedMarkets.length} markets</h3>
+        </summary>
+        <form action={saveCanonicalQualificationMapping} className="mt-4 grid gap-4 border-t border-slate-100 pt-4">
+          <input type="hidden" name="lead_id" value={lead.id} />
+          <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Qualification notes<textarea name="qualification_notes" defaultValue={data.workflow?.qualificationNotes ?? lead.notes ?? ''} className="min-h-20 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-700" /></label>
+          <button className="w-fit rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">Save qualification</button>
+        </form>
+      </details>'''
+          new = '''function SecondaryPanels({ data }: { data: LeadProfileData }) {
+  const lead = data.lead!;
+  const selectedProductIds = new Set(data.linkedProducts.map((product) => product.id));
+  const selectedMarketIds = new Set(data.linkedMarkets.map((market) => market.id));
+  const categories = ((data as any).productCategories || []) as Array<{ id: string; name: string }>;
+  const categoryName = (categoryId?: string | null) => categories.find((category) => category.id === categoryId)?.name || (categoryId ? `Category ${categoryId.slice(0, 8)}` : 'Uncategorized');
+  const groupedCategories = Array.from(new Set(data.products.map((product: any) => product.category_id).filter(Boolean))).map((categoryId: string) => ({ id: categoryId, name: categoryName(categoryId), count: data.products.filter((product: any) => product.category_id === categoryId).length }));
+  return (
+    <section className="grid gap-4 xl:grid-cols-2">
+      <details id="qualification" open className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer list-none">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Qualification & Mapping</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-950">{data.linkedProducts.length} products · {data.linkedMarkets.length} markets</h3>
+        </summary>
+        <form action={saveCanonicalQualificationMapping} className="mt-4 grid gap-4 border-t border-slate-100 pt-4">
+          <input type="hidden" name="lead_id" value={lead.id} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pick categories</p>
+              <div className="mt-3 grid max-h-44 gap-2 overflow-auto pr-1">
+                {groupedCategories.map((category) => <label key={category.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm"><span>{category.name} <span className="text-xs text-slate-400">({category.count})</span></span><input type="checkbox" name="category_ids" value={category.id} /></label>)}
+                {!groupedCategories.length ? <p className="text-sm font-medium text-slate-500">No categories available.</p> : null}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pick products</p>
+              <div className="mt-3 grid max-h-44 gap-2 overflow-auto pr-1">
+                {data.products.map((product: any) => <label key={product.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm"><span>{product.name}<span className="ml-2 text-xs text-slate-400">{product.sku || categoryName(product.category_id)}</span></span><input type="checkbox" name="product_ids" value={product.id} defaultChecked={selectedProductIds.has(product.id)} /></label>)}
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pick markets</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {data.markets.map((market) => <label key={market.id} className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm"><input type="checkbox" name="market_ids" value={market.id} defaultChecked={selectedMarketIds.has(market.id)} />{market.name}</label>)}
+            </div>
+          </div>
+          <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Qualification notes<textarea name="qualification_notes" defaultValue={data.workflow?.qualificationNotes ?? lead.notes ?? ''} className="min-h-20 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-700" /></label>
+          <button className="w-fit rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">Save qualification & mapping</button>
+        </form>
+      </details>'''
+          if old not in s:
+              raise SystemExit('qualification block not found')
+          p.write_text(s.replace(old, new))
+          Path('.github/workflows/s37-final-cleanup.yml').write_text('name: S37 final cleanup disabled\non: workflow_dispatch\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo disabled\n')
           PY
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: 'S37-QUOTE: Fix product picker pricing defaults'
-          add: 'src/features/quotes/canonical/CanonicalQuoteBuilder.tsx src/features/quotes/canonical/QuoteProductRowsClient.tsx src/features/quotes/canonical/actions-stabilized.ts'
+      - name: Commit patch
+        run: |
+          git config user.name "setu-flow-cleanup-bot"
+          git config user.email "actions@github.com"
+          git add src/lib/queries/query-core.ts src/features/leads/canonical/LeadCommandCenterPremium.tsx .github/workflows/s37-final-cleanup.yml
+          git commit -m "S37-QUAL: Add qualification product and category selector"
+          git push
