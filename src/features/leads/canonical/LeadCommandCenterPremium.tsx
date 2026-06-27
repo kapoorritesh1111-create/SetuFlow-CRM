@@ -115,8 +115,8 @@ function NewQuoteButton({ leadId, sourceQuoteId, label = 'Create New Quote', com
       <input type="hidden" name="lead_id" value={leadId} />
       {sourceQuoteId ? <input type="hidden" name="source_quote_id" value={sourceQuoteId} /> : null}
       <input type="hidden" name="force_new" value="true" />
-      <button className={compact ? 'inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700' : 'inline-flex h-10 items-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700'}>
-        <Icon name="plus" />
+      <button className={compact ? 'inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700' : 'inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700'}>
+        <Icon name="plus" className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         {label}
       </button>
     </form>
@@ -361,24 +361,24 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
           <FollowUpComposer leadId={lead.id} clientName={lead.company_name} senderName="Ritesh Kapoor" senderCompany="SETU Flow CRM" email={lead.email} whatsapp={lead.whatsapp_number || lead.phone} action={scheduleCanonicalLeadFollowUp} />
         </div>
 
-        <div id="commercial" className="relative rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start gap-4 xl:pr-[440px]">
+        <div id="commercial" className="relative rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-start gap-3 xl:min-h-[76px] xl:pr-[365px]">
             <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Icon name="chart" /></span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Icon name="chart" className="h-3.5 w-3.5" /></span>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-slate-950">Commercial</h2>
-                <p className="mt-2 text-base font-bold text-slate-950">{activeQuote ? `${activeQuote.quote_number || 'Quote'} · ${title(activeQuote.status)}` : 'No quote yet'}</p>
-                <p className="mt-1.5 text-sm font-medium text-slate-500">Open lifecycle, generate the customer PDF, or start a fresh quote from the saved commercial context.</p>
+                <h2 className="text-[17px] font-bold leading-6 text-slate-950">Commercial</h2>
+                <p className="mt-1 text-[15px] font-bold leading-5 text-slate-950">{activeQuote ? `${activeQuote.quote_number || 'Quote'} · ${title(activeQuote.status)}` : 'No quote yet'}</p>
+                <p className="mt-1 text-[13px] font-medium leading-5 text-slate-500">Open lifecycle, export PDF, or create a fresh quote from this commercial context.</p>
               </div>
             </div>
-            <div className="flex flex-wrap justify-end gap-2 xl:absolute xl:right-5 xl:top-5 xl:max-w-[420px]">
-              {primary.href ? <Link href={primary.href} className="inline-flex h-10 items-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">{primary.label}</Link> : null}
-              {activeQuote ? <Link href={`/api/quotes/${activeQuote.id}/pdf`} className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm"><Icon name="pdf" />Customer PDF</Link> : null}
-              <NewQuoteButton leadId={lead.id} sourceQuoteId={activeQuote?.id} label="Create New Quote" compact />
+            <div className="flex flex-wrap justify-end gap-2 xl:absolute xl:right-4 xl:top-4 xl:flex-nowrap">
+              {primary.href ? <Link href={primary.href} className="inline-flex h-9 items-center whitespace-nowrap rounded-2xl bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700">{primary.label}</Link> : null}
+              {activeQuote ? <Link href={`/api/quotes/${activeQuote.id}/pdf`} className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm"><Icon name="pdf" className="h-3.5 w-3.5" />Customer PDF</Link> : null}
+              <NewQuoteButton leadId={lead.id} sourceQuoteId={activeQuote?.id} label="New Quote" compact />
             </div>
           </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Buyer</p>
               <dl className="mt-3 grid gap-2 text-sm">
@@ -397,9 +397,9 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3">
             <p className="text-sm font-semibold text-slate-700">Mapped Coverage</p>
-            <div className="mt-2.5 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               {data.linkedProducts.slice(0, 6).map((p) => <span key={p.id} className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">{p.name}</span>)}
             </div>
           </div>
