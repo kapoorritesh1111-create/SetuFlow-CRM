@@ -117,7 +117,7 @@ export type BuyerSelection = {
 };
 
 // --- Product readiness (S34-CATALOG-003) -----------------------------------
-// Derived in code, NOT stored. Based on completeness of export-ready fields.
+// Derived in code, NOT stored. Based on share readiness, not catalog-admin completeness.
 export type ProductReadiness = 'ready' | 'needs_data' | 'missing_price' | 'missing_image';
 
 export type ProductReadinessInput = {
@@ -164,13 +164,11 @@ export function computeProductReadiness(p: ProductReadinessInput): {
   const missing = checks.filter((c) => !c.ok).map((c) => c.key);
 
   const hasPrice = checks.find((c) => c.key === 'price')?.ok ?? false;
-  // Image is optional — a product missing only an image is still shareable and
-  // should not be flagged as a blocker (S34-CATALOG-047). Price is the only hard gate.
-  const hardMissing = missing.filter((k) => k !== 'image');
-
+  // For Share Price List, product name + mapped price/list coverage is enough to share.
+  // Admin completeness fields such as description, images, HSN, origin, or certifications
+  // should not show buyer-share users a scary "Needs Data" warning.
   let status: ProductReadiness;
   if (!hasPrice) status = 'missing_price';
-  else if (hardMissing.length > 0) status = 'needs_data';
   else status = 'ready';
 
   return { status, score, missing };
@@ -178,10 +176,10 @@ export function computeProductReadiness(p: ProductReadinessInput): {
 
 export function readinessLabel(status: ProductReadiness): string {
   switch (status) {
-    case 'ready': return 'Ready';
-    case 'needs_data': return 'Needs Data';
-    case 'missing_price': return 'Missing Price';
-    case 'missing_image': return 'Missing Image';
+    case 'ready': return 'Curated';
+    case 'needs_data': return 'Curated';
+    case 'missing_price': return 'Price Needed';
+    case 'missing_image': return 'Curated';
   }
 }
 
