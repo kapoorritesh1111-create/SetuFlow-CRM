@@ -25,7 +25,7 @@ function Field({ label, name, type = 'text', placeholder, required = false, defa
   return (
     <label className="space-y-2 text-sm text-slate-700">
       <span className="block font-medium text-slate-800">{label}</span>
-      <input name={name} type={type} placeholder={placeholder} required={required} autoComplete={name} defaultValue={defaultValue} readOnly={readOnly} className={readOnly ? 'bg-slate-100 text-slate-700' : undefined} />
+      <input name={name} type={type} placeholder={placeholder} required={required} autoComplete={name} defaultValue={defaultValue} readOnly={readOnly} className={readOnly ? 'bg-slate-100 text-slate-800' : undefined} />
     </label>
   );
 }
@@ -92,38 +92,42 @@ export default async function InviteTokenPage({ params }: { params: { token: str
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-        <section className="rounded-[2rem] bg-gradient-to-br from-navy-950 via-navy-900 to-brand-700 p-6 text-white shadow-soft sm:p-8">
-          <div className="flex items-center gap-3">
-            {organization?.logo_url ? <img src={organization.logo_url} alt="" className="h-10 w-10 rounded-2xl bg-white/10 object-contain p-1" /> : null}
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/65">SETU Flow CRM Invitation</p>
-              <p className="text-sm text-white/75">{organizationSlug}.setuflowcrm.com</p>
+        <section className="relative overflow-hidden rounded-[2rem] border border-cyan-400/30 bg-slate-950 p-6 text-white shadow-soft sm:p-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(20,184,166,0.34),transparent_34%),radial-gradient(circle_at_85%_15%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#061421_0%,#082236_48%,#053f46_100%)]" />
+          <div className="absolute inset-0 bg-slate-950/35" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3">
+              {organization?.logo_url ? <img src={organization.logo_url} alt="" className="h-12 w-12 rounded-2xl border border-white/20 bg-white object-contain p-1.5 shadow-lg" /> : null}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-100">SETU Flow CRM Invitation</p>
+                <p className="text-sm font-medium text-white">{organizationSlug}.setuflowcrm.com</p>
+              </div>
             </div>
-          </div>
-          <h1 className="mt-6 text-3xl font-semibold tracking-tight">Join {organizationName}</h1>
-          <p className="mt-3 text-sm leading-6 text-white/85">Create your password and accept owner access for this workspace. Your invited email and organization context are already attached to this secure link.</p>
+            <h1 className="mt-7 text-3xl font-bold tracking-tight text-white">Join {organizationName}</h1>
+            <p className="mt-3 max-w-md text-sm leading-6 text-slate-100">Create your password and accept owner access for this workspace. Your invited email and organization context are already attached to this secure link.</p>
 
-          <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em]">
-            <span className="rounded-full border border-cyan-300/50 bg-cyan-300/10 px-3 py-1 text-cyan-100">{industryLabel}</span>
-            <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-white/85">{packLabel}</span>
-          </div>
+            <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em]">
+              <span className="rounded-full border border-cyan-200 bg-cyan-300 px-3 py-1.5 text-slate-950 shadow-sm">{industryLabel}</span>
+              <span className="rounded-full border border-white/35 bg-white px-3 py-1.5 text-slate-950 shadow-sm">{packLabel}</span>
+            </div>
 
-          <div className="mt-6 space-y-3 rounded-[1.75rem] bg-white/10 p-5 backdrop-blur">
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-white/65">Invited email</p>
-              <p className="mt-1 text-lg font-semibold">{invite.email}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-white/65">Invited name</p>
-              <p className="mt-1 text-lg font-semibold">{fullNameDefault || 'Complete on setup'}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-white/65">Role on accept</p>
-              <p className="mt-1 text-lg font-semibold">{roleName ?? 'No default role assigned'}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-white/65">Expires</p>
-              <p className="mt-1 text-lg font-semibold">{expiresAt ? expiresAt.toLocaleString() : 'No expiry set'}</p>
+            <div className="mt-6 space-y-4 rounded-[1.75rem] border border-white/20 bg-slate-900/80 p-5 shadow-xl backdrop-blur">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">Invited email</p>
+                <p className="mt-1 text-lg font-bold text-white">{invite.email}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">Invited name</p>
+                <p className="mt-1 text-lg font-bold text-white">{fullNameDefault || 'Complete on setup'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">Role on accept</p>
+                <p className="mt-1 text-lg font-bold text-white">{roleName ?? 'No default role assigned'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">Expires</p>
+                <p className="mt-1 text-lg font-bold text-white">{expiresAt ? expiresAt.toLocaleString() : 'No expiry set'}</p>
+              </div>
             </div>
           </div>
         </section>
