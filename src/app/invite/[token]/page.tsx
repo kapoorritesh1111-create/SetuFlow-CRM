@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { StateMessage } from '@/components/ui/state-message';
-import { acceptInvitationByToken, registerAndAcceptInvitation } from '@/features/admin/server/actions';
+import { acceptInvitationByToken, registerAndAcceptInvitation } from '@/features/admin/server/invite-acceptance';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { hashInvitationToken } from '@/lib/invitationTokens';
