@@ -2,30 +2,22 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
-import { escapeHtml, logoDataUrl, renderHtmlToPdf } from '@/lib/pdf/browser-pdf';
 
 export const runtime = 'nodejs';
 
+const INK = '#0f172a';
+const MUTED = '#475569';
+const NAVY = '#0b2e4a';
+const BLUE = '#1d4ed8';
+const LINE = '#cbd5e1';
+const PANEL = '#f8fafc';
+const GREEN = '#ecfdf5';
+const NL = String.fromCharCode(10);
+const BS = String.fromCharCode(92);
+
+type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
 type PdfRow = { sku: string; product: string; qty: string; details: string; unitPrice: string; amount: string };
 type KeyValue = [string, string];
-
-type PdfData = {
-  title: string;
-  subtitle: string;
-  documentNo: string;
-  issueDate: string;
-  status: string;
-  logoUrl: string | null;
-  org: any;
-  buyer: any;
-  quote: any;
-  order: any;
-  shipment: any;
-  rows: PdfRow[];
-  summary: KeyValue[];
-  terms: string[];
-  notes: string[];
-};
 
 function num(value: unknown, fallback = 0) {
   const parsed = Number(value ?? fallback);
@@ -37,6 +29,11 @@ function text(value: unknown, fallback = '-') {
   return out || fallback;
 }
 
+function clip(value: unknown, max = 42, fallback = '-') {
+  const out = text(value, fallback);
+  return out.length > max ? `${out.slice(0, Math.max(1, max - 3))}...` : out;
+}
+
 function dateText(value: unknown) {
   const out = text(value, '');
   if (!out) return '-';
@@ -46,6 +43,19 @@ function dateText(value: unknown) {
 
 function money(value: unknown, currency = 'USD') {
   return `${currency} ${num(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function pdfText(value: string) {
+  return String(value).split(BS).join(BS + BS).split('(').join(BS + '(').split(')').join(BS + ')').split(NL).join(' ');
+}
+
+function rgb(hex: string) {
+  const value = Number.parseInt(hex.replace('#', ''), 16);
+  return `${(((value >> 16) & 255) / 255).toFixed(3)} ${(((value >> 8) & 255) / 255).toFixed(3)} ${((value & 255) / 255).toFixed(3)}`;
+}
+
+function width(value: string, size: number, bold = false) {
+  return value.length * size * (bold ? 0.56 : 0.52);
 }
 
 function orgLogoMark(org: any) {
@@ -111,108 +121,150 @@ function buildTerms(document: any, org: any, order: any, quote: any) {
   return [text(org?.order_terms_conditions ?? org?.quote_terms_conditions, 'This document is generated from CRM workflow data and subject to final commercial confirmation.')];
 }
 
-function td(value: unknown, cls = '') {
-  return `<td class="${cls}">${escapeHtml(value)}</td>`;
-}
+function buildPdf(data: {
+  title: string;
+  subtitle: string;
+  documentNo: string;
+  issueDate: string;
+  status: string;
+  org: any;
+  buyer: any;
+  quote: any;
+  order: any;
+  shipment: any;
+  rows: PdfRow[];
+  summary: KeyValue[];
+  terms: string[];
+  notes: string[];
+}) {
+  const objects: string[] = [];
+  const add = (body: string) => {
+    objects.push(body);
+    return objects.length;
+  };
+  const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const fontBold = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const ops: string[] = [];
+  const copy: PdfText[] = [];
+  const left = 24;
+  const right = 588;
+  const box = (x: number, y: number, w: number, h: number, fill?: string, stroke?: string) => {
+    if (fill) ops.push(`${rgb(fill)} rg ${x} ${y} ${w} ${h} re f`);
+    if (stroke) ops.push(`${rgb(stroke)} RG ${x} ${y} ${w} ${h} re S`);
+  };
+  const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, lineWidth = 0.7) => ops.push(`${rgb(color)} RG ${lineWidth} w ${x1} ${y1} m ${x2} ${y2} l S`);
+  const put = (x: number, y: number, value: string, size = 7, bold = false, color = INK, alignRight = false) => copy.push({ x, y, text: value, size, bold, color, right: alignRight });
+  const logo = orgLogoMark(data.org);
 
-function buildHtml(data: PdfData) {
-  const orgName = text(data.org?.legal_name ?? data.org?.name, 'Organization');
-  const logo = data.logoUrl
-    ? `<img src="${data.logoUrl}" alt="${escapeHtml(orgName)} logo" />`
-    : `<span>${escapeHtml(orgLogoMark(data.org))}</span>`;
-  const total = data.rows.map((row) => Number(String(row.amount).replace(/[^0-9.-]/g, ''))).filter(Number.isFinite).reduce((sum, value) => sum + value, 0);
-  const currency = text(data.order?.currency ?? data.quote?.display_currency ?? data.quote?.currency, 'USD').toUpperCase();
-  const rows = (data.rows.length ? data.rows : [{ sku: '-', product: data.title, qty: '-', details: 'Workflow record generated from CRM data', unitPrice: '-', amount: '-' }]).map((row, index) => `
-    <tr>
-      ${td(index + 1, 'muted center')}
-      ${td(row.sku)}
-      ${td(row.product, 'strong')}
-      ${td(row.qty, 'right')}
-      ${td(row.details, 'muted')}
-      ${td(row.unitPrice, 'right')}
-      ${td(row.amount, 'right strong')}
-    </tr>`).join('');
-  const summary = data.summary.slice(0, 6).map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
-  const notes = data.notes.slice(0, 5).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
-  const terms = data.terms.slice(0, 6).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
+  box(0, 0, 612, 792, '#ffffff');
+  box(left, 724, 564, 44, '#ffffff', LINE);
+  box(left, 724, 44, 44, NAVY);
+  put(46, 746, logo, logo.length > 2 ? 6.8 : 8.5, true, '#ffffff', true);
+  put(78, 750, clip(data.org?.legal_name ?? data.org?.name, 38, 'Apparel DEMO'), 11, true, NAVY);
+  put(78, 736, clip(data.org?.website, 52, 'https://www.setuflowcrm.com'), 6.3, false, MUTED);
+  put(230, 752, data.title, 15.2, true, NAVY);
+  put(230, 736, data.subtitle, 7.5, false, MUTED);
+  box(462, 732, 116, 28, PANEL, LINE);
+  put(574, 750, clip(data.documentNo, 28), 8.2, true, NAVY, true);
+  put(574, 739, `${data.issueDate} | ${data.status}`, 5.7, false, MUTED, true);
 
-  return `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<style>
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #0f172a; background: white; }
-  .page { width: 100%; padding: 18px; }
-  .header { display: grid; grid-template-columns: 250px 1fr 160px; gap: 18px; align-items: center; border: 1px solid #cbd5e1; padding: 10px; }
-  .brand { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
-  .logo { width: 64px; height: 54px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; }
-  .logo img { max-width: 58px; max-height: 48px; object-fit: contain; display: block; }
-  .logo span { font-weight: 900; color: #0b2e4a; font-size: 15px; letter-spacing: .04em; }
-  .org h2, .doc h1 { margin: 0; color: #0b2e4a; }
-  .org h2 { font-size: 18px; }
-  .org p, .doc p, .ref p { margin: 5px 0 0; color: #475569; font-size: 10px; }
-  .doc { text-align: center; }
-  .doc h1 { font-size: 24px; }
-  .ref { border: 1px solid #cbd5e1; padding: 10px; text-align: right; background: #f8fafc; }
-  .ref strong { display: block; color: #0b2e4a; font-size: 13px; }
-  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 24px; }
-  .card { border: 1px solid #cbd5e1; background: #f8fafc; padding: 14px; min-height: 114px; }
-  .label { color: #1d4ed8; font-weight: 900; text-transform: uppercase; font-size: 10px; margin-bottom: 12px; }
-  .card h3 { margin: 0 0 10px; font-size: 14px; }
-  .card p { margin: 4px 0; color: #475569; font-size: 10px; }
-  .summary div { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 10px; }
-  .summary span { color: #475569; font-weight: 700; }
-  .banner { margin-top: 14px; border: 1px solid #bbf7d0; background: #ecfdf5; color: #166534; padding: 9px 12px; font-size: 10px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 28px; font-size: 10px; }
-  th { background: #e2e8f0; color: #0b2e4a; text-align: left; padding: 9px; border: 1px solid #cbd5e1; font-size: 9px; text-transform: uppercase; }
-  td { padding: 10px 9px; border: 1px solid #cbd5e1; }
-  tr:nth-child(even) td { background: #f8fafc; }
-  .right { text-align: right; } .center { text-align: center; } .strong { font-weight: 800; } .muted { color: #475569; }
-  .total { border-top: 3px solid #0b2e4a; display: flex; justify-content: flex-end; gap: 30px; padding: 12px 0 0; margin-top: 0; font-weight: 900; color: #0b2e4a; font-size: 16px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 34px; }
-  .panel { border: 1px solid #cbd5e1; background: #f8fafc; padding: 14px; min-height: 98px; }
-  .panel h4, .terms h4 { margin: 0 0 12px; color: #0b2e4a; font-size: 12px; }
-  .panel ul, .terms ul { margin: 0; padding-left: 16px; color: #475569; font-size: 10px; line-height: 1.7; }
-  .refs div { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; }
-  .terms { margin-top: 22px; border: 1px solid #cbd5e1; padding: 14px; min-height: 100px; }
-  .footer { display: flex; justify-content: space-between; margin-top: 24px; color: #475569; font-size: 10px; }
-  .signature { border: 1px solid #cbd5e1; padding: 12px 60px 12px 12px; color: #0b2e4a; font-weight: 800; }
-</style>
-</head>
-<body>
-  <main class="page">
-    <section class="header">
-      <div class="brand"><div class="logo">${logo}</div><div class="org"><h2>${escapeHtml(orgName)}</h2><p>${escapeHtml(text(data.org?.website, ''))}</p></div></div>
-      <div class="doc"><h1>${escapeHtml(data.title)}</h1><p>${escapeHtml(data.subtitle)}</p></div>
-      <div class="ref"><strong>${escapeHtml(data.documentNo)}</strong><p>${escapeHtml(data.issueDate)} | ${escapeHtml(data.status)}</p></div>
-    </section>
-    <section class="cards">
-      <div class="card"><div class="label">Seller / Exporter</div><h3>${escapeHtml(orgName)}</h3><p>${escapeHtml(text(data.org?.registered_address, ''))}</p><p>${escapeHtml([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '))}</p><p>${escapeHtml(text(data.org?.contact_email, ''))}</p><p>Tax ID: ${escapeHtml(text(data.org?.tax_id, '-'))}</p></div>
-      <div class="card"><div class="label">Buyer / Importer</div><h3>${escapeHtml(text(data.buyer?.company_name, 'Buyer pending'))}</h3><p>${escapeHtml(text(data.buyer?.contact_name, ''))}</p><p>${escapeHtml(text(data.buyer?.country, ''))}</p><p>${escapeHtml(text(data.buyer?.email, ''))}</p><p>${escapeHtml(text(data.buyer?.phone ?? data.buyer?.whatsapp_number, ''))}</p></div>
-      <div class="card summary">${summary}</div>
-    </section>
-    <div class="banner">${escapeHtml(data.title)} generated from live CRM data for this buyer, quote, order and shipment workflow.</div>
-    <table>
-      <thead><tr><th>#</th><th>SKU / Ref</th><th>Product / Gate Item</th><th class="right">Qty</th><th>Details</th><th class="right">Unit</th><th class="right">Amount</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="total"><span>Document Total / Control</span><span>${escapeHtml(total ? money(total, currency) : `${data.rows.length} line(s)`)}</span></div>
-    <section class="grid2">
-      <div class="panel"><h4>Workflow Context</h4><ul>${notes}</ul></div>
-      <div class="panel refs"><h4>Commercial References</h4>
-        <div><span>Quote</span><strong>${escapeHtml(text(data.quote?.quote_number, '-'))}</strong></div>
-        <div><span>Order</span><strong>${escapeHtml(text(data.order?.order_number, '-'))}</strong></div>
-        <div><span>Shipment</span><strong>${escapeHtml(text(data.shipment?.booking_reference, '-'))}</strong></div>
-        <div><span>BOL/AWB</span><strong>${escapeHtml(text(data.shipment?.bol_awb_number, '-'))}</strong></div>
-        <div><span>Tracking</span><strong>${escapeHtml(text(data.shipment?.tracking_number, '-'))}</strong></div>
-      </div>
-    </section>
-    <section class="terms"><h4>Terms & Conditions</h4><ul>${terms}</ul></section>
-    <section class="footer"><div>Generated by SETU Flow CRM from client workspace data.</div><div class="signature">Authorized Signatory<br />${escapeHtml(orgName)}</div></section>
-  </main>
-</body>
-</html>`;
+  box(24, 612, 176, 92, PANEL, LINE);
+  put(36, 686, 'SELLER / EXPORTER', 6.5, true, BLUE);
+  put(36, 672, clip(data.org?.legal_name ?? data.org?.name, 34, 'Apparel DEMO'), 8, true);
+  put(36, 658, clip(data.org?.registered_address, 38), 6.2, false, MUTED);
+  put(36, 648, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 38), 6.2, false, MUTED);
+  put(36, 632, clip(data.org?.contact_email, 36), 6.2, false, MUTED);
+  put(36, 622, `Tax ID: ${clip(data.org?.tax_id, 28)}`, 6.2, false, MUTED);
+
+  box(216, 612, 176, 92, PANEL, LINE);
+  put(228, 686, 'BUYER / IMPORTER', 6.5, true, BLUE);
+  put(228, 672, clip(data.buyer?.company_name, 34, 'Buyer pending'), 8, true);
+  put(228, 658, clip(data.buyer?.contact_name, 35, ''), 6.2, false, MUTED);
+  put(228, 648, clip(data.buyer?.country, 35, data.order?.destination_place ?? data.quote?.destination_port), 6.2, false, MUTED);
+  put(228, 632, clip(data.buyer?.email, 36), 6.2, false, MUTED);
+  put(228, 622, clip(data.buyer?.phone ?? data.buyer?.whatsapp_number, 36), 6.2, false, MUTED);
+
+  box(408, 612, 180, 92, PANEL, LINE);
+  data.summary.slice(0, 6).forEach(([label, value], index) => {
+    const y = 688 - index * 12;
+    put(420, y, label, 5.3, true, MUTED);
+    put(580, y, clip(value, 25), 5.7, false, INK, true);
+  });
+
+  box(left, 590, 564, 14, GREEN, '#bbf7d0');
+  put(36, 594, `${data.title}: generated from live CRM data for this buyer, quote, order, and shipment workflow.`, 5.45, false, '#166534');
+
+  let y = 560;
+  box(18, y - 17, 576, 20, '#e2e8f0', LINE);
+  put(24, y - 10, '#', 5, true, NAVY);
+  put(58, y - 10, 'SKU / Ref', 5, true, NAVY);
+  put(134, y - 10, 'Product / Gate Item', 5, true, NAVY);
+  put(314, y - 10, 'Qty', 5, true, NAVY, true);
+  put(342, y - 10, 'Details', 5, true, NAVY);
+  put(480, y - 10, 'Unit', 5, true, NAVY, true);
+  put(582, y - 10, 'Amount', 5, true, NAVY, true);
+  y -= 23;
+
+  const rows = data.rows.length ? data.rows : [{ sku: '-', product: data.title, qty: '-', details: 'Workflow record generated from CRM data', unitPrice: '-', amount: '-' }];
+  rows.slice(0, 12).forEach((row, index) => {
+    box(18, y - 15, 576, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
+    put(24, y - 6, String(index + 1), 5.2);
+    put(58, y - 6, clip(row.sku, 16), 5.2);
+    put(134, y - 6, clip(row.product, 36), 5.2, index === 0);
+    put(314, y - 6, clip(row.qty, 9), 5.2, false, INK, true);
+    put(342, y - 6, clip(row.details, 34), 5.2, false, MUTED);
+    put(480, y - 6, clip(row.unitPrice, 18), 5.2, false, INK, true);
+    put(582, y - 6, clip(row.amount, 18), 5.2, index === 0, INK, true);
+    y -= 21;
+  });
+
+  line(18, y + 5, 594, y + 5, NAVY, 1.1);
+  const total = rows.map((row) => Number(String(row.amount).replace(/[^0-9.-]/g, ''))).filter(Number.isFinite).reduce((sum, value) => sum + value, 0);
+  put(450, y - 7, 'Document Total / Control', 8.2, true, NAVY, true);
+  put(582, y - 7, total ? money(total, data.order?.currency ?? data.quote?.display_currency ?? data.quote?.currency ?? 'USD') : `${rows.length} line(s)`, 8.5, true, NAVY, true);
+
+  y -= 44;
+  box(24, y - 72, 274, 72, PANEL, LINE);
+  put(36, y - 15, 'WORKFLOW CONTEXT', 7, true, NAVY);
+  data.notes.slice(0, 5).forEach((lineText, index) => put(36, y - 31 - index * 10, `- ${clip(lineText, 72)}`, 5.7, false, MUTED));
+
+  box(314, y - 72, 274, 72, PANEL, LINE);
+  put(326, y - 15, 'COMMERCIAL REFERENCES', 7, true, NAVY);
+  [['Quote', text(data.quote?.quote_number, '-')], ['Order', text(data.order?.order_number, '-')], ['Shipment', text(data.shipment?.booking_reference, '-')], ['BOL/AWB', text(data.shipment?.bol_awb_number, '-')], ['Tracking', text(data.shipment?.tracking_number, '-')]].forEach(([label, value], index) => {
+    put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
+    put(580, y - 31 - index * 10, clip(value, 26), 5.8, false, INK, true);
+  });
+
+  y -= 94;
+  box(left, y - 86, right - left, 86, '#ffffff', LINE);
+  put(36, y - 15, 'TERMS & CONDITIONS', 7, true, NAVY);
+  data.terms.slice(0, 6).forEach((lineText, index) => put(36, y - 31 - index * 9.5, clip(lineText, 135), 5.2, false, MUTED));
+  box(372, 52, 176, 42, '#ffffff', LINE);
+  put(384, 78, 'Authorized Signatory', 6.2, true, NAVY);
+  put(384, 62, clip(data.org?.legal_name ?? data.org?.name, 42, 'Apparel DEMO'), 5.8, false, MUTED);
+  put(36, 62, 'Generated by SETU Flow CRM from client workspace data.', 5.8, false, MUTED);
+
+  const textOps = copy.flatMap((entry) => {
+    const x = entry.right ? Math.max(left, entry.x - width(entry.text, entry.size, entry.bold)) : entry.x;
+    return ['BT', `${rgb(entry.color)} rg /F${entry.bold ? 'B' : 'R'} ${entry.size} Tf`, `1 0 0 1 ${x.toFixed(2)} ${entry.y.toFixed(2)} Tm (${pdfText(entry.text)}) Tj`, 'ET'];
+  });
+  const stream = [...ops, ...textOps].join(NL);
+  const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>${NL}stream${NL}${stream}${NL}endstream`);
+  const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${content} 0 R >>`);
+  const pages = add(`<< /Type /Pages /Kids [${page} 0 R] /Count 1 >>`);
+  objects[page - 1] = objects[page - 1].replace('/Parent 0 0 R', `/Parent ${pages} 0 R`);
+  const catalog = add(`<< /Type /Catalog /Pages ${pages} 0 R >>`);
+  let pdf = `%PDF-1.4${NL}`;
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(Buffer.byteLength(pdf, 'binary'));
+    pdf += `${index + 1} 0 obj${NL}${object}${NL}endobj${NL}`;
+  });
+  const xref = Buffer.byteLength(pdf, 'binary');
+  pdf += `xref${NL}0 ${objects.length + 1}${NL}0000000000 65535 f ${NL}`;
+  offsets.slice(1).forEach((offset) => { pdf += `${String(offset).padStart(10, '0')} 00000 n ${NL}`; });
+  pdf += `trailer${NL}<< /Size ${objects.length + 1} /Root ${catalog} 0 R >>${NL}startxref${NL}${xref}${NL}%%EOF${NL}`;
+  return Buffer.from(pdf, 'binary');
 }
 
 async function getLead(db: any, organizationId: string, leadId?: string | null) {
@@ -252,11 +304,9 @@ async function productMapFor(db: any, organizationId: string, productIds: string
 
 export async function GET(_request: Request, { params }: { params: { documentId: string } }) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 });
-
   const workspace = await requireWorkspace();
   const organizationId = workspace.organization?.id;
   if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
-
   const db = (await createClient()) as any;
   const { documentId } = params;
   const { data: document, error } = await db.from('documents').select('*').eq('organization_id', organizationId).eq('id', documentId).maybeSingle();
@@ -267,17 +317,14 @@ export async function GET(_request: Request, { params }: { params: { documentId:
   const quote = await getQuote(db, organizationId, quoteId);
   const order = await getOrder(db, organizationId, { orderId: document.related_entity === 'order' ? document.related_id : null, quoteId: quote?.id, leadId: document.related_entity === 'lead' ? document.related_id : quote?.lead_id });
   const lead = await getLead(db, organizationId, document.related_entity === 'lead' ? document.related_id : quote?.lead_id ?? order?.lead_id ?? null);
-  const [{ data: org }, { data: shipment }, { data: brandSettings }] = await Promise.all([
+  const [{ data: org }, { data: shipment }] = await Promise.all([
     db.from('organizations').select('id, name, legal_name, logo_url, logo_storage_path, website, registered_address, city, postal_code, headquarters_country, contact_email, tax_id, quote_terms_conditions, order_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     order?.id ? db.from('shipments').select('*').eq('organization_id', organizationId).eq('order_id', order.id).order('created_at', { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
-    db.from('organization_brand_settings').select('workspace_logo_storage_path').eq('organization_id', organizationId).maybeSingle(),
   ]);
 
-  const logoUrl = await logoDataUrl(db, (brandSettings as any)?.workspace_logo_storage_path ?? org?.logo_storage_path);
   const typeInfo = labelForDocType(document.doc_type);
   const currency = text(order?.currency ?? quote?.display_currency ?? quote?.currency ?? org?.default_currency, 'USD').toUpperCase();
   let rows: PdfRow[] = [];
-
   if (order?.id) {
     const { data: orderLines } = await db.from('order_lines').select('*').eq('organization_id', organizationId).eq('order_id', order.id).order('created_at', { ascending: true });
     rows = (orderLines ?? []).map((line: any) => ({
@@ -306,35 +353,23 @@ export async function GET(_request: Request, { params }: { params: { documentId:
     });
   }
 
-  const data: PdfData = {
+  const bytes = buildPdf({
     title: typeInfo.title,
     subtitle: typeInfo.subtitle,
     documentNo: docNo(document, quote, order),
     issueDate: dateText(document.updated_at ?? document.uploaded_at ?? new Date().toISOString()),
     status: text(document.status, 'generated'),
-    logoUrl,
     org: org ?? workspace.organization,
     buyer: lead ?? {},
     quote: quote ?? {},
     order: order ?? {},
     shipment: shipment ?? {},
     rows,
-    summary: [
-      ['Buyer', text(lead?.company_name, '-')],
-      ['Quote', text(quote?.quote_number, '-')],
-      ['Order', text(order?.order_number, '-')],
-      ['Incoterm', text(order?.incoterm ?? order?.pricing_basis ?? quote?.pricing_basis, '-')],
-      ['Currency', currency],
-      ['Shipment', text(shipment?.booking_reference, '-')],
-    ],
+    summary: [['Buyer', text(lead?.company_name, '-')], ['Quote', text(quote?.quote_number, '-')], ['Order', text(order?.order_number, '-')], ['Incoterm', text(order?.incoterm ?? order?.pricing_basis ?? quote?.pricing_basis, '-')], ['Currency', currency], ['Shipment', text(shipment?.booking_reference, '-')]],
     terms: buildTerms(document, org, order, quote),
     notes: [`Buyer: ${text(lead?.company_name, '-')}`, `Contact: ${text(lead?.contact_name, '-')}`, `Quote: ${text(quote?.quote_number, '-')}`, `Order: ${text(order?.order_number, '-')}`, `Shipment: ${text(shipment?.booking_reference, '-')}`],
-  };
-
-  const bytes = await renderHtmlToPdf(buildHtml(data));
-  const filename = text(document.file_name, `${typeInfo.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`).replace(/\.pdf$/i, '') + '.pdf';
-  return new Response(new Uint8Array(bytes), {
-    status: 200,
-    headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Cache-Control': 'no-store' },
   });
+
+  const filename = text(document.file_name, `${typeInfo.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`).replace(/\.pdf$/i, '') + '.pdf';
+  return new Response(new Uint8Array(bytes), { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Cache-Control': 'no-store' } });
 }
