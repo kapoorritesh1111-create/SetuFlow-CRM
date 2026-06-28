@@ -1,52 +1,63 @@
 import { NextResponse } from 'next/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { createClient } from '@/lib/supabase/server';
 
 const FALLBACK_LOGO = '/logos/setu-flow-logo.svg';
+const LOGO_BUCKET = 'org-logos';
 
-function isAllowedLogoUrl(value?: string | null) {
-  const raw = String(value ?? '').trim();
-  if (!raw) return false;
-  if (raw.startsWith('/')) return true;
-  try {
-    const url = new URL(raw);
-    return url.protocol === 'https:' || url.protocol === 'http:';
-  } catch {
-    return false;
-  }
+function fallback() {
+  return NextResponse.redirect(new URL(FALLBACK_LOGO, process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.setuflowcrm.com'));
+}
+
+function safeCacheHeaders(contentType: string) {
+  return {
+    'Content-Type': contentType,
+    'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
+    'X-Content-Type-Options': 'nosniff',
+  };
+}
+
+function isSafeStoragePath(value?: string | null) {
+  const path = String(value ?? '').trim();
+  return Boolean(path) && !path.includes('..') && !/^https?:\/\//i.test(path) && !path.startsWith('/');
 }
 
 export async function GET() {
   const workspace = await getWorkspaceAccess();
-  const logoUrl = String((workspace.organization as any)?.logo_url ?? '').trim();
 
-  if (!workspace.user || !workspace.membership || !workspace.organization || !isAllowedLogoUrl(logoUrl)) {
-    return NextResponse.redirect(new URL(FALLBACK_LOGO, process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.setuflowcrm.com'));
+  if (!workspace.user || !workspace.membership || !workspace.organization) {
+    return fallback();
   }
 
-  if (logoUrl.startsWith('/')) {
-    return NextResponse.redirect(new URL(logoUrl, process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.setuflowcrm.com'));
+  const supabase = await createClient();
+  const { data: brandSettings } = await supabase
+    .from('organization_brand_settings' as any)
+    .select('workspace_logo_storage_path')
+    .eq('organization_id', workspace.organization.id)
+    .maybeSingle();
+
+  const logoPath = String(
+    (brandSettings as any)?.workspace_logo_storage_path
+      ?? (workspace.organization as any)?.logo_storage_path
+      ?? '',
+  ).trim();
+
+  if (!isSafeStoragePath(logoPath)) {
+    return fallback();
   }
 
   try {
-    const upstream = await fetch(logoUrl, { cache: 'no-store' });
-    if (!upstream.ok || !upstream.body) {
-      return NextResponse.redirect(new URL(FALLBACK_LOGO, process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.setuflowcrm.com'));
-    }
+    const { data, error } = await supabase.storage.from(LOGO_BUCKET).download(logoPath);
+    if (error || !data) return fallback();
 
-    const contentType = upstream.headers.get('content-type') ?? 'image/png';
-    if (!contentType.toLowerCase().startsWith('image/')) {
-      return NextResponse.redirect(new URL(FALLBACK_LOGO, process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.setuflowcrm.com'));
-    }
+    const contentType = data.type || 'image/png';
+    if (!contentType.toLowerCase().startsWith('image/')) return fallback();
 
-    return new NextResponse(upstream.body, {
+    return new NextResponse(data, {
       status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
-        'X-Content-Type-Options': 'nosniff',
-      },
+      headers: safeCacheHeaders(contentType),
     });
   } catch {
-    return NextResponse.redirect(new URL(FALLBACK_LOGO, process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.setuflowcrm.com'));
+    return fallback();
   }
 }
