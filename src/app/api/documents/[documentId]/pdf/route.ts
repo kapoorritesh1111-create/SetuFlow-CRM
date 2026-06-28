@@ -76,6 +76,13 @@ function width(value: string, size: number, bold = false) {
   return value.length * size * (bold ? 0.56 : 0.52);
 }
 
+function orgLogoMark(org: any) {
+  const name = text(org?.legal_name ?? org?.name, 'ORG').replace(/[^A-Za-z0-9 ]/g, ' ').trim();
+  const words = name.split(/\s+/).filter(Boolean).filter((word) => !['demo', 'llc', 'llp', 'inc', 'ltd', 'private', 'limited', 'exports', 'exporter'].includes(word.toLowerCase()));
+  const mark = (words.length >= 2 ? `${words[0][0]}${words[1][0]}` : (words[0] ?? name).slice(0, 3)).toUpperCase();
+  return mark || 'ORG';
+}
+
 function labelForDocType(value: unknown) {
   const type = text(value, '').toLowerCase();
   if (type.includes('sample')) return { title: 'Sample Approval Sheet', subtitle: 'Buyer sample sign-off and fit/color approval gate' };
@@ -105,11 +112,12 @@ function buildPdf(data: PdfData) {
   };
   const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, lineWidth = 0.7) => ops.push(`${rgb(color)} RG ${lineWidth} w ${x1} ${y1} m ${x2} ${y2} l S`);
   const put = (x: number, y: number, value: string, size = 7, bold = false, color = INK, alignRight = false) => copy.push({ x, y, text: value, size, bold, color, right: alignRight });
+  const logo = orgLogoMark(data.org);
 
   box(0, 0, 612, 792, '#ffffff');
   box(left, 724, 564, 44, '#ffffff', LINE);
   box(left, 724, 44, 44, NAVY);
-  put(35, 746, 'SETU', 7, true, '#ffffff');
+  put(46, 746, logo, logo.length > 2 ? 6.8 : 8.5, true, '#ffffff', true);
   put(78, 750, clip(data.org?.legal_name ?? data.org?.name, 38, 'Apparel DEMO'), 11, true, NAVY);
   put(78, 736, clip(data.org?.website, 52, 'https://www.setuflowcrm.com'), 6.3, false, MUTED);
   put(230, 752, data.title, 15.2, true, NAVY);
@@ -325,7 +333,7 @@ export async function GET(_request: Request, { params }: { params: { documentId:
   const order = await getOrder(db, organizationId, { orderId: document.related_entity === 'order' ? document.related_id : null, quoteId: quote?.id, leadId: document.related_entity === 'lead' ? document.related_id : quote?.lead_id });
   const lead = await getLead(db, organizationId, document.related_entity === 'lead' ? document.related_id : quote?.lead_id ?? order?.lead_id ?? null);
   const [{ data: org }, { data: shipment }] = await Promise.all([
-    db.from('organizations').select('id, name, legal_name, website, registered_address, city, postal_code, headquarters_country, contact_email, tax_id, quote_terms_conditions, order_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
+    db.from('organizations').select('id, name, legal_name, logo_url, logo_storage_path, website, registered_address, city, postal_code, headquarters_country, contact_email, tax_id, quote_terms_conditions, order_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     order?.id ? db.from('shipments').select('*').eq('organization_id', organizationId).eq('order_id', order.id).order('created_at', { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
   ]);
 
