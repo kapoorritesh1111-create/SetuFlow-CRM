@@ -8,7 +8,7 @@ export async function renderHtmlToPdf(html: string) {
       args: [...chromium.args, '--hide-scrollbars', '--disable-web-security', '--no-sandbox'],
       defaultViewport: { width: 1240, height: 1754, deviceScaleFactor: 1 },
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: true,
     });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: ['load', 'networkidle0'], timeout: 30000 });
