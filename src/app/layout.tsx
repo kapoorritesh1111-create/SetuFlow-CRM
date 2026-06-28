@@ -97,14 +97,7 @@ export const metadata: Metadata = {
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
     description:
       'Explore visual product walkthroughs of how trade teams manage leads, quotes, approvals, documents, orders and shipment readiness in one connected system.',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Setu Flow — Trade Execution CRM for import-export teams',
-      },
-    ],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Setu Flow — Trade Execution CRM for import-export teams' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -112,15 +105,13 @@ export const metadata: Metadata = {
     description: 'Visual product walkthroughs of trade execution workflows for import-export teams.',
     images: ['/og-image.png'],
   },
-  alternates: {
-    canonical: 'https://www.setuflowcrm.com',
-  },
+  alternates: { canonical: 'https://www.setuflowcrm.com' },
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent', startupImage: ['/icons/icon-512.png'] },
+  appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent', startupImage: ['/api/workspace/favicon'] },
   icons: {
-    icon: [{ url: '/favicon.ico' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
-    shortcut: ['/favicon.ico'],
+    icon: [{ url: '/api/workspace/favicon' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
+    apple: [{ url: '/api/workspace/favicon', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/api/workspace/favicon'],
   },
 };
 
@@ -135,7 +126,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" dir="ltr" className={jakarta.variable} suppressHydrationWarning>
       <head>
-        <link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.min.css" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0c7fff" />
         <meta name="google" content="notranslate" />
@@ -147,9 +137,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           nonce={nonce}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify([organizationSchema, softwareSchema]),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationSchema, softwareSchema]) }}
         />
       </head>
       <body suppressHydrationWarning>
