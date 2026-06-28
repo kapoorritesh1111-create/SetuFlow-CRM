@@ -68,6 +68,10 @@ function setTextField(payload: OrganizationProfilePatch, formData: FormData, fie
   if (formData.has(field)) payload[field] = clean(formData.get(field));
 }
 
+function setBrandTextField(payload: Record<string, string | null>, formData: FormData, field: string) {
+  if (formData.has(field)) payload[field] = clean(formData.get(field));
+}
+
 async function uploadLogoFile({ supabase, organizationId, formData }: { supabase: Awaited<ReturnType<typeof createClient>>; organizationId: string; formData: FormData }) {
   const entry = formData.get('logo_file');
   if (!(entry instanceof File) || entry.size === 0) return null;
@@ -81,9 +85,10 @@ async function uploadLogoFile({ supabase, organizationId, formData }: { supabase
 }
 
 async function upsertBrandSettings(supabase: Awaited<ReturnType<typeof createClient>>, organizationId: string, payload: Record<string, string | null>) {
-  await supabase
+  const { error } = await supabase
     .from('organization_brand_settings' as any)
     .upsert({ organization_id: organizationId, ...payload }, { onConflict: 'organization_id' });
+  if (error) throw error;
 }
 
 export async function updateOrganizationProfileV2(formData: FormData): Promise<void> {
@@ -119,6 +124,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   }
 
   const payload: OrganizationProfilePatch = { updated_at: new Date().toISOString() };
+  const brandPatch: Record<string, string | null> = {};
 
   if (formData.has('name')) payload.name = clean(formData.get('name')) ?? context.organization.name;
   if (formData.has('slug')) payload.slug = nextSlug;
@@ -132,6 +138,13 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   setTextField(payload, formData, 'tax_id');
   setTextField(payload, formData, 'quote_terms_conditions');
   setTextField(payload, formData, 'order_terms_conditions');
+
+  if (formData.has('brand_display_name')) brandPatch.brand_display_name = clean(formData.get('brand_display_name')) ?? payload.name ?? context.organization.name;
+  setBrandTextField(brandPatch, formData, 'primary_color');
+  setBrandTextField(brandPatch, formData, 'secondary_color');
+  setBrandTextField(brandPatch, formData, 'accent_color');
+  setBrandTextField(brandPatch, formData, 'sidebar_theme');
+  if (formData.has('logo_alt_text')) brandPatch.logo_alt_text = clean(formData.get('logo_alt_text')) ?? `${payload.name ?? context.organization.name ?? 'Workspace'} logo`;
 
   if (formData.has('default_country_id')) {
     payload.default_country_id = requestedCountryId;
@@ -150,25 +163,25 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   if (logoAction === 'remove') {
     payload.logo_url = null;
     payload.logo_storage_path = null;
-    await upsertBrandSettings(supabase, context.organization.id, {
-      workspace_logo_storage_path: null,
-      login_logo_storage_path: null,
-      quote_logo_storage_path: null,
-      document_logo_storage_path: null,
-      favicon_storage_path: null,
-      app_icon_storage_path: null,
-    });
+    brandPatch.workspace_logo_storage_path = null;
+    brandPatch.login_logo_storage_path = null;
+    brandPatch.quote_logo_storage_path = null;
+    brandPatch.document_logo_storage_path = null;
+    brandPatch.favicon_storage_path = null;
+    brandPatch.app_icon_storage_path = null;
   } else if (uploadedLogoPath) {
     payload.logo_url = SAFE_WORKSPACE_LOGO_URL;
     payload.logo_storage_path = uploadedLogoPath;
-    await upsertBrandSettings(supabase, context.organization.id, {
-      brand_display_name: context.organization.name,
-      workspace_logo_storage_path: uploadedLogoPath,
-      login_logo_storage_path: uploadedLogoPath,
-      quote_logo_storage_path: uploadedLogoPath,
-      document_logo_storage_path: uploadedLogoPath,
-      logo_alt_text: `${context.organization.name ?? 'Workspace'} logo`,
-    });
+    brandPatch.brand_display_name = brandPatch.brand_display_name ?? payload.name ?? context.organization.name;
+    brandPatch.workspace_logo_storage_path = uploadedLogoPath;
+    brandPatch.login_logo_storage_path = uploadedLogoPath;
+    brandPatch.quote_logo_storage_path = uploadedLogoPath;
+    brandPatch.document_logo_storage_path = uploadedLogoPath;
+    brandPatch.logo_alt_text = brandPatch.logo_alt_text ?? `${payload.name ?? context.organization.name ?? 'Workspace'} logo`;
+  }
+
+  if (Object.keys(brandPatch).length > 0) {
+    await upsertBrandSettings(supabase, context.organization.id, brandPatch);
   }
 
   const { error } = await organizationTable(supabase)
@@ -192,6 +205,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
         default_market_id: organizationRecord.default_market_id ?? null,
       },
       next: payload,
+      brand: brandPatch,
       source: 'admin_organization_profile_v2',
     },
   });
