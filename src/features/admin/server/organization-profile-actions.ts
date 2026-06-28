@@ -18,6 +18,12 @@ const COUNTRY_CURRENCY: Record<string, string> = {
 
 const SAFE_WORKSPACE_LOGO_URL = '/api/workspace/logo';
 const LOGO_BUCKET = 'org-logos';
+const SETU_DEFAULT_BRAND = {
+  primary_color: '#0B2E4A',
+  secondary_color: '#061C2E',
+  accent_color: '#0C7FFF',
+  sidebar_theme: 'setu-premium-navy',
+};
 
 type OrganizationProfilePatch = Record<string, string | null>;
 type OrganizationUpdateResult = Promise<{ error: { message: string } | null }>;
@@ -70,6 +76,10 @@ function setTextField(payload: OrganizationProfilePatch, formData: FormData, fie
 
 function setBrandTextField(payload: Record<string, string | null>, formData: FormData, field: string) {
   if (formData.has(field)) payload[field] = clean(formData.get(field));
+}
+
+function setBrandColorField(payload: Record<string, string | null>, formData: FormData, field: keyof typeof SETU_DEFAULT_BRAND) {
+  if (formData.has(field)) payload[field] = clean(formData.get(field)) ?? SETU_DEFAULT_BRAND[field];
 }
 
 async function uploadLogoFile({ supabase, organizationId, formData }: { supabase: Awaited<ReturnType<typeof createClient>>; organizationId: string; formData: FormData }) {
@@ -125,6 +135,7 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
 
   const payload: OrganizationProfilePatch = { updated_at: new Date().toISOString() };
   const brandPatch: Record<string, string | null> = {};
+  const brandAction = clean(formData.get('brand_action'));
 
   if (formData.has('name')) payload.name = clean(formData.get('name')) ?? context.organization.name;
   if (formData.has('slug')) payload.slug = nextSlug;
@@ -140,11 +151,18 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   setTextField(payload, formData, 'order_terms_conditions');
 
   if (formData.has('brand_display_name')) brandPatch.brand_display_name = clean(formData.get('brand_display_name')) ?? payload.name ?? context.organization.name;
-  setBrandTextField(brandPatch, formData, 'primary_color');
-  setBrandTextField(brandPatch, formData, 'secondary_color');
-  setBrandTextField(brandPatch, formData, 'accent_color');
-  setBrandTextField(brandPatch, formData, 'sidebar_theme');
+  setBrandColorField(brandPatch, formData, 'primary_color');
+  setBrandColorField(brandPatch, formData, 'secondary_color');
+  setBrandColorField(brandPatch, formData, 'accent_color');
+  if (formData.has('sidebar_theme')) brandPatch.sidebar_theme = clean(formData.get('sidebar_theme')) ?? SETU_DEFAULT_BRAND.sidebar_theme;
   if (formData.has('logo_alt_text')) brandPatch.logo_alt_text = clean(formData.get('logo_alt_text')) ?? `${payload.name ?? context.organization.name ?? 'Workspace'} logo`;
+
+  if (brandAction === 'reset_setu') {
+    brandPatch.primary_color = SETU_DEFAULT_BRAND.primary_color;
+    brandPatch.secondary_color = SETU_DEFAULT_BRAND.secondary_color;
+    brandPatch.accent_color = SETU_DEFAULT_BRAND.accent_color;
+    brandPatch.sidebar_theme = SETU_DEFAULT_BRAND.sidebar_theme;
+  }
 
   if (formData.has('default_country_id')) {
     payload.default_country_id = requestedCountryId;
