@@ -53,28 +53,27 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const myCardSettingsRow = await getMyCardSettingsForUser(workspace.user.id);
   const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
 
-  // S24-TRIAL-204 Pass B: tour provider mounts ONLY for guided-trial orgs —
-  // non-trial orgs render the exact same tree as before, with no tour code.
   const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
   const guidedTourEnabled = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
+  const safeOrganization = {
+    ...workspace.organization,
+    logo_url: workspace.organization.logo_url ? '/api/workspace/logo' : null,
+    logo_storage_path: null,
+  } as typeof workspace.organization;
 
   const inner = (
     <>
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
-      {/* InAppNotificationCenter is now rendered inline in the AppShell header — no floating duplicate */}
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
     </>
   );
 
-  // S24-TRIAL-205 Pass C: the provider wraps AppShell (not just the page body)
-  // because SetuGuruWidget mounts inside AppShell and needs useTrialTour() for
-  // "Show me" actions. Non-trial orgs still render the identical tree.
   const shell = (
     <AppShell
       profile={workspace.profile}
-      organization={workspace.organization}
+      organization={safeOrganization}
       membership={workspace.membership}
       currentRoles={workspace.currentRoles}
       cardSettings={myCardSettings}
