@@ -11,7 +11,7 @@ export async function renderHtmlToPdf(html: string) {
       headless: true,
     });
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: ['load', 'networkidle0'], timeout: 30000 });
+    await page.setContent(html, { waitUntil: 'load', timeout: 30000 });
     return Buffer.from(await page.pdf({
       format: 'A4',
       printBackground: true,
