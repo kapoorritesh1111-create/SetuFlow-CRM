@@ -16,6 +16,9 @@ const COUNTRY_CURRENCY: Record<string, string> = {
   EU: 'EUR',
 };
 
+const SAFE_WORKSPACE_LOGO_URL = '/api/workspace/logo';
+const LOGO_BUCKET = 'org-logos';
+
 type OrganizationProfilePatch = Record<string, string | null>;
 type OrganizationUpdateResult = Promise<{ error: { message: string } | null }>;
 type OrganizationTableClient = {
@@ -72,10 +75,15 @@ async function uploadLogoFile({ supabase, organizationId, formData }: { supabase
   const safeName = entry.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
   const extension = safeName.includes('.') ? safeName.split('.').pop() : 'png';
   const path = `${organizationId}/${Date.now()}.${extension ?? 'png'}`;
-  const { error } = await supabase.storage.from('org-logos').upload(path, entry, { upsert: true, contentType: entry.type || 'image/png' });
+  const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, entry, { upsert: true, contentType: entry.type || 'image/png' });
   if (error) throw error;
-  const { data } = supabase.storage.from('org-logos').getPublicUrl(path);
-  return data.publicUrl;
+  return path;
+}
+
+async function upsertBrandSettings(supabase: Awaited<ReturnType<typeof createClient>>, organizationId: string, payload: Record<string, string | null>) {
+  await supabase
+    .from('organization_brand_settings' as any)
+    .upsert({ organization_id: organizationId, ...payload }, { onConflict: 'organization_id' });
 }
 
 export async function updateOrganizationProfileV2(formData: FormData): Promise<void> {
@@ -136,9 +144,32 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     payload.default_currency = (manualCurrency ?? currencyFromCountry(defaultCountry, String(organizationRecord.default_currency ?? 'USD'))).toUpperCase().slice(0, 3);
   }
 
-  if (formData.has('logo_url')) payload.logo_url = clean(formData.get('logo_url'));
-  const uploadedLogoUrl = await uploadLogoFile({ supabase, organizationId: context.organization.id, formData });
-  if (uploadedLogoUrl) payload.logo_url = uploadedLogoUrl;
+  const logoAction = clean(formData.get('logo_action'));
+  const uploadedLogoPath = await uploadLogoFile({ supabase, organizationId: context.organization.id, formData });
+
+  if (logoAction === 'remove') {
+    payload.logo_url = null;
+    payload.logo_storage_path = null;
+    await upsertBrandSettings(supabase, context.organization.id, {
+      workspace_logo_storage_path: null,
+      login_logo_storage_path: null,
+      quote_logo_storage_path: null,
+      document_logo_storage_path: null,
+      favicon_storage_path: null,
+      app_icon_storage_path: null,
+    });
+  } else if (uploadedLogoPath) {
+    payload.logo_url = SAFE_WORKSPACE_LOGO_URL;
+    payload.logo_storage_path = uploadedLogoPath;
+    await upsertBrandSettings(supabase, context.organization.id, {
+      brand_display_name: context.organization.name,
+      workspace_logo_storage_path: uploadedLogoPath,
+      login_logo_storage_path: uploadedLogoPath,
+      quote_logo_storage_path: uploadedLogoPath,
+      document_logo_storage_path: uploadedLogoPath,
+      logo_alt_text: `${context.organization.name ?? 'Workspace'} logo`,
+    });
+  }
 
   const { error } = await organizationTable(supabase)
     .update(payload)
