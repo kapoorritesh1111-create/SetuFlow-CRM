@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { BrandColorInputEnhancer } from '@/components/shell/BrandColorInputEnhancer';
 import { listPending } from '@/lib/offline/lead-queue';
 
 type BannerState = {
@@ -65,19 +66,28 @@ export function OfflineStatusBanner() {
     };
   }, []);
 
-  if (state.online && state.pending === 0 && state.synced === 0 && state.failed === 0) return null;
+  const banner = (() => {
+    if (state.online && state.pending === 0 && state.synced === 0 && state.failed === 0) return null;
 
-  const copy = !state.online
-    ? 'Offline — leads will sync when connection returns.'
-    : state.pending > 0
-      ? `${state.pending} offline lead${state.pending === 1 ? '' : 's'} waiting to sync.`
-      : state.failed > 0
-        ? 'Some offline leads still need attention.'
-        : `${state.synced} offline lead${state.synced === 1 ? '' : 's'} synced.`;
+    const copy = !state.online
+      ? 'Offline — leads will sync when connection returns.'
+      : state.pending > 0
+        ? `${state.pending} offline lead${state.pending === 1 ? '' : 's'} waiting to sync.`
+        : state.failed > 0
+          ? 'Some offline leads still need attention.'
+          : `${state.synced} offline lead${state.synced === 1 ? '' : 's'} synced.`;
+
+    return (
+      <div className="fixed inset-x-3 bottom-3 z-[70] mx-auto max-w-xl rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950 shadow-[0_18px_45px_rgba(15,23,42,0.18)]" role="status">
+        {copy}
+      </div>
+    );
+  })();
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-[70] mx-auto max-w-xl rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950 shadow-[0_18px_45px_rgba(15,23,42,0.18)]" role="status">
-      {copy}
-    </div>
+    <>
+      <BrandColorInputEnhancer />
+      {banner}
+    </>
   );
 }
