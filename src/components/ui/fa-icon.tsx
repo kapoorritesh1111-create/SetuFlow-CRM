@@ -1,5 +1,5 @@
 import {
-  Archive,
+  AlertTriangle,
   BarChart3,
   Bell,
   Bot,
@@ -17,6 +17,7 @@ import {
   FileCheck,
   FileDown,
   FileText,
+  Flag,
   Folder,
   Globe2,
   Home,
@@ -47,7 +48,6 @@ import {
   Users,
   Wrench,
   X,
-  AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -83,6 +83,7 @@ const ICONS: Record<string, LucideIcon> = {
   'file-text': FileText,
   'file-text-o': FileText,
   filter: SlidersHorizontal,
+  flag: Flag,
   folder: Folder,
   globe: Globe2,
   'globe-2': Globe2,
