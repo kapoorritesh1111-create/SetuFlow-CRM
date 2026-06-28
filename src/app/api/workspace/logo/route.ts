@@ -30,8 +30,8 @@ export async function GET() {
   }
 
   const supabase = await createClient();
-  const { data: brandSettings } = await supabase
-    .from('organization_brand_settings' as any)
+  const { data: brandSettings } = await (supabase as any)
+    .from('organization_brand_settings')
     .select('workspace_logo_storage_path')
     .eq('organization_id', workspace.organization.id)
     .maybeSingle();
