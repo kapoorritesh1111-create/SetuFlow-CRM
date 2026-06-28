@@ -78,6 +78,13 @@ function width(value: string, size: number, bold = false) {
   return value.length * size * (bold ? 0.56 : 0.52);
 }
 
+function orgLogoMark(org: any) {
+  const name = text(org?.legal_name ?? org?.name, 'ORG').replace(/[^A-Za-z0-9 ]/g, ' ').trim();
+  const words = name.split(/\s+/).filter(Boolean).filter((word) => !['demo', 'llc', 'llp', 'inc', 'ltd', 'private', 'limited', 'exports', 'exporter'].includes(word.toLowerCase()));
+  const mark = (words.length >= 2 ? `${words[0][0]}${words[1][0]}` : (words[0] ?? name).slice(0, 3)).toUpperCase();
+  return mark || 'ORG';
+}
+
 function buildPdf(data: PdfData) {
   const objects: string[] = [];
   const add = (body: string) => {
@@ -97,11 +104,12 @@ function buildPdf(data: PdfData) {
   const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, lineWidth = 0.7) => ops.push(`${rgb(color)} RG ${lineWidth} w ${x1} ${y1} m ${x2} ${y2} l S`);
   const put = (x: number, y: number, value: string, size = 7, bold = false, color = INK, alignRight = false) => copy.push({ x, y, text: value, size, bold, color, right: alignRight });
   const total = data.rows.reduce((sum, row) => sum + row.total, 0);
+  const logo = orgLogoMark(data.org);
 
   box(0, 0, 612, 792, '#ffffff');
   box(left, 724, 564, 44, '#ffffff', LINE);
   box(left, 724, 44, 44, NAVY);
-  put(35, 746, 'SETU', 7, true, '#ffffff');
+  put(46, 746, logo, logo.length > 2 ? 6.8 : 8.5, true, '#ffffff', true);
   put(78, 750, clip(data.org?.legal_name ?? data.org?.name, 34, 'SETU Groups LLC'), 10.5, true, NAVY);
   put(78, 736, clip(data.org?.website, 42, 'https://www.setuflowcrm.com'), 6.4, false, MUTED);
   put(204, 752, 'SETU Flow - Client Price List', 15.2, true, NAVY);
@@ -198,7 +206,9 @@ function buildPdf(data: PdfData) {
     pdf += `${index + 1} 0 obj${NL}${object}${NL}endobj${NL}`;
   });
   const xref = Buffer.byteLength(pdf, 'binary');
-  pdf += `xref${NL}0 ${objects.length + 1}${NL}0000000000 65535 f ${NL}${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join(NL)}${NL}trailer << /Size ${objects.length + 1} /Root ${catalog} 0 R >>${NL}startxref${NL}${xref}${NL}%%EOF`;
+  pdf += `xref${NL}0 ${objects.length + 1}${NL}0000000000 65535 f ${NL}`;
+  offsets.slice(1).forEach((offset) => { pdf += `${String(offset).padStart(10, '0')} 00000 n ${NL}`; });
+  pdf += `trailer${NL}<< /Size ${objects.length + 1} /Root ${catalog} 0 R >>${NL}startxref${NL}${xref}${NL}%%EOF${NL}`;
   return Buffer.from(pdf, 'binary');
 }
 
@@ -230,7 +240,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
 
   const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
     db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes').eq('quote_id', quote.id).order('created_at', { ascending: true }),
-    db.from('organizations').select('id, name, legal_name, logo_url, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
+    db.from('organizations').select('id, name, legal_name, logo_url, logo_storage_path, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     countryPromise,
     quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
