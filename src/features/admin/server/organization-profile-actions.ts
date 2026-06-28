@@ -74,21 +74,18 @@ function setTextField(payload: OrganizationProfilePatch, formData: FormData, fie
   if (formData.has(field)) payload[field] = clean(formData.get(field));
 }
 
-function setBrandTextField(payload: Record<string, string | null>, formData: FormData, field: string) {
-  if (formData.has(field)) payload[field] = clean(formData.get(field));
-}
-
 function setBrandColorField(payload: Record<string, string | null>, formData: FormData, field: keyof typeof SETU_DEFAULT_BRAND) {
   if (formData.has(field)) payload[field] = clean(formData.get(field)) ?? SETU_DEFAULT_BRAND[field];
 }
 
-async function uploadLogoFile({ supabase, organizationId, formData }: { supabase: Awaited<ReturnType<typeof createClient>>; organizationId: string; formData: FormData }) {
-  const entry = formData.get('logo_file');
+async function uploadBrandAsset({ supabase, organizationId, formData, fieldName, folder }: { supabase: Awaited<ReturnType<typeof createClient>>; organizationId: string; formData: FormData; fieldName: string; folder: string }) {
+  const entry = formData.get(fieldName);
   if (!(entry instanceof File) || entry.size === 0) return null;
+  if (!entry.type.toLowerCase().startsWith('image/')) throw new Error('Brand assets must be image files.');
 
   const safeName = entry.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
   const extension = safeName.includes('.') ? safeName.split('.').pop() : 'png';
-  const path = `${organizationId}/${Date.now()}.${extension ?? 'png'}`;
+  const path = `${organizationId}/${folder}/${Date.now()}.${extension ?? 'png'}`;
   const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, entry, { upsert: true, contentType: entry.type || 'image/png' });
   if (error) throw error;
   return path;
@@ -176,7 +173,11 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
   }
 
   const logoAction = clean(formData.get('logo_action'));
-  const uploadedLogoPath = await uploadLogoFile({ supabase, organizationId: context.organization.id, formData });
+  const faviconAction = clean(formData.get('favicon_action'));
+  const appIconAction = clean(formData.get('app_icon_action'));
+  const uploadedLogoPath = await uploadBrandAsset({ supabase, organizationId: context.organization.id, formData, fieldName: 'logo_file', folder: 'logos' });
+  const uploadedFaviconPath = await uploadBrandAsset({ supabase, organizationId: context.organization.id, formData, fieldName: 'favicon_file', folder: 'favicons' });
+  const uploadedAppIconPath = await uploadBrandAsset({ supabase, organizationId: context.organization.id, formData, fieldName: 'app_icon_file', folder: 'app-icons' });
 
   if (logoAction === 'remove') {
     payload.logo_url = null;
@@ -185,8 +186,6 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     brandPatch.login_logo_storage_path = null;
     brandPatch.quote_logo_storage_path = null;
     brandPatch.document_logo_storage_path = null;
-    brandPatch.favicon_storage_path = null;
-    brandPatch.app_icon_storage_path = null;
   } else if (uploadedLogoPath) {
     payload.logo_url = SAFE_WORKSPACE_LOGO_URL;
     payload.logo_storage_path = uploadedLogoPath;
@@ -197,6 +196,12 @@ export async function updateOrganizationProfileV2(formData: FormData): Promise<v
     brandPatch.document_logo_storage_path = uploadedLogoPath;
     brandPatch.logo_alt_text = brandPatch.logo_alt_text ?? `${payload.name ?? context.organization.name ?? 'Workspace'} logo`;
   }
+
+  if (faviconAction === 'remove') brandPatch.favicon_storage_path = null;
+  else if (uploadedFaviconPath) brandPatch.favicon_storage_path = uploadedFaviconPath;
+
+  if (appIconAction === 'remove') brandPatch.app_icon_storage_path = null;
+  else if (uploadedAppIconPath) brandPatch.app_icon_storage_path = uploadedAppIconPath;
 
   if (Object.keys(brandPatch).length > 0) {
     await upsertBrandSettings(supabase, context.organization.id, brandPatch);
