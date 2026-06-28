@@ -8,6 +8,7 @@ import { TrialTourProvider } from '@/features/trial/tour-provider';
 import { getTrialCapability } from '@/lib/trial/capability';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { createClient } from '@/lib/supabase/server';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { EMPTY_CARD_SETTINGS, toCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
 
@@ -16,6 +17,11 @@ import { unstable_noStore as noStore } from 'next/cache';
 export const dynamic = 'force-dynamic';
 
 import type { ReactNode } from 'react';
+
+function safeHex(value: unknown, fallback: string) {
+  const text = String(value ?? '').trim().toUpperCase();
+  return /^#[0-9A-F]{6}$/.test(text) ? text : fallback;
+}
 
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
   noStore();
@@ -50,6 +56,13 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     );
   }
 
+  const supabase = await createClient();
+  const { data: brandSettings } = await (supabase as any)
+    .from('organization_brand_settings')
+    .select('primary_color, secondary_color, accent_color, sidebar_theme')
+    .eq('organization_id', workspace.organization.id)
+    .maybeSingle();
+
   const myCardSettingsRow = await getMyCardSettingsForUser(workspace.user.id);
   const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
 
@@ -59,6 +72,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     ...workspace.organization,
     logo_url: workspace.organization.logo_url ? '/api/workspace/logo' : null,
     logo_storage_path: null,
+    brand_primary_color: safeHex((brandSettings as any)?.primary_color, '#0B2E4A'),
+    brand_secondary_color: safeHex((brandSettings as any)?.secondary_color, '#061C2E'),
+    brand_accent_color: safeHex((brandSettings as any)?.accent_color, '#0C7FFF'),
+    brand_sidebar_theme: String((brandSettings as any)?.sidebar_theme ?? 'setu-premium-navy'),
   } as typeof workspace.organization;
 
   const inner = (
