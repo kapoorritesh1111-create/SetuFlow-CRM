@@ -85,8 +85,8 @@ async function uploadLogoFile({ supabase, organizationId, formData }: { supabase
 }
 
 async function upsertBrandSettings(supabase: Awaited<ReturnType<typeof createClient>>, organizationId: string, payload: Record<string, string | null>) {
-  const { error } = await supabase
-    .from('organization_brand_settings' as any)
+  const { error } = await (supabase as any)
+    .from('organization_brand_settings')
     .upsert({ organization_id: organizationId, ...payload }, { onConflict: 'organization_id' });
   if (error) throw error;
 }
