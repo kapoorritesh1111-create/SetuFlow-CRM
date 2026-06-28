@@ -24,6 +24,10 @@ function inviteRedirect(token: string, notice: string): never {
   redirect(`/invite/${encodeURIComponent(token)}?notice=${encodeURIComponent(notice)}`);
 }
 
+function acceptedDashboardRedirect(): never {
+  redirect('/dashboard?notice=invite-accepted');
+}
+
 async function findAuthUserByEmail(admin: any, email: string) {
   try {
     const firstPage = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -130,7 +134,11 @@ export async function acceptInvitationByToken(formData: FormData): Promise<void>
 
   const expiresAt = invitation.expires_at ? new Date(invitation.expires_at) : null;
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
-  if (invitation.status === 'accepted' || invitation.status === 'revoked' || isExpired) inviteRedirect(token, 'invite-not-open');
+  if (invitation.status === 'accepted') {
+    persistActiveOrganization(invitation.organization_id);
+    acceptedDashboardRedirect();
+  }
+  if (invitation.status === 'revoked' || isExpired) inviteRedirect(token, 'invite-not-open');
 
   const { error: finalizeError } = await admin.rpc('app_finalize_invitation_acceptance_tx', {
     p_payload: {
@@ -148,7 +156,7 @@ export async function acceptInvitationByToken(formData: FormData): Promise<void>
   persistActiveOrganization(invitation.organization_id);
   revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
-  redirect('/dashboard');
+  acceptedDashboardRedirect();
 }
 
 export async function registerAndAcceptInvitation(formData: FormData): Promise<void> {
@@ -174,7 +182,8 @@ export async function registerAndAcceptInvitation(formData: FormData): Promise<v
 
   const expiresAt = invitation.expires_at ? new Date(invitation.expires_at) : null;
   const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
-  if (invitation.status === 'accepted' || invitation.status === 'revoked' || isExpired) inviteRedirect(token, 'invite-not-open');
+  if (invitation.status === 'accepted') inviteRedirect(token, 'invite-already-accepted');
+  if (invitation.status === 'revoked' || isExpired) inviteRedirect(token, 'invite-not-open');
 
   const invitedEmail = normalizeEmail(invitation.email);
   const { data: usernameRows } = await admin
@@ -209,5 +218,5 @@ export async function registerAndAcceptInvitation(formData: FormData): Promise<v
   persistActiveOrganization(invitation.organization_id);
   revalidatePath('/admin/invitations');
   revalidatePath('/admin/users');
-  redirect('/dashboard');
+  acceptedDashboardRedirect();
 }
