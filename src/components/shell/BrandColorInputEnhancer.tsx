@@ -4,7 +4,14 @@ import { useEffect } from 'react';
 
 const BRAND_COLOR_NAMES = ['primary_color', 'secondary_color', 'accent_color'];
 
+function isVisibleBrandInput(input: HTMLInputElement) {
+  if (input.type === 'hidden' || input.hidden) return false;
+  if (input.closest('[hidden]')) return false;
+  return input.offsetParent !== null;
+}
+
 function enhanceInput(input: HTMLInputElement) {
+  if (!isVisibleBrandInput(input)) return;
   if (input.dataset.brandColorEnhanced === 'true') return;
   input.dataset.brandColorEnhanced = 'true';
   const current = /^#[0-9a-fA-F]{6}$/.test(input.value) ? input.value : '#0B2E4A';
