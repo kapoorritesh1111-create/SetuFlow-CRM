@@ -1,5 +1,5 @@
 import { createInvitationToken, hashInvitationToken } from '@/lib/invitationTokens';
-import { DEFAULT_SETU_FLOW_LOGO, ROOT_DOMAIN, defaultMarkets, defaultNextSteps, defaultPipelineStages, defaultPipelines, slugifyCompanyName } from '@/features/client-onboarding/shared';
+import { DEFAULT_SETU_FLOW_LOGO, ROOT_DOMAIN, defaultNextSteps, defaultPipelineStages, defaultPipelines, slugifyCompanyName } from '@/features/client-onboarding/shared';
 import { MODULE_DEFINITIONS, normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
 import { getTrialTemplateConfig, resolveTrialTemplateKeyForRequest } from '@/lib/trial/templates';
 
@@ -47,14 +47,19 @@ function normalizePlan(value: string | null | undefined, trial?: boolean | null)
 function cleanModuleKeys(value: string[] | null | undefined): ModuleKey[] { return Array.from(new Set((value ?? []).map((item) => normalizeModuleKey(item)).filter((item): item is ModuleKey => item !== null))); }
 
 async function countRows(admin: SupabaseAdmin, table: string, organizationId: string) { const { count } = await admin.from(table).select('id', { count: 'exact', head: true }).eq('organization_id', organizationId); return Number(count ?? 0); }
-async function seedMarkets(admin: SupabaseAdmin, organizationId: string, requestedMarkets: string[] | null | undefined) {
+
+async function seedMarkets(admin: SupabaseAdmin, organizationId: string, platformOrganizationId: string) {
   const existingCount = await countRows(admin, 'markets', organizationId);
-  if (existingCount > 0) { const { data } = await admin.from('markets').select('id, name').eq('organization_id', organizationId).order('sort_order'); return { rows: data ?? [], inserted: 0 }; }
-  const rows = cleanList(requestedMarkets, defaultMarkets).map((name, index) => ({ organization_id: organizationId, name, market_code: `${slugifyCompanyName(name).toUpperCase().slice(0, 8)}${index + 1}`, sort_order: index + 1, is_active: true }));
-  const { data, error } = await admin.from('markets').insert(rows).select('id, name').throwOnError();
+  if (existingCount > 0) { const { data } = await admin.from('markets').select('id, name, market_code').eq('organization_id', organizationId).order('sort_order'); return { rows: data ?? [], inserted: 0 }; }
+  const { data: templateMarkets, error } = await admin.from('markets').select('name, market_code, sort_order, is_active').eq('organization_id', platformOrganizationId).order('sort_order', { ascending: true });
   if (error) throw error;
+  if (!templateMarkets || templateMarkets.length === 0) throw new Error('SETU Flow master markets are missing; workspace provisioning cannot continue.');
+  const rows = templateMarkets.map((market: any, index: number) => ({ organization_id: organizationId, name: market.name, market_code: market.market_code ?? `${slugifyCompanyName(market.name).toUpperCase().slice(0, 8)}${index + 1}`, sort_order: market.sort_order ?? index + 1, is_active: market.is_active ?? true }));
+  const { data, error: insertError } = await admin.from('markets').insert(rows).select('id, name, market_code').throwOnError();
+  if (insertError) throw insertError;
   return { rows: data ?? [], inserted: rows.length };
 }
+
 async function seedCountries(admin: SupabaseAdmin, organizationId: string, platformOrganizationId: string, fallbackMarketId: string | null) {
   const existingCount = await countRows(admin, 'countries', organizationId);
   if (existingCount > 0 || !fallbackMarketId) return 0;
@@ -62,15 +67,24 @@ async function seedCountries(admin: SupabaseAdmin, organizationId: string, platf
   if (targetMarketError) throw targetMarketError;
   const targetMarketByName = new Map<string, string>();
   for (const market of targetMarkets ?? []) targetMarketByName.set(normalizeLookup(market.name), market.id);
-  const { data: templateCountries, error } = await admin.from('countries').select('name, iso2_code, iso3_code, phone_code, sort_order, is_active, search_aliases, market:markets(name)').eq('organization_id', platformOrganizationId).order('sort_order', { ascending: true });
+  const { data: templateCountries, error } = await admin.from('countries').select('name, iso2_code, iso3_code, phone_code, sort_order, is_active, search_aliases, default_port_of_loading, market:markets(name)').eq('organization_id', platformOrganizationId).order('sort_order', { ascending: true });
   if (error) throw error;
   const marketSortTracker = new Map<string, number>();
-  const countries = (templateCountries ?? []).map((country: any) => { const templateMarketName = Array.isArray(country.market) ? country.market[0]?.name : country.market?.name; const resolvedMarketId = targetMarketByName.get(normalizeLookup(templateMarketName)) ?? fallbackMarketId; const nextSortOrder = (marketSortTracker.get(resolvedMarketId) ?? 0) + 1; marketSortTracker.set(resolvedMarketId, nextSortOrder); return { organization_id: organizationId, market_id: resolvedMarketId, name: country.name, iso2_code: country.iso2_code ?? null, iso3_code: country.iso3_code ?? null, phone_code: country.phone_code ?? null, sort_order: nextSortOrder, is_active: country.is_active ?? true, search_aliases: country.search_aliases ?? null }; });
+  const countries = (templateCountries ?? []).map((country: any) => { const templateMarketName = Array.isArray(country.market) ? country.market[0]?.name : country.market?.name; const resolvedMarketId = targetMarketByName.get(normalizeLookup(templateMarketName)) ?? fallbackMarketId; const nextSortOrder = (marketSortTracker.get(resolvedMarketId) ?? 0) + 1; marketSortTracker.set(resolvedMarketId, nextSortOrder); return { organization_id: organizationId, market_id: resolvedMarketId, name: country.name, iso2_code: country.iso2_code ?? null, iso3_code: country.iso3_code ?? null, phone_code: country.phone_code ?? null, sort_order: nextSortOrder, is_active: country.is_active ?? true, search_aliases: country.search_aliases ?? null, default_port_of_loading: country.default_port_of_loading ?? null }; });
   if (countries.length === 0) return 0;
   const { error: insertError } = await admin.from('countries').insert(countries).throwOnError();
   if (insertError) throw insertError;
   return countries.length;
 }
+
+async function validateReferenceData(admin: SupabaseAdmin, organizationId: string) {
+  const marketsCount = await countRows(admin, 'markets', organizationId);
+  const countriesCount = await countRows(admin, 'countries', organizationId);
+  if (marketsCount === 0) throw new Error('Workspace provisioning validation failed: no markets were created.');
+  if (countriesCount < 195) throw new Error(`Workspace provisioning validation failed: expected 195 countries, found ${countriesCount}.`);
+  return { marketsCount, countriesCount };
+}
+
 async function seedPipelinesAndStages(admin: SupabaseAdmin, organizationId: string, requestedPipelines: string[] | null | undefined, requestedStages: string[] | null | undefined) {
   const existingCount = await countRows(admin, 'pipelines', organizationId);
   if (existingCount > 0) return { pipelinesSeeded: 0, stagesSeeded: 0 };
@@ -124,80 +138,25 @@ async function seedTrialTemplateData(admin: SupabaseAdmin, organizationId: strin
   });
   if (guidedTrialError) throw guidedTrialError;
 
-  const { data: categoryRows } = await admin
-    .from('product_categories')
-    .select('id, name')
-    .eq('organization_id', organizationId)
-    .ilike('name', template.label)
-    .limit(1);
-
+  const { data: categoryRows } = await admin.from('product_categories').select('id, name').eq('organization_id', organizationId).ilike('name', template.label).limit(1);
   let categoryId = categoryRows?.[0]?.id ?? null;
   if (!categoryId) {
-    const { data: insertedCategory } = await admin
-      .from('product_categories')
-      .insert({ organization_id: organizationId, name: template.label, sort_order: 10, is_active: true })
-      .select('id')
-      .maybeSingle();
+    const { data: insertedCategory } = await admin.from('product_categories').insert({ organization_id: organizationId, name: template.label, sort_order: 10, is_active: true }).select('id').maybeSingle();
     categoryId = insertedCategory?.id ?? null;
   }
 
-  const { count } = await admin
-    .from('products')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
-    .in('sku', template.sampleProducts.map((product) => product.sku));
-
+  const { count } = await admin.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).in('sku', template.sampleProducts.map((product) => product.sku));
   if (Number(count ?? 0) === 0) {
-    await admin.from('products').insert(template.sampleProducts.map((product, index) => ({
-      organization_id: organizationId,
-      category_id: categoryId,
-      name: product.name,
-      sku: product.sku,
-      sku_code: product.sku,
-      description: product.description,
-      pack_size: product.packSize,
-      product_family_code: product.family,
-      pricing_type: product.pricingType,
-      is_active: true,
-      sort_order: index + 1,
-      exw_price: product.exwPrice,
-      fob_price: product.fobPrice,
-      pricing_currency: product.currency,
-      lifecycle_status: 'active',
-      hsn_review_status: 'pending_review',
-    }))).throwOnError();
+    await admin.from('products').insert(template.sampleProducts.map((product, index) => ({ organization_id: organizationId, category_id: categoryId, name: product.name, sku: product.sku, sku_code: product.sku, description: product.description, pack_size: product.packSize, product_family_code: product.family, pricing_type: product.pricingType, is_active: true, sort_order: index + 1, exw_price: product.exwPrice, fob_price: product.fobPrice, pricing_currency: product.currency, lifecycle_status: 'active', hsn_review_status: 'pending_review' }))).throwOnError();
   }
 
-  await admin.from('audit_logs').insert({
-    organization_id: organizationId,
-    actor_user_id: null,
-    entity_type: 'guided_trial',
-    entity_id: organizationId,
-    action: 'guided_trial_template_seeded',
-    payload: {
-      template_key: templateKey,
-      template_label: template.label,
-      pricing_scenario: template.pricingScenario,
-      stark_packmate_ready: templateKey === 'packaging_converter',
-    },
-  });
-
+  await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: null, entity_type: 'guided_trial', entity_id: organizationId, action: 'guided_trial_template_seeded', payload: { template_key: templateKey, template_label: template.label, pricing_scenario: template.pricingScenario, stark_packmate_ready: templateKey === 'packaging_converter' } });
   return { templateKey, productsSeeded: template.sampleProducts.length };
 }
 
 async function seedEntitlements(admin: SupabaseAdmin, organizationId: string, request: OnboardingRequest, platformOrganizationId: string, actorUserId: string | null) {
   const requestedModules = cleanModuleKeys(request.requested_modules);
-  await admin.from('client_entitlement_profiles').upsert({
-    organization_id: organizationId,
-    managed_by_organization_id: platformOrganizationId,
-    plan_key: normalizePlan(request.requested_plan, request.is_trial_request),
-    billing_status: request.is_trial_request || request.requested_plan === 'trial' ? 'trial' : 'active',
-    seat_limit: request.is_trial_request || request.requested_plan === 'trial' ? 1 : Number(request.requested_seat_count ?? 25),
-    onboarding_stage: request.is_trial_request || request.requested_plan === 'trial' ? 'provision' : 'entitlements',
-    guru_monthly_request_limit: 25000,
-    guru_monthly_spend_limit: 2500,
-    overage_policy: request.is_trial_request || request.requested_plan === 'trial' ? 'block_at_limit' : 'warn_then_block',
-  }, { onConflict: 'organization_id' }).throwOnError();
+  await admin.from('client_entitlement_profiles').upsert({ organization_id: organizationId, managed_by_organization_id: platformOrganizationId, plan_key: normalizePlan(request.requested_plan, request.is_trial_request), billing_status: request.is_trial_request || request.requested_plan === 'trial' ? 'trial' : 'active', seat_limit: request.is_trial_request || request.requested_plan === 'trial' ? 1 : Number(request.requested_seat_count ?? 25), onboarding_stage: request.is_trial_request || request.requested_plan === 'trial' ? 'provision' : 'entitlements', guru_monthly_request_limit: 25000, guru_monthly_spend_limit: 2500, overage_policy: request.is_trial_request || request.requested_plan === 'trial' ? 'block_at_limit' : 'warn_then_block' }, { onConflict: 'organization_id' }).throwOnError();
   if (requestedModules.length > 0) {
     await admin.from('org_module_grants').upsert(MODULE_DEFINITIONS.map((moduleDef) => ({ organization_id: organizationId, module_key: moduleDef.key, enabled: requestedModules.includes(moduleDef.key), granted_by: actorUserId })), { onConflict: 'organization_id,module_key' }).throwOnError();
   }
@@ -225,9 +184,10 @@ export async function provisionWorkspaceFromOnboardingRequest(input: Provisionin
   const { data: org, error: orgError } = await admin.from('organizations').upsert({ name: companyName, slug, default_currency: 'USD', logo_url: logoUrl, website: request.website, headquarters_country: request.headquarters_country, contact_email: request.primary_admin_email, created_by: actorUserId, updated_at: new Date().toISOString() }, { onConflict: 'slug' }).select('id').maybeSingle();
   if (orgError || !org?.id) throw orgError ?? new Error('Workspace organization was not created.');
   const organizationId = org.id;
-  const { rows: markets, inserted: marketsSeeded } = await seedMarkets(admin, organizationId, request.requested_markets);
+  const { rows: markets, inserted: marketsSeeded } = await seedMarkets(admin, organizationId, platformOrganizationId);
   const fallbackMarketId = markets?.[0]?.id ?? null;
   const countriesSeeded = await seedCountries(admin, organizationId, platformOrganizationId, fallbackMarketId);
+  const referenceValidation = await validateReferenceData(admin, organizationId);
   const { pipelinesSeeded, stagesSeeded } = await seedPipelinesAndStages(admin, organizationId, request.requested_pipelines, request.requested_pipeline_stages);
   const nextStepsSeeded = await seedNextSteps(admin, organizationId, request.requested_next_steps);
   const { ownerRoleId, inserted: rolesSeeded } = await seedRoles(admin, organizationId);
@@ -235,6 +195,6 @@ export async function provisionWorkspaceFromOnboardingRequest(input: Provisionin
   await seedEntitlements(admin, organizationId, request, platformOrganizationId, actorUserId);
   const { invitationId, invitationAcceptUrl } = await createFirstAdminInvitation(admin, { organizationId, email: request.primary_admin_email, roleId: ownerRoleId, actorMembershipId, requestId: request.id, workspaceDomain });
   const trialSeed = await seedTrialTemplateData(admin, organizationId, request);
-  await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: actorUserId, entity_type: 'client_onboarding_request', entity_id: request.id, action: 'workspace_provisioned_from_client_onboarding', payload: { workspace_domain: workspaceDomain, countries_seeded: countriesSeeded, markets_seeded: marketsSeeded, pipelines_seeded: pipelinesSeeded, stages_seeded: stagesSeeded, next_steps_seeded: nextStepsSeeded, roles_seeded: rolesSeeded, invitation_id: invitationId, product_categories_created: trialSeed.productsSeeded > 0 ? 1 : 0, trial_template_key: trialSeed.templateKey, trial_products_seeded: trialSeed.productsSeeded, product_category_notes: request.product_category_notes, requested_focus_countries: request.requested_countries ?? [] } });
+  await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: actorUserId, entity_type: 'client_onboarding_request', entity_id: request.id, action: 'workspace_provisioned_from_client_onboarding', payload: { workspace_domain: workspaceDomain, countries_seeded: countriesSeeded, markets_seeded: marketsSeeded, countries_count: referenceValidation.countriesCount, markets_count: referenceValidation.marketsCount, pipelines_seeded: pipelinesSeeded, stages_seeded: stagesSeeded, next_steps_seeded: nextStepsSeeded, roles_seeded: rolesSeeded, invitation_id: invitationId, product_categories_created: trialSeed.productsSeeded > 0 ? 1 : 0, trial_template_key: trialSeed.templateKey, trial_products_seeded: trialSeed.productsSeeded, product_category_notes: request.product_category_notes, requested_focus_markets: request.requested_markets ?? [], requested_focus_countries: request.requested_countries ?? [] } });
   return { organizationId, workspaceDomain, countriesSeeded, marketsSeeded, pipelinesSeeded, stagesSeeded, nextStepsSeeded, rolesSeeded, invitationId, invitationAcceptUrl };
 }
