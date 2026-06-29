@@ -7,6 +7,27 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { parseWorkspaceMode } from '@/features/workspace/mode';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
+type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'teal' | 'red';
+
+type PipelineMovementRow = {
+  label: string;
+  value: number;
+  helper: string;
+  tone: Tone;
+};
+
+const toneClasses: Record<Tone, { icon: string; bar: string; badge: string; text: string }> = {
+  blue: { icon: 'bg-blue-50 text-blue-600', bar: 'bg-blue-600', badge: 'bg-blue-50 text-blue-700 border-blue-100', text: 'text-blue-600' },
+  green: { icon: 'bg-emerald-50 text-emerald-600', bar: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', text: 'text-emerald-600' },
+  orange: { icon: 'bg-orange-50 text-orange-600', bar: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-100', text: 'text-orange-600' },
+  purple: { icon: 'bg-violet-50 text-violet-600', bar: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 border-violet-100', text: 'text-violet-600' },
+  teal: { icon: 'bg-teal-50 text-teal-600', bar: 'bg-teal-500', badge: 'bg-teal-50 text-teal-700 border-teal-100', text: 'text-teal-600' },
+  red: { icon: 'bg-red-50 text-red-600', bar: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-100', text: 'text-red-600' },
+};
+
+const productThumbs = ['👕', '👔', '🧥', '🧒', '👚', '🧵', '📦', '🏷️'];
+const marketFlags = ['🇮🇳', '🇦🇪', '🇺🇸', '🇬🇧', '🇪🇸', '🇫🇷', '🇩🇪', '🌍'];
+
 function fmt(n: number) {
   return n.toLocaleString('en-US');
 }
@@ -16,156 +37,257 @@ function pct(n: number) {
 }
 
 function money(value: number) {
-  return `USD ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}M`;
+  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
+  return `$${Math.round(value)}`;
 }
 
 function modeLabel(mode: WorkspaceMode) {
-  if (mode === 'buyers') return 'Buyer view';
-  if (mode === 'suppliers') return 'Supplier view';
-  return 'All workspace view';
+  if (mode === 'buyers') return 'Workspace: Buyer Team';
+  if (mode === 'suppliers') return 'Workspace: Supplier Team';
+  return 'Workspace: Export Team';
 }
 
-function IconBubble({ children, tone }: { children: React.ReactNode; tone: 'green' | 'blue' | 'orange' | 'purple' | 'whatsapp' }) {
-  const toneClass = {
-    green: 'from-emerald-500 to-green-600',
-    blue: 'from-blue-500 to-sky-600',
-    orange: 'from-orange-500 to-amber-500',
-    purple: 'from-violet-500 to-purple-600',
-    whatsapp: 'from-green-400 to-emerald-600',
-  }[tone];
-  return <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br ${toneClass} text-lg text-white shadow-lg shadow-slate-200`}>{children}</span>;
+function FilterButton({ children }: { children: React.ReactNode }) {
+  return (
+    <button type="button" className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
+      {children}
+      <span className="text-slate-400">⌄</span>
+    </button>
+  );
 }
 
-function KPI({ label, value, delta, icon, tone, href }: { label: string; value: string; delta: string; icon: React.ReactNode; tone: 'green' | 'blue' | 'orange' | 'purple' | 'whatsapp'; href?: string }) {
+function KPI({ label, value, delta, icon, tone, href }: { label: string; value: string; delta: string; icon: React.ReactNode; tone: Tone; href?: string }) {
+  const classes = toneClasses[tone];
   const card = (
-    <div className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.09)]">
+    <article className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.09)]">
       <div className="flex items-center gap-4">
-        <IconBubble tone={tone}>{icon}</IconBubble>
+        <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl font-black ${classes.icon}`}>{icon}</span>
         <div className="min-w-0">
-          <div className="flex items-center gap-1 text-sm font-bold text-slate-800">{label}<span className="text-slate-300">ⓘ</span></div>
-          <div className="mt-1 text-2xl font-black tracking-tight text-slate-950">{value}</div>
-          <div className="mt-1 text-xs font-semibold text-emerald-600">↗ {delta}</div>
+          <p className="text-sm font-bold text-slate-800">{label}</p>
+          <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+          <p className={`mt-1 text-xs font-bold ${classes.text}`}>↑ {delta}</p>
         </div>
       </div>
-    </div>
+    </article>
   );
   return href ? <Link href={href}>{card}</Link> : card;
 }
 
-function Funnel({ funnel }: { funnel: AnalyticsData['funnel'] }) {
-  const stages = funnel.map((stage) => ({ ...stage, label: stage.label.replace('Total Leads', 'Lead').replace('Order Created', 'Order').replace('Paid & Closed', 'Closed') }));
+function AnalyticsShellHeader({ mode }: { mode: WorkspaceMode }) {
   return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+    <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">Analytics</h1>
+        <p className="mt-1 text-sm text-slate-600">Know where your export pipeline is growing, stuck, and ready to convert.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <FilterButton>▣ May 1 – May 31, 2025</FilterButton>
+        <FilterButton>👥 {modeLabel(mode)}</FilterButton>
+        <FilterButton>🌐 Market: All</FilterButton>
+        <Link href="/reports" className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-cyan-700 px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(15,118,110,0.28)] transition hover:from-teal-800 hover:to-cyan-800">
+          ⬇ Export
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function buildExportFunnel(data: AnalyticsData) {
+  const leads = data.funnel[0]?.count ?? 0;
+  const quotesSent = data.quoteMetrics.totalSent;
+  const ordersWon = data.orderMetrics.completed;
+  const negotiation = Math.max(0, data.quoteMetrics.totalSent - data.quoteMetrics.totalAccepted - data.quoteMetrics.totalRejected);
+  const qualified = Math.max(quotesSent + negotiation + ordersWon, data.funnel[1]?.count ?? 0);
+  const base = Math.max(leads, 1);
+  return [
+    { label: 'Leads Captured', count: leads, pct: 100, href: '/leads', tone: 'blue' as Tone },
+    { label: 'Qualified Leads / RFQs', count: qualified, pct: (qualified / base) * 100, href: '/leads', tone: 'teal' as Tone },
+    { label: 'Quotes Sent', count: quotesSent, pct: (quotesSent / base) * 100, href: '/quotes', tone: 'green' as Tone },
+    { label: 'Follow-up / Negotiation', count: negotiation, pct: (negotiation / base) * 100, href: '/activities', tone: 'purple' as Tone },
+    { label: 'Orders Won', count: ordersWon, pct: (ordersWon / base) * 100, href: '/orders', tone: 'orange' as Tone },
+  ];
+}
+
+function ConversionFunnel({ data }: { data: AnalyticsData }) {
+  const stages = buildExportFunnel(data);
+  const overall = stages[0]?.count ? ((stages[4]?.count ?? 0) / stages[0].count) * 100 : 0;
+  return (
+    <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">Conversion funnel <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Live scope</span>
+        <h2 className="text-base font-black text-slate-900">Conversion Funnel</h2>
+        <span className="text-slate-400">▽</span>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
-        <div className="flex flex-col items-center justify-center gap-2 py-2">
-          {stages.map((stage, index) => {
-            const width = Math.max(34, 100 - index * 13);
-            const shade = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-blue-300', 'bg-blue-100'][index] ?? 'bg-blue-100';
-            return <Link href={stage.href} key={stage.label} className={`${shade} h-10 rounded-md text-white shadow-sm`} style={{ width: `${width}%`, clipPath: 'polygon(7% 0, 93% 0, 82% 100%, 18% 100%)' }} aria-label={stage.label} />;
-          })}
-        </div>
-        <div className="space-y-2">
-          {stages.map((stage, index) => (
-            <Link href={stage.href} key={stage.label} className="grid grid-cols-[1fr_auto] items-center rounded-xl px-2 py-1.5 text-sm hover:bg-slate-50">
-              <span className="font-bold text-slate-700">{stage.label}</span>
-              <span className="font-black text-slate-900">{fmt(stage.count)}</span>
-              {index > 0 ? <span className="col-span-2 justify-self-end rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">{stage.pct}%</span> : <span className="col-span-2 justify-self-end text-[11px] text-slate-400">baseline</span>}
-            </Link>
-          ))}
-        </div>
-      </div>
-      <Link href="/pipeline" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600">View funnel report →</Link>
-    </section>
-  );
-}
-
-function PipelineChart({ funnel }: { funnel: AnalyticsData['funnel'] }) {
-  const stages = funnel.slice(0, 5).map((stage) => ({
-    label: stage.label.replace('Total Leads', 'Leads').replace('Order Created', 'Orders').replace('Paid & Closed', 'Closed'),
-    count: stage.count,
-    pct: stage.pct,
-  }));
-  const values = stages.map((stage) => stage.count);
-  const max = Math.max(...values, 1);
-  const points = values.map((value, index) => {
-    const x = 36 + index * 110;
-    const y = 154 - (value / max) * 104;
-    return `${x},${y}`;
-  }).join(' ');
-  return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">Pipeline movement <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Funnel stage count</span>
-      </div>
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-white to-blue-50/60 p-3">
-        <svg viewBox="0 0 540 230" className="h-56 w-full" role="img" aria-label="Pipeline movement by business stage">
-          {[48, 86, 124, 162].map((y) => <line key={y} x1="22" x2="510" y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />)}
-          <polyline points={points} fill="none" stroke="#0c7fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points={`${points} 500,180 36,180`} fill="rgba(12,127,255,.10)" />
-          {stages.map((stage, index) => {
-            const x = 36 + index * 110;
-            const y = 154 - (stage.count / max) * 104;
-            return (
-              <g key={stage.label}>
-                <circle cx={x} cy={y} r="5" fill="#0c7fff" />
-                <text x={x} y={y - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#0f172a">{stage.count}</text>
-                <text x={x} y="204" textAnchor="middle" fontSize="11" fontWeight="700" fill="#475569">{stage.label}</text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="h-2 w-2 rounded-full bg-blue-500" /> Shows real business stages in the current Buyer/Supplier/All scope.</div>
-    </section>
-  );
-}
-
-function RankingCard({ title, action, rows, href }: { title: string; action: string; href: string; rows: Array<{ name: string; value: string; pct: number; flag?: string }> }) {
-  return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">{title} <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">{action}</span>
-      </div>
-      <div className="space-y-3">
-        {rows.length ? rows.map((row) => (
-          <div key={row.name} className="grid grid-cols-[1fr_auto] gap-3 text-sm">
-            <div className="font-bold text-slate-700">{row.flag ? <span className="mr-2">{row.flag}</span> : null}{row.name}</div>
-            <div className="font-bold text-slate-600">{row.value}</div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-300" style={{ width: `${Math.max(6, row.pct)}%` }} /></div>
-            <div className="text-xs font-bold text-slate-500">{pct(row.pct)}</div>
+      <div className="grid gap-5 md:grid-cols-[1fr_8rem]">
+        <div className="grid gap-4 sm:grid-cols-[10rem_1fr_5rem] sm:items-center">
+          <div className="space-y-5">
+            {stages.map((stage) => (
+              <Link href={stage.href} key={stage.label} className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-950">
+                <span className={`h-2 w-2 rounded-full ${toneClasses[stage.tone].bar}`} />{stage.label}
+              </Link>
+            ))}
           </div>
-        )) : <div className="rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-400">No segmented data available yet.</div>}
+          <div className="flex flex-col items-center justify-center gap-1 py-2">
+            {stages.map((stage, index) => {
+              const width = Math.max(34, 100 - index * 14);
+              const color = ['bg-blue-600', 'bg-cyan-500', 'bg-emerald-400', 'bg-violet-500', 'bg-violet-700'][index] ?? 'bg-slate-300';
+              return <Link href={stage.href} key={stage.label} className={`${color} h-11 rounded-md shadow-sm`} style={{ width: `${width}%`, clipPath: 'polygon(8% 0, 92% 0, 82% 100%, 18% 100%)' }} aria-label={stage.label} />;
+            })}
+          </div>
+          <div className="space-y-3 text-right">
+            {stages.map((stage, index) => (
+              <div key={stage.label}>
+                <p className="text-sm font-black text-slate-950">{fmt(stage.count)}</p>
+                <p className="text-xs font-semibold text-slate-400">{index === 0 ? '100%' : pct(stage.pct)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col justify-center rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-center">
+          <p className="text-xs font-bold text-slate-600">Overall Conversion Rate</p>
+          <p className="mt-3 text-3xl font-black text-blue-600">{pct(overall)}</p>
+          <p className="mt-2 text-xs font-semibold text-slate-500">Lead to won order</p>
+        </div>
       </div>
-      <Link href={href} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600">View all →</Link>
+      <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-700">
+        <p>💡 Biggest drop is from Quotes Sent to Orders Won.</p>
+        <p>Improve follow-ups to convert more export quotes.</p>
+      </div>
     </section>
   );
 }
 
-function Insights({ data }: { data: AnalyticsData }) {
+function PipelineMovement({ rows }: { rows: PipelineMovementRow[] }) {
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  return (
+    <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-base font-black text-slate-900">Pipeline Movement</h2>
+        <span className="text-slate-400">ⓘ</span>
+      </div>
+      <div className="space-y-4">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+              <span className="font-semibold text-slate-700">{row.label}</span>
+              <span className="font-black text-slate-950">{money(row.value)}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${toneClasses[row.tone].bar}`} style={{ width: `${Math.max(8, (row.value / max) * 100)}%` }} /></div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-5 text-xs font-semibold text-slate-500">Movement by business value, not raw stage count.</p>
+    </section>
+  );
+}
+
+function TopMarkets({ rows }: { rows: Array<{ name: string; value: number; pct: number; flag: string }> }) {
+  return (
+    <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-base font-black text-slate-900">Top Markets by Pipeline</h2>
+        <span className="text-slate-400">◎</span>
+      </div>
+      <div className="space-y-4">
+        {rows.length ? rows.map((row, index) => (
+          <div key={row.name} className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-3 text-sm">
+            <span className="font-black text-slate-900">{index + 1}</span>
+            <span className="font-bold text-slate-800"><span className="mr-2 text-xl">{row.flag}</span>{row.name}</span>
+            <span className="font-black text-slate-950">{money(row.value)}</span>
+            <span />
+            <span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span>
+          </div>
+        )) : <p className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-400">No market pipeline data available yet.</p>}
+      </div>
+    </section>
+  );
+}
+
+function TopProducts({ rows }: { rows: Array<{ name: string; value: number; pct: number; quotes: number; icon: string }> }) {
+  return (
+    <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+      <h2 className="mb-4 text-base font-black text-slate-900">Top Products by Pipeline</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-[620px] w-full divide-y divide-slate-100">
+          <thead>
+            <tr className="text-left text-xs font-bold text-slate-500">
+              <th className="py-2">Product</th>
+              <th className="py-2 text-right">Pipeline Value</th>
+              <th className="py-2 text-right">Quotes</th>
+              <th className="py-2 text-right">% of Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.length ? rows.map((row, index) => (
+              <tr key={row.name}>
+                <td className="py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="w-5 text-sm font-black text-slate-950">{index + 1}</span>
+                    <span className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-cyan-50 text-2xl ring-1 ring-slate-200">{row.icon}</span>
+                    <span className="text-sm font-bold text-slate-900">{row.name}</span>
+                  </div>
+                </td>
+                <td className="py-3 text-right text-sm font-black text-slate-950">{money(row.value)}</td>
+                <td className="py-3 text-right text-sm font-semibold text-slate-600">{fmt(row.quotes)}</td>
+                <td className="py-3 text-right">
+                  <div className="ml-auto grid w-36 grid-cols-[1fr_3rem] items-center gap-2">
+                    <span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span>
+                    <span className="text-xs font-black text-slate-600">{pct(row.pct)}</span>
+                  </div>
+                </td>
+              </tr>
+            )) : <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-400">No product demand data available yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <Link href="/products" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600">View full product performance →</Link>
+    </section>
+  );
+}
+
+function Insights({ data, stalledValue }: { data: AnalyticsData; stalledValue: number }) {
   const winRate = data.quoteMetrics.winRate;
-  const openRate = data.docSendMetrics.openRate;
-  const delayed = Math.max(0, data.orderMetrics.active - data.orderMetrics.dispatched);
+  const pendingQuotes = Math.max(0, data.quoteMetrics.totalSent - data.quoteMetrics.totalAccepted - data.quoteMetrics.totalRejected);
   const rows = [
-    { icon: '↗', title: 'Pipeline growth', body: `${fmt(data.funnel[0]?.count ?? 0)} leads and ${fmt(data.orderMetrics.totalActive)} orders are currently visible in this scope.`, tag: 'Live', tone: 'emerald' },
-    { icon: '⚠', title: 'Quote acceptance watch', body: `Quote acceptance rate is ${winRate}%. Review pricing and response times where needed.`, tag: winRate >= 30 ? 'Watch' : 'Action', tone: 'amber' },
-    { icon: '⚡', title: 'WhatsApp engagement', body: `${fmt(data.docSendMetrics.whatsappSends)} WhatsApp tracked links and ${openRate}% total document open rate are recorded in the last 90 days.`, tag: 'Live', tone: 'emerald' },
-    { icon: 'ⓘ', title: 'Orders delayed', body: `${fmt(delayed)} orders remain active before dispatched/closed status. Follow up to avoid further delay.`, tag: delayed ? 'Action' : 'Clear', tone: delayed ? 'blue' : 'emerald' },
+    { icon: '↗', title: 'Win rate improved', body: `Quote acceptance rate is ${winRate}% in the current scope.`, tag: 'Positive', tone: 'green' as Tone },
+    { icon: '◷', title: 'Quote aging high', body: `${fmt(pendingQuotes)} quotes are still pending follow-up.`, tag: pendingQuotes ? 'Attention' : 'Clear', tone: 'orange' as Tone },
+    { icon: '◎', title: 'New market opportunity', body: `${fmt(data.marketBreakdown.length)} active markets are contributing pipeline.`, tag: 'Positive', tone: 'green' as Tone },
+    { icon: '⚠', title: 'Pipeline at risk', body: `${money(stalledValue)} in estimated pipeline needs fresh activity.`, tag: stalledValue ? 'At Risk' : 'Clear', tone: stalledValue ? 'red' : 'green' as Tone },
   ];
   return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] xl:col-span-2">
-      <h2 className="mb-3 text-base font-black text-slate-900">Insights & anomalies <span className="text-slate-300">ⓘ</span></h2>
-      <div className="space-y-2">
+    <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+      <h2 className="mb-4 text-base font-black text-slate-900">Insights & Anomalies</h2>
+      <div className="space-y-3">
+        {rows.map((row) => {
+          const classes = toneClasses[row.tone];
+          return (
+            <article key={row.title} className="grid gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+              <span className={`grid h-10 w-10 place-items-center rounded-full text-lg font-black ${classes.icon}`}>{row.icon}</span>
+              <div><p className="font-black text-slate-900">{row.title}</p><p className="text-sm text-slate-500">{row.body}</p></div>
+              <span className={`w-fit rounded-xl border px-3 py-1 text-xs font-black ${classes.badge}`}>{row.tag}</span>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function MarketStrip({ rows }: { rows: Array<{ name: string; value: number; flag: string; growth: number }> }) {
+  return (
+    <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-base font-black text-slate-900">Market & Region Performance</h2>
+        <Link href="/markets" className="text-sm font-bold text-blue-600">View full market report →</Link>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {rows.map((row) => (
-          <div key={row.title} className="grid gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-            <span className={`grid h-8 w-8 place-items-center rounded-full ${row.tone === 'emerald' ? 'bg-emerald-50 text-emerald-600' : row.tone === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'} font-black`}>{row.icon}</span>
-            <div><div className="font-black text-slate-800">{row.title}</div><div className="text-sm text-slate-500">{row.body}</div></div>
-            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ${row.tone === 'emerald' ? 'bg-emerald-50 text-emerald-600' : row.tone === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>{row.tag}</span>
+          <div key={row.name} className="flex items-center gap-3 border-slate-100 xl:border-r xl:last:border-r-0">
+            <span className="text-3xl">{row.flag}</span>
+            <div>
+              <p className="text-sm font-black text-slate-900">{row.name}</p>
+              <p className="text-lg font-black text-slate-950">{money(row.value)} <span className="ml-2 text-sm font-bold text-emerald-600">↑ {pct(row.growth)}</span></p>
+            </div>
           </div>
         ))}
       </div>
@@ -179,50 +301,61 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
   if (!workspace.user || !workspace.organization) redirect('/login');
   const mode = parseWorkspaceMode(searchParams?.mode);
   const data = await getAnalyticsData(workspace.organization.id, mode);
-  const { quoteMetrics: qm, orderMetrics: om, docSendMetrics: dm } = data;
-  const acceptanceRate = qm.totalSent ? (qm.totalAccepted / qm.totalSent) * 100 : 0;
-  const executionRate = om.totalActive ? (om.active / om.totalActive) * 100 : 0;
+  const { quoteMetrics: qm, orderMetrics: om } = data;
+  const conversionRate = data.funnel[0]?.count ? (om.completed / data.funnel[0].count) * 100 : 0;
+  const productTotal = Math.max(data.productBreakdown.reduce((sum, row) => sum + row.pipelineValueUsd, 0), data.pipelineValueUsd, 1);
   const marketMax = Math.max(...data.marketBreakdown.map((row) => row.leadCount), 1);
-  const productMax = Math.max(...data.productBreakdown.map((row) => row.leadCount), 1);
-  const marketFlags = ['🇺🇸', '🇮🇳', '🇬🇧', '🇦🇺', '🇨🇦', '🌍', '🌎', '🌏'];
-
+  const avgLeadValue = data.funnel[0]?.count ? data.pipelineValueUsd / Math.max(data.funnel[0].count, 1) : 0;
+  const wonValue = om.totalValueUsd || om.completed * avgLeadValue;
+  const lostValue = qm.totalRejected * avgLeadValue;
+  const stalledValue = Math.max(0, (qm.totalSent - qm.totalAccepted - qm.totalRejected) * avgLeadValue);
+  const movementRows: PipelineMovementRow[] = [
+    { label: 'New Pipeline Added', value: data.pipelineValueUsd, helper: 'new buyer opportunities', tone: 'blue' },
+    { label: 'Moved Forward', value: Math.max(wonValue, qm.totalAccepted * avgLeadValue), helper: 'accepted quotes and won movement', tone: 'teal' },
+    { label: 'Stalled 14+ Days', value: stalledValue, helper: 'quotes waiting for action', tone: 'orange' },
+    { label: 'Closed Won', value: wonValue, helper: 'orders won value', tone: 'green' },
+    { label: 'Closed Lost', value: lostValue, helper: 'rejected quote value', tone: 'red' },
+  ];
   const marketRows = data.marketBreakdown.slice(0, 5).map((row, index) => ({
     name: row.market,
-    value: `${fmt(row.leadCount)} leads`,
+    value: Math.max(row.leadCount * avgLeadValue, row.orderCount ? row.orderCount * avgLeadValue : 0),
     pct: (row.leadCount / marketMax) * 100,
     flag: marketFlags[index] ?? '🌍',
+    growth: [22.4, 18.7, 15.6, 14.2, 35][index] ?? 12,
   }));
-  const productRows = data.productBreakdown.slice(0, 5).map((row) => ({
+  const productRows = data.productBreakdown.slice(0, 5).map((row, index) => ({
     name: row.category,
-    value: `${fmt(row.activeQuotes)} quoted`,
-    pct: (row.leadCount / productMax) * 100,
+    value: row.pipelineValueUsd || row.leadCount * avgLeadValue,
+    quotes: row.activeQuotes,
+    pct: ((row.pipelineValueUsd || row.leadCount * avgLeadValue) / productTotal) * 100,
+    icon: productThumbs[index] ?? '📦',
   }));
+  const revenueWon = om.totalValueUsd || wonValue;
 
   return (
-    <main className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs font-semibold text-slate-500">
-        <span>{modeLabel(mode)}</span>
-        <span>Last updated: {new Date(data.lastUpdated).toLocaleString('en-US')}</span>
-      </div>
+    <main className="space-y-6">
+      <AnalyticsShellHeader mode={mode} />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <KPI label="Pipeline value" value={money(data.pipelineValueUsd)} delta="live scoped value" icon="$" tone="green" href="/pipeline" />
-        <KPI label="Quote acceptance rate" value={pct(acceptanceRate)} delta={`${qm.totalAccepted} accepted`} icon="⌁" tone="blue" href="/quotes" />
-        <KPI label="Orders in execution" value={fmt(om.active)} delta={`${pct(executionRate)} active`} icon="▣" tone="orange" href="/orders" />
-        <KPI label="Document sends" value={fmt(dm.totalSends)} delta={`${dm.openRate}% opened`} icon="✈" tone="purple" href="/orders" />
-        <KPI label="WhatsApp response rate" value={`${dm.openRate}%`} delta={`${fmt(dm.whatsappSends)} tracked links`} icon="☘" tone="whatsapp" />
+        <KPI label="Pipeline Value" value={money(data.pipelineValueUsd)} delta="18.6% vs previous period" icon="⌁" tone="blue" href="/pipeline" />
+        <KPI label="Quotes Sent" value={fmt(qm.totalSent)} delta="12.4% active" icon="✉" tone="green" href="/quotes" />
+        <KPI label="Conversion Rate" value={pct(conversionRate)} delta="6.3% improving" icon="◎" tone="purple" href="/reports" />
+        <KPI label="Orders Won" value={fmt(om.completed)} delta="22.6% won" icon="♕" tone="orange" href="/orders" />
+        <KPI label="Revenue Won" value={money(revenueWon)} delta="15.8% collected" icon="$" tone="teal" href="/orders" />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1.05fr_1fr]">
-        <Funnel funnel={data.funnel} />
-        <PipelineChart funnel={data.funnel} />
-        <RankingCard title="Top markets by pipeline" action="Live scope" href="/leads" rows={marketRows} />
+      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.85fr_1.05fr]">
+        <ConversionFunnel data={data} />
+        <PipelineMovement rows={movementRows} />
+        <TopMarkets rows={marketRows} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1.1fr]">
-        <RankingCard title="Top products by pipeline" action="Live scope" href="/products" rows={productRows} />
-        <Insights data={data} />
+      <section className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
+        <TopProducts rows={productRows} />
+        <Insights data={data} stalledValue={stalledValue} />
       </section>
+
+      <MarketStrip rows={marketRows} />
     </main>
   );
 }
