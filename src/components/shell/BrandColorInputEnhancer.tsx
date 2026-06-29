@@ -3,6 +3,39 @@
 import { useEffect } from 'react';
 
 const BRAND_COLOR_NAMES = ['primary_color', 'secondary_color', 'accent_color'];
+const COUNTRY_TO_ISO2: Record<string, string> = {
+  india: 'IN',
+  france: 'FR',
+  germany: 'DE',
+  italy: 'IT',
+  spain: 'ES',
+  'united states': 'US',
+  usa: 'US',
+  'united kingdom': 'GB',
+  uk: 'GB',
+  ireland: 'IE',
+  'united arab emirates': 'AE',
+  uae: 'AE',
+  canada: 'CA',
+  australia: 'AU',
+  japan: 'JP',
+  china: 'CN',
+  singapore: 'SG',
+  'saudi arabia': 'SA',
+  qatar: 'QA',
+  kuwait: 'KW',
+  oman: 'OM',
+  bahrain: 'BH',
+  nepal: 'NP',
+  ghana: 'GH',
+  lebanon: 'LB',
+};
+
+function flagFromIso2(iso2: string) {
+  const safe = iso2.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(safe)) return '';
+  return safe.split('').map((char) => String.fromCodePoint(127397 + char.charCodeAt(0))).join('');
+}
 
 function validHex(value?: string | null) {
   const text = String(value ?? '').trim().toUpperCase();
@@ -76,16 +109,41 @@ function addSecondaryColorCard(input: HTMLInputElement) {
   else form.appendChild(card);
 }
 
+function enhanceAdminBrandColors() {
+  if (!window.location.pathname.includes('/admin/organization')) return;
+  for (const name of BRAND_COLOR_NAMES) {
+    document.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`).forEach((input) => {
+      if (name === 'secondary_color' && input.type === 'hidden') addSecondaryColorCard(input);
+      else enhanceInput(input);
+    });
+  }
+}
+
+function enhanceLeadCountryFlags() {
+  if (!window.location.pathname.includes('/leads')) return;
+  document.querySelectorAll<HTMLElement>('p').forEach((element) => {
+    if (element.dataset.countryFlagEnhanced === 'true') return;
+    const text = element.textContent ?? '';
+    if (!text.includes(' · ')) return;
+    for (const [country, iso2] of Object.entries(COUNTRY_TO_ISO2)) {
+      const flag = flagFromIso2(iso2);
+      const titleCountry = country.replace(/\b\w/g, (char) => char.toUpperCase());
+      for (const candidate of [titleCountry, country.toUpperCase(), country]) {
+        const token = ` · ${candidate}`;
+        if (!text.includes(token) || text.includes(` · ${flag}`)) continue;
+        element.textContent = text.replace(token, ` · ${flag} ${candidate}`);
+        element.dataset.countryFlagEnhanced = 'true';
+        return;
+      }
+    }
+  });
+}
+
 export function BrandColorInputEnhancer() {
   useEffect(() => {
     function run() {
-      if (!window.location.pathname.includes('/admin/organization')) return;
-      for (const name of BRAND_COLOR_NAMES) {
-        document.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`).forEach((input) => {
-          if (name === 'secondary_color' && input.type === 'hidden') addSecondaryColorCard(input);
-          else enhanceInput(input);
-        });
-      }
+      enhanceAdminBrandColors();
+      enhanceLeadCountryFlags();
     }
     run();
     const observer = new MutationObserver(run);
