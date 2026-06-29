@@ -2,13 +2,11 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
   AlertTriangle,
-  BarChart3,
   CalendarDays,
   ChevronDown,
   CircleDollarSign,
   Clock3,
   Download,
-  FileText,
   Globe2,
   Info,
   Lightbulb,
@@ -38,7 +36,7 @@ type PipelineMovementRow = {
 };
 
 type MarketRow = { name: string; value: number; pct: number; flag: string; growth: number };
-type ProductRow = { name: string; value: number; pct: number; quotes: number; Icon: LucideIcon; tone: Tone };
+type ProductRow = { name: string; value: number; pct: number; quotes: number; Icon: LucideIcon; tone: Tone; imageUrl: string | null; topMarket: string | null };
 
 const toneClasses: Record<Tone, { icon: string; bar: string; badge: string; text: string; soft: string }> = {
   blue: { icon: 'bg-blue-50 text-blue-600', bar: 'bg-blue-600', badge: 'bg-blue-50 text-blue-700 border-blue-100', text: 'text-blue-600', soft: 'bg-blue-50' },
@@ -129,19 +127,13 @@ function AnalyticsShellHeader({ mode }: { mode: WorkspaceMode }) {
 }
 
 function buildExportFunnel(data: AnalyticsData) {
-  const leads = data.funnel[0]?.count ?? 0;
-  const quotesSent = data.quoteMetrics.totalSent;
-  const ordersWon = data.orderMetrics.completed;
-  const negotiation = Math.max(0, data.quoteMetrics.totalSent - data.quoteMetrics.totalAccepted - data.quoteMetrics.totalRejected);
-  const qualified = Math.max(quotesSent + negotiation + ordersWon, data.funnel[1]?.count ?? 0);
-  const base = Math.max(leads, 1);
-  return [
-    { label: 'Leads Captured', count: leads, pct: 100, href: '/leads', tone: 'blue' as Tone },
-    { label: 'Qualified Leads / RFQs', count: qualified, pct: (qualified / base) * 100, href: '/leads', tone: 'teal' as Tone },
-    { label: 'Quotes Sent', count: quotesSent, pct: (quotesSent / base) * 100, href: '/quotes', tone: 'green' as Tone },
-    { label: 'Follow-up / Negotiation', count: negotiation, pct: (negotiation / base) * 100, href: '/activities', tone: 'purple' as Tone },
-    { label: 'Orders Won', count: ordersWon, pct: (ordersWon / base) * 100, href: '/orders', tone: 'orange' as Tone },
-  ];
+  return data.funnel.map((stage, index) => ({
+    label: stage.label,
+    count: stage.count,
+    pct: index === 0 ? 100 : stage.pct,
+    href: stage.href,
+    tone: (['blue', 'teal', 'green', 'purple', 'orange'][index] ?? 'blue') as Tone,
+  }));
 }
 
 function ConversionFunnel({ data }: { data: AnalyticsData }) {
@@ -241,6 +233,14 @@ function TopMarkets({ rows }: { rows: MarketRow[] }) {
   );
 }
 
+function ProductVisual({ row }: { row: ProductRow }) {
+  const Icon = row.Icon;
+  if (row.imageUrl) {
+    return <img src={row.imageUrl} alt="" className="h-11 w-11 rounded-xl object-cover ring-1 ring-slate-200" loading="lazy" referrerPolicy="no-referrer" />;
+  }
+  return <span className={`grid h-11 w-11 place-items-center overflow-hidden rounded-xl ring-1 ring-slate-200 ${toneClasses[row.tone].icon}`}><Icon className="h-6 w-6" /></span>;
+}
+
 function TopProducts({ rows }: { rows: ProductRow[] }) {
   return (
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
@@ -256,28 +256,25 @@ function TopProducts({ rows }: { rows: ProductRow[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.length ? rows.map((row, index) => {
-              const Icon = row.Icon;
-              return (
-                <tr key={row.name}>
-                  <td className="py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-5 text-sm font-black text-slate-950">{index + 1}</span>
-                      <span className={`grid h-11 w-11 place-items-center overflow-hidden rounded-xl ring-1 ring-slate-200 ${toneClasses[row.tone].icon}`}><Icon className="h-6 w-6" /></span>
-                      <span className="text-sm font-bold text-slate-900">{row.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 text-right text-sm font-black text-slate-950">{money(row.value)}</td>
-                  <td className="py-3 text-right text-sm font-semibold text-slate-600">{fmt(row.quotes)}</td>
-                  <td className="py-3 text-right">
-                    <div className="ml-auto grid w-36 grid-cols-[1fr_3rem] items-center gap-2">
-                      <span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span>
-                      <span className="text-xs font-black text-slate-600">{pct(row.pct)}</span>
-                    </div>
-                  </td>
-                </tr>
-              );
-            }) : <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-400">No product demand data available yet.</td></tr>}
+            {rows.length ? rows.map((row, index) => (
+              <tr key={row.name}>
+                <td className="py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="w-5 text-sm font-black text-slate-950">{index + 1}</span>
+                    <ProductVisual row={row} />
+                    <span className="text-sm font-bold text-slate-900">{row.name}{row.topMarket ? <span className="mt-0.5 block text-xs font-semibold text-slate-400">Top market: {row.topMarket}</span> : null}</span>
+                  </div>
+                </td>
+                <td className="py-3 text-right text-sm font-black text-slate-950">{money(row.value)}</td>
+                <td className="py-3 text-right text-sm font-semibold text-slate-600">{fmt(row.quotes)}</td>
+                <td className="py-3 text-right">
+                  <div className="ml-auto grid w-36 grid-cols-[1fr_3rem] items-center gap-2">
+                    <span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span>
+                    <span className="text-xs font-black text-slate-600">{pct(row.pct)}</span>
+                  </div>
+                </td>
+              </tr>
+            )) : <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-400">No product demand data available yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -288,12 +285,12 @@ function TopProducts({ rows }: { rows: ProductRow[] }) {
 
 function Insights({ data, stalledValue }: { data: AnalyticsData; stalledValue: number }) {
   const winRate = data.quoteMetrics.winRate;
-  const pendingQuotes = Math.max(0, data.quoteMetrics.totalSent - data.quoteMetrics.totalAccepted - data.quoteMetrics.totalRejected);
+  const pendingQuotes = data.quoteMetrics.openPending;
   const rows: Array<{ Icon: LucideIcon; title: string; body: string; tag: string; tone: Tone }> = [
     { Icon: TrendingUp, title: 'Win rate improved', body: `Quote acceptance rate is ${winRate}% in the current scope.`, tag: 'Positive', tone: 'green' },
-    { Icon: Clock3, title: 'Quote aging high', body: `${fmt(pendingQuotes)} quotes are still pending follow-up.`, tag: pendingQuotes ? 'Attention' : 'Clear', tone: 'orange' },
+    { Icon: Clock3, title: 'Quote aging high', body: `${fmt(data.quoteMetrics.stalled14Days)} quotes have no fresh activity in 14+ days.`, tag: data.quoteMetrics.stalled14Days ? 'Attention' : 'Clear', tone: 'orange' },
     { Icon: Globe2, title: 'New market opportunity', body: `${fmt(data.marketBreakdown.length)} active markets are contributing pipeline.`, tag: 'Positive', tone: 'green' },
-    { Icon: AlertTriangle, title: 'Pipeline at risk', body: `${money(stalledValue)} in estimated pipeline needs fresh activity.`, tag: stalledValue ? 'At Risk' : 'Clear', tone: stalledValue ? 'red' : 'green' },
+    { Icon: AlertTriangle, title: 'Pipeline at risk', body: `${money(stalledValue)} in estimated pipeline needs fresh activity across ${fmt(pendingQuotes)} open quotes.`, tag: stalledValue ? 'At Risk' : 'Clear', tone: stalledValue ? 'red' : 'green' },
   ];
   return (
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
@@ -328,7 +325,7 @@ function MarketStrip({ rows }: { rows: MarketRow[] }) {
             <span className="text-3xl">{row.flag}</span>
             <div>
               <p className="text-sm font-black text-slate-900">{row.name}</p>
-              <p className="text-lg font-black text-slate-950">{money(row.value)} <span className="ml-2 text-sm font-bold text-emerald-600">↑ {pct(row.growth)}</span></p>
+              <p className="text-lg font-black text-slate-950">{money(row.value)} <span className={`ml-2 text-sm font-bold ${row.growth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{row.growth >= 0 ? '↑' : '↓'} {pct(Math.abs(row.growth))}</span></p>
             </div>
           </div>
         ))}
@@ -343,51 +340,49 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
   if (!workspace.user || !workspace.organization) redirect('/login');
   const mode = parseWorkspaceMode(searchParams?.mode);
   const data = await getAnalyticsData(workspace.organization.id, mode);
-  const { quoteMetrics: qm, orderMetrics: om } = data;
+  const { quoteMetrics: qm, orderMetrics: om, pipelineMovement: pm } = data;
   const conversionRate = data.funnel[0]?.count ? (om.completed / data.funnel[0].count) * 100 : 0;
   const productTotal = Math.max(data.productBreakdown.reduce((sum, row) => sum + row.pipelineValueUsd, 0), data.pipelineValueUsd, 1);
-  const marketMax = Math.max(...data.marketBreakdown.map((row) => row.leadCount), 1);
-  const avgLeadValue = data.funnel[0]?.count ? data.pipelineValueUsd / Math.max(data.funnel[0].count, 1) : 0;
-  const wonValue = om.totalValueUsd || om.completed * avgLeadValue;
-  const lostValue = qm.totalRejected * avgLeadValue;
-  const stalledValue = Math.max(0, (qm.totalSent - qm.totalAccepted - qm.totalRejected) * avgLeadValue);
+  const marketMax = Math.max(...data.marketBreakdown.map((row) => row.pipelineValueUsd || row.leadCount), 1);
   const movementRows: PipelineMovementRow[] = [
-    { label: 'New Pipeline Added', value: data.pipelineValueUsd, helper: 'new buyer opportunities', tone: 'blue' },
-    { label: 'Moved Forward', value: Math.max(wonValue, qm.totalAccepted * avgLeadValue), helper: 'accepted quotes and won movement', tone: 'teal' },
-    { label: 'Stalled 14+ Days', value: stalledValue, helper: 'quotes waiting for action', tone: 'orange' },
-    { label: 'Closed Won', value: wonValue, helper: 'orders won value', tone: 'green' },
-    { label: 'Closed Lost', value: lostValue, helper: 'rejected quote value', tone: 'red' },
+    { label: 'New Pipeline Added', value: pm.newPipelineUsd, helper: 'new buyer opportunities', tone: 'blue' },
+    { label: 'Moved Forward', value: pm.movedForwardUsd, helper: 'stage movement and accepted quotes', tone: 'teal' },
+    { label: 'Stalled 14+ Days', value: pm.stalled14DaysUsd, helper: 'quotes without fresh activity', tone: 'orange' },
+    { label: 'Closed Won', value: pm.closedWonUsd, helper: 'orders won value', tone: 'green' },
+    { label: 'Closed Lost', value: pm.closedLostUsd, helper: 'rejected quote value', tone: 'red' },
   ];
   const marketRows: MarketRow[] = data.marketBreakdown.slice(0, 5).map((row, index) => ({
     name: row.market,
-    value: Math.max(row.leadCount * avgLeadValue, row.orderCount ? row.orderCount * avgLeadValue : 0),
-    pct: (row.leadCount / marketMax) * 100,
+    value: row.pipelineValueUsd,
+    pct: ((row.pipelineValueUsd || row.leadCount) / marketMax) * 100,
     flag: marketFlags[index] ?? '🌍',
-    growth: [22.4, 18.7, 15.6, 14.2, 35][index] ?? 12,
+    growth: row.growthPct,
   }));
   const productRows: ProductRow[] = data.productBreakdown.slice(0, 5).map((row, index) => {
     const visual = productVisuals[index] ?? { Icon: Package, tone: 'blue' as Tone };
     return {
       name: row.category,
-      value: row.pipelineValueUsd || row.leadCount * avgLeadValue,
+      value: row.pipelineValueUsd,
       quotes: row.activeQuotes,
-      pct: ((row.pipelineValueUsd || row.leadCount * avgLeadValue) / productTotal) * 100,
+      pct: (row.pipelineValueUsd / productTotal) * 100,
       Icon: visual.Icon,
       tone: visual.tone,
+      imageUrl: row.imageUrl,
+      topMarket: row.topMarket,
     };
   });
-  const revenueWon = om.totalValueUsd || wonValue;
+  const revenueWon = om.totalValueUsd || pm.closedWonUsd;
 
   return (
     <main className="space-y-6">
       <AnalyticsShellHeader mode={mode} />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <KPI label="Pipeline Value" value={money(data.pipelineValueUsd)} delta="18.6% vs previous period" icon={TrendingUp} tone="blue" href="/pipeline" />
-        <KPI label="Quotes Sent" value={fmt(qm.totalSent)} delta="12.4% active" icon={Mail} tone="green" href="/quotes" />
-        <KPI label="Conversion Rate" value={pct(conversionRate)} delta="6.3% improving" icon={Target} tone="purple" href="/reports" />
-        <KPI label="Orders Won" value={fmt(om.completed)} delta="22.6% won" icon={Trophy} tone="orange" href="/orders" />
-        <KPI label="Revenue Won" value={money(revenueWon)} delta="15.8% collected" icon={CircleDollarSign} tone="teal" href="/orders" />
+        <KPI label="Pipeline Value" value={money(data.pipelineValueUsd)} delta="live scoped value" icon={TrendingUp} tone="blue" href="/pipeline" />
+        <KPI label="Quotes Sent" value={fmt(qm.totalSent)} delta={`${fmt(qm.openPending)} active`} icon={Mail} tone="green" href="/quotes" />
+        <KPI label="Conversion Rate" value={pct(conversionRate)} delta="lead to won order" icon={Target} tone="purple" href="/reports" />
+        <KPI label="Orders Won" value={fmt(om.completed)} delta="won export orders" icon={Trophy} tone="orange" href="/orders" />
+        <KPI label="Revenue Won" value={money(revenueWon)} delta="closed order value" icon={CircleDollarSign} tone="teal" href="/orders" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.85fr_1.05fr]">
@@ -398,7 +393,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
         <TopProducts rows={productRows} />
-        <Insights data={data} stalledValue={stalledValue} />
+        <Insights data={data} stalledValue={pm.stalled14DaysUsd} />
       </section>
 
       <MarketStrip rows={marketRows} />
