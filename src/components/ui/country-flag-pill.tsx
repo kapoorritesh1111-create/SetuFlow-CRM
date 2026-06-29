@@ -11,6 +11,25 @@ export type CountryFlagPillCountry = {
 
 type CountriesPayload = { countries?: CountryFlagPillCountry[] };
 
+const COUNTRY_DISPLAY_ALIASES: Record<string, string> = {
+  uk: 'gb',
+  'u k': 'gb',
+  'united kingdom': 'gb',
+  britain: 'gb',
+  'great britain': 'gb',
+  england: 'gb',
+  usa: 'us',
+  'u s a': 'us',
+  us: 'us',
+  'u s': 'us',
+  'united states': 'us',
+  'united states of america': 'us',
+  america: 'us',
+  uae: 'ae',
+  'u a e': 'ae',
+  'united arab emirates': 'ae',
+};
+
 let cachedCountries: CountryFlagPillCountry[] | null = null;
 let countriesPromise: Promise<CountryFlagPillCountry[]> | null = null;
 
@@ -43,6 +62,11 @@ function countrySlug(value?: string | null) {
     .replace(/^the\s+/, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
+}
+
+function iso2FromDisplayAlias(value?: string | null) {
+  const slug = countrySlug(value);
+  return COUNTRY_DISPLAY_ALIASES[slug] ?? '';
 }
 
 function localFlagCandidates(iso2: string) {
@@ -91,7 +115,7 @@ export function CountryFlagPill({
   }, [countries, countryId, countryName, workspaceCountries]);
 
   const name = String(matched?.name ?? countryName ?? '').trim();
-  const iso2 = normalizeIso2(matched?.iso2_code ?? iso2Code);
+  const iso2 = normalizeIso2(matched?.iso2_code ?? iso2Code) || iso2FromDisplayAlias(name);
   const candidates = iso2 ? localFlagCandidates(iso2) : [];
   const src = candidates[fallbackIndex] ?? '';
 
