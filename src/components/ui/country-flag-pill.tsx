@@ -48,7 +48,7 @@ function countrySlug(value?: string | null) {
 function localFlagCandidates(iso2: string) {
   const lower = iso2.toLowerCase();
   const upper = iso2.toUpperCase();
-  return [`/flag/${lower}.svg`, `/flag/${lower}.png`, `/flag/${upper}.svg`, `/flag/${upper}.png`];
+  return [`/flags/${lower}.svg`, `/flags/${lower}.png`, `/flags/${upper}.svg`, `/flags/${upper}.png`];
 }
 
 export function CountryFlagPill({
