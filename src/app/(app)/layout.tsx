@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
+import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
 import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
@@ -80,6 +81,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
 
   const inner = (
     <>
+      <DocumentsUiPolish />
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
