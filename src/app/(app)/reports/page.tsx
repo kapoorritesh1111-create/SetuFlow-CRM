@@ -1,6 +1,5 @@
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { ReportsControlsPanel } from '@/features/reports/components/reports-controls-panel';
 import { ReportsWorkspace } from '@/features/reports/components/reports-workspace';
 import { getReportsData } from '@/lib/queries/reports';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
@@ -55,10 +54,7 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-5">
       <QueryIssuesAlert issues={data.queryIssues} title="Some reporting sources could not be loaded" />
-      <ReportsControlsPanel data={data} />
-      <div className="setu-reports-workspace-cleanup">
-        <ReportsWorkspace data={data} readOnlyMessage={readOnlyMessage} />
-      </div>
+      <ReportsWorkspace data={data} readOnlyMessage={readOnlyMessage} />
     </div>
   );
 }
