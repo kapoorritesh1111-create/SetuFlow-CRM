@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const analyticsPage = readFileSync('src/app/(app)/dashboard/analytics/page.tsx', 'utf8');
+const analyticsQuery = readFileSync('src/lib/queries/analytics.ts', 'utf8');
 const reportsPage = readFileSync('src/app/(app)/reports/page.tsx', 'utf8');
 const reportsWorkspace = readFileSync('src/features/reports/components/reports-workspace.tsx', 'utf8');
 
@@ -31,6 +32,27 @@ test('Sprint 40 analytics keeps approved premium intelligence layout and icon sy
   }
 
   assert.doesNotMatch(analyticsPage, /Funnel stage count/);
+});
+
+test('Sprint 40 analytics uses business-backed RFQ, product, stalled, and market growth signals', () => {
+  for (const expected of [
+    "db.from('rfqs')",
+    "db.from('lead_stage_history')",
+    'Qualified Leads / RFQs',
+    'pipelineMovement',
+    'stalled14DaysUsd',
+    'stalled14Days',
+    'image_url',
+    'imageUrl',
+    'topMarket',
+    'growthPct',
+  ]) {
+    assert.match(analyticsQuery + analyticsPage, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+
+  for (const banned of ['growth: [22.4, 18.7, 15.6, 14.2, 35]', 'const stalledValue = Math.max(0, (qm.totalSent']) {
+    assert.doesNotMatch(analyticsPage, new RegExp(banned.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
 });
 
 test('Sprint 40 reports remains an owner-facing business report center', () => {
