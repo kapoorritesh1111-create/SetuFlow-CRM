@@ -12,6 +12,10 @@ body.${BODY_CLASS} {
   color: #172033 !important;
 }
 
+body.${BODY_CLASS} [aria-label="Global workspace filter"] {
+  display: none !important;
+}
+
 body.${BODY_CLASS} [style] {
   font-family: var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
@@ -107,7 +111,6 @@ body.${BODY_CLASS} [style*="background-color: rgb(248, 250, 252)"] {
   background: rgba(248, 250, 252, 0.76) !important;
 }
 
-/* Calm the large catalog hero from a blue promotional block into a compact workbench header. */
 body.${BODY_CLASS} [style*="linear-gradient"][style*="border-radius"],
 body.${BODY_CLASS} [style*="linear-gradient"][style*="borderRadius"] {
   background: rgba(255, 255, 255, 0.96) !important;
@@ -149,7 +152,6 @@ body.${BODY_CLASS} [style*="borderRadius: 16px"] {
   border-radius: 18px !important;
 }
 
-/* Make the category/filter pills calmer and less badge-heavy. */
 body.${BODY_CLASS} span[style*="border-radius: 999px"],
 body.${BODY_CLASS} span[style*="borderRadius:999px"],
 body.${BODY_CLASS} span[style*="borderRadius: 999px"] {
@@ -187,7 +189,6 @@ body.${BODY_CLASS} [style*="color: rgb(148, 163, 184)"] {
   color: #7b8aa0 !important;
 }
 
-/* Reduce KPI color load; keep numbers readable, but make cards feel like one system. */
 body.${BODY_CLASS} [style*="background: #ecfdf5"],
 body.${BODY_CLASS} [style*="background:'#ecfdf5'"],
 body.${BODY_CLASS} [style*="background-color: rgb(236, 253, 245)"],
@@ -213,7 +214,6 @@ body.${BODY_CLASS} [style*="gridTemplateColumns: repeat(5"] {
   padding-top: 12px !important;
 }
 
-/* Product table: less cramped horizontally, calmer rows, more room for product identity. */
 body.${BODY_CLASS} [style*="grid-template-columns: 28px 1fr"],
 body.${BODY_CLASS} [style*="gridTemplateColumns:'28px 1fr"],
 body.${BODY_CLASS} [style*="gridTemplateColumns: 28px 1fr"] {
