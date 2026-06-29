@@ -1,5 +1,26 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import {
+  AlertTriangle,
+  BarChart3,
+  CalendarDays,
+  ChevronDown,
+  CircleDollarSign,
+  Clock3,
+  Download,
+  FileText,
+  Globe2,
+  Info,
+  Lightbulb,
+  Mail,
+  Package,
+  Shirt,
+  Target,
+  TrendingUp,
+  Trophy,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getAnalyticsData } from '@/lib/queries/analytics';
 import type { AnalyticsData } from '@/lib/queries/analytics';
@@ -16,16 +37,29 @@ type PipelineMovementRow = {
   tone: Tone;
 };
 
-const toneClasses: Record<Tone, { icon: string; bar: string; badge: string; text: string }> = {
-  blue: { icon: 'bg-blue-50 text-blue-600', bar: 'bg-blue-600', badge: 'bg-blue-50 text-blue-700 border-blue-100', text: 'text-blue-600' },
-  green: { icon: 'bg-emerald-50 text-emerald-600', bar: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', text: 'text-emerald-600' },
-  orange: { icon: 'bg-orange-50 text-orange-600', bar: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-100', text: 'text-orange-600' },
-  purple: { icon: 'bg-violet-50 text-violet-600', bar: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 border-violet-100', text: 'text-violet-600' },
-  teal: { icon: 'bg-teal-50 text-teal-600', bar: 'bg-teal-500', badge: 'bg-teal-50 text-teal-700 border-teal-100', text: 'text-teal-600' },
-  red: { icon: 'bg-red-50 text-red-600', bar: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-100', text: 'text-red-600' },
+type MarketRow = { name: string; value: number; pct: number; flag: string; growth: number };
+type ProductRow = { name: string; value: number; pct: number; quotes: number; Icon: LucideIcon; tone: Tone };
+
+const toneClasses: Record<Tone, { icon: string; bar: string; badge: string; text: string; soft: string }> = {
+  blue: { icon: 'bg-blue-50 text-blue-600', bar: 'bg-blue-600', badge: 'bg-blue-50 text-blue-700 border-blue-100', text: 'text-blue-600', soft: 'bg-blue-50' },
+  green: { icon: 'bg-emerald-50 text-emerald-600', bar: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', text: 'text-emerald-600', soft: 'bg-emerald-50' },
+  orange: { icon: 'bg-orange-50 text-orange-600', bar: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-100', text: 'text-orange-600', soft: 'bg-orange-50' },
+  purple: { icon: 'bg-violet-50 text-violet-600', bar: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 border-violet-100', text: 'text-violet-600', soft: 'bg-violet-50' },
+  teal: { icon: 'bg-teal-50 text-teal-600', bar: 'bg-teal-500', badge: 'bg-teal-50 text-teal-700 border-teal-100', text: 'text-teal-600', soft: 'bg-teal-50' },
+  red: { icon: 'bg-red-50 text-red-600', bar: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-100', text: 'text-red-600', soft: 'bg-red-50' },
 };
 
-const productThumbs = ['👕', '👔', '🧥', '🧒', '👚', '🧵', '📦', '🏷️'];
+const productVisuals: Array<{ Icon: LucideIcon; tone: Tone }> = [
+  { Icon: Shirt, tone: 'green' },
+  { Icon: Shirt, tone: 'blue' },
+  { Icon: Package, tone: 'orange' },
+  { Icon: Shirt, tone: 'teal' },
+  { Icon: Shirt, tone: 'purple' },
+  { Icon: Package, tone: 'blue' },
+  { Icon: Shirt, tone: 'orange' },
+  { Icon: Package, tone: 'teal' },
+];
+
 const marketFlags = ['🇮🇳', '🇦🇪', '🇺🇸', '🇬🇧', '🇪🇸', '🇫🇷', '🇩🇪', '🌍'];
 
 function fmt(n: number) {
@@ -48,21 +82,22 @@ function modeLabel(mode: WorkspaceMode) {
   return 'Workspace: Export Team';
 }
 
-function FilterButton({ children }: { children: React.ReactNode }) {
+function FilterButton({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
     <button type="button" className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
+      <Icon className="h-4 w-4 text-slate-600" />
       {children}
-      <span className="text-slate-400">⌄</span>
+      <ChevronDown className="h-4 w-4 text-slate-400" />
     </button>
   );
 }
 
-function KPI({ label, value, delta, icon, tone, href }: { label: string; value: string; delta: string; icon: React.ReactNode; tone: Tone; href?: string }) {
+function KPI({ label, value, delta, icon: Icon, tone, href }: { label: string; value: string; delta: string; icon: LucideIcon; tone: Tone; href?: string }) {
   const classes = toneClasses[tone];
   const card = (
     <article className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.09)]">
       <div className="flex items-center gap-4">
-        <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl font-black ${classes.icon}`}>{icon}</span>
+        <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full ${classes.icon}`}><Icon className="h-7 w-7" strokeWidth={2.15} /></span>
         <div className="min-w-0">
           <p className="text-sm font-bold text-slate-800">{label}</p>
           <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{value}</p>
@@ -82,11 +117,11 @@ function AnalyticsShellHeader({ mode }: { mode: WorkspaceMode }) {
         <p className="mt-1 text-sm text-slate-600">Know where your export pipeline is growing, stuck, and ready to convert.</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <FilterButton>▣ May 1 – May 31, 2025</FilterButton>
-        <FilterButton>👥 {modeLabel(mode)}</FilterButton>
-        <FilterButton>🌐 Market: All</FilterButton>
+        <FilterButton icon={CalendarDays}>May 1 – May 31, 2025</FilterButton>
+        <FilterButton icon={Users}>{modeLabel(mode)}</FilterButton>
+        <FilterButton icon={Globe2}>Market: All</FilterButton>
         <Link href="/reports" className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-cyan-700 px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(15,118,110,0.28)] transition hover:from-teal-800 hover:to-cyan-800">
-          ⬇ Export
+          <Download className="h-4 w-4" /> Export
         </Link>
       </div>
     </section>
@@ -116,7 +151,7 @@ function ConversionFunnel({ data }: { data: AnalyticsData }) {
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-900">Conversion Funnel</h2>
-        <span className="text-slate-400">▽</span>
+        <Info className="h-4 w-4 text-slate-400" />
       </div>
       <div className="grid gap-5 md:grid-cols-[1fr_8rem]">
         <div className="grid gap-4 sm:grid-cols-[10rem_1fr_5rem] sm:items-center">
@@ -149,9 +184,12 @@ function ConversionFunnel({ data }: { data: AnalyticsData }) {
           <p className="mt-2 text-xs font-semibold text-slate-500">Lead to won order</p>
         </div>
       </div>
-      <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-700">
-        <p>💡 Biggest drop is from Quotes Sent to Orders Won.</p>
-        <p>Improve follow-ups to convert more export quotes.</p>
+      <div className="mt-5 flex gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-700">
+        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+        <div>
+          <p>Biggest drop is from Quotes Sent to Orders Won.</p>
+          <p>Improve follow-ups to convert more export quotes.</p>
+        </div>
       </div>
     </section>
   );
@@ -163,7 +201,7 @@ function PipelineMovement({ rows }: { rows: PipelineMovementRow[] }) {
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-900">Pipeline Movement</h2>
-        <span className="text-slate-400">ⓘ</span>
+        <Info className="h-4 w-4 text-slate-400" />
       </div>
       <div className="space-y-4">
         {rows.map((row) => (
@@ -181,12 +219,12 @@ function PipelineMovement({ rows }: { rows: PipelineMovementRow[] }) {
   );
 }
 
-function TopMarkets({ rows }: { rows: Array<{ name: string; value: number; pct: number; flag: string }> }) {
+function TopMarkets({ rows }: { rows: MarketRow[] }) {
   return (
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-black text-slate-900">Top Markets by Pipeline</h2>
-        <span className="text-slate-400">◎</span>
+        <Globe2 className="h-4 w-4 text-slate-400" />
       </div>
       <div className="space-y-4">
         {rows.length ? rows.map((row, index) => (
@@ -203,7 +241,7 @@ function TopMarkets({ rows }: { rows: Array<{ name: string; value: number; pct: 
   );
 }
 
-function TopProducts({ rows }: { rows: Array<{ name: string; value: number; pct: number; quotes: number; icon: string }> }) {
+function TopProducts({ rows }: { rows: ProductRow[] }) {
   return (
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <h2 className="mb-4 text-base font-black text-slate-900">Top Products by Pipeline</h2>
@@ -218,25 +256,28 @@ function TopProducts({ rows }: { rows: Array<{ name: string; value: number; pct:
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.length ? rows.map((row, index) => (
-              <tr key={row.name}>
-                <td className="py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 text-sm font-black text-slate-950">{index + 1}</span>
-                    <span className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-cyan-50 text-2xl ring-1 ring-slate-200">{row.icon}</span>
-                    <span className="text-sm font-bold text-slate-900">{row.name}</span>
-                  </div>
-                </td>
-                <td className="py-3 text-right text-sm font-black text-slate-950">{money(row.value)}</td>
-                <td className="py-3 text-right text-sm font-semibold text-slate-600">{fmt(row.quotes)}</td>
-                <td className="py-3 text-right">
-                  <div className="ml-auto grid w-36 grid-cols-[1fr_3rem] items-center gap-2">
-                    <span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span>
-                    <span className="text-xs font-black text-slate-600">{pct(row.pct)}</span>
-                  </div>
-                </td>
-              </tr>
-            )) : <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-400">No product demand data available yet.</td></tr>}
+            {rows.length ? rows.map((row, index) => {
+              const Icon = row.Icon;
+              return (
+                <tr key={row.name}>
+                  <td className="py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 text-sm font-black text-slate-950">{index + 1}</span>
+                      <span className={`grid h-11 w-11 place-items-center overflow-hidden rounded-xl ring-1 ring-slate-200 ${toneClasses[row.tone].icon}`}><Icon className="h-6 w-6" /></span>
+                      <span className="text-sm font-bold text-slate-900">{row.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-right text-sm font-black text-slate-950">{money(row.value)}</td>
+                  <td className="py-3 text-right text-sm font-semibold text-slate-600">{fmt(row.quotes)}</td>
+                  <td className="py-3 text-right">
+                    <div className="ml-auto grid w-36 grid-cols-[1fr_3rem] items-center gap-2">
+                      <span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span>
+                      <span className="text-xs font-black text-slate-600">{pct(row.pct)}</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            }) : <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-400">No product demand data available yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -248,11 +289,11 @@ function TopProducts({ rows }: { rows: Array<{ name: string; value: number; pct:
 function Insights({ data, stalledValue }: { data: AnalyticsData; stalledValue: number }) {
   const winRate = data.quoteMetrics.winRate;
   const pendingQuotes = Math.max(0, data.quoteMetrics.totalSent - data.quoteMetrics.totalAccepted - data.quoteMetrics.totalRejected);
-  const rows = [
-    { icon: '↗', title: 'Win rate improved', body: `Quote acceptance rate is ${winRate}% in the current scope.`, tag: 'Positive', tone: 'green' as Tone },
-    { icon: '◷', title: 'Quote aging high', body: `${fmt(pendingQuotes)} quotes are still pending follow-up.`, tag: pendingQuotes ? 'Attention' : 'Clear', tone: 'orange' as Tone },
-    { icon: '◎', title: 'New market opportunity', body: `${fmt(data.marketBreakdown.length)} active markets are contributing pipeline.`, tag: 'Positive', tone: 'green' as Tone },
-    { icon: '⚠', title: 'Pipeline at risk', body: `${money(stalledValue)} in estimated pipeline needs fresh activity.`, tag: stalledValue ? 'At Risk' : 'Clear', tone: stalledValue ? 'red' : 'green' as Tone },
+  const rows: Array<{ Icon: LucideIcon; title: string; body: string; tag: string; tone: Tone }> = [
+    { Icon: TrendingUp, title: 'Win rate improved', body: `Quote acceptance rate is ${winRate}% in the current scope.`, tag: 'Positive', tone: 'green' },
+    { Icon: Clock3, title: 'Quote aging high', body: `${fmt(pendingQuotes)} quotes are still pending follow-up.`, tag: pendingQuotes ? 'Attention' : 'Clear', tone: 'orange' },
+    { Icon: Globe2, title: 'New market opportunity', body: `${fmt(data.marketBreakdown.length)} active markets are contributing pipeline.`, tag: 'Positive', tone: 'green' },
+    { Icon: AlertTriangle, title: 'Pipeline at risk', body: `${money(stalledValue)} in estimated pipeline needs fresh activity.`, tag: stalledValue ? 'At Risk' : 'Clear', tone: stalledValue ? 'red' : 'green' },
   ];
   return (
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
@@ -260,9 +301,10 @@ function Insights({ data, stalledValue }: { data: AnalyticsData; stalledValue: n
       <div className="space-y-3">
         {rows.map((row) => {
           const classes = toneClasses[row.tone];
+          const Icon = row.Icon;
           return (
             <article key={row.title} className="grid gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-              <span className={`grid h-10 w-10 place-items-center rounded-full text-lg font-black ${classes.icon}`}>{row.icon}</span>
+              <span className={`grid h-10 w-10 place-items-center rounded-full ${classes.icon}`}><Icon className="h-5 w-5" /></span>
               <div><p className="font-black text-slate-900">{row.title}</p><p className="text-sm text-slate-500">{row.body}</p></div>
               <span className={`w-fit rounded-xl border px-3 py-1 text-xs font-black ${classes.badge}`}>{row.tag}</span>
             </article>
@@ -273,7 +315,7 @@ function Insights({ data, stalledValue }: { data: AnalyticsData; stalledValue: n
   );
 }
 
-function MarketStrip({ rows }: { rows: Array<{ name: string; value: number; flag: string; growth: number }> }) {
+function MarketStrip({ rows }: { rows: MarketRow[] }) {
   return (
     <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -316,20 +358,24 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
     { label: 'Closed Won', value: wonValue, helper: 'orders won value', tone: 'green' },
     { label: 'Closed Lost', value: lostValue, helper: 'rejected quote value', tone: 'red' },
   ];
-  const marketRows = data.marketBreakdown.slice(0, 5).map((row, index) => ({
+  const marketRows: MarketRow[] = data.marketBreakdown.slice(0, 5).map((row, index) => ({
     name: row.market,
     value: Math.max(row.leadCount * avgLeadValue, row.orderCount ? row.orderCount * avgLeadValue : 0),
     pct: (row.leadCount / marketMax) * 100,
     flag: marketFlags[index] ?? '🌍',
     growth: [22.4, 18.7, 15.6, 14.2, 35][index] ?? 12,
   }));
-  const productRows = data.productBreakdown.slice(0, 5).map((row, index) => ({
-    name: row.category,
-    value: row.pipelineValueUsd || row.leadCount * avgLeadValue,
-    quotes: row.activeQuotes,
-    pct: ((row.pipelineValueUsd || row.leadCount * avgLeadValue) / productTotal) * 100,
-    icon: productThumbs[index] ?? '📦',
-  }));
+  const productRows: ProductRow[] = data.productBreakdown.slice(0, 5).map((row, index) => {
+    const visual = productVisuals[index] ?? { Icon: Package, tone: 'blue' as Tone };
+    return {
+      name: row.category,
+      value: row.pipelineValueUsd || row.leadCount * avgLeadValue,
+      quotes: row.activeQuotes,
+      pct: ((row.pipelineValueUsd || row.leadCount * avgLeadValue) / productTotal) * 100,
+      Icon: visual.Icon,
+      tone: visual.tone,
+    };
+  });
   const revenueWon = om.totalValueUsd || wonValue;
 
   return (
@@ -337,11 +383,11 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
       <AnalyticsShellHeader mode={mode} />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <KPI label="Pipeline Value" value={money(data.pipelineValueUsd)} delta="18.6% vs previous period" icon="⌁" tone="blue" href="/pipeline" />
-        <KPI label="Quotes Sent" value={fmt(qm.totalSent)} delta="12.4% active" icon="✉" tone="green" href="/quotes" />
-        <KPI label="Conversion Rate" value={pct(conversionRate)} delta="6.3% improving" icon="◎" tone="purple" href="/reports" />
-        <KPI label="Orders Won" value={fmt(om.completed)} delta="22.6% won" icon="♕" tone="orange" href="/orders" />
-        <KPI label="Revenue Won" value={money(revenueWon)} delta="15.8% collected" icon="$" tone="teal" href="/orders" />
+        <KPI label="Pipeline Value" value={money(data.pipelineValueUsd)} delta="18.6% vs previous period" icon={TrendingUp} tone="blue" href="/pipeline" />
+        <KPI label="Quotes Sent" value={fmt(qm.totalSent)} delta="12.4% active" icon={Mail} tone="green" href="/quotes" />
+        <KPI label="Conversion Rate" value={pct(conversionRate)} delta="6.3% improving" icon={Target} tone="purple" href="/reports" />
+        <KPI label="Orders Won" value={fmt(om.completed)} delta="22.6% won" icon={Trophy} tone="orange" href="/orders" />
+        <KPI label="Revenue Won" value={money(revenueWon)} delta="15.8% collected" icon={CircleDollarSign} tone="teal" href="/orders" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.85fr_1.05fr]">
