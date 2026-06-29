@@ -1,5 +1,24 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import {
+  AlertTriangle,
+  CalendarDays,
+  ChevronDown,
+  CircleDollarSign,
+  Clock3,
+  Globe2,
+  Info,
+  Lightbulb,
+  Mail,
+  Package,
+  Shirt,
+  Target,
+  TrendingUp,
+  Trophy,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { DashboardExportModal } from '@/components/dashboard/dashboard-export-modal';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getAnalyticsData } from '@/lib/queries/analytics';
 import type { AnalyticsData } from '@/lib/queries/analytics';
@@ -7,222 +26,148 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { parseWorkspaceMode } from '@/features/workspace/mode';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
-function fmt(n: number) {
-  return n.toLocaleString('en-US');
+type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'teal' | 'red';
+type RangeKey = '30d' | '60d' | '90d';
+type FunnelFocus = 'all' | 'rfq' | 'quote' | 'orders';
+type SearchParams = { mode?: string | string[]; range?: string | string[]; market?: string | string[]; funnel?: string | string[] };
+type MovementRow = { label: string; value: number; tone: Tone };
+type MarketRow = { name: string; value: number; pct: number; growth: number; code: string };
+type ProductRow = { name: string; value: number; pct: number; quotes: number; Icon: LucideIcon; tone: Tone; imageUrl: string | null; topMarket: string | null };
+
+const tone: Record<Tone, { icon: string; bar: string; badge: string; text: string }> = {
+  blue: { icon: 'bg-blue-50 text-blue-600', bar: 'bg-blue-600', badge: 'bg-blue-50 text-blue-700 border-blue-100', text: 'text-blue-600' },
+  green: { icon: 'bg-emerald-50 text-emerald-600', bar: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', text: 'text-emerald-600' },
+  orange: { icon: 'bg-orange-50 text-orange-600', bar: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-100', text: 'text-orange-600' },
+  purple: { icon: 'bg-violet-50 text-violet-600', bar: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 border-violet-100', text: 'text-violet-600' },
+  teal: { icon: 'bg-teal-50 text-teal-600', bar: 'bg-teal-500', badge: 'bg-teal-50 text-teal-700 border-teal-100', text: 'text-teal-600' },
+  red: { icon: 'bg-red-50 text-red-600', bar: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-100', text: 'text-red-600' },
+};
+
+const rangeOptions: Array<{ key: RangeKey; label: string; days: number }> = [
+  { key: '30d', label: 'May 1 - May 31, 2025', days: 30 },
+  { key: '60d', label: 'Last 60 Days', days: 60 },
+  { key: '90d', label: 'Last 90 Days', days: 90 },
+];
+
+const funnelFilters: Array<{ key: FunnelFocus; label: string; stages: string[] }> = [
+  { key: 'all', label: 'All', stages: [] },
+  { key: 'rfq', label: 'RFQ', stages: ['Leads Captured', 'Qualified Leads / RFQs'] },
+  { key: 'quote', label: 'Quotes', stages: ['Qualified Leads / RFQs', 'Quotes Sent', 'Follow-up / Negotiation'] },
+  { key: 'orders', label: 'Orders', stages: ['Quotes Sent', 'Follow-up / Negotiation', 'Orders Won'] },
+];
+
+const productVisuals: Array<{ Icon: LucideIcon; tone: Tone }> = [
+  { Icon: Shirt, tone: 'green' },
+  { Icon: Shirt, tone: 'blue' },
+  { Icon: Package, tone: 'orange' },
+  { Icon: Shirt, tone: 'teal' },
+  { Icon: Shirt, tone: 'purple' },
+];
+
+function first(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] : value; }
+function fmt(value: number) { return value.toLocaleString('en-US'); }
+function pct(value: number) { return `${Math.round(value * 10) / 10}%`; }
+function money(value: number) { if (value >= 1000000) return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}M`; if (value >= 1000) return `$${Math.round(value / 1000)}K`; return `$${Math.round(value)}`; }
+function modeLabel(mode: WorkspaceMode) { if (mode === 'buyers') return 'Workspace: Buyer Team'; if (mode === 'suppliers') return 'Workspace: Supplier Team'; return 'Workspace: Export Team'; }
+function parseRange(value: string | undefined): RangeKey { return value === '60d' || value === '90d' ? value : '30d'; }
+function parseFunnel(value: string | undefined): FunnelFocus { return value === 'rfq' || value === 'quote' || value === 'orders' ? value : 'all'; }
+function marketCode(name: string) { return name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'GL'; }
+function datesFor(range: RangeKey) { const config = rangeOptions.find((item) => item.key === range) ?? rangeOptions[0]; const to = new Date(); const from = new Date(to.getTime() - config.days * 86400000); return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }; }
+function route(params: Record<string, string | null | undefined>) { const query = new URLSearchParams(); for (const [key, value] of Object.entries(params)) if (value && value !== 'all') query.set(key, value); const text = query.toString(); return text ? `/dashboard/analytics?${text}` : '/dashboard/analytics'; }
+
+function MarketIcon({ name, code }: { name: string; code?: string }) {
+  return <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full border border-blue-100 bg-gradient-to-br from-blue-50 to-cyan-50 text-[10px] font-semibold text-blue-700 shadow-sm" title={name}><Globe2 className="absolute h-5 w-5 text-blue-200" /><span className="relative">{code ?? marketCode(name)}</span></span>;
 }
 
-function pct(n: number) {
-  return `${Math.round(n * 10) / 10}%`;
+function SelectMenu({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: React.ReactNode }) {
+  return <details className="group relative"><summary className="inline-flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"><Icon className="h-4 w-4 text-slate-600" />{label}<ChevronDown className="h-4 w-4 text-slate-400 transition group-open:rotate-180" /></summary><div className="absolute right-0 z-20 mt-2 min-w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">{children}</div></details>;
 }
 
-function money(value: number) {
-  return `USD ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+function MenuLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return <Link href={href} className={`block rounded-xl px-3 py-2 text-sm font-medium ${active ? 'bg-slate-950 text-white' : 'text-slate-700 hover:bg-slate-50'}`}>{children}</Link>;
 }
 
-function modeLabel(mode: WorkspaceMode) {
-  if (mode === 'buyers') return 'Buyer view';
-  if (mode === 'suppliers') return 'Supplier view';
-  return 'All workspace view';
-}
-
-function IconBubble({ children, tone }: { children: React.ReactNode; tone: 'green' | 'blue' | 'orange' | 'purple' | 'whatsapp' }) {
-  const toneClass = {
-    green: 'from-emerald-500 to-green-600',
-    blue: 'from-blue-500 to-sky-600',
-    orange: 'from-orange-500 to-amber-500',
-    purple: 'from-violet-500 to-purple-600',
-    whatsapp: 'from-green-400 to-emerald-600',
-  }[tone];
-  return <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br ${toneClass} text-lg text-white shadow-lg shadow-slate-200`}>{children}</span>;
-}
-
-function KPI({ label, value, delta, icon, tone, href }: { label: string; value: string; delta: string; icon: React.ReactNode; tone: 'green' | 'blue' | 'orange' | 'purple' | 'whatsapp'; href?: string }) {
-  const card = (
-    <div className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.09)]">
-      <div className="flex items-center gap-4">
-        <IconBubble tone={tone}>{icon}</IconBubble>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1 text-sm font-bold text-slate-800">{label}<span className="text-slate-300">ⓘ</span></div>
-          <div className="mt-1 text-2xl font-black tracking-tight text-slate-950">{value}</div>
-          <div className="mt-1 text-xs font-semibold text-emerald-600">↗ {delta}</div>
-        </div>
-      </div>
-    </div>
-  );
+function KpiCard({ label, value, helper, Icon, variant, href }: { label: string; value: string; helper: string; Icon: LucideIcon; variant: Tone; href?: string }) {
+  const card = <article className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.07)]"><div className="flex items-center gap-4"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${tone[variant].icon}`}><Icon className="h-6 w-6" strokeWidth={2} /></span><div><p className="text-sm font-medium text-slate-700">{label}</p><p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{value}</p><p className={`mt-1 text-xs font-medium ${tone[variant].text}`}>{helper}</p></div></div></article>;
   return href ? <Link href={href}>{card}</Link> : card;
 }
 
-function Funnel({ funnel }: { funnel: AnalyticsData['funnel'] }) {
-  const stages = funnel.map((stage) => ({ ...stage, label: stage.label.replace('Total Leads', 'Lead').replace('Order Created', 'Order').replace('Paid & Closed', 'Closed') }));
-  return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">Conversion funnel <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Live scope</span>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
-        <div className="flex flex-col items-center justify-center gap-2 py-2">
-          {stages.map((stage, index) => {
-            const width = Math.max(34, 100 - index * 13);
-            const shade = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-blue-300', 'bg-blue-100'][index] ?? 'bg-blue-100';
-            return <Link href={stage.href} key={stage.label} className={`${shade} h-10 rounded-md text-white shadow-sm`} style={{ width: `${width}%`, clipPath: 'polygon(7% 0, 93% 0, 82% 100%, 18% 100%)' }} aria-label={stage.label} />;
-          })}
-        </div>
-        <div className="space-y-2">
-          {stages.map((stage, index) => (
-            <Link href={stage.href} key={stage.label} className="grid grid-cols-[1fr_auto] items-center rounded-xl px-2 py-1.5 text-sm hover:bg-slate-50">
-              <span className="font-bold text-slate-700">{stage.label}</span>
-              <span className="font-black text-slate-900">{fmt(stage.count)}</span>
-              {index > 0 ? <span className="col-span-2 justify-self-end rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">{stage.pct}%</span> : <span className="col-span-2 justify-self-end text-[11px] text-slate-400">baseline</span>}
-            </Link>
-          ))}
-        </div>
-      </div>
-      <Link href="/pipeline" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600">View funnel report →</Link>
-    </section>
-  );
+function AnalyticsHeader({ mode, range, market, markets }: { mode: WorkspaceMode; range: RangeKey; market: string; markets: MarketRow[] }) {
+  const rangeLabel = rangeOptions.find((item) => item.key === range)?.label ?? rangeOptions[0].label;
+  return <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">Analytics</h1><p className="mt-1 text-sm text-slate-600">Know where your export pipeline is growing, stuck, and ready to convert.</p></div><div className="flex flex-wrap items-center gap-3"><SelectMenu icon={CalendarDays} label={rangeLabel}>{rangeOptions.map((item) => <MenuLink key={item.key} active={range === item.key} href={route({ range: item.key, market, mode })}>{item.label}</MenuLink>)}</SelectMenu><SelectMenu icon={Users} label={modeLabel(mode)}>{(['all', 'buyers', 'suppliers'] as const).map((item) => <MenuLink key={item} active={mode === item} href={route({ range, market, mode: item })}>{modeLabel(item)}</MenuLink>)}</SelectMenu><SelectMenu icon={Globe2} label={`Market: ${market === 'all' ? 'All' : market}`}><MenuLink active={market === 'all'} href={route({ range, market: 'all', mode })}>All Markets</MenuLink>{markets.map((item) => <MenuLink key={item.name} active={market === item.name} href={route({ range, market: item.name, mode })}>{item.name}</MenuLink>)}</SelectMenu><DashboardExportModal active="analytics" tone="teal" label="Export" /></div></section>;
 }
 
-function PipelineChart({ funnel }: { funnel: AnalyticsData['funnel'] }) {
-  const stages = funnel.slice(0, 5).map((stage) => ({
-    label: stage.label.replace('Total Leads', 'Leads').replace('Order Created', 'Orders').replace('Paid & Closed', 'Closed'),
-    count: stage.count,
-    pct: stage.pct,
-  }));
-  const values = stages.map((stage) => stage.count);
-  const max = Math.max(...values, 1);
-  const points = values.map((value, index) => {
-    const x = 36 + index * 110;
-    const y = 154 - (value / max) * 104;
-    return `${x},${y}`;
-  }).join(' ');
-  return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">Pipeline movement <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">Funnel stage count</span>
-      </div>
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-white to-blue-50/60 p-3">
-        <svg viewBox="0 0 540 230" className="h-56 w-full" role="img" aria-label="Pipeline movement by business stage">
-          {[48, 86, 124, 162].map((y) => <line key={y} x1="22" x2="510" y1={y} y2={y} stroke="#e2e8f0" strokeWidth="1" />)}
-          <polyline points={points} fill="none" stroke="#0c7fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points={`${points} 500,180 36,180`} fill="rgba(12,127,255,.10)" />
-          {stages.map((stage, index) => {
-            const x = 36 + index * 110;
-            const y = 154 - (stage.count / max) * 104;
-            return (
-              <g key={stage.label}>
-                <circle cx={x} cy={y} r="5" fill="#0c7fff" />
-                <text x={x} y={y - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#0f172a">{stage.count}</text>
-                <text x={x} y="204" textAnchor="middle" fontSize="11" fontWeight="700" fill="#475569">{stage.label}</text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="h-2 w-2 rounded-full bg-blue-500" /> Shows real business stages in the current Buyer/Supplier/All scope.</div>
-    </section>
-  );
+function filteredFunnel(data: AnalyticsData, focus: FunnelFocus) {
+  const allowed = funnelFilters.find((item) => item.key === focus)?.stages ?? [];
+  return data.funnel.map((stage, index) => ({ label: stage.label, count: stage.count, pct: index === 0 ? 100 : stage.pct, href: stage.href, tone: (['blue', 'teal', 'green', 'purple', 'orange'][index] ?? 'blue') as Tone })).filter((stage) => !allowed.length || allowed.includes(stage.label));
 }
 
-function RankingCard({ title, action, rows, href }: { title: string; action: string; href: string; rows: Array<{ name: string; value: string; pct: number; flag?: string }> }) {
-  return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-slate-900">{title} <span className="text-slate-300">ⓘ</span></h2>
-        <span className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600">{action}</span>
-      </div>
-      <div className="space-y-3">
-        {rows.length ? rows.map((row) => (
-          <div key={row.name} className="grid grid-cols-[1fr_auto] gap-3 text-sm">
-            <div className="font-bold text-slate-700">{row.flag ? <span className="mr-2">{row.flag}</span> : null}{row.name}</div>
-            <div className="font-bold text-slate-600">{row.value}</div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-300" style={{ width: `${Math.max(6, row.pct)}%` }} /></div>
-            <div className="text-xs font-bold text-slate-500">{pct(row.pct)}</div>
-          </div>
-        )) : <div className="rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-400">No segmented data available yet.</div>}
-      </div>
-      <Link href={href} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600">View all →</Link>
-    </section>
-  );
+function ConversionFunnel({ data, focus, range, market, mode }: { data: AnalyticsData; focus: FunnelFocus; range: RangeKey; market: string; mode: WorkspaceMode }) {
+  const stages = filteredFunnel(data, focus);
+  const allStages = filteredFunnel(data, 'all');
+  const overall = allStages[0]?.count ? ((allStages[4]?.count ?? 0) / allStages[0].count) * 100 : 0;
+  return <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-base font-semibold text-slate-900">Conversion Funnel</h2><div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">{funnelFilters.map((item) => <Link key={item.key} href={route({ range, market, mode, funnel: item.key })} className={`rounded-lg px-3 py-1 text-xs font-semibold ${focus === item.key ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>{item.label}</Link>)}</div></div><div className="grid gap-5 md:grid-cols-[1fr_8rem]"><div className="grid gap-4 sm:grid-cols-[10rem_1fr_5rem] sm:items-center"><div className="space-y-5">{stages.map((stage) => <Link href={stage.href} key={stage.label} className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-950"><span className={`h-2 w-2 rounded-full ${tone[stage.tone].bar}`} />{stage.label}</Link>)}</div><div className="flex flex-col items-center justify-center gap-1 py-2">{stages.map((stage, index) => { const width = Math.max(34, 100 - index * 14); const color = ['bg-blue-600', 'bg-cyan-500', 'bg-emerald-400', 'bg-violet-500', 'bg-violet-700'][index] ?? 'bg-slate-300'; return <Link href={stage.href} key={stage.label} className={`${color} h-11 rounded-md shadow-sm`} style={{ width: `${width}%`, clipPath: 'polygon(8% 0, 92% 0, 82% 100%, 18% 100%)' }} aria-label={stage.label} />; })}</div><div className="space-y-3 text-right">{stages.map((stage) => <div key={stage.label}><p className="text-sm font-semibold text-slate-950">{fmt(stage.count)}</p><p className="text-xs font-medium text-slate-400">{pct(stage.pct)}</p></div>)}</div></div><div className="flex flex-col justify-center rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-center"><p className="text-xs font-medium text-slate-600">Overall Conversion Rate</p><p className="mt-3 text-3xl font-semibold text-blue-600">{pct(overall)}</p><p className="mt-2 text-xs font-medium text-slate-500">Lead to won order</p></div></div><div className="mt-5 flex gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-700"><Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" /><div><p>Biggest drop is from Quotes Sent to Orders Won.</p><p>Improve follow-ups to convert more export quotes.</p></div></div></section>;
 }
 
-function Insights({ data }: { data: AnalyticsData }) {
-  const winRate = data.quoteMetrics.winRate;
-  const openRate = data.docSendMetrics.openRate;
-  const delayed = Math.max(0, data.orderMetrics.active - data.orderMetrics.dispatched);
-  const rows = [
-    { icon: '↗', title: 'Pipeline growth', body: `${fmt(data.funnel[0]?.count ?? 0)} leads and ${fmt(data.orderMetrics.totalActive)} orders are currently visible in this scope.`, tag: 'Live', tone: 'emerald' },
-    { icon: '⚠', title: 'Quote acceptance watch', body: `Quote acceptance rate is ${winRate}%. Review pricing and response times where needed.`, tag: winRate >= 30 ? 'Watch' : 'Action', tone: 'amber' },
-    { icon: '⚡', title: 'WhatsApp engagement', body: `${fmt(data.docSendMetrics.whatsappSends)} WhatsApp tracked links and ${openRate}% total document open rate are recorded in the last 90 days.`, tag: 'Live', tone: 'emerald' },
-    { icon: 'ⓘ', title: 'Orders delayed', body: `${fmt(delayed)} orders remain active before dispatched/closed status. Follow up to avoid further delay.`, tag: delayed ? 'Action' : 'Clear', tone: delayed ? 'blue' : 'emerald' },
+function Movement({ rows }: { rows: MovementRow[] }) {
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  return <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-base font-semibold text-slate-900">Pipeline Movement</h2><Info className="h-4 w-4 text-slate-400" /></div><div className="space-y-4">{rows.map((row) => <div key={row.label}><div className="mb-2 flex items-center justify-between gap-3 text-sm"><span className="font-medium text-slate-700">{row.label}</span><span className="font-semibold text-slate-950">{money(row.value)}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${tone[row.tone].bar}`} style={{ width: `${Math.max(8, (row.value / max) * 100)}%` }} /></div></div>)}</div><p className="mt-5 text-xs font-medium text-slate-500">Movement by business value, not raw stage count.</p></section>;
+}
+
+function TopMarkets({ rows }: { rows: MarketRow[] }) {
+  return <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-base font-semibold text-slate-900">Top Markets by Pipeline</h2><Globe2 className="h-4 w-4 text-slate-400" /></div><div className="space-y-4">{rows.length ? rows.map((row, index) => <div key={row.name} className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-3 text-sm"><span className="font-semibold text-slate-900">{index + 1}</span><span className="flex items-center gap-2 font-medium text-slate-800"><MarketIcon name={row.name} code={row.code} />{row.name}</span><span className="font-semibold text-slate-950">{money(row.value)}</span><span /><span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span></div>) : <p className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-400">No market pipeline data available yet.</p>}</div></section>;
+}
+
+function ProductVisual({ item }: { item: ProductRow }) {
+  const Icon = item.Icon;
+  if (item.imageUrl) return <img src={item.imageUrl} alt="" className="h-11 w-11 rounded-xl object-cover ring-1 ring-slate-200" loading="lazy" referrerPolicy="no-referrer" />;
+  return <span className={`grid h-11 w-11 place-items-center overflow-hidden rounded-xl ring-1 ring-slate-200 ${tone[item.tone].icon}`}><Icon className="h-6 w-6" /></span>;
+}
+
+function TopProducts({ rows }: { rows: ProductRow[] }) {
+  return <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"><h2 className="mb-4 text-base font-semibold text-slate-900">Top Products by Pipeline</h2><div className="overflow-x-auto"><table className="min-w-[620px] w-full divide-y divide-slate-100"><thead><tr className="text-left text-xs font-medium text-slate-500"><th className="py-2">Product</th><th className="py-2 text-right">Pipeline Value</th><th className="py-2 text-right">Quotes</th><th className="py-2 text-right">% of Total</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.length ? rows.map((row, index) => <tr key={row.name}><td className="py-3"><div className="flex items-center gap-3"><span className="w-5 text-sm font-semibold text-slate-950">{index + 1}</span><ProductVisual item={row} /><span className="text-sm font-medium text-slate-900">{row.name}{row.topMarket ? <span className="mt-0.5 block text-xs font-medium text-slate-400">Top market: {row.topMarket}</span> : null}</span></div></td><td className="py-3 text-right text-sm font-semibold text-slate-950">{money(row.value)}</td><td className="py-3 text-right text-sm font-medium text-slate-600">{fmt(row.quotes)}</td><td className="py-3 text-right"><div className="ml-auto grid w-36 grid-cols-[1fr_3rem] items-center gap-2"><span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(8, row.pct)}%` }} /></span><span className="text-xs font-semibold text-slate-600">{pct(row.pct)}</span></div></td></tr>) : <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-400">No product demand data available yet.</td></tr>}</tbody></table></div><Link href="/products" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600">View full product performance</Link></section>;
+}
+
+function Insights({ data, stalledValue }: { data: AnalyticsData; stalledValue: number }) {
+  const rows: Array<{ Icon: LucideIcon; title: string; body: string; tag: string; variant: Tone }> = [
+    { Icon: TrendingUp, title: 'Win rate improved', body: `Quote acceptance rate is ${data.quoteMetrics.winRate}% in the current scope.`, tag: 'Positive', variant: 'green' },
+    { Icon: Clock3, title: 'Quote aging high', body: `${fmt(data.quoteMetrics.stalled14Days)} quotes have no fresh activity in 14+ days.`, tag: data.quoteMetrics.stalled14Days ? 'Attention' : 'Clear', variant: 'orange' },
+    { Icon: Globe2, title: 'New market opportunity', body: `${fmt(data.marketBreakdown.length)} active markets are contributing pipeline.`, tag: 'Positive', variant: 'green' },
+    { Icon: AlertTriangle, title: 'Pipeline at risk', body: `${money(stalledValue)} in estimated pipeline needs fresh activity across ${fmt(data.quoteMetrics.openPending)} open quotes.`, tag: stalledValue ? 'At Risk' : 'Clear', variant: stalledValue ? 'red' : 'green' },
   ];
-  return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] xl:col-span-2">
-      <h2 className="mb-3 text-base font-black text-slate-900">Insights & anomalies <span className="text-slate-300">ⓘ</span></h2>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <div key={row.title} className="grid gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-            <span className={`grid h-8 w-8 place-items-center rounded-full ${row.tone === 'emerald' ? 'bg-emerald-50 text-emerald-600' : row.tone === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'} font-black`}>{row.icon}</span>
-            <div><div className="font-black text-slate-800">{row.title}</div><div className="text-sm text-slate-500">{row.body}</div></div>
-            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ${row.tone === 'emerald' ? 'bg-emerald-50 text-emerald-600' : row.tone === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>{row.tag}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  return <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"><h2 className="mb-4 text-base font-semibold text-slate-900">Insights & Anomalies</h2><div className="space-y-3">{rows.map((row) => { const Icon = row.Icon; return <article key={row.title} className="grid gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 sm:grid-cols-[auto_1fr_auto] sm:items-center"><span className={`grid h-10 w-10 place-items-center rounded-full ${tone[row.variant].icon}`}><Icon className="h-5 w-5" /></span><div><p className="font-semibold text-slate-900">{row.title}</p><p className="text-sm text-slate-500">{row.body}</p></div><span className={`w-fit rounded-xl border px-3 py-1 text-xs font-semibold ${tone[row.variant].badge}`}>{row.tag}</span></article>; })}</div></section>;
 }
 
-export default async function AnalyticsPage({ searchParams }: { searchParams?: { mode?: string | string[] } }) {
+function MarketStrip({ rows }: { rows: MarketRow[] }) {
+  return <section className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-base font-semibold text-slate-900">Market & Region Performance</h2><Link href="/markets" className="text-sm font-medium text-blue-600">View full market report</Link></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">{rows.map((row) => <div key={row.name} className="flex items-center gap-3 border-slate-100 xl:border-r xl:last:border-r-0"><MarketIcon name={row.name} code={row.code} /><div><p className="text-sm font-semibold text-slate-900">{row.name}</p><p className="text-lg font-semibold text-slate-950">{money(row.value)} <span className={`ml-2 text-sm font-medium ${row.growth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{row.growth >= 0 ? '↑' : '↓'} {pct(Math.abs(row.growth))}</span></p></div></div>)}</div></section>;
+}
+
+export default async function AnalyticsPage({ searchParams }: { searchParams?: SearchParams }) {
   if (!hasSupabaseEnv) redirect('/dashboard');
   const workspace = await getWorkspaceAccess();
   if (!workspace.user || !workspace.organization) redirect('/login');
+
   const mode = parseWorkspaceMode(searchParams?.mode);
-  const data = await getAnalyticsData(workspace.organization.id, mode);
-  const { quoteMetrics: qm, orderMetrics: om, docSendMetrics: dm } = data;
-  const acceptanceRate = qm.totalSent ? (qm.totalAccepted / qm.totalSent) * 100 : 0;
-  const executionRate = om.totalActive ? (om.active / om.totalActive) * 100 : 0;
-  const marketMax = Math.max(...data.marketBreakdown.map((row) => row.leadCount), 1);
-  const productMax = Math.max(...data.productBreakdown.map((row) => row.leadCount), 1);
-  const marketFlags = ['🇺🇸', '🇮🇳', '🇬🇧', '🇦🇺', '🇨🇦', '🌍', '🌎', '🌏'];
+  const range = parseRange(first(searchParams?.range));
+  const market = first(searchParams?.market) ?? 'all';
+  const funnel = parseFunnel(first(searchParams?.funnel));
+  const data = await getAnalyticsData(workspace.organization.id, mode, { ...datesFor(range), market });
+  const movement = data.pipelineMovement;
+  const ordersWon = data.orderMetrics.completed;
+  const conversionRate = data.funnel[0]?.count ? (ordersWon / data.funnel[0].count) * 100 : 0;
+  const productTotal = Math.max(data.productBreakdown.reduce((sum, row) => sum + row.pipelineValueUsd, 0), data.pipelineValueUsd, 1);
+  const marketMax = Math.max(...data.marketBreakdown.map((row) => row.pipelineValueUsd || row.leadCount), 1);
 
-  const marketRows = data.marketBreakdown.slice(0, 5).map((row, index) => ({
-    name: row.market,
-    value: `${fmt(row.leadCount)} leads`,
-    pct: (row.leadCount / marketMax) * 100,
-    flag: marketFlags[index] ?? '🌍',
-  }));
-  const productRows = data.productBreakdown.slice(0, 5).map((row) => ({
-    name: row.category,
-    value: `${fmt(row.activeQuotes)} quoted`,
-    pct: (row.leadCount / productMax) * 100,
-  }));
+  const movements: MovementRow[] = [
+    { label: 'New Pipeline Added', value: movement.newPipelineUsd, tone: 'blue' },
+    { label: 'Moved Forward', value: movement.movedForwardUsd, tone: 'teal' },
+    { label: 'Stalled 14+ Days', value: movement.stalled14DaysUsd, tone: 'orange' },
+    { label: 'Closed Won', value: movement.closedWonUsd, tone: 'green' },
+    { label: 'Closed Lost', value: movement.closedLostUsd, tone: 'red' },
+  ];
+  const markets: MarketRow[] = data.marketBreakdown.slice(0, 5).map((row) => ({ name: row.market, value: row.pipelineValueUsd, pct: ((row.pipelineValueUsd || row.leadCount) / marketMax) * 100, growth: row.growthPct, code: marketCode(row.market) }));
+  const products: ProductRow[] = data.productBreakdown.slice(0, 5).map((row, index) => { const visual = productVisuals[index] ?? { Icon: Package, tone: 'blue' as Tone }; return { name: row.category, value: row.pipelineValueUsd, pct: (row.pipelineValueUsd / productTotal) * 100, quotes: row.activeQuotes, Icon: visual.Icon, tone: visual.tone, imageUrl: row.imageUrl, topMarket: row.topMarket }; });
+  const revenueWon = data.orderMetrics.totalValueUsd || movement.closedWonUsd;
 
-  return (
-    <main className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs font-semibold text-slate-500">
-        <span>{modeLabel(mode)}</span>
-        <span>Last updated: {new Date(data.lastUpdated).toLocaleString('en-US')}</span>
-      </div>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <KPI label="Pipeline value" value={money(data.pipelineValueUsd)} delta="live scoped value" icon="$" tone="green" href="/pipeline" />
-        <KPI label="Quote acceptance rate" value={pct(acceptanceRate)} delta={`${qm.totalAccepted} accepted`} icon="⌁" tone="blue" href="/quotes" />
-        <KPI label="Orders in execution" value={fmt(om.active)} delta={`${pct(executionRate)} active`} icon="▣" tone="orange" href="/orders" />
-        <KPI label="Document sends" value={fmt(dm.totalSends)} delta={`${dm.openRate}% opened`} icon="✈" tone="purple" href="/orders" />
-        <KPI label="WhatsApp response rate" value={`${dm.openRate}%`} delta={`${fmt(dm.whatsappSends)} tracked links`} icon="☘" tone="whatsapp" />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1fr_1.05fr_1fr]">
-        <Funnel funnel={data.funnel} />
-        <PipelineChart funnel={data.funnel} />
-        <RankingCard title="Top markets by pipeline" action="Live scope" href="/leads" rows={marketRows} />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1fr_1.1fr]">
-        <RankingCard title="Top products by pipeline" action="Live scope" href="/products" rows={productRows} />
-        <Insights data={data} />
-      </section>
-    </main>
-  );
+  return <main className="space-y-6 text-slate-900"><AnalyticsHeader mode={mode} range={range} market={market} markets={markets} /><section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5"><KpiCard label="Pipeline Value" value={money(data.pipelineValueUsd)} helper="live scoped value" Icon={TrendingUp} variant="blue" href="/pipeline" /><KpiCard label="Quotes Sent" value={fmt(data.quoteMetrics.totalSent)} helper={`${fmt(data.quoteMetrics.openPending)} active`} Icon={Mail} variant="green" href="/quotes" /><KpiCard label="Conversion Rate" value={pct(conversionRate)} helper="lead to won order" Icon={Target} variant="purple" href="/reports" /><KpiCard label="Orders Won" value={fmt(ordersWon)} helper="won export orders" Icon={Trophy} variant="orange" href="/orders" /><KpiCard label="Revenue Won" value={money(revenueWon)} helper="closed order value" Icon={CircleDollarSign} variant="teal" href="/orders" /></section><section className="grid gap-4 xl:grid-cols-[1.25fr_0.85fr_1.05fr]"><ConversionFunnel data={data} focus={funnel} range={range} market={market} mode={mode} /><Movement rows={movements} /><TopMarkets rows={markets} /></section><section className="grid gap-4 xl:grid-cols-[1fr_1.2fr]"><TopProducts rows={products} /><Insights data={data} stalledValue={movement.stalled14DaysUsd} /></section><MarketStrip rows={markets} /><span className="sr-only">Download export opens the shared business export panel.</span></main>;
 }

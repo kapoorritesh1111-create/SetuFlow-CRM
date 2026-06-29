@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { FaIcon } from "@/components/ui/fa-icon";
-import { StateMessage } from "@/components/ui/state-message";
-import { loginWithUsername, requestPasswordReset, verifyLoginOtp } from "@/features/auth/server/actions";
+import { useState, useTransition } from 'react';
+import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserRound } from 'lucide-react';
+import { StateMessage } from '@/components/ui/state-message';
+import { loginWithUsername, requestPasswordReset, verifyLoginOtp } from '@/features/auth/server/actions';
 
 type LoginState = {
   error?: string;
@@ -19,9 +19,13 @@ function FieldLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
   return <label htmlFor={htmlFor} className="text-sm font-semibold text-slate-800">{label}</label>;
 }
 
-export function LoginForm({ next = "" }: { next?: string }) {
+function InputIcon({ children }: { children: React.ReactNode }) {
+  return <span className="pointer-events-none absolute left-4 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-blue-50 text-[#1F487C]">{children}</span>;
+}
+
+export function LoginForm({ next = '' }: { next?: string }) {
   const [state, setState] = useState<LoginState>({});
-  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmail, setResetEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -33,7 +37,7 @@ export function LoginForm({ next = "" }: { next?: string }) {
       <div className="space-y-5">
         <div className="rounded-[1.5rem] border border-[#1F487C]/12 bg-[#f8fbff] p-5">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1F487C]/10 text-[#1F487C]"><FaIcon icon="shield" fixedWidth /></span>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#1F487C]/10 text-[#1F487C]"><ShieldCheck className="h-5 w-5" /></span>
             <div>
               <p className="text-sm font-bold text-slate-950">Two-factor verification</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">Enter the 6-digit code from your authenticator app to finish signing in.</p>
@@ -51,13 +55,13 @@ export function LoginForm({ next = "" }: { next?: string }) {
           <div className="space-y-2">
             <FieldLabel htmlFor="otpCode" label="Authenticator code" />
             <div className="relative">
-              <FaIcon icon="key" fixedWidth className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
-              <input id="otpCode" name="code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required autoComplete="one-time-code" placeholder="000000" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-center text-lg font-black tracking-[0.4em] text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-300 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+              <InputIcon><KeyRound className="h-3.5 w-3.5" /></InputIcon>
+              <input id="otpCode" name="code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required autoComplete="one-time-code" placeholder="000000" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-center text-lg font-black tracking-[0.4em] text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-300 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
             </div>
           </div>
           {state.error ? <StateMessage title="Verification failed" description={state.error} tone="danger" /> : null}
           <button type="submit" disabled={isOtpPending} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#1F487C_0%,#0c7fff_120%)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_34px_rgba(31,72,124,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60">
-            {isOtpPending ? "Verifying..." : "Verify and enter workspace"}<FaIcon icon="arrow-right" fixedWidth className="text-xs" />
+            {isOtpPending ? 'Verifying...' : 'Verify and enter workspace'}<ArrowRight className="h-4 w-4" />
           </button>
           <button type="button" onClick={() => setState({})} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#1F487C] transition hover:bg-[#1F487C]/5">
             Use a different username
@@ -79,8 +83,8 @@ export function LoginForm({ next = "" }: { next?: string }) {
           <div className="space-y-2">
             <FieldLabel htmlFor="username" label="Username" />
             <div className="relative">
-              <FaIcon icon="user-o" fixedWidth className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
-              <input id="username" name="username" type="text" required autoComplete="username" placeholder="your.username" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-400 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+              <InputIcon><UserRound className="h-3.5 w-3.5" /></InputIcon>
+              <input id="username" name="username" type="text" required autoComplete="username" placeholder="your.username" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm font-medium text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-400 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
             </div>
           </div>
           <div className="space-y-2">
@@ -89,10 +93,10 @@ export function LoginForm({ next = "" }: { next?: string }) {
               <button type="button" onClick={() => setResetOpen((v) => !v)} className="text-sm font-semibold text-[#1F487C] transition hover:text-[#359F91]">Forgot password?</button>
             </div>
             <div className="relative">
-              <FaIcon icon="lock" fixedWidth className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
-              <input id="password" name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" placeholder="Enter your password" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-[5.75rem] text-sm font-medium text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-400 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
-              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-2 top-1/2 inline-flex min-h-9 -translate-y-1/2 items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-[#1F487C] transition hover:bg-[#1F487C]/5" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
-                <FaIcon icon={showPassword ? "eye-slash" : "eye"} fixedWidth /><span>{showPassword ? "Hide" : "Show"}</span>
+              <InputIcon><LockKeyhole className="h-3.5 w-3.5" /></InputIcon>
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} required autoComplete="current-password" placeholder="Enter your password" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-[6.25rem] text-sm font-medium text-slate-900 shadow-[0_10px_24px_rgba(31,72,124,0.06)] outline-none transition placeholder:text-slate-400 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-2 top-1/2 inline-flex min-h-9 -translate-y-1/2 items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-[#1F487C] transition hover:bg-[#1F487C]/5" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
+                {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}<span>{showPassword ? 'Hide' : 'Show'}</span>
               </button>
             </div>
           </div>
@@ -100,22 +104,31 @@ export function LoginForm({ next = "" }: { next?: string }) {
         {state.error ? <StateMessage title="Sign-in failed" description={state.error} tone="danger" /> : null}
         {state.success ? <StateMessage title="Success" description={state.success} tone="success" /> : null}
         <button type="submit" disabled={isPending} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#1F487C_0%,#0c7fff_120%)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_34px_rgba(31,72,124,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60">
-          {isPending ? "Signing in..." : "Sign in to workspace"}<FaIcon icon="arrow-right" fixedWidth className="text-xs" />
+          {isPending ? 'Signing in...' : 'Sign in to workspace'}<ArrowRight className="h-4 w-4" />
         </button>
         <p className="text-center text-xs text-slate-500">Use the username your workspace admin assigned to your profile. Accounts with 2FA enabled will be asked for an authenticator code.</p>
       </form>
       <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_10px_28px_rgba(31,72,124,0.05)]">
         <button type="button" onClick={() => setResetOpen((v) => !v)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded={resetOpen}>
-          <div><p className="text-sm font-bold text-slate-900">Password help</p><p className="mt-1 text-xs text-slate-500">Send a secure reset link to your account email.</p></div>
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F487C]/5 text-[#1F487C]"><FaIcon icon={resetOpen ? "chevron-up" : "chevron-down"} fixedWidth /></span>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-teal-50 text-[#108477]"><Mail className="h-5 w-5" /></span>
+            <div><p className="text-sm font-bold text-slate-900">Password help</p><p className="mt-1 text-xs text-slate-500">Send a secure reset link to your account email.</p></div>
+          </div>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#1F487C]/5 text-[#1F487C]">{resetOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</span>
         </button>
         {resetOpen ? (
           <form className="space-y-3 border-t border-slate-100 bg-slate-50 px-5 py-4" onSubmit={(event) => {
             event.preventDefault();
             startResetTransition(() => { void (async () => setState((await requestPasswordReset(resetEmail)) ?? {}))(); });
           }}>
-            <div className="space-y-2"><FieldLabel htmlFor="resetEmail" label="Account email" /><input id="resetEmail" type="email" name="resetEmail" placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required autoComplete="email" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" /></div>
-            <button type="submit" disabled={isResetPending} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-[#1F487C]/15 bg-white px-4 py-3 text-sm font-bold text-[#1F487C] transition hover:bg-[#1F487C]/5 disabled:opacity-60">{isResetPending ? "Sending reset link..." : "Send reset link"}</button>
+            <div className="space-y-2">
+              <FieldLabel htmlFor="resetEmail" label="Account email" />
+              <div className="relative">
+                <InputIcon><Mail className="h-3.5 w-3.5" /></InputIcon>
+                <input id="resetEmail" type="email" name="resetEmail" placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required autoComplete="email" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+              </div>
+            </div>
+            <button type="submit" disabled={isResetPending} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#1F487C]/15 bg-white px-4 py-3 text-sm font-bold text-[#1F487C] transition hover:bg-[#1F487C]/5 disabled:opacity-60">{isResetPending ? 'Sending reset link...' : 'Send reset link'}<ArrowRight className="h-4 w-4" /></button>
           </form>
         ) : null}
       </div>

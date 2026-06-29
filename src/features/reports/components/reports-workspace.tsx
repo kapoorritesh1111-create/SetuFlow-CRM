@@ -1,469 +1,472 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { GuruAvatar } from '@/components/ui/guru-avatar';
+
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { EmptyState } from '@/components/ui/empty-state';
-// SectionCard
-import { SectionCard } from '@/components/ui/section-card';
-import { StatCard } from '@/components/ui/stat-card';
-import { StatusBadge } from '@/components/ui/status-badge';
+import {
+  ArrowUpDown,
+  BarChart3,
+  Building2,
+  CalendarDays,
+  Clock3,
+  Eye,
+  FileDown,
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  Globe2,
+  Search,
+  Share2,
+  Sparkles,
+  Tag,
+  Truck,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { DashboardExportModal } from '@/components/dashboard/dashboard-export-modal';
+import { GuruAvatar } from '@/components/ui/guru-avatar';
 import type { ReportsData } from '@/lib/queries/reports';
-import { calculateCommercialSummaryMetrics, isWorkflowOpenStatus } from '@/lib/reporting/summary-metrics';
-import { formatDateTime } from '@/lib/utils';
-import { getAuditEventCategory, getAuditEventLabel, getAuditEventSummary, getAuditEventTone } from '@/lib/adminAuditEvents';
+import { isWorkflowOpenStatus } from '@/lib/reporting/summary-metrics';
 
-function daysBetween(start: string | null | undefined, end: string | null | undefined) {
-  if (!start || !end) return null;
-  const a = new Date(start).getTime();
-  const b = new Date(end).getTime();
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return Math.max(0, Math.round((b - a) / 86400000));
+type RangeKey = '30d' | '60d' | '90d';
+type ReportType =
+  | 'all'
+  | 'pipeline'
+  | 'quote-aging'
+  | 'product-demand'
+  | 'market-performance'
+  | 'buyer-follow-up'
+  | 'orders-execution'
+  | 'trade-event-roi'
+  | 'price-margin'
+  | 'buyer-account';
+type ScrollTarget = 'report-cards' | 'active-report';
+type SortDirection = 'asc' | 'desc';
+type ReportRow = Record<string, string | number>;
+type LooseRow = Record<string, unknown>;
+type ReportCard = { title: string; body: string; type: Exclude<ReportType, 'all'>; icon: LucideIcon; tone: string };
+
+const RANGE_LABELS: Record<RangeKey, string> = {
+  '30d': 'May 1 - May 31, 2025',
+  '60d': 'Last 60 Days',
+  '90d': 'Last 90 Days',
+};
+
+const TYPE_LABELS: Record<ReportType, string> = {
+  all: 'All',
+  pipeline: 'Sales Pipeline',
+  'quote-aging': 'Quote Aging',
+  'product-demand': 'Product Demand',
+  'market-performance': 'Market Performance',
+  'buyer-follow-up': 'Buyer Follow-up',
+  'orders-execution': 'Orders & Execution',
+  'trade-event-roi': 'Trade Event ROI',
+  'price-margin': 'Price / Margin',
+  'buyer-account': 'Buyer Account',
+};
+
+const REPORTS: ReportCard[] = [
+  { title: 'Sales Pipeline Report', body: 'Pipeline value, stage health, and conversion by market.', type: 'pipeline', icon: Filter, tone: 'blue' },
+  { title: 'Quote Aging Report', body: 'Pending quotes by buyer, age bucket, and recommended next action.', type: 'quote-aging', icon: Clock3, tone: 'orange' },
+  { title: 'Product Demand Report', body: 'Demanded products, quote concentration, and buyer interest.', type: 'product-demand', icon: BarChart3, tone: 'green' },
+  { title: 'Market Performance Report', body: 'Market coverage, active buyers, pipeline, orders, and revenue.', type: 'market-performance', icon: Globe2, tone: 'purple' },
+  { title: 'Buyer Follow-up Report', body: 'Follow-up activity, due dates, response gaps, and buyer priority.', type: 'buyer-follow-up', icon: Users, tone: 'blue' },
+  { title: 'Orders & Execution Report', body: 'Execution state, fulfillment timeline, and delivery visibility.', type: 'orders-execution', icon: Truck, tone: 'teal' },
+  { title: 'Trade Event ROI Report', body: 'Trade show leads, influenced pipeline, and follow-up quality.', type: 'trade-event-roi', icon: CalendarDays, tone: 'purple' },
+  { title: 'Price / Margin Report', body: 'Selling price, COGS signals, and margin pressure by product.', type: 'price-margin', icon: Tag, tone: 'orange' },
+  { title: 'Buyer Account Report', body: 'Buyer activity, quotes, orders, and spend by account.', type: 'buyer-account', icon: Building2, tone: 'teal' },
+];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function row(value: unknown): LooseRow {
+  return value as LooseRow;
 }
 
-function getCoverageTone(covered: number, total: number) {
-  if (!total) return 'warning' as const;
-  if (covered >= total) return 'success' as const;
-  if (covered > 0) return 'warning' as const;
-  return 'danger' as const;
+function text(value: unknown, fallback = 'Not specified') {
+  return String(value ?? '').trim() || fallback;
 }
 
-function countRecordsSince(records: Array<{ created_at?: string | null; updated_at?: string | null }>, since: number) {
-  return records.filter((record) => {
-    const createdAt = new Date(record.created_at ?? record.updated_at ?? '').getTime();
-    return Number.isFinite(createdAt) && createdAt >= since;
-  }).length;
+function fmt(value: number) {
+  return value.toLocaleString('en-US');
 }
 
-function getWindowStart(dayOffset: number) {
-  return Date.now() - dayOffset * 24 * 60 * 60 * 1000;
+function money(value: number) {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
+  return `$${Math.round(value)}`;
+}
+
+function inRange(value: string | null | undefined, range: RangeKey) {
+  const time = new Date(value ?? '').getTime();
+  if (!Number.isFinite(time)) return true;
+  const days = range === '90d' ? 90 : range === '60d' ? 60 : 30;
+  return Date.now() - time <= days * DAY_MS;
+}
+
+function age(value: string | null | undefined) {
+  const time = new Date(value ?? '').getTime();
+  return Number.isFinite(time) ? Math.max(0, Math.round((Date.now() - time) / DAY_MS)) : 0;
+}
+
+function humanize(value: unknown) {
+  const raw = text(value, 'Open');
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function quoteAction(status: unknown, days: number) {
+  const normalized = text(status, '').toLowerCase();
+  if (normalized === 'accepted') return 'Prepare order handoff';
+  if (normalized === 'rejected') return 'Review loss reason';
+  if (days >= 14) return 'Escalate buyer follow-up';
+  if (days >= 7) return 'Send follow-up reminder';
+  return 'Monitor buyer response';
+}
+
+function leadName(lead?: ReportsData['leads'][number]) {
+  const raw = row(lead ?? {});
+  return text(raw.company_name ?? raw.contact_name, 'Unassigned buyer');
+}
+
+function leadMarket(lead: ReportsData['leads'][number]) {
+  const raw = row(lead);
+  return text(raw.country ?? raw.market ?? raw.company_country, 'Unknown market');
+}
+
+function productName(product?: ReportsData['products'][number] | LooseRow | null) {
+  const raw = row(product ?? {});
+  return text(raw.name ?? raw.product_name ?? raw.description, 'Product');
+}
+
+function downloadCsv(rows: ReportRow[], fileName: string) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const csv = [
+    headers.join(','),
+    ...rows.map((item) => headers.map((key) => `"${String(item[key] ?? '').replaceAll('"', '""')}"`).join(',')),
+  ].join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function compareCell(a: string | number, b: string | number) {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  const aNumber = Number(String(a).replace(/[^0-9.-]/g, ''));
+  const bNumber = Number(String(b).replace(/[^0-9.-]/g, ''));
+  if (Number.isFinite(aNumber) && Number.isFinite(bNumber) && String(a).match(/\d/) && String(b).match(/\d/)) return aNumber - bNumber;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market: string): ReportRow[] {
+  const leads = data.leads
+    .filter((lead) => inRange(row(lead).updated_at as string | null | undefined, range))
+    .filter((lead) => market === 'all' || leadMarket(lead) === market);
+  const leadIds = new Set(leads.map((lead) => lead.id));
+  const leadById = new Map(data.leads.map((lead) => [lead.id, lead]));
+  const productById = new Map(data.products.map((product) => [product.id, product]));
+  const stageById = new Map(data.stages.map((stage) => [stage.id, stage.name]));
+  const quotes = data.quotes
+    .filter((quote) => !quote.lead_id || leadIds.has(quote.lead_id))
+    .filter((quote) => inRange(quote.updated_at ?? quote.created_at, range));
+  const followUps = data.followUps
+    .filter((item) => !item.lead_id || leadIds.has(item.lead_id))
+    .filter((item) => inRange(item.scheduled_at ?? item.created_at, range));
+
+  if (type === 'quote-aging') {
+    return quotes.slice(0, 40).map((quote) => {
+      const days = age(quote.updated_at ?? quote.created_at);
+      return {
+        Buyer: quote.lead_id ? leadName(leadById.get(quote.lead_id)) : 'No buyer assigned',
+        'Quote Stage': humanize(quote.status),
+        'Days Waiting': days,
+        'Recommended Action': quoteAction(quote.status, days),
+      };
+    });
+  }
+
+  if (type === 'buyer-follow-up') {
+    return followUps.slice(0, 40).map((item) => ({
+      Buyer: item.lead_id ? leadName(leadById.get(item.lead_id)) : 'No buyer assigned',
+      Status: humanize(item.status),
+      'Follow-up Due': text(item.scheduled_at, 'No date'),
+      'Next Action': text(row(item).notes, 'Review buyer notes'),
+    }));
+  }
+
+  if (type === 'product-demand') {
+    return data.quoteLineItems.slice(0, 40).map((item) => {
+      const raw = row(item);
+      const product = raw.product_id ? productById.get(String(raw.product_id)) : null;
+      return {
+        Product: productName(product ?? raw),
+        Quantity: Number(raw.quantity ?? 0),
+        'Quoted Value': money(Number(raw.line_total ?? raw.total_price ?? raw.unit_price ?? 0)),
+      };
+    });
+  }
+
+  if (type === 'market-performance') {
+    const map = new Map<string, { buyers: number; value: number }>();
+    leads.forEach((lead) => {
+      const key = leadMarket(lead);
+      const current = map.get(key) ?? { buyers: 0, value: 0 };
+      current.buyers += 1;
+      current.value += Number(row(lead).deal_value ?? 0);
+      map.set(key, current);
+    });
+    return Array.from(map.entries()).map(([name, item]) => ({ Market: name, Buyers: item.buyers, Pipeline: money(item.value) }));
+  }
+
+  if (type === 'orders-execution') {
+    return leads.slice(0, 40).map((lead) => ({
+      Buyer: leadName(lead),
+      Market: leadMarket(lead),
+      Stage: text(stageById.get(String(row(lead).stage_id)), 'Open'),
+      Pipeline: money(Number(row(lead).deal_value ?? 0)),
+    }));
+  }
+
+  if (type === 'price-margin') {
+    return data.products.slice(0, 40).map((product) => ({
+      Product: productName(product),
+      SKU: text(row(product).sku, '-'),
+      Status: row(product).is_active === false ? 'Inactive' : 'Active',
+      Market: market === 'all' ? 'All markets' : market,
+    }));
+  }
+
+  if (type === 'buyer-account') {
+    return leads.slice(0, 40).map((lead) => ({
+      Buyer: leadName(lead),
+      Contact: text(row(lead).contact_name, '-'),
+      Market: leadMarket(lead),
+      Pipeline: money(Number(row(lead).deal_value ?? 0)),
+    }));
+  }
+
+  if (type === 'trade-event-roi') {
+    return leads
+      .filter((lead) => Boolean(row(lead).trade_event_id || row(lead).trade_show_name))
+      .slice(0, 40)
+      .map((lead) => ({
+        Event: text(row(lead).trade_show_name, 'Trade event'),
+        Buyer: leadName(lead),
+        Pipeline: money(Number(row(lead).deal_value ?? 0)),
+        Market: leadMarket(lead),
+      }));
+  }
+
+  return leads.slice(0, 40).map((lead) => ({
+    Buyer: leadName(lead),
+    Contact: text(row(lead).contact_name, '-'),
+    Market: leadMarket(lead),
+    Pipeline: money(Number(row(lead).deal_value ?? 0)),
+    Updated: text(row(lead).updated_at, '-'),
+  }));
+}
+
+function Metric({ label, value, helper, Icon }: { label: string; value: string | number; helper: string; Icon: LucideIcon }) {
+  return (
+    <article className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+      <div className="flex items-center gap-4">
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-blue-600"><Icon className="h-6 w-6" /></span>
+        <div>
+          <p className="text-sm font-medium text-slate-700">{label}</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{value}</p>
+          <p className="mt-1 text-xs font-medium text-emerald-600">{helper}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selected: ReportType; onOpen: (type: Exclude<ReportType, 'all'>) => void }) {
+  return (
+    <section id="report-cards" className="scroll-mt-24 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <button
+            key={card.type}
+            type="button"
+            onClick={() => onOpen(card.type)}
+            className={`rounded-[1.35rem] border bg-white p-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 ${selected === card.type ? 'border-blue-300 ring-2 ring-blue-50' : 'border-slate-200'}`}
+          >
+            <div className="flex gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon className="h-5 w-5" /></span>
+              <div>
+                <h3 className="text-base font-semibold text-slate-950">{card.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
+                <span className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800"><Eye className="h-4 w-4" />Open report</span>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </section>
+  );
+}
+
+function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; onBack: () => void }) {
+  const headers = rows[0] ? Object.keys(rows[0]) : ['No data'];
+  const [query, setQuery] = useState('');
+  const [sortKey, setSortKey] = useState(headers[0] ?? '');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const activeSortKey = headers.includes(sortKey) ? sortKey : headers[0];
+  const visibleRows = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const filtered = normalizedQuery
+      ? rows.filter((item) => Object.values(item).some((value) => String(value).toLowerCase().includes(normalizedQuery)))
+      : rows;
+    return [...filtered].sort((a, b) => {
+      const result = compareCell(a[activeSortKey] ?? '', b[activeSortKey] ?? '');
+      return sortDirection === 'asc' ? result : -result;
+    });
+  }, [activeSortKey, query, rows, sortDirection]);
+
+  useEffect(() => {
+    if (!headers.includes(sortKey)) setSortKey(headers[0] ?? '');
+  }, [headers, sortKey]);
+
+  return (
+    <section id="active-report" className="scroll-mt-28 rounded-[1.45rem] border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Active report</p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-950">{TYPE_LABELS[type]} Report Preview</h2>
+          <p className="text-sm text-slate-500">Clean buyer-facing rows generated from the selected report, market, and date filters.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={onBack} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Back to report cards</button>
+          <button type="button" onClick={() => downloadCsv(visibleRows, `setu-flow-${type}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"><FileSpreadsheet className="h-4 w-4" />Export Excel</button>
+          <button type="button" onClick={() => downloadCsv(visibleRows, `setu-flow-${type}-pdf-ready.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700"><FileDown className="h-4 w-4" />PDF data</button>
+        </div>
+      </div>
+      <div className="mb-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 lg:grid-cols-[1fr_auto_auto]">
+        <label className="relative block">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter this report by buyer, market, stage, action..." className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100" />
+        </label>
+        <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
+          <ArrowUpDown className="h-4 w-4 text-slate-400" />
+          <select value={activeSortKey} onChange={(event) => setSortKey(event.target.value)} className="h-10 bg-transparent outline-none">
+            {headers.map((header) => <option key={header} value={header}>Sort: {header}</option>)}
+          </select>
+        </label>
+        <button type="button" onClick={() => setSortDirection((value) => (value === 'asc' ? 'desc' : 'asc'))} className="rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[760px] w-full divide-y divide-slate-100">
+          <thead>
+            <tr>{headers.map((key) => <th key={key} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{key}</th>)}</tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {visibleRows.length ? visibleRows.map((item, index) => (
+              <tr key={index}>{headers.map((key) => <td key={key} className="px-4 py-3 text-sm text-slate-700">{item[key]}</td>)}</tr>
+            )) : (
+              <tr><td colSpan={headers.length} className="px-4 py-8 text-center text-sm text-slate-400">No matching report rows for these filters.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
 
 export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData; readOnlyMessage?: string | null }) {
-  // SF-18-115: Date range filter
-  const [dateRange, setDateRange] = useState<30 | 60 | 90 | 180>(30);
-  const since = useMemo(() => Date.now() - dateRange * 24 * 60 * 60 * 1000, [dateRange]);
-
-  // SF-18-115: CSV export
-  function exportCSV(rows: Record<string, unknown>[], filename: string) {
-    if (!rows.length) return;
-    const keys = Object.keys(rows[0]);
-    const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = filename; a.click();
-  }
-
-  // SF-18-115: Build trend data (daily counts over selected range)
-  function buildTrend(records: Array<{ created_at?: string | null }>, label: string) {
-    const days: Record<string, number> = {};
-    const now = new Date();
-    for (let i = dateRange - 1; i >= 0; i--) {
-      const d = new Date(now); d.setDate(now.getDate() - i);
-      days[d.toISOString().slice(0, 10)] = 0;
-    }
-    records.forEach(r => { const k = (r.created_at ?? '').slice(0, 10); if (k in days) days[k]++; });
-    return Object.entries(days).map(([date, count]) => ({ date: date.slice(5), [label]: count }));
-  }
+  const [range, setRange] = useState<RangeKey>('30d');
+  const [market, setMarket] = useState('all');
+  const [reportType, setReportType] = useState<ReportType>('all');
+  const [selected, setSelected] = useState<ReportType>('pipeline');
+  const [scrollTarget, setScrollTarget] = useState<ScrollTarget | null>(null);
   const now = Date.now();
-  const stageMap = new Map(data.stages.map((stage) => [stage.id, stage]));
-  const quoteLineItemsByQuoteId = new Map<string, ReportsData['quoteLineItems']>();
-  for (const item of data.quoteLineItems) {
-    const current = quoteLineItemsByQuoteId.get(item.quote_id) ?? [];
-    current.push(item);
-    quoteLineItemsByQuoteId.set(item.quote_id, current);
-  }
 
-  const dashboardSummaryMetrics = calculateCommercialSummaryMetrics({
-    stages: data.stages,
-    leads: data.leads,
-    followUps: data.followUps,
-    quotes: data.quotes,
-    complianceItems: data.complianceItems,
-    tasks: data.tasks,
-    now,
-  });
-  const openLeads = data.leads.filter((lead) => {
-    const stage = lead.stage_id ? stageMap.get(lead.stage_id) : null;
-    return !(stage?.is_closed || stage?.is_lost);
-  });
-  const overdueFollowUps = data.followUps.filter((item) => item.scheduled_at && isWorkflowOpenStatus(item.status) && new Date(item.scheduled_at).getTime() < now);
-  const openQuotes = data.quotes.filter((quote) => isWorkflowOpenStatus(quote.status));
-  const openRfqs = data.rfqs.filter((rfq) => isWorkflowOpenStatus(rfq.status));
-  const blockedCompliance = data.complianceItems.filter((item) => isWorkflowOpenStatus(item.status) && item.severity && ['high', 'critical'].includes(item.severity.toLowerCase()));
-  const overdueTasks = data.tasks.filter((task) => isWorkflowOpenStatus(task.status) && new Date(task.scheduled_for).getTime() < now);
-  const activeProducts = data.products.filter((item) => item.is_active);
-  const activeMarketCount = data.markets.filter((item) => item.is_active).length;
-  const priceMarketIds = new Set(
-    data.prices
-      .filter((price) => !price.effective_to || new Date(price.effective_to).getTime() >= now)
-      .map((price) => price.market_id)
-      .filter(Boolean),
-  );
-  const recentAudit = data.auditEvents.slice(0, 10);
-  const recentlyTouchedQuotes = data.quotes
-    .slice()
-    .sort((a, b) => new Date(b.updated_at ?? b.created_at).getTime() - new Date(a.updated_at ?? a.created_at).getTime())
-    .slice(0, 6)
-    .map((quote) => {
-      const lineItems = quoteLineItemsByQuoteId.get(quote.id) ?? [];
-      const overridden = lineItems.filter((item) => item.is_price_overridden).length;
-      const variance = lineItems.reduce((total, item) => total + Math.max(0, Number(item.unit_price ?? 0) - Number(item.catalog_price_amount ?? 0)), 0);
-      return { quote, lineItems: lineItems.length, overridden, variance };
+  const markets = useMemo(() => ['all', ...Array.from(new Set(data.leads.map((lead) => leadMarket(lead)).filter(Boolean))).slice(0, 12)], [data.leads]);
+  const cards = reportType === 'all' ? REPORTS : REPORTS.filter((item) => item.type === reportType);
+  const rows = useMemo(() => buildRows(selected, data, range, market), [selected, data, range, market]);
+  const openQuotes = data.quotes.filter((quote) => isWorkflowOpenStatus(quote.status) && inRange(quote.updated_at ?? quote.created_at, range));
+  const overdue = data.followUps.filter((item) => item.scheduled_at && isWorkflowOpenStatus(item.status) && new Date(item.scheduled_at).getTime() < now && inRange(item.scheduled_at, range));
+
+  useEffect(() => {
+    if (!scrollTarget) return undefined;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setScrollTarget(null);
     });
+    return () => cancelAnimationFrame(frame);
+  }, [rows.length, scrollTarget, selected]);
 
-  const wonStages = new Set(data.stages.filter((stage) => stage.is_won).map((stage) => stage.id));
-  const latestConversionDays = (() => {
-    const wonLeads = data.leads.filter((lead) => lead.stage_id && wonStages.has(lead.stage_id));
-    const values = wonLeads.map((lead) => daysBetween(lead.created_at, lead.updated_at)).filter((value): value is number => value !== null);
-    if (!values.length) return '—';
-    return `${Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)}d`;
-  })();
-
-  const leadsWithRfqs = new Set(data.rfqs.map((rfq) => rfq.lead_id).filter(Boolean)).size;
-  const leadsWithQuotes = new Set(data.quotes.map((quote) => quote.lead_id).filter(Boolean)).size;
-  const wonLeadCount = data.leads.filter((lead) => lead.stage_id && wonStages.has(lead.stage_id)).length;
-  const stageDistribution = data.stages.map((stage) => ({
-    stage,
-    count: data.leads.filter((lead) => lead.stage_id === stage.id).length,
-  }));
-  const stageCoverage = stageDistribution.filter((item) => item.count > 0);
-  const thirtyDaysAgo = getWindowStart(30);
-  const sevenDaysAgo = getWindowStart(7);
-  const reportingWindows = [
-    {
-      label: 'Last 7 days',
-      leads: countRecordsSince(data.leads, sevenDaysAgo),
-      rfqs: countRecordsSince(data.rfqs, sevenDaysAgo),
-      quotes: countRecordsSince(data.quotes, sevenDaysAgo),
-      audit: data.auditEvents.filter((event) => new Date(event.created_at).getTime() >= sevenDaysAgo).length,
-    },
-    {
-      label: 'Last 30 days',
-      leads: countRecordsSince(data.leads, thirtyDaysAgo),
-      rfqs: countRecordsSince(data.rfqs, thirtyDaysAgo),
-      quotes: countRecordsSince(data.quotes, thirtyDaysAgo),
-      audit: data.auditEvents.filter((event) => new Date(event.created_at).getTime() >= thirtyDaysAgo).length,
-    },
-  ];
-
-  const stats = [
-    { label: 'Open leads', value: dashboardSummaryMetrics.openLeadCount, helper: 'Dashboard-aligned leads not in closed stages.', href: '/pipeline' },
-    { label: 'Overdue follow-ups', value: dashboardSummaryMetrics.overdueFollowUpCount, helper: 'Dashboard-aligned open follow-ups scheduled before now.', href: '/leads' },
-    { label: 'Open RFQs / Quotes', value: `${openRfqs.length} / ${dashboardSummaryMetrics.openQuoteCount}`, helper: 'Commercial work still in motion.', href: '/reports' },
-    { label: 'Cycle time', value: latestConversionDays, helper: 'Average created → current/won timeline.', href: '/pipeline' },
-    { label: 'High-severity blockers', value: dashboardSummaryMetrics.blockedComplianceCount, helper: 'Dashboard-aligned compliance items needing immediate attention.', href: '/compliance' },
-    { label: 'Coverage markets', value: `${priceMarketIds.size}/${activeMarketCount || 0}`, helper: 'Markets with a current active baseline.', href: '/products' },
-  ];
-  const missingMetricContext = [
-    !data.stages.length ? 'Pipeline stages are missing, so conversion totals cannot be fully explained yet.' : null,
-    activeMarketCount === 0 ? 'Active markets are missing, so coverage totals are running without baseline market context.' : null,
-    activeMarketCount > 0 && priceMarketIds.size === 0 ? 'Baseline prices are missing for every active market, so coverage totals are present but not yet actionable.' : null,
-  ].filter((value): value is string => Boolean(value));
-  const consistencyChecks = [
-    { label: 'Open leads', dashboard: dashboardSummaryMetrics.openLeadCount, reports: openLeads.length, href: '/pipeline' },
-    { label: 'Overdue follow-ups', dashboard: dashboardSummaryMetrics.overdueFollowUpCount, reports: overdueFollowUps.length, href: '/leads' },
-    { label: 'Active quotes', dashboard: dashboardSummaryMetrics.openQuoteCount, reports: openQuotes.length, href: '/reports' },
-    { label: 'Compliance blockers', dashboard: dashboardSummaryMetrics.blockedComplianceCount, reports: blockedCompliance.length, href: '/compliance' },
-  ];
+  const openReport = (type: Exclude<ReportType, 'all'>) => {
+    setSelected(type);
+    setScrollTarget('active-report');
+  };
 
   return (
-    <div className="space-y-6">
-      {/* SF-18-115: Date range filter + CSV export */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-white px-5 py-2">
-        <span className="text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-400">Time range:</span>
-        {([30, 60, 90, 180] as const).map(d => (
-          <button key={d} type="button" onClick={() => setDateRange(d)}
-            className={`h-8 rounded-xl px-3 text-[11px] font-bold transition ${dateRange === d ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'}`}>
-            {d}d
-          </button>
-        ))}
-        <div className="flex items-center gap-1.5 ml-2">
-          <GuruAvatar size="xs" />
-          <span className="text-[10px] font-semibold text-sky-700">Setu Guru Insights</span>
+    <main className="space-y-6 text-slate-900">
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">Reports</h1>
+          <p className="mt-1 text-sm text-slate-600">Clean business reports for owners, sales teams, and trade follow-ups.</p>
         </div>
-        <button type="button" onClick={() => exportCSV(data.leads.map(l => ({ id: l.id, stage: l.stage_id, deal: l.deal_value, created: l.created_at })), 'leads-report.csv')}
-          className="ml-auto flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition">
-          ⬇ Export CSV
-        </button>
-      </div>
-
-      {/* SF-18-115: Trend chart */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-slate-900">Lead activity trend — last {dateRange} days</h3>
-        </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <AreaChart data={buildTrend(data.leads, 'Leads')} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-            <defs><linearGradient id="leadsGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/><stop offset="95%" stopColor="#2563eb" stopOpacity={0}/></linearGradient></defs>
-            <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval={Math.floor(dateRange / 6)} />
-            <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
-            <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-            <Area type="monotone" dataKey="Leads" stroke="#2563eb" strokeWidth={2} fill="url(#leadsGrad)" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {stats.map((item) => {
-          const card = <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} />;
-          return item.href ? (
-            <Link key={item.label} href={item.href} className="block rounded-[1.5rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2">
-              {card}
-            </Link>
-          ) : card;
-        })}
-      </div>
-
-      {readOnlyMessage ? (
-        <SectionCard>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Report-view state</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Read-only reporting remains available</h2>
-          <p className="mt-2 text-sm text-slate-600">{readOnlyMessage}</p>
-          <p className="mt-3 text-sm text-slate-600">Drill-through links stay available so operators can inspect the dashboard, pipeline, compliance, and audit totals without expanding scope into edit flows.</p>
-        </SectionCard>
-      ) : null}
-
-      {missingMetricContext.length ? (
-        <SectionCard>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Missing metric context</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Some reporting totals are intentionally contained</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
-            {missingMetricContext.map((item) => (
-              <li key={item}>{item}</li>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            {(['30d', '60d', '90d'] as const).map((item) => (
+              <button key={item} type="button" onClick={() => setRange(item)} className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${range === item ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{RANGE_LABELS[item]}</button>
             ))}
-          </ul>
-        </SectionCard>
-      ) : null}
+          </div>
+          <select value={market} onChange={(event) => setMarket(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm">
+            {markets.map((item) => <option key={item} value={item}>{item === 'all' ? 'Market: All' : item}</option>)}
+          </select>
+          <select value={reportType} onChange={(event) => setReportType(event.target.value as ReportType)} className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm">
+            {Object.entries(TYPE_LABELS).map(([key, label]) => <option key={key} value={key}>{`Report Type: ${label}`}</option>)}
+          </select>
+          <DashboardExportModal active="reports" tone="teal" label="Export" />
+        </div>
+      </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <SectionCard>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Conversion visibility</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Pipeline movement baseline</h2>
-              <p className="mt-2 text-sm text-slate-600">A minimal explainable funnel view for leads, RFQ conversion, quote progression, and won-stage movement.</p>
-            </div>
-            <StatusBadge label={`${stageCoverage.length} active stages`} tone="info" />
-          </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lead → RFQ</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{leadsWithRfqs}/{data.leads.length || 0}</p>
-              <p className="mt-2 text-sm text-slate-600">Distinct leads with at least one RFQ on record.</p>
-            </div>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lead → Quote</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{leadsWithQuotes}/{data.leads.length || 0}</p>
-              <p className="mt-2 text-sm text-slate-600">Distinct leads with at least one quote created.</p>
-            </div>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Won leads</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{wonLeadCount}</p>
-              <p className="mt-2 text-sm text-slate-600">Leads currently mapped to won stages.</p>
-            </div>
-          </div>
-          <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
-            <table className="min-w-[640px] divide-y divide-slate-200">
-              <thead className="bg-slate-50/90">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Stage</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Leads</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Stage posture</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {stageCoverage.length ? stageCoverage.map(({ stage, count }) => (
-                  <tr key={stage.id} className="align-top transition hover:bg-slate-50/80">
-                    <td className="px-5 py-4 text-sm font-medium text-slate-900">{stage.name}</td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{count}</td>
-                    <td className="px-5 py-4">
-                      <StatusBadge
-                        label={stage.is_won ? 'Won stage' : stage.is_closed ? 'Closed stage' : 'Open stage'}
-                        tone={stage.is_won ? 'success' : stage.is_closed ? 'neutral' : 'info'}
-                      />
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={3} className="px-5 py-8">
-                      <EmptyState title="No stage distribution yet" description="Lead stage counts will appear once pipeline records are available." />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
+      {readOnlyMessage ? <section className="rounded-[1.35rem] border border-blue-100 bg-blue-50/70 p-4 text-sm font-medium text-blue-800">{readOnlyMessage}</section> : null}
 
-        <SectionCard>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Workflow trends</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Recent operating cadence</h2>
-          <p className="mt-2 text-sm text-slate-600">Recent record creation and audited action volume across the governed workflow surface.</p>
-          <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
-            <table className="min-w-[640px] divide-y divide-slate-200">
-              <thead className="bg-slate-50/90">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Window</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Leads</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">RFQs</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quotes</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Audit events</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {reportingWindows.map((window) => (
-                  <tr key={window.label} className="align-top transition hover:bg-slate-50/80">
-                    <td className="px-5 py-4 text-sm font-medium text-slate-900">{window.label}</td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{window.leads}</td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{window.rfqs}</td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{window.quotes}</td>
-                    <td className="px-5 py-4 text-sm text-slate-600">{window.audit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Reports Generated" value={fmt(Math.max(3, rows.length + openQuotes.length))} helper="live filtered scope" Icon={FileText} />
+        <Metric label="Open Quotes" value={fmt(openQuotes.length)} helper="active in scope" Icon={FileSpreadsheet} />
+        <Metric label="Overdue Follow-ups" value={fmt(overdue.length)} helper="need attention" Icon={Clock3} />
+        <Metric label="Markets Active" value={fmt(markets.length - 1)} helper="available filter options" Icon={Globe2} />
+      </section>
+
+      <ReportCards cards={cards} selected={selected} onOpen={openReport} />
+      <Preview type={selected} rows={rows} onBack={() => setScrollTarget('report-cards')} />
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_17rem]">
+        <div className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-950">Recently Generated Reports</h2>
+            <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${selected}-${range}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Export current preview</button>
           </div>
-          <div className="mt-5 space-y-4">
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Market baseline coverage</p>
-                  <p className="mt-1 text-sm text-slate-600">Active markets with at least one current baseline price.</p>
+          <div className="mt-4 grid gap-3">
+            {REPORTS.slice(0, 3).map((item) => (
+              <div key={item.type} className="grid gap-3 rounded-2xl border border-slate-100 px-4 py-3 text-sm hover:bg-slate-50 md:grid-cols-[1fr_auto] md:items-center">
+                <span className="font-semibold text-slate-900">{item.title} - {RANGE_LABELS[range]}</span>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => openReport(item.type)} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700"><Eye className="h-3.5 w-3.5" />Open</button>
+                  <button type="button" onClick={() => downloadCsv(buildRows(item.type, data, range, market), `setu-flow-${item.type}-${range}.csv`)} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Excel</button>
+                  <button type="button" onClick={() => downloadCsv(buildRows(item.type, data, range, market), `setu-flow-${item.type}-${range}-pdf-ready.csv`)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><FileDown className="h-3.5 w-3.5" />PDF</button>
                 </div>
-                <StatusBadge label={`${priceMarketIds.size}/${activeMarketCount || 0}`} tone={getCoverageTone(priceMarketIds.size, activeMarketCount)} />
               </div>
-            </div>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Compliance blockers</p>
-                  <p className="mt-1 text-sm text-slate-600">High-severity items still open across leads.</p>
-                </div>
-                <StatusBadge label={`${blockedCompliance.length}`} tone={blockedCompliance.length ? 'danger' : 'success'} />
-              </div>
-            </div>
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Task backlog</p>
-                  <p className="mt-1 text-sm text-slate-600">Open tasks that are past due and likely to affect follow-through.</p>
-                </div>
-                <StatusBadge label={`${overdueTasks.length}`} tone={overdueTasks.length ? 'warning' : 'success'} />
-              </div>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/products" className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open products</Link>
-            <Link href="/compliance" className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Open compliance</Link>
-            <Link href="/admin/audit" className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Open audit log</Link>
-          </div>
-        </SectionCard>
-      </div>
-
-      <SectionCard>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Consistency check</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Dashboard and reports totals stay aligned</h2>
-            <p className="mt-2 text-sm text-slate-600">These checks use the same summary metric logic as the dashboard so operators can trust the drill-through totals.</p>
-          </div>
-          <StatusBadge label={`${consistencyChecks.filter((item) => item.dashboard === item.reports).length}/${consistencyChecks.length} aligned`} tone={consistencyChecks.every((item) => item.dashboard === item.reports) ? 'success' : 'warning'} />
-        </div>
-        <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
-          <table className="min-w-[720px] divide-y divide-slate-200">
-            <thead className="bg-slate-50/90">
-              <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Metric</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Dashboard total</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Reports total</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {consistencyChecks.map((item) => (
-                <tr key={item.label} className="align-top transition hover:bg-slate-50/80">
-                  <td className="px-5 py-4 text-sm font-medium text-slate-900"><Link href={item.href} className="hover:text-slate-700">{item.label}</Link></td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{item.dashboard}</td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{item.reports}</td>
-                  <td className="px-5 py-4"><StatusBadge label={item.dashboard === item.reports ? 'Aligned' : 'Review mismatch'} tone={item.dashboard === item.reports ? 'success' : 'warning'} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <SectionCard>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Commercial reporting</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Pricing variance and commercial pressure</h2>
-            <p className="mt-2 text-sm text-slate-600">Use this snapshot to explain quote movement, override posture, and operational blockers without reading raw records.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge label={`${activeProducts.length} active products`} tone="info" />
-            <StatusBadge label={`${overdueTasks.length} overdue tasks`} tone={overdueTasks.length ? 'warning' : 'success'} />
+            ))}
           </div>
         </div>
-        <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
-          <table className="min-w-[760px] divide-y divide-slate-200">
-            <thead className="bg-slate-50/90">
-              <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Line items</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Overrides</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Variance</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Updated</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {recentlyTouchedQuotes.length ? recentlyTouchedQuotes.map(({ quote, lineItems, overridden, variance }) => (
-                <tr key={quote.id} className="align-top transition hover:bg-slate-50/80">
-                  <td className="px-5 py-4 text-sm text-slate-900">{quote.id.slice(0, 8)}</td>
-                  <td className="px-5 py-4"><StatusBadge label={quote.status || 'draft'} tone={isWorkflowOpenStatus(quote.status) ? 'info' : 'neutral'} /></td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{lineItems}</td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{overridden}</td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{variance.toFixed(2)}</td>
-                  <td className="px-5 py-4 text-sm text-slate-600">{formatDateTime(quote.updated_at ?? quote.created_at)}</td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={6} className="px-5 py-8">
-                    <EmptyState title="No recent quotes" description="Recent quote activity will appear here once quote records exist in the workspace." />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <SectionCard>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Audit expansion</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Recent explainable history</h2>
-            <p className="mt-2 text-sm text-slate-600">Recent high-value events across commercial and operations flows, organized for quick review.</p>
-          </div>
-          <StatusBadge label={`${recentAudit.length} visible`} tone="info" />
-        </div>
-        <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          {recentAudit.length ? recentAudit.map((event) => (
-            <article key={event.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge label={getAuditEventLabel(event.event_type)} tone={getAuditEventTone(event.event_type)} />
-                <StatusBadge label={getAuditEventCategory(event.event_type)} tone="neutral" />
-              </div>
-              <p className="mt-3 text-sm font-semibold text-slate-900">{event.entity_type}{event.entity_id ? ` · ${event.entity_id.slice(0, 8)}` : ''}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{getAuditEventSummary(event)}</p>
-              <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{formatDateTime(event.created_at)}</p>
-            </article>
-          )) : (
-            <EmptyState title="No audit events yet" description="Audited product, commercial, compliance, and AI activity will appear here when records are created." />
-          )}
-        </div>
-      </SectionCard>
-    </div>
+        <aside className="rounded-[1.45rem] border border-slate-200 bg-white p-5 text-center shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+          <p className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-950"><Sparkles className="h-4 w-4 text-blue-600" />Need help with reports?</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Setu Guru can help you build custom reports and insights tailored to your export business.</p>
+          <div className="mt-5 flex justify-center"><GuruAvatar size="lg" /></div>
+          <Link href="/setu-guru" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-cyan-700 px-4 py-3 text-sm font-semibold text-white"><Sparkles className="h-4 w-4" />Chat with Setu Guru</Link>
+        </aside>
+      </section>
+    </main>
   );
 }
