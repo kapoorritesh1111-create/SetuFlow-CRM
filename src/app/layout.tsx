@@ -6,7 +6,6 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegistration';
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
-import { ProductsUiPolish } from '@/components/shell/ProductsUiPolish';
 import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -146,7 +145,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ServiceWorkerRegistration />
         <LeadsFilterStability />
         <OfflineStatusBanner />
-        <ProductsUiPolish />
         <DocumentsUiPolish />
         {children}
       </body>
