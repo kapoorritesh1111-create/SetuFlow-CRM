@@ -21,7 +21,6 @@ type EnrichedMarket = CoreReportsData['markets'][number] & {
 
 type EnrichedQuoteLineItem = CoreReportsData['quoteLineItems'][number] & {
   product_id?: string | null;
-  product_name?: string | null;
   quantity?: number | null;
   line_total?: number | null;
   total_price?: number | null;
@@ -63,7 +62,7 @@ export async function getReportsData(organizationId: string): Promise<ReportsDat
     quoteIds.length
       ? supabase
           .from('quote_line_items')
-          .select('id, quote_id, product_id, product_name, quantity, unit_price, catalog_price_amount, is_price_overridden, line_total, total_price')
+          .select('id, quote_id, product_id, quantity, unit_price, catalog_price_amount, is_price_overridden')
           .in('quote_id', quoteIds)
           .limit(720)
       : Promise.resolve({ data: [], error: null }),
