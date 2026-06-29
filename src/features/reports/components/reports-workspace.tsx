@@ -3,14 +3,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  ArrowUpDown,
   BarChart3,
   Building2,
   CalendarDays,
   Clock3,
+  Eye,
+  FileDown,
   FileSpreadsheet,
   FileText,
   Filter,
   Globe2,
+  Search,
   Share2,
   Sparkles,
   Tag,
@@ -36,6 +40,7 @@ type ReportType =
   | 'price-margin'
   | 'buyer-account';
 type ScrollTarget = 'report-cards' | 'active-report';
+type SortDirection = 'asc' | 'desc';
 type ReportRow = Record<string, string | number>;
 type LooseRow = Record<string, unknown>;
 type ReportCard = { title: string; body: string; type: Exclude<ReportType, 'all'>; icon: LucideIcon; tone: string };
@@ -147,6 +152,14 @@ function downloadCsv(rows: ReportRow[], fileName: string) {
   URL.revokeObjectURL(url);
 }
 
+function compareCell(a: string | number, b: string | number) {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  const aNumber = Number(String(a).replace(/[^0-9.-]/g, ''));
+  const bNumber = Number(String(b).replace(/[^0-9.-]/g, ''));
+  if (Number.isFinite(aNumber) && Number.isFinite(bNumber) && String(a).match(/\d/) && String(b).match(/\d/)) return aNumber - bNumber;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
 function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market: string): ReportRow[] {
   const leads = data.leads
     .filter((lead) => inRange(row(lead).updated_at as string | null | undefined, range))
@@ -163,7 +176,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
     .filter((item) => inRange(item.scheduled_at ?? item.created_at, range));
 
   if (type === 'quote-aging') {
-    return quotes.slice(0, 20).map((quote) => {
+    return quotes.slice(0, 40).map((quote) => {
       const days = age(quote.updated_at ?? quote.created_at);
       return {
         Buyer: quote.lead_id ? leadName(leadById.get(quote.lead_id)) : 'No buyer assigned',
@@ -175,7 +188,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
   }
 
   if (type === 'buyer-follow-up') {
-    return followUps.slice(0, 20).map((item) => ({
+    return followUps.slice(0, 40).map((item) => ({
       Buyer: item.lead_id ? leadName(leadById.get(item.lead_id)) : 'No buyer assigned',
       Status: humanize(item.status),
       'Follow-up Due': text(item.scheduled_at, 'No date'),
@@ -184,7 +197,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
   }
 
   if (type === 'product-demand') {
-    return data.quoteLineItems.slice(0, 20).map((item) => {
+    return data.quoteLineItems.slice(0, 40).map((item) => {
       const raw = row(item);
       const product = raw.product_id ? productById.get(String(raw.product_id)) : null;
       return {
@@ -208,7 +221,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
   }
 
   if (type === 'orders-execution') {
-    return leads.slice(0, 20).map((lead) => ({
+    return leads.slice(0, 40).map((lead) => ({
       Buyer: leadName(lead),
       Market: leadMarket(lead),
       Stage: text(stageById.get(String(row(lead).stage_id)), 'Open'),
@@ -217,7 +230,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
   }
 
   if (type === 'price-margin') {
-    return data.products.slice(0, 20).map((product) => ({
+    return data.products.slice(0, 40).map((product) => ({
       Product: productName(product),
       SKU: text(row(product).sku, '-'),
       Status: row(product).is_active === false ? 'Inactive' : 'Active',
@@ -226,7 +239,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
   }
 
   if (type === 'buyer-account') {
-    return leads.slice(0, 20).map((lead) => ({
+    return leads.slice(0, 40).map((lead) => ({
       Buyer: leadName(lead),
       Contact: text(row(lead).contact_name, '-'),
       Market: leadMarket(lead),
@@ -237,7 +250,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
   if (type === 'trade-event-roi') {
     return leads
       .filter((lead) => Boolean(row(lead).trade_event_id || row(lead).trade_show_name))
-      .slice(0, 20)
+      .slice(0, 40)
       .map((lead) => ({
         Event: text(row(lead).trade_show_name, 'Trade event'),
         Buyer: leadName(lead),
@@ -246,7 +259,7 @@ function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market:
       }));
   }
 
-  return leads.slice(0, 20).map((lead) => ({
+  return leads.slice(0, 40).map((lead) => ({
     Buyer: leadName(lead),
     Contact: text(row(lead).contact_name, '-'),
     Market: leadMarket(lead),
@@ -287,7 +300,7 @@ function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selecte
               <div>
                 <h3 className="text-base font-semibold text-slate-950">{card.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
-                <span className="mt-4 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800">Open report</span>
+                <span className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800"><Eye className="h-4 w-4" />Open report</span>
               </div>
             </div>
           </button>
@@ -299,9 +312,28 @@ function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selecte
 
 function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; onBack: () => void }) {
   const headers = rows[0] ? Object.keys(rows[0]) : ['No data'];
+  const [query, setQuery] = useState('');
+  const [sortKey, setSortKey] = useState(headers[0] ?? '');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const activeSortKey = headers.includes(sortKey) ? sortKey : headers[0];
+  const visibleRows = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const filtered = normalizedQuery
+      ? rows.filter((item) => Object.values(item).some((value) => String(value).toLowerCase().includes(normalizedQuery)))
+      : rows;
+    return [...filtered].sort((a, b) => {
+      const result = compareCell(a[activeSortKey] ?? '', b[activeSortKey] ?? '');
+      return sortDirection === 'asc' ? result : -result;
+    });
+  }, [activeSortKey, query, rows, sortDirection]);
+
+  useEffect(() => {
+    if (!headers.includes(sortKey)) setSortKey(headers[0] ?? '');
+  }, [headers, sortKey]);
+
   return (
     <section id="active-report" className="scroll-mt-28 rounded-[1.45rem] border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Active report</p>
           <h2 className="mt-1 text-xl font-semibold text-slate-950">{TYPE_LABELS[type]} Report Preview</h2>
@@ -309,8 +341,24 @@ function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; 
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={onBack} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Back to report cards</button>
-          <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${type}.csv`)} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Export preview</button>
+          <button type="button" onClick={() => downloadCsv(visibleRows, `setu-flow-${type}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"><FileSpreadsheet className="h-4 w-4" />Export Excel</button>
+          <button type="button" onClick={() => downloadCsv(visibleRows, `setu-flow-${type}-pdf-ready.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700"><FileDown className="h-4 w-4" />PDF data</button>
         </div>
+      </div>
+      <div className="mb-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 lg:grid-cols-[1fr_auto_auto]">
+        <label className="relative block">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter this report by buyer, market, stage, action..." className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100" />
+        </label>
+        <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
+          <ArrowUpDown className="h-4 w-4 text-slate-400" />
+          <select value={activeSortKey} onChange={(event) => setSortKey(event.target.value)} className="h-10 bg-transparent outline-none">
+            {headers.map((header) => <option key={header} value={header}>Sort: {header}</option>)}
+          </select>
+        </label>
+        <button type="button" onClick={() => setSortDirection((value) => (value === 'asc' ? 'desc' : 'asc'))} className="rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+        </button>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-[760px] w-full divide-y divide-slate-100">
@@ -318,7 +366,7 @@ function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; 
             <tr>{headers.map((key) => <th key={key} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{key}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.length ? rows.map((item, index) => (
+            {visibleRows.length ? visibleRows.map((item, index) => (
               <tr key={index}>{headers.map((key) => <td key={key} className="px-4 py-3 text-sm text-slate-700">{item[key]}</td>)}</tr>
             )) : (
               <tr><td colSpan={headers.length} className="px-4 py-8 text-center text-sm text-slate-400">No matching report rows for these filters.</td></tr>
@@ -397,14 +445,18 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
         <div className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-950">Recently Generated Reports</h2>
-            <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${selected}-${range}.csv`)} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">Export current preview</button>
+            <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${selected}-${range}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Export current preview</button>
           </div>
           <div className="mt-4 grid gap-3">
             {REPORTS.slice(0, 3).map((item) => (
-              <button key={item.type} type="button" onClick={() => openReport(item.type)} className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 text-left text-sm hover:bg-slate-50">
+              <div key={item.type} className="grid gap-3 rounded-2xl border border-slate-100 px-4 py-3 text-sm hover:bg-slate-50 md:grid-cols-[1fr_auto] md:items-center">
                 <span className="font-semibold text-slate-900">{item.title} - {RANGE_LABELS[range]}</span>
-                <span className="text-blue-600">Open</span>
-              </button>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => openReport(item.type)} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700"><Eye className="h-3.5 w-3.5" />Open</button>
+                  <button type="button" onClick={() => downloadCsv(buildRows(item.type, data, range, market), `setu-flow-${item.type}-${range}.csv`)} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Excel</button>
+                  <button type="button" onClick={() => downloadCsv(buildRows(item.type, data, range, market), `setu-flow-${item.type}-${range}-pdf-ready.csv`)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"><FileDown className="h-3.5 w-3.5" />PDF</button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
