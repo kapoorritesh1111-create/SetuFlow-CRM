@@ -63,7 +63,7 @@ export function ProductsToolbar(props: Props) {
         <SelectField label="Pricing mode" value={props.pricingMode} onChange={props.onPricingModeChange} options={[{ value: 'case', label: 'Case' }, { value: 'unit', label: 'Unit' }, { value: 'kg', label: 'Kg' }]} />
         <SelectField label="Gaps" value={props.gapFilter} onChange={props.onGapFilterChange} options={[{ value: 'all', label: 'All gaps' }, { value: 'has_gap', label: 'Has gap' }, { value: 'complete', label: 'Complete' }]} />
         <SelectField label="Status" value={props.activeFilter} onChange={props.onActiveFilterChange} options={[{ value: 'all', label: 'All rows' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]} />
-        <SelectField label="Quote-ready" value={props.quoteableFilter} onChange={props.onQuoteableChange ?? props.onQuoteableFilterChange} options={[{ value: 'all', label: 'All rows' }, { value: 'quoteable', label: 'In quote' }, { value: 'not_quoteable', label: 'Not in quote' }]} />
+        <SelectField label="Quote-ready" value={props.quoteableFilter} onChange={props.onQuoteableFilterChange} options={[{ value: 'all', label: 'All rows' }, { value: 'quoteable', label: 'In quote' }, { value: 'not_quoteable', label: 'Not in quote' }]} />
         {filtersActive ? <span className="self-end rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">{filtersActive} active</span> : null}
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-medium text-slate-500">
