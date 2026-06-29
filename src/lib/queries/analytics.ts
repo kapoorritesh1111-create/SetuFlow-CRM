@@ -11,7 +11,7 @@ export interface ProductBreakdown { category: string; leadCount: number; activeQ
 export interface PipelineMovement { newPipelineUsd: number; movedForwardUsd: number; stalled14DaysUsd: number; closedWonUsd: number; closedLostUsd: number }
 export interface AnalyticsData { funnel: FunnelStage[]; quoteMetrics: QuoteMetrics; rfqMetrics: RfqMetrics; orderMetrics: OrderMetrics; docSendMetrics: DocSendMetrics; marketBreakdown: MarketBreakdown[]; productBreakdown: ProductBreakdown[]; pipelineMovement: PipelineMovement; pipelineValueUsd: number; lastUpdated: string }
 
-type DateRange = { from?: string | null; to?: string | null };
+type DateRange = { from?: string | null; to?: string | null; market?: string | null };
 type QueryResult<T> = { data: T[] | null; error?: { message?: string } | null };
 type QueryBuilder<T> = PromiseLike<QueryResult<T>> & {
   eq(column: string, value: string | number | boolean): QueryBuilder<T>;
@@ -106,14 +106,17 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
   const previousFrom = currentFrom - windowMs;
 
   const allLeads = leadsRes.data ?? [];
-  const scopedLeadsAll = allLeads.filter((lead) => matchesMode(lead.lead_type, mode));
+  const allMarkets = marketsRes.data ?? [];
+  const requestedMarket = norm(range?.market);
+  const marketScopedLeadIds = new Set(allMarkets.filter((market) => !requestedMarket || requestedMarket === 'all' || norm(market.markets?.name) === requestedMarket).map((market) => market.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
+  const scopedLeadsAll = allLeads.filter((lead) => matchesMode(lead.lead_type, mode) && (!requestedMarket || requestedMarket === 'all' || marketScopedLeadIds.has(lead.id)));
   const scopedLeadIds = new Set(scopedLeadsAll.map((lead) => lead.id));
   const leadsInRange = scopedLeadsAll.filter((lead) => inRange(lead, range));
   const quotes = (quotesRes.data ?? []).filter((quote) => quote.lead_id && scopedLeadIds.has(quote.lead_id) && inRange(quote, range));
   const rfqs = (rfqsRes.data ?? []).filter((rfq) => rfq.lead_id && scopedLeadIds.has(rfq.lead_id) && inRange(rfq, range));
   const orders = (ordersRes.data ?? []).filter((order) => order.lead_id && scopedLeadIds.has(order.lead_id) && inRange(order, range));
   const sends = (sendsRes.data ?? []).filter((send) => inRange(send, range));
-  const markets = (marketsRes.data ?? []).filter((market) => market.lead_id && scopedLeadIds.has(market.lead_id));
+  const markets = allMarkets.filter((market) => market.lead_id && scopedLeadIds.has(market.lead_id));
   const products = (productsRes.data ?? []).filter((product) => product.lead_id && scopedLeadIds.has(product.lead_id) && inRange(product, range));
   const stageHistory = (stageHistoryRes.data ?? []).filter((history) => history.lead_id && scopedLeadIds.has(history.lead_id));
 
@@ -162,9 +165,7 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
   const marketMap = new Map<string, { ids: Set<string>; currentValue: number; previousValue: number }>();
   markets.forEach((market) => {
     const name = market.markets?.name ?? 'Unknown market';
-    if (market.lead_id) {
-      leadMarketNames.set(market.lead_id, [...(leadMarketNames.get(market.lead_id) ?? []), name]);
-    }
+    if (market.lead_id) leadMarketNames.set(market.lead_id, [...(leadMarketNames.get(market.lead_id) ?? []), name]);
     if (!marketMap.has(name)) marketMap.set(name, { ids: new Set(), currentValue: 0, previousValue: 0 });
     const bucket = marketMap.get(name);
     if (!bucket || !market.lead_id) return;
