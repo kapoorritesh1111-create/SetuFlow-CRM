@@ -45,6 +45,12 @@ function countrySlug(value?: string | null) {
     .trim();
 }
 
+function localFlagCandidates(iso2: string) {
+  const lower = iso2.toLowerCase();
+  const upper = iso2.toUpperCase();
+  return [`/flag/${lower}.svg`, `/flag/${lower}.png`, `/flag/${upper}.svg`, `/flag/${upper}.png`];
+}
+
 export function CountryFlagPill({
   countryName,
   iso2Code,
@@ -61,6 +67,7 @@ export function CountryFlagPill({
   className?: string;
 }) {
   const [workspaceCountries, setWorkspaceCountries] = useState<CountryFlagPillCountry[] | null>(cachedCountries);
+  const [fallbackIndex, setFallbackIndex] = useState(0);
 
   useEffect(() => {
     if (iso2Code || countries?.length) return;
@@ -85,19 +92,25 @@ export function CountryFlagPill({
 
   const name = String(matched?.name ?? countryName ?? '').trim();
   const iso2 = normalizeIso2(matched?.iso2_code ?? iso2Code);
+  const candidates = iso2 ? localFlagCandidates(iso2) : [];
+  const src = candidates[fallbackIndex] ?? '';
+
+  useEffect(() => {
+    setFallbackIndex(0);
+  }, [iso2]);
 
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700', className)} title={name || 'No country'}>
-      {iso2 ? (
+      {iso2 && src ? (
         <img
-          src={`https://flagcdn.com/24x18/${iso2}.png`}
-          srcSet={`https://flagcdn.com/48x36/${iso2}.png 2x, https://flagcdn.com/72x54/${iso2}.png 3x`}
+          src={src}
           width="16"
           height="12"
           alt=""
           aria-hidden="true"
           className="shrink-0 rounded-[2px] border border-black/10 object-cover"
           loading="lazy"
+          onError={() => setFallbackIndex((current) => current + 1)}
         />
       ) : (
         <span aria-hidden="true" className="inline-flex h-3 w-4 shrink-0 items-center justify-center rounded-[2px] border border-slate-200 bg-white text-[8px] font-black text-slate-400">--</span>
