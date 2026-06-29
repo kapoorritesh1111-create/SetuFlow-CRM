@@ -3,6 +3,7 @@ import { siWhatsapp } from 'simple-icons/icons';
 import {
   AlertTriangle,
   BarChart3,
+  Bell,
   Briefcase,
   Building2,
   Camera,
@@ -71,6 +72,8 @@ const ICONS: Record<string, LucideIcon> = {
   archive: Package,
   'bar-chart': BarChart3,
   bars: LayoutDashboard,
+  bell: Bell,
+  'bell-o': Bell,
   billing: CreditCard,
   briefcase: Briefcase,
   building: Building2,
