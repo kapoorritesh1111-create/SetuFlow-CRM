@@ -2,6 +2,25 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import {
+  BarChart3,
+  Building2,
+  CalendarDays,
+  ChevronDown,
+  Clock3,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  Globe2,
+  Plus,
+  Share2,
+  Sparkles,
+  Tag,
+  Truck,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import type { ReportsData } from '@/lib/queries/reports';
 import { isWorkflowOpenStatus } from '@/lib/reporting/summary-metrics';
@@ -11,7 +30,7 @@ type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'teal' | 'red';
 type ReportCard = {
   title: string;
   description: string;
-  icon: string;
+  Icon: LucideIcon;
   tone: Tone;
   href: string;
 };
@@ -20,63 +39,63 @@ const REPORT_CARDS: ReportCard[] = [
   {
     title: 'Sales Pipeline Report',
     description: 'Track pipeline value, stage breakdown, and conversion by market.',
-    icon: '▽',
+    Icon: Filter,
     tone: 'blue',
     href: '/pipeline',
   },
   {
     title: 'Quote Aging Report',
     description: 'See pending quotes by age bucket to prioritize follow-ups and close faster.',
-    icon: '◷',
+    Icon: Clock3,
     tone: 'orange',
     href: '/quotes',
   },
   {
     title: 'Product Demand Report',
     description: 'Discover top demanded products and buyer interest across markets.',
-    icon: '▥',
+    Icon: BarChart3,
     tone: 'green',
     href: '/products',
   },
   {
     title: 'Market Performance Report',
     description: 'Compare performance by market including pipeline, orders, and revenue.',
-    icon: '◎',
+    Icon: Globe2,
     tone: 'purple',
     href: '/markets',
   },
   {
     title: 'Buyer Follow-up Report',
     description: 'Track follow-up activity, response rates, and gaps by buyer.',
-    icon: '♙',
+    Icon: Users,
     tone: 'blue',
     href: '/leads',
   },
   {
     title: 'Orders & Execution Report',
     description: 'Monitor order status, fulfillment timelines, and on-time delivery performance.',
-    icon: '▣',
+    Icon: Truck,
     tone: 'teal',
     href: '/orders',
   },
   {
     title: 'Trade Event ROI Report',
     description: 'Evaluate trade show performance, leads generated, and revenue influenced.',
-    icon: '▤',
+    Icon: CalendarDays,
     tone: 'purple',
     href: '/trade-events',
   },
   {
     title: 'Price / Margin Report',
     description: 'Analyze selling prices, COGS, and margin pressure by product and market.',
-    icon: '◇',
+    Icon: Tag,
     tone: 'orange',
     href: '/products',
   },
   {
     title: 'Buyer Account Report',
     description: 'Complete view of buyer activity, quotations, orders, and spend by account.',
-    icon: '▦',
+    Icon: Building2,
     tone: 'teal',
     href: '/accounts',
   },
@@ -95,12 +114,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function fmt(value: number) {
   return value.toLocaleString('en-US');
-}
-
-function money(value: number) {
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}M`;
-  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
-  return `$${Math.round(value)}`;
 }
 
 function ageDays(value: string | null | undefined) {
@@ -122,12 +135,12 @@ function downloadCsv(rows: Array<Record<string, string | number>>, fileName: str
   URL.revokeObjectURL(url);
 }
 
-function MetricCard({ label, value, helper, icon, tone }: { label: string; value: string | number; helper: string; icon: string; tone: Tone }) {
+function MetricCard({ label, value, helper, Icon, tone }: { label: string; value: string | number; helper: string; Icon: LucideIcon; tone: Tone }) {
   const classes = toneClasses[tone];
   return (
     <article className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
       <div className="flex items-center gap-4">
-        <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl font-black ${classes.icon}`}>{icon}</span>
+        <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full ${classes.icon}`}><Icon className="h-7 w-7" strokeWidth={2.15} /></span>
         <div className="min-w-0">
           <p className="text-sm font-bold text-slate-800">{label}</p>
           <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{value}</p>
@@ -138,21 +151,23 @@ function MetricCard({ label, value, helper, icon, tone }: { label: string; value
   );
 }
 
-function FilterButton({ children }: { children: React.ReactNode }) {
+function FilterButton({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
     <button type="button" className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
+      <Icon className="h-4 w-4 text-slate-600" />
       {children}
-      <span className="text-slate-400">⌄</span>
+      <ChevronDown className="h-4 w-4 text-slate-400" />
     </button>
   );
 }
 
 function ReportLibraryCard({ item }: { item: ReportCard }) {
   const classes = toneClasses[item.tone];
+  const Icon = item.Icon;
   return (
     <Link href={item.href} className="group rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
       <div className="flex gap-4">
-        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-xl font-black ${classes.icon}`}>{item.icon}</span>
+        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${classes.icon}`}><Icon className="h-6 w-6" strokeWidth={2.1} /></span>
         <div className="min-w-0">
           <h3 className="text-base font-black text-slate-950">{item.title}</h3>
           <p className="mt-2 min-h-[3rem] text-sm leading-6 text-slate-600">{item.description}</p>
@@ -173,12 +188,6 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
     const openQuotes = data.quotes.filter((quote) => isWorkflowOpenStatus(quote.status));
     const overdueFollowUps = data.followUps.filter((item) => item.scheduled_at && isWorkflowOpenStatus(item.status) && new Date(item.scheduled_at).getTime() < now);
     const activeMarkets = data.markets.filter((market) => market.is_active).length;
-    const quoteLineItemsByQuoteId = new Map<string, ReportsData['quoteLineItems']>();
-    for (const item of data.quoteLineItems) {
-      const current = quoteLineItemsByQuoteId.get(item.quote_id) ?? [];
-      current.push(item);
-      quoteLineItemsByQuoteId.set(item.quote_id, current);
-    }
     const pipelineValue = data.leads.reduce((sum, lead) => sum + Number(lead.deal_value ?? 0), 0);
     const quoteAgingHigh = openQuotes.filter((quote) => {
       const days = ageDays(quote.updated_at ?? quote.created_at);
@@ -194,18 +203,21 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
         scope: 'Market: UAE • All Pipelines',
         generatedOn: 'Today • 10:24 AM',
         tone: 'red' as Tone,
+        Icon: FileText,
       },
       {
         name: 'Quote Aging — Apparel Demo — Last 60 Days',
         scope: 'Event: Apparel Demo • All Markets',
         generatedOn: 'Yesterday • 04:18 PM',
         tone: 'green' as Tone,
+        Icon: FileSpreadsheet,
       },
       {
         name: 'Product Demand — Cotton / Linen — Q2',
         scope: 'Products: Cotton, Linen • Q2 2025',
         generatedOn: 'May 29, 2025 • 11:07 AM',
         tone: 'red' as Tone,
+        Icon: FileText,
       },
     ];
 
@@ -220,7 +232,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
     ];
 
     return { openQuotes, overdueFollowUps, activeMarkets, quoteAgingHigh, wonLeads, generatedCount, pipelineValue, recentReports, exportRows };
-  }, [data.followUps, data.leads, data.markets, data.quoteLineItems, data.quotes, data.rfqs.length, data.stages, dateRange, now]);
+  }, [data.followUps, data.leads, data.markets, data.quotes, data.rfqs.length, data.stages, dateRange, now]);
 
   return (
     <main className="space-y-6">
@@ -237,10 +249,10 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
               </button>
             ))}
           </div>
-          <FilterButton>🌐 Market: All</FilterButton>
-          <FilterButton>☷ Report Type: All</FilterButton>
+          <FilterButton icon={Globe2}>Market: All</FilterButton>
+          <FilterButton icon={Filter}>Report Type: All</FilterButton>
           <button type="button" onClick={() => downloadCsv(reportData.exportRows, `setu-flow-reports-${dateRange}.csv`)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-cyan-700 px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(15,118,110,0.28)] transition hover:from-teal-800 hover:to-cyan-800">
-            ＋ Create / Export Report
+            <Plus className="h-4 w-4" /> Create / Export Report
           </button>
         </div>
       </section>
@@ -252,10 +264,10 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Reports Generated" value={fmt(reportData.generatedCount)} helper="↑ 23.1% vs previous period" icon="□" tone="blue" />
-        <MetricCard label="Open Quotes" value={fmt(reportData.openQuotes.length)} helper="↑ 12.4% active" icon="⌘" tone="green" />
-        <MetricCard label="Overdue Follow-ups" value={fmt(reportData.overdueFollowUps.length)} helper={`${Math.min(reportData.overdueFollowUps.length, 6)} need attention`} icon="◷" tone="orange" />
-        <MetricCard label="Markets Active" value={fmt(reportData.activeMarkets)} helper="↑ 2 new this period" icon="◎" tone="teal" />
+        <MetricCard label="Reports Generated" value={fmt(reportData.generatedCount)} helper="↑ 23.1% vs previous period" Icon={FileText} tone="blue" />
+        <MetricCard label="Open Quotes" value={fmt(reportData.openQuotes.length)} helper="↑ 12.4% active" Icon={FileSpreadsheet} tone="green" />
+        <MetricCard label="Overdue Follow-ups" value={fmt(reportData.overdueFollowUps.length)} helper={`${Math.min(reportData.overdueFollowUps.length, 6)} need attention`} Icon={Clock3} tone="orange" />
+        <MetricCard label="Markets Active" value={fmt(reportData.activeMarkets)} helper="↑ 2 new this period" Icon={Globe2} tone="teal" />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -284,16 +296,17 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
               <tbody className="divide-y divide-slate-100">
                 {reportData.recentReports.map((report) => {
                   const classes = toneClasses[report.tone];
+                  const Icon = report.Icon;
                   return (
                     <tr key={report.name} className="align-middle transition hover:bg-slate-50/70">
-                      <td className="px-4 py-4 text-sm font-bold text-slate-900"><span className={`mr-3 inline-flex rounded-lg border px-2 py-1 text-[11px] font-black ${classes.pill}`}>PDF</span>{report.name}</td>
+                      <td className="px-4 py-4 text-sm font-bold text-slate-900"><span className={`mr-3 inline-flex rounded-lg border p-1.5 ${classes.pill}`}><Icon className="h-4 w-4" /></span>{report.name}</td>
                       <td className="px-4 py-4 text-sm text-slate-600">{report.scope}</td>
                       <td className="px-4 py-4 text-sm text-slate-600">{report.generatedOn}</td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-2">
-                          <button type="button" className="rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black text-red-600">PDF</button>
-                          <button type="button" onClick={() => downloadCsv(reportData.exportRows, `${report.name.toLowerCase().replaceAll(' ', '-')}.csv`)} className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">Excel</button>
-                          <button type="button" className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700">Share</button>
+                          <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black text-red-600"><FileText className="h-3.5 w-3.5" />PDF</button>
+                          <button type="button" onClick={() => downloadCsv(reportData.exportRows, `${report.name.toLowerCase().replaceAll(' ', '-')}.csv`)} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Excel</button>
+                          <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700"><Share2 className="h-3.5 w-3.5" />Share</button>
                         </div>
                       </td>
                     </tr>
@@ -305,10 +318,10 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
         </div>
 
         <aside className="rounded-[1.45rem] border border-slate-200 bg-white p-5 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-          <p className="text-sm font-black text-slate-950">✦ Need help with reports?</p>
+          <p className="flex items-center justify-center gap-2 text-sm font-black text-slate-950"><Sparkles className="h-4 w-4 text-blue-600" />Need help with reports?</p>
           <p className="mt-3 text-sm leading-6 text-slate-600">Setu Guru can help you build custom reports and insights tailored to your export business.</p>
           <div className="mt-5 flex justify-center"><GuruAvatar size="lg" /></div>
-          <Link href="/setu-guru" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-cyan-700 px-4 py-3 text-sm font-black text-white shadow-[0_12px_28px_rgba(15,118,110,0.24)]">○ Chat with Setu Guru</Link>
+          <Link href="/setu-guru" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-cyan-700 px-4 py-3 text-sm font-black text-white shadow-[0_12px_28px_rgba(15,118,110,0.24)]"><Sparkles className="h-4 w-4" />Chat with Setu Guru</Link>
         </aside>
       </section>
     </main>
