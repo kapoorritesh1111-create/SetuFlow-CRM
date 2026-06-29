@@ -117,3 +117,54 @@ export type LeadDrawerLead = Pick<LeadRow,
   'trade_event_id' | 'notes' | 'website' | 'social_handle' | 'deal_value' | 'deal_currency' |
   'pipeline_id' | 'intro_sent' | 'phone_country_code' | 'phone_secondary_country_code'
 >;
+
+export type LeadDrawerSavePayload = {
+  resetForNextLead: boolean;
+  lead?: LeadDrawerLead;
+  selectedMarketIds?: string[];
+  selectedProductIds?: string[];
+};
+
+export type LeadDrawerProps = {
+  lead?: LeadDrawerLead;
+  stages: Stage[];
+  pipelines: Pipeline[];
+  nextSteps: Option[];
+  tradeEvents: Option[];
+  productCategories?: ProductCategory[];
+  products: Product[];
+  markets: Market[];
+  variants?: Variant[];
+  prices?: Price[];
+  pricingRules?: PricingRule[];
+  profiles: Profile[];
+  countries: Country[];
+  followUps?: FollowUp[];
+  activities?: Activity[];
+  stageHistory?: StageHistory[];
+  rfqs?: Rfq[];
+  quotes?: Quote[];
+  quoteVersions?: QuoteVersion[];
+  documents?: LeadDocument[];
+  complianceItems?: ComplianceItem[];
+  complianceDefinitions?: ComplianceDefinition[];
+  selectedMarketIds?: string[];
+  selectedProductIds?: string[];
+  currentUserId?: string;
+  open?: boolean;
+  onClose?: () => void;
+  onSaved?: (result: LeadDrawerSavePayload) => void;
+  onOpenInlineQuote?: (leadId: string, quoteId?: string | null) => void;
+  mode?: 'quick' | 'full';
+  title?: string;
+  canNavigatePrev?: boolean;
+  canNavigateNext?: boolean;
+  onNavigatePrev?: () => void;
+  onNavigateNext?: () => void;
+  navigationMeta?: string;
+  initialStepId?: LeadWizardStepId;
+  prefill?: LeadQuickCapturePrefill | null;
+  fastFieldMode?: boolean;
+  /** S24-TRIAL-203: true only for guided-trial orgs; gates trial coaching UI inside the drawer. */
+  guidedTrialCoach?: boolean;
+};
