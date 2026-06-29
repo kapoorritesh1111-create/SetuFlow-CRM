@@ -16,7 +16,9 @@ body.${BODY_CLASS} header[style] {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.035) !important;
 }
 
-body.${BODY_CLASS} [class*="font-black"],
+body.${BODY_CLASS} [style*="font-weight: 800"],
+body.${BODY_CLASS} [style*="fontWeight:800"],
+body.${BODY_CLASS} [style*="fontWeight: 800"],
 body.${BODY_CLASS} [class*="font-extrabold"],
 body.${BODY_CLASS} [class*="font-bold"] {
   font-weight: 650 !important;
@@ -35,19 +37,17 @@ body.${BODY_CLASS} main div.space-y-4 {
 
 body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(1) {
   order: 2 !important;
-  padding: 12px 14px !important;
-  border: 1px solid rgba(148, 163, 184, 0.22) !important;
-  border-radius: 22px !important;
-  background: rgba(255,255,255,0.92) !important;
-  box-shadow: 0 12px 30px rgba(15,23,42,0.04) !important;
-}
-
-body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(1) > div:first-child {
-  display: none !important;
+  max-height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(2) {
-  order: 3 !important;
+  order: 2 !important;
 }
 
 body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(3) {
@@ -59,7 +59,7 @@ body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(3) {
 }
 
 body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(4) {
-  order: 4 !important;
+  order: 3 !important;
 }
 
 body.${BODY_CLASS} main div.space-y-5 > section:nth-of-type(3) form input,
