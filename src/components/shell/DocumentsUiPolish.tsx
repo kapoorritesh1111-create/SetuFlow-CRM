@@ -27,6 +27,36 @@ body.${BODY_CLASS} [class*="font-bold"] {
 body.${BODY_CLASS} [class*="uppercase"] {
   letter-spacing: 0.08em !important;
 }
+
+body.${BODY_CLASS} section > div.divide-y.divide-slate-100 {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  background: #f6f8fb !important;
+}
+
+body.${BODY_CLASS} section > div.divide-y.divide-slate-100 > details {
+  overflow: hidden !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.045) !important;
+}
+
+body.${BODY_CLASS} section > div.divide-y.divide-slate-100 > details > summary {
+  border-bottom-color: rgba(226, 232, 240, 0.78) !important;
+  background: linear-gradient(90deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+body.${BODY_CLASS} section > div.divide-y.divide-slate-100 > details + details {
+  border-top-width: 1px !important;
+}
+
+body.${BODY_CLASS} section > div.divide-y.divide-slate-100 > details svg {
+  width: 1.08em !important;
+  height: 1.08em !important;
+}
 `;
 
 export function DocumentsUiPolish() {
