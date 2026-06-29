@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { BrandColorInputEnhancer } from '@/components/shell/BrandColorInputEnhancer';
+import { ShellProfileMenuBridge } from '@/components/shell/ShellProfileMenuBridge';
 import { listPending } from '@/lib/offline/lead-queue';
 
 type BannerState = {
@@ -87,6 +88,7 @@ export function OfflineStatusBanner() {
   return (
     <>
       <BrandColorInputEnhancer />
+      <ShellProfileMenuBridge />
       {banner}
     </>
   );
