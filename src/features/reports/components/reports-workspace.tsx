@@ -28,6 +28,7 @@ type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'teal' | 'red';
 type RangeKey = '30d' | '60d' | '90d';
 type ReportType = 'all' | 'pipeline' | 'quote-aging' | 'product-demand' | 'market-performance' | 'buyer-follow-up' | 'orders-execution' | 'trade-event-roi' | 'price-margin' | 'buyer-account';
 type ReportRow = Record<string, string | number>;
+type LooseRow = Record<string, unknown>;
 type ReportCard = { title: string; description: string; Icon: LucideIcon; tone: Tone; type: Exclude<ReportType, 'all'> };
 
 const REPORT_CARDS: ReportCard[] = [
@@ -93,20 +94,24 @@ function safeName(value: unknown, fallback = 'Not specified') {
   return String(value ?? '').trim() || fallback;
 }
 
+function asRow(value: unknown): LooseRow {
+  return value as LooseRow;
+}
+
 function leadMarket(lead: ReportsData['leads'][number]) {
-  const raw = lead as Record<string, unknown>;
+  const raw = asRow(lead);
   return safeName(raw.country ?? raw.market ?? raw.company_country, 'Unknown market');
 }
 
 function reportCollections(data: ReportsData) {
-  const raw = data as unknown as Record<string, unknown>;
+  const raw = asRow(data);
   return {
     leads: data.leads,
     quotes: data.quotes,
     followUps: data.followUps,
     quoteLineItems: data.quoteLineItems,
-    products: Array.isArray(raw.products) ? (raw.products as Array<Record<string, unknown>>) : [],
-    orders: Array.isArray(raw.orders) ? (raw.orders as Array<Record<string, unknown>>) : [],
+    products: Array.isArray(raw.products) ? (raw.products as LooseRow[]) : [],
+    orders: Array.isArray(raw.orders) ? (raw.orders as LooseRow[]) : [],
   };
 }
 
@@ -176,7 +181,7 @@ function ReportLibraryCard({ item, active, onSelect }: { item: ReportCard; activ
 function buildReportRows(type: ReportType, data: ReportsData, range: RangeKey, market: string): ReportRow[] {
   const collections = reportCollections(data);
   const leads = collections.leads
-    .filter((lead) => inRange((lead as Record<string, unknown>).updated_at as string | null | undefined, range))
+    .filter((lead) => inRange(asRow(lead).updated_at as string | null | undefined, range))
     .filter((lead) => market === 'all' || leadMarket(lead) === market);
   const leadIds = new Set(leads.map((lead) => lead.id));
   const quotes = collections.quotes
@@ -187,10 +192,10 @@ function buildReportRows(type: ReportType, data: ReportsData, range: RangeKey, m
     .filter((item) => inRange(item.scheduled_at ?? item.created_at, range));
 
   if (type === 'quote-aging') {
-    return quotes.slice(0, 20).map((quote) => ({ Quote: safeName((quote as Record<string, unknown>).quote_number, quote.id.slice(0, 8)), Status: safeName(quote.status), AgeDays: ageDays(quote.updated_at ?? quote.created_at) ?? 0, FollowUp: safeName((quote as Record<string, unknown>).follow_up_at, 'No date') }));
+    return quotes.slice(0, 20).map((quote) => ({ Quote: safeName(asRow(quote).quote_number, quote.id.slice(0, 8)), Status: safeName(quote.status), AgeDays: ageDays(quote.updated_at ?? quote.created_at) ?? 0, FollowUp: safeName(asRow(quote).follow_up_at, 'No date') }));
   }
   if (type === 'buyer-follow-up') {
-    return followUps.slice(0, 20).map((item) => ({ Buyer: safeName(item.lead_id, 'Buyer'), Status: safeName(item.status), Scheduled: safeName(item.scheduled_at, 'No date'), Notes: safeName((item as Record<string, unknown>).notes, '-') }));
+    return followUps.slice(0, 20).map((item) => ({ Buyer: safeName(item.lead_id, 'Buyer'), Status: safeName(item.status), Scheduled: safeName(item.scheduled_at, 'No date'), Notes: safeName(asRow(item).notes, '-') }));
   }
   if (type === 'market-performance') {
     const byMarket = new Map<string, { leads: number; value: number }>();
@@ -198,29 +203,38 @@ function buildReportRows(type: ReportType, data: ReportsData, range: RangeKey, m
       const key = leadMarket(lead);
       const current = byMarket.get(key) ?? { leads: 0, value: 0 };
       current.leads += 1;
-      current.value += Number((lead as Record<string, unknown>).deal_value ?? 0);
+      current.value += Number(asRow(lead).deal_value ?? 0);
       byMarket.set(key, current);
     });
     return Array.from(byMarket.entries()).map(([name, row]) => ({ Market: name, Leads: row.leads, Pipeline: money(row.value) }));
   }
   if (type === 'product-demand') {
-    return collections.quoteLineItems.slice(0, 20).map((item) => ({ Product: safeName((item as Record<string, unknown>).product_name ?? (item as Record<string, unknown>).description, 'Quoted product'), Quantity: Number((item as Record<string, unknown>).quantity ?? 0), Value: money(Number((item as Record<string, unknown>).line_total ?? (item as Record<string, unknown>).total_price ?? 0)) }));
+    return collections.quoteLineItems.slice(0, 20).map((item) => {
+      const row = asRow(item);
+      return { Product: safeName(row.product_name ?? row.description, 'Quoted product'), Quantity: Number(row.quantity ?? 0), Value: money(Number(row.line_total ?? row.total_price ?? 0)) };
+    });
   }
   if (type === 'orders-execution') {
-    const orderSource = collections.orders.length ? collections.orders : leads;
-    return orderSource.slice(0, 20).map((order) => ({ Order: safeName(order.order_number, safeName(order.company_name, 'Order')), Status: safeName(order.status ?? order.stage_id, 'Open'), Value: money(Number(order.total_order_value ?? order.deal_value ?? 0)), Updated: safeName(order.updated_at, '-') }));
+    const orderSource = (collections.orders.length ? collections.orders : leads) as unknown[];
+    return orderSource.slice(0, 20).map((source) => {
+      const order = asRow(source);
+      return { Order: safeName(order.order_number, safeName(order.company_name, 'Order')), Status: safeName(order.status ?? order.stage_id, 'Open'), Value: money(Number(order.total_order_value ?? order.deal_value ?? 0)), Updated: safeName(order.updated_at, '-') };
+    });
   }
   if (type === 'price-margin') {
-    const priceSource = collections.products.length ? collections.products : collections.quoteLineItems;
-    return priceSource.slice(0, 20).map((product) => ({ Product: safeName(product.name ?? product.product_name ?? product.description, 'Product'), SKU: safeName(product.sku ?? product.sku_code, '-'), EXW: money(Number(product.exw_price ?? 0)), FOB: money(Number(product.fob_price ?? product.line_total ?? product.total_price ?? 0)) }));
+    const priceSource = (collections.products.length ? collections.products : collections.quoteLineItems) as unknown[];
+    return priceSource.slice(0, 20).map((source) => {
+      const product = asRow(source);
+      return { Product: safeName(product.name ?? product.product_name ?? product.description, 'Product'), SKU: safeName(product.sku ?? product.sku_code, '-'), EXW: money(Number(product.exw_price ?? 0)), FOB: money(Number(product.fob_price ?? product.line_total ?? product.total_price ?? 0)) };
+    });
   }
   if (type === 'buyer-account') {
-    return leads.slice(0, 20).map((lead) => ({ Buyer: safeName((lead as Record<string, unknown>).company_name), Contact: safeName((lead as Record<string, unknown>).contact_name), Market: leadMarket(lead), Pipeline: money(Number((lead as Record<string, unknown>).deal_value ?? 0)) }));
+    return leads.slice(0, 20).map((lead) => ({ Buyer: safeName(asRow(lead).company_name), Contact: safeName(asRow(lead).contact_name), Market: leadMarket(lead), Pipeline: money(Number(asRow(lead).deal_value ?? 0)) }));
   }
   if (type === 'trade-event-roi') {
-    return leads.filter((lead) => Boolean((lead as Record<string, unknown>).trade_event_id || (lead as Record<string, unknown>).trade_show_name)).slice(0, 20).map((lead) => ({ Event: safeName((lead as Record<string, unknown>).trade_show_name, 'Trade event'), Buyer: safeName((lead as Record<string, unknown>).company_name), Pipeline: money(Number((lead as Record<string, unknown>).deal_value ?? 0)), Stage: safeName((lead as Record<string, unknown>).stage_id, '-') }));
+    return leads.filter((lead) => Boolean(asRow(lead).trade_event_id || asRow(lead).trade_show_name)).slice(0, 20).map((lead) => ({ Event: safeName(asRow(lead).trade_show_name, 'Trade event'), Buyer: safeName(asRow(lead).company_name), Pipeline: money(Number(asRow(lead).deal_value ?? 0)), Stage: safeName(asRow(lead).stage_id, '-') }));
   }
-  return leads.slice(0, 20).map((lead) => ({ Buyer: safeName((lead as Record<string, unknown>).company_name), Market: leadMarket(lead), Pipeline: money(Number((lead as Record<string, unknown>).deal_value ?? 0)), Updated: safeName((lead as Record<string, unknown>).updated_at, '-') }));
+  return leads.slice(0, 20).map((lead) => ({ Buyer: safeName(asRow(lead).company_name), Market: leadMarket(lead), Pipeline: money(Number(asRow(lead).deal_value ?? 0)), Updated: safeName(asRow(lead).updated_at, '-') }));
 }
 
 function ReportPreview({ type, rows, onExport }: { type: ReportType; rows: ReportRow[]; onExport: () => void }) {
@@ -260,7 +274,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
     const openQuotes = data.quotes.filter((quote) => isWorkflowOpenStatus(quote.status) && inRange(quote.updated_at ?? quote.created_at, dateRange));
     const overdueFollowUps = data.followUps.filter((item) => item.scheduled_at && isWorkflowOpenStatus(item.status) && new Date(item.scheduled_at).getTime() < now && inRange(item.scheduled_at, dateRange));
     const scopedLeads = data.leads.filter((lead) => market === 'all' || leadMarket(lead) === market);
-    const pipelineValue = scopedLeads.reduce((sum, lead) => sum + Number((lead as Record<string, unknown>).deal_value ?? 0), 0);
+    const pipelineValue = scopedLeads.reduce((sum, lead) => sum + Number(asRow(lead).deal_value ?? 0), 0);
     const activeMarkets = marketOptions.length - 1;
     const generatedCount = Math.max(3, Math.min(99, activeRows.length + openQuotes.length));
     const exportRows = [
