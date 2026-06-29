@@ -203,38 +203,29 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
 
   return (
     <div className="space-y-3">
-      <section className="rounded-[1.4rem] border border-slate-200/80 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-sky-300">Catalog</div>
-            <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-slate-950 dark:text-slate-50">Products & Pricing</h1>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">Manage products, variants, baselines, MOQ defaults, and quote-ready pricing without leaving the catalog workspace.</p>
-          </div>
-          <div className="flex flex-col gap-3 xl:items-end">
-            <div className="inline-flex w-fit rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-900/85">
+      <section className="rounded-[1.35rem] border border-slate-200/80 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-900/85">
               {[{ key: 'products', label: 'Products' }, { key: 'pricing', label: 'Pricing view' }, { key: 'spreadsheet', label: 'Spreadsheet' }].map((mode) => (
-                <button key={mode.key} type="button" onClick={() => setCatalogMode(mode.key as typeof catalogMode)} className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${catalogMode === mode.key ? 'bg-slate-950 text-white shadow-sm dark:bg-sky-500 dark:text-slate-950' : 'text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800'}`}>{mode.label}</button>
+                <button key={mode.key} type="button" onClick={() => setCatalogMode(mode.key as typeof catalogMode)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${catalogMode === mode.key ? 'bg-slate-950 text-white shadow-sm dark:bg-sky-500 dark:text-slate-950' : 'text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800'}`}>{mode.label}</button>
               ))}
             </div>
-            <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
-              <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Export</a>
-              <button type="button" onClick={() => setCatalogMode('pricing')} className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Pricing calculator</button>
-              <Link href="/price-lists" className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Price Lists</Link>
-              <Link href="/catalog" className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Buyer shares</Link>
-              <Link href={tradeShowReadyHref} className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Quote handoff</Link>
-              <button type="button" data-tour="add-product" className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${workspacePrimaryButtonClass}`} onClick={openAddProduct}>＋ Add product</button>
-            </div>
+            <div className="hidden h-7 w-px bg-slate-200 lg:block dark:bg-slate-800" />
+            <button type="button" onClick={() => { setCategory(''); setGapFilter('all'); setQuoteableFilter('all'); }} className="rounded-full border border-slate-200 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white dark:border-slate-700 dark:bg-sky-500 dark:text-slate-950">All products <span className="ml-1 text-white/70">{summary?.visible_products ?? filteredProductCount}</span></button>
+            <button type="button" onClick={() => setGapFilter('has_gap')} className="rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-slate-900 dark:text-amber-200">Pricing gaps <span className="ml-1 text-amber-500">{gapRows}</span></button>
+            <button type="button" onClick={() => setQuoteableFilter('quoteable')} className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-slate-900 dark:text-emerald-200">Quote-ready <span className="ml-1 text-emerald-500">{quoteReadyRows.length}</span></button>
+          </div>
+          <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
+            <a href="/api/products/spreadsheet?page_size=1000" className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Export</a>
+            <button type="button" onClick={() => setCatalogMode('pricing')} className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Pricing calculator</button>
+            <Link href="/price-lists" className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Price Lists</Link>
+            <Link href="/catalog" className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Buyer shares</Link>
+            <Link href={tradeShowReadyHref} className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${workspaceSecondaryButtonClass}`}>Quote handoff</Link>
+            <button type="button" data-tour="add-product" className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${workspacePrimaryButtonClass}`} onClick={openAddProduct}>＋ Add product</button>
           </div>
         </div>
       </section>
-
-      <div className="flex flex-wrap items-center gap-2 rounded-[1.2rem] border border-slate-200/80 bg-white px-4 py-3 text-xs font-semibold shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-        <span className="mr-1 text-[10px] uppercase tracking-[0.14em] text-slate-400">Quick filters</span>
-        <button type="button" onClick={() => { setCategory(''); setGapFilter('all'); setQuoteableFilter('all'); }} className="rounded-full border border-slate-200 bg-slate-950 px-3 py-1.5 text-white dark:border-slate-700 dark:bg-sky-500 dark:text-slate-950">All products <span className="ml-1 text-white/70">{summary?.visible_products ?? filteredProductCount}</span></button>
-        <button type="button" onClick={() => setGapFilter('has_gap')} className="rounded-full border border-amber-200 bg-white px-3 py-1.5 text-amber-700 dark:border-amber-900/60 dark:bg-slate-900 dark:text-amber-200">Pricing gaps <span className="ml-1 text-amber-500">{gapRows}</span></button>
-        <button type="button" onClick={() => setQuoteableFilter('quoteable')} className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-emerald-700 dark:border-emerald-900/60 dark:bg-slate-900 dark:text-emerald-200">Quote-ready <span className="ml-1 text-emerald-500">{quoteReadyRows.length}</span></button>
-        <span className="ml-auto hidden text-xs font-medium text-slate-400 lg:inline">Use the filter bar below for category, status, pricing mode, and quote-ready rules.</span>
-      </div>
 
       {!canManageCatalog && readOnlyMessage ? <StateMessage title="Read-only mode is active" tone="warning" description={readOnlyMessage} /> : null}
       {error ? <StateMessage title="Products refresh failed" tone="danger" description={error} /> : null}
@@ -262,11 +253,11 @@ export function ProductsSpreadsheetPage({ canManageCatalog = true, readOnlyMessa
       />
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <button type="button" onClick={() => { setCategory(''); setGapFilter('all'); setActiveFilter('all'); setQuoteableFilter('all'); }} className={cn('text-left', workspaceMetricClass)}><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Total products</div><div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary?.visible_products ?? filteredProductCount}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">Across {summary?.categories_visible ?? categories.length} categories</p></button>
-        <button type="button" onClick={() => setQuoteableFilter('quoteable')} className={cn('text-left', workspaceMetricClass)}><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Quote-ready</div><div className="mt-2 text-2xl font-semibold text-emerald-700 dark:text-emerald-200">{summary?.quote_ready_variants ?? 0}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{quoteReadyCoverage} coverage</p></button>
-        <button type="button" onClick={() => setGapFilter('has_gap')} className={cn('text-left', workspaceMetricClass)}><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Pricing gaps</div><div className="mt-2 text-2xl font-semibold text-amber-700 dark:text-amber-200">{gapRows}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{pricingCoverage} priced</p></button>
-        <div className={workspaceMetricClass}><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Variants</div><div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary?.visible_variants ?? rows.length}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{missingMoqRows} missing MOQ</p></div>
-        <div className={workspaceMetricClass}><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Catalog health</div><div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{usdCatalogRows}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{stalePriceRows} stale · Updated {latestPricingUpdate}</p></div>
+        <button type="button" onClick={() => { setCategory(''); setGapFilter('all'); setActiveFilter('all'); setQuoteableFilter('all'); }} className={cn('text-left', workspaceMetricClass)}><div className="flex items-center justify-between"><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Total products</div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-slate-800">▦</span></div><div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary?.visible_products ?? filteredProductCount}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">Across {summary?.categories_visible ?? categories.length} categories</p></button>
+        <button type="button" onClick={() => setQuoteableFilter('quoteable')} className={cn('text-left', workspaceMetricClass)}><div className="flex items-center justify-between"><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Quote-ready</div><span className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-600 dark:bg-emerald-950/40">✓</span></div><div className="mt-2 text-2xl font-semibold text-emerald-700 dark:text-emerald-200">{summary?.quote_ready_variants ?? 0}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{quoteReadyCoverage} coverage</p></button>
+        <button type="button" onClick={() => setGapFilter('has_gap')} className={cn('text-left', workspaceMetricClass)}><div className="flex items-center justify-between"><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Pricing gaps</div><span className="rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-600 dark:bg-amber-950/40">!</span></div><div className="mt-2 text-2xl font-semibold text-amber-700 dark:text-amber-200">{gapRows}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{pricingCoverage} priced</p></button>
+        <div className={workspaceMetricClass}><div className="flex items-center justify-between"><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Variants</div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-slate-800">◫</span></div><div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary?.visible_variants ?? rows.length}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{missingMoqRows} missing MOQ</p></div>
+        <div className={workspaceMetricClass}><div className="flex items-center justify-between"><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">Catalog health</div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-slate-800">◇</span></div><div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{usdCatalogRows}</div><p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{stalePriceRows} stale · Updated {latestPricingUpdate}</p></div>
       </section>
 
       {isEmptyWorkspace ? (
