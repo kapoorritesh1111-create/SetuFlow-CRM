@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   BarChart3,
@@ -35,6 +35,7 @@ type ReportType =
   | 'trade-event-roi'
   | 'price-margin'
   | 'buyer-account';
+type ScrollTarget = 'report-cards' | 'active-report';
 type ReportRow = Record<string, string | number>;
 type LooseRow = Record<string, unknown>;
 type ReportCard = { title: string; body: string; type: Exclude<ReportType, 'all'>; icon: LucideIcon; tone: string };
@@ -271,7 +272,7 @@ function Metric({ label, value, helper, Icon }: { label: string; value: string |
 
 function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selected: ReportType; onOpen: (type: Exclude<ReportType, 'all'>) => void }) {
   return (
-    <section id="report-cards" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section id="report-cards" className="scroll-mt-24 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -299,7 +300,7 @@ function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selecte
 function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; onBack: () => void }) {
   const headers = rows[0] ? Object.keys(rows[0]) : ['No data'];
   return (
-    <section id="active-report" className="scroll-mt-24 rounded-[1.45rem] border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+    <section id="active-report" className="scroll-mt-28 rounded-[1.45rem] border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Active report</p>
@@ -329,15 +330,12 @@ function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; 
   );
 }
 
-function scrollTo(id: string) {
-  setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
-}
-
 export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData; readOnlyMessage?: string | null }) {
   const [range, setRange] = useState<RangeKey>('30d');
   const [market, setMarket] = useState('all');
   const [reportType, setReportType] = useState<ReportType>('all');
   const [selected, setSelected] = useState<ReportType>('pipeline');
+  const [scrollTarget, setScrollTarget] = useState<ScrollTarget | null>(null);
   const now = Date.now();
 
   const markets = useMemo(() => ['all', ...Array.from(new Set(data.leads.map((lead) => leadMarket(lead)).filter(Boolean))).slice(0, 12)], [data.leads]);
@@ -346,9 +344,18 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
   const openQuotes = data.quotes.filter((quote) => isWorkflowOpenStatus(quote.status) && inRange(quote.updated_at ?? quote.created_at, range));
   const overdue = data.followUps.filter((item) => item.scheduled_at && isWorkflowOpenStatus(item.status) && new Date(item.scheduled_at).getTime() < now && inRange(item.scheduled_at, range));
 
+  useEffect(() => {
+    if (!scrollTarget) return undefined;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setScrollTarget(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [rows.length, scrollTarget, selected]);
+
   const openReport = (type: Exclude<ReportType, 'all'>) => {
     setSelected(type);
-    scrollTo('active-report');
+    setScrollTarget('active-report');
   };
 
   return (
@@ -384,7 +391,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
       </section>
 
       <ReportCards cards={cards} selected={selected} onOpen={openReport} />
-      <Preview type={selected} rows={rows} onBack={() => scrollTo('report-cards')} />
+      <Preview type={selected} rows={rows} onBack={() => setScrollTarget('report-cards')} />
 
       <section className="grid gap-5 xl:grid-cols-[1fr_17rem]">
         <div className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
