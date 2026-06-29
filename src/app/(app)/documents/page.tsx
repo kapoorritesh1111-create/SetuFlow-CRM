@@ -83,6 +83,7 @@ function typeIcon(value?: string | null) {
   if (type.includes('freight')) return 'truck';
   if (type.includes('evidence')) return 'cloud-upload';
   if (type.includes('delivery')) return 'truck';
+  if (type.includes('order')) return 'clipboard';
   return 'file-text-o';
 }
 
@@ -109,11 +110,11 @@ function isApproved(status?: string | null) {
 }
 
 function statusBadge(item: DocumentItem) {
-  if (isExpired(item)) return { label: 'Expired', className: 'bg-rose-50 text-rose-700 ring-rose-100', icon: 'warning' };
-  if (isExpiringSoon(item)) return { label: 'Expiring soon', className: 'bg-orange-50 text-orange-700 ring-orange-100', icon: 'clock-o' };
-  if (isNeedsReview(item.status)) return { label: 'Needs review', className: 'bg-amber-50 text-amber-700 ring-amber-100', icon: 'exclamation-circle' };
-  if (isApproved(item.status)) return { label: 'Approved', className: 'bg-emerald-50 text-emerald-700 ring-emerald-100', icon: 'check-circle-o' };
-  return { label: normalize(item.status) || 'Tracked', className: 'bg-slate-100 text-slate-700 ring-slate-200', icon: 'circle-o' };
+  if (isExpired(item)) return { label: 'Expired', className: 'border-rose-200 bg-rose-50 text-rose-700', icon: 'warning' };
+  if (isExpiringSoon(item)) return { label: 'Expiring soon', className: 'border-orange-200 bg-orange-50 text-orange-700', icon: 'clock-o' };
+  if (isNeedsReview(item.status)) return { label: 'Needs review', className: 'border-amber-200 bg-amber-50 text-amber-700', icon: 'exclamation-circle' };
+  if (isApproved(item.status)) return { label: 'Approved', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: 'check-circle-o' };
+  return { label: normalize(item.status) || 'Tracked', className: 'border-slate-200 bg-slate-50 text-slate-700', icon: 'circle-o' };
 }
 
 function rawFileMeta(fileName?: string | null) {
@@ -221,14 +222,21 @@ function sortLabel(searchParams: DocumentsPageProps['searchParams'], sort: strin
   return `${label}${active ? (dir === 'desc' ? ' ↓' : ' ↑') : ''}`;
 }
 
+function iconTile(icon: string, tone: string, size = 'h-12 w-12') {
+  return <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-[1rem] border text-base shadow-[0_10px_22px_rgba(15,23,42,0.045)] ${tone}`}><FaIcon icon={icon} fixedWidth /></span>;
+}
+
 function metricCard(label: string, value: number, helper: string, icon: string, tone: string) {
   return (
-    <div className="rounded-[1.35rem] border border-slate-200/80 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-      <div className="flex items-center gap-3">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}><FaIcon icon={icon} fixedWidth /></span>
-        <div><p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</p><p className="mt-1 text-2xl font-black text-slate-950">{value}</p></div>
+    <div className="rounded-[1.35rem] border border-slate-200/80 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.045)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{value}</p>
+        </div>
+        {iconTile(icon, tone, 'h-11 w-11')}
       </div>
-      <p className="mt-3 text-xs font-semibold text-slate-500">{helper}</p>
+      <p className="mt-3 text-xs font-medium text-slate-500">{helper}</p>
     </div>
   );
 }
@@ -243,20 +251,16 @@ function buildWorkspaceRoute(item: DocumentItem, quote?: QuoteRow | null, order?
 function buildPdfHref(item: DocumentItem, quote?: QuoteRow | null, order?: OrderRow | null, contract?: ContractRow | null) {
   const shareUrl = normalizedPdfShareUrl(item.latestShareUrl);
   if (shareUrl) return shareUrl;
-
   const storagePath = safePdfStoragePath(item.pdfStoragePath);
   if (storagePath) return storagePath;
-
   const type = normalize(item.docType).toLowerCase();
   if (item.relatedEntity === 'quote' && quote?.id && type.includes('quote')) return `/api/quotes/${quote.id}/pdf`;
   if (item.relatedEntity === 'quote' && type.includes('quote')) return `/api/quotes/${item.relatedId}/pdf`;
-
   const legacyContractId = item.legacyContractId ?? order?.legacy_contract_id ?? contract?.id ?? null;
   if (legacyContractId) {
     if (type.includes('invoice') || type.includes('completion')) return `/api/orders/${legacyContractId}/invoice/pdf`;
     if (type.includes('order') || type.includes('dispatch')) return `/api/orders/${legacyContractId}/order-confirmation/pdf`;
   }
-
   return safeExplicitFileUrl(item.fileUrl);
 }
 
@@ -422,17 +426,46 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   }, {});
 
   return (
-    <div className="space-y-5">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0c7fff]">Documents</p><p className="mt-2 max-w-3xl text-sm font-semibold text-slate-600">Manage client documents, generated PDFs, expiry posture, and review status across leads, quotes, and orders.</p></div><div className="flex flex-wrap gap-2"><button type="button" className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm"><FaIcon icon="download" fixedWidth />Export view</button><Link href="/leads" className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#061c2e] px-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(6,28,46,0.2)]"><FaIcon icon="users" fixedWidth />Attach from lead</Link></div></section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{metricCard('Total', items.length, 'Global and order workflow docs', 'file-text-o', 'bg-blue-50 text-[#0c7fff]')}{metricCard('Needs review', needsReview, 'Awaiting action', 'exclamation-circle', 'bg-amber-50 text-amber-700')}{metricCard('Approved', approved, 'Ready to use', 'check-circle-o', 'bg-emerald-50 text-emerald-700')}{metricCard('PDF ready', pdfReady, `${expiringSoon} expiring soon`, 'file-pdf-o', 'bg-rose-50 text-rose-700')}</section>
-
-      <section className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-        <form className="grid gap-3 xl:grid-cols-[1fr_190px_210px_260px_auto]" action="/documents"><label className="relative"><span className="sr-only">Search documents</span><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><FaIcon icon="search" fixedWidth /></span><input name="q" defaultValue={searchParams?.q ?? ''} placeholder="Search documents, clients, orders, quotes..." className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100" /></label><select name="status" defaultValue={searchParams?.status ?? ''} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none"><option value="">All statuses</option>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select><select name="type" defaultValue={searchParams?.type ?? ''} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none"><option value="">All document types</option>{typeOptions.map((type) => <option key={type} value={type}>{documentTypeLabel(type)}</option>)}</select><div className="flex rounded-2xl bg-slate-100 p-1">{['client', 'status', 'type', 'timeline'].map((view) => (<button key={view} type="submit" name="view" value={view} className={`flex-1 rounded-xl px-3 py-2 text-xs font-black capitalize transition ${selectedView === view ? 'bg-[#0c7fff] text-white shadow-sm' : 'text-slate-600 hover:bg-white'}`}>{view}</button>))}</div><div className="flex gap-2"><button type="submit" className="h-12 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white">Apply</button><Link href="/documents" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Reset</Link></div></form>
-        <div className="mt-3 grid gap-2 rounded-2xl bg-slate-50 p-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_120px]"><Link href={sortHref(searchParams, 'document')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'document', 'Document')}</Link><Link href={sortHref(searchParams, 'client')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'client', 'Client')}</Link><Link href={sortHref(searchParams, 'record')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'record', 'Linked record')}</Link><Link href={sortHref(searchParams, 'status')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'status', 'Status')}</Link><Link href={sortHref(searchParams, 'date')} className="rounded-xl px-3 py-2 hover:bg-white">{sortLabel(searchParams, 'date', 'Date')}</Link><span className="px-3 py-2">PDF</span></div>
+    <div className="space-y-4">
+      <section className="rounded-[1.35rem] border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            {iconTile('folder-open-o', 'border-teal-100 bg-teal-50 text-teal-700')}
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-700">Document control</p>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Client documents, generated PDFs, expiry posture, and review status across leads, quotes, and orders.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"><FaIcon icon="download" fixedWidth />Export view</button>
+            <Link href="/leads" className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"><FaIcon icon="paperclip" fixedWidth />Attach from lead</Link>
+          </div>
+        </div>
       </section>
 
-      {Object.entries(grouped).length ? <section className="space-y-4">{Object.entries(grouped).map(([groupName, groupItems]) => { const hasAttention = groupItems.some((item) => isNeedsReview(item.status) || isExpired(item) || isExpiringSoon(item)); const defaultOpen = selectedView === 'status' ? groupName !== 'Approved' : hasAttention; return <details key={groupName} open={defaultOpen} className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.05)]"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-sky-50/70 px-5 py-4 marker:hidden"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-[#0c7fff]"><FaIcon icon="building-o" fixedWidth /></span><div><h2 className="text-base font-black text-slate-950">{groupName}</h2><p className="text-xs font-semibold text-slate-500">{groupItems.length} document{groupItems.length === 1 ? '' : 's'} · click to expand/collapse</p></div></div><span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${hasAttention ? 'bg-amber-50 text-amber-700 ring-amber-100' : 'bg-emerald-50 text-emerald-700 ring-emerald-100'}`}><FaIcon icon={hasAttention ? 'exclamation-circle' : 'check-circle-o'} fixedWidth />{hasAttention ? 'Attention' : 'Healthy'}</span></summary><div className="divide-y divide-slate-100">{groupItems.map((item) => { const context = contextById[item.id]; const badge = statusBadge(item); return <div key={item.id} className={`grid gap-4 px-5 py-4 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_120px] lg:items-center ${badge.label === 'Needs review' || badge.label === 'Expired' || badge.label === 'Expiring soon' ? 'bg-amber-50/45' : 'bg-white'}`}><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100"><FaIcon icon={typeIcon(item.docType)} fixedWidth /></span><div><p className="font-black text-slate-950">{context.documentTitle}</p><p className="mt-1 text-xs font-semibold text-slate-500">{context.documentSubtitle}</p></div></div><div><p className="font-black text-slate-950">{context.clientName}</p><p className="mt-1 text-xs font-semibold text-slate-400">{context.leadName}</p></div><Link href={context.linkedHref} className="font-black text-[#075985] transition hover:text-[#0c7fff] hover:underline">{context.linkedLabel}</Link><span className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1 ${badge.className}`}><FaIcon icon={badge.icon} fixedWidth />{badge.label}</span><div className="text-xs font-semibold text-slate-500"><p>{formatDate(item.uploadedAt)}</p><p className="mt-1">Expiry: {formatDate(item.expiresAt)}</p></div>{context.pdfHref ? <a href={context.pdfHref} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 rounded-full bg-[#061c2e] px-4 py-2 text-xs font-black text-white shadow-sm"><FaIcon icon="external-link" fixedWidth />PDF</a> : <span className="rounded-full bg-slate-100 px-3 py-2 text-center text-xs font-black text-slate-500">{context.pdfLabel}</span>}</div>; })}</div></details>; })}</section> : <section className="rounded-[1.6rem] border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm"><p className="text-lg font-black text-slate-950">No documents match this view</p><p className="mt-2 text-sm font-semibold text-slate-500">Clear filters or generate documents from Quotes and Orders.</p></section>}
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {metricCard('Total', items.length, 'Global and order workflow docs', 'file-text-o', 'border-sky-100 bg-sky-50 text-sky-700')}
+        {metricCard('Needs review', needsReview, 'Awaiting action', 'exclamation-circle', 'border-amber-100 bg-amber-50 text-amber-700')}
+        {metricCard('Approved', approved, 'Ready to use', 'check-circle-o', 'border-emerald-100 bg-emerald-50 text-emerald-700')}
+        {metricCard('PDF ready', pdfReady, `${expiringSoon} expiring soon`, 'file-pdf-o', 'border-rose-100 bg-rose-50 text-rose-700')}
+      </section>
+
+      <section className="rounded-[1.45rem] border border-slate-200/80 bg-gradient-to-r from-white via-slate-50/80 to-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.045)]">
+        <form className="grid gap-2 xl:grid-cols-[1.4fr_180px_210px_250px_auto]" action="/documents">
+          <label className="relative">
+            <span className="sr-only">Search documents</span>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><FaIcon icon="search" fixedWidth /></span>
+            <input name="q" defaultValue={searchParams?.q ?? ''} placeholder="Search documents, clients, orders, quotes..." className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.04)] outline-none transition focus:border-teal-300 focus:ring-2 focus:ring-teal-100" />
+          </label>
+          <select name="status" defaultValue={searchParams?.status ?? ''} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.04)] outline-none"><option value="">All statuses</option>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select>
+          <select name="type" defaultValue={searchParams?.type ?? ''} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.04)] outline-none"><option value="">All document types</option>{typeOptions.map((type) => <option key={type} value={type}>{documentTypeLabel(type)}</option>)}</select>
+          <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-[0_8px_18px_rgba(15,23,42,0.04)]">{['client', 'status', 'type', 'timeline'].map((view) => (<button key={view} type="submit" name="view" value={view} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${selectedView === view ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>{view}</button>))}</div>
+          <div className="flex gap-2"><button type="submit" className="h-10 rounded-xl bg-slate-950 px-4 text-xs font-semibold text-white">Apply</button><Link href="/documents" className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700">Reset</Link></div>
+        </form>
+        <div className="mt-3 grid gap-2 rounded-xl border border-slate-200/80 bg-white px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_120px]"><Link href={sortHref(searchParams, 'document')} className="rounded-lg px-3 py-2 hover:bg-slate-50">{sortLabel(searchParams, 'document', 'Document')}</Link><Link href={sortHref(searchParams, 'client')} className="rounded-lg px-3 py-2 hover:bg-slate-50">{sortLabel(searchParams, 'client', 'Client')}</Link><Link href={sortHref(searchParams, 'record')} className="rounded-lg px-3 py-2 hover:bg-slate-50">{sortLabel(searchParams, 'record', 'Linked record')}</Link><Link href={sortHref(searchParams, 'status')} className="rounded-lg px-3 py-2 hover:bg-slate-50">{sortLabel(searchParams, 'status', 'Status')}</Link><Link href={sortHref(searchParams, 'date')} className="rounded-lg px-3 py-2 hover:bg-slate-50">{sortLabel(searchParams, 'date', 'Date')}</Link><span className="px-3 py-2">PDF</span></div>
+      </section>
+
+      {Object.entries(grouped).length ? <section className="space-y-3">{Object.entries(grouped).map(([groupName, groupItems]) => { const hasAttention = groupItems.some((item) => isNeedsReview(item.status) || isExpired(item) || isExpiringSoon(item)); const defaultOpen = selectedView === 'status' ? groupName !== 'Approved' : hasAttention; return <details key={groupName} open={defaultOpen} className="overflow-hidden rounded-[1.45rem] border border-slate-200/80 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.045)]"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50 px-5 py-4 marker:hidden"><div className="flex items-center gap-3">{iconTile(selectedView === 'type' ? 'file-text-o' : selectedView === 'status' ? (hasAttention ? 'exclamation-circle' : 'check-circle-o') : 'building-o', hasAttention ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-teal-100 bg-teal-50 text-teal-700', 'h-10 w-10')}<div><h2 className="text-base font-semibold text-slate-950">{groupName}</h2><p className="text-xs font-medium text-slate-500">{groupItems.length} document{groupItems.length === 1 ? '' : 's'} · click to expand/collapse</p></div></div><span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${hasAttention ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}><FaIcon icon={hasAttention ? 'exclamation-circle' : 'check-circle-o'} fixedWidth />{hasAttention ? 'Attention' : 'Healthy'}</span></summary><div className="divide-y divide-slate-100">{groupItems.map((item) => { const context = contextById[item.id]; const badge = statusBadge(item); return <div key={item.id} className={`grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[1.45fr_1fr_1fr_130px_165px_120px] lg:items-center ${badge.label === 'Needs review' || badge.label === 'Expired' || badge.label === 'Expiring soon' ? 'bg-amber-50/28' : 'bg-white'}`}><div className="flex items-start gap-3">{iconTile(typeIcon(item.docType), 'border-rose-100 bg-rose-50 text-rose-600', 'h-10 w-10')}<div><p className="font-semibold text-slate-950">{context.documentTitle}</p><p className="mt-1 text-xs font-medium text-slate-500">{context.documentSubtitle}</p></div></div><div><p className="font-semibold text-slate-950">{context.clientName}</p><p className="mt-1 text-xs font-medium text-slate-400">{context.leadName}</p></div><Link href={context.linkedHref} className="font-semibold text-teal-700 transition hover:text-teal-900 hover:underline">{context.linkedLabel}</Link><span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${badge.className}`}><FaIcon icon={badge.icon} fixedWidth />{badge.label}</span><div className="text-xs font-medium text-slate-500"><p>{formatDate(item.uploadedAt)}</p><p className="mt-1">Expiry: {formatDate(item.expiresAt)}</p></div>{context.pdfHref ? <a href={context.pdfHref} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"><FaIcon icon="external-link" fixedWidth />PDF</a> : <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-500">{context.pdfLabel}</span>}</div>; })}</div></details>; })}</section> : <section className="rounded-[1.45rem] border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm"><p className="text-lg font-semibold text-slate-950">No documents match this view</p><p className="mt-2 text-sm font-medium text-slate-500">Clear filters or generate documents from Quotes and Orders.</p></section>}
     </div>
   );
 }
