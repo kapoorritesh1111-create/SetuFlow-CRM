@@ -39,11 +39,12 @@ type ReportType =
   | 'trade-event-roi'
   | 'price-margin'
   | 'buyer-account';
+type ReportKey = Exclude<ReportType, 'all'>;
 type ScrollTarget = 'report-cards' | 'active-report';
 type SortDirection = 'asc' | 'desc';
 type ReportRow = Record<string, string | number>;
 type LooseRow = Record<string, unknown>;
-type ReportCard = { title: string; body: string; type: Exclude<ReportType, 'all'>; icon: LucideIcon; tone: string };
+type ReportCard = { title: string; body: string; type: ReportKey; icon: LucideIcon; tone: string };
 
 const RANGE_LABELS: Record<RangeKey, string> = {
   '30d': 'May 1 - May 31, 2025',
@@ -160,7 +161,7 @@ function compareCell(a: string | number, b: string | number) {
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 }
 
-function buildRows(type: ReportType, data: ReportsData, range: RangeKey, market: string): ReportRow[] {
+function buildRows(type: ReportKey, data: ReportsData, range: RangeKey, market: string): ReportRow[] {
   const leads = data.leads
     .filter((lead) => inRange(row(lead).updated_at as string | null | undefined, range))
     .filter((lead) => market === 'all' || leadMarket(lead) === market);
@@ -283,9 +284,9 @@ function Metric({ label, value, helper, Icon }: { label: string; value: string |
   );
 }
 
-function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selected: ReportType; onOpen: (type: Exclude<ReportType, 'all'>) => void }) {
+function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selected: ReportKey | null; onOpen: (type: ReportKey) => void }) {
   return (
-    <section id="report-cards" className="scroll-mt-24 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section id="report-cards" className="scroll-mt-24 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -310,7 +311,7 @@ function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selecte
   );
 }
 
-function Preview({ type, rows, onBack }: { type: ReportType; rows: ReportRow[]; onBack: () => void }) {
+function Preview({ type, rows, onBack }: { type: ReportKey; rows: ReportRow[]; onBack: () => void }) {
   const headers = rows[0] ? Object.keys(rows[0]) : ['No data'];
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState(headers[0] ?? '');
@@ -382,13 +383,13 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
   const [range, setRange] = useState<RangeKey>('30d');
   const [market, setMarket] = useState('all');
   const [reportType, setReportType] = useState<ReportType>('all');
-  const [selected, setSelected] = useState<ReportType>('pipeline');
+  const [selected, setSelected] = useState<ReportKey | null>(null);
   const [scrollTarget, setScrollTarget] = useState<ScrollTarget | null>(null);
   const now = Date.now();
 
   const markets = useMemo(() => ['all', ...Array.from(new Set(data.leads.map((lead) => leadMarket(lead)).filter(Boolean))).slice(0, 12)], [data.leads]);
   const cards = reportType === 'all' ? REPORTS : REPORTS.filter((item) => item.type === reportType);
-  const rows = useMemo(() => buildRows(selected, data, range, market), [selected, data, range, market]);
+  const rows = useMemo(() => (selected ? buildRows(selected, data, range, market) : []), [selected, data, range, market]);
   const openQuotes = data.quotes.filter((quote) => isWorkflowOpenStatus(quote.status) && inRange(quote.updated_at ?? quote.created_at, range));
   const overdue = data.followUps.filter((item) => item.scheduled_at && isWorkflowOpenStatus(item.status) && new Date(item.scheduled_at).getTime() < now && inRange(item.scheduled_at, range));
 
@@ -401,7 +402,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
     return () => cancelAnimationFrame(frame);
   }, [rows.length, scrollTarget, selected]);
 
-  const openReport = (type: Exclude<ReportType, 'all'>) => {
+  const openReport = (type: ReportKey) => {
     setSelected(type);
     setScrollTarget('active-report');
   };
@@ -432,20 +433,20 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
       {readOnlyMessage ? <section className="rounded-[1.35rem] border border-blue-100 bg-blue-50/70 p-4 text-sm font-medium text-blue-800">{readOnlyMessage}</section> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Reports Generated" value={fmt(Math.max(3, rows.length + openQuotes.length))} helper="live filtered scope" Icon={FileText} />
+        <Metric label="Reports Generated" value={fmt(Math.max(3, (selected ? rows.length : 0) + openQuotes.length))} helper="live filtered scope" Icon={FileText} />
         <Metric label="Open Quotes" value={fmt(openQuotes.length)} helper="active in scope" Icon={FileSpreadsheet} />
         <Metric label="Overdue Follow-ups" value={fmt(overdue.length)} helper="need attention" Icon={Clock3} />
         <Metric label="Markets Active" value={fmt(markets.length - 1)} helper="available filter options" Icon={Globe2} />
       </section>
 
       <ReportCards cards={cards} selected={selected} onOpen={openReport} />
-      <Preview type={selected} rows={rows} onBack={() => setScrollTarget('report-cards')} />
+      {selected ? <Preview type={selected} rows={rows} onBack={() => setScrollTarget('report-cards')} /> : null}
 
       <section className="grid gap-5 xl:grid-cols-[1fr_17rem]">
         <div className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-950">Recently Generated Reports</h2>
-            <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${selected}-${range}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Export current preview</button>
+            {selected ? <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${selected}-${range}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Export current preview</button> : null}
           </div>
           <div className="mt-4 grid gap-3">
             {REPORTS.slice(0, 3).map((item) => (
