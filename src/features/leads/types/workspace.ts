@@ -38,7 +38,7 @@ export type Option = { id: string; name: string };
 export type ProductCategory = { id: string; name: string; is_active?: boolean; sort_order?: number; parent_id?: string | null };
 export type Product = { id: string; name: string; sku: string | null; category_id: string | null };
 export type Profile = { id: string; full_name: string | null; username: string | null };
-export type Country = { id: string; name: string; phone_code: string | null; market_id: string | null };
+export type Country = { id: string; name: string; phone_code: string | null; market_id: string | null; iso2_code?: string | null };
 export type Market = { id: string; name: string };
 export type Stage = { id: string; name: string; pipeline_id: string; sort_order: number; is_closed?: boolean; is_won?: boolean; is_lost?: boolean };
 export type Pipeline = { id: string; name: string; lead_type: 'buyer' | 'supplier' | 'both'; is_default: boolean };
@@ -117,54 +117,3 @@ export type LeadDrawerLead = Pick<LeadRow,
   'trade_event_id' | 'notes' | 'website' | 'social_handle' | 'deal_value' | 'deal_currency' |
   'pipeline_id' | 'intro_sent' | 'phone_country_code' | 'phone_secondary_country_code'
 >;
-
-export type LeadDrawerSavePayload = {
-  resetForNextLead: boolean;
-  lead?: LeadDrawerLead;
-  selectedMarketIds?: string[];
-  selectedProductIds?: string[];
-};
-
-export type LeadDrawerProps = {
-  lead?: LeadDrawerLead;
-  stages: Stage[];
-  pipelines: Pipeline[];
-  nextSteps: Option[];
-  tradeEvents: Option[];
-  productCategories?: ProductCategory[];
-  products: Product[];
-  markets: Market[];
-  variants?: Variant[];
-  prices?: Price[];
-  pricingRules?: PricingRule[];
-  profiles: Profile[];
-  countries: Country[];
-  followUps?: FollowUp[];
-  activities?: Activity[];
-  stageHistory?: StageHistory[];
-  rfqs?: Rfq[];
-  quotes?: Quote[];
-  quoteVersions?: QuoteVersion[];
-  documents?: LeadDocument[];
-  complianceItems?: ComplianceItem[];
-  complianceDefinitions?: ComplianceDefinition[];
-  selectedMarketIds?: string[];
-  selectedProductIds?: string[];
-  currentUserId?: string;
-  open?: boolean;
-  onClose?: () => void;
-  onSaved?: (result: LeadDrawerSavePayload) => void;
-  onOpenInlineQuote?: (leadId: string, quoteId?: string | null) => void;
-  mode?: 'quick' | 'full';
-  title?: string;
-  canNavigatePrev?: boolean;
-  canNavigateNext?: boolean;
-  onNavigatePrev?: () => void;
-  onNavigateNext?: () => void;
-  navigationMeta?: string;
-  initialStepId?: LeadWizardStepId;
-  prefill?: LeadQuickCapturePrefill | null;
-  fastFieldMode?: boolean;
-  /** S24-TRIAL-203: true only for guided-trial orgs; gates trial coaching UI inside the drawer. */
-  guidedTrialCoach?: boolean;
-};
