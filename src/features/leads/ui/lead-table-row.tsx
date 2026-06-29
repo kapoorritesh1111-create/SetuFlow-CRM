@@ -6,6 +6,7 @@ import type { LeadCommercialReadiness } from '@/lib/catalog-pricing-model';
 import { computeLeadHealth } from '@/lib/lead-health';
 import { LeadHealthBadge } from '@/components/ui/lead-health-badge';
 import { CountryFlagPill } from '@/components/ui/country-flag-pill';
+import { FaIcon } from '@/components/ui/fa-icon';
 import type { LeadRow } from '@/features/leads/types/workspace';
 
 export interface LeadTableRowProps {
@@ -66,13 +67,13 @@ function getFollowUpState(scheduledAt?: string | null, nowIso?: string | null) {
   return 'upcoming';
 }
 
-function ContactButton({ href, label, tone }: { href: string; label: string; tone: 'mail' | 'whatsapp' | 'phone' }) {
+function ContactIconButton({ href, label, tone }: { href: string; label: string; tone: 'mail' | 'whatsapp' | 'phone' }) {
   const toneClass = tone === 'whatsapp'
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    ? 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50'
     : tone === 'phone'
-      ? 'border-slate-200 bg-white text-slate-700'
-      : 'border-blue-200 bg-blue-50 text-blue-700';
-  const icon = tone === 'whatsapp' ? '◔' : tone === 'phone' ? '☎' : '✉';
+      ? 'border-[#0b2e4a]/15 bg-white text-[#0b2e4a] hover:border-[#0b2e4a]/30 hover:bg-slate-50'
+      : 'border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50';
+  const icon = tone === 'whatsapp' ? 'whatsapp' : tone === 'phone' ? 'phone' : 'envelope';
   return (
     <a
       href={href}
@@ -81,9 +82,9 @@ function ContactButton({ href, label, tone }: { href: string; label: string; ton
       onClick={(event) => event.stopPropagation()}
       title={label}
       aria-label={label}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black shadow-sm transition hover:opacity-80 ${toneClass}`}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_20px_rgba(15,23,42,.08)] transition ${toneClass}`}
     >
-      {icon}
+      <FaIcon icon={icon} fixedWidth />
     </a>
   );
 }
@@ -180,9 +181,9 @@ export function LeadTableRow({
       </div>
 
       <div className="hidden lg:flex items-center justify-center gap-2" aria-label={`Contact ${lead.company_name}`}>
-        {emailAddress ? <ContactButton href={mailHref} label={`Email ${lead.company_name}`} tone="mail" /> : null}
-        {whatsappHref ? <ContactButton href={whatsappHref} label={`WhatsApp ${lead.company_name}`} tone="whatsapp" /> : null}
-        {phoneNumber ? <ContactButton href={telHref} label={`Call ${lead.company_name}`} tone="phone" /> : null}
+        {emailAddress ? <ContactIconButton href={mailHref} label={`Email ${lead.company_name}`} tone="mail" /> : null}
+        {whatsappHref ? <ContactIconButton href={whatsappHref} label={`WhatsApp ${lead.company_name}`} tone="whatsapp" /> : null}
+        {phoneNumber ? <ContactIconButton href={telHref} label={`Call ${lead.company_name}`} tone="phone" /> : null}
       </div>
 
       <div className="hidden lg:block">
