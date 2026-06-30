@@ -6,7 +6,7 @@ const tradeEventsPage = readFileSync('src/app/(app)/trade-events/page.tsx', 'utf
 const appShell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
 
 test('trade events page uses premium command center sections', () => {
-  assert.match(tradeEventsPage, /Event Pipeline/);
+  assert.match(tradeEventsPage, /Quote Pipeline|Event Pipeline/);
   assert.match(tradeEventsPage, /Capture\. Qualify\. Follow up\. Close\./);
   assert.match(tradeEventsPage, /Active Events/);
   assert.match(tradeEventsPage, /Intake Queue/);
@@ -15,6 +15,8 @@ test('trade events page uses premium command center sections', () => {
   assert.match(tradeEventsPage, /Capture supplier/);
   assert.match(tradeEventsPage, /Scan card/);
   assert.match(tradeEventsPage, /Dictate note/);
+  assert.match(tradeEventsPage, /Recommended upcoming trade events/);
+  assert.match(tradeEventsPage, /Setu Guru/);
 });
 
 test('trade events page removes internal proof and prototype language', () => {
