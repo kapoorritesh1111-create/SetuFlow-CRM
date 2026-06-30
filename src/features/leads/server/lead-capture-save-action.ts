@@ -19,6 +19,29 @@ function htmlFromText(value: string) {
     .replaceAll("'", '&#39;')}</div>`;
 }
 
+function validateLeadTypeGuard(formData: FormData): ActionState | null {
+  const leadType = clean(formData.get('lead_type')).toLowerCase();
+  const submittedMode = clean(formData.get('mode') ?? formData.get('workspace_mode') ?? formData.get('lead_mode')).toLowerCase();
+
+  if (!leadType) {
+    return { error: 'Lead type is required. Supplier mode cannot silently save as buyer.' };
+  }
+
+  if (leadType !== 'buyer' && leadType !== 'supplier') {
+    return { error: 'Lead type must be buyer or supplier.' };
+  }
+
+  if ((submittedMode === 'supplier' || submittedMode === 'suppliers') && leadType !== 'supplier') {
+    return { error: 'Supplier mode requires lead_type=supplier.' };
+  }
+
+  if ((submittedMode === 'buyer' || submittedMode === 'buyers') && leadType !== 'buyer') {
+    return { error: 'Buyer mode requires lead_type=buyer.' };
+  }
+
+  return null;
+}
+
 function capturedInterest(notes: string) {
   const line = notes
     .split(/\n+/)
@@ -177,6 +200,9 @@ async function sendLeadCaptureIntro(params: { db: any; organization: any; actorU
 }
 
 export async function saveLead(previousState: ActionState | undefined, formData: FormData): Promise<ActionState> {
+  const leadTypeGuard = validateLeadTypeGuard(formData);
+  if (leadTypeGuard) return leadTypeGuard;
+
   const result = await saveLeadBase(previousState, formData);
   if (!result?.success || !result.lead?.id || result.lead.intro_sent) return result;
 
