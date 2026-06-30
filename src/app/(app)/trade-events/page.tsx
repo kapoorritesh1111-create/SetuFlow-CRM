@@ -58,7 +58,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   }
 
   const supabase = await createClient();
-  const trialState = await getTradeShowTrialCapabilityState(supabase, workspace.organization.id);
+  const trialState = await getTradeShowTrialCapabilityState(supabase as any, workspace.organization.id);
   const isTradeShowTrial = Boolean(trialState?.isTradeShowTrial);
 
   const data = await getTradeEventsData(workspace.organization.id);
