@@ -49,6 +49,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
   });
 
   const activeLeadType = normalizeMode(searchParams.get('mode')) || props.initialLeadType || '';
+  const activeWorkspaceMode = activeLeadType === 'supplier' ? 'suppliers' : activeLeadType === 'buyer' ? 'buyers' : 'all';
   const search = searchParams.get('q')?.trim().toLowerCase() ?? '';
   const ownerId = searchParams.get('owner') ?? '';
   const productId = searchParams.get('product') ?? searchParams.get('category') ?? '';
@@ -112,6 +113,26 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
       return matchesSearch && matchesOwner && matchesProduct && matchesMarket && matchesCountry && matchesTradeEvent && matchesLeadType;
     });
   }, [activeLeadType, countryId, leadMarketsMap, leadProductsMap, marketId, ownerId, productId, props.leads, search, tradeEventId]);
+
+  const filteredStages = useMemo(() => {
+    if (!activeLeadType) return props.stages;
+    const allowedStageIds = new Set(stageGroups.flatMap((group) => group.stages.map((stage) => stage.id)));
+    return props.stages.filter((stage) => allowedStageIds.has(stage.id));
+  }, [activeLeadType, props.stages, stageGroups]);
+
+  const filteredPipelines = useMemo(() => {
+    if (!activeLeadType) return props.pipelines;
+    return props.pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, activeLeadType));
+  }, [activeLeadType, props.pipelines]);
+
+  const scopedKanbanProps = useMemo<PipelineBoardProps>(() => ({
+    ...props,
+    leads: filteredLeads,
+    stages: filteredStages,
+    pipelines: filteredPipelines,
+    initialLeadType: activeLeadType,
+    initialMode: activeWorkspaceMode,
+  }), [activeLeadType, activeWorkspaceMode, filteredLeads, filteredPipelines, filteredStages, props]);
 
   const ownerLabelById = useMemo(() => new Map(props.profiles.map((profile) => [profile.id, profile.full_name ?? profile.username ?? 'Unassigned'])), [props.profiles]);
   const valueCurrency = filteredLeads.find((lead) => lead.deal_currency)?.deal_currency ?? 'USD';
@@ -205,7 +226,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
 
       {boardView === 'kanban' ? (
         <div className="sf-pipeline-shell-kanban">
-          <PipelineBoard {...props} />
+          <PipelineBoard {...scopedKanbanProps} />
         </div>
       ) : boardView === 'swimlane' ? (
         <PipelineSwimlaneView
