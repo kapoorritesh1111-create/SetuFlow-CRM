@@ -165,6 +165,14 @@ function mergeLeadNotes(...values: Array<string | null | undefined>) {
     .join('\n\n');
 }
 
+function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null {
+  const rawLeadType = String(formData.get('lead_type') ?? '').trim().toLowerCase();
+  const rawMode = String(formData.get('mode') ?? formData.get('workspace_mode') ?? formData.get('lead_mode') ?? '').trim().toLowerCase();
+  const derivedFromMode = rawMode === 'supplier' || rawMode === 'suppliers' ? 'supplier' : rawMode === 'buyer' || rawMode === 'buyers' ? 'buyer' : null;
+  if (rawLeadType === 'supplier' || rawLeadType === 'buyer') return rawLeadType;
+  return derivedFromMode;
+}
+
 export async function createLeadFromContactScanReview(formData: FormData): Promise<ContactScanCreateLeadResult> {
   const companyName = String(formData.get('company_name') ?? '').trim() || String(formData.get('contact_name') ?? '').trim() || 'Scanned contact';
   const contactName = String(formData.get('contact_name') ?? '').trim();
@@ -174,7 +182,8 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
   const phoneSecondary = String(formData.get('phone_secondary') ?? '').trim();
   const website = String(formData.get('website') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
-  const leadType = String(formData.get('lead_type') ?? '').trim() === 'supplier' ? 'supplier' : 'buyer';
+  const leadType = parseReviewedLeadType(formData);
+  if (!leadType) return { error: 'Choose Buyer or Supplier before creating a reviewed contact scan lead.' };
   const sourceProfile = String(formData.get('source_profile') ?? '').trim() || 'generic';
   const extractionBoundary = String(formData.get('extraction_boundary') ?? '').trim() || 'server_manual_text';
   const rawSourceLabel = String(formData.get('source_label') ?? '').trim() || 'Contact scan review';
@@ -183,6 +192,7 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
 
   const leadFormData = new FormData();
   leadFormData.set('lead_type', leadType);
+  leadFormData.set('workspace_mode', leadType === 'supplier' ? 'suppliers' : 'buyers');
   leadFormData.set('company_name', companyName);
   leadFormData.set('contact_name', contactName);
   leadFormData.set('job_title', jobTitle);
