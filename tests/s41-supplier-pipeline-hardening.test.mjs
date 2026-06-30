@@ -31,9 +31,17 @@ test('S41 supplier pipeline migration seeds canonical supplier journey stages', 
 
 test('S41 supplier pipeline migration clears old supplier defaults before promoting canonical default', () => {
   assert.match(migration, /'Supplier Journey Pipeline', 'supplier', false/);
-  assert.match(migration, /lower\(lead_type\) = 'supplier'[\s\S]*lower\(name\) <> 'supplier journey pipeline'/);
+  assert.match(migration, /set is_default = false[\s\S]*lower\(p\.lead_type\) = 'supplier'[\s\S]*p\.is_default = true/);
   assert.match(migration, /set is_default = true[\s\S]*lower\(name\) = 'supplier journey pipeline'/);
   assert.doesNotMatch(migration, /'Supplier Journey Pipeline', 'supplier', true/);
+  assert.doesNotMatch(migration, /set is_default = \(p\.id = c\.id\)/);
+});
+
+test('S41 supplier pipeline migration repairs legacy stage-derived pipeline mismatches', () => {
+  assert.match(migration, /Repair legacy records that have a stage but no matching pipeline/);
+  assert.match(migration, /update public\.leads l/);
+  assert.match(migration, /l\.pipeline_id is distinct from ps\.pipeline_id/);
+  assert.match(migration, /lower\(p\.lead_type\) in \(lower\(l\.lead_type\), 'both'\)/);
 });
 
 test('S41 pipeline shell passes mode-scoped Kanban props', () => {
