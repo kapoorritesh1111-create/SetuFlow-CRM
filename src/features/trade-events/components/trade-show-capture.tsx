@@ -15,8 +15,13 @@ type TradeEventOption = {
   ends_on: string | null;
 };
 
+function workspaceModeForLeadType(leadType: 'buyer' | 'supplier') {
+  return leadType === 'supplier' ? 'suppliers' : 'buyers';
+}
+
 function makeOfflineLead(formData: FormData): OfflineLead {
   const now = new Date().toISOString();
+  const leadType = String(formData.get('lead_type') ?? '').trim() === 'supplier' ? 'supplier' : 'buyer';
   return {
     id: crypto?.randomUUID?.() ?? `offline-${Date.now()}`,
     capturedAt: now,
@@ -28,7 +33,7 @@ function makeOfflineLead(formData: FormData): OfflineLead {
     email: String(formData.get('email') ?? '').trim(),
     notes: String(formData.get('notes') ?? '').trim(),
     product_interests: String(formData.get('product_interests') ?? '').split(',').map((item) => item.trim()).filter(Boolean),
-    lead_type: String(formData.get('lead_type') ?? 'buyer'),
+    lead_type: leadType,
     event_id: String(formData.get('trade_event_id') ?? '').trim(),
   };
 }
@@ -67,6 +72,11 @@ export function TradeShowCapture({ events }: { events: TradeEventOption[] }) {
   }, []);
 
   const submit = (formData: FormData) => {
+    const expectedMode = workspaceModeForLeadType(leadType);
+    formData.set('lead_type', leadType);
+    formData.set('workspace_mode', expectedMode);
+    formData.set('mode', expectedMode);
+
     if (!online) {
       startTransition(() => {
         void enqueueCapture(makeOfflineLead(formData)).then(async () => {
@@ -124,6 +134,8 @@ export function TradeShowCapture({ events }: { events: TradeEventOption[] }) {
           <DrawerSection title="Lead capture" description="Keep the flow short so reps can capture leads between booth conversations.">
             <div className="grid gap-3 md:grid-cols-2">
               <input type="hidden" name="lead_type" value={leadType} />
+              <input type="hidden" name="workspace_mode" value={workspaceModeForLeadType(leadType)} />
+              <input type="hidden" name="mode" value={workspaceModeForLeadType(leadType)} />
               <input type="hidden" name="source_type" value="trade_event" />
               <input name="company_name" placeholder="Company name" required />
               <input name="contact_name" placeholder="Contact name" />

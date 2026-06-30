@@ -2,9 +2,18 @@ import { clearSynced, listPending, markSynced, type OfflineLead } from './lead-q
 
 export type OfflineSyncResult = { synced: number; failed: number; skipped: number };
 
+function normalizeOfflineLeadType(value: OfflineLead['lead_type']): 'buyer' | 'supplier' | null {
+  const leadType = String(value ?? '').trim().toLowerCase();
+  if (leadType === 'buyer' || leadType === 'supplier') return leadType;
+  return null;
+}
+
 function toFormData(lead: OfflineLead) {
+  const leadType = normalizeOfflineLeadType(lead.lead_type);
+  if (!leadType) return null;
   const formData = new FormData();
-  formData.set('lead_type', lead.lead_type || 'buyer');
+  formData.set('lead_type', leadType);
+  formData.set('workspace_mode', leadType === 'supplier' ? 'suppliers' : 'buyers');
   formData.set('company_name', lead.company || lead.name || 'Offline lead');
   formData.set('contact_name', lead.name || '');
   formData.set('country', lead.country || '');
@@ -37,8 +46,14 @@ export async function syncOfflineLeads(): Promise<OfflineSyncResult> {
     }
     seen.add(key);
 
+    const formData = toFormData(lead);
+    if (!formData) {
+      failed += 1;
+      continue;
+    }
+
     try {
-      const response = await fetch('/api/offline/leads', { method: 'POST', body: toFormData(lead) });
+      const response = await fetch('/api/offline/leads', { method: 'POST', body: formData });
       const payload = await response.json().catch(() => ({}));
       if (response.ok && !payload?.error) {
         await markSynced(lead.id);

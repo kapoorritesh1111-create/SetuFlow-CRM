@@ -36,6 +36,10 @@ function hasDraftSignal(draft: Draft) {
   return Boolean(draft.contactName || draft.companyName || draft.email || draft.phone || draft.website || draft.notes);
 }
 
+function workspaceModeForLeadType(leadType: 'buyer' | 'supplier') {
+  return leadType === 'supplier' ? 'suppliers' : 'buyers';
+}
+
 async function tryBrowserTextDetection(file: File): Promise<string> {
   if (typeof window === 'undefined') return '';
   const Detector = (window as unknown as { TextDetector?: new () => { detect: (source: ImageBitmap) => Promise<Array<{ rawValue?: string; text?: string }>> } }).TextDetector;
@@ -152,7 +156,10 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
     setError('');
     try {
       const formData = new FormData();
+      const workspaceMode = workspaceModeForLeadType(leadType);
       formData.set('lead_type', leadType);
+      formData.set('workspace_mode', workspaceMode);
+      formData.set('mode', workspaceMode);
       formData.set('contact_name', draft.contactName);
       formData.set('company_name', draft.companyName || draft.contactName || 'Scanned contact');
       formData.set('job_title', draft.jobTitle);
@@ -235,17 +242,18 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
         <div className="mt-4 grid gap-3">
           <input value={draft.contactName} onChange={(event) => updateField('contactName', event.target.value)} placeholder="Full name" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="contactName" />
           <input value={draft.companyName} onChange={(event) => updateField('companyName', event.target.value)} placeholder="Company" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="companyName" />
-          <input value={draft.jobTitle} onChange={(event) => updateField('jobTitle', event.target.value)} placeholder="Role / title" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="jobTitle" />
+          <input value={draft.jobTitle} onChange={(event) => updateField('jobTitle', event.target.value)} placeholder="Title / role" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
           <input value={draft.email} onChange={(event) => updateField('email', event.target.value)} placeholder="Email" type="email" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="email" />
-          <input value={draft.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="Phone" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="phone" />
-          <input value={draft.website} onChange={(event) => updateField('website', event.target.value)} placeholder="Website" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="website" />
-          <textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} placeholder="Notes" className="min-h-24 rounded-2xl border border-slate-200 p-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="notes" />
+          <input value={draft.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="Phone" inputMode="tel" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="phone" />
+          <input value={draft.phoneSecondary} onChange={(event) => updateField('phoneSecondary', event.target.value)} placeholder="Secondary phone" inputMode="tel" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+          <input value={draft.website} onChange={(event) => updateField('website', event.target.value)} placeholder="Website" inputMode="url" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+          <textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} placeholder="Notes / context" rows={4} className="rounded-2xl border border-slate-200 p-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
         </div>
 
-        <button type="button" onClick={saveLead} disabled={!canSave} className="mt-4 min-h-14 w-full rounded-2xl bg-slate-950 text-sm font-black text-white shadow-lg dark:bg-white dark:text-slate-950 disabled:opacity-55">
+        <button type="button" onClick={saveLead} disabled={!canSave} className="mt-4 min-h-14 w-full rounded-2xl bg-slate-950 text-sm font-black text-white shadow-lg shadow-slate-950/15 disabled:opacity-55 dark:bg-white dark:text-slate-950">
           {isSaving ? 'Saving lead…' : createdLeadId ? 'Lead saved' : `Save ${leadType} lead`}
         </button>
-        {createdLeadId ? <a href={`/leads/${createdLeadId}`} className="mt-3 block text-center text-sm font-black text-blue-600 dark:text-sky-300">Open saved lead →</a> : null}
+        {createdLeadId ? <p className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-black text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">Lead created successfully.</p> : null}
       </div>
     </section>
   );

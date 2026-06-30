@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { StateMessage } from '@/components/ui/state-message';
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { createLeadFromContactScanReview, extractContactScan } from '@/features/leads/server/contact-scan-actions';
+import { parseWorkspaceMode, workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import type { ContactServerExtractionResult } from '@/lib/contact-exchange/contact-extraction';
 
 type ReviewDraft = {
@@ -54,11 +56,18 @@ function humanizeProfile(profile: ContactServerExtractionResult['sourceProfile']
   return profile === 'business_card' ? 'business card' : profile === 'screenshot' ? 'screenshot' : profile === 'scan_pdf' ? 'scan-PDF' : 'generic source';
 }
 
+function workspaceModeForLeadType(leadType: 'buyer' | 'supplier') {
+  return leadType === 'supplier' ? 'suppliers' : 'buyers';
+}
+
 export function ContactIntakeReview({ initialEventId = null }: { initialEventId?: string | null }) {
+  const searchParams = useSearchParams();
+  const routeLeadType = workspaceModeToLeadJourney(parseWorkspaceMode(searchParams.get('mode')));
+  const initialLeadType = routeLeadType === '' ? 'buyer' : routeLeadType;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [publicCardUrl, setPreviewUrl] = useState('');
   const [assistText, setAssistText] = useState('');
-  const [leadType, setLeadType] = useState<'buyer' | 'supplier'>('buyer');
+  const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(initialLeadType);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -136,7 +145,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
     setReviewConfirmed(false);
     setReviewError('');
     setCreatedLead(null);
-    setLeadType('buyer');
+    setLeadType(initialLeadType);
     setReviewMessage('Upload a source or paste visible text, then run review extraction.');
   }
 
@@ -151,7 +160,10 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
     setCreatedLead(null);
     try {
       const formData = new FormData();
+      const workspaceMode = workspaceModeForLeadType(leadType);
       formData.set('lead_type', leadType);
+      formData.set('workspace_mode', workspaceMode);
+      formData.set('mode', workspaceMode);
       formData.set('contact_name', draft.contactName);
       formData.set('company_name', draft.companyName || draft.contactName || 'Scanned contact');
       formData.set('job_title', draft.jobTitle);
