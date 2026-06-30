@@ -6,6 +6,7 @@ import {
   Camera,
   CheckCircle2,
   ClipboardCheck,
+  ExternalLink,
   FileText,
   Handshake,
   ImageIcon,
@@ -42,6 +43,14 @@ type TradeEventStatus = 'live' | 'upcoming' | 'completed' | 'unscheduled';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+function asObject(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function textValue(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 function formatTradeEventDateRange(startsOn?: string | null, endsOn?: string | null) {
@@ -135,20 +144,35 @@ function toneClasses(tone: Tone) {
 }
 
 function getEventImageUrl(event: any) {
-  return String(event?.image_url ?? event?.banner_url ?? event?.cover_image_url ?? event?.logo_url ?? '').trim();
+  const defaults = asObject(event?.capture_defaults);
+  return textValue(event?.image_url) || textValue(defaults.image_url) || textValue(event?.banner_url) || textValue(defaults.banner_url) || textValue(event?.cover_image_url) || textValue(event?.logo_url);
+}
+
+function getEventWebsiteUrl(event: any) {
+  const defaults = asObject(event?.capture_defaults);
+  return textValue(event?.website_url) || textValue(defaults.website_url) || textValue(event?.event_url) || textValue(defaults.event_url);
+}
+
+function getEventBooth(event: any) {
+  return textValue(event?.booth_number) || textValue(event?.booth_location) || 'Not assigned';
+}
+
+function guruHref(prompt: string) {
+  const params = new URLSearchParams({ context: 'trade-events', prompt });
+  return `/setu-guru?${params.toString()}`;
 }
 
 const boothWorkflow: Array<{ step: string; title: string; body: string; tone: Tone; icon: IconType }> = [
   { step: '1', title: 'Capture', body: 'Capture leads from walk-ins, scans, and booth conversations.', tone: 'blue', icon: UserPlus },
-  { step: '2', title: 'Qualify', body: 'Review real captured details and identify the hottest opportunities.', tone: 'violet', icon: ClipboardCheck },
+  { step: '2', title: 'Qualify', body: 'Review captured details and identify buyer-ready opportunities.', tone: 'violet', icon: ClipboardCheck },
   { step: '3', title: 'Follow-up', body: 'Send WhatsApp, email, and call follow-ups from the lead record.', tone: 'green', icon: MessageSquareText },
   { step: '4', title: 'Convert', body: 'Move qualified event leads into quotes, samples, and meetings.', tone: 'amber', icon: TrendingUp },
 ];
 
 const setuGuruRecommendedEvents = [
+  { name: 'Bharat Tex 2026', location: 'New Delhi, India', date: 'Jul 14 - Jul 17, 2026', fit: 'Strong fit for apparel, textile, sourcing, and export buyer conversations.' },
   { name: 'Texworld USA', location: 'New York, USA', date: 'Jan 19 - Jan 21, 2027', fit: 'Strong fit for apparel exporters targeting US sourcing buyers.' },
   { name: 'Apparel Sourcing Paris', location: 'Paris, France', date: 'Feb 2 - Feb 5, 2027', fit: 'Recommended for private label, sustainable fabric, and EU retail buyers.' },
-  { name: 'Gulf Fashion Sourcing Meet', location: 'Dubai, UAE', date: 'Sep 2 - Sep 4, 2026', fit: 'Useful for GCC distributors and boutique retail chains.' },
 ];
 
 export default async function TradeEventsPage({ searchParams }: { searchParams?: PageSearchParams }) {
@@ -187,11 +211,13 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   const hotLeadCount = pendingEntryCount;
   const pipelineValue = '$0';
   const meetingsSet = 0;
-  const captureHref = commandEvent
-    ? `/leads?quickLead=1&sourceType=trade_event&eventId=${commandEvent.id}&sourceLabel=${encodeURIComponent(commandEvent.name)}`
+  const commandEventId = commandEvent?.id ? String(commandEvent.id) : '';
+  const commandEventName = commandEvent?.name ? String(commandEvent.name) : '';
+  const captureHref = commandEventId
+    ? `/leads?quickLead=1&sourceType=trade_event&eventId=${commandEventId}&sourceLabel=${encodeURIComponent(commandEventName)}`
     : '/leads?quickLead=1&sourceType=trade_event';
-  const scanHref = commandEvent
-    ? `/contact-exchange/scan?eventId=${encodeURIComponent(commandEvent.id)}&sourceType=trade_event`
+  const scanHref = commandEventId
+    ? `/contact-exchange/scan?eventId=${encodeURIComponent(commandEventId)}&sourceType=trade_event`
     : '/contact-exchange/scan?sourceType=trade_event';
 
   const liveQuickActions: Array<{ href: string; title: string; sub: string; icon: IconType }> = [
@@ -206,13 +232,6 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
     { label: 'Capture supplier', href: captureHref, icon: Handshake },
     { label: 'Scan card', href: scanHref, icon: QrCode },
     { label: 'Dictate note', href: `${captureHref}&dictate=1`, icon: Mic2 },
-  ];
-
-  const trialMetrics = [
-    { label: 'Booth leads', value: capturedLeadCount, sub: 'Captured in this trial' },
-    { label: 'Need review', value: pendingEntryCount, sub: 'Ready to qualify' },
-    { label: 'Companies', value: uniqueCompanies, sub: 'Unique accounts' },
-    { label: 'Follow-ups', value: followUpCount, sub: 'Can be created in trial' },
   ];
 
   const liveMetrics: Array<{ label: string; value: string | number; sub: string; tone: Tone; icon: IconType }> = [
@@ -236,20 +255,6 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
     due: 'Now',
     value: 'Not quoted yet',
   }));
-
-  const workspaceCards = isTradeShowTrial
-    ? [
-        { href: '/dashboard', title: 'Dashboard preview', body: 'See how trade show capture becomes command-center KPIs and leadership visibility.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-        { href: '/leads?view=trade-event', title: 'Leads list', body: 'Review every captured booth lead in the existing Leads workspace.', badge: 'Trial', badgeClass: 'bg-emerald-100 text-emerald-700' },
-        { href: '/pipeline', title: 'Pipeline preview', body: 'Preview stages, aging, and risk lanes for captured trade show opportunities.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-        { href: '/approval-send', title: 'Send preview', body: 'Preview outbound readiness. Live send actions stay upgrade-only except approved intro/follow-up behavior.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-        { href: '/documents', title: 'Documents preview', body: 'Preview document and compliance readiness connected to future quotes and orders.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-        { href: '/tasks', title: 'Tasks', body: 'Create follow-up tasks only for captured trade show leads.', badge: 'Trial', badgeClass: 'bg-emerald-100 text-emerald-700' },
-        { href: '/products', title: 'Catalog preview', body: 'Preview product and pricing context. Catalog management unlocks after upgrade.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-        { href: '/quotes', title: 'Quotes preview', body: 'Preview the quote workflow. Quote creation remains locked during trial.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-        { href: '/orders', title: 'Orders preview', body: 'Preview execution and order readiness. Order creation remains locked during trial.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
-      ]
-    : [];
 
   return (
     <div className="space-y-5 pb-6 font-sans text-slate-950">
@@ -279,293 +284,234 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         </div>
       ) : null}
 
-      {isTradeShowTrial ? (
-        <>
-          <section className="relative overflow-hidden rounded-[2rem] border border-blue-200 bg-[radial-gradient(circle_at_80%_15%,rgba(12,127,255,0.24),transparent_22%),linear-gradient(135deg,#07172f_0%,#0b2e63_54%,#0e7490_140%)] p-5 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)] sm:p-7">
-            <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.24)_1px,transparent_0)] [background-size:22px_22px]" />
-            <div className="relative z-10 grid gap-7 xl:grid-cols-[1fr_360px] xl:items-center">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">Trade Show Trial Home</p>
-                <h1 className="mt-3 max-w-4xl text-3xl font-black tracking-[-0.04em] text-white sm:text-5xl">Capture booth leads in the existing CRM experience.</h1>
-                <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-blue-50/90">
-                  Trial clients can capture leads, share vCard context, review follow-ups, and preview the full Setu Flow module journey: dashboard, pipeline, send, documents, catalog, quotes, and orders. Only approved trial actions are live until upgrade.
-                </p>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <Link href={captureHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-black text-slate-950 shadow-[0_18px_45px_rgba(255,255,255,0.20)] transition hover:-translate-y-0.5 hover:bg-blue-50">Add booth lead</Link>
-                  <Link href="/leads?view=trade-event" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/16">Review event leads</Link>
-                  <Link href="/dashboard" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/16">Preview dashboard</Link>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.86fr)]">
+        <div className="relative overflow-hidden rounded-[2rem] border border-blue-200 bg-[radial-gradient(circle_at_82%_12%,rgba(56,189,248,0.24),transparent_28%),linear-gradient(135deg,#07172f_0%,#0b2e63_58%,#0e7490_150%)] p-5 text-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:p-6">
+          <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.28)_1px,transparent_0)] [background-size:22px_22px]" />
+          <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-300">{isTradeShowTrial ? 'Trade Show Trial Home' : commandStatus === 'live' ? 'Current live event' : commandStatus === 'upcoming' ? 'Next event' : 'Recent event'}</p>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-lg font-black text-slate-950 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">{initialsFor(commandEvent?.name, 'EV')}</div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="truncate text-2xl font-black tracking-[-0.03em] text-white sm:text-3xl">{commandEvent?.name ?? 'No event selected'}</h1>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black uppercase ring-1 ${statusClasses(commandStatus)}`}>{statusLabel(commandStatus)} <BadgeCheck className="h-3.5 w-3.5" /></span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-blue-50/90">
+                    <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-cyan-200" />{[commandEvent?.city, commandEvent?.country].filter(Boolean).join(', ') || 'Location TBD'}</span>
+                    <span className="inline-flex items-center gap-2"><CalendarDays className="h-4 w-4 text-cyan-200" />{commandEvent ? formatTradeEventDateRange(commandEvent.starts_on, commandEvent.ends_on) : 'Dates not set'}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </section>
-
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {trialMetrics.map((metric) => (
-              <div key={metric.label} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
-                <p className="text-3xl font-black text-slate-950">{metric.value}</p>
-                <p className="mt-1 text-sm font-black text-slate-900">{metric.label}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">{metric.sub}</p>
-              </div>
-            ))}
-          </section>
-
-          <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Existing workspace access</p>
-            <h2 className="mt-1 text-xl font-black text-slate-950">What trial clients can see</h2>
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {workspaceCards.map((card) => (
-                <Link key={card.title} href={card.href} className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-black text-slate-950">{card.title}</p>
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${card.badgeClass}`}>{card.badge}</span>
-                  </div>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{card.body}</p>
-                </Link>
-              ))}
+            <div className="grid grid-cols-2 gap-3 rounded-[1.4rem] border border-white/10 bg-white/10 p-4 text-sm font-bold text-blue-50 backdrop-blur md:w-72">
+              <div><p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200">Booth</p><p className="mt-1 text-white">{commandEvent ? getEventBooth(commandEvent) : 'Not assigned'}</p></div>
+              <div><p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200">Timing</p><p className="mt-1 inline-flex items-center gap-1 text-white"><Timer className="h-4 w-4" />{commandEvent ? getEventTimingLabel(commandEvent, now) : 'No event'}</p></div>
             </div>
-          </section>
-        </>
-      ) : (
-        <>
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.86fr)]">
-            <div className="relative overflow-hidden rounded-[2rem] border border-blue-200 bg-[radial-gradient(circle_at_82%_12%,rgba(56,189,248,0.24),transparent_28%),linear-gradient(135deg,#07172f_0%,#0b2e63_58%,#0e7490_150%)] p-5 text-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:p-6">
-              <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.28)_1px,transparent_0)] [background-size:22px_22px]" />
-              <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-300">{commandStatus === 'live' ? 'Current live event' : commandStatus === 'upcoming' ? 'Next event' : 'Recent event'}</p>
-                  <div className="mt-4 flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-lg font-black text-slate-950 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">{initialsFor(commandEvent?.name, 'EV')}</div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="truncate text-2xl font-black tracking-[-0.03em] text-white sm:text-3xl">{commandEvent?.name ?? 'No event selected'}</h1>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black uppercase ring-1 ${statusClasses(commandStatus)}`}>{statusLabel(commandStatus)} <BadgeCheck className="h-3.5 w-3.5" /></span>
-                      </div>
-                      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-blue-50/90">
-                        <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-cyan-200" />{[commandEvent?.city, commandEvent?.country].filter(Boolean).join(', ') || 'Location TBD'}</span>
-                        <span className="inline-flex items-center gap-2"><CalendarDays className="h-4 w-4 text-cyan-200" />{commandEvent ? formatTradeEventDateRange(commandEvent.starts_on, commandEvent.ends_on) : 'Dates not set'}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_22px_65px_rgba(15,23,42,0.08)] md:grid-cols-4 xl:grid-cols-2">
+          {liveQuickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link key={action.title} href={action.href} className="group flex min-h-24 flex-col justify-between rounded-[1.4rem] bg-slate-950 p-4 text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:bg-[#07172f]">
+                <Icon className="h-7 w-7 text-blue-100 transition group-hover:scale-105" />
+                <span><span className="block text-sm font-black">{action.title}</span><span className="mt-0.5 block text-xs font-semibold text-blue-100/80">{action.sub}</span></span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_22px_65px_rgba(15,23,42,0.07)]">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div><p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Quick capture</p><p className="mt-1 text-sm font-semibold text-slate-500">Keep the fastest booth actions above the fold.</p></div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[620px]">
+            {captureShortcuts.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.label} href={item.href} className="flex min-h-16 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900 transition hover:border-blue-200 hover:bg-blue-50">
+                  <Icon className="h-5 w-5 text-blue-600" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_22px_65px_rgba(15,23,42,0.07)] md:grid-cols-3 xl:grid-cols-6">
+        {liveMetrics.map((metric) => {
+          const Icon = metric.icon;
+          const tone = toneClasses(metric.tone);
+          return (
+            <div key={metric.label} className="flex items-center gap-3 border-slate-100 md:border-r md:last:border-r-0 xl:min-h-20">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone.soft} ${tone.text} ring-8 ${tone.ring}`}><Icon className="h-6 w-6" /></div>
+              <div className="min-w-0">
+                <p className="text-2xl font-black tracking-[-0.04em] text-slate-950">{metric.value}</p>
+                <p className="text-xs font-black text-slate-900">{metric.label}</p>
+                <p className="mt-1 text-[11px] font-bold text-slate-500">{metric.sub}</p>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[330px_minmax(0,1fr)_360px]">
+        <div className="space-y-5">
+          <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Today's Focus</p>
+            <p className="mt-1 text-sm font-bold text-slate-500">Capture. Qualify. Follow up. Close.</p>
+            <div className="mt-5 space-y-3">
+              {boothWorkflow.map((item) => {
+                const Icon = item.icon;
+                const tone = toneClasses(item.tone);
+                const count = item.title === 'Capture' ? capturedLeadCount : item.title === 'Qualify' ? pendingEntryCount : item.title === 'Follow-up' ? followUpCount : 0;
+                return (
+                  <div key={item.title} className="relative rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white shadow-[0_12px_28px_rgba(37,99,235,0.28)]">{item.step}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2"><span className={`flex h-9 w-9 items-center justify-center rounded-2xl ${tone.soft} ${tone.text}`}><Icon className="h-5 w-5" /></span><p className="font-black text-slate-950">{item.title}</p></div>
+                          <span className={`rounded-full px-2 py-1 text-xs font-black ${tone.badge}`}>{count}</span>
+                        </div>
+                        <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.body}</p>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 rounded-[1.4rem] border border-white/10 bg-white/10 p-4 text-sm font-bold text-blue-50 backdrop-blur md:w-72">
-                  <div><p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200">Booth</p><p className="mt-1 text-white">{String((commandEvent as any)?.booth_location ?? 'Not assigned')}</p></div>
-                  <div><p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200">Timing</p><p className="mt-1 inline-flex items-center gap-1 text-white"><Timer className="h-4 w-4" />{commandEvent ? getEventTimingLabel(commandEvent, now) : 'No event'}</p></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_22px_65px_rgba(15,23,42,0.08)] md:grid-cols-4 xl:grid-cols-2">
-              {liveQuickActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <Link key={action.title} href={action.href} className="group flex min-h-24 flex-col justify-between rounded-[1.4rem] bg-slate-950 p-4 text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:bg-[#07172f]">
-                    <Icon className="h-7 w-7 text-blue-100 transition group-hover:scale-105" />
-                    <span><span className="block text-sm font-black">{action.title}</span><span className="mt-0.5 block text-xs font-semibold text-blue-100/80">{action.sub}</span></span>
-                  </Link>
                 );
               })}
             </div>
-          </section>
+            <Link href="/leads?view=trade-event" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 text-sm font-black text-blue-700">View full workflow</Link>
+          </div>
+        </div>
 
-          <section className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_22px_65px_rgba(15,23,42,0.07)]">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div><p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Quick capture</p><p className="mt-1 text-sm font-semibold text-slate-500">Keep the fastest booth actions above the fold.</p></div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[620px]">
-                {captureShortcuts.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link key={item.label} href={item.href} className="flex min-h-16 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900 transition hover:border-blue-200 hover:bg-blue-50">
-                      <Icon className="h-5 w-5 text-blue-600" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
+        <div className="space-y-5">
+          <div className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Intake Queue</p>
+                <h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-slate-950">Hot buyer queue</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">{pendingEntryCount} real entries need your attention</p>
               </div>
+              <Link href="/leads?view=trade-event" className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700">View all</Link>
             </div>
-          </section>
-
-          <section className="grid gap-3 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_22px_65px_rgba(15,23,42,0.07)] md:grid-cols-3 xl:grid-cols-6">
-            {liveMetrics.map((metric) => {
-              const Icon = metric.icon;
-              const tone = toneClasses(metric.tone);
-              return (
-                <div key={metric.label} className="flex items-center gap-3 border-slate-100 md:border-r md:last:border-r-0 xl:min-h-20">
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone.soft} ${tone.text} ring-8 ${tone.ring}`}><Icon className="h-6 w-6" /></div>
-                  <div className="min-w-0">
-                    <p className="text-2xl font-black tracking-[-0.04em] text-slate-950">{metric.value}</p>
-                    <p className="text-xs font-black text-slate-900">{metric.label}</p>
-                    <p className="mt-1 text-[11px] font-bold text-slate-500">{metric.sub}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-
-          <section className="grid gap-5 xl:grid-cols-[330px_minmax(0,1fr)_360px]">
-            <div className="space-y-5">
-              <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Today's Focus</p>
-                <p className="mt-1 text-sm font-bold text-slate-500">Capture. Qualify. Follow up. Close.</p>
-                <div className="mt-5 space-y-3">
-                  {boothWorkflow.map((item) => {
-                    const Icon = item.icon;
-                    const tone = toneClasses(item.tone);
-                    const count = item.title === 'Capture' ? capturedLeadCount : item.title === 'Qualify' ? pendingEntryCount : item.title === 'Follow-up' ? followUpCount : 0;
-                    return (
-                      <div key={item.title} className="relative rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white shadow-[0_12px_28px_rgba(37,99,235,0.28)]">{item.step}</div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2"><span className={`flex h-9 w-9 items-center justify-center rounded-2xl ${tone.soft} ${tone.text}`}><Icon className="h-5 w-5" /></span><p className="font-black text-slate-950">{item.title}</p></div>
-                              <span className={`rounded-full px-2 py-1 text-xs font-black ${tone.badge}`}>{count}</span>
-                            </div>
-                            <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.body}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <Link href="/leads?view=trade-event" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 text-sm font-black text-blue-700">View full workflow</Link>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Intake Queue</p>
-                    <h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-slate-950">Hot buyer queue</h2>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">{pendingEntryCount} real entries need your attention</p>
-                  </div>
-                  <Link href="/leads?view=trade-event" className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700">View all</Link>
-                </div>
-                {leadQueue.length ? (
-                  <div className="mt-4 space-y-3">
-                    {leadQueue.map((lead) => (
-                      <div key={`${lead.name}-${lead.company}`} className="grid gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)] md:grid-cols-[minmax(210px,1.2fr)_minmax(150px,0.9fr)_110px_120px] md:items-center">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2563eb,#7c3aed)] text-sm font-black text-white">{lead.initials}</div>
-                          <div className="min-w-0"><p className="truncate font-black text-slate-950">{lead.name}</p><p className="truncate text-sm font-semibold text-slate-500">{lead.company}</p><p className="mt-1 text-xs font-bold text-slate-500">{lead.country}</p></div>
-                        </div>
-                        <div className="min-w-0"><p className="font-black text-slate-900">{lead.interest}</p><p className="line-clamp-2 text-sm font-semibold text-slate-500">{lead.detail}</p></div>
-                        <div><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">{lead.heat}</span><p className="mt-2 text-xs font-black text-slate-500">{lead.value}</p></div>
-                        <div className="text-sm"><p className="text-xs font-bold text-slate-400">Next step</p><p className="font-black text-slate-900">{lead.next}</p><p className="font-black text-blue-600">{lead.due}</p></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mt-4 rounded-[1.4rem] border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-                    <p className="font-black text-slate-950">No event leads captured yet</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-500">Use Add Booth Lead or Scan Badge to create real event entries.</p>
-                    <Link href={captureHref} className="mt-4 inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">Add first lead</Link>
-                  </div>
-                )}
-                <Link href="/leads?view=trade-event" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 text-sm font-black text-blue-700">View all leads</Link>
-              </div>
-
-              <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div><p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Active Events</p><h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-slate-950">Upcoming & active shows</h2></div>
-                  <Link href="/admin/trade-events" className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">Add event</Link>
-                </div>
-                <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                  {events.slice(0, 3).map((event: any) => {
-                    const eventStatus = getTradeEventStatus(event, now);
-                    const eventEntryCount = entries.filter((entry: any) => entry.trade_event_id === event.id).length;
-                    const eventImage = getEventImageUrl(event);
-                    return (
-                      <article key={event.id} className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-                        <div className="relative h-28 overflow-hidden bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.28),transparent_24%),linear-gradient(135deg,#7dd3fc_0%,#2563eb_44%,#0f172a_100%)]">
-                          {eventImage ? <img src={eventImage} alt={`${event.name} event image`} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-center text-xs font-black uppercase tracking-[0.14em] text-white/75"><ImageIcon className="mr-2 h-5 w-5" />Image pending</div>}
-                          <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-black uppercase text-slate-900">{statusLabel(eventStatus)}</span>
-                        </div>
-                        <div className="px-4 pb-4 pt-4">
-                          <h3 className="text-lg font-black text-slate-950">{event.name}</h3>
-                          <p className="mt-2 text-xs font-semibold text-slate-600">{[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}</p>
-                          <p className="mt-1 text-xs font-semibold text-slate-600">{formatTradeEventDateRange(event.starts_on, event.ends_on)}</p>
-                          <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 rounded-2xl bg-slate-50 p-3 text-center">
-                            <div><p className="font-black text-slate-950">{eventEntryCount}</p><p className="text-[10px] font-bold text-slate-500">Captured</p></div>
-                            <div><p className="font-black text-slate-950">$0</p><p className="text-[10px] font-bold text-slate-500">Pipeline</p></div>
-                            <div><p className="font-black text-slate-950">0</p><p className="text-[10px] font-bold text-slate-500">Meetings</p></div>
-                          </div>
-                          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                            <Link href={`/leads?eventId=${event.id}`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">View event <ArrowUpRight className="ml-2 h-4 w-4" /></Link>
-                            <Link href={`/admin/trade-events?eventId=${event.id}&asset=event-image`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><Camera className="mr-2 h-4 w-4" />Image</Link>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                  {!events.length ? (
-                    <div className="rounded-[1.4rem] border border-dashed border-slate-300 bg-slate-50 p-6 text-center lg:col-span-3">
-                      <p className="font-black text-slate-950">No trade events yet</p>
-                      <p className="mt-2 text-sm font-semibold text-slate-500">Add an event from Admin, then Setu Guru can help enrich the event image and prep plan.</p>
+            {leadQueue.length ? (
+              <div className="mt-4 space-y-3">
+                {leadQueue.map((lead) => (
+                  <div key={`${lead.name}-${lead.company}`} className="grid gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)] md:grid-cols-[minmax(210px,1.2fr)_minmax(150px,0.9fr)_110px_120px] md:items-center">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2563eb,#7c3aed)] text-sm font-black text-white">{lead.initials}</div>
+                      <div className="min-w-0"><p className="truncate font-black text-slate-950">{lead.name}</p><p className="truncate text-sm font-semibold text-slate-500">{lead.company}</p><p className="mt-1 text-xs font-bold text-slate-500">{lead.country}</p></div>
                     </div>
-                  ) : null}
+                    <div className="min-w-0"><p className="font-black text-slate-900">{lead.interest}</p><p className="line-clamp-2 text-sm font-semibold text-slate-500">{lead.detail}</p></div>
+                    <div><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">{lead.heat}</span><p className="mt-2 text-xs font-black text-slate-500">{lead.value}</p></div>
+                    <div className="text-sm"><p className="text-xs font-bold text-slate-400">Next step</p><p className="font-black text-slate-900">{lead.next}</p><p className="font-black text-blue-600">{lead.due}</p></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-[1.4rem] border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <p className="font-black text-slate-950">No event leads captured yet</p>
+                <p className="mt-2 text-sm font-semibold text-slate-500">Use Add Booth Lead or Scan Badge to create real event entries.</p>
+                <Link href={captureHref} className="mt-4 inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">Add first lead</Link>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Active Events</p><h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-slate-950">Upcoming & active shows</h2></div>
+              <Link href="/admin/trade-events" className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">Add event</Link>
+            </div>
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+              {events.slice(0, 3).map((event: any) => {
+                const eventStatus = getTradeEventStatus(event, now);
+                const eventEntryCount = entries.filter((entry: any) => entry.trade_event_id === event.id).length;
+                const eventImage = getEventImageUrl(event);
+                const websiteUrl = getEventWebsiteUrl(event);
+                return (
+                  <article key={event.id} className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                    <div className="relative h-28 overflow-hidden bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.28),transparent_24%),linear-gradient(135deg,#7dd3fc_0%,#2563eb_44%,#0f172a_100%)]">
+                      {eventImage ? <img src={eventImage} alt={`${event.name} event image`} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-center text-xs font-black uppercase tracking-[0.14em] text-white/75"><ImageIcon className="mr-2 h-5 w-5" />Image pending</div>}
+                      <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-black uppercase text-slate-900">{statusLabel(eventStatus)}</span>
+                    </div>
+                    <div className="px-4 pb-4 pt-4">
+                      <h3 className="text-lg font-black text-slate-950">{event.name}</h3>
+                      <p className="mt-2 text-xs font-semibold text-slate-600">{[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-600">{formatTradeEventDateRange(event.starts_on, event.ends_on)}</p>
+                      <p className="mt-1 text-xs font-black text-slate-700">Booth: {getEventBooth(event)}</p>
+                      <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 rounded-2xl bg-slate-50 p-3 text-center">
+                        <div><p className="font-black text-slate-950">{eventEntryCount}</p><p className="text-[10px] font-bold text-slate-500">Captured</p></div>
+                        <div><p className="font-black text-slate-950">$0</p><p className="text-[10px] font-bold text-slate-500">Pipeline</p></div>
+                        <div><p className="font-black text-slate-950">0</p><p className="text-[10px] font-bold text-slate-500">Meetings</p></div>
+                      </div>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        <Link href={`/leads?eventId=${event.id}`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">View event <ArrowUpRight className="ml-2 h-4 w-4" /></Link>
+                        <Link href={`/admin/trade-events?eventId=${event.id}&asset=event-image`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><Camera className="mr-2 h-4 w-4" />Image</Link>
+                        {websiteUrl ? <a href={websiteUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 sm:col-span-2"><ExternalLink className="mr-2 h-4 w-4" />Official site</a> : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+              {!events.length ? (
+                <div className="rounded-[1.4rem] border border-dashed border-slate-300 bg-slate-50 p-6 text-center lg:col-span-3">
+                  <p className="font-black text-slate-950">No trade events yet</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-500">Add an event from Admin, then Setu Guru can help enrich the event image and prep plan.</p>
                 </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
+          <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Current event snapshot</p>
+            <div className="mt-4 flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">{initialsFor(commandEvent?.name, 'EV')}</div><div className="min-w-0"><p className="truncate font-black text-slate-950">{commandEvent?.name ?? 'No event selected'}</p><p className="text-sm font-semibold text-slate-500">{[commandEvent?.city, commandEvent?.country].filter(Boolean).join(', ') || 'Location TBD'}</p></div></div>
+            <div className="mt-5 grid grid-cols-4 divide-x divide-slate-200 rounded-2xl bg-slate-50 p-3 text-center">
+              <div><p className="font-black">{capturedLeadCount}</p><p className="text-[10px] font-bold text-slate-500">Captured</p></div>
+              <div><p className="font-black">{pendingEntryCount}</p><p className="text-[10px] font-bold text-slate-500">Review</p></div>
+              <div><p className="font-black">{pipelineValue}</p><p className="text-[10px] font-bold text-slate-500">Pipeline</p></div>
+              <div><p className="font-black">{meetingsSet}</p><p className="text-[10px] font-bold text-slate-500">Meetings</p></div>
+            </div>
+            <Link href="/reports" className="mt-4 inline-flex min-h-11 w-full items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">View event report <ArrowUpRight className="h-4 w-4" /></Link>
+          </section>
+
+          <section className="overflow-hidden rounded-[1.8rem] border border-blue-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Setu Guru Insight <span className="rounded-full bg-cyan-100 px-2 py-1 text-[10px] text-cyan-700">AI</span></p><h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-slate-950">Prioritize real event work</h2></div>
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white p-1 ring-8 ring-blue-50 shadow-inner"><img src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" className="h-full w-full rounded-full object-contain" /></div>
+            </div>
+            <p className="mt-4 text-sm font-semibold leading-6 text-slate-600">Setu Guru is using your actual event entries. Add product interests, quote links, and follow-up tasks to improve prioritization.</p>
+            <div className="mt-5 rounded-2xl border border-dashed border-blue-200 bg-blue-50/70 p-4">
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-blue-700"><Sparkles className="h-4 w-4" />Recommended upcoming trade events</p>
+              <div className="mt-3 space-y-3">
+                {setuGuruRecommendedEvents.slice(0, 2).map((event) => (
+                  <div key={event.name} className="rounded-2xl bg-white p-3 shadow-[0_10px_25px_rgba(15,23,42,0.05)]">
+                    <p className="font-black text-slate-950">{event.name}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{event.location} · {event.date}</p>
+                    <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{event.fit}</p>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-              <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Current event snapshot</p>
-                <div className="mt-4 flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">{initialsFor(commandEvent?.name, 'EV')}</div><div className="min-w-0"><p className="truncate font-black text-slate-950">{commandEvent?.name ?? 'No event selected'}</p><p className="text-sm font-semibold text-slate-500">{[commandEvent?.city, commandEvent?.country].filter(Boolean).join(', ') || 'Location TBD'}</p></div></div>
-                <div className="mt-5 grid grid-cols-4 divide-x divide-slate-200 rounded-2xl bg-slate-50 p-3 text-center">
-                  <div><p className="font-black">{capturedLeadCount}</p><p className="text-[10px] font-bold text-slate-500">Captured</p></div>
-                  <div><p className="font-black">{pendingEntryCount}</p><p className="text-[10px] font-bold text-slate-500">Review</p></div>
-                  <div><p className="font-black">{pipelineValue}</p><p className="text-[10px] font-bold text-slate-500">Pipeline</p></div>
-                  <div><p className="font-black">{meetingsSet}</p><p className="text-[10px] font-bold text-slate-500">Meetings</p></div>
-                </div>
-                <Link href="/reports" className="mt-4 inline-flex min-h-11 w-full items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">View event report <ArrowUpRight className="h-4 w-4" /></Link>
-              </section>
-
-              <section className="overflow-hidden rounded-[1.8rem] border border-blue-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <div className="flex items-start justify-between gap-4">
-                  <div><p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Setu Guru Insight <span className="rounded-full bg-cyan-100 px-2 py-1 text-[10px] text-cyan-700">AI</span></p><h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-slate-950">Prioritize real event work</h2></div>
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-8 ring-blue-50 shadow-inner"><img src="/logos/setu-flow-logo.svg" alt="Setu Guru" className="h-12 w-12 object-contain" /></div>
-                </div>
-                <p className="mt-4 text-sm font-semibold leading-6 text-slate-600">Setu Guru is using your actual event entries. Add product interests, quote links, and follow-up tasks to improve prioritization.</p>
-                <div className="mt-5 rounded-2xl border border-dashed border-blue-200 bg-blue-50/70 p-4">
-                  <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-blue-700"><Sparkles className="h-4 w-4" />Recommended upcoming trade events</p>
-                  <div className="mt-3 space-y-3">
-                    {setuGuruRecommendedEvents.slice(0, 2).map((event) => (
-                      <div key={event.name} className="rounded-2xl bg-white p-3 shadow-[0_10px_25px_rgba(15,23,42,0.05)]">
-                        <p className="font-black text-slate-950">{event.name}</p>
-                        <p className="mt-1 text-xs font-bold text-slate-500">{event.location} · {event.date}</p>
-                        <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{event.fit}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Link href="/setu-guru" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-[0_18px_36px_rgba(37,99,235,0.24)]"><Sparkles className="mr-2 h-4 w-4" />Ask Setu Guru</Link>
-              </section>
-
-              <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Booth team checklist</p><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">0/6</span></div>
-                <div className="mt-4 space-y-3 text-sm font-semibold text-slate-600">
-                  {['Capture at least 25 leads today', 'Review new leads', 'Send follow-ups to hot leads', 'Schedule 5 meetings', 'Update pipeline with quotes', 'End of day sync'].map((task) => (
-                    <div key={task} className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-slate-300" /><span>{task}</span></div>
-                  ))}
-                </div>
-                <Link href="/tasks" className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">View all tasks</Link>
-              </section>
-
-              <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Top opportunities</p>
-                {leadQueue.length ? (
-                  <div className="mt-4 space-y-3">
-                    {leadQueue.slice(0, 3).map((lead) => (
-                      <div key={`op-${lead.name}`} className="flex items-center justify-between gap-3 text-sm"><div className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{lead.initials}</span><span className="truncate font-bold text-slate-700">{lead.company}</span></div><span className="font-black text-slate-500">{lead.value}</span></div>
-                    ))}
-                  </div>
-                ) : <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">Opportunities will appear after event leads are qualified and attached to quotes.</p>}
-              </section>
-            </aside>
+            <Link href={guruHref('Review my trade events, booth readiness, image enrichment, official sources, and follow-up plan.')} className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-black text-white shadow-[0_18px_36px_rgba(37,99,235,0.24)]"><Sparkles className="mr-2 h-4 w-4" />Ask Setu Guru</Link>
           </section>
-        </>
-      )}
+
+          <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+            <div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-[0.22em] text-slate-800">Booth team checklist</p><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">0/6</span></div>
+            <div className="mt-4 space-y-3 text-sm font-semibold text-slate-600">
+              {['Capture at least 25 leads today', 'Review new leads', 'Send follow-ups to hot leads', 'Schedule 5 meetings', 'Update pipeline with quotes', 'End of day sync'].map((task) => (
+                <div key={task} className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-slate-300" /><span>{task}</span></div>
+              ))}
+            </div>
+            <Link href="/tasks" className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">View all tasks</Link>
+          </section>
+        </aside>
+      </section>
     </div>
   );
 }
