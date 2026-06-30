@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { getTradeEventsData } from '@/lib/queries/trade-events';
+import { createClient } from '@/lib/supabase/server';
+import { getTradeShowTrialCapabilityState } from '@/lib/trial/trade-show-trial-capabilities';
 import { formatDate } from '@/lib/utils';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -46,7 +48,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
   if (!workspace.membership || !workspace.organization) {
     return (
       <WorkspaceState
-        eyebrow="Trade show trial"
+        eyebrow="Trade events"
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded."
         primaryActionHref="/dashboard"
@@ -54,6 +56,10 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
       />
     );
   }
+
+  const supabase = await createClient();
+  const trialState = await getTradeShowTrialCapabilityState(supabase, workspace.organization.id);
+  const isTradeShowTrial = Boolean(trialState?.isTradeShowTrial);
 
   const data = await getTradeEventsData(workspace.organization.id);
   const noticeKey = readParam(searchParams?.notice);
@@ -71,24 +77,40 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
     ? `/leads?quickLead=1&sourceType=trade_event&eventId=${activeEvent.id}&sourceLabel=${encodeURIComponent(activeEvent.name)}`
     : '/leads?quickLead=1&sourceType=trade_event';
 
-  const metrics = [
-    { label: 'Booth leads', value: capturedLeadCount, sub: 'Captured in this trial' },
-    { label: 'Need review', value: pendingEntryCount, sub: 'Ready to qualify' },
-    { label: 'Companies', value: uniqueCompanies, sub: 'Unique accounts' },
-    { label: 'Follow-ups', value: followUpCount, sub: 'Can be created in trial' },
-  ];
+  const metrics = isTradeShowTrial
+    ? [
+        { label: 'Booth leads', value: capturedLeadCount, sub: 'Captured in this trial' },
+        { label: 'Need review', value: pendingEntryCount, sub: 'Ready to qualify' },
+        { label: 'Companies', value: uniqueCompanies, sub: 'Unique accounts' },
+        { label: 'Follow-ups', value: followUpCount, sub: 'Can be created in trial' },
+      ]
+    : [
+        { label: 'Booth leads', value: capturedLeadCount, sub: 'Captured from events' },
+        { label: 'Needs review', value: pendingEntryCount, sub: 'Ready to qualify' },
+        { label: 'Follow-ups due', value: followUpCount, sub: 'Actions to protect momentum' },
+        { label: 'Event pipeline', value: '$0', sub: 'Quote value sourced from events' },
+      ];
 
-  const allowedSpaces = [
-    { href: '/dashboard', title: 'Dashboard preview', body: 'See how trade show capture becomes command-center KPIs and leadership visibility.', preview: true },
-    { href: '/leads?view=trade-event', title: 'Leads list', body: 'Review every captured booth lead in the existing Leads workspace.', preview: false },
-    { href: '/pipeline', title: 'Pipeline preview', body: 'Preview stages, aging, and risk lanes for captured trade show opportunities.', preview: true },
-    { href: '/approval-send', title: 'Send preview', body: 'Preview outbound readiness. Live send actions stay upgrade-only except approved intro/follow-up behavior.', preview: true },
-    { href: '/documents', title: 'Documents preview', body: 'Preview document and compliance readiness connected to future quotes and orders.', preview: true },
-    { href: '/tasks', title: 'Tasks', body: 'Create follow-up tasks only for captured trade show leads.', preview: false },
-    { href: '/products', title: 'Catalog preview', body: 'Preview product and pricing context. Catalog management unlocks after upgrade.', preview: true },
-    { href: '/quotes', title: 'Quotes preview', body: 'Preview the quote workflow. Quote creation remains locked during trial.', preview: true },
-    { href: '/orders', title: 'Orders preview', body: 'Preview execution and order readiness. Order creation remains locked during trial.', preview: true },
-  ];
+  const workspaceCards = isTradeShowTrial
+    ? [
+        { href: '/dashboard', title: 'Dashboard preview', body: 'See how trade show capture becomes command-center KPIs and leadership visibility.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+        { href: '/leads?view=trade-event', title: 'Leads list', body: 'Review every captured booth lead in the existing Leads workspace.', badge: 'Trial', badgeClass: 'bg-emerald-100 text-emerald-700' },
+        { href: '/pipeline', title: 'Pipeline preview', body: 'Preview stages, aging, and risk lanes for captured trade show opportunities.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+        { href: '/approval-send', title: 'Send preview', body: 'Preview outbound readiness. Live send actions stay upgrade-only except approved intro/follow-up behavior.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+        { href: '/documents', title: 'Documents preview', body: 'Preview document and compliance readiness connected to future quotes and orders.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+        { href: '/tasks', title: 'Tasks', body: 'Create follow-up tasks only for captured trade show leads.', badge: 'Trial', badgeClass: 'bg-emerald-100 text-emerald-700' },
+        { href: '/products', title: 'Catalog preview', body: 'Preview product and pricing context. Catalog management unlocks after upgrade.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+        { href: '/quotes', title: 'Quotes preview', body: 'Preview the quote workflow. Quote creation remains locked during trial.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+        { href: '/orders', title: 'Orders preview', body: 'Preview execution and order readiness. Order creation remains locked during trial.', badge: 'Preview', badgeClass: 'bg-amber-100 text-amber-700' },
+      ]
+    : [
+        { href: captureHref, title: 'Capture leads', body: 'Add walk-ins, scanned contacts, buyer requirements, and booth conversation notes.', badge: 'Live', badgeClass: 'bg-emerald-100 text-emerald-700' },
+        { href: '/leads?view=trade-event', title: 'Review and qualify', body: 'Clean up event leads, confirm importer or exporter fit, and assign next priority.', badge: 'Action', badgeClass: 'bg-blue-100 text-blue-700' },
+        { href: '/tasks', title: 'Follow up', body: 'Create WhatsApp, email, call, and task follow-ups from event conversations.', badge: 'Due', badgeClass: 'bg-indigo-100 text-indigo-700' },
+        { href: '/quotes', title: 'Create quote', body: 'Move qualified event leads into quote opportunities with product and market context.', badge: 'Convert', badgeClass: 'bg-cyan-100 text-cyan-700' },
+        { href: '/pipeline', title: 'Track pipeline', body: 'Monitor event-sourced opportunities by stage, buyer quality, and business value.', badge: 'Value', badgeClass: 'bg-violet-100 text-violet-700' },
+        { href: '/reports', title: 'Event report', body: 'Review event performance, team activity, lead quality, and post-show outcomes.', badge: 'Report', badgeClass: 'bg-slate-200 text-slate-700' },
+      ];
 
   return (
     <div className="space-y-5 pb-6">
@@ -98,7 +120,11 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         <WorkspaceState
           eyebrow="Lead saved"
           title="Booth lead is ready for follow-up"
-          description="The lead is now available in the existing Leads list. Create a follow-up task during the trial; quotes and orders unlock after upgrade."
+          description={
+            isTradeShowTrial
+              ? 'The lead is now available in the existing Leads list. Create a follow-up task during the trial; quotes and orders unlock after upgrade.'
+              : 'The lead is now available in the Leads workspace. Review the buyer need, assign the next follow-up, and move qualified conversations toward quote creation.'
+          }
           primaryActionHref="/leads?view=trade-event"
           primaryActionLabel="Open leads list"
           secondaryActionHref={captureHref}
@@ -106,7 +132,7 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         />
       ) : null}
 
-      {lockedModule ? (
+      {lockedModule && isTradeShowTrial ? (
         <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
           {lockedModule === 'quotes' || lockedModule === 'orders'
             ? `${lockedModule[0].toUpperCase()}${lockedModule.slice(1)} are preview-only during the Trade Show Trial. Capture leads and create follow-up tasks first.`
@@ -118,22 +144,28 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
         <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.24)_1px,transparent_0)] [background-size:22px_22px]" />
         <div className="relative z-10 grid gap-7 xl:grid-cols-[1fr_360px] xl:items-center">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">Trade Show Trial Home</p>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">
+              {isTradeShowTrial ? 'Trade Show Trial Home' : 'Trade Events Command Center'}
+            </p>
             <h1 className="mt-3 max-w-4xl text-3xl font-black tracking-[-0.04em] text-white sm:text-5xl">
-              Capture booth leads in the existing CRM experience.
+              {isTradeShowTrial
+                ? 'Capture booth leads in the existing CRM experience.'
+                : 'Capture, qualify, and convert trade show conversations.'}
             </h1>
             <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-blue-50/90">
-              Trial clients can capture leads, share vCard context, review follow-ups, and preview the full Setu Flow module journey: dashboard, pipeline, send, documents, catalog, quotes, and orders. Only approved trial actions are live until upgrade.
+              {isTradeShowTrial
+                ? 'Trial clients can capture leads, share vCard context, review follow-ups, and preview the full Setu Flow module journey: dashboard, pipeline, send, documents, catalog, quotes, and orders. Only approved trial actions are live until upgrade.'
+                : 'Manage live and upcoming trade shows from booth capture to buyer review, follow-up, quote creation, and pipeline visibility for importer and exporter teams.'}
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link href={captureHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-black text-slate-950 shadow-[0_18px_45px_rgba(255,255,255,0.20)] transition hover:-translate-y-0.5 hover:bg-blue-50">
                 Add booth lead
               </Link>
               <Link href="/leads?view=trade-event" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/16">
-                View leads list
+                Review event leads
               </Link>
-              <Link href="/dashboard" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/16">
-                Preview dashboard
+              <Link href={isTradeShowTrial ? '/dashboard' : '/reports'} className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/16">
+                {isTradeShowTrial ? 'Preview dashboard' : 'View event report'}
               </Link>
             </div>
           </div>
@@ -147,10 +179,11 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                   <p className="mt-1 text-xs font-bold text-slate-500">{activeEvent ? formatTradeEventDateRange(activeEvent.starts_on, activeEvent.ends_on) : 'Create an event to start'}</p>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-100 pt-4 text-center">
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-center sm:grid-cols-4">
                 <div><p className="text-xl font-black">{capturedLeadCount}</p><p className="text-[10px] font-bold uppercase text-slate-500">Captured</p></div>
                 <div><p className="text-xl font-black">{pendingEntryCount}</p><p className="text-[10px] font-bold uppercase text-slate-500">Review</p></div>
                 <div><p className="text-xl font-black">{followUpCount}</p><p className="text-[10px] font-bold uppercase text-slate-500">Follow-up</p></div>
+                <div><p className="text-xl font-black">$0</p><p className="text-[10px] font-bold uppercase text-slate-500">Pipeline</p></div>
               </div>
             </div>
           </div>
@@ -172,19 +205,27 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
           <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Existing workspace access</p>
-                <h2 className="mt-1 text-xl font-black text-slate-950">What trial clients can see</h2>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">
+                  {isTradeShowTrial ? 'Existing workspace access' : 'Event workflow'}
+                </p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  {isTradeShowTrial ? 'What trial clients can see' : 'Run the trade show from capture to close'}
+                </h2>
               </div>
-              <p className="max-w-xl text-sm font-medium text-slate-600">Existing Setu Flow spaces stay visible so clients understand what they are upgrading into.</p>
+              <p className="max-w-xl text-sm font-medium text-slate-600">
+                {isTradeShowTrial
+                  ? 'Existing Setu Flow spaces stay visible so clients understand what they are upgrading into.'
+                  : 'Give your team one clear workspace for importer and exporter event follow-up, quotes, and pipeline movement.'}
+              </p>
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {allowedSpaces.map((space) => (
-                <Link key={space.title} href={space.href} className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50">
+              {workspaceCards.map((card) => (
+                <Link key={card.title} href={card.href} className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-black text-slate-950">{space.title}</p>
-                    <span className={space.preview ? 'rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black uppercase text-amber-700' : 'rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black uppercase text-emerald-700'}>{space.preview ? 'Preview' : 'Trial'}</span>
+                    <p className="font-black text-slate-950">{card.title}</p>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${card.badgeClass}`}>{card.badge}</span>
                   </div>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{space.body}</p>
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{card.body}</p>
                 </Link>
               ))}
             </div>
@@ -194,7 +235,9 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Active events</p>
-                <h2 className="mt-1 text-xl font-black text-slate-950">Capture from the current event card</h2>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  {isTradeShowTrial ? 'Capture from the current event card' : 'Manage current and upcoming shows'}
+                </h2>
               </div>
               <Link href={captureHref} className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">Add booth lead</Link>
             </div>
@@ -212,7 +255,11 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
                         <h3 className="text-lg font-black text-slate-950">{event.name}</h3>
                         <p className="mt-2 text-xs font-semibold text-slate-600">{[event.city, event.country].filter(Boolean).join(', ') || 'Location TBD'}</p>
                         <p className="mt-1 text-xs font-semibold text-slate-600">{formatTradeEventDateRange(event.starts_on, event.ends_on)}</p>
-                        <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-sm font-bold text-slate-700">{eventEntryCount} booth entries connected</div>
+                        <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-sm font-bold text-slate-700">
+                          {isTradeShowTrial
+                            ? `${eventEntryCount} booth entries connected`
+                            : `${eventEntryCount} event leads captured · ${eventEntryCount} ready for review`}
+                        </div>
                         <div className="mt-4 grid gap-2 sm:grid-cols-2">
                           <Link href={eventCaptureHref} className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">Capture</Link>
                           <Link href={`/leads?eventId=${event.id}`} className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-700">Review</Link>
@@ -225,7 +272,9 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
             ) : (
               <div className="mt-5 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
                 <p className="text-lg font-black text-slate-950">No event has been created yet</p>
-                <p className="mt-2 text-sm text-slate-600">Create a default event during signup or add one from admin.</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {isTradeShowTrial ? 'Create a default event during signup or add one from admin.' : 'Add your next trade show from Admin so the team can start capturing and reviewing event leads.'}
+                </p>
               </div>
             )}
           </section>
@@ -267,7 +316,11 @@ export default async function TradeEventsPage({ searchParams }: { searchParams?:
           <section className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Guidance</p>
             <h2 className="mt-1 text-xl font-black text-slate-950">Chat + Setu Guru</h2>
-            <p className="mt-3 text-sm font-medium leading-6 text-slate-600">Trial clients can ask limited workflow questions and create follow-up tasks for captured leads. Setu Guru will not perform quote, order, catalog, send, document, or admin actions in trial.</p>
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-600">
+              {isTradeShowTrial
+                ? 'Trial clients can ask limited workflow questions and create follow-up tasks for captured leads. Setu Guru will not perform quote, order, catalog, send, document, or admin actions in trial.'
+                : 'Ask Setu Guru to summarize event leads, identify hot buyers, draft follow-up messages, and recommend which importer or exporter conversations need attention today.'}
+            </p>
           </section>
         </aside>
       </div>
