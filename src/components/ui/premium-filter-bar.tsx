@@ -6,6 +6,30 @@
  */
 'use client';
 import React from 'react';
+import { FaIcon } from '@/components/ui/fa-icon';
+
+const ICON_ALIASES: Record<string, string> = {
+  '◎': 'filter',
+  '◯': 'filter',
+  '○': 'filter',
+  '🔍': 'search',
+  '🌍': 'globe',
+  '🌐': 'globe',
+  '📦': 'archive',
+  '📅': 'calendar',
+  '👤': 'user-circle-o',
+  '🎪': 'calendar',
+  market: 'globe',
+  product: 'archive',
+  calendar: 'calendar',
+  event: 'calendar',
+  owner: 'user-circle-o',
+  type: 'filter',
+};
+
+function resolveIcon(icon: string) {
+  return ICON_ALIASES[icon] ?? icon;
+}
 
 interface FilterPillProps {
   icon: string;
@@ -18,15 +42,17 @@ export function FilterPill({ icon, label, children, active = false, minWidth = 1
   return (
     <label
       className={[
-        'inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 cursor-pointer transition',
+        'inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border px-3 transition',
         active
-          ? 'border-blue-200 bg-blue-50 hover:bg-blue-50 hover:border-blue-300'
-          : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 hover:shadow-sm',
+          ? 'border-blue-200 bg-blue-50 hover:border-blue-300 hover:bg-blue-50'
+          : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white hover:shadow-sm',
       ].join(' ')}
       style={{ minWidth }}
     >
-      <span className="text-[13px] flex-shrink-0 leading-none">{icon}</span>
-      <div className="flex flex-col leading-none gap-[3px] min-w-0">{children}</div>
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/75 text-[13px] text-slate-500 ring-1 ring-slate-200/70">
+        <FaIcon icon={resolveIcon(icon)} fixedWidth />
+      </span>
+      <div className="flex min-w-0 flex-col gap-[3px] leading-none">{children}</div>
     </label>
   );
 }
@@ -40,8 +66,8 @@ interface FilterSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement
 export function FilterSelect({ icon, label, active, minWidth, children, ...props }: FilterSelectProps) {
   return (
     <FilterPill icon={icon} label={label} active={active} minWidth={minWidth}>
-      <span className="text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">{label}</span>
-      <select {...props} className="border-none bg-transparent outline-none text-[11.5px] font-bold text-slate-800 appearance-none cursor-pointer leading-snug">
+      <span className="text-[8.5px] font-semibold uppercase leading-none tracking-[0.1em] text-slate-400">{label}</span>
+      <select {...props} className="cursor-pointer appearance-none border-none bg-transparent text-[11.5px] font-semibold leading-snug text-slate-800 outline-none">
         {children}
       </select>
     </FilterPill>
@@ -54,31 +80,33 @@ interface FilterSearchProps extends React.InputHTMLAttributes<HTMLInputElement> 
 export function FilterSearch({ minWidth = 200, className = '', ...props }: FilterSearchProps) {
   return (
     <div
-      className="inline-flex items-center gap-2 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 transition focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 focus-within:bg-white hover:bg-white hover:border-slate-300"
+      className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition hover:border-slate-300 hover:bg-white focus-within:border-blue-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100"
       style={{ minWidth }}
     >
-      <span className="text-slate-400 text-[13px] flex-shrink-0">🔍</span>
-      <input type="text" {...props} className={`border-none bg-transparent outline-none text-[11.5px] font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal w-full ${className}`} />
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/75 text-[13px] text-slate-400 ring-1 ring-slate-200/70">
+        <FaIcon icon="search" fixedWidth />
+      </span>
+      <input type="text" {...props} className={`w-full border-none bg-transparent text-[11.5px] font-medium text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 ${className}`} />
     </div>
   );
 }
 
 export function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) {
   return (
-    <button type="button" onClick={onClear} className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 transition">
-      {label}<span className="opacity-60 text-[9px]">✕</span>
+    <button type="button" onClick={onClear} className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700 transition hover:bg-blue-100">
+      {label}<FaIcon icon="times" className="text-[9px] opacity-60" />
     </button>
   );
 }
 export function ClearAllButton({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-50 transition">
+    <button type="button" onClick={onClick} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-50">
       Clear all
     </button>
   );
 }
 export function FilterMeta({ children }: { children: React.ReactNode }) {
-  return <span className="ml-auto text-[10px] font-semibold text-slate-400 whitespace-nowrap tracking-wide">{children}</span>;
+  return <span className="ml-auto whitespace-nowrap text-[10px] font-medium tracking-wide text-slate-400">{children}</span>;
 }
 export function FilterBar({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
