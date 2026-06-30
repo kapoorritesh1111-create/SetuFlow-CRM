@@ -68,42 +68,33 @@ execute function public.setuflow_enforce_lead_pipeline_journey();
 with orgs as (
   select id as organization_id
     from public.organizations
-), inserted_pipelines as (
-  insert into public.pipelines (id, organization_id, name, lead_type, is_default, created_at, updated_at)
-  select gen_random_uuid(), orgs.organization_id, 'Supplier Journey Pipeline', 'supplier', false, now(), now()
-    from orgs
-   where not exists (
-     select 1
-       from public.pipelines existing
-      where existing.organization_id = orgs.organization_id
-        and lower(existing.lead_type) = 'supplier'
-        and lower(existing.name) = 'supplier journey pipeline'
-   )
-  returning id, organization_id
-), canonical_supplier_pipelines as (
-  select id, organization_id
-    from inserted_pipelines
-  union all
-  select id, organization_id
+)
+insert into public.pipelines (id, organization_id, name, lead_type, is_default, created_at, updated_at)
+select gen_random_uuid(), orgs.organization_id, 'Supplier Journey Pipeline', 'supplier', false, now(), now()
+  from orgs
+ where not exists (
+   select 1
+     from public.pipelines existing
+    where existing.organization_id = orgs.organization_id
+      and lower(existing.lead_type) = 'supplier'
+      and lower(existing.name) = 'supplier journey pipeline'
+ );
+
+-- The live database has a partial unique index for one default pipeline per organization + lead_type.
+-- Clear old supplier defaults first, then promote the canonical supplier workflow pipeline.
+with canonical_supplier_pipelines as (
+  select organization_id
     from public.pipelines
    where lower(lead_type) = 'supplier'
      and lower(name) = 'supplier journey pipeline'
 )
 update public.pipelines p
-   set is_default = (p.id = c.id),
+   set is_default = false,
        updated_at = now()
   from canonical_supplier_pipelines c
  where p.organization_id = c.organization_id
-   and lower(p.lead_type) = 'supplier';
-
--- The live database has a partial unique index for one default pipeline per organization + lead_type.
--- Clear old supplier defaults first, then promote the canonical supplier workflow pipeline.
-update public.pipelines
-   set is_default = false,
-       updated_at = now()
- where lower(lead_type) = 'supplier'
-   and is_default = true
-   and lower(name) <> 'supplier journey pipeline';
+   and lower(p.lead_type) = 'supplier'
+   and p.is_default = true;
 
 update public.pipelines
    set is_default = true,
@@ -153,3 +144,14 @@ update public.pipeline_stages ps
   join supplier_stages s on true
  where ps.pipeline_id = c.pipeline_id
    and lower(ps.name) = lower(s.name);
+
+-- Repair legacy records that have a stage but no matching pipeline before the new guard becomes the source of truth.
+update public.leads l
+   set pipeline_id = ps.pipeline_id,
+       updated_at = now()
+  from public.pipeline_stages ps
+  join public.pipelines p on p.id = ps.pipeline_id
+ where l.stage_id = ps.id
+   and l.pipeline_id is distinct from ps.pipeline_id
+   and lower(l.lead_type) in ('buyer', 'supplier')
+   and lower(p.lead_type) in (lower(l.lead_type), 'both');
