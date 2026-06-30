@@ -70,7 +70,7 @@ with orgs as (
     from public.organizations
 ), inserted_pipelines as (
   insert into public.pipelines (id, organization_id, name, lead_type, is_default, created_at, updated_at)
-  select gen_random_uuid(), orgs.organization_id, 'Supplier Journey Pipeline', 'supplier', true, now(), now()
+  select gen_random_uuid(), orgs.organization_id, 'Supplier Journey Pipeline', 'supplier', false, now(), now()
     from orgs
    where not exists (
      select 1
@@ -95,6 +95,21 @@ update public.pipelines p
   from canonical_supplier_pipelines c
  where p.organization_id = c.organization_id
    and lower(p.lead_type) = 'supplier';
+
+-- The live database has a partial unique index for one default pipeline per organization + lead_type.
+-- Clear old supplier defaults first, then promote the canonical supplier workflow pipeline.
+update public.pipelines
+   set is_default = false,
+       updated_at = now()
+ where lower(lead_type) = 'supplier'
+   and is_default = true
+   and lower(name) <> 'supplier journey pipeline';
+
+update public.pipelines
+   set is_default = true,
+       updated_at = now()
+ where lower(lead_type) = 'supplier'
+   and lower(name) = 'supplier journey pipeline';
 
 with canonical_supplier_pipelines as (
   select id as pipeline_id
