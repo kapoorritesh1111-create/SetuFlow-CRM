@@ -1,3 +1,4 @@
+import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
 
 type StateTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
@@ -10,11 +11,21 @@ const WRAPPER_CLASSES: Record<StateTone, string> = {
   info: 'border-blue-200 bg-blue-50/95 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/45 dark:text-blue-200',
 };
 
+const TONE_ICON: Record<StateTone, string> = {
+  neutral: 'sparkles',
+  success: 'check-circle-o',
+  warning: 'warning',
+  danger: 'exclamation-circle',
+  info: 'file-text-o',
+};
+
 export function StateMessage({ title, description, tone = 'neutral', className }: { title: string; description?: string; tone?: StateTone; className?: string }) {
   return (
     <div className={cn('rounded-[1.5rem] border px-4 py-3.5 text-sm shadow-[0_10px_30px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] dark:ring-white/[0.03]', WRAPPER_CLASSES[tone], className)} role="status">
       <div className="flex items-start gap-3">
-        <span className="mt-1 h-2.5 w-2.5 rounded-full bg-current opacity-80" aria-hidden="true" />
+        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/15 bg-white/65 text-[13px] shadow-sm" aria-hidden="true">
+          <FaIcon icon={TONE_ICON[tone]} fixedWidth />
+        </span>
         <div>
           <p className="font-semibold">{title}</p>
           {description ? <p className="mt-1 leading-6">{description}</p> : null}
