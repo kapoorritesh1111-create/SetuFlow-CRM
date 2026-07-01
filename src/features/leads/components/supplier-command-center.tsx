@@ -12,6 +12,7 @@ import {
   type SupplierCommandCenterData,
 } from '@/lib/supplier-workflow';
 import { getJourneyTerminology } from '@/lib/journey';
+import { approveSupplier, markSupplierUnderReview, rejectSupplier, setSupplierInactive } from '@/features/leads/canonical/actions';
 
 const supplierTerms = getJourneyTerminology('supplier');
 
@@ -129,7 +130,10 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
             <Link href={`/leads/${lead?.id}/rfq/new?mode=suppliers`} className="rounded-2xl border border-teal-200 bg-teal-600 px-4 py-3 text-center font-semibold text-white shadow-soft hover:bg-teal-700">{supplierTerms.primaryActionLabel}</Link>
             <Link href="/documents?mode=suppliers" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center font-semibold text-slate-800 hover:border-teal-200 hover:text-teal-700">{supplierTerms.documentActionLabel}</Link>
             <Link href={`/leads/${lead?.id}/rfq/new?request=sample&mode=suppliers`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center font-semibold text-slate-800 hover:border-teal-200 hover:text-teal-700">{supplierTerms.sampleActionLabel}</Link>
-            <span className={`rounded-2xl border px-4 py-3 text-center text-sm font-semibold ${canApprove ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{canApprove ? supplierTerms.approvalActionLabel : 'Approval blocked'}</span>
+            <form action={approveSupplier}>
+              <input type="hidden" name="lead_id" value={lead?.id ?? ''} />
+              <button disabled={!canApprove} className={`w-full rounded-2xl border px-4 py-3 text-center text-sm font-semibold ${canApprove ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'cursor-not-allowed border-amber-200 bg-amber-50 text-amber-800'}`}>{canApprove ? supplierTerms.approvalActionLabel : 'Approval blocked'}</button>
+            </form>
           </div>
         </div>
       </div>
@@ -222,6 +226,26 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                 <p className="mt-2">{approval.reason}</p>
               </div>
               {approval.blockers.length ? <div className="space-y-2">{approval.blockers.map((blocker) => <p key={blocker} className="rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-amber-900">{blocker}</p>)}</div> : null}
+              <div className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 md:grid-cols-2 xl:grid-cols-4">
+                <form action={markSupplierUnderReview}>
+                  <input type="hidden" name="lead_id" value={lead?.id ?? ''} />
+                  <button className="w-full rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800 hover:bg-teal-100">Mark Under Review</button>
+                </form>
+                <form action={approveSupplier}>
+                  <input type="hidden" name="lead_id" value={lead?.id ?? ''} />
+                  <button disabled={!canApprove} className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold ${canApprove ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'}`}>Approve Supplier</button>
+                </form>
+                <form action={rejectSupplier} className="grid gap-2">
+                  <input type="hidden" name="lead_id" value={lead?.id ?? ''} />
+                  <input name="reason" required placeholder="Rejection reason" className="rounded-xl border border-rose-200 px-3 py-2 text-xs text-slate-700" />
+                  <button className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-100">Reject Supplier</button>
+                </form>
+                <form action={setSupplierInactive} className="grid gap-2">
+                  <input type="hidden" name="lead_id" value={lead?.id ?? ''} />
+                  <input name="reason" required placeholder="Inactive reason" className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700" />
+                  <button className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">Set Inactive</button>
+                </form>
+              </div>
             </div>
           ) : null}
 

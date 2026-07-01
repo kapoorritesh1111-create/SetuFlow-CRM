@@ -60,7 +60,7 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
 
   const { data: leadRecord, error: leadError } = await db
     .from('leads')
-    .select('id, organization_id')
+    .select('id, organization_id, lead_type')
     .eq('organization_id', workspace.organization.id)
     .eq('id', leadId)
     .maybeSingle();
@@ -68,6 +68,18 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
   if (leadError || !leadRecord?.id) {
     if (leadError) logServerError('createLeadQuoteDraftFromLead.load-lead', leadError);
     redirect(`/leads/${leadId}?quoteDraftError=lead-not-found`);
+  }
+
+  if (String(leadRecord.lead_type ?? '').toLowerCase() === 'supplier') {
+    await writeAuditLog({
+      organizationId: workspace.organization.id,
+      action: 'supplier_quote_blocked',
+      entityType: 'lead',
+      entityId: leadId,
+      actorUserId: workspace.user.id,
+      payload: { metadata: { source: 'createLeadQuoteDraftFromLead', reason: 'supplier_records_use_cost_requests' } },
+    });
+    redirect(`/leads/${leadId}?mode=suppliers&quoteDraftError=${encodeURIComponent('Supplier records use Cost Requests, not buyer quotes.')}`);
   }
 
   if (sourceQuoteId) {

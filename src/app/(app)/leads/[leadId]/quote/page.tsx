@@ -47,6 +47,10 @@ export default async function QuotePage({
     return <EmptyState title="Lead not found" description="The requested lead could not be loaded from the active workspace." />;
   }
 
+  if (String(data.lead.lead_type || '').toLowerCase() === 'supplier') {
+    redirect(`/leads/${params.leadId}?mode=suppliers&quoteDraftError=${encodeURIComponent('Supplier records use Cost Requests, not buyer quotes.')}`);
+  }
+
   const quoteId = readParam(searchParams?.quoteId).trim() || null;
   const selectedQuote = quoteId ? data.quotes.find((quote: any) => quote.id === quoteId) : null;
   if (selectedQuote && String(selectedQuote.status || '').toLowerCase() === 'sent') {

@@ -3,6 +3,7 @@ import type { LeadProfileData } from '@/lib/queries/leads';
 import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draft-actions';
 import { moveCanonicalLeadStage, reassignCanonicalLeadOwner, saveCanonicalLeadDetails, saveCanonicalQualificationMapping, scheduleCanonicalLeadFollowUp } from './actions';
 import FollowUpComposer from './FollowUpComposer';
+import { SupplierCommandCenter } from '@/features/leads/components/supplier-command-center';
 
 type TeamMember = { id: string; name: string; email?: string | null };
 type Props = { data: LeadProfileData; canReassignOwner?: boolean; teamMembers?: TeamMember[]; backHref?: string };

@@ -133,13 +133,22 @@ export async function getAnalyticsData(organizationId: string, mode: WorkspaceMo
   const base = Math.max(leadsInRange.length, 1);
   const qualifiedLeadIds = new Set([...rfqLeadIds, ...quotedLeadIds, ...orderedLeadIds]);
   const negotiationLeadIds = new Set(pendingQuotes.map((quote) => quote.lead_id).filter((leadId): leadId is string => Boolean(leadId)));
-  const funnel = [
-    { label: 'Leads Captured', count: leadsInRange.length, pct: pct(leadsInRange.length, base), href: '/leads', color: '#2563eb' },
-    { label: 'Qualified Leads / RFQs', count: qualifiedLeadIds.size, pct: pct(qualifiedLeadIds.size, base), href: '/leads', color: '#06b6d4' },
-    { label: 'Quotes Sent', count: sentQuotes.length, pct: pct(sentQuotes.length, base), href: '/quotes', color: '#34d399' },
-    { label: 'Follow-up / Negotiation', count: negotiationLeadIds.size, pct: pct(negotiationLeadIds.size, base), href: '/activities', color: '#8b5cf6' },
-    { label: 'Orders Won', count: completed, pct: pct(completed, base), href: '/orders', color: '#f97316' },
-  ];
+  const supplierResponseLeadIds = new Set([...rfqLeadIds, ...quotedLeadIds]);
+  const funnel = mode === 'suppliers'
+    ? [
+        { label: 'Suppliers Captured', count: leadsInRange.length, pct: pct(leadsInRange.length, base), href: '/leads?mode=suppliers', color: '#0f766e' },
+        { label: 'Profile Review / Verification', count: qualifiedLeadIds.size, pct: pct(qualifiedLeadIds.size, base), href: '/pipeline?mode=suppliers', color: '#0891b2' },
+        { label: 'Cost Requests Sent', count: rfqs.length, pct: pct(rfqs.length, base), href: '/rfqs?mode=suppliers', color: '#10b981' },
+        { label: 'Responses Received', count: supplierResponseLeadIds.size, pct: pct(supplierResponseLeadIds.size, base), href: '/rfqs?mode=suppliers', color: '#8b5cf6' },
+        { label: 'Approved Suppliers', count: completed || scopedLeadsAll.filter((lead) => orderedLeadIds.has(lead.id)).length, pct: pct(completed || scopedLeadsAll.filter((lead) => orderedLeadIds.has(lead.id)).length, base), href: '/pipeline?mode=suppliers', color: '#f97316' },
+      ]
+    : [
+        { label: 'Leads Captured', count: leadsInRange.length, pct: pct(leadsInRange.length, base), href: '/leads', color: '#2563eb' },
+        { label: 'Qualified Leads / RFQs', count: qualifiedLeadIds.size, pct: pct(qualifiedLeadIds.size, base), href: '/leads', color: '#06b6d4' },
+        { label: 'Quotes Sent', count: sentQuotes.length, pct: pct(sentQuotes.length, base), href: '/quotes', color: '#34d399' },
+        { label: 'Follow-up / Negotiation', count: negotiationLeadIds.size, pct: pct(negotiationLeadIds.size, base), href: '/activities', color: '#8b5cf6' },
+        { label: 'Orders Won', count: completed, pct: pct(completed, base), href: '/orders', color: '#f97316' },
+      ];
 
   const dealByLead = new Map(scopedLeadsAll.map((lead) => [lead.id, Number(lead.deal_value ?? 0)]));
   const leadValue = scopedLeadsAll.reduce((sum, lead) => sum + Number(lead.deal_value ?? 0), 0);

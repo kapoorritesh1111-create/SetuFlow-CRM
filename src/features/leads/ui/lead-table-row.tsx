@@ -226,13 +226,14 @@ export function LeadTableRow({
 }
 
 export function LeadTableHeader({
-  onSelectAll, allSelected, currentSortField, currentSortDir, onColumnSort
+  onSelectAll, allSelected, currentSortField, currentSortDir, onColumnSort, valueLabel = 'Deal value'
 }: {
   onSelectAll: (checked: boolean) => void;
   allSelected: boolean;
   currentSortField?: string;
   currentSortDir?: 'asc' | 'desc';
   onColumnSort?: (field: string) => void;
+  valueLabel?: string;
 }) {
   function SortableHeader({ field, label, className = '' }: { field: string; label: string; className?: string }) {
     const isActive = currentSortField === field;
@@ -247,7 +248,7 @@ export function LeadTableHeader({
       <SortableHeader field="stage" label="Stage" />
       <SortableHeader field="follow_up" label="Follow up" />
       <SortableHeader field="priority_score" label="Score" />
-      <SortableHeader field="deal_value" label="Deal value" />
+      <SortableHeader field="deal_value" label={valueLabel} />
       <SortableHeader field="owner" label="Owner" />
       <div className="hidden lg:block text-right text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Actions</div>
     </div>

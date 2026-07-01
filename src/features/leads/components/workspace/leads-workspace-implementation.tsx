@@ -1790,6 +1790,7 @@ export function LeadsWorkspace({
             }}
             currentSortField={sortRules[0]?.field}
             currentSortDir={sortRules[0]?.dir}
+            valueLabel={workspaceMode === 'suppliers' ? 'Sourcing value' : workspaceMode === 'all' ? 'Value' : 'Deal value'}
             onColumnSort={(field) => {
               const current = sortRules[0];
               if (current?.field === field) {

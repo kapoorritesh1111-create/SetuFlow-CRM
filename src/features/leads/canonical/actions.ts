@@ -115,3 +115,146 @@ export async function saveCanonicalQualificationMapping(formData: FormData) {
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`); revalidatePath(`/leads/${leadId}/quote`);
   goLead(leadId, { saved: 'qualification' }, 'qualification');
 }
+
+async function supplierStageByName(db: any, organizationId: string, name: string) {
+  const { data, error } = await db
+    .from('pipelines')
+    .select('id, pipeline_stages(id, name, sort_order)')
+    .eq('organization_id', organizationId)
+    .eq('lead_type', 'supplier')
+    .eq('is_default', true)
+    .maybeSingle();
+  if (error || !data?.id) return null;
+  const stages = Array.isArray(data.pipeline_stages) ? data.pipeline_stages : [];
+  const wanted = name.trim().toLowerCase();
+  const stage = stages.find((item: any) => String(item?.name ?? '').trim().toLowerCase() === wanted) ?? null;
+  return stage?.id ? { id: stage.id, pipelineId: data.id, name: stage.name } : null;
+}
+
+async function recordSupplierAction(db: any, input: { organizationId: string; leadId: string; actorUserId: string; kind: string; message: string; metadata?: Record<string, unknown> }) {
+  const nowIso = new Date().toISOString();
+  await db.from('lead_activities').insert({
+    organization_id: input.organizationId,
+    lead_id: input.leadId,
+    actor_user_id: input.actorUserId,
+    kind: input.kind,
+    message: input.message,
+    occurred_at: nowIso,
+  });
+  await db.from('communications').insert({
+    organization_id: input.organizationId,
+    lead_id: input.leadId,
+    related_entity: 'lead',
+    related_id: input.leadId,
+    communication_type: 'system_note',
+    direction: 'internal',
+    channel: 'system',
+    subject: input.message,
+    body: input.message,
+    summary: input.message,
+    draft_source: 'system',
+    status: 'sent',
+    sent_at: nowIso,
+    created_by: input.actorUserId,
+    provider_payload: {},
+    metadata: input.metadata ?? {},
+  });
+}
+
+async function transitionSupplierApproval(formData: FormData, next: { status: string; stageName: string; kind: string; saved: string; message: string; requiresReason?: boolean }) {
+  if (!hasSupabaseEnv) return;
+  const workspace = await requireWorkspace();
+  if (!workspace?.organization || !workspace?.user) return;
+  const leadId = clean(formData.get('lead_id'));
+  const reason = nullable(formData.get('reason'));
+  if (!leadId) return;
+  if (next.requiresReason && !reason) goLead(leadId, { stageError: 'supplier-reason-required' }, 'approval');
+  const supabase = (await createClient()) as any;
+  const { data: lead, error: leadError } = await supabase
+    .from('leads')
+    .select('id, lead_type, notes')
+    .eq('organization_id', workspace.organization!.id)
+    .eq('id', leadId)
+    .maybeSingle();
+  if (leadError || !lead?.id || String(lead.lead_type ?? '').toLowerCase() !== 'supplier') goLead(leadId, { stageError: 'supplier-lead-required' }, 'approval');
+  const stage = await supplierStageByName(supabase, workspace.organization!.id, next.stageName);
+  if (!stage) goLead(leadId, { stageError: 'supplier-stage-missing' }, 'approval');
+  const { parseLeadWorkflow, serializeLeadWorkflow } = await import('@/lib/lead-workflow');
+  const { writeAuditLog } = await import('@/lib/auditLog');
+  const parsed = parseLeadWorkflow(lead.notes);
+  const notes = serializeLeadWorkflow(parsed.plainNotes, {
+    ...parsed.workflow,
+    supplierCapability: {
+      ...parsed.workflow.supplierCapability,
+      approvalStatus: next.status,
+    },
+  });
+  const { error } = await supabase
+    .from('leads')
+    .update({ notes, stage_id: stage!.id, pipeline_id: stage!.pipelineId, updated_by: workspace.user!.id })
+    .eq('organization_id', workspace.organization!.id)
+    .eq('id', leadId);
+  if (error) goLead(leadId, { stageError: 'supplier-transition-failed' }, 'approval');
+  await recordSupplierAction(supabase, {
+    organizationId: workspace.organization!.id,
+    leadId,
+    actorUserId: workspace.user!.id,
+    kind: next.kind,
+    message: reason ? `${next.message} Reason: ${reason}` : next.message,
+    metadata: { supplier_status: next.status, stage: next.stageName, reason },
+  });
+  await writeAuditLog({
+    organizationId: workspace.organization!.id,
+    action: next.kind,
+    entityType: 'lead',
+    entityId: leadId,
+    actorUserId: workspace.user!.id,
+    payload: { new: { supplier_status: next.status, stage: next.stageName }, metadata: { reason, source: 'SupplierCommandCenter' } },
+  });
+  revalidatePath('/leads');
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath('/pipeline');
+  goLead(leadId, { saved: next.saved }, 'approval');
+}
+
+export async function markSupplierUnderReview(formData: FormData) {
+  await transitionSupplierApproval(formData, {
+    status: 'under_review',
+    stageName: 'Compliance Review',
+    kind: 'supplier_under_review',
+    saved: 'supplier-review',
+    message: 'Supplier moved into compliance review.',
+  });
+}
+
+export async function approveSupplier(formData: FormData) {
+  await transitionSupplierApproval(formData, {
+    status: 'approved',
+    stageName: 'Approved Supplier',
+    kind: 'supplier_approved',
+    saved: 'supplier-approved',
+    message: 'Supplier approved for sourcing and buyer demand linkage.',
+  });
+}
+
+export async function rejectSupplier(formData: FormData) {
+  await transitionSupplierApproval(formData, {
+    status: 'rejected',
+    stageName: 'Rejected Supplier',
+    kind: 'supplier_rejected',
+    saved: 'supplier-rejected',
+    message: 'Supplier rejected from sourcing workflow.',
+    requiresReason: true,
+  });
+}
+
+export async function setSupplierInactive(formData: FormData) {
+  await transitionSupplierApproval(formData, {
+    status: 'inactive',
+    stageName: 'Inactive Supplier',
+    kind: 'supplier_inactive',
+    saved: 'supplier-inactive',
+    message: 'Supplier set inactive.',
+    requiresReason: true,
+  });
+}
