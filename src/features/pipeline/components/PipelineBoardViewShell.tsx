@@ -37,6 +37,21 @@ const densityLabel: Record<Density, string> = {
   micro: 'Micro scanning mode',
 };
 
+const SUPPLIER_CORE_PIPELINE_STAGE_NAMES = [
+  'New Supplier',
+  'Profile Review',
+  'Documents Requested',
+  'Cost / Sample Requested',
+  'Response Received',
+  'Approved Supplier',
+];
+
+const SUPPLIER_CORE_PIPELINE_STAGE_SET = new Set(SUPPLIER_CORE_PIPELINE_STAGE_NAMES.map((name) => name.toLowerCase()));
+
+function isSupplierCorePipelineStage(stageName: string) {
+  return SUPPLIER_CORE_PIPELINE_STAGE_SET.has(stageName.trim().toLowerCase());
+}
+
 function preferredPipelinesForLeadType(pipelines: PipelineBoardProps['pipelines'], leadType: LeadJourney | '') {
   if (!leadType) return pipelines;
   const scoped = pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, leadType));
@@ -88,9 +103,28 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
     return map;
   }, [props.leadProductInterests]);
 
+  const leadCountByStageId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const lead of props.leads) {
+      if (!lead.stage_id) continue;
+      counts.set(lead.stage_id, (counts.get(lead.stage_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [props.leads]);
+
+  const scopedStagesForView = useMemo(() => {
+    if (!activeLeadType) return props.stages;
+    const allowedPipelineIds = new Set(preferredPipelinesForLeadType(props.pipelines, activeLeadType).map((pipeline) => pipeline.id));
+    return props.stages.filter((stage) => {
+      if (!allowedPipelineIds.has(stage.pipeline_id)) return false;
+      if (activeLeadType !== 'supplier') return true;
+      return isSupplierCorePipelineStage(stage.name) || (leadCountByStageId.get(stage.id) ?? 0) > 0;
+    });
+  }, [activeLeadType, leadCountByStageId, props.pipelines, props.stages]);
+
   const stageGroups = useMemo<StageGroup[]>(() => {
     const grouped = new Map<string, StageGroup>();
-    for (const stage of props.stages) {
+    for (const stage of scopedStagesForView) {
       const existing = grouped.get(stage.name);
       if (existing) {
         existing.stages.push(stage);
@@ -102,11 +136,8 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
         grouped.set(stage.name, { name: stage.name, stages: [stage], sort_order: stage.sort_order, ref: stage });
       }
     }
-    const groups = Array.from(grouped.values()).sort((left, right) => left.sort_order - right.sort_order);
-    if (!activeLeadType) return groups;
-    const allowedPipelineIds = preferredPipelinesForLeadType(props.pipelines, activeLeadType).map((pipeline) => pipeline.id);
-    return groups.filter((group) => group.stages.some((stage) => allowedPipelineIds.includes(stage.pipeline_id)));
-  }, [activeLeadType, props.pipelines, props.stages]);
+    return Array.from(grouped.values()).sort((left, right) => left.sort_order - right.sort_order);
+  }, [scopedStagesForView]);
 
   const filteredLeads = useMemo(() => {
     return props.leads.filter((lead) => {

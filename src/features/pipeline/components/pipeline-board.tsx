@@ -33,6 +33,21 @@ import { workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import type { TodayFilterKey, TodayLayerState, WorkspaceMode } from '@/features/workspace/types';
 
 
+const SUPPLIER_CORE_PIPELINE_STAGE_NAMES = [
+  'New Supplier',
+  'Profile Review',
+  'Documents Requested',
+  'Cost / Sample Requested',
+  'Response Received',
+  'Approved Supplier',
+];
+
+const SUPPLIER_CORE_PIPELINE_STAGE_SET = new Set(SUPPLIER_CORE_PIPELINE_STAGE_NAMES.map((name) => name.toLowerCase()));
+
+function isSupplierCorePipelineStage(stageName: string) {
+  return SUPPLIER_CORE_PIPELINE_STAGE_SET.has(stageName.trim().toLowerCase());
+}
+
 function preferredPipelinesForLeadType(pipelines: PipelineBoardProps['pipelines'], leadType: LeadJourney | '') {
   if (!leadType) return pipelines;
   const scoped = pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, leadType));
@@ -361,14 +376,35 @@ export function PipelineBoard({
   }, [activities]);
 
   const nextStepMap = useMemo(() => new Map(nextSteps.map((item) => [item.id, item.name])), [nextSteps]);
-  // Group stages by name across all pipelines to avoid duplicate lanes when pipelines
-  // share stage names.  Each group aggregates the stages that share the same
-  // name, sorts by the lowest sort_order among the group, and carries a
-  // representative stage record for closed/won/lost flags.  When moving
-  // leads we pick the stage whose pipeline_id matches the lead’s pipeline.
-  const orderedStageGroups = useMemo(() => {
+
+  const leadCountByStageId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const lead of localLeads) {
+      if (!lead.stage_id) continue;
+      counts.set(lead.stage_id, (counts.get(lead.stage_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [localLeads]);
+
+  // Scope stages before grouping. This prevents legacy supplier pipelines with the
+  // same names but lower sort orders from pushing canonical Supplier Journey lanes
+  // out of order. In supplier mode, show the six owner-friendly working lanes and
+  // only surface lifecycle terminal lanes when they actually contain records.
+  const scopedStagesForBoard = useMemo(() => {
+    if (!leadTypeFilter) return stages;
+    const allowedPipelineIds = new Set(preferredPipelinesForLeadType(pipelines, leadTypeFilter).map((p) => p.id));
+    return stages.filter((stage) => {
+      if (!allowedPipelineIds.has(stage.pipeline_id)) return false;
+      if (leadTypeFilter !== 'supplier') return true;
+      return isSupplierCorePipelineStage(stage.name) || (leadCountByStageId.get(stage.id) ?? 0) > 0;
+    });
+  }, [leadCountByStageId, leadTypeFilter, pipelines, stages]);
+
+  // Group stages by name across the scoped pipelines to avoid duplicate lanes when
+  // buyer/all mode includes multiple pipelines with the same stage names.
+  const filteredStageGroups = useMemo(() => {
     const map = new Map<string, { name: string; stages: Stage[]; sort_order: number; ref: Stage }>();
-    for (const stage of stages) {
+    for (const stage of scopedStagesForBoard) {
       const existing = map.get(stage.name);
       if (existing) {
         existing.stages.push(stage);
@@ -381,17 +417,7 @@ export function PipelineBoard({
       }
     }
     return Array.from(map.values()).sort((a, b) => a.sort_order - b.sort_order);
-  }, [stages]);
-
-  // Filter stage groups by the selected lead type.  When leadTypeFilter is empty,
-  // return all stage groups.  Otherwise, return only groups that contain at least one
-  // stage whose pipeline_id belongs to a pipeline of the selected type.  This
-  // prevents buyer and supplier lanes from being mixed when filtering.
-  const filteredStageGroups = useMemo(() => {
-    if (!leadTypeFilter) return orderedStageGroups;
-    const allowedPipelineIds = preferredPipelinesForLeadType(pipelines, leadTypeFilter).map((p) => p.id);
-    return orderedStageGroups.filter((group) => group.stages.some((stage) => allowedPipelineIds.includes(stage.pipeline_id)));
-  }, [orderedStageGroups, pipelines, leadTypeFilter]);
+  }, [scopedStagesForBoard]);
   const filteredLeads = useMemo(() => {
     const needle = search.trim().toLowerCase();
     const todayStart = new Date();
