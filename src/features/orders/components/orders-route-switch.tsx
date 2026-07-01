@@ -7,14 +7,24 @@ export function OrdersRouteSwitch({ children, ordersView }: { children: React.Re
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supplierMode = searchParams.get('mode') === 'suppliers';
+  const mode = searchParams.get('mode');
+  const supplierMode = mode === 'suppliers';
   const supplierRoute = pathname.startsWith('/orders/supplier-links');
 
   useEffect(() => {
+    // Supplier mode → redirect to supplier execution view
     if (supplierMode && !supplierRoute) {
       router.replace('/orders/supplier-links?mode=suppliers', { scroll: false });
+      return;
     }
-  }, [router, supplierMode, supplierRoute]);
+    // Buyer mode or All mode while on supplier-links → redirect back to main orders
+    if (!supplierMode && supplierRoute) {
+      const params = new URLSearchParams();
+      if (mode && mode !== 'all') params.set('mode', mode);
+      const query = params.toString();
+      router.replace(query ? `/orders?${query}` : '/orders', { scroll: false });
+    }
+  }, [router, supplierMode, supplierRoute, mode]);
 
   if (supplierRoute) return <>{children}</>;
   if (supplierMode) {

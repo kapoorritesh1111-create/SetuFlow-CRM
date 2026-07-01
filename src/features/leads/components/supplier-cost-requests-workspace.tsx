@@ -104,7 +104,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
       </div>
 
       {/* Main split: queue + detail */}
-      <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[480px_minmax(0,1fr)]">
         {/* Queue */}
         <div className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
@@ -119,14 +119,11 @@ export function SupplierCostRequestsWorkspace(props: Props) {
               </div>
             </div>
             {/* Column headers */}
-            <div className="mt-4 grid grid-cols-[1fr_60px_60px_70px_60px_60px_80px] gap-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            <div className="mt-4 grid grid-cols-[1fr_80px_80px_80px] gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               <span>Supplier</span>
-              <span>Market</span>
               <span>Stage</span>
-              <span>Open RFQs</span>
-              <span className="truncate">Latest Resp.</span>
-              <span className="truncate">Approval</span>
-              <span>Sourcing $</span>
+              <span>Approval</span>
+              <span className="text-right">Value</span>
             </div>
           </div>
           <div className="divide-y divide-slate-50">
@@ -134,21 +131,18 @@ export function SupplierCostRequestsWorkspace(props: Props) {
               <Link
                 key={s.id}
                 href={`/leads/${s.id}?mode=suppliers`}
-                className={`grid grid-cols-[1fr_60px_60px_70px_60px_60px_80px] items-center gap-1 px-5 py-3 text-xs hover:bg-slate-50 transition-colors ${s.id === selected?.id ? 'bg-teal-50 border-l-2 border-l-[#279491]' : ''}`}
+                className={`grid grid-cols-[1fr_80px_80px_80px] items-center gap-2 px-5 py-3 text-xs hover:bg-slate-50 transition-colors ${s.id === selected?.id ? 'bg-teal-50 border-l-2 border-l-[#279491]' : ''}`}
               >
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-slate-900">{s.company_name}</p>
-                  <p className="truncate text-slate-400">{s.country || '—'}</p>
+                  <p className="truncate text-[11px] text-slate-400">{s.country || '—'}</p>
                 </div>
-                <span className="text-slate-500">{s.country?.slice(0, 3) ?? '—'}</span>
-                <span className="flex items-center gap-1 font-medium text-slate-700">
+                <span className="flex items-center gap-1.5 font-medium text-slate-700">
                   <StageDot stage={s.stageName} />
-                  <span className="truncate">{s.stageName.split(' ').slice(0, 2).join(' ')}</span>
+                  <span className="truncate text-[11px]">{s.stageName.split(' ').slice(0, 2).join(' ')}</span>
                 </span>
-                <span className="text-center font-semibold text-slate-700">{s.rfqCount}</span>
-                <span className="truncate text-slate-500">{s.latestResponse ?? 'No response yet'}</span>
                 <ReadinessBadge level={s.approvalReadiness} />
-                <span className="text-right text-slate-700">USD {Math.round(Number(s.deal_value ?? 0) / 1000)}K</span>
+                <span className="text-right font-semibold text-slate-700">USD {Math.round(Number(s.deal_value ?? 0) / 1000)}K</span>
               </Link>
             ))}
             {suppliers.length === 0 && (

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { normalizeQuotesForTimeline } from '@/lib/normalizers/quote-normalizer';
@@ -48,6 +49,13 @@ export default async function CreateRfqPage({ params }: { params: { leadId: stri
   const qualificationStatus = String(workflow.qualificationStatus ?? 'not_started');
   const mappedProductCount = Array.isArray(data.linkedProducts) ? data.linkedProducts.length : 0;
   const mappedMarketCount = Array.isArray(data.linkedMarkets) ? data.linkedMarkets.length : 0;
+  const isSupplierLead = String(lead.lead_type ?? '').toLowerCase() === 'supplier';
+
+  // Supplier leads use the sourcing workflow — they do not require buyer qualification status.
+  // Return them to the supplier command center where Request Cost is the correct action.
+  if (isSupplierLead) {
+    redirect(`/leads/${leadId}?mode=suppliers`);
+  }
 
   if (qualificationStatus !== 'qualified') {
     return <EmptyState title="Qualification required" description="This lead must be marked as qualified before an RFQ can be created. Update qualification on the lead profile and then return here." />;
