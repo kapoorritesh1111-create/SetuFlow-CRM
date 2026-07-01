@@ -7,8 +7,9 @@ import { GenerateLeadDraftControls } from '@/features/ai/components/ai-draft-con
 import { getSuggestionFamilyLabel, getSuggestionLabel, normalizeSuggestionType } from '@/lib/ai/suggestion-types';
 import { getPricingBasisLabel } from '@/lib/pricing-basis-contract';
 import { LeadProfileControls } from '@/features/leads/components/lead-profile-controls';
+import { SupplierCommandCenter } from '@/features/leads/components/supplier-command-center';
 
-type BuyerDetailTab = 'overview' | 'timeline' | 'communications' | 'product_interest' | 'quotes' | 'documents' | 'compliance' | 'follow_ups';
+ type BuyerDetailTab = 'overview' | 'timeline' | 'communications' | 'product_interest' | 'quotes' | 'documents' | 'compliance' | 'follow_ups';
 
 function formatDateValue(value?: string | null) {
   if (!value) return '—';
@@ -44,8 +45,13 @@ function SnapshotCard({ label, value, helper }: { label: string; value: string; 
 }
 
 export function BuyerDetailPage({ data }: { data: any }) {
-  const [activeTab, setActiveTab] = useState<BuyerDetailTab>('overview');
   const lead = data?.lead;
+
+  if (lead?.lead_type === 'supplier') {
+    return <SupplierCommandCenter data={data} />;
+  }
+
+  const [activeTab, setActiveTab] = useState<BuyerDetailTab>('overview');
   const workflow = data?.workflow ?? {};
   const quotes = Array.isArray(data?.quotes) ? data.quotes : [];
   const activities = Array.isArray(data?.activities) ? data.activities : [];
@@ -86,9 +92,7 @@ export function BuyerDetailPage({ data }: { data: any }) {
 
   const timelineRows = useMemo(() => {
     const activityRows = activities.map((item: any) => ({ id: `activity-${item.id}`, type: 'Activity', title: item.message || item.kind || 'Activity', occurred_at: item.occurred_at, detail: item.kind || '' }));
-    const communicationRows = communications.map((item: any) => { const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata as Record<string, any> : null; const operatorNote = typeof metadata?.operator_notes === 'string' && metadata.operator_notes.trim() ? metadata.operator_notes.trim() : null; const aiSuggestionType = typeof metadata?.ai_suggestion_type === 'string' ? normalizeSuggestionType(metadata.ai_suggestion_type) : null; const sourceLabel = item.draft_source === 'ai' ? `${getSuggestionFamilyLabel(aiSuggestionType)} draft · ${aiSuggestionType ? getSuggestionLabel(aiSuggestionType) : 'AI-assisted'}` : 'Manual communication'; return { id: `communication-${item.id}`, type: 'Communication', title: item.subject || item.summary || String(item.communication_type || 'communication').replace(/_/g, ' '), occurred_at: item.sent_at || item.scheduled_at || item.created_at, detail: `${sourceLabel} · ${item.body || item.summary || `${item.channel || 'channel'} · ${item.status || 'draft'}`}${operatorNote ? `
-
-Operator note: ${operatorNote}` : ''}` }; });
+    const communicationRows = communications.map((item: any) => { const metadata = item?.metadata && typeof item.metadata === 'object' ? metadata as Record<string, any> : null; const operatorNote = typeof metadata?.operator_notes === 'string' && metadata.operator_notes.trim() ? metadata.operator_notes.trim() : null; const aiSuggestionType = typeof metadata?.ai_suggestion_type === 'string' ? normalizeSuggestionType(metadata.ai_suggestion_type) : null; const sourceLabel = item.draft_source === 'ai' ? `${getSuggestionFamilyLabel(aiSuggestionType)} draft · ${aiSuggestionType ? getSuggestionLabel(aiSuggestionType) : 'AI-assisted'}` : 'Manual communication'; return { id: `communication-${item.id}`, type: 'Communication', title: item.subject || item.summary || String(item.communication_type || 'communication').replace(/_/g, ' '), occurred_at: item.sent_at || item.scheduled_at || item.created_at, detail: `${sourceLabel} · ${item.body || item.summary || `${item.channel || 'channel'} · ${item.status || 'draft'}`}${operatorNote ? `\n\nOperator note: ${operatorNote}` : ''}` }; });
     const followUpRows = followUps.map((item: any) => ({ id: `follow-up-${item.id}`, type: 'Follow-up', title: item.status === 'completed' ? 'Follow-up completed' : 'Follow-up scheduled', occurred_at: item.scheduled_at || item.created_at, detail: item.notes || item.status || '' }));
     const quoteRows = quotes.map((item: any) => ({ id: `quote-${item.id}`, type: 'Quote', title: `${item.quote_number || 'Quote'} · ${String(item.status || 'draft').replace(/_/g, ' ')}`, occurred_at: item.updated_at || item.created_at, detail: `${item.currency || 'USD'} · current version ${item.current_version_id ? 'linked' : 'pending'}` }));
     const documentRows = documents.map((item: any) => ({ id: `document-${item.id}`, type: 'Document', title: item.file_name || item.doc_type || 'Document uploaded', occurred_at: item.uploaded_at || item.reviewed_at, detail: item.status || '' }));
@@ -111,7 +115,7 @@ Operator note: ${operatorNote}` : ''}` }; });
   ];
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-4 md:p-6" data-s41-buyer-command-center="true">
       <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -234,7 +238,7 @@ Operator note: ${operatorNote}` : ''}` }; });
           ) : null}
 
           {activeTab === 'quotes' ? (
-            quotes.length ? <div className="overflow-x-auto rounded-3xl border border-slate-200"><table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500"><tr><th className="px-4 py-3">Quote #</th><th className="px-4 py-3">Basis</th><th className="px-4 py-3">Currency</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Current Version</th><th className="px-4 py-3">Contract</th><th className="px-4 py-3">Approval</th><th className="px-4 py-3">Updated At</th></tr></thead><tbody>{quotes.map((quote: any) => { const notes = String(quote?.notes || '').toLowerCase(); const basis = getPricingBasisLabel(quote?.pricing_basis); const approvalState = notes.includes('approved') ? 'Approved' : notes.includes('pending') ? 'Pending approval' : 'Not required'; const linkedContract = contracts.find((item: any) => item.quote_id === quote.id); return <tr key={quote.id} className="border-t border-slate-100"><td className="px-4 py-3 font-medium text-slate-900"><a className="underline-offset-2 hover:underline" href={`/leads/${lead?.id}/quote?quoteId=${quote.id}`}>{quote.quote_number || `Quote ${String(quote.id).slice(0, 8)}`}</a></td><td className="px-4 py-3 text-slate-600">{basis}</td><td className="px-4 py-3 text-slate-600">{quote.currency || 'USD'}</td><td className="px-4 py-3 text-slate-600">{String(quote.status || 'draft').replace(/_/g, ' ')}</td><td className="px-4 py-3 text-slate-600">{quote.current_version_id ? 'Linked' : 'Pending'}</td><td className="px-4 py-3 text-slate-600">{linkedContract ? <Link href="/contracts" className="font-medium text-brand-700 hover:underline">{String(linkedContract.status || 'draft').replace(/_/g, ' ')}</Link> : '—'}</td><td className="px-4 py-3 text-slate-600">{approvalState}</td><td className="px-4 py-3 text-slate-600">{formatDateTimeValue(quote.updated_at)}</td></tr>; })}</tbody></table></div> : <EmptyTabState title="No quotes yet" description="Create a draft quote from the buyer drawer to start the commercial negotiation flow." />
+            quotes.length ? <div className="overflow-x-auto rounded-3xl border border-slate-200"><table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500"><tr><th className="px-4 py-3">Quote #</th><th className="px-4 py-3">Basis</th><th className="px-4 py-3">Currency</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Current Version</th><th className="px-4 py-3">Contract</th><th className="px-4 py-3">Approval</th><th className="px-4 py-3">Updated At</th></tr></thead><tbody>{quotes.map((quote: any) => { const notes = String(quote?.notes || '').toLowerCase(); const basis = getPricingBasisLabel(quote?.pricing_basis); const approvalState = notes.includes('approved') ? 'Approved' : notes.includes('pending') ? 'Pending approval' : 'Not required'; const linkedContract = contracts.find((item: any) => item.quote_id === quote.id); return <tr key={quote.id} className="border-t border-slate-100"><td className="px-4 py-3 font-medium text-slate-900"><a className="underline-offset-2 hover:underline" href={`/leads/${lead?.id}/quote?quoteId=${quote.id}`}>{quote.quote_number || `Quote ${String(quote.id).slice(0, 8)}`}</a></td><td className="px-4 py-3 text-slate-600">{basis}</td><td className="px-4 py-3 text-slate-600">{quote.currency || 'USD'}</td><td className="px-4 py-3 text-slate-600">{String(quote.status || 'draft').replace(/_/g, ' ')}</td><td className="px-4 py-3 text-slate-600">{quote.current_version_id ? 'Linked' : 'Pending'}</td><td className="px-4 py-3 text-slate-600">{linkedContract ? <Link href="/contracts" className="font-medium text-brand-700 hover:underline">{String(linkedContract.status || 'draft').replace(/_/g, ' ')}</Link> : '—'}</td><td className="px-4 py-3 text-slate-600">{approvalState}</td><td className="px-4 py-3 text-slate-600">{formatDateTimeValue(quote.updated_at)}</td></tr>; })}</tbody></table></div> : <EmptyTabState title="No quotes yet" description="Create a draft quote from the buyer drawer to start the commercial workflow." />
           ) : null}
 
           {activeTab === 'documents' ? (
