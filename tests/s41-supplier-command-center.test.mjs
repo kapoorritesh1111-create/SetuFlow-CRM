@@ -46,7 +46,7 @@ test('S41-SUP-013 through S41-SUP-017 supplier approval, cost request, responses
   assert.match(supplierWorkflow, /getSupplierOfferComparison/);
   assert.match(supplierWorkflow, /getSupplierDemandMatches/);
   assert.match(supplierCenter, /Request Cost/);
-  assert.match(supplierCenter, /Supplier responses/);
+  assert.match(supplierCenter, /supplier responses/);
   assert.match(supplierCenter, /Offer comparison/);
   assert.match(supplierCenter, /buyer demand/);
   assert.doesNotMatch(supplierCenter, /Open quote workspace/);
