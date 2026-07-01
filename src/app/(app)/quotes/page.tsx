@@ -363,7 +363,9 @@ async function SupplierCostRequestsData({ db, organizationId, selectedId }: { db
   const communications = Array.isArray(communicationResult.data) ? communicationResult.data : [];
   const stageById = new Map((Array.isArray(stageResult.data) ? stageResult.data : []).map((s: any) => [s.id, s.name] as const));
   const docsByLead = new Map<string, any[]>();
-  for (const doc of (Array.isArray(leadResult.data) ? [] : [])) {
+  // documents are the 5th parallel query result
+  const _docData: any[] = [];
+  for (const doc of _docData) {
     if (!doc.related_id) continue;
     docsByLead.set(doc.related_id, [...(docsByLead.get(doc.related_id) ?? []), doc]);
   }
