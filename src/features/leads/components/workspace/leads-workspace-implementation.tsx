@@ -861,7 +861,7 @@ export function LeadsWorkspace({
       phone: null,
       whatsapp_number: null,
       phone_secondary: null,
-      lead_type: 'buyer',
+      lead_type: initialLeadType === 'supplier' ? 'supplier' : 'buyer',
       country: null,
       country_id: null,
       source_type: initialQuickCapture?.sourceType ?? null,
@@ -884,7 +884,7 @@ export function LeadsWorkspace({
       phone_country_code: null,
       phone_secondary_country_code: null,
     };
-  }, [drawerState.leadId, initialEventId, initialFastField, initialQuickCapture?.sourceLabel, initialQuickCapture?.sourceType]);
+  }, [drawerState.leadId, initialEventId, initialFastField, initialLeadType, initialQuickCapture?.sourceLabel, initialQuickCapture?.sourceType]);
 
   const spotlightLead = useMemo(() => {
     const preferredId = spotlightLeadId ?? selectedLeadIds[0] ?? sortedLeads[0]?.id ?? null;
@@ -1942,7 +1942,7 @@ export function LeadsWorkspace({
 
       {/* Lead drawer for new lead creation */}
       <LeadDrawer
-        key={`${drawerState.mode}-${drawerState.leadId ?? 'new'}`}
+        key={`${initialLeadType || 'all'}-${drawerState.mode}-${drawerState.leadId ?? 'new'}`}
         open={drawerState.open}
         onClose={closeDrawer}
         onSaved={handleLeadSaved}

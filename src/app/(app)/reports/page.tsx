@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { ReportsWorkspace } from '@/features/reports/components/reports-workspace';
@@ -5,7 +6,14 @@ import { getReportsData } from '@/lib/queries/reports';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
-export default async function ReportsPage() {
+function readSearchParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+export default async function ReportsPage({ searchParams }: { searchParams?: { mode?: string | string[] } }) {
+  if (readSearchParam(searchParams?.mode).trim().toLowerCase() === 'suppliers') {
+    redirect('/reports/suppliers?mode=suppliers');
+  }
   const workspace = await getWorkspaceAccess();
 
   if (!workspace.membership || !workspace.organization) {

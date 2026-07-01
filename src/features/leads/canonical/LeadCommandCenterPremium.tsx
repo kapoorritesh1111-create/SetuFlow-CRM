@@ -88,6 +88,14 @@ function SecondaryPanels({ data }: { data: LeadProfileData }) {
 
 export default function LeadCommandCenterPremium({ data, canReassignOwner = false, teamMembers = [], backHref = '/leads' }: Props) {
   const lead = data.lead!;
+
+  // Sprint 41: supplier records must not render the buyer commercial command center.
+  // This branch keeps the existing buyer experience untouched while routing suppliers
+  // into the sourcing-native workspace with capability, documents, cost requests,
+  // responses, approval, demand linkage, performance, and activity tabs.
+  if (normalize(lead.lead_type) === 'supplier') {
+    return <SupplierCommandCenter data={data as any} />;
+  }
   const quotes = sortedQuotes(data);
   const activeQuote = quotes[0] || null;
   const activeValue = Number(lead.deal_value || 0) || quoteValue(activeQuote) || null;

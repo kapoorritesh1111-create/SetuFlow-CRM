@@ -4,6 +4,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { OrdersRouteSwitch } from '@/features/orders/components/orders-route-switch';
 import { type OrderLineComparison8S, OrdersProductionWorkspace8S, type CatalogOrderOption8S, type ProductionOrder8S } from '@/features/orders/components/OrdersProductionWorkspace81DRepair3';
 
 function num(value: unknown) {
@@ -62,13 +63,14 @@ function whatsappContact(lead: any) {
   return clean(lead?.whatsapp) ?? clean(lead?.phone);
 }
 
-function ResponsiveOrdersWorkspace({ orders, catalogOptions, organizationId, currentUserId, currentUserName }: { orders: ProductionOrder8S[]; catalogOptions: CatalogOrderOption8S[]; organizationId: string; currentUserId: string; currentUserName: string }) {
-  return (
+function ResponsiveOrdersWorkspace({ orders, catalogOptions, organizationId, currentUserId, currentUserName, children }: { orders: ProductionOrder8S[]; catalogOptions: CatalogOrderOption8S[]; organizationId: string; currentUserId: string; currentUserName: string; children?: React.ReactNode }) {
+  const ordersView = (
     <>
       <div className="md:hidden"><MobileOrdersWorkspace orders={orders} catalogOptions={catalogOptions} /></div>
       <div className="hidden md:block"><OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} /></div>
     </>
   );
+  return <OrdersRouteSwitch ordersView={ordersView}>{children}</OrdersRouteSwitch>;
 }
 
 // This layout IS the Orders view. The child page is intentionally a null route placeholder.
@@ -95,7 +97,7 @@ export default async function OrdersLayout({ children: _children }: { children: 
 
   if (ordersError) return <EmptyState title="Could not load structured orders" description={String(ordersError.message ?? 'Unknown error')} />;
   const orderRows = Array.isArray(rawOrders) ? rawOrders : [];
-  if (!orderRows.length) return <ResponsiveOrdersWorkspace orders={[]} catalogOptions={[]} organizationId={orgId} currentUserId={workspace.user?.id ?? ''} currentUserName={(workspace.profile as any)?.full_name ?? workspace.user?.email ?? 'User'} />;
+  if (!orderRows.length) return <ResponsiveOrdersWorkspace orders={[]} catalogOptions={[]} organizationId={orgId} currentUserId={workspace.user?.id ?? ''} currentUserName={(workspace.profile as any)?.full_name ?? workspace.user?.email ?? 'User'}>{_children}</ResponsiveOrdersWorkspace>;
 
   const quoteIds = [...new Set(orderRows.map((order: any) => order.source_quote_id).filter(Boolean))];
   const orderIds = orderRows.map((order: any) => order.id).filter(Boolean);
@@ -372,5 +374,5 @@ export default async function OrdersLayout({ children: _children }: { children: 
     } as ProductionOrder8S;
   });
 
-  return <ResponsiveOrdersWorkspace orders={orders} catalogOptions={catalogOptions} organizationId={orgId} currentUserId={workspace.user?.id ?? ''} currentUserName={(workspace.profile as any)?.full_name ?? workspace.user?.email ?? 'User'} />;
+  return <ResponsiveOrdersWorkspace orders={orders} catalogOptions={catalogOptions} organizationId={orgId} currentUserId={workspace.user?.id ?? ''} currentUserName={(workspace.profile as any)?.full_name ?? workspace.user?.email ?? 'User'}>{_children}</ResponsiveOrdersWorkspace>;
 }

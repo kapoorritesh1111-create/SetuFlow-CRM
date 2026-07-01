@@ -32,6 +32,14 @@ import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceModeToLeadJourney } from '@/features/workspace/mode';
 import type { TodayFilterKey, TodayLayerState, WorkspaceMode } from '@/features/workspace/types';
 
+
+function preferredPipelinesForLeadType(pipelines: PipelineBoardProps['pipelines'], leadType: LeadJourney | '') {
+  if (!leadType) return pipelines;
+  const scoped = pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, leadType));
+  const defaults = scoped.filter((pipeline) => pipeline.is_default);
+  return defaults.length ? defaults : scoped;
+}
+
 export function PipelineBoard({
   currentUserId,
   canManageLeads,
@@ -381,7 +389,7 @@ export function PipelineBoard({
   // prevents buyer and supplier lanes from being mixed when filtering.
   const filteredStageGroups = useMemo(() => {
     if (!leadTypeFilter) return orderedStageGroups;
-    const allowedPipelineIds = pipelines.filter((p) => isPipelineInJourney(p.lead_type, leadTypeFilter)).map((p) => p.id);
+    const allowedPipelineIds = preferredPipelinesForLeadType(pipelines, leadTypeFilter).map((p) => p.id);
     return orderedStageGroups.filter((group) => group.stages.some((stage) => allowedPipelineIds.includes(stage.pipeline_id)));
   }, [orderedStageGroups, pipelines, leadTypeFilter]);
   const filteredLeads = useMemo(() => {

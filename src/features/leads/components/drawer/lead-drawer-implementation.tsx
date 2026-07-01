@@ -1339,7 +1339,7 @@ export function LeadDrawer({
           setLastSavedCompany(savedName);
           setTimeout(() => setLastSavedCompany(null), 5000);
           formElement.reset();
-          setLeadType("buyer");
+          setLeadType(lead?.lead_type ?? "buyer");
           setCompanyName("");
           setContactName("");
           setJobTitle("");

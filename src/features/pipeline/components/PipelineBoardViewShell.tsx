@@ -37,6 +37,13 @@ const densityLabel: Record<Density, string> = {
   micro: 'Micro scanning mode',
 };
 
+function preferredPipelinesForLeadType(pipelines: PipelineBoardProps['pipelines'], leadType: LeadJourney | '') {
+  if (!leadType) return pipelines;
+  const scoped = pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, leadType));
+  const defaults = scoped.filter((pipeline) => pipeline.is_default);
+  return defaults.length ? defaults : scoped;
+}
+
 export function PipelineBoardViewShell(props: PipelineBoardProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -97,7 +104,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
     }
     const groups = Array.from(grouped.values()).sort((left, right) => left.sort_order - right.sort_order);
     if (!activeLeadType) return groups;
-    const allowedPipelineIds = props.pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, activeLeadType)).map((pipeline) => pipeline.id);
+    const allowedPipelineIds = preferredPipelinesForLeadType(props.pipelines, activeLeadType).map((pipeline) => pipeline.id);
     return groups.filter((group) => group.stages.some((stage) => allowedPipelineIds.includes(stage.pipeline_id)));
   }, [activeLeadType, props.pipelines, props.stages]);
 
@@ -122,7 +129,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
 
   const filteredPipelines = useMemo(() => {
     if (!activeLeadType) return props.pipelines;
-    return props.pipelines.filter((pipeline) => isPipelineInJourney(pipeline.lead_type, activeLeadType));
+    return preferredPipelinesForLeadType(props.pipelines, activeLeadType);
   }, [activeLeadType, props.pipelines]);
 
   const scopedKanbanProps = useMemo<PipelineBoardProps>(() => ({
