@@ -4,8 +4,13 @@ import React from 'react';
 import NewMarketForm from './NewMarketForm';
 import { checkboxClassName } from '@/components/ui/checkbox';
 import { LeadCoverageManager } from '@/components/shell/LeadCoverageManager';
+import {
+  mergeSupplierCapabilityIntoNotes,
+  parseSupplierCapabilityFromNotes,
+  type SupplierCapabilityMetadata,
+} from '@/lib/lead-workflow';
 
-type Product = { id: string; name: string; sku: string | null; category_id: string | null };
+ type Product = { id: string; name: string; sku: string | null; category_id: string | null };
 type ProductCategory = { id: string; name: string; is_active?: boolean; sort_order?: number; parent_id?: string | null };
 type Market = { id: string; name: string };
 type Country = { id: string; name: string; market_id: string | null };
@@ -47,24 +52,149 @@ interface ProductMarketsSectionProps {
   onAddMarket: () => void;
 }
 
-function useLeadContextFromDrawerForm() {
-  const [leadContext, setLeadContext] = React.useState<{ leadId: string; companyName: string }>({ leadId: '', companyName: '' });
+type LeadDrawerContext = {
+  leadId: string;
+  companyName: string;
+  leadType: 'buyer' | 'supplier';
+};
+
+function readDrawerInputValue(name: string) {
+  if (typeof document === 'undefined') return '';
+  return String((document.querySelector(`input[name="${name}"]`) as HTMLInputElement | null)?.value ?? '').trim();
+}
+
+function useLeadContextFromDrawerForm(): LeadDrawerContext {
+  const [leadContext, setLeadContext] = React.useState<LeadDrawerContext>({
+    leadId: '',
+    companyName: '',
+    leadType: 'buyer',
+  });
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return;
 
     const sync = () => {
-      const leadId = String((document.querySelector('input[name="lead_id"]') as HTMLInputElement | null)?.value ?? '').trim();
-      const companyName = String((document.querySelector('input[name="company_name"]') as HTMLInputElement | null)?.value ?? '').trim();
-      setLeadContext({ leadId, companyName });
+      const leadId = readDrawerInputValue('lead_id');
+      const companyName = readDrawerInputValue('company_name');
+      const rawLeadType = readDrawerInputValue('lead_type');
+      setLeadContext({
+        leadId,
+        companyName,
+        leadType: rawLeadType === 'supplier' ? 'supplier' : 'buyer',
+      });
     };
 
     sync();
     const frame = window.requestAnimationFrame(sync);
-    return () => window.cancelAnimationFrame(frame);
+    const interval = window.setInterval(sync, 500);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(interval);
+    };
   }, []);
 
   return leadContext;
+}
+
+function SupplierCapabilitySection({
+  capability,
+  onChange,
+}: {
+  capability: SupplierCapabilityMetadata;
+  onChange: (next: SupplierCapabilityMetadata) => void;
+}) {
+  const updateField = (field: keyof SupplierCapabilityMetadata, value: string) => {
+    onChange({ ...capability, [field]: value });
+  };
+
+  const fieldClassName = 'h-11 w-full rounded-2xl border border-teal-100 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-100';
+  const labelClassName = 'block space-y-2';
+  const labelTextClassName = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700';
+
+  return (
+    <div data-s41-supplier-capability-section="true" className="rounded-[1.5rem] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-4 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Supplier capability</p>
+          <h3 className="mt-2 text-base font-bold text-slate-950">Map sourcing readiness before cost requests</h3>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Capture MOQ, capacity, lead time, payment terms, Incoterms, export markets, risk, approval, and performance signals without adding a new supplier table yet.
+          </p>
+        </div>
+        <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700">
+          Supplier only
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Capability category</span>
+          <input value={capability.category ?? ''} onChange={(event) => updateField('category', event.target.value)} placeholder="e.g. Knits, woven shirts, denim" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>MOQ</span>
+          <input value={capability.moq ?? ''} onChange={(event) => updateField('moq', event.target.value)} placeholder="e.g. 500 pcs / style" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Production capacity</span>
+          <input value={capability.productionCapacity ?? ''} onChange={(event) => updateField('productionCapacity', event.target.value)} placeholder="e.g. 25k pcs / month" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Lead time</span>
+          <input value={capability.leadTime ?? ''} onChange={(event) => updateField('leadTime', event.target.value)} placeholder="e.g. 45–60 days" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Payment terms</span>
+          <input value={capability.paymentTerms ?? ''} onChange={(event) => updateField('paymentTerms', event.target.value)} placeholder="e.g. 30/70, LC, advance" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Incoterms</span>
+          <input value={capability.incoterms ?? ''} onChange={(event) => updateField('incoterms', event.target.value)} placeholder="e.g. FOB, CIF, EXW" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Export markets</span>
+          <input value={capability.exportMarkets ?? ''} onChange={(event) => updateField('exportMarkets', event.target.value)} placeholder="e.g. EU, UK, UAE, USA" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Risk status</span>
+          <select value={capability.riskStatus ?? ''} onChange={(event) => updateField('riskStatus', event.target.value)} className={fieldClassName}>
+            <option value="">Select risk</option>
+            <option value="low">Low risk</option>
+            <option value="medium">Medium risk</option>
+            <option value="high">High risk</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Approval status</span>
+          <select value={capability.approvalStatus ?? ''} onChange={(event) => updateField('approvalStatus', event.target.value)} className={fieldClassName}>
+            <option value="">Select status</option>
+            <option value="profile_review">Profile review</option>
+            <option value="capability_mapped">Capability mapped</option>
+            <option value="compliance_review">Compliance review</option>
+            <option value="approved">Approved supplier</option>
+            <option value="rejected">Rejected supplier</option>
+            <option value="inactive">Inactive supplier</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Reliability score</span>
+          <input value={capability.reliabilityScore ?? ''} onChange={(event) => updateField('reliabilityScore', event.target.value)} placeholder="1–5 or notes" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Quality score</span>
+          <input value={capability.qualityScore ?? ''} onChange={(event) => updateField('qualityScore', event.target.value)} placeholder="1–5 or notes" className={fieldClassName} />
+        </label>
+        <label className={labelClassName}>
+          <span className={labelTextClassName}>Response speed</span>
+          <input value={capability.responseTimeScore ?? ''} onChange={(event) => updateField('responseTimeScore', event.target.value)} placeholder="e.g. same day, 48h, slow" className={fieldClassName} />
+        </label>
+      </div>
+    </div>
+  );
 }
 
 export default function ProductMarketsSection({
@@ -92,12 +222,19 @@ export default function ProductMarketsSection({
   showInterestSelectors = true,
   onAddMarket,
 }: ProductMarketsSectionProps) {
-  const { leadId, companyName } = useLeadContextFromDrawerForm();
+  const { leadId, companyName, leadType } = useLeadContextFromDrawerForm();
   const selectedCountry = countries.find((country) => country.id === countryId) ?? null;
   const countryLinkedMarket = selectedCountry?.market_id ?? null;
   const availableMarkets = countryLinkedMarket
     ? markets.filter((market) => market.id !== countryLinkedMarket)
     : markets;
+  const supplierCapability = React.useMemo(() => parseSupplierCapabilityFromNotes(notesValue), [notesValue]);
+  const supplierCapabilitySection = leadType === 'supplier' ? (
+    <SupplierCapabilitySection
+      capability={supplierCapability}
+      onChange={(next) => onNotesChange(mergeSupplierCapabilityIntoNotes(notesValue, next))}
+    />
+  ) : null;
 
   if (showInterestSelectors && leadId) {
     return (
@@ -115,6 +252,7 @@ export default function ProductMarketsSection({
         </div>
 
         <div className="mt-4 space-y-4">
+          {supplierCapabilitySection}
           <label className="block space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</span>
             <textarea
@@ -327,6 +465,7 @@ export default function ProductMarketsSection({
       ) : null}
 
       <div className={showInterestSelectors ? 'mt-4 space-y-4' : 'space-y-4'}>
+        {supplierCapabilitySection}
         <label className="block space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</span>
           <textarea

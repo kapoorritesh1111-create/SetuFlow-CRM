@@ -19,6 +19,26 @@ export type JourneyCopy = {
   commandSurfaceLabel: string;
 };
 
+export type JourneyTerminology = {
+  leadLabel: string;
+  leadPluralLabel: string;
+  valueLabel: string;
+  qualificationLabel: string;
+  mappingLabel: string;
+  primaryRequestLabel: string;
+  primaryOfferLabel: string;
+  positiveStageLabel: string;
+  negativeStageLabel: string;
+  inactiveStageLabel: string;
+  primaryActionLabel: string;
+  documentActionLabel: string;
+  sampleActionLabel: string;
+  approvalActionLabel: string;
+  rejectionActionLabel: string;
+  commandCenterTitle: string;
+  commandCenterDescription: string;
+};
+
 export const JOURNEY_COPY: Record<LeadJourney, JourneyCopy> = {
   buyer: {
     key: 'buyer',
@@ -54,6 +74,50 @@ export const JOURNEY_COPY: Record<LeadJourney, JourneyCopy> = {
   },
 };
 
+export const JOURNEY_TERMINOLOGY: Record<LeadJourney, JourneyTerminology> = {
+  buyer: {
+    leadLabel: 'Buyer lead',
+    leadPluralLabel: 'Buyer leads',
+    valueLabel: 'Deal value',
+    qualificationLabel: 'Qualification',
+    mappingLabel: 'Product / market mapping',
+    primaryRequestLabel: 'RFQ / quote draft',
+    primaryOfferLabel: 'Buyer quote',
+    positiveStageLabel: 'Won',
+    negativeStageLabel: 'Lost',
+    inactiveStageLabel: 'Nurture',
+    primaryActionLabel: 'Create Quote',
+    documentActionLabel: 'Request Buyer Documents',
+    sampleActionLabel: 'Share Sample Details',
+    approvalActionLabel: 'Mark Qualified',
+    rejectionActionLabel: 'Mark Lost',
+    commandCenterTitle: 'Buyer command center',
+    commandCenterDescription: 'Manage qualification, product fit, quote creation, negotiation, and order conversion for buyer demand.',
+  },
+  supplier: {
+    leadLabel: 'Supplier profile',
+    leadPluralLabel: 'Supplier profiles',
+    valueLabel: 'Sourcing value',
+    qualificationLabel: 'Verification',
+    mappingLabel: 'Capability mapping',
+    primaryRequestLabel: 'Cost Request',
+    primaryOfferLabel: 'Supplier Offer',
+    positiveStageLabel: 'Approved Supplier',
+    negativeStageLabel: 'Rejected Supplier',
+    inactiveStageLabel: 'Inactive Supplier',
+    primaryActionLabel: 'Request Cost',
+    documentActionLabel: 'Request Documents',
+    sampleActionLabel: 'Request Sample',
+    approvalActionLabel: 'Approve Supplier',
+    rejectionActionLabel: 'Reject Supplier',
+    commandCenterTitle: 'Supplier sourcing command center',
+    commandCenterDescription: 'Manage supplier verification, capability, compliance readiness, cost requests, approval, demand linkage, and performance.',
+  },
+};
+
+export function getJourneyTerminology(journey: '' | LeadJourney): JourneyTerminology {
+  return JOURNEY_TERMINOLOGY[journey || 'buyer'];
+}
 
 export function isPipelineInJourney(pipelineLeadType: 'buyer' | 'supplier' | 'both', journey: '' | LeadJourney) {
   if (!journey) return true;

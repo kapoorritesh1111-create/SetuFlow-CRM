@@ -8,6 +8,21 @@ export type LeadCoverageSelection = {
   sourceContext?: { sourceType?: string | null; sourceLabel?: string | null } | null;
 };
 
+export type SupplierCapabilityMetadata = {
+  category?: string | null;
+  moq?: string | null;
+  productionCapacity?: string | null;
+  leadTime?: string | null;
+  paymentTerms?: string | null;
+  incoterms?: string | null;
+  exportMarkets?: string | null;
+  riskStatus?: string | null;
+  approvalStatus?: string | null;
+  reliabilityScore?: string | null;
+  qualityScore?: string | null;
+  responseTimeScore?: string | null;
+};
+
 export type LeadWorkflowState = {
   qualificationStatus: LeadQualificationStatus;
   qualificationNotes: string | null;
@@ -19,6 +34,7 @@ export type LeadWorkflowState = {
   coverageSelections: LeadCoverageSelection[];
   productMappingUpdatedAt: string | null;
   productMappingNotes: string | null;
+  supplierCapability: SupplierCapabilityMetadata;
 };
 
 export type ParsedLeadWorkflow = {
@@ -29,6 +45,36 @@ export type ParsedLeadWorkflow = {
 const MARKER_PREFIX = '<!-- SETU_LEAD_WORKFLOW:';
 const MARKER_SUFFIX = '-->';
 const MARKER_PATTERN = /<!--\s*SETU_LEAD_WORKFLOW:[\s\S]*?-->/g;
+
+export const SUPPLIER_CAPABILITY_FIELDS: Array<keyof SupplierCapabilityMetadata> = [
+  'category',
+  'moq',
+  'productionCapacity',
+  'leadTime',
+  'paymentTerms',
+  'incoterms',
+  'exportMarkets',
+  'riskStatus',
+  'approvalStatus',
+  'reliabilityScore',
+  'qualityScore',
+  'responseTimeScore',
+];
+
+export const DEFAULT_SUPPLIER_CAPABILITY: SupplierCapabilityMetadata = {
+  category: null,
+  moq: null,
+  productionCapacity: null,
+  leadTime: null,
+  paymentTerms: null,
+  incoterms: null,
+  exportMarkets: null,
+  riskStatus: null,
+  approvalStatus: null,
+  reliabilityScore: null,
+  qualityScore: null,
+  responseTimeScore: null,
+};
 
 export const DEFAULT_LEAD_WORKFLOW: LeadWorkflowState = {
   qualificationStatus: 'not_started',
@@ -41,6 +87,7 @@ export const DEFAULT_LEAD_WORKFLOW: LeadWorkflowState = {
   coverageSelections: [],
   productMappingUpdatedAt: null,
   productMappingNotes: null,
+  supplierCapability: { ...DEFAULT_SUPPLIER_CAPABILITY },
 };
 
 function sanitizeString(value: unknown) {
@@ -84,6 +131,22 @@ function sanitizeCoverageSelections(value: unknown): LeadCoverageSelection[] {
     .filter((entry): entry is LeadCoverageSelection => Boolean(entry));
 }
 
+export function normalizeSupplierCapability(value: Partial<SupplierCapabilityMetadata> | null | undefined): SupplierCapabilityMetadata {
+  const normalized: SupplierCapabilityMetadata = { ...DEFAULT_SUPPLIER_CAPABILITY };
+  const record = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+
+  for (const field of SUPPLIER_CAPABILITY_FIELDS) {
+    normalized[field] = sanitizeString(record[field]);
+  }
+
+  return normalized;
+}
+
+export function hasSupplierCapabilityMetadata(value: SupplierCapabilityMetadata | null | undefined) {
+  const normalized = normalizeSupplierCapability(value);
+  return SUPPLIER_CAPABILITY_FIELDS.some((field) => Boolean(normalized[field]));
+}
+
 export function normalizeLeadWorkflowState(value: Partial<LeadWorkflowState> | null | undefined): LeadWorkflowState {
   return {
     qualificationStatus: sanitizeQualificationStatus(value?.qualificationStatus),
@@ -96,6 +159,7 @@ export function normalizeLeadWorkflowState(value: Partial<LeadWorkflowState> | n
     coverageSelections: sanitizeCoverageSelections(value?.coverageSelections),
     productMappingUpdatedAt: sanitizeString(value?.productMappingUpdatedAt),
     productMappingNotes: sanitizeString(value?.productMappingNotes),
+    supplierCapability: normalizeSupplierCapability(value?.supplierCapability),
   };
 }
 
@@ -105,7 +169,7 @@ export function parseLeadWorkflow(notes: string | null | undefined): ParsedLeadW
   if (markerIndex === -1) {
     return {
       plainNotes: stripLeadWorkflowMetadata(raw),
-      workflow: { ...DEFAULT_LEAD_WORKFLOW },
+      workflow: { ...DEFAULT_LEAD_WORKFLOW, supplierCapability: { ...DEFAULT_SUPPLIER_CAPABILITY } },
     };
   }
 
@@ -113,7 +177,7 @@ export function parseLeadWorkflow(notes: string | null | undefined): ParsedLeadW
   if (suffixIndex === -1) {
     return {
       plainNotes: stripLeadWorkflowMetadata(raw),
-      workflow: { ...DEFAULT_LEAD_WORKFLOW },
+      workflow: { ...DEFAULT_LEAD_WORKFLOW, supplierCapability: { ...DEFAULT_SUPPLIER_CAPABILITY } },
     };
   }
 
@@ -129,14 +193,46 @@ export function parseLeadWorkflow(notes: string | null | undefined): ParsedLeadW
   } catch {
     return {
       plainNotes: stripLeadWorkflowMetadata(raw),
-      workflow: { ...DEFAULT_LEAD_WORKFLOW },
+      workflow: { ...DEFAULT_LEAD_WORKFLOW, supplierCapability: { ...DEFAULT_SUPPLIER_CAPABILITY } },
     };
   }
 }
 
 export function serializeLeadWorkflow(plainNotes: string | null | undefined, workflowInput: Partial<LeadWorkflowState> | null | undefined) {
-  normalizeLeadWorkflowState(workflowInput);
-  return stripLeadWorkflowMetadata(plainNotes);
+  const workflow = normalizeLeadWorkflowState(workflowInput);
+  const cleanPlainNotes = stripLeadWorkflowMetadata(plainNotes);
+  const hasWorkflowPayload =
+    workflow.qualificationStatus !== DEFAULT_LEAD_WORKFLOW.qualificationStatus ||
+    Boolean(workflow.qualificationNotes) ||
+    Boolean(workflow.qualificationUpdatedAt) ||
+    Boolean(workflow.qualificationUpdatedBy) ||
+    workflow.productMappingStatus !== DEFAULT_LEAD_WORKFLOW.productMappingStatus ||
+    workflow.mappedProductIds.length > 0 ||
+    workflow.mappedMarketIds.length > 0 ||
+    workflow.coverageSelections.length > 0 ||
+    Boolean(workflow.productMappingUpdatedAt) ||
+    Boolean(workflow.productMappingNotes) ||
+    hasSupplierCapabilityMetadata(workflow.supplierCapability);
+
+  if (!hasWorkflowPayload) return cleanPlainNotes ?? '';
+
+  const marker = `${MARKER_PREFIX}${JSON.stringify(workflow)}${MARKER_SUFFIX}`;
+  return [cleanPlainNotes, marker].filter(Boolean).join('\n\n');
+}
+
+export function parseSupplierCapabilityFromNotes(notes: string | null | undefined) {
+  return parseLeadWorkflow(notes).workflow.supplierCapability;
+}
+
+export function mergeSupplierCapabilityIntoNotes(
+  notes: string | null | undefined,
+  supplierCapability: Partial<SupplierCapabilityMetadata>,
+) {
+  const parsed = parseLeadWorkflow(notes);
+  return serializeLeadWorkflow(parsed.plainNotes, {
+    ...parsed.workflow,
+    supplierCapability: normalizeSupplierCapability(supplierCapability),
+  });
 }
 
 export function deriveProductMappingStatus(productIds: string[], marketIds: string[], coverageSelections: LeadCoverageSelection[] = []): LeadProductMappingStatus {
@@ -144,7 +240,6 @@ export function deriveProductMappingStatus(productIds: string[], marketIds: stri
   if (!productIds.length && coverageSelections.length) return 'in_progress';
   return marketIds.length ? 'ready' : 'in_progress';
 }
-
 
 export function summarizeLeadCoverageSelections(selections: LeadCoverageSelection[] = []) {
   return selections.map((item) => {
