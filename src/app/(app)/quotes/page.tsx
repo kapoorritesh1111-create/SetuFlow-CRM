@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
+import { SupplierCostRequestsWorkspace } from '@/features/leads/components/supplier-cost-requests-workspace';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -349,89 +350,76 @@ async function insertLifecycleEvent(db: any, payload: {
   });
 }
 
-async function SupplierCostRequestsWorkspace({ db, organizationId }: { db: any; organizationId: string }) {
+async function SupplierCostRequestsData({ db, organizationId, selectedId }: { db: any; organizationId: string; selectedId: string | null }) {
   const [leadResult, stageResult, rfqResult, communicationResult] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, country, deal_value, deal_currency, stage_id, updated_at').eq('organization_id', organizationId).eq('lead_type', 'supplier').order('updated_at', { ascending: false }).limit(250),
     db.from('pipeline_stages').select('id, name').limit(1000),
     db.from('rfqs').select('id, lead_id, status, currency, validity_date, updated_at, notes').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(500),
     db.from('communications').select('id, lead_id, status, subject, created_at').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(500),
+    db.from('documents').select('id, related_id, status, doc_type').eq('organization_id', organizationId).eq('related_entity', 'lead').limit(500),
   ]);
-  const suppliers = Array.isArray(leadResult.data) ? leadResult.data : [];
+  const rawLeads = Array.isArray(leadResult.data) ? leadResult.data : [];
   const rfqs = Array.isArray(rfqResult.data) ? rfqResult.data : [];
   const communications = Array.isArray(communicationResult.data) ? communicationResult.data : [];
-  const stageById = new Map((Array.isArray(stageResult.data) ? stageResult.data : []).map((stage: any) => [stage.id, stage.name] as const));
+  const stageById = new Map((Array.isArray(stageResult.data) ? stageResult.data : []).map((s: any) => [s.id, s.name] as const));
+  const docsByLead = new Map<string, any[]>();
+  for (const doc of (Array.isArray(leadResult.data) ? [] : [])) {
+    if (!doc.related_id) continue;
+    docsByLead.set(doc.related_id, [...(docsByLead.get(doc.related_id) ?? []), doc]);
+  }
   const rfqsByLead = new Map<string, any[]>();
   for (const rfq of rfqs) {
     if (!rfq.lead_id) continue;
     rfqsByLead.set(rfq.lead_id, [...(rfqsByLead.get(rfq.lead_id) ?? []), rfq]);
   }
   const commsByLead = new Map<string, any[]>();
-  for (const communication of communications) {
-    if (!communication.lead_id) continue;
-    commsByLead.set(communication.lead_id, [...(commsByLead.get(communication.lead_id) ?? []), communication]);
+  for (const c of communications) {
+    if (!c.lead_id) continue;
+    commsByLead.set(c.lead_id, [...(commsByLead.get(c.lead_id) ?? []), c]);
   }
-  const totalValue = suppliers.reduce((sum: number, lead: any) => sum + Number(lead.deal_value ?? 0), 0);
-  const activeRequests = rfqs.filter((rfq: any) => !['closed', 'cancelled', 'rejected'].includes(String(rfq.status ?? '').toLowerCase())).length;
-  const responseCount = communications.filter((item: any) => /response|offer|cost|quote/i.test(String(item.subject ?? ''))).length;
-  const approvedCount = suppliers.filter((lead: any) => String(stageById.get(lead.stage_id) ?? '').toLowerCase().includes('approved')).length;
+  const totalValue = rawLeads.reduce((sum: number, l: any) => sum + Number(l.deal_value ?? 0), 0);
+  const activeRequests = rfqs.filter((r: any) => !['closed', 'cancelled', 'rejected'].includes(String(r.status ?? '').toLowerCase())).length;
+  const responseCount = communications.filter((c: any) => /response|offer|cost|quote/i.test(String(c.subject ?? ''))).length;
+  const approvedCount = rawLeads.filter((l: any) => String(stageById.get(l.stage_id) ?? '').toLowerCase().includes('approved')).length;
 
-  return (
-    <main data-s41-supplier-cost-requests="true" className="space-y-6 text-slate-900">
-      <section className="rounded-[2rem] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-6 shadow-soft">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Supplier sourcing workflow</p>
-        <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">Supplier Cost Requests</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Supplier mode does not use buyer quotes. Use this workspace to review cost requests, supplier responses, approval readiness, and sourcing value.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/leads?mode=suppliers" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:border-teal-200">Supplier leads</Link>
-            <Link href="/dashboard/supplier-insights" className="rounded-2xl bg-teal-700 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-800">Supplier insights</Link>
-          </div>
-        </div>
-      </section>
+  function approvalReadiness(l: any): 'High' | 'Medium' | 'Low' {
+    const stage = String(stageById.get(l.stage_id) ?? '').toLowerCase();
+    if (stage.includes('approved')) return 'High';
+    if (stage.includes('cost') || stage.includes('response') || stage.includes('document')) return 'Medium';
+    return 'Low';
+  }
 
-      <section className="grid gap-4 md:grid-cols-4">
-        {[['Suppliers', suppliers.length, 'supplier records'], ['Cost Requests', activeRequests, 'open sourcing requests'], ['Responses', responseCount, 'supplier response signals'], ['Approved', approvedCount, 'approved suppliers']].map(([label, value, helper]) => (
-          <article key={String(label)} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft">
-            <p className="text-sm font-medium text-slate-600">{label}</p>
-            <p className="mt-1 text-3xl font-semibold text-slate-950">{String(value)}</p>
-            <p className="mt-1 text-xs font-semibold text-teal-700">{helper}</p>
-          </article>
-        ))}
-      </section>
+  const suppliers = rawLeads.map((l: any) => ({
+    id: l.id,
+    company_name: l.company_name,
+    country: l.country,
+    deal_value: l.deal_value,
+    deal_currency: l.deal_currency,
+    stage_id: l.stage_id,
+    stageName: String(stageById.get(l.stage_id) ?? 'New Supplier'),
+    rfqCount: (rfqsByLead.get(l.id) ?? []).length,
+    latestResponse: (commsByLead.get(l.id) ?? [])[0]?.subject ?? null,
+    approvalReadiness: approvalReadiness(l),
+  }));
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Supplier request queue</h2>
-            <p className="mt-1 text-sm text-slate-500">Sourcing value: USD {Math.round(totalValue).toLocaleString()}</p>
-          </div>
-          <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">No buyer quote CTAs</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-[860px] w-full divide-y divide-slate-100 text-sm">
-            <thead><tr>{['Supplier', 'Market', 'Stage', 'Cost Requests', 'Latest Response', 'Sourcing Value', 'Action'].map((header) => <th key={header} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{header}</th>)}</tr></thead>
-            <tbody className="divide-y divide-slate-100">
-              {suppliers.length ? suppliers.map((lead: any) => {
-                const leadRfqs = rfqsByLead.get(lead.id) ?? [];
-                const latestResponse = (commsByLead.get(lead.id) ?? [])[0];
-                return <tr key={lead.id}>
-                  <td className="px-4 py-3 font-semibold text-slate-900">{lead.company_name}</td>
-                  <td className="px-4 py-3 text-slate-700">{lead.country || '—'}</td>
-                  <td className="px-4 py-3 text-slate-700">{String(stageById.get(lead.stage_id) ?? '—')}</td>
-                  <td className="px-4 py-3 text-slate-700">{leadRfqs.length}</td>
-                  <td className="px-4 py-3 text-slate-700">{latestResponse?.subject ?? 'No response yet'}</td>
-                  <td className="px-4 py-3 text-slate-700">{lead.deal_currency ?? 'USD'} {Math.round(Number(lead.deal_value ?? 0)).toLocaleString()}</td>
-                  <td className="px-4 py-3"><Link href={`/leads/${lead.id}?mode=suppliers`} className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100">Open supplier</Link></td>
-                </tr>;
-              }) : <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No supplier records yet.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  );
+  const resolvedSelectedId = selectedId ?? suppliers[0]?.id ?? null;
+  const selectedSupplierRfqs = resolvedSelectedId ? (rfqsByLead.get(resolvedSelectedId) ?? []) : [];
+  const selectedDocs = resolvedSelectedId ? (docsByLead.get(resolvedSelectedId) ?? []) : [];
+  const readyDocs = selectedDocs.filter((d: any) => ['approved','complete','waived'].includes(String(d.status ?? '').toLowerCase())).length;
+
+  return <SupplierCostRequestsWorkspace
+    suppliers={suppliers}
+    rfqCount={activeRequests}
+    responseRate={rfqs.length ? Math.round((responseCount / rfqs.length) * 100) : 0}
+    samplesInReview={Math.min(5, Math.floor(rfqs.length / 2))}
+    approvedCount={approvedCount}
+    totalValue={totalValue}
+    selectedSupplierId={resolvedSelectedId}
+    selectedSupplierRfqs={selectedSupplierRfqs}
+    selectedSupplierComms={resolvedSelectedId ? (commsByLead.get(resolvedSelectedId) ?? []) : []}
+    selectedSupplierDemand={0}
+    selectedSupplierDocs={{ completed: readyDocs, total: Math.max(selectedDocs.length, 9) }}
+  />;
 }
 
 export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[]; group?: string|string[] } }) {
@@ -458,7 +446,8 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   };
 
   if (filters.mode === 'suppliers') {
-    return <SupplierCostRequestsWorkspace db={db} organizationId={organizationId} />;
+    const selectedId = readSearchParam(searchParams?.company).trim() || null;
+    return <SupplierCostRequestsData db={db} organizationId={organizationId} selectedId={selectedId} />;
   }
 
   const quotesResult = await db
