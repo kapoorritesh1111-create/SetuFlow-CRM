@@ -5,7 +5,7 @@ import { LeadsBoard } from './leads-board';
 
 export const dynamic = 'force-dynamic';
 
-type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null };
+type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null; demo_scheduled_at:string|null; demo_completed_at:string|null; demo_outcome:string|null; demo_notes:string|null; activity_log:Array<{id:string;kind:string;note:string;actor_name:string;created_at:string}> };
 type SearchParams = Record<string, string | string[] | undefined>;
 
 const TRIAL_TEMPLATES = [
