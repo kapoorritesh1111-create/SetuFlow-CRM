@@ -20,6 +20,7 @@ async function assertSetuMember() {
 const ALLOWED_FIELDS = [
   'pipeline_stage', 'lead_score', 'internal_notes', 'next_follow_up_at',
   'assigned_to_name', 'assigned_to_user_id', 'status', 'last_contact_at',
+  'is_trial_request',
   // Sprint C: demo tracking
   'demo_scheduled_at', 'demo_completed_at', 'demo_outcome', 'demo_notes',
 ];

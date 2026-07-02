@@ -356,6 +356,26 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
 
             {/* Full details link */}
             {/* Client Orgs link (for Qualified+ that have an org) */}
+            {/* Convert to Trial CTA — for qualified/negotiating leads not yet on trial */}
+            {['qualified','negotiating'].includes(dStage) && !sel.is_trial_request && (
+              <div style={{marginTop:14,padding:13,border:'1px solid #c7d2fe',borderRadius:10,background:'#eef2ff'}}>
+                <p style={{margin:'0 0 4px',fontSize:11.5,fontWeight:700,color:'#1e1b4b'}}>🎯 Convert to Trial</p>
+                <p style={{margin:'0 0 10px',fontSize:11,color:'#3730a3'}}>Move this lead to Trial stage and mark it as a trial request. Then provision the workspace when ready.</p>
+                <button
+                  onClick={async () => {
+                    setSaving(true);
+                    const ok = await patch(sel.id, { pipeline_stage: 'trial', is_trial_request: true });
+                    if (ok) setDStage('trial');
+                    setSaving(false);
+                  }}
+                  disabled={saving}
+                  style={{width:'100%',border:'none',background:'#4f46e5',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:'pointer'}}
+                >
+                  Move to Trial Stage
+                </button>
+              </div>
+            )}
+
             {/* Sprint D: Provision Trial Workspace */}
             {dStage === 'trial' && !(sel as any).linked_organization_id && (
               <div style={{marginTop:14,padding:13,border:'1px solid #bbf7d0',borderRadius:10,background:'#f0fdf4'}}>
