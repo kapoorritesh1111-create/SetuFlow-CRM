@@ -263,7 +263,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
                   <div className="rounded-2xl border border-dashed border-teal-200 bg-teal-50/30 px-6 py-10 text-center">
                     <p className="font-semibold text-slate-800">No cost requests yet</p>
                     <p className="mt-2 text-sm text-slate-500">Create a cost request to initiate sourcing without touching buyer quotes.</p>
-                    <Link href={`/leads/${selected.id}/rfq/new?mode=suppliers`} className="mt-3 inline-block rounded-xl bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163561]">Create First Cost Request</Link>
+                    <Link href={`/leads/${selected.id}/cost-request/new?mode=suppliers`} className="mt-3 inline-block rounded-xl bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163561]">Create First Cost Request</Link>
                   </div>
                 )}
 

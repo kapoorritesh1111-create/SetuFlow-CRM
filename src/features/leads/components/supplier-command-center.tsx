@@ -247,17 +247,17 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
           {/* Action rail */}
           <div className="flex shrink-0 flex-col gap-2 xl:min-w-[200px]">
             <Link
-              href={`/leads/${lead?.id}/rfq/new?mode=suppliers`}
+              href={`/leads/${lead?.id}/cost-request/new?mode=suppliers`}
               className="flex items-center justify-center gap-2 rounded-xl bg-[#1F487C] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#163561] transition-colors"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               Create Cost Request
             </Link>
-            <Link href="/documents?mode=suppliers" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-teal-700 transition-colors">
+            <Link href={`/leads/${lead?.id}?mode=suppliers#compliance`} onClick={(e) => { e.preventDefault(); setActiveTab('compliance'); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-teal-700 transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
               Request Documents
             </Link>
-            <Link href={`/leads/${lead?.id}/rfq/new?request=sample&mode=suppliers`} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-teal-700 transition-colors">
+            <Link href={`/leads/${lead?.id}/cost-request/new?request=sample&mode=suppliers`} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-teal-700 transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
               Request Sample
             </Link>
@@ -375,7 +375,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Supplier Profile Snapshot</p>
-                      <Link href={`/leads/${lead?.id}`} className="text-xs font-semibold text-[#279491] hover:underline">✏ Edit Profile</Link>
+                      <Link href={`/leads/${lead?.id}?mode=suppliers`} className="text-xs font-semibold text-[#279491] hover:underline">✏ Edit Profile</Link>
                     </div>
                     <FieldGrid rows={[
                       { label: 'Contact',  value: lead?.contact_name },
@@ -390,7 +390,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                   {/* Capability & Compliance + Linked Demand summary */}
                   <div className="space-y-4">
                     <div>
-                      <SectionHead title="Capability & Compliance Summary" action="View All" actionHref="#capability" />
+                      <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Capability & Compliance Summary</p><button type="button" onClick={() => setActiveTab('capability')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button></div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                           <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Top Capabilities</p>
@@ -426,7 +426,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                     </div>
 
                     <div>
-                      <SectionHead title="Linked Demand Overview" action="View All" actionHref="#linked_demand" />
+                      <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Linked Demand Overview</p><button type="button" onClick={() => setActiveTab('linked_demand')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button></div>
                       {demandMatches.length ? (
                         <div className="space-y-1.5">
                           {demandMatches.slice(0, 3).map((m) => (
@@ -524,7 +524,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-slate-700">Procurement Requests ({rfqs.length})</p>
-                  <Link href={`/leads/${lead?.id}/rfq/new?mode=suppliers`} className="rounded-xl bg-[#1F487C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#163561]">+ New Cost Request</Link>
+                  <Link href={`/leads/${lead?.id}/cost-request/new?mode=suppliers`} className="rounded-xl bg-[#1F487C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#163561]">+ New Cost Request</Link>
                 </div>
                 {rfqs.length > 0 ? (
                   <div className="overflow-x-auto rounded-2xl border border-slate-200">
@@ -694,7 +694,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Next Best Actions</p>
-              <Link href="#compliance" className="text-xs font-semibold text-[#279491] hover:underline">View All</Link>
+              <button type="button" onClick={() => setActiveTab('compliance')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button>
             </div>
             <div className="space-y-2">
               {[
@@ -724,7 +724,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
             <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Outstanding Gaps</p>
-                <Link href="#compliance" className="text-xs font-semibold text-[#279491] hover:underline">View All</Link>
+                <button type="button" onClick={() => setActiveTab('compliance')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button>
               </div>
               <div className="space-y-2">
                 {gaps.map((g) => (
@@ -741,7 +741,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Procurement Timeline</p>
-              <Link href="#activity" className="text-xs font-semibold text-[#279491] hover:underline">View All</Link>
+              <button type="button" onClick={() => setActiveTab('activity')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button>
             </div>
             <div className="space-y-4">
               {[

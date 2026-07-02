@@ -214,7 +214,9 @@ async function transitionSupplierApproval(formData: FormData, next: { status: st
   revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
   revalidatePath('/pipeline');
-  goLead(leadId, { saved: next.saved }, 'approval');
+  revalidatePath(`/leads/${leadId}?mode=suppliers`);
+  const { redirect: serverRedirect } = await import('next/navigation');
+  serverRedirect(`/leads/${leadId}?mode=suppliers&saved=${next.saved}`);
 }
 
 export async function markSupplierUnderReview(formData: FormData) {
