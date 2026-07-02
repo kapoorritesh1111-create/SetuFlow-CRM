@@ -6,6 +6,8 @@ import { FollowUpBoard } from './followup-board';
 
 export const dynamic = 'force-dynamic';
 
+type ActivityEntry = { id: string; kind: string; note: string; actor_name: string; created_at: string };
+
 type LeadRow = {
   id: string; company_name: string; primary_admin_name: string | null;
   primary_admin_email: string; primary_phone: string | null;
@@ -16,7 +18,7 @@ type LeadRow = {
   source: string | null; source_detail: string | null;
   demo_scheduled_at: string | null; demo_completed_at: string | null;
   demo_outcome: string | null; demo_notes: string | null;
-  activity_log: unknown[];
+  activity_log: ActivityEntry[];
 };
 
 async function assertMember() {

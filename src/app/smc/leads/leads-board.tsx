@@ -2,7 +2,7 @@
 
 import { useState, useEffect, type CSSProperties } from 'react';
 
-type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null; demo_scheduled_at:string|null; demo_completed_at:string|null; demo_outcome:string|null; demo_notes:string|null; activity_log:unknown[] };
+type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null; demo_scheduled_at:string|null; demo_completed_at:string|null; demo_outcome:string|null; demo_notes:string|null; activity_log:Array<{id:string;kind:string;note:string;actor_name:string;created_at:string}> };
 
 const STAGES = [
   { key:'inquiry',     label:'Inquiry',     color:'#8b5cf6', border:'#c4b5fd' },
@@ -51,6 +51,12 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [dScore,     setDScore]   = useState('');
   const [dFollowUp,  setDFollowUp]= useState('');
   const [dAssignee,  setDAssignee]= useState('');
+  // Sprint B: activity log in drawer
+  const [logKind,    setLogKind]    = useState('note');
+  const [logNote,    setLogNote]    = useState('');
+  const [logSaving,  setLogSaving]  = useState(false);
+  const [provState,  setProvState]  = useState<'idle'|'loading'|'done'|'error'>('idle');
+  const [provMsg,    setProvMsg]    = useState('');
   // Sprint C: demo fields
   const [dDemoDate,  setDDemoDate]  = useState('');
   const [dDemoNotes, setDDemoNotes] = useState('');
@@ -66,6 +72,7 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     setDDemoDate(lead.demo_scheduled_at ? lead.demo_scheduled_at.slice(0,10) : '');
     setDDemoNotes(lead.demo_notes ?? '');
     setDDemoOutcome(lead.demo_outcome ?? '');
+    setLogNote(''); setLogKind('note'); setProvState('idle'); setProvMsg('');
   }
 
   async function patch(id: string, payload: Record<string,unknown>) {
@@ -105,6 +112,48 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     });
     if (ok) { setSel(null); }
     setSaving(false);
+  }
+
+  // Sprint D: provision trial workspace
+  async function provisionTrial() {
+    if (!sel) return;
+    setProvState('loading'); setProvMsg('');
+    try {
+      const res = await fetch('/api/smc/leads/' + sel.id + '/provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: sel.id }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setProvState('done');
+        setProvMsg(d.message ?? 'Workspace provisioned. Check Client Orgs.');
+        if (d.lead) { setLeads(prev => prev.map(l => l.id === sel.id ? d.lead : l)); setSel(d.lead); }
+      } else {
+        setProvState('error');
+        setProvMsg(d.error ?? 'Provisioning failed. Check admin logs.');
+      }
+    } catch (err) {
+      setProvState('error');
+      setProvMsg(String(err));
+    }
+  }
+
+  // Sprint B: log activity from drawer
+  async function logActivity() {
+    if (!sel || !logNote.trim()) return;
+    setLogSaving(true);
+    const res = await fetch(`/api/smc/leads/${sel.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _activity: { kind: logKind, note: logNote.trim(), actor_name: dAssignee || 'Team' } }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok && d.lead) {
+      setLeads(prev => prev.map(l => l.id === sel.id ? d.lead : l));
+      setSel(d.lead);
+    }
+    setLogNote(''); setLogSaving(false);
   }
 
   async function markLost() {
@@ -253,6 +302,34 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
               <textarea value={dNotes} onChange={e=>setDNotes(e.target.value)} rows={4} style={{...inp,resize:'vertical'}} placeholder="Context, next steps, blockers…" />
             </label>
 
+            {/* Sprint B: Log activity */}
+            <div style={{marginBottom:12,border:'1px solid #e2e8f0',borderRadius:10,overflow:'hidden'}}>
+              <div style={{padding:'8px 12px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:11,fontWeight:700,color:'#475569'}}>+ Log Activity</div>
+              <div style={{padding:10,display:'flex',flexDirection:'column',gap:8}}>
+                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                  {[{k:'note',l:'📝 Note'},{k:'call',l:'📞 Call'},{k:'whatsapp',l:'💬 WA'},{k:'email',l:'✉ Email'},{k:'demo_completed',l:'🖥 Demo'}].map(({k,l})=>(
+                    <button key={k} type="button" onClick={()=>setLogKind(k)} style={{border:`2px solid ${logKind===k?'#1F487C':'#e2e8f0'}`,background:logKind===k?'#eef4ff':'#fff',color:logKind===k?'#1F487C':'#64748b',borderRadius:8,padding:'3px 9px',fontSize:10,fontWeight:700,cursor:'pointer'}}>{l}</button>
+                  ))}
+                </div>
+                <textarea value={logNote} onChange={e=>setLogNote(e.target.value)} rows={2} placeholder="What happened..." style={{...inp,resize:'vertical',fontSize:12}} />
+                <button onClick={logActivity} disabled={!logNote.trim()||logSaving} style={{border:'none',background:logNote.trim()?'#1F487C':'#e2e8f0',color:logNote.trim()?'#fff':'#94a3b8',borderRadius:8,padding:'6px 12px',fontSize:12,fontWeight:700,cursor:'pointer',alignSelf:'flex-end'}}>{logSaving?'Saving…':'Log'}</button>
+              </div>
+              {/* Activity history */}
+              {sel.activity_log && sel.activity_log.length > 0 && (
+                <div style={{borderTop:'1px solid #f1f5f9',maxHeight:180,overflowY:'auto'}}>
+                  {[...sel.activity_log].reverse().map(entry=>(
+                    <div key={entry.id} style={{padding:'7px 12px',borderBottom:'1px solid #f8fafc',fontSize:11}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:2}}>
+                        <span style={{fontWeight:700,color:'#1F487C',textTransform:'uppercase',fontSize:9,letterSpacing:'.06em'}}>{entry.kind}</span>
+                        <span style={{color:'#94a3b8',fontSize:9}}>{new Date(entry.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · {entry.actor_name}</span>
+                      </div>
+                      <p style={{margin:0,color:'#334155',whiteSpace:'pre-wrap'}}>{entry.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Read-only info */}
             <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:12,fontSize:12,color:'#475569',display:'grid',gap:6}}>
               {sel.primary_admin_email&&<div>✉️ {sel.primary_admin_email}</div>}
@@ -279,6 +356,18 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
 
             {/* Full details link */}
             {/* Client Orgs link (for Qualified+ that have an org) */}
+            {/* Sprint D: Provision Trial Workspace */}
+            {dStage === 'trial' && !(sel as any).linked_organization_id && (
+              <div style={{marginTop:14,padding:13,border:'1px solid #bbf7d0',borderRadius:10,background:'#f0fdf4'}}>
+                <p style={{margin:'0 0 6px',fontSize:11.5,fontWeight:700,color:'#14532d'}}>🚀 Provision Trial Workspace</p>
+                <p style={{margin:'0 0 10px',fontSize:11,color:'#166534'}}>Create the client org, seed trial data, and prepare the first admin invite link. This runs the same provisioning flow as the Admin panel.</p>
+                {provMsg && <p style={{margin:'0 0 8px',fontSize:11,fontWeight:600,color:provState==='done'?'#047857':'#991b1b',background:provState==='done'?'#dcfce7':'#fee2e2',borderRadius:7,padding:'5px 8px'}}>{provMsg}</p>}
+                <button onClick={provisionTrial} disabled={provState==='loading'||provState==='done'} style={{width:'100%',border:'none',background:provState==='done'?'#6b7280':'#15803d',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:provState==='loading'||provState==='done'?'not-allowed':'pointer'}}>
+                  {provState==='loading'?'Provisioning…':provState==='done'?'✓ Done':'Provision Now'}
+                </button>
+              </div>
+            )}
+
             {CLIENT_ORG_STAGES.has(dStage)&&sel.company_slug?(
               <a href={clientHref(sel)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:14,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
                 Manage in Client Orgs (SMC) ↗
