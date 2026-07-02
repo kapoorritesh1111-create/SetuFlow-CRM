@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 
-type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null };
+type Lead = { id:string; company_name:string; company_slug:string|null; workspace_domain:string|null; primary_admin_name:string|null; primary_admin_email:string; primary_phone:string|null; headquarters_country:string|null; status:string; requested_seat_count:number; requested_plan:string; trial_template_key:string|null; pipeline_stage:string|null; lead_score:number|null; is_trial_request:boolean; created_at:string; website:string|null; industry:string|null; source:string|null; source_detail:string|null; internal_notes:string|null; last_contact_at:string|null; next_follow_up_at:string|null; assigned_to_name:string|null; demo_scheduled_at:string|null; demo_completed_at:string|null; demo_outcome:string|null; demo_notes:string|null; activity_log:unknown[] };
 
 const STAGES = [
   { key:'inquiry',     label:'Inquiry',     color:'#8b5cf6', border:'#c4b5fd' },
@@ -12,7 +12,9 @@ const STAGES = [
   { key:'converted',   label:'Converted',   color:'#1F487C', border:'#93c5fd' },
   { key:'lost',        label:'Lost',        color:'#dc2626', border:'#fca5a5' },
 ];
-const ASSIGNEES = ['Ritesh Kapoor','Kumar Mayank','Ankush Arya'];
+// ASSIGNEES: loaded dynamically from /api/smc/team in the board component
+// Fallback list for initial render before API responds
+const ASSIGNEES_FALLBACK = ['Ritesh Kapoor','Kumar Mayank','Ankush Arya'];
 
 const CLIENT_ORG_STAGES = new Set(['qualified','trial','negotiating','converted']);
 
@@ -30,6 +32,15 @@ function stageOf(l: Lead) {
 
 export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads]         = useState<Lead[]>(initialLeads);
+  const [assignees, setAssignees] = useState<string[]>(ASSIGNEES_FALLBACK);
+  // Fetch dynamic team members
+  useEffect(() => {
+    fetch('/api/smc/team').then(r => r.json()).then(d => {
+      if (Array.isArray(d.team) && d.team.length > 0) {
+        setAssignees(d.team.map((m: any) => m.display_name));
+      }
+    }).catch(() => {});
+  }, []);
   const [dragId, setDragId]       = useState<string|null>(null);
   const [dragOver, setDragOver]   = useState<string|null>(null);
   const [sel, setSel]             = useState<Lead|null>(null);
@@ -40,6 +51,10 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [dScore,     setDScore]   = useState('');
   const [dFollowUp,  setDFollowUp]= useState('');
   const [dAssignee,  setDAssignee]= useState('');
+  // Sprint C: demo fields
+  const [dDemoDate,  setDDemoDate]  = useState('');
+  const [dDemoNotes, setDDemoNotes] = useState('');
+  const [dDemoOutcome, setDDemoOutcome] = useState('');
 
   function openDrawer(lead: Lead) {
     setSel(lead);
@@ -48,6 +63,9 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     setDScore(lead.lead_score != null ? String(lead.lead_score) : '');
     setDFollowUp(lead.next_follow_up_at ? lead.next_follow_up_at.slice(0,10) : '');
     setDAssignee(lead.assigned_to_name ?? '');
+    setDDemoDate(lead.demo_scheduled_at ? lead.demo_scheduled_at.slice(0,10) : '');
+    setDDemoNotes(lead.demo_notes ?? '');
+    setDDemoOutcome(lead.demo_outcome ?? '');
   }
 
   async function patch(id: string, payload: Record<string,unknown>) {
@@ -78,6 +96,9 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     const ok = await patch(sel.id, {
       pipeline_stage: dStage || null,
       lead_score: dScore ? Number(dScore) : null,
+      demo_scheduled_at: dDemoDate ? new Date(dDemoDate).toISOString() : null,
+      demo_notes: dDemoNotes || null,
+      demo_outcome: dDemoOutcome || null,
       internal_notes: dNotes || null,
       next_follow_up_at: dFollowUp || null,
       assigned_to_name: dAssignee || null,
@@ -213,7 +234,7 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
             <label style={lbl}>Assigned To
               <select value={dAssignee} onChange={e=>setDAssignee(e.target.value)} style={inp}>
                 <option value="">Unassigned</option>
-                {ASSIGNEES.map(a=><option key={a} value={a}>{a}</option>)}
+                {(assignees.length ? assignees : ASSIGNEES_FALLBACK).map(a=><option key={a} value={a}>{a}</option>)}
               </select>
             </label>
 

@@ -117,6 +117,61 @@ function InlineTrialPreviewBanner({ copy }: { copy: TrialPreviewCopy }) {
   );
 }
 
+function getSupplierProcurementUpgradeCopy(pathname: string): TrialPreviewCopy | null {
+  if (pathname.startsWith('/dashboard/supplier-insights')) {
+    return {
+      eyebrow: 'Supplier Procurement Module',
+      title: 'Supplier Insights is an add-on',
+      description: 'The sourcing command center, supplier funnel analytics, and Guru recommendations require the Supplier Procurement module. Contact your account manager to enable it.',
+    };
+  }
+  if (pathname.startsWith('/reports/suppliers')) {
+    return {
+      eyebrow: 'Supplier Procurement Module',
+      title: 'Supplier Reports is an add-on',
+      description: 'Clean vendor-facing sourcing reports with document readiness, cost request movement, and approval status require the Supplier Procurement module.',
+    };
+  }
+  if (pathname.startsWith('/orders/supplier-links')) {
+    return {
+      eyebrow: 'Supplier Procurement Module',
+      title: 'Supplier Orders is an add-on',
+      description: 'PO execution, inbound tracking, quality checks, and supplier performance linked to buyer orders require the Supplier Procurement module.',
+    };
+  }
+  return null;
+}
+
+function SupplierUpgradeFallback({ preview }: { preview: TrialPreviewCopy }) {
+  return (
+    <div className="mx-auto flex min-h-[68vh] max-w-2xl items-center px-4 py-10">
+      <section className="w-full overflow-hidden rounded-[2rem] border border-teal-200 bg-white p-8 shadow-sm text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50">
+          <svg className="h-6 w-6 text-[#279491]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-teal-700">
+          {preview.eyebrow}
+        </div>
+        <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-950">{preview.title}</h2>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">{preview.description}</p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <a
+            href="mailto:admin@setugroups.com?subject=Supplier Procurement Module"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#163561]"
+          >
+            Request module access
+          </a>
+          <Link href="/leads?mode=suppliers" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300">
+            Back to supplier leads
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function FullPreviewFallback({ preview }: { preview: TrialPreviewCopy }) {
   return (
     <div className="mx-auto flex min-h-[68vh] max-w-5xl items-center px-4 py-10">
@@ -178,6 +233,14 @@ export function ModuleAccessGuard({ children }: { children: ReactNode }) {
   const moduleDef = getModuleForPath(pathname);
   const isTrial = grants ? isTradeShowTrialOrg(enabledModules) : false;
   const previewCopy = isTrial ? getTradeShowTrialPreviewCopy(pathname) : null;
+
+  const supplierUpgradeCopy = grants ? getSupplierProcurementUpgradeCopy(pathname) : null;
+  const isSupplierRoute = supplierUpgradeCopy !== null;
+
+  // Supplier procurement routes: show sourcing-specific upgrade screen if module is disabled
+  if (grants && isSupplierRoute && !enabledModules.has('supplier_procurement') && grants.length > 0) {
+    return <SupplierUpgradeFallback preview={supplierUpgradeCopy!} />;
+  }
 
   if (grants && moduleDef && !isPathEnabled(pathname, enabledModules) && !previewCopy) {
     return <FullPreviewFallback preview={{ eyebrow: 'Available after upgrade', title: 'This module is available after upgrade', description: 'Continue the trade show trial from the existing workspace, then upgrade when you are ready for the full CRM workflow.' }} />;

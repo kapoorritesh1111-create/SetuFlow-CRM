@@ -4,6 +4,7 @@ import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draf
 import { moveCanonicalLeadStage, reassignCanonicalLeadOwner, saveCanonicalLeadDetails, saveCanonicalQualificationMapping, scheduleCanonicalLeadFollowUp } from './actions';
 import FollowUpComposer from './FollowUpComposer';
 import { SupplierCommandCenter } from '@/features/leads/components/supplier-command-center';
+import { SupplierModuleGate } from '@/features/leads/components/supplier-module-gate';
 
 type TeamMember = { id: string; name: string; email?: string | null };
 type Props = { data: LeadProfileData; canReassignOwner?: boolean; teamMembers?: TeamMember[]; backHref?: string };
@@ -93,8 +94,14 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
   // This branch keeps the existing buyer experience untouched while routing suppliers
   // into the sourcing-native workspace with capability, documents, cost requests,
   // responses, approval, demand linkage, performance, and activity tabs.
+  // The SupplierModuleGate checks whether the org has supplier_procurement enabled;
+  // if not, it shows a locked upgrade screen instead of the full sourcing workspace.
   if (normalize(lead.lead_type) === 'supplier') {
-    return <SupplierCommandCenter data={data as any} />;
+    return (
+      <SupplierModuleGate companyName={lead.company_name ?? 'Supplier'} leadId={lead.id}>
+        <SupplierCommandCenter data={data as any} />
+      </SupplierModuleGate>
+    );
   }
   const quotes = sortedQuotes(data);
   const activeQuote = quotes[0] || null;

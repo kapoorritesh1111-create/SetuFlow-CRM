@@ -1,4 +1,4 @@
-export const MODULE_KEYS = ['full_crm', 'trade_show', 'orders_compliance', 'setu_guru', 'analytics', 'vcard'] as const;
+export const MODULE_KEYS = ['full_crm', 'trade_show', 'orders_compliance', 'setu_guru', 'analytics', 'vcard', 'supplier_procurement'] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 
@@ -50,6 +50,17 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
     title: 'vCard',
     subtitle: 'My Card, QR share links, public card pages, and vCard download flows.',
     routes: ['/contact-exchange/vcard', '/card'],
+  },
+  {
+    key: 'supplier_procurement',
+    title: 'Supplier Procurement',
+    subtitle: 'Full supplier sourcing workflow: compliance readiness, cost requests, RFQ responses, approval lifecycle, demand linkage, performance KPIs, and supplier analytics.',
+    routes: [
+      '/dashboard/supplier-insights',
+      '/reports/suppliers',
+      '/leads/cost-request',
+      '/orders/supplier-links',
+    ],
   },
 ];
 

@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
+import { createClient as createServerClientCR } from '@/lib/supabase/server';
+import { getEnabledModuleSet as getEnabledCR, normalizeModuleKey as normKeyCR } from '@/lib/modules/module-grants';
 import { getLeadProfileData } from '@/lib/queries/leads';
 import { createRfq } from '@/features/rfqs/server/actions';
 
@@ -21,6 +23,19 @@ export default async function SupplierCostRequestPage({
     return <EmptyState title="Configuration required" description="Supabase environment values missing." />;
   if (!workspace?.membership || !workspace?.organization)
     return <EmptyState title="Workspace needed" description="No active organization membership found." />;
+
+  // Module gate: supplier cost requests require supplier_procurement
+  {
+    const _dbCR = await createServerClientCR();
+    const { data: _gCR } = await (_dbCR as any).from('org_module_grants')
+      .select('module_key, enabled').eq('organization_id', workspace.organization.id);
+    if (Array.isArray(_gCR) && _gCR.length > 0) {
+      const _emCR = getEnabledCR(_gCR.map((r: any) => ({ module_key: normKeyCR(r.module_key) ?? r.module_key, enabled: r.enabled })));
+      if (!_emCR.has('supplier_procurement')) {
+        return <EmptyState title="Supplier Procurement required" description="Creating supplier cost requests requires the Supplier Procurement add-on. Contact your account manager to enable it." />;
+      }
+    }
+  }
 
   const { leadId } = params;
   let data: Awaited<ReturnType<typeof getLeadProfileData>> | null = null;

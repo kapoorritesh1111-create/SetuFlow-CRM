@@ -6,8 +6,29 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { buildSetuGuruSupplierRecommendations, buildSupplierSourcingReportRows } from '@/lib/supplier-insights';
+import { createClient as createServerClientR } from '@/lib/supabase/server';
+import { getEnabledModuleSet as getEnabledR, normalizeModuleKey as normKeyR } from '@/lib/modules/module-grants';
 
 export default async function SupplierReportsPage() {
+  const _wsR = await getWorkspaceAccess();
+  if (_wsR.organization) {
+    const _dbR = await createServerClientR();
+    const { data: _gR } = await (_dbR as any).from('org_module_grants')
+      .select('module_key, enabled').eq('organization_id', _wsR.organization.id);
+    if (Array.isArray(_gR) && _gR.length > 0) {
+      const _emR = getEnabledR(_gR.map((r: any) => ({ module_key: normKeyR(r.module_key) ?? r.module_key, enabled: r.enabled })));
+      if (!_emR.has('supplier_procurement')) {
+        return (
+          <div className="mx-auto max-w-xl px-4 py-16 text-center">
+            <p className="text-xs font-black uppercase tracking-widest text-[#279491]">Supplier Procurement Module</p>
+            <h2 className="mt-3 text-2xl font-bold text-slate-950">Supplier reports locked</h2>
+            <p className="mt-3 text-sm text-slate-500">Supplier sourcing reports require the Supplier Procurement add-on.</p>
+            <a href="mailto:admin@setugroups.com?subject=Supplier Procurement Module" className="mt-6 inline-block rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white">Request module access</a>
+          </div>
+        );
+      }
+    }
+  }
   if (!hasSupabaseEnv) redirect('/reports');
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {

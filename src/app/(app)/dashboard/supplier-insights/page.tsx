@@ -11,6 +11,8 @@ import {
   buildSupplierSourcingReportRows,
   calculateSupplierPerformanceKpis,
 } from '@/lib/supplier-insights';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getEnabledModuleSet, normalizeModuleKey } from '@/lib/modules/module-grants';
 
 function fmt(value: number) {
   return value.toLocaleString('en-US');
@@ -38,6 +40,27 @@ function Metric({ label, value, helper, Icon }: { label: string; value: string; 
 }
 
 export default async function SupplierInsightsPage() {
+  // Module gate: check whether this org has supplier_procurement enabled
+  const _ws = await getWorkspaceAccess();
+  if (_ws.organization) {
+    const _db = await createServerClient();
+    const { data: _grants } = await (_db as any).from('org_module_grants')
+      .select('module_key, enabled')
+      .eq('organization_id', _ws.organization.id);
+    if (Array.isArray(_grants) && _grants.length > 0) {
+      const _enabled = getEnabledModuleSet(_grants.map((r: any) => ({ module_key: normalizeModuleKey(r.module_key) ?? r.module_key, enabled: r.enabled })));
+      if (!_enabled.has('supplier_procurement')) {
+        return (
+          <div className="mx-auto max-w-xl px-4 py-16 text-center">
+            <p className="text-xs font-black uppercase tracking-widest text-[#279491]">Supplier Procurement Module</p>
+            <h2 className="mt-3 text-2xl font-bold text-slate-950">Supplier insights locked</h2>
+            <p className="mt-3 text-sm text-slate-500">The Supplier Insights dashboard, sourcing funnel, and Guru recommendations require the Supplier Procurement add-on.</p>
+            <a href="mailto:admin@setugroups.com?subject=Supplier Procurement Module" className="mt-6 inline-block rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white">Request module access</a>
+          </div>
+        );
+      }
+    }
+  }
   if (!hasSupabaseEnv) redirect('/dashboard?mode=suppliers');
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
