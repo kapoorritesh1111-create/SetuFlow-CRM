@@ -6,6 +6,13 @@ import { AccessBoard } from './access-board';
 
 export const dynamic = 'force-dynamic';
 
+type OrgMember = {
+  user_id: string;
+  full_name: string | null;
+  username: string | null;
+  email: string | null;
+};
+
 type SmcMember = {
   id: string; user_id: string; display_name: string; initials: string;
   email: string | null; role: string; allowed_groups: string[] | null;
@@ -80,12 +87,38 @@ export default async function SmcAccessPage({ searchParams }: { searchParams?: R
   const params = await searchParams;
   const notice = params?.notice;
 
-  const { data } = await (sb as any)
+  // Fetch SMC team members
+  const { data: smcData } = await (sb as any)
     .from('smc_team_members')
     .select('*')
     .order('role', { ascending: true })
     .order('display_name', { ascending: true });
+  const members = (smcData ?? []) as SmcMember[];
+  const smcUserIds = new Set(members.map((m) => m.user_id));
 
-  const members = (data ?? []) as SmcMember[];
-  return <AccessBoard members={members} notice={notice ?? null} saveMember={saveMemberAction} deactivateMember={deactivateMemberAction} />;
+  // Fetch ALL org members with profiles — for the "Add Member" picker
+  const { data: orgData } = await (sb as any)
+    .from('organization_members')
+    .select('user_id, profiles(full_name, username, email)')
+    .eq('organization_id', INTERNAL_ORG_ID);
+
+  const orgMembers: OrgMember[] = ((orgData ?? []) as any[])
+    .map((row: any) => ({
+      user_id: row.user_id,
+      full_name: row.profiles?.full_name ?? null,
+      username: row.profiles?.username ?? null,
+      email: row.profiles?.email ?? null,
+    }))
+    // Only show org members not yet in SMC
+    .filter((m: OrgMember) => !smcUserIds.has(m.user_id));
+
+  return (
+    <AccessBoard
+      members={members}
+      orgMembers={orgMembers}
+      notice={notice ?? null}
+      saveMember={saveMemberAction}
+      deactivateMember={deactivateMemberAction}
+    />
+  );
 }

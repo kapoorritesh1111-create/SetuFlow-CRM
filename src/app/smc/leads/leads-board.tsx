@@ -394,27 +394,42 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
                     style={{width:'100%',border:'1px solid #dbe6ef',borderRadius:9,padding:'8px 10px',fontSize:12,resize:'vertical',fontFamily:'inherit',boxSizing:'border-box'}} />
                   <div style={{display:'flex',gap:6}}>
                     {fuPanel==='whatsapp' && sel.primary_phone && (
+                      // Open WhatsApp — clicking logs the message AND opens WA link
                       <a href={waHref(sel.primary_phone, fuMsg||`Hi ${sel.primary_admin_name||sel.company_name}, following up on SETU Flow CRM.`)}
                         target="_blank" rel="noopener"
                         onClick={()=>{ if(fuMsg.trim()) { const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind','whatsapp'); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); } }}
-                        style={{flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:5,background:'#25D366',color:'#fff',borderRadius:9,padding:'8px',fontSize:12,fontWeight:700,textDecoration:'none'}}>
-                        💬 Open WhatsApp
+                        style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'#25D366',color:'#fff',borderRadius:9,padding:'10px',fontSize:13,fontWeight:700,textDecoration:'none'}}>
+                        💬 Open WhatsApp &amp; Log
                       </a>
                     )}
-                    {fuPanel==='email' && (
-                      <a href={`mailto:${sel.primary_admin_email}?body=${encodeURIComponent(fuMsg)}`}
-                        onClick={()=>{ if(fuMsg.trim()) { const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind','email'); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); } }}
-                        style={{flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:5,background:'#6366f1',color:'#fff',borderRadius:9,padding:'8px',fontSize:12,fontWeight:700,textDecoration:'none'}}>
-                        ✉ Open in Mail
-                      </a>
+                    {fuPanel==='whatsapp' && !sel.primary_phone && (
+                      <p style={{margin:0,fontSize:11,color:'#dc2626',background:'#fef2f2',borderRadius:8,padding:'8px 10px',width:'100%'}}>
+                        ⚠ No phone number on this lead. Add a phone number to enable WhatsApp.
+                      </p>
                     )}
-                    {fuMsg.trim() && (
-                      <button type="button"
-                        onClick={()=>{ const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind',fuPanel); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); setFuPanel('closed'); setFuMsg(''); }}
-                        style={{flex:1,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#475569',borderRadius:9,padding:'8px',fontSize:11,fontWeight:600,cursor:'pointer'}}>
-                        Log only
-                      </button>
-                    )}
+                    {fuPanel==='email' && (() => {
+                      // Parse Subject line from generated text so mailto has proper subject
+                      const lines = fuMsg.split('\n');
+                      const subjectLine = lines.find(l => l.toLowerCase().startsWith('subject:'));
+                      const subject = subjectLine ? subjectLine.replace(/^subject:\s*/i, '').trim() : `Following up — ${sel.company_name}`;
+                      // Body is everything after the subject line (skip blank line)
+                      const bodyStart = subjectLine ? lines.indexOf(subjectLine) + 1 : 0;
+                      const body = lines.slice(bodyStart).join('\n').replace(/^\n+/, '');
+                      const mailtoHref = `mailto:${sel.primary_admin_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      return (
+                        <div style={{display:'flex',flexDirection:'column',gap:6,width:'100%'}}>
+                          <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'6px 10px',fontSize:11}}>
+                            <span style={{color:'#94a3b8',fontWeight:600}}>Subject: </span>
+                            <span style={{color:'#0f172a',fontWeight:700}}>{subject}</span>
+                          </div>
+                          <a href={mailtoHref}
+                            onClick={()=>{ if(fuMsg.trim()) { const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind','email'); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); } }}
+                            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'#6366f1',color:'#fff',borderRadius:9,padding:'10px',fontSize:13,fontWeight:700,textDecoration:'none'}}>
+                            ✉ Open in Mail &amp; Log
+                          </a>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
