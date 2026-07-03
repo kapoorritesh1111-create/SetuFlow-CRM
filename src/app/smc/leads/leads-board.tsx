@@ -55,6 +55,11 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [logKind,    setLogKind]    = useState('note');
   const [logNote,    setLogNote]    = useState('');
   const [logSaving,  setLogSaving]  = useState(false);
+  // Follow-up message generator (inline in drawer)
+  const [fuPanel,    setFuPanel]    = useState<'closed'|'whatsapp'|'email'>('closed');
+  const [fuMsg,      setFuMsg]      = useState('');
+  const [fuGen,      setFuGen]      = useState(false);
+  const [fuError,    setFuError]    = useState('');
   const [provState,  setProvState]  = useState<'idle'|'loading'|'done'|'error'>('idle');
   const [provMsg,    setProvMsg]    = useState('');
   // Sprint C: demo fields
@@ -72,7 +77,7 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     setDDemoDate(lead.demo_scheduled_at ? lead.demo_scheduled_at.slice(0,10) : '');
     setDDemoNotes(lead.demo_notes ?? '');
     setDDemoOutcome(lead.demo_outcome ?? '');
-    setLogNote(''); setLogKind('note'); setProvState('idle'); setProvMsg('');
+    setLogNote(''); setLogKind('note'); setProvState('idle'); setProvMsg(''); setFuPanel('closed'); setFuMsg(''); setFuError('');
   }
 
   async function patch(id: string, payload: Record<string,unknown>) {
@@ -114,6 +119,42 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     setSaving(false);
   }
 
+  // Follow-up message generator
+  async function generateFuMessage(kind: 'whatsapp'|'email') {
+    if (!sel) return;
+    setFuGen(true); setFuError(''); setFuMsg('');
+    try {
+      const res = await fetch('/api/smc/suggest-message', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          company_name: sel.company_name,
+          contact_name: sel.primary_admin_name,
+          pipeline_stage: stageOf(sel),
+          source: sel.source,
+          source_detail: sel.source_detail,
+          internal_notes: sel.internal_notes,
+          last_contact_at: sel.last_contact_at,
+          next_follow_up_at: sel.next_follow_up_at,
+          lead_score: sel.lead_score,
+          activity_log: sel.activity_log,
+          kind,
+          sender_name: dAssignee || 'Ritesh Kapoor',
+        }),
+      });
+      const d = await res.json();
+      if (d.message) setFuMsg(d.message);
+      else setFuError(d.error || 'Generation failed');
+    } catch(err) { setFuError(String(err)); }
+    setFuGen(false);
+  }
+  function waHref(phone: string|null, msg: string) {
+    if (!phone) return '#';
+    const n = phone.replace(/[^0-9+]/g,'');
+    const num = n.startsWith('+') ? n.slice(1) : n;
+    return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+  }
+
   // Sprint D: provision trial workspace
   async function provisionTrial() {
     if (!sel) return;
@@ -140,6 +181,25 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
   }
 
   // Sprint B: log activity from drawer
+  // Log activity from FormData (used by follow-up panel inline)
+  async function logActivityFd(fd: FormData) {
+    const id = fd.get('lead_id') as string;
+    const kind = fd.get('kind') as string;
+    const note = fd.get('note') as string;
+    const actor = fd.get('actor_name') as string;
+    if (!id || !note?.trim()) return;
+    const entry = { id: crypto.randomUUID(), kind, note: note.trim(), actor_name: actor, created_at: new Date().toISOString() };
+    const current = leads.find(l => l.id === id);
+    const currentLog = Array.isArray(current?.activity_log) ? current.activity_log : [];
+    await fetch(`/api/smc/leads/${id}`, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ _activity: { kind, note: note.trim(), actor_name: actor } }),
+    });
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, activity_log: [...currentLog, entry], last_contact_at: new Date().toISOString() } : l));
+    if (sel?.id === id) setSel(s => s ? { ...s, activity_log: [...currentLog, entry] } : s);
+  }
+
   async function logActivity() {
     if (!sel || !logNote.trim()) return;
     setLogSaving(true);
@@ -302,6 +362,64 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
               <textarea value={dNotes} onChange={e=>setDNotes(e.target.value)} rows={4} style={{...inp,resize:'vertical'}} placeholder="Context, next steps, blockers…" />
             </label>
 
+            {/* ── Follow-up message generator (inline) ── */}
+            <div style={{marginBottom:12,border:'1px solid #dbeafe',borderRadius:10,overflow:'hidden'}}>
+              <div style={{padding:'8px 12px 8px',background:'#eff6ff',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:11,fontWeight:700,color:'#1d4ed8'}}>✨ Follow Up via Setu Guru</span>
+                <div style={{display:'flex',gap:5}}>
+                  <button type="button"
+                    onClick={()=>{setFuPanel(fuPanel==='whatsapp'?'closed':'whatsapp'); setFuMsg(''); setFuError('');}}
+                    style={{border:`2px solid ${fuPanel==='whatsapp'?'#25D366':'#e2e8f0'}`,background:fuPanel==='whatsapp'?'#dcfce7':'#fff',color:fuPanel==='whatsapp'?'#15803d':'#64748b',borderRadius:7,padding:'3px 9px',fontSize:10,fontWeight:700,cursor:'pointer'}}>
+                    💬 WA
+                  </button>
+                  <button type="button"
+                    onClick={()=>{setFuPanel(fuPanel==='email'?'closed':'email'); setFuMsg(''); setFuError('');}}
+                    style={{border:`2px solid ${fuPanel==='email'?'#6366f1':'#e2e8f0'}`,background:fuPanel==='email'?'#eef2ff':'#fff',color:fuPanel==='email'?'#4338ca':'#64748b',borderRadius:7,padding:'3px 9px',fontSize:10,fontWeight:700,cursor:'pointer'}}>
+                    ✉ Email
+                  </button>
+                </div>
+              </div>
+              {fuPanel !== 'closed' && (
+                <div style={{padding:10,display:'flex',flexDirection:'column',gap:8}}>
+                  <div style={{display:'flex',justifyContent:'flex-end'}}>
+                    <button type="button" onClick={()=>generateFuMessage(fuPanel)} disabled={fuGen}
+                      style={{background:fuGen?'#f1f5f9':'#1F487C',color:fuGen?'#94a3b8':'#fff',border:'none',borderRadius:8,padding:'5px 12px',fontSize:11,fontWeight:700,cursor:fuGen?'not-allowed':'pointer'}}>
+                      {fuGen?'Generating…':'✨ Generate'}
+                    </button>
+                  </div>
+                  {fuError && <p style={{margin:0,fontSize:11,color:'#dc2626',background:'#fef2f2',borderRadius:7,padding:'5px 8px'}}>{fuError}</p>}
+                  <textarea value={fuMsg} onChange={e=>setFuMsg(e.target.value)}
+                    placeholder={fuPanel==='whatsapp'?'Generate or write your WhatsApp message…':'Generate or write your email (Subject: …\n\nBody…)'}
+                    rows={fuPanel==='email'?8:4}
+                    style={{width:'100%',border:'1px solid #dbe6ef',borderRadius:9,padding:'8px 10px',fontSize:12,resize:'vertical',fontFamily:'inherit',boxSizing:'border-box'}} />
+                  <div style={{display:'flex',gap:6}}>
+                    {fuPanel==='whatsapp' && sel.primary_phone && (
+                      <a href={waHref(sel.primary_phone, fuMsg||`Hi ${sel.primary_admin_name||sel.company_name}, following up on SETU Flow CRM.`)}
+                        target="_blank" rel="noopener"
+                        onClick={()=>{ if(fuMsg.trim()) { const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind','whatsapp'); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); } }}
+                        style={{flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:5,background:'#25D366',color:'#fff',borderRadius:9,padding:'8px',fontSize:12,fontWeight:700,textDecoration:'none'}}>
+                        💬 Open WhatsApp
+                      </a>
+                    )}
+                    {fuPanel==='email' && (
+                      <a href={`mailto:${sel.primary_admin_email}?body=${encodeURIComponent(fuMsg)}`}
+                        onClick={()=>{ if(fuMsg.trim()) { const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind','email'); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); } }}
+                        style={{flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:5,background:'#6366f1',color:'#fff',borderRadius:9,padding:'8px',fontSize:12,fontWeight:700,textDecoration:'none'}}>
+                        ✉ Open in Mail
+                      </a>
+                    )}
+                    {fuMsg.trim() && (
+                      <button type="button"
+                        onClick={()=>{ const fd=new FormData(); fd.set('lead_id',sel.id); fd.set('kind',fuPanel); fd.set('note',fuMsg.trim()); fd.set('actor_name',dAssignee||'Ritesh Kapoor'); logActivityFd(fd); setFuPanel('closed'); setFuMsg(''); }}
+                        style={{flex:1,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#475569',borderRadius:9,padding:'8px',fontSize:11,fontWeight:600,cursor:'pointer'}}>
+                        Log only
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Sprint B: Log activity */}
             <div style={{marginBottom:12,border:'1px solid #e2e8f0',borderRadius:10,overflow:'hidden'}}>
               <div style={{padding:'8px 12px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:11,fontWeight:700,color:'#475569'}}>+ Log Activity</div>
@@ -356,22 +474,22 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
 
             {/* Full details link */}
             {/* Client Orgs link (for Qualified+ that have an org) */}
-            {/* Convert to Trial CTA — for qualified/negotiating leads not yet on trial */}
-            {['qualified','negotiating'].includes(dStage) && !sel.is_trial_request && (
+            {/* Convert to Trial — visible whenever stage isn't trial/converted/lost */}
+            {!['trial','converted','lost'].includes(dStage) && (
               <div style={{marginTop:14,padding:13,border:'1px solid #c7d2fe',borderRadius:10,background:'#eef2ff'}}>
                 <p style={{margin:'0 0 4px',fontSize:11.5,fontWeight:700,color:'#1e1b4b'}}>🎯 Convert to Trial</p>
-                <p style={{margin:'0 0 10px',fontSize:11,color:'#3730a3'}}>Move this lead to Trial stage and mark it as a trial request. Then provision the workspace when ready.</p>
+                <p style={{margin:'0 0 10px',fontSize:11,color:'#3730a3'}}>Move this lead to Trial stage, mark it as a trial request, and unlock the workspace provisioning button.</p>
                 <button
                   onClick={async () => {
                     setSaving(true);
                     const ok = await patch(sel.id, { pipeline_stage: 'trial', is_trial_request: true });
-                    if (ok) setDStage('trial');
+                    if (ok) { setDStage('trial'); setLeads(prev => prev.map(l => l.id===sel.id ? {...l, pipeline_stage:'trial', is_trial_request:true} : l)); }
                     setSaving(false);
                   }}
                   disabled={saving}
-                  style={{width:'100%',border:'none',background:'#4f46e5',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:'pointer'}}
+                  style={{width:'100%',border:'none',background:'#4f46e5',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:saving?'not-allowed':'pointer'}}
                 >
-                  Move to Trial Stage
+                  {saving ? 'Moving…' : 'Move to Trial Stage'}
                 </button>
               </div>
             )}
