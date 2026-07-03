@@ -66,6 +66,16 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [dDemoDate,  setDDemoDate]  = useState('');
   const [dDemoNotes, setDDemoNotes] = useState('');
   const [dDemoOutcome, setDDemoOutcome] = useState('');
+  // Drawer tabs
+  const [drawerTab, setDrawerTab] = useState<'edit'|'followup'|'activity'|'contact'>('edit');
+  // Contact edit fields
+  const [dContactName, setDContactName] = useState('');
+  const [dEmail,       setDEmail]       = useState('');
+  const [dPhone,       setDPhone]       = useState('');
+  const [dCountry,     setDCountry]     = useState('');
+  const [dWebsite,     setDWebsite]     = useState('');
+  const [dIndustry,    setDIndustry]    = useState('');
+  const [dCompanyName, setDCompanyName] = useState('');
 
   function openDrawer(lead: Lead) {
     setSel(lead);
@@ -78,6 +88,14 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
     setDDemoNotes(lead.demo_notes ?? '');
     setDDemoOutcome(lead.demo_outcome ?? '');
     setLogNote(''); setLogKind('note'); setProvState('idle'); setProvMsg(''); setFuPanel('closed'); setFuMsg(''); setFuError('');
+    setDrawerTab('edit');
+    setDContactName(lead.primary_admin_name ?? '');
+    setDEmail(lead.primary_admin_email ?? '');
+    setDPhone(lead.primary_phone ?? '');
+    setDCountry(lead.headquarters_country ?? '');
+    setDWebsite(lead.website ?? '');
+    setDIndustry(lead.industry ?? '');
+    setDCompanyName(lead.company_name ?? '');
   }
 
   async function patch(id: string, payload: Record<string,unknown>) {
@@ -111,6 +129,14 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
       demo_scheduled_at: dDemoDate ? new Date(dDemoDate).toISOString() : null,
       demo_notes: dDemoNotes || null,
       demo_outcome: dDemoOutcome || null,
+      // Contact fields
+      company_name: dCompanyName || sel.company_name,
+      primary_admin_name: dContactName || null,
+      primary_admin_email: dEmail || sel.primary_admin_email,
+      primary_phone: dPhone || null,
+      headquarters_country: dCountry || null,
+      website: dWebsite || null,
+      industry: dIndustry || null,
       internal_notes: dNotes || null,
       next_follow_up_at: dFollowUp || null,
       assigned_to_name: dAssignee || null,
@@ -330,24 +356,42 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
             <button onClick={()=>setSel(null)} style={{border:'none',background:'rgba(255,255,255,.15)',color:'#fff',borderRadius:8,padding:'4px 10px',cursor:'pointer',fontSize:16}}>✕</button>
           </div>
 
+          {/* Tab bar */}
+          <div style={{display:'flex',borderBottom:'1px solid #e2e8f0',background:'#fafafa',flexShrink:0}}>
+            {([
+              {k:'edit',     l:'✏ Edit'},
+              {k:'followup', l:'✨ Follow Up'},
+              {k:'activity', l:`📋 Activity${sel.activity_log?.length ? ` (${sel.activity_log.length})` : ''}`},
+              {k:'contact',  l:'👤 Contact'},
+            ] as const).map(({k,l})=>(
+              <button key={k} type="button" onClick={()=>setDrawerTab(k)}
+                style={{flex:1,border:'none',background:'none',padding:'10px 4px',fontSize:10,fontWeight:700,color:drawerTab===k?'#1F487C':'#94a3b8',borderBottom:drawerTab===k?'2px solid #1F487C':'2px solid transparent',cursor:'pointer',whiteSpace:'nowrap'}}>
+                {l}
+              </button>
+            ))}
+          </div>
+
           {/* Body */}
-          <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
-            {/* Stage */}
-            <label style={lbl}>Pipeline Stage
-              <select value={dStage} onChange={e=>setDStage(e.target.value)} style={inp}>
-                {STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-            </label>
+          <div style={{flex:1,overflowY:'auto',padding:'14px 16px'}}>
 
-            {/* Assignee */}
-            <label style={lbl}>Assigned To
-              <select value={dAssignee} onChange={e=>setDAssignee(e.target.value)} style={inp}>
-                <option value="">Unassigned</option>
-                {(assignees.length ? assignees : ASSIGNEES_FALLBACK).map(a=><option key={a} value={a}>{a}</option>)}
-              </select>
-            </label>
+            {/* ══ TAB: EDIT ══ */}
+            {drawerTab==='edit' && (<>
+            {/* Stage + Assignee */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <label style={lbl}>Pipeline Stage
+                <select value={dStage} onChange={e=>setDStage(e.target.value)} style={inp}>
+                  {STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
+                </select>
+              </label>
+              <label style={lbl}>Assigned To
+                <select value={dAssignee} onChange={e=>setDAssignee(e.target.value)} style={inp}>
+                  <option value="">Unassigned</option>
+                  {(assignees.length ? assignees : ASSIGNEES_FALLBACK).map(a=><option key={a} value={a}>{a}</option>)}
+                </select>
+              </label>
+            </div>
 
-            {/* Score + Follow-up side by side */}
+            {/* Score + Follow-up */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <label style={lbl}>Lead Score (0–100)
                 <input type="number" min={0} max={100} value={dScore} onChange={e=>setDScore(e.target.value)} style={inp} placeholder="0" />
@@ -359,10 +403,80 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
 
             {/* Internal notes */}
             <label style={lbl}>Internal Notes
-              <textarea value={dNotes} onChange={e=>setDNotes(e.target.value)} rows={4} style={{...inp,resize:'vertical'}} placeholder="Context, next steps, blockers…" />
+              <textarea value={dNotes} onChange={e=>setDNotes(e.target.value)} rows={5} style={{...inp,resize:'vertical'}} placeholder="Context, next steps, blockers…" />
             </label>
 
-            {/* ── Follow-up message generator (inline) ── */}
+            {/* Demo section */}
+            <div style={{padding:12,border:'1px solid #e2e8f0',borderRadius:10,marginBottom:12,background:'#fafafa'}}>
+              <p style={{margin:'0 0 8px',fontSize:11,fontWeight:700,color:'#475569'}}>Demo Tracking</p>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                <label style={lbl}>Demo Date
+                  <input type="date" value={dDemoDate} onChange={e=>setDDemoDate(e.target.value)} style={inp} />
+                </label>
+                <label style={lbl}>Outcome
+                  <select value={dDemoOutcome} onChange={e=>setDDemoOutcome(e.target.value)} style={inp}>
+                    <option value="">— Not set</option>
+                    <option value="positive">✅ Positive</option>
+                    <option value="neutral">⚡ Neutral</option>
+                    <option value="negative">❌ Negative</option>
+                  </select>
+                </label>
+              </div>
+              <label style={{...lbl,marginTop:6}}>Demo Notes
+                <textarea value={dDemoNotes} onChange={e=>setDDemoNotes(e.target.value)} rows={2} style={{...inp,resize:'vertical'}} placeholder="What was shown, reaction, next steps…" />
+              </label>
+            </div>
+
+            {/* Convert to Trial — visible whenever stage isn't trial/converted/lost */}
+            {!['trial','converted','lost'].includes(dStage) && (
+              <div style={{marginBottom:12,padding:12,border:'1px solid #c7d2fe',borderRadius:10,background:'#eef2ff'}}>
+                <p style={{margin:'0 0 4px',fontSize:11.5,fontWeight:700,color:'#1e1b4b'}}>🎯 Convert to Trial</p>
+                <p style={{margin:'0 0 8px',fontSize:11,color:'#3730a3'}}>Move to Trial stage and unlock workspace provisioning.</p>
+                <button
+                  onClick={async () => {
+                    setSaving(true);
+                    const ok = await patch(sel.id, { pipeline_stage: 'trial', is_trial_request: true });
+                    if (ok) { setDStage('trial'); setLeads(prev => prev.map(l => l.id===sel.id ? {...l, pipeline_stage:'trial', is_trial_request:true} : l)); }
+                    setSaving(false);
+                  }}
+                  disabled={saving}
+                  style={{width:'100%',border:'none',background:'#4f46e5',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:saving?'not-allowed':'pointer'}}>
+                  {saving ? 'Moving…' : 'Move to Trial Stage'}
+                </button>
+              </div>
+            )}
+
+            {/* Provision Trial Workspace */}
+            {dStage === 'trial' && !(sel as any).linked_organization_id && (
+              <div style={{marginBottom:12,padding:12,border:'1px solid #bbf7d0',borderRadius:10,background:'#f0fdf4'}}>
+                <p style={{margin:'0 0 4px',fontSize:11.5,fontWeight:700,color:'#14532d'}}>🚀 Provision Trial Workspace</p>
+                <p style={{margin:'0 0 8px',fontSize:11,color:'#166534'}}>Create the client org and seed trial data.</p>
+                {provMsg && <p style={{margin:'0 0 6px',fontSize:11,fontWeight:600,color:provState==='done'?'#047857':'#991b1b',background:provState==='done'?'#dcfce7':'#fee2e2',borderRadius:7,padding:'5px 8px'}}>{provMsg}</p>}
+                <button onClick={provisionTrial} disabled={provState==='loading'||provState==='done'}
+                  style={{width:'100%',border:'none',background:provState==='done'?'#6b7280':'#15803d',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:provState==='loading'||provState==='done'?'not-allowed':'pointer'}}>
+                  {provState==='loading'?'Provisioning…':provState==='done'?'✓ Done':'Provision Now'}
+                </button>
+              </div>
+            )}
+
+            {CLIENT_ORG_STAGES.has(dStage)&&(
+              <a href={clientHref(sel)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginBottom:12,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
+                {sel.company_slug ? 'Manage in Client Orgs (SMC) ↗' : 'View in Client Orgs (SMC) ↗'}
+              </a>
+            )}
+
+            {/* Mark as lost */}
+            {dStage!=='lost'&&(
+              <div style={{padding:12,border:'1px dashed #fca5a5',borderRadius:10,background:'#fff5f5'}}>
+                <div style={{fontSize:11,color:'#7f1d1d',marginBottom:8}}><strong>Mark as Lost</strong> — move to Lost column. You can drag them back.</div>
+                <button onClick={markLost} disabled={saving} style={{border:'none',background:'#dc2626',color:'#fff',borderRadius:8,padding:'7px 16px',fontSize:12,fontWeight:700,cursor:'pointer'}}>Mark as Lost</button>
+              </div>
+            )}
+            </>)}
+
+            {/* ══ TAB: FOLLOW UP ══ */}
+            {drawerTab==='followup' && (<>
+            {/* ── Follow-up message generator ── */}
             <div style={{marginBottom:12,border:'1px solid #dbeafe',borderRadius:10,overflow:'hidden'}}>
               <div style={{padding:'8px 12px 8px',background:'#eff6ff',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:11,fontWeight:700,color:'#1d4ed8'}}>✨ Follow Up via Setu Guru</span>
@@ -435,101 +549,81 @@ export function LeadsBoard({ initialLeads }: { initialLeads: Lead[] }) {
               )}
             </div>
 
-            {/* Sprint B: Log activity */}
-            <div style={{marginBottom:12,border:'1px solid #e2e8f0',borderRadius:10,overflow:'hidden'}}>
+            </>)}
+
+            {/* ══ TAB: ACTIVITY ══ */}
+            {drawerTab==='activity' && (<>
+            {/* Log new activity */}
+            <div style={{border:'1px solid #e2e8f0',borderRadius:10,overflow:'hidden',marginBottom:14}}>
               <div style={{padding:'8px 12px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',fontSize:11,fontWeight:700,color:'#475569'}}>+ Log Activity</div>
               <div style={{padding:10,display:'flex',flexDirection:'column',gap:8}}>
                 <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
                   {[{k:'note',l:'📝 Note'},{k:'call',l:'📞 Call'},{k:'whatsapp',l:'💬 WA'},{k:'email',l:'✉ Email'},{k:'demo_completed',l:'🖥 Demo'}].map(({k,l})=>(
-                    <button key={k} type="button" onClick={()=>setLogKind(k)} style={{border:`2px solid ${logKind===k?'#1F487C':'#e2e8f0'}`,background:logKind===k?'#eef4ff':'#fff',color:logKind===k?'#1F487C':'#64748b',borderRadius:8,padding:'3px 9px',fontSize:10,fontWeight:700,cursor:'pointer'}}>{l}</button>
+                    <button key={k} type="button" onClick={()=>setLogKind(k)} style={{border:`2px solid ${logKind===k?'#1F487C':'#e2e8f0'}`,background:logKind===k?'#eef4ff':'#fff',color:logKind===k?'#1F487C':'#64748b',borderRadius:8,padding:'4px 10px',fontSize:11,fontWeight:700,cursor:'pointer'}}>{l}</button>
                   ))}
                 </div>
-                <textarea value={logNote} onChange={e=>setLogNote(e.target.value)} rows={2} placeholder="What happened..." style={{...inp,resize:'vertical',fontSize:12}} />
-                <button onClick={logActivity} disabled={!logNote.trim()||logSaving} style={{border:'none',background:logNote.trim()?'#1F487C':'#e2e8f0',color:logNote.trim()?'#fff':'#94a3b8',borderRadius:8,padding:'6px 12px',fontSize:12,fontWeight:700,cursor:'pointer',alignSelf:'flex-end'}}>{logSaving?'Saving…':'Log'}</button>
+                <textarea value={logNote} onChange={e=>setLogNote(e.target.value)} rows={3} placeholder="What happened — outcome, next steps…" style={{...inp,resize:'vertical',fontSize:12}} />
+                <button onClick={logActivity} disabled={!logNote.trim()||logSaving} style={{border:'none',background:logNote.trim()?'#1F487C':'#e2e8f0',color:logNote.trim()?'#fff':'#94a3b8',borderRadius:8,padding:'8px 14px',fontSize:13,fontWeight:700,cursor:'pointer',alignSelf:'flex-end'}}>{logSaving?'Saving…':'Save Log'}</button>
               </div>
-              {/* Activity history */}
-              {sel.activity_log && sel.activity_log.length > 0 && (
-                <div style={{borderTop:'1px solid #f1f5f9',maxHeight:180,overflowY:'auto'}}>
-                  {[...sel.activity_log].reverse().map(entry=>(
-                    <div key={entry.id} style={{padding:'7px 12px',borderBottom:'1px solid #f8fafc',fontSize:11}}>
-                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:2}}>
-                        <span style={{fontWeight:700,color:'#1F487C',textTransform:'uppercase',fontSize:9,letterSpacing:'.06em'}}>{entry.kind}</span>
-                        <span style={{color:'#94a3b8',fontSize:9}}>{new Date(entry.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · {entry.actor_name}</span>
-                      </div>
-                      <p style={{margin:0,color:'#334155',whiteSpace:'pre-wrap'}}>{entry.note}</p>
-                    </div>
-                  ))}
-                </div>
+            </div>
+            {/* Activity history — full height */}
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {(!sel.activity_log || sel.activity_log.length === 0) && (
+                <p style={{margin:0,fontSize:12,color:'#94a3b8',textAlign:'center',padding:'24px 0'}}>No activity logged yet.</p>
               )}
+              {[...(sel.activity_log??[])].reverse().map(entry=>{
+                const kindColors: Record<string,string> = {call:'#1F487C',whatsapp:'#25D366',email:'#6366f1',note:'#64748b',demo_completed:'#279491',follow_up_set:'#d97706',stage_changed:'#8b5cf6'};
+                const c = kindColors[entry.kind] ?? '#64748b';
+                return (
+                  <div key={entry.id} style={{border:'1px solid #e2e8f0',borderRadius:12,padding:'10px 12px',background:'#fff'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                      <span style={{fontWeight:800,color:c,textTransform:'uppercase',fontSize:9,letterSpacing:'.1em',background:`${c}15`,borderRadius:5,padding:'2px 6px'}}>{entry.kind}</span>
+                      <span style={{color:'#94a3b8',fontSize:9}}>{new Date(entry.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · {entry.actor_name}</span>
+                    </div>
+                    <p style={{margin:0,color:'#334155',fontSize:12,whiteSpace:'pre-wrap',lineHeight:1.5}}>{entry.note}</p>
+                  </div>
+                );
+              })}
             </div>
+            </>)}
 
-            {/* Read-only info */}
-            <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:12,fontSize:12,color:'#475569',display:'grid',gap:6}}>
-              {sel.primary_admin_email&&<div>✉️ {sel.primary_admin_email}</div>}
-              {sel.primary_phone&&<div>📞 {sel.primary_phone}</div>}
-              {sel.website&&<a href={sel.website.startsWith('http')?sel.website:`https://${sel.website}`} target="_blank" rel="noreferrer" style={{color:'#1f487c',textDecoration:'none'}}>🌐 {sel.website}</a>}
-              <div style={{marginTop:2,display:'flex',gap:6,flexWrap:'wrap'}}>
-                <span style={{background:'#f5f3ff',color:'#8b5cf6',padding:'2px 7px',borderRadius:5,fontSize:10,fontWeight:600}}>{sel.requested_plan}</span>
-                <span style={{background:'#f1f5f9',color:'#475569',padding:'2px 7px',borderRadius:5,fontSize:10,fontWeight:600}}>{sel.requested_seat_count} seats</span>
-                {sel.source&&<span style={{background:'#ecfdf5',color:'#10b981',padding:'2px 7px',borderRadius:5,fontSize:10,fontWeight:600}}>{sel.source}</span>}
+            {/* ══ TAB: CONTACT ══ */}
+            {drawerTab==='contact' && (<>
+            <p style={{margin:'0 0 12px',fontSize:11,color:'#94a3b8',fontWeight:600}}>Edit contact details. Changes are saved with the "Save changes" button.</p>
+            <label style={lbl}>Company Name
+              <input value={dCompanyName} onChange={e=>setDCompanyName(e.target.value)} style={inp} placeholder="Acme Foods Ltd" />
+            </label>
+            <label style={lbl}>Contact Name
+              <input value={dContactName} onChange={e=>setDContactName(e.target.value)} style={inp} placeholder="Jane Smith" />
+            </label>
+            <label style={lbl}>Email
+              <input type="email" value={dEmail} onChange={e=>setDEmail(e.target.value)} style={inp} placeholder="jane@company.com" />
+            </label>
+            <label style={lbl}>Phone / WhatsApp
+              <input type="tel" value={dPhone} onChange={e=>setDPhone(e.target.value)} style={inp} placeholder="+1 555 123 4567" />
+            </label>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <label style={lbl}>Country
+                <input value={dCountry} onChange={e=>setDCountry(e.target.value)} style={inp} placeholder="United States" />
+              </label>
+              <label style={lbl}>Industry
+                <input value={dIndustry} onChange={e=>setDIndustry(e.target.value)} style={inp} placeholder="Food Export" />
+              </label>
+            </div>
+            <label style={lbl}>Website
+              <input type="url" value={dWebsite} onChange={e=>setDWebsite(e.target.value)} style={inp} placeholder="https://company.com" />
+            </label>
+            {/* Read-only sourcing info */}
+            <div style={{marginTop:8,padding:12,background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,fontSize:11,color:'#64748b'}}>
+              <p style={{margin:'0 0 6px',fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.08em',color:'#94a3b8'}}>Sourcing Info (read-only)</p>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                <span style={{background:'#f5f3ff',color:'#8b5cf6',padding:'2px 8px',borderRadius:6,fontSize:10,fontWeight:600}}>{sel.requested_plan}</span>
+                <span style={{background:'#f1f5f9',color:'#475569',padding:'2px 8px',borderRadius:6,fontSize:10,fontWeight:600}}>{sel.requested_seat_count} seats</span>
+                {sel.source&&<span style={{background:'#ecfdf5',color:'#10b981',padding:'2px 8px',borderRadius:6,fontSize:10,fontWeight:600}}>{sel.source.replace(/_/g,' ')}</span>}
+                {sel.source_detail&&<span style={{background:'#fff7ed',color:'#ea580c',padding:'2px 8px',borderRadius:6,fontSize:10,fontWeight:600}}>{sel.source_detail}</span>}
               </div>
             </div>
-
-            {/* Mark as lost */}
-            {dStage!=='lost'&&(
-              <div style={{marginTop:14,padding:12,border:'1px dashed #fca5a5',borderRadius:10,background:'#fff5f5'}}>
-                <div style={{fontSize:11.5,color:'#7f1d1d',marginBottom:8}}>
-                  <strong>Mark as Lost</strong> — move to Lost column and close this lead. This cannot automatically be undone but you can drag them back.
-                </div>
-                <button onClick={markLost} disabled={saving} style={{border:'none',background:'#dc2626',color:'#fff',borderRadius:8,padding:'7px 16px',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                  Mark as Lost
-                </button>
-              </div>
-            )}
-
-            {/* Full details link */}
-            {/* Client Orgs link (for Qualified+ that have an org) */}
-            {/* Convert to Trial — visible whenever stage isn't trial/converted/lost */}
-            {!['trial','converted','lost'].includes(dStage) && (
-              <div style={{marginTop:14,padding:13,border:'1px solid #c7d2fe',borderRadius:10,background:'#eef2ff'}}>
-                <p style={{margin:'0 0 4px',fontSize:11.5,fontWeight:700,color:'#1e1b4b'}}>🎯 Convert to Trial</p>
-                <p style={{margin:'0 0 10px',fontSize:11,color:'#3730a3'}}>Move this lead to Trial stage, mark it as a trial request, and unlock the workspace provisioning button.</p>
-                <button
-                  onClick={async () => {
-                    setSaving(true);
-                    const ok = await patch(sel.id, { pipeline_stage: 'trial', is_trial_request: true });
-                    if (ok) { setDStage('trial'); setLeads(prev => prev.map(l => l.id===sel.id ? {...l, pipeline_stage:'trial', is_trial_request:true} : l)); }
-                    setSaving(false);
-                  }}
-                  disabled={saving}
-                  style={{width:'100%',border:'none',background:'#4f46e5',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:saving?'not-allowed':'pointer'}}
-                >
-                  {saving ? 'Moving…' : 'Move to Trial Stage'}
-                </button>
-              </div>
-            )}
-
-            {/* Sprint D: Provision Trial Workspace */}
-            {dStage === 'trial' && !(sel as any).linked_organization_id && (
-              <div style={{marginTop:14,padding:13,border:'1px solid #bbf7d0',borderRadius:10,background:'#f0fdf4'}}>
-                <p style={{margin:'0 0 6px',fontSize:11.5,fontWeight:700,color:'#14532d'}}>🚀 Provision Trial Workspace</p>
-                <p style={{margin:'0 0 10px',fontSize:11,color:'#166534'}}>Create the client org, seed trial data, and prepare the first admin invite link. This runs the same provisioning flow as the Admin panel.</p>
-                {provMsg && <p style={{margin:'0 0 8px',fontSize:11,fontWeight:600,color:provState==='done'?'#047857':'#991b1b',background:provState==='done'?'#dcfce7':'#fee2e2',borderRadius:7,padding:'5px 8px'}}>{provMsg}</p>}
-                <button onClick={provisionTrial} disabled={provState==='loading'||provState==='done'} style={{width:'100%',border:'none',background:provState==='done'?'#6b7280':'#15803d',color:'#fff',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:provState==='loading'||provState==='done'?'not-allowed':'pointer'}}>
-                  {provState==='loading'?'Provisioning…':provState==='done'?'✓ Done':'Provision Now'}
-                </button>
-              </div>
-            )}
-
-            {CLIENT_ORG_STAGES.has(dStage)&&sel.company_slug?(
-              <a href={clientHref(sel)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:14,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
-                Manage in Client Orgs (SMC) ↗
-              </a>
-            ):(
-              <a href={clientHref(sel)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:14,border:'1px solid #c7d2fe',background:'#eef2ff',color:'#1F487C',borderRadius:10,padding:'9px',fontSize:11.5,fontWeight:700,textDecoration:'none'}}>
-                View in Client Orgs (SMC) ↗
-              </a>
-            )}
+            </>)}
           </div>
 
           {/* Footer actions */}
