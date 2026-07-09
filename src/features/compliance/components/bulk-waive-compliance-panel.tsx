@@ -61,7 +61,7 @@ export function BulkWaiveCompliancePanel({ data, canReview, readOnlyMessage = nu
   if (!openItems.length) return null;
 
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft">
+    <section className="rounded-hero border border-slate-200 bg-white p-5 shadow-soft">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Reviewer bulk action</p>

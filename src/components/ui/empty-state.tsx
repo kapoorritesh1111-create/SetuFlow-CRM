@@ -27,7 +27,7 @@ export function EmptyState({ title, description, actionHref, actionLabel, icon =
   return (
     <div className={`${workspaceHeroClass} border-dashed px-6 py-12 text-center sm:px-8`}>
       <div
-        className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-brand-50 via-white to-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_8px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/80 dark:from-sky-500/20 dark:via-slate-900 dark:to-slate-800"
+        className="mx-auto flex h-16 w-16 items-center justify-center rounded-panel bg-gradient-to-br from-brand-50 via-white to-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_8px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/80 dark:from-sky-500/20 dark:via-slate-900 dark:to-slate-800"
         aria-hidden="true"
       >
         <svg

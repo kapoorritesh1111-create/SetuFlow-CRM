@@ -527,7 +527,7 @@ export function ComplianceWorkspace({ mode = 'compliance', data, canReview = tru
       {!data.documentRequirementRules.length ? <StateMessage title="No evidence rules configured" description="Document requirement rules are still empty for this workspace. The screen can show uploaded files, but quote-send and contract gates will stay incomplete until rules are configured." tone="warning" /> : null}
       {missingEvidenceLeadCount > 0 ? <StateMessage title="Missing evidence is still blocking progression" description={`${missingEvidenceLeadCount} lead${missingEvidenceLeadCount === 1 ? '' : 's'} still need required evidence before quote send or contract progression can move forward.`} tone="danger" /> : null}
 
-      <section className="rounded-[28px] border border-slate-200 bg-white shadow-soft">
+      <section className="rounded-hero border border-slate-200 bg-white shadow-soft">
         <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-brand-900 px-5 py-5 text-white sm:px-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="space-y-3">

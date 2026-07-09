@@ -265,7 +265,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
       </button>
       {open ? (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+          <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-hero border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick entry · inbound capture</p>
@@ -277,17 +277,17 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
 
             <div className="border-b border-slate-200 bg-slate-50/80 px-6 py-4">
               <div className="grid gap-3 md:grid-cols-3">
-                <div className={`rounded-[1.25rem] border px-4 py-3 text-sm ${selectedSource || assistText.trim() ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
+                <div className={`rounded-card border px-4 py-3 text-sm ${selectedSource || assistText.trim() ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Step 1</p>
                   <p className="mt-1 font-semibold">Choose source</p>
                   <p className="mt-1 text-xs leading-5">Upload a file, use the camera, or paste visible text.</p>
                 </div>
-                <div className={`rounded-[1.25rem] border px-4 py-3 text-sm ${extraction || isExtracting ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
+                <div className={`rounded-card border px-4 py-3 text-sm ${extraction || isExtracting ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Step 2</p>
                   <p className="mt-1 font-semibold">Review prefill</p>
                   <p className="mt-1 text-xs leading-5">Check extracted fields or finish them manually on one screen.</p>
                 </div>
-                <div className={`rounded-[1.25rem] border px-4 py-3 text-sm ${reviewConfirmed ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-white text-slate-600'}`}>
+                <div className={`rounded-card border px-4 py-3 text-sm ${reviewConfirmed ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-white text-slate-600'}`}>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Step 3</p>
                   <p className="mt-1 font-semibold">Confirm and apply</p>
                   <p className="mt-1 text-xs leading-5">Unlock the apply button only after your review is explicitly confirmed.</p>
@@ -297,7 +297,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
 
             <div className="overflow-y-auto px-6 py-6">
               <div className="grid gap-6 xl:grid-cols-[0.94fr_1.06fr]">
-                <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-5">
+                <section className="rounded-panel border border-slate-200 bg-slate-50/70 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Source intake</p>
@@ -314,7 +314,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                         setExtractionMessage('Choose an image, PDF, or text file to continue.');
                         uploadInputRef.current?.click();
                       }}
-                      className={`rounded-[1.35rem] border px-4 py-4 text-left transition ${sourceMode === 'upload' ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                      className={`rounded-panel border px-4 py-4 text-left transition ${sourceMode === 'upload' ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                     >
                       <p className="text-sm font-semibold text-sky-700">Upload source</p>
                       <p className="mt-2 text-sm leading-6 text-slate-600">Image, PDF, text, or shared asset</p>
@@ -326,7 +326,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                         setExtractionMessage('Use the camera to capture a card or contact source.');
                         cameraInputRef.current?.click();
                       }}
-                      className={`rounded-[1.35rem] border px-4 py-4 text-left transition ${sourceMode === 'camera' ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                      className={`rounded-panel border px-4 py-4 text-left transition ${sourceMode === 'camera' ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                     >
                       <p className="text-sm font-semibold text-sky-700">Use camera</p>
                       <p className="mt-2 text-sm leading-6 text-slate-600">Capture a business card or live contact source</p>
@@ -336,7 +336,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                   <input ref={uploadInputRef} type="file" accept="image/*,.pdf,text/plain,.txt" className="hidden" onChange={(event) => void handleFileSelected(event.target.files?.[0] ?? null, 'upload')} />
                   <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => void handleFileSelected(event.target.files?.[0] ?? null, 'camera')} />
 
-                  <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-700">
+                  <div className="mt-4 rounded-panel border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-700">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Selected source</p>
                     <p className="mt-2 font-semibold text-slate-900">{sourceLabel}</p>
                     <p className="mt-3 leading-6 text-slate-600">
@@ -350,7 +350,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
 
                   <label className="mt-4 block">
                     <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Assist text for extraction</span>
-                    <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} className="mt-2 min-h-[120px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add visible text only when a photo is blurry or incomplete." />
+                    <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} className="mt-2 min-h-[120px] w-full rounded-panel border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add visible text only when a photo is blurry or incomplete." />
                   </label>
 
                   <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -359,7 +359,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                   </div>
                   {extractionError ? <p className="mt-3 text-sm font-medium text-rose-600">{extractionError}</p> : null}
 
-                  <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                  <div className="mt-4 rounded-panel border border-slate-200 bg-white p-4 text-sm text-slate-600">
                     <p className="font-semibold text-slate-900">How this flow works</p>
                     <ol className="mt-3 space-y-2 leading-6">
                       <li>1. Pick a source or paste visible text.</li>
@@ -370,7 +370,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                   </div>
                 </section>
 
-                <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                <section className="rounded-panel border border-slate-200 bg-white p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Editable prefill</p>
@@ -380,7 +380,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                   </div>
 
                   {extraction ? (
-                    <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+                    <div className="mt-4 rounded-panel border border-slate-200 bg-slate-50/70 p-4">
                       <div className="mb-4 flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                         <span className="rounded-full bg-white px-2.5 py-1 text-slate-700 shadow-sm">Boundary: {extraction.boundary.replace(/_/g, ' ')}</span>
                         <span className="rounded-full bg-white px-2.5 py-1 text-slate-700 shadow-sm">Kind: {extraction.acceptedSourceKind}</span>
@@ -402,7 +402,7 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                       </ul>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+                    <div className="mt-4 rounded-panel border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
                       No extraction payload yet. You can still fill these fields manually and apply them after review.
                     </div>
                   )}
@@ -415,10 +415,10 @@ export function ContactScanTrigger(props: ContactScanTriggerProps) {
                     <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone 1</span><input value={draft.phone} onChange={(event) => updateField('phone', event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Primary phone" /></label>
                     <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone 2</span><input value={draft.phoneSecondary} onChange={(event) => updateField('phoneSecondary', event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Secondary phone" /></label>
                     <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Website</span><input value={draft.website} onChange={(event) => updateField('website', event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="https://company.com" /></label>
-                    <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes / context</span><textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} className="min-h-[120px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add context from the scanned source or sales conversation." /></label>
+                    <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes / context</span><textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} className="min-h-[120px] w-full rounded-panel border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add context from the scanned source or sales conversation." /></label>
                   </div>
 
-                  <label className={`mt-5 flex items-start gap-3 rounded-[1.5rem] border px-4 py-4 text-sm ${reviewConfirmed ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
+                  <label className={`mt-5 flex items-start gap-3 rounded-panel border px-4 py-4 text-sm ${reviewConfirmed ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
                     <input type="checkbox" checked={reviewConfirmed} onChange={(event) => setReviewConfirmed(event.target.checked)} className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-300" />
                     <span><strong className="text-slate-900">Review confirmed.</strong> I have checked the extracted or manually edited values on this screen before applying them back into the lead form.</span>
                   </label>

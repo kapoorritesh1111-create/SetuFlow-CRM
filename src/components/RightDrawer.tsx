@@ -42,7 +42,7 @@ const FOCUSABLE_SELECTOR = [
 
 export function DrawerSection({ title, description, action, children, className = '' }: DrawerSectionProps) {
   return (
-    <section className={['rounded-[1.75rem] border border-white/70 bg-white/90 p-5 shadow-soft ring-1 ring-slate-950/5 backdrop-blur', className].join(' ')}>
+    <section className={['rounded-hero border border-white/70 bg-white/90 p-5 shadow-soft ring-1 ring-slate-950/5 backdrop-blur', className].join(' ')}>
       {title || description || action ? (
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -169,7 +169,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
         ref={panelRef}
         className={[
           'flex h-[100dvh] w-full flex-col overflow-hidden border-l border-white/60 bg-white shadow-2xl overscroll-contain',
-          'sm:my-3 sm:mr-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-[2rem] sm:ring-1 sm:ring-slate-950/8',
+          'sm:my-3 sm:mr-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-hero sm:ring-1 sm:ring-slate-950/8',
           widthClassName,
         ].join(' ')}
         role="dialog"

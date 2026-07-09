@@ -49,7 +49,7 @@ export function ComplianceCheckPopover({
         <label htmlFor={panelId} className="absolute inset-0 cursor-pointer">
           <span className="sr-only">Close compliance check</span>
         </label>
-        <span className="relative z-[81] flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.35)]">
+        <span className="relative z-[81] flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-panel border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.35)]">
           <span className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
             <span className="min-w-0">
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">Quote Review blocker</span>

@@ -39,7 +39,7 @@ function nextStage(order: MobileOrder) {
 function Timeline({ order }: { order: MobileOrder }) {
   const activeIndex = Math.max(0, stages.findIndex((stage) => stage.key === normalizeStage(order.stage)));
   return (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Execution timeline</p>
       <div className="mt-4 grid grid-cols-5 gap-2">
         {stages.map((stage, index) => {
@@ -72,7 +72,7 @@ export function MobileOrderDetail({ order }: { order: MobileOrder }) {
       <Link href="/mobile/orders" className="mb-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200">
         ← Orders
       </Link>
-      <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white shadow-xl shadow-blue-950/20">
+      <section className="rounded-hero bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white shadow-xl shadow-blue-950/20">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Order detail</p>
@@ -85,7 +85,7 @@ export function MobileOrderDetail({ order }: { order: MobileOrder }) {
 
       <section className="mt-4 space-y-3">
         <Timeline order={order} />
-        <div className="grid grid-cols-2 gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-2 gap-3 rounded-panel border border-slate-200 bg-white p-4 shadow-sm">
           <Kv label="Value" value={money(order.totalValue, order.currency)} />
           <Kv label="Incoterm" value={order.incoterm} />
           <Kv label="Payment" value={order.paymentStatus ?? order.paymentTerms} />
@@ -93,17 +93,17 @@ export function MobileOrderDetail({ order }: { order: MobileOrder }) {
         </div>
 
         {order.blockerReasons.length ? (
-          <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <div className="rounded-panel border border-rose-200 bg-rose-50 p-4 text-rose-800">
             <p className="text-[10px] font-black uppercase tracking-[0.14em]">Active blockers</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-semibold">
               {order.blockerReasons.map((blocker) => <li key={blocker}>{blocker}</li>)}
             </ul>
           </div>
         ) : (
-          <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-800">No active blockers found.</div>
+          <div className="rounded-panel border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-800">No active blockers found.</div>
         )}
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-panel border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Documents</p>
           <div className="mt-3 space-y-2">
             {order.documents.length ? order.documents.map((doc) => (
@@ -129,7 +129,7 @@ export function MobileOrderDetail({ order }: { order: MobileOrder }) {
           )}
         </section>
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-panel border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Lines</p>
           <div className="mt-3 space-y-2">
             {order.lines.slice(0, 8).map((line) => (

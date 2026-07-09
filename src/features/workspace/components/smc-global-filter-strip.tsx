@@ -120,7 +120,7 @@ export function SmcGlobalFilterStrip({
   const activeFilterCount = [sprintValue, severityValue, statusValue, areaValue, reporterValue].filter(Boolean).length;
 
   return (
-    <div className="sticky top-0 z-30 overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white/95 shadow-[0_18px_70px_rgba(15,23,42,0.12)] ring-1 ring-slate-100 backdrop-blur-xl">
+    <div className="sticky top-0 z-30 overflow-hidden rounded-panel border border-slate-200 bg-white/95 shadow-[0_18px_70px_rgba(15,23,42,0.12)] ring-1 ring-slate-100 backdrop-blur-xl">
       <div className="border-b border-slate-200 bg-gradient-to-r from-[#07111f] via-[#0b1a2c] to-[#211b45] px-3 py-3 text-white">
         <div className="flex min-w-0 items-center gap-3 overflow-x-auto pb-1">
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-sky-300/20 bg-sky-400/10 px-4 text-sky-100">

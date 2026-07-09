@@ -39,10 +39,10 @@ export function AgentPromptCopy(props: AgentPromptCopyProps) {
   }
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+    <div className="rounded-hero border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0c7fff] dark:text-violet-300">Agent handoff</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-500 dark:text-violet-300">Agent handoff</p>
           <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Copy execution prompt</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Select the AI you are using, then copy the live Workspace protocol with the selected issue context.</p>
         </div>
@@ -52,7 +52,7 @@ export function AgentPromptCopy(props: AgentPromptCopyProps) {
             <select
               value={target}
               onChange={(event) => setTarget(event.target.value as AiTarget)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-900 outline-none focus:border-[#0c7fff] dark:border-white/10 dark:bg-slate-950 dark:text-white"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-900 outline-none focus:border-brand-500 dark:border-white/10 dark:bg-slate-950 dark:text-white"
               aria-label="Select AI target"
             >
               <option value="gpt">GPT</option>
@@ -63,7 +63,7 @@ export function AgentPromptCopy(props: AgentPromptCopyProps) {
           <button
             type="button"
             onClick={copyPrompt}
-            className="rounded-2xl bg-[#0c7fff] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#075ec2]"
+            className="rounded-2xl bg-brand-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-brand-600"
           >
             {copied ? 'Copied!' : `Copy for ${TARGETS[target].label}`}
           </button>

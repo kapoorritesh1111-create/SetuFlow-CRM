@@ -118,9 +118,9 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { 
   const initials = signedIn?.initials ?? initialsFrom(displayName);
   return (
     <div className="fixed inset-0 z-[90] bg-slate-950/55 backdrop-blur-sm" onClick={onClose}>
-      <div className="absolute bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 rounded-t-[2rem] bg-white p-5 pb-[calc(100px+env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 rounded-t-hero bg-white p-5 pb-[calc(100px+env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
-        <div className="flex items-start gap-3 rounded-[1.5rem] bg-slate-50 p-3 dark:bg-slate-800/70">
+        <div className="flex items-start gap-3 rounded-panel bg-slate-50 p-3 dark:bg-slate-800/70">
           <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="lg" />
           <div className="min-w-0">
             <h2 className="truncate text-lg font-black text-slate-950 dark:text-white">{displayName}</h2>
@@ -145,7 +145,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
   const pathname = usePathname();
   const tabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
   return (
-    <nav className="fixed bottom-0 left-1/2 z-[420] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-[24px] border border-slate-200/80 border-b-0 bg-white/95 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/95" aria-label="Mobile navigation">
+    <nav className="fixed bottom-0 left-1/2 z-[420] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-panel border border-slate-200/80 border-b-0 bg-white/95 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/95" aria-label="Mobile navigation">
       {tabs.map((tab) => {
         const active = tab.match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
         return (
@@ -172,7 +172,7 @@ export function MobileHomeHero({ data }: { data?: DashboardData }) {
   ];
 
   return (
-    <section className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
+    <section className="rounded-hero bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
       <div className="flex items-center justify-between gap-4">
         <div><p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Today</p><h1 className="mt-2 text-2xl font-black leading-none tracking-tight">Trade work</h1><p className="mt-2 text-xs font-semibold text-slate-300">Live workspace pulse</p></div>
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400 text-slate-950 shadow-[0_12px_34px_rgba(245,158,11,.35)]"><SetuIcon name="sparkles" className="h-5 w-5" /></span>
@@ -218,15 +218,15 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[2rem] border border-white/70 bg-white/90 p-3 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="grid grid-cols-3 gap-1 rounded-[1.5rem] bg-slate-100 p-1 dark:bg-slate-950">
-          {(['all', 'buyer', 'supplier'] as const).map((item) => <button key={item} type="button" onClick={() => changeScope(item)} className={`min-h-11 rounded-[1.15rem] px-3 text-sm font-black transition ${scope === item ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 dark:text-slate-300'}`}>{item === 'all' ? 'All' : item === 'buyer' ? 'Buyer' : 'Supplier'}</button>)}
+      <section className="rounded-hero border border-white/70 bg-white/90 p-3 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="grid grid-cols-3 gap-1 rounded-panel bg-slate-100 p-1 dark:bg-slate-950">
+          {(['all', 'buyer', 'supplier'] as const).map((item) => <button key={item} type="button" onClick={() => changeScope(item)} className={`min-h-11 rounded-card px-3 text-sm font-black transition ${scope === item ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 dark:text-slate-300'}`}>{item === 'all' ? 'All' : item === 'buyer' ? 'Buyer' : 'Supplier'}</button>)}
         </div>
       </section>
       <section className="grid grid-cols-2 gap-3">
-        {metrics.map((metric) => <Link key={metric.label} href={metric.href} className="rounded-[1.5rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 transition active:scale-[.98] dark:border-slate-800 dark:bg-slate-900/90"><div className="flex items-start justify-between gap-3"><span className={`grid h-11 w-11 place-items-center rounded-2xl ${metric.tone}`}><SetuIcon name={metric.icon} className="h-5 w-5" /></span><span className="text-lg font-black text-slate-300">›</span></div><b className={`mt-3 block text-3xl ${metric.valueTone}`}>{metric.value}</b><p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{metric.label}</p><p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{metric.sub}</p></Link>)}
+        {metrics.map((metric) => <Link key={metric.label} href={metric.href} className="rounded-panel border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 transition active:scale-[.98] dark:border-slate-800 dark:bg-slate-900/90"><div className="flex items-start justify-between gap-3"><span className={`grid h-11 w-11 place-items-center rounded-2xl ${metric.tone}`}><SetuIcon name={metric.icon} className="h-5 w-5" /></span><span className="text-lg font-black text-slate-300">›</span></div><b className={`mt-3 block text-3xl ${metric.valueTone}`}>{metric.value}</b><p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{metric.label}</p><p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{metric.sub}</p></Link>)}
       </section>
-      <section className="rounded-[2rem] border border-slate-200 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
+      <section className="rounded-hero border border-slate-200 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
         <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Activity feed</p><h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">Latest movement</h2></div><Link href="/dashboard" className="text-xs font-black text-blue-600 dark:text-sky-300">View all</Link></div>
         <div className="mt-3 grid gap-2">
           {recentActivity.length ? recentActivity.map((activity) => <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800"><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black uppercase text-white dark:bg-slate-700">{activity.iconKey.slice(0, 2)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{activityTitle(activity)}</p><p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-300">{activity.message}</p></div><span className="text-[10px] font-bold text-slate-400">{formatActivityTime(activity.timestamp)}</span></Link>) : <div className="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300">No recent activity yet.</div>}

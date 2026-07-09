@@ -96,7 +96,7 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                 key={entry.key}
                 type="button"
                 onClick={() => setTab(entry.key)}
-                className={active ? 'rounded-full bg-[#0b2e4a] px-3.5 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)]' : 'rounded-full border border-transparent px-3.5 py-2 text-xs font-semibold text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}
+                className={active ? 'rounded-full bg-surface-1 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)]' : 'rounded-full border border-transparent px-3.5 py-2 text-xs font-semibold text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}
               >
                 {entry.label}
                 {entry.count > 0 ? (
@@ -156,14 +156,14 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                       Review
                     </button>
                     {item.ctaHref ? (
-                      <Link href={item.ctaHref} className="rounded-full bg-[#0b2e4a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]">
+                      <Link href={item.ctaHref} className="rounded-full bg-surface-1 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]">
                         {primaryAction}
                       </Link>
                     ) : (
                       <button
                         type="button"
                         onClick={() => onFocus?.(item)}
-                        className="rounded-full bg-[#0b2e4a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]"
+                        className="rounded-full bg-surface-1 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]"
                       >
                         {primaryAction}
                       </button>
@@ -175,7 +175,7 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-5 py-3 text-[11px] font-semibold text-slate-500 sm:px-6">
             <span>{summaryLine}</span>
-            <span className="text-[#0b2e4a]">Open the next priority item to keep momentum moving</span>
+            <span className="text-content-primary">Open the next priority item to keep momentum moving</span>
           </div>
         </>
       ) : <WidgetEmptyState className="m-5 sm:m-6" title="Queue clear" description="No items match this view right now." />}

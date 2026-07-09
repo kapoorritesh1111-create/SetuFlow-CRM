@@ -41,7 +41,7 @@ function ensureResolverMount() {
   const mount = document.createElement('div');
   mount.setAttribute('data-inline-coverage-resolver', 'true');
   mount.setAttribute('data-testid', 'quote-product-scope-inline-product-picker');
-  mount.className = 'my-3 rounded-[24px] border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm';
+  mount.className = 'my-3 rounded-panel border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm';
 
   const children = Array.from(panel.children);
   const anchor = children.find((child) => /no products mapped|product scope|product & buyer lock/i.test(textOf(child))) ?? children[0] ?? null;

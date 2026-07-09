@@ -93,7 +93,7 @@ function LeadMobileCard(props: LeadTableRowProps) {
       role="link"
       tabIndex={0}
       className={[
-        'cursor-pointer rounded-[1.45rem] border border-slate-200 bg-white p-3.5 shadow-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200',
+        'cursor-pointer rounded-panel border border-slate-200 bg-white p-3.5 shadow-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200',
         selected || isSpotlight ? 'ring-2 ring-brand-200' : '',
       ].join(' ')}
       onMouseEnter={() => setSpotlightLead(lead.id)}

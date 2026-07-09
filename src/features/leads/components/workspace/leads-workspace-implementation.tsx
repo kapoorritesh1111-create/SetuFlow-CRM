@@ -2356,9 +2356,9 @@ export function InlineQuoteBuilder({
     <div className="flex flex-col gap-3 px-6 py-4 pb-20" style={{ background: '#f0f4f8' }}>
 
       {/* Hero — spec .qb-hero */}
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-[22px] p-[18px_22px] text-white" style={{ background: 'linear-gradient(135deg,#061c2e 0%,#0b2e4a 55%,#1a5fa0 100%)' }}>
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-panel p-[18px_22px] text-white" style={{ background: 'linear-gradient(135deg,#061c2e 0%,#0b2e4a 55%,#1a5fa0 100%)' }}>
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] text-[14px] font-extrabold text-white" style={{ background: 'linear-gradient(135deg,#1a5fa0,#0c7fff)' }}>
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-ctl text-[14px] font-extrabold text-white" style={{ background: 'linear-gradient(135deg,#1a5fa0,#0c7fff)' }}>
             {getLeadInitials(lead.company_name) || 'SF'}
           </div>
           <div>
@@ -2368,7 +2368,7 @@ export function InlineQuoteBuilder({
               {selectedProductNames.slice(0, 3).map((p) => (
                 <span key={p} className="rounded-full border border-white/18 bg-white/12 px-[9px] py-[2px] text-[9px] font-bold uppercase tracking-[.04em] text-white/85">{p}</span>
               ))}
-              {blockerCount > 0 ? <span className="rounded-full px-[9px] py-[2px] text-[9px] font-bold text-[#fde68a]" style={{ background: 'rgba(217,119,6,.25)', border: '1px solid rgba(217,119,6,.5)' }}>{blockerCount} send blocker{blockerCount === 1 ? '' : 's'}</span> : null}
+              {blockerCount > 0 ? <span className="rounded-full px-[9px] py-[2px] text-[9px] font-bold text-warning-border" style={{ background: 'rgba(217,119,6,.25)', border: '1px solid rgba(217,119,6,.5)' }}>{blockerCount} send blocker{blockerCount === 1 ? '' : 's'}</span> : null}
             </div>
           </div>
         </div>
@@ -2376,40 +2376,40 @@ export function InlineQuoteBuilder({
           <div className="text-[24px] font-extrabold tracking-[-0.5px]">{subtotal > 0 ? `${currency} ${formatPreviewAmount(subtotal)}` : (quotes.length > 0 ? `${quotes.length} quote${quotes.length === 1 ? '' : 's'}` : '—')}</div>
           <div className="mt-[2px] text-[9px] uppercase tracking-[.12em] text-white/50">Draft quote total</div>
           <div className="mt-[10px] flex justify-end gap-[6px]">
-            <button type="button" onClick={onOpenCommandCenter} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
-            <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Create/open draft preview</button>
+            <button type="button" onClick={onOpenCommandCenter} className="rounded-md border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white" style={{ background: 'rgba(255,255,255,.12)' }}>← Back to CC</button>
+            <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-md border border-white/20 px-[12px] py-[5px] text-[10px] font-bold text-white disabled:opacity-60" style={{ background: 'rgba(255,255,255,.12)' }}>Create/open draft preview</button>
           </div>
         </div>
       </div>
 
 
       {/* Stepper — spec .qb-stepper */}
-      <div className="rounded-[22px] border border-[#e2e8f0] bg-white p-[16px_20px] shadow-sm">
+      <div className="rounded-panel border border-line bg-white p-[16px_20px] shadow-sm">
         <div className="mb-[14px] flex items-center gap-[10px]">
-          <div className="text-[13px] font-bold text-[#0f172a]">Quote Preview</div>
-          <div className="rounded-full border border-[rgba(12,127,255,.2)] px-[9px] py-[2px] text-[9px] font-bold uppercase tracking-[.08em] text-[#0c7fff]" style={{ background: 'rgba(12,127,255,.08)' }}>
+          <div className="text-[13px] font-bold text-content-primary">Quote Preview</div>
+          <div className="rounded-full border border-[rgba(12,127,255,.2)] px-[9px] py-[2px] text-[9px] font-bold uppercase tracking-[.08em] text-brand-500" style={{ background: 'rgba(12,127,255,.08)' }}>
             Step {builderStep + 1} of 5 · {steps[builderStep]}
           </div>
-          <div className="ml-auto text-[10px] text-[#94a3b8]">Capture → Lead → <strong className="text-[#0b2e4a]">Quote</strong> → Order</div>
+          <div className="ml-auto text-[10px] text-content-faint">Capture → Lead → <strong className="text-content-primary">Quote</strong> → Order</div>
         </div>
         {/* Step track — spec .qb-track */}
         <div className="relative mb-[12px] flex items-center">
           {steps.map((step, index) => (
             <React.Fragment key={step}>
               <button type="button" onClick={() => setBuilderStep(index)} className="relative z-[1] flex flex-1 flex-col items-center gap-[4px]">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold transition-all ${index < builderStep ? 'bg-[#059669] text-white shadow-[0_0_0_3px_#d1fae5]' : index === builderStep ? 'bg-[#0b2e4a] text-white shadow-[0_0_0_3px_rgba(11,46,74,.1)]' : 'border-2 border-[#e2e8f0] bg-white text-[#94a3b8]'}`}>
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold transition-all ${index < builderStep ? 'bg-success-solid text-white shadow-[0_0_0_3px_#d1fae5]' : index === builderStep ? 'bg-surface-1 text-white shadow-[0_0_0_3px_rgba(11,46,74,.1)]' : 'border-2 border-line bg-white text-content-faint'}`}>
                   {index < builderStep ? '✓' : index + 1}
                 </div>
-                <div className={`text-center text-[9px] font-bold ${index < builderStep ? 'text-[#059669]' : index === builderStep ? 'text-[#0b2e4a]' : 'text-[#94a3b8]'}`}>{step}</div>
+                <div className={`text-center text-[9px] font-bold ${index < builderStep ? 'text-success-solid' : index === builderStep ? 'text-content-primary' : 'text-content-faint'}`}>{step}</div>
               </button>
               {index < steps.length - 1 ? (
-                <div className={`h-[2px] flex-1 ${index < builderStep ? 'bg-[#059669]' : 'bg-[#e2e8f0]'}`} style={{ marginTop: '14px', alignSelf: 'flex-start', position: 'relative', zIndex: 1 }} />
+                <div className={`h-[2px] flex-1 ${index < builderStep ? 'bg-success-solid' : 'bg-surface-3'}`} style={{ marginTop: '14px', alignSelf: 'flex-start', position: 'relative', zIndex: 1 }} />
               ) : null}
             </React.Fragment>
           ))}
         </div>
-        <div className="rounded-[6px] border-l-[3px] border-[#0c7fff] bg-[#f8fafc] px-[12px] py-[8px] text-[11px] leading-[1.6] text-[#64748b]">
-          <strong className="text-[#1e293b]">Step {builderStep + 1} — {steps[builderStep]}:</strong>{' '}
+        <div className="rounded-md border-l-[3px] border-brand-500 bg-surface-2 px-[12px] py-[8px] text-[11px] leading-[1.6] text-content-muted">
+          <strong className="text-content-primary">Step {builderStep + 1} — {steps[builderStep]}:</strong>{' '}
           {builderStep === 0 ? 'Confirm the product or category promise before pricing starts.' :
            builderStep === 1 ? 'Lock the quote basis first: currency, incoterm, payment terms, port context, validity, and FX reference.' :
            builderStep === 2 ? 'Build pricing lines after the commercial basis is known. Quantities follow the product UOM, pack size, and MOQ.' :
@@ -2422,38 +2422,38 @@ export function InlineQuoteBuilder({
       <div className="grid gap-[14px] xl:grid-cols-[1fr_228px]">
 
         {/* Main step panel — spec .qb-main > .qb-panel */}
-        <div className="overflow-hidden rounded-[22px] border border-[#e2e8f0] bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-[#e2e8f0] px-[18px] py-[13px]">
+        <div className="overflow-hidden rounded-panel border border-line bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-[18px] py-[13px]">
             <div>
-              <div className="text-[9px] font-bold uppercase tracking-[.18em] text-[#0c7fff]">Step {builderStep + 1} — {steps[builderStep]}</div>
-              <div className="text-[14px] font-bold text-[#0f172a]">
+              <div className="text-[9px] font-bold uppercase tracking-[.18em] text-brand-500">Step {builderStep + 1} — {steps[builderStep]}</div>
+              <div className="text-[14px] font-bold text-content-primary">
                 {builderStep === 0 ? 'Product & buyer lock' : builderStep === 1 ? 'Set commercial terms' : builderStep === 2 ? 'Build pricing lines' : builderStep === 3 ? 'Review quote package' : 'Approve and send safely'}
               </div>
             </div>
-            <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-semibold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
+            <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-md border border-line bg-white px-[12px] py-[7px] text-[11px] font-semibold text-content-secondary disabled:opacity-60">Create/open draft preview</button>
           </div>
-          <div className="border-b border-[#e2e8f0] bg-[#f8fafc] px-[18px] py-[10px] text-[11px] leading-[1.6] text-[#475569]">
+          <div className="border-b border-line bg-surface-2 px-[18px] py-[10px] text-[11px] leading-[1.6] text-content-secondary">
             This inline view is a quote preview and readiness handoff. Use <strong>Create/open draft preview</strong> to create or refresh the governed draft. Detailed quantity, pricing, terms, PDF, approval, and send actions remain in the saved quote workflow.
           </div>
           <div className="p-[16px_18px]">
             {builderStep === 0 ? (
               <div className="grid grid-cols-2 gap-[10px]">
-                <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
-                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Buyer context</div>
+                <div className="rounded-ctl border border-line bg-surface-2 p-[12px]">
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Buyer context</div>
                   {[['Company', lead.company_name], ['Lead type', lead.lead_type], ['Market', selectedMarketNames[0] ?? lead.country ?? '—'], ['Currency', currency]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between border-b border-[#f8fafc] py-[3px] text-[11px]">
-                      <span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
+                    <div key={k} className="flex justify-between border-b border-line py-[3px] text-[11px]">
+                      <span className="text-content-muted">{k}</span><span className="font-bold text-content-primary">{v}</span>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px]">
-                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Product scope</div>
+                <div className="rounded-ctl border border-line bg-surface-2 p-[12px]">
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Product scope</div>
                   {selectedProductNames.length ? selectedProductNames.map((p) => (
-                    <div key={p} className="mb-[4px] text-[11px] font-semibold text-[#334155]">· {p}</div>
+                    <div key={p} className="mb-[4px] text-[11px] font-semibold text-content-secondary">· {p}</div>
                   )) : (
                     <div className="space-y-2">
-                      <div className="text-[11px] text-[#94a3b8]">No products mapped yet</div>
-                      <button type="button" onClick={onOpenCoverageManager} className="rounded-[6px] bg-[#0b2e4a] px-[10px] py-[6px] text-[10px] font-bold text-white">
+                      <div className="text-[11px] text-content-faint">No products mapped yet</div>
+                      <button type="button" onClick={onOpenCoverageManager} className="rounded-md bg-surface-1 px-[10px] py-[6px] text-[10px] font-bold text-white">
                         Open coverage manager
                       </button>
                     </div>
@@ -2464,12 +2464,12 @@ export function InlineQuoteBuilder({
               <div className="space-y-3">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
-                    <tr className="bg-[#f8fafc] text-left text-[9px] font-extrabold uppercase tracking-[.12em] text-[#94a3b8]">
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Product</th>
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Price basis</th>
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Qty</th>
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Baseline / adjustment</th>
-                      <th className="border-b border-[#e2e8f0] px-[10px] py-[6px]">Quote price / total</th>
+                    <tr className="bg-surface-2 text-left text-[9px] font-extrabold uppercase tracking-[.12em] text-content-faint">
+                      <th className="border-b border-line px-[10px] py-[6px]">Product</th>
+                      <th className="border-b border-line px-[10px] py-[6px]">Price basis</th>
+                      <th className="border-b border-line px-[10px] py-[6px]">Qty</th>
+                      <th className="border-b border-line px-[10px] py-[6px]">Baseline / adjustment</th>
+                      <th className="border-b border-line px-[10px] py-[6px]">Quote price / total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2477,88 +2477,88 @@ export function InlineQuoteBuilder({
                       const qty = item.quantity;
                       const price = item.unitPrice;
                       return (
-                        <tr key={item.id} className="border-t border-[#f1f5f9] hover:bg-[#f8fafc]">
-                          <td className="px-[10px] py-[10px]"><div className="font-bold text-[#0f172a]">{item.productLabel}</div><div className="mt-1 text-[10px] text-[#64748b]">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-[#94a3b8]">{item.note}</div> : null}</td>
-                          <td className="px-[10px] py-[10px] text-[10px] text-[#475569]"><div className="font-extrabold uppercase tracking-[.08em] text-[#0f172a]">{item.pricingBasis ?? 'case'}</div><div>{item.packSummary ?? 'Pack not set'}</div><div>{item.moqLabel ?? 'MOQ not set'}</div></td>
-                          <td className="px-[10px] py-[10px]"><input title="Quantity updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[68px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-center text-[12px] font-semibold text-[#0f172a] outline-none" value={qty} onChange={(event) => updateEditableLine(item.id, 'quantity', event.target.value)} /></td>
+                        <tr key={item.id} className="border-t border-line hover:bg-surface-2">
+                          <td className="px-[10px] py-[10px]"><div className="font-bold text-content-primary">{item.productLabel}</div><div className="mt-1 text-[10px] text-content-muted">{item.variantLabel ? `${item.variantLabel} · ` : ''}{item.source === 'coverage' ? 'coverage/catalog fallback' : item.source === 'rfq' ? 'RFQ line' : 'quote draft line'}</div>{item.note ? <div className="mt-1 text-[10px] text-content-faint">{item.note}</div> : null}</td>
+                          <td className="px-[10px] py-[10px] text-[10px] text-content-secondary"><div className="font-extrabold uppercase tracking-[.08em] text-content-primary">{item.pricingBasis ?? 'case'}</div><div>{item.packSummary ?? 'Pack not set'}</div><div>{item.moqLabel ?? 'MOQ not set'}</div></td>
+                          <td className="px-[10px] py-[10px]"><input title="Quantity updates this quote preview total immediately. Save via the governed quote workflow when ready." className="w-[68px] rounded-md border border-line-strong bg-white p-[5px] text-center text-[12px] font-semibold text-content-primary outline-none" value={qty} onChange={(event) => updateEditableLine(item.id, 'quantity', event.target.value)} /></td>
                           <td className="px-[10px] py-[10px]">
-                            <div className="text-[10px] font-semibold text-[#475569]">Default: {item.currency} {formatPreviewAmount(item.catalogPriceAmount ?? price ?? 0)}</div>
+                            <div className="text-[10px] font-semibold text-content-secondary">Default: {item.currency} {formatPreviewAmount(item.catalogPriceAmount ?? price ?? 0)}</div>
                             <div className="mt-1 grid grid-cols-[1fr_72px] gap-1">
-                              <select title="Quote-only adjustment type. This does not change product/category/default pricing." className="rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-[10px] font-semibold text-[#0f172a] outline-none" value={item.quoteAdjustmentType ?? 'none'} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentType', event.target.value)}>
+                              <select title="Quote-only adjustment type. This does not change product/category/default pricing." className="rounded-md border border-line-strong bg-white p-[5px] text-[10px] font-semibold text-content-primary outline-none" value={item.quoteAdjustmentType ?? 'none'} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentType', event.target.value)}>
                                 {QUOTE_ADJUSTMENT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                               </select>
-                              <input title="Adjustment value in percent or quote currency based on selected adjustment type." className="rounded-[6px] border border-[#cbd5e1] bg-white p-[5px] text-right text-[10px] font-bold text-[#0f172a] outline-none" value={item.quoteAdjustmentValue ?? ''} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentValue', event.target.value)} placeholder="0" />
+                              <input title="Adjustment value in percent or quote currency based on selected adjustment type." className="rounded-md border border-line-strong bg-white p-[5px] text-right text-[10px] font-bold text-content-primary outline-none" value={item.quoteAdjustmentValue ?? ''} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentValue', event.target.value)} placeholder="0" />
                             </div>
-                            <input title="Reason is required if the quote-only change exceeds the approval threshold." className="mt-1 w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[5px] text-[10px] text-[#334155] outline-none" value={item.quoteAdjustmentReason ?? ''} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentReason', event.target.value)} placeholder="Adjustment reason for this quote only" />
-                            {item.approvalRequired ? <div className="mt-1 rounded-[6px] border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[10px] font-bold text-[#92400e]">Approval needed: {formatPreviewAmount(Math.abs(item.adjustmentDeltaPercent ?? 0))}% change exceeds 15% threshold.</div> : null}
+                            <input title="Reason is required if the quote-only change exceeds the approval threshold." className="mt-1 w-full rounded-md border border-line bg-white p-[5px] text-[10px] text-content-secondary outline-none" value={item.quoteAdjustmentReason ?? ''} onChange={(event) => updateEditableLine(item.id, 'quoteAdjustmentReason', event.target.value)} placeholder="Adjustment reason for this quote only" />
+                            {item.approvalRequired ? <div className="mt-1 rounded-md border border-warning-border bg-warning-bg px-2 py-1 text-[10px] font-bold text-warning-fg">Approval needed: {formatPreviewAmount(Math.abs(item.adjustmentDeltaPercent ?? 0))}% change exceeds 15% threshold.</div> : null}
                           </td>
-                          <td className="px-[10px] py-[10px]"><input title="Final quote unit price for this quote only. Save via the governed quote workflow when ready." className="w-[90px] rounded-[6px] border border-[#cbd5e1] bg-white p-[5px_7px] text-right text-[12px] font-bold text-[#0f172a] outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" />
-                          <div className="mt-1 font-bold text-[#0f172a]">{item.currency} {formatPreviewAmount(item.total)}</div></td>
+                          <td className="px-[10px] py-[10px]"><input title="Final quote unit price for this quote only. Save via the governed quote workflow when ready." className="w-[90px] rounded-md border border-line-strong bg-white p-[5px_7px] text-right text-[12px] font-bold text-content-primary outline-none" value={price ?? ''} onChange={(event) => updateEditableLine(item.id, 'unitPrice', event.target.value)} placeholder="Price" />
+                          <div className="mt-1 font-bold text-content-primary">{item.currency} {formatPreviewAmount(item.total)}</div></td>
                         </tr>
                       );
                     }) : (
-                      <tr><td colSpan={5} className="px-[10px] py-[24px] text-center text-[12px] text-[#94a3b8]">No quote lines yet. Map products in Coverage or create/open a quote draft.</td></tr>
+                      <tr><td colSpan={5} className="px-[10px] py-[24px] text-center text-[12px] text-content-faint">No quote lines yet. Map products in Coverage or create/open a quote draft.</td></tr>
                     )}
                   </tbody>
                 </table>
-                <div className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[12px_14px]">
+                <div className="rounded-ctl border border-line bg-surface-2 p-[12px_14px]">
                   {[['Subtotal', `${currency} ${formatPreviewAmount(subtotal)}`], ['Freight (est.)', '—'], ['Taxes', '—']].map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-[3px] text-[12px]"><span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
+                    <div key={k} className="flex justify-between py-[3px] text-[12px]"><span className="text-content-muted">{k}</span><span className="font-bold text-content-primary">{v}</span>
                     </div>
                   ))}
-                  <div className="mt-[5px] h-px bg-[#e2e8f0]" />
-                  <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-[#0f172a]">Grand total</span><span className="text-[16px] font-extrabold text-[#0b2e4a]">{currency} {formatPreviewAmount(subtotal)}</span></div>
+                  <div className="mt-[5px] h-px bg-surface-3" />
+                  <div className="flex justify-between py-[6px] text-[13px]"><span className="font-bold text-content-primary">Grand total</span><span className="text-[16px] font-extrabold text-content-primary">{currency} {formatPreviewAmount(subtotal)}</span></div>
                 </div>
                 {quoteAdjustmentApprovalRequired ? (
-                  <div className="rounded-[6px] border border-[#fde68a] bg-[#fffbeb] p-[9px_13px] text-[11px] leading-[1.55] text-[#92400e]">⚠ Quote-only adjustment exceeds the 15% approval threshold. Save the draft, then request approval before sending.</div>
+                  <div className="rounded-md border border-warning-border bg-warning-bg p-[9px_13px] text-[11px] leading-[1.55] text-warning-fg">⚠ Quote-only adjustment exceeds the 15% approval threshold. Save the draft, then request approval before sending.</div>
                 ) : null}
               </div>
             ) : builderStep === 1 ? (
               <div className="grid grid-cols-2 gap-[10px]">
                 <div className="flex flex-col gap-[4px]">
-                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Currency</label>
-                  <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={termsCurrency} onChange={(event) => setTermsCurrency(event.target.value)}>
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Currency</label>
+                  <select className="w-full rounded-md border border-line bg-white p-[8px_10px] text-[12px] font-semibold text-content-primary outline-none" value={termsCurrency} onChange={(event) => setTermsCurrency(event.target.value)}>
                     {currencyOptions.map((option) => <option key={option}>{option}</option>)}
                   </select>
-                  <p className="text-[10px] leading-[1.45] text-[#64748b]">Lead country currency {localCurrency ?? 'not mapped'} is included when available. Use quote validity days to lock the weekly average FX reference for this quote.</p>
+                  <p className="text-[10px] leading-[1.45] text-content-muted">Lead country currency {localCurrency ?? 'not mapped'} is included when available. Use quote validity days to lock the weekly average FX reference for this quote.</p>
                 </div>
                 <div className="flex flex-col gap-[4px]">
-                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Incoterm</label>
-                  <select className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={termsIncoterm} onChange={(event) => setTermsIncoterm(event.target.value)}>
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Incoterm</label>
+                  <select className="w-full rounded-md border border-line bg-white p-[8px_10px] text-[12px] font-semibold text-content-primary outline-none" value={termsIncoterm} onChange={(event) => setTermsIncoterm(event.target.value)}>
                     {['FOB', 'CIF', 'EXW', 'DDP', 'CFR'].map((option) => <option key={option} value={option}>{option} — {getIncotermHelp(option)}</option>)}
                   </select>
-                  <p className="text-[10px] leading-[1.45] text-[#64748b]">{getIncotermHelp(termsIncoterm)}</p>
+                  <p className="text-[10px] leading-[1.45] text-content-muted">{getIncotermHelp(termsIncoterm)}</p>
                 </div>
                 <div className="flex flex-col gap-[4px]">
-                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Payment terms</label>
-                  <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={paymentTerms} onChange={(event) => setPaymentTerms(event.target.value)} />
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Payment terms</label>
+                  <input className="w-full rounded-md border border-line bg-white p-[8px_10px] text-[12px] font-semibold text-content-primary outline-none" value={paymentTerms} onChange={(event) => setPaymentTerms(event.target.value)} />
                 </div>
                 <div className="flex flex-col gap-[4px]">
-                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Quote validity (days)</label>
-                  <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={quoteValidityDays} onChange={(event) => setQuoteValidityDays(event.target.value)} />
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Quote validity (days)</label>
+                  <input className="w-full rounded-md border border-line bg-white p-[8px_10px] text-[12px] font-semibold text-content-primary outline-none" value={quoteValidityDays} onChange={(event) => setQuoteValidityDays(event.target.value)} />
                 </div>
                 <div className="flex flex-col gap-[4px]">
-                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Port of loading</label>
-                  <input className="w-full rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] font-semibold text-[#0f172a] outline-none" value={portOfLoading} onChange={(event) => setPortOfLoading(event.target.value)} placeholder="e.g. JNPT Mumbai" />
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Port of loading</label>
+                  <input className="w-full rounded-md border border-line bg-white p-[8px_10px] text-[12px] font-semibold text-content-primary outline-none" value={portOfLoading} onChange={(event) => setPortOfLoading(event.target.value)} placeholder="e.g. JNPT Mumbai" />
                 </div>
                 <div className="col-span-2 flex flex-col gap-[4px]">
-                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">Delivery notes</label>
-                  <textarea className="w-full resize-y rounded-[6px] border border-[#e2e8f0] bg-white p-[8px_10px] text-[12px] text-[#0f172a] outline-none" value={deliveryNotes} onChange={(event) => setDeliveryNotes(event.target.value)} placeholder="Packaging, labelling, or shipping notes..." style={{ minHeight: '68px' }} />
+                  <label className="text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">Delivery notes</label>
+                  <textarea className="w-full resize-y rounded-md border border-line bg-white p-[8px_10px] text-[12px] text-content-primary outline-none" value={deliveryNotes} onChange={(event) => setDeliveryNotes(event.target.value)} placeholder="Packaging, labelling, or shipping notes..." style={{ minHeight: '68px' }} />
                 </div>
               </div>
             ) : builderStep === 3 ? (
               <div className="space-y-[10px]">
                 {blockerCount > 0 ? (
-                  <details className="rounded-[16px] border border-[#fecaca] bg-[linear-gradient(135deg,#fff7f7,#fff)] p-[13px_15px] shadow-[0_18px_45px_rgba(225,29,72,.08)]">
-                    <summary className="cursor-pointer list-none text-[12px] font-extrabold text-[#9f1239] [&::-webkit-details-marker]:hidden">
+                  <details className="rounded-card border border-danger-border bg-[linear-gradient(135deg,#fff7f7,#fff)] p-[13px_15px] shadow-[0_18px_45px_rgba(225,29,72,.08)]">
+                    <summary className="cursor-pointer list-none text-[12px] font-extrabold text-danger-fg [&::-webkit-details-marker]:hidden">
                       Resolve compliance/document blocker · open guided fix panel
                     </summary>
-                    <div className="mt-[10px] grid gap-[8px] text-[11px] leading-[1.55] text-[#7f1d1d]">
+                    <div className="mt-[10px] grid gap-[8px] text-[11px] leading-[1.55] text-danger-fg">
                       <p>This quote is blocked because compliance or required evidence is still open. Upload the matching document in the Lead or Order document area, then return here and create/open the draft preview again.</p>
-                      <div className="rounded-[12px] border border-[#fecaca] bg-white p-[10px]">Active blockers: {blockerCount}. Latest document: {documents[0]?.file_name ?? 'none linked'}.</div>
+                      <div className="rounded-ctl border border-danger-border bg-white p-[10px]">Active blockers: {blockerCount}. Latest document: {documents[0]?.file_name ?? 'none linked'}.</div>
                       <div className="flex flex-wrap gap-[8px]">
-                        <button type="button" onClick={onOpenCommandCenter} className="rounded-[8px] bg-[#0b2e4a] px-[12px] py-[7px] text-[11px] font-bold text-white">Back to Command Center</button>
-                        <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[8px] border border-[#e2e8f0] bg-white px-[12px] py-[7px] text-[11px] font-bold text-[#334155] disabled:opacity-60">Refresh draft after fix</button>
+                        <button type="button" onClick={onOpenCommandCenter} className="rounded-lg bg-surface-1 px-[12px] py-[7px] text-[11px] font-bold text-white">Back to Command Center</button>
+                        <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-lg border border-line bg-white px-[12px] py-[7px] text-[11px] font-bold text-content-secondary disabled:opacity-60">Refresh draft after fix</button>
                       </div>
                     </div>
                   </details>
@@ -2570,16 +2570,16 @@ export function InlineQuoteBuilder({
                   { label: 'Compliance check', items: [['Active items', String(complianceItems.length)], ['Blockers', String(blockerCount)], ['Gate', blockerCount === 0 ? 'Clear ✓' : 'Blocked']] },
                   { label: 'Quote version', items: [['Version', latestVersion?.version_no ? `v${latestVersion.version_no}` : 'v1 draft'], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']] },
                 ].map((card) => (
-                  <div key={card.label} className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[11px_13px]">
-                    <div className="mb-[7px] text-[9px] font-bold uppercase tracking-[.14em] text-[#94a3b8]">{card.label}</div>
+                  <div key={card.label} className="rounded-ctl border border-line bg-surface-2 p-[11px_13px]">
+                    <div className="mb-[7px] text-[9px] font-bold uppercase tracking-[.14em] text-content-faint">{card.label}</div>
                     {card.items.map(([k, v]) => (
                       <div key={k} className="flex justify-between border-b border-[rgba(0,0,0,.03)] py-[3px] text-[11px]">
-                        <span className="text-[#64748b]">{k}</span>
-                        <span className={`font-bold ${String(v).includes('✓') ? 'text-[#059669]' : String(v).includes('Blocked') ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>{v}</span>
+                        <span className="text-content-muted">{k}</span>
+                        <span className={`font-bold ${String(v).includes('✓') ? 'text-success-solid' : String(v).includes('Blocked') ? 'text-danger-solid' : 'text-content-primary'}`}>{v}</span>
                       </div>
                     ))}
-                    <div className="mt-[4px] h-[6px] rounded-full bg-[#f1f5f9] overflow-hidden">
-                      <div className={`h-full rounded-full ${pricingReady && blockerCount === 0 ? 'bg-[#059669]' : 'bg-[#f59e0b]'}`} style={{ width: pricingReady && blockerCount === 0 ? '100%' : '50%' }} />
+                    <div className="mt-[4px] h-[6px] rounded-full bg-surface-2 overflow-hidden">
+                      <div className={`h-full rounded-full ${pricingReady && blockerCount === 0 ? 'bg-success-solid' : 'bg-warning-solid'}`} style={{ width: pricingReady && blockerCount === 0 ? '100%' : '50%' }} />
                     </div>
                   </div>
                 ))}
@@ -2587,14 +2587,14 @@ export function InlineQuoteBuilder({
               </div>
             ) : (
               // Step 4: Send gate — spec .sg
-              <div className={`overflow-hidden rounded-[22px] border-2 ${sendReady ? 'border-[#a7f3d0] bg-[#ecfdf5]' : 'border-[#fecaca] bg-[#fff1f2]'} mb-[10px]`}>
+              <div className={`overflow-hidden rounded-panel border-2 ${sendReady ? 'border-success-border bg-success-bg' : 'border-danger-border bg-danger-bg'} mb-[10px]`}>
                 <div className="flex items-center gap-3 p-[14px_18px]">
                   <span className="text-[22px]">{sendReady ? '✓' : '⚠'}</span>
                   <div>
-                    <div className={`text-[14px] font-extrabold ${sendReady ? 'text-[#047857]' : 'text-[#9f1239]'}`}>
+                    <div className={`text-[14px] font-extrabold ${sendReady ? 'text-success-fg' : 'text-danger-fg'}`}>
                       {sendReady ? 'This quote version is safe to send.' : 'Send blocked — resolve before sending.'}
                     </div>
-                    <div className={`mt-[2px] text-[11px] ${sendReady ? 'text-[#059669]' : 'text-[#e11d48]'}`}>
+                    <div className={`mt-[2px] text-[11px] ${sendReady ? 'text-success-solid' : 'text-danger-solid'}`}>
                       {sendReady ? 'Version binding, approval posture, and explicit blockers all point to send-safe.' : `${blockerCount} blocker${blockerCount === 1 ? '' : 's'} or pricing gap${blockerCount === 1 ? '' : 's'} remain.`}
                     </div>
                   </div>
@@ -2607,44 +2607,44 @@ export function InlineQuoteBuilder({
                     { label: 'Compliance clear', ok: complianceItems.length === 0 },
                     { label: 'Quote draft exists', ok: hasQuoteDraft },
                   ].map((ck) => (
-                    <div key={ck.label} className={`flex items-center gap-[8px] rounded-[6px] border p-[6px_10px] text-[12px] ${ck.ok ? 'border-[#a7f3d0] bg-[#ecfdf5] text-[#047857]' : 'border-[#fecaca] bg-[#fff1f2] text-[#9f1239]'}`}>
+                    <div key={ck.label} className={`flex items-center gap-[8px] rounded-md border p-[6px_10px] text-[12px] ${ck.ok ? 'border-success-border bg-success-bg text-success-fg' : 'border-danger-border bg-danger-bg text-danger-fg'}`}>
                       <span className="font-bold">{ck.ok ? '✓' : '✕'}</span> {ck.label}
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-[8px] border-t p-[12px_18px]" style={{ borderColor: sendReady ? '#a7f3d0' : '#fecaca' }}>
                   {sendReady && latestQuote?.id ? (
-                    <Link href={`/quotes?quoteId=${latestQuote.id}&send=1`} className="flex-1 rounded-[6px] bg-[#0b2e4a] p-[10px] text-center text-[13px] font-extrabold text-white no-underline">
+                    <Link href={`/quotes?quoteId=${latestQuote.id}&send=1`} className="flex-1 rounded-md bg-surface-1 p-[10px] text-center text-[13px] font-extrabold text-white no-underline">
                       Open send workflow
                     </Link>
                   ) : (
-                    <button type="button" disabled title="Resolve blockers or approval before sending." className="flex-1 rounded-[6px] bg-[#e2e8f0] p-[10px] text-[13px] font-extrabold text-[#94a3b8] border-none cursor-not-allowed">
+                    <button type="button" disabled title="Resolve blockers or approval before sending." className="flex-1 rounded-md bg-surface-3 p-[10px] text-[13px] font-extrabold text-content-faint border-none cursor-not-allowed">
                       Send quote
                     </button>
                   )}
-                  <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="flex-1 rounded-[6px] bg-[#f59e0b] p-[10px] text-[13px] font-extrabold text-white border-none disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="flex-1 rounded-md bg-warning-solid p-[10px] text-[13px] font-extrabold text-white border-none disabled:cursor-not-allowed disabled:opacity-60">
                     {approvalPending ? 'Request approval / view queue' : 'Request approval'}
                   </button>
-                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[6px] border border-[#e2e8f0] bg-white p-[10px_14px] text-[12px] font-bold text-[#475569] disabled:opacity-60">
+                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-md border border-line bg-white p-[10px_14px] text-[12px] font-bold text-content-secondary disabled:opacity-60">
                     Create/open draft preview
                   </button>
                 </div>
-                <div className="border-t border-[#fecaca] bg-white/70 p-[14px_18px]">
-                  <div className="mb-[8px] text-[13px] font-extrabold text-[#0f172a]">Deal closed directly?</div>
-                  <div className="mb-[10px] text-[11px] leading-[1.6] text-[#64748b]">Use this when the buyer agreed by trade show, phone, or WhatsApp and you need an order record without sending the external quote email.</div>
+                <div className="border-t border-danger-border bg-white/70 p-[14px_18px]">
+                  <div className="mb-[8px] text-[13px] font-extrabold text-content-primary">Deal closed directly?</div>
+                  <div className="mb-[10px] text-[11px] leading-[1.6] text-content-muted">Use this when the buyer agreed by trade show, phone, or WhatsApp and you need an order record without sending the external quote email.</div>
                   <div className="flex flex-col gap-[8px] sm:flex-row">
                     <input
                       value={directOrderNote}
                       onChange={(event) => setDirectOrderNote(event.target.value)}
                       placeholder="Optional note, e.g. agreed at trade show"
-                      className="min-w-0 flex-1 rounded-[8px] border border-[#e2e8f0] bg-white px-[12px] py-[9px] text-[12px] font-semibold text-[#334155] outline-none focus:border-[#0c7fff]"
+                      className="min-w-0 flex-1 rounded-lg border border-line bg-white px-[12px] py-[9px] text-[12px] font-semibold text-content-secondary outline-none focus:border-brand-500"
                     />
                     <button
                       type="button"
                       onClick={() => onMarkDirectOrder(lead.id, latestQuote?.id ?? null, directOrderNote)}
                       disabled={!latestQuote?.id || !pricingReady || isInlineActionPending}
                       title={!latestQuote?.id ? 'Create or open a quote draft first.' : !pricingReady ? 'Fix missing prices before creating an order.' : 'Create the order directly from this quote.'}
-                      className="rounded-[8px] bg-[#0b2e4a] px-[14px] py-[9px] text-[12px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-[#cbd5e1]"
+                      className="rounded-lg bg-surface-1 px-[14px] py-[9px] text-[12px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-surface-3"
                     >
                       ✓ Mark as direct order
                     </button>
@@ -2658,12 +2658,12 @@ export function InlineQuoteBuilder({
         {/* Sidebar — spec .qb-sidebar */}
         <aside className="flex flex-col gap-[10px]">
           {/* Quote summary card — spec .qb-rc */}
-          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
-            <div className="mb-[6px] text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Quote v1</div>
-            <div className="mb-[6px] text-[14px] font-extrabold text-[#0f172a]">{currency} {formatPreviewAmount(subtotal)}</div>
+          <div className="rounded-card border border-line bg-white p-[14px] shadow-sm">
+            <div className="mb-[6px] text-[9px] font-bold uppercase tracking-[.16em] text-content-faint">Quote v1</div>
+            <div className="mb-[6px] text-[14px] font-extrabold text-content-primary">{currency} {formatPreviewAmount(subtotal)}</div>
             {[['Lines', String(displayLines.length)], ['Status', latestQuote?.status?.replace(/_/g, ' ') ?? 'draft'], ['Version', latestVersion ? `v${latestVersion.version_no}` : 'v1'], ['Updated', latestQuote ? safeFormatDateTime(latestQuote.updated_at) : 'Not saved']].map(([k, v]) => (
-              <div key={k} className="flex justify-between border-b border-[#f8fafc] py-[3px] text-[11px]">
-                <span className="text-[#64748b]">{k}</span><span className="font-bold text-[#1e293b]">{v}</span>
+              <div key={k} className="flex justify-between border-b border-line py-[3px] text-[11px]">
+                <span className="text-content-muted">{k}</span><span className="font-bold text-content-primary">{v}</span>
               </div>
             ))}
           </div>
@@ -2672,8 +2672,8 @@ export function InlineQuoteBuilder({
           <div className="flex flex-col gap-[4px]">
             {steps.map((step, index) => (
               <button key={step} type="button" onClick={() => setBuilderStep(index)}
-                className={`flex w-full items-center gap-[8px] rounded-[6px] border p-[7px_10px] text-left text-[11px] font-bold transition-colors ${index < builderStep ? 'border-[#a7f3d0] bg-[#ecfdf5] text-[#047857]' : index === builderStep ? 'border-[#0c7fff] bg-[rgba(12,127,255,.06)] text-[#0b2e4a]' : 'border-[#e2e8f0] bg-white text-[#475569] hover:bg-[#f8fafc]'}`}>
-                <span className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${index < builderStep ? 'bg-[#059669] text-white' : index === builderStep ? 'bg-[#0b2e4a] text-white' : 'border-[1.5px] border-[#e2e8f0] bg-[#f1f5f9] text-[#94a3b8]'}`}>
+                className={`flex w-full items-center gap-[8px] rounded-md border p-[7px_10px] text-left text-[11px] font-bold transition-colors ${index < builderStep ? 'border-success-border bg-success-bg text-success-fg' : index === builderStep ? 'border-brand-500 bg-[rgba(12,127,255,.06)] text-content-primary' : 'border-line bg-white text-content-secondary hover:bg-surface-2'}`}>
+                <span className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${index < builderStep ? 'bg-success-solid text-white' : index === builderStep ? 'bg-surface-1 text-white' : 'border-[1.5px] border-line bg-surface-2 text-content-faint'}`}>
                   {index < builderStep ? '✓' : index + 1}
                 </span>
                 {step}
@@ -2682,22 +2682,22 @@ export function InlineQuoteBuilder({
           </div>
 
           {/* Context card */}
-          <div className="rounded-[16px] border border-[#e2e8f0] bg-white p-[14px] shadow-sm">
-            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#94a3b8]">Approval queue</div>
-            <div className="mb-[6px] text-[13px] font-bold text-[#0f172a]">{approvalPending ? 'Approval pending' : blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'}</div>
-            <div className="text-[11px] leading-[1.6] text-[#64748b]">{approvalPending ? 'A quote-only adjustment needs owner approval. The requester sees pending until approved.' : sendReady ? 'Send gate clear — quote is safe to send.' : 'Resolve blockers before the send gate opens.'}</div>
+          <div className="rounded-card border border-line bg-white p-[14px] shadow-sm">
+            <div className="mb-2 text-[9px] font-bold uppercase tracking-[.16em] text-content-faint">Approval queue</div>
+            <div className="mb-[6px] text-[13px] font-bold text-content-primary">{approvalPending ? 'Approval pending' : blockerCount > 0 ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'}` : 'No blockers'}</div>
+            <div className="text-[11px] leading-[1.6] text-content-muted">{approvalPending ? 'A quote-only adjustment needs owner approval. The requester sees pending until approved.' : sendReady ? 'Send gate clear — quote is safe to send.' : 'Resolve blockers before the send gate opens.'}</div>
             {approvalPending ? (
               <div className="mt-3 grid gap-2">
                 {quoteAdjustmentApprovalRequired && !latestQuoteApprovalRequired ? (
-                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="w-full rounded-[8px] bg-[#0b2e4a] px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="w-full rounded-lg bg-surface-1 px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
                     Save adjustment for approval
                   </button>
                 ) : (
                   <>
-                    <button type="button" onClick={() => onApproveQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="w-full rounded-[8px] bg-[#059669] px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                    <button type="button" onClick={() => onApproveQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="w-full rounded-lg bg-success-solid px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
                       Approve quote adjustment
                     </button>
-                    <button type="button" onClick={() => onRejectQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="w-full rounded-[8px] border border-[#fecaca] bg-white px-3 py-2 text-[12px] font-extrabold text-[#dc2626] disabled:cursor-not-allowed disabled:opacity-60">
+                    <button type="button" onClick={() => onRejectQuoteAdjustment(lead.id, latestQuote?.id ?? null)} disabled={!latestQuote?.id || isInlineActionPending} className="w-full rounded-lg border border-danger-border bg-white px-3 py-2 text-[12px] font-extrabold text-danger-solid disabled:cursor-not-allowed disabled:opacity-60">
                       Reject / request revision
                     </button>
                   </>
@@ -2709,23 +2709,23 @@ export function InlineQuoteBuilder({
       </div>
 
       {stepValidationMessage ? (
-        <div role="alert" className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-semibold text-amber-800">
+        <div role="alert" className="rounded-card border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-semibold text-amber-800">
           {stepValidationMessage}
         </div>
       ) : null}
 
       {/* Sticky bottom bar */}
-      <div className="sticky bottom-3 z-10 rounded-[24px] border border-[#e2e8f0] bg-white/95 p-3 shadow-xl backdrop-blur">
+      <div className="sticky bottom-3 z-10 rounded-panel border border-line bg-white/95 p-3 shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={continueQuotePreviewStep} disabled={builderStep >= steps.length - 1}
-            className="rounded-[22px] bg-[#0b2e4a] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
+            className="rounded-panel bg-surface-1 px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
-          <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:opacity-60">Create/open draft preview</button>
-          {latestQuote?.id ? <Link href={`/quotes?quoteId=${latestQuote.id}`} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] no-underline">Open in Quotes</Link> : null}
-          {latestQuote?.id ? <Link href={`/api/quotes/${latestQuote.id}/pdf`} target="_blank" className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] no-underline">PDF preview</Link> : null}
-          <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-[22px] border border-[#e2e8f0] px-5 py-3 text-[13px] font-bold text-[#334155] disabled:cursor-not-allowed disabled:opacity-60">{approvalPending ? 'Request approval / view queue' : 'Request approval'}</button>
-          <span className="ml-auto rounded-full bg-[#f1f5f9] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#64748b]">
+          <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-panel border border-line px-5 py-3 text-[13px] font-bold text-content-secondary disabled:opacity-60">Create/open draft preview</button>
+          {latestQuote?.id ? <Link href={`/quotes?quoteId=${latestQuote.id}`} className="rounded-panel border border-line px-5 py-3 text-[13px] font-bold text-content-secondary no-underline">Open in Quotes</Link> : null}
+          {latestQuote?.id ? <Link href={`/api/quotes/${latestQuote.id}/pdf`} target="_blank" className="rounded-panel border border-line px-5 py-3 text-[13px] font-bold text-content-secondary no-underline">PDF preview</Link> : null}
+          <button type="button" onClick={() => onRequestQuoteApproval(lead.id, latestQuote?.id ?? null)} disabled={!approvalReady || isInlineActionPending} title={approvalReady ? 'Record owner approval request for this quote.' : 'Create or open a quote draft before requesting approval.'} className="rounded-panel border border-line px-5 py-3 text-[13px] font-bold text-content-secondary disabled:cursor-not-allowed disabled:opacity-60">{approvalPending ? 'Request approval / view queue' : 'Request approval'}</button>
+          <span className="ml-auto rounded-full bg-surface-2 px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-content-muted">
             Command Center · Quote Preview · {steps[builderStep]}
           </span>
         </div>

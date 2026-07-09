@@ -146,7 +146,7 @@ function enhanceBlockerOnce() {
   button.type = 'button';
   button.textContent = 'Resolve here';
   button.setAttribute(BUTTON_MARKER, 'true');
-  button.className = 'inline-flex h-10 items-center rounded-[10px] bg-rose-700 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-rose-800';
+  button.className = 'inline-flex h-10 items-center rounded-ctl bg-rose-700 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-rose-800';
   button.addEventListener('click', () => {
     if (!panel.querySelector(`[${PANEL_MARKER}]`)) panel.appendChild(createInlinePanel(quoteId));
   });

@@ -202,7 +202,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
   return (
     <div className="space-y-6">
       <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5">
+        <section className="rounded-panel border border-slate-200 bg-white/85 p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Live intake</p>
@@ -213,7 +213,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
             </span>
           </div>
 
-          <label className="mt-5 flex cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
+          <label className="mt-5 flex cursor-pointer flex-col items-center justify-center rounded-panel border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
             <span className="text-sm font-semibold text-slate-900">Choose image, PDF, or text file</span>
             <span className="mt-2 text-sm text-slate-600">
               Upload the source, then add any visible text to improve extraction quality before lead creation.
@@ -241,7 +241,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
               value={assistText}
               onChange={(event: any) => setAssistText(event.target.value)}
               placeholder="Paste any visible text from the card, PDF, image, or shared document to improve the review result."
-              className="mt-2 min-h-[160px] w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="mt-2 min-h-[160px] w-full rounded-panel border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
           </label>
 
@@ -273,12 +273,12 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
           </div>
         </section>
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5">
+        <section className="rounded-panel border border-slate-200 bg-white/85 p-5">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Source review</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
             Keep the source beside the extracted fields
           </h3>
-          <div className="mt-5 min-h-[360px] rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-4">
+          <div className="mt-5 min-h-[360px] rounded-panel border border-dashed border-slate-300 bg-slate-50 p-4">
             {!selectedFile ? (
               <div className="flex h-full min-h-[320px] items-center justify-center text-center text-sm text-slate-500">
                 Upload a file and run review extraction to open the review state.
@@ -309,7 +309,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
         </section>
       </div>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5">
+      <section className="rounded-panel border border-slate-200 bg-white/85 p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">
@@ -324,7 +324,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
           </span>
         </div>
 
-        <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200">
+        <div className="mt-5 overflow-hidden rounded-panel border border-slate-200">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-[0.16em] text-slate-500">
               <tr>
@@ -365,7 +365,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold text-slate-900">Reviewed CRM payload</p>
@@ -385,18 +385,18 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
               </div>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Full name</span><input value={draft.contactName} onChange={(event: any) => updateField('contactName', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company</span><input value={draft.companyName} onChange={(event: any) => updateField('companyName', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role</span><input value={draft.jobTitle} onChange={(event: any) => updateField('jobTitle', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Email</span><input type="email" value={draft.email} onChange={(event: any) => updateField('email', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone</span><input value={draft.phone} onChange={(event: any) => updateField('phone', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone 2</span><input value={draft.phoneSecondary} onChange={(event: any) => updateField('phoneSecondary', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Website</span><input value={draft.website} onChange={(event: any) => updateField('website', event.target.value)} className="w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
-              <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</span><textarea value={draft.notes} onChange={(event: any) => updateField('notes', event.target.value)} className="min-h-[140px] w-full rounded-[1.1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add any context that should follow the lead into the CRM." /></label>
+              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Full name</span><input value={draft.contactName} onChange={(event: any) => updateField('contactName', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company</span><input value={draft.companyName} onChange={(event: any) => updateField('companyName', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role</span><input value={draft.jobTitle} onChange={(event: any) => updateField('jobTitle', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Email</span><input type="email" value={draft.email} onChange={(event: any) => updateField('email', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone</span><input value={draft.phone} onChange={(event: any) => updateField('phone', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Phone 2</span><input value={draft.phoneSecondary} onChange={(event: any) => updateField('phoneSecondary', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Website</span><input value={draft.website} onChange={(event: any) => updateField('website', event.target.value)} className="w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" /></label>
+              <label className="space-y-2 md:col-span-2"><span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Notes</span><textarea value={draft.notes} onChange={(event: any) => updateField('notes', event.target.value)} className="min-h-[140px] w-full rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400" placeholder="Add any context that should follow the lead into the CRM." /></label>
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <p className="font-semibold text-slate-900">Create gate</p>
             <ul className="mt-3 space-y-2">
               <li>Source profile: <span className="font-medium text-slate-900">{humanizeProfile(extraction?.sourceProfile || 'generic')}</span></li>
@@ -404,7 +404,7 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
               <li>Internal source label: <span className="font-medium text-slate-900">{draft.sourceLabel || 'Contact scan review'}</span></li>
               <li>Lead type on create: <span className="font-medium text-slate-900">{leadType}</span></li>
             </ul>
-            <label className="mt-5 flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3">
+            <label className="mt-5 flex items-start gap-3 rounded-card border border-slate-200 bg-white px-4 py-3">
               <input type="checkbox" checked={reviewConfirmed} onChange={(event: any) => setReviewConfirmed(event.target.checked)} className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400" />
               <span>
                 <strong className="text-slate-900">Review confirmed.</strong> I checked the extracted values against the source and want to create a real CRM lead from this reviewed scan.
@@ -420,12 +420,12 @@ export function ContactIntakeReview({ initialEventId = null }: { initialEventId?
                 {isCreating ? 'Creating lead…' : 'Confirm & Create Lead'}
               </button>
             </div>
-            <div className="mt-4 rounded-[1.25rem] border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600">
+            <div className="mt-4 rounded-card border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600">
               {reviewMessage}
             </div>
             {reviewError ? <p className="mt-3 text-sm font-medium text-rose-600">{reviewError}</p> : null}
             {createdLead ? (
-              <div className="mt-4 rounded-[1.25rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              <div className="mt-4 rounded-card border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                 <p className="font-semibold text-emerald-900">Lead created: {createdLead.companyName}</p>
                 <p className="mt-1">Internal source attribution: {createdLead.sourceLabel}</p>
                 <div className="mt-3 flex flex-wrap gap-2">

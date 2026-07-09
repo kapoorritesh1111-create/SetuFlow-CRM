@@ -82,7 +82,7 @@ export function TradeShowTrialVideoPage() {
                 Open a focused Setu Flow workspace for trade show capture, contact sharing, CSV export, and upgrade previews.
               </p>
 
-              <div className="mt-7 max-w-2xl rounded-[1.6rem] border border-white/16 bg-[#061e34]/42 p-4 shadow-[0_20px_64px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5">
+              <div className="mt-7 max-w-2xl rounded-panel border border-white/16 bg-[#061e34]/42 p-4 shadow-[0_20px_64px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5">
                 <p className="text-sm font-extrabold text-white/92 sm:text-base">Your trial tour</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-4">
                   {tourSteps.map((step, index) => (
@@ -115,13 +115,13 @@ export function TradeShowTrialVideoPage() {
 
         <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-4 py-12 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl text-center">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#108477]">How your trial tour works</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-[#0b2e4a] sm:text-4xl">One workspace. Four clear moves.</h2>
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-accent-700">How your trial tour works</p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-content-primary sm:text-4xl">One workspace. Four clear moves.</h2>
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {lowerSteps.map((step) => (
                 <div key={step.title} className="rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-[0_18px_48px_rgba(15,23,42,0.055)] sm:text-center">
-                  <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#dff7f2] text-[#108477]"><Icon name={step.icon} className="h-6 w-6" /></span>
-                  <h3 className="mt-5 text-lg font-extrabold text-[#0b2e4a]">{step.title}</h3>
+                  <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#dff7f2] text-accent-700"><Icon name={step.icon} className="h-6 w-6" /></span>
+                  <h3 className="mt-5 text-lg font-extrabold text-content-primary">{step.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-500">{step.body}</p>
                 </div>
               ))}

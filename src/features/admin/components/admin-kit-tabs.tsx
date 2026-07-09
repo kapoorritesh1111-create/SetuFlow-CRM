@@ -35,7 +35,7 @@ export function KitTabs({ items, initialTab }: { items: KitTabItem[]; initialTab
               className={cn(
                 'whitespace-nowrap border-b-[2.5px] px-3.5 py-2 text-xs transition',
                 isActive
-                  ? 'border-[#1F487C] font-bold text-[#1F487C]'
+                  ? 'border-brand-700 font-bold text-brand-700'
                   : 'border-transparent font-semibold text-slate-500 hover:text-slate-800',
               )}
             >

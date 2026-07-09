@@ -89,7 +89,7 @@ export function DashboardCustomizePanel({
         if (event.target === event.currentTarget) handleClose();
       }}
     >
-      <section className="relative w-full max-w-5xl rounded-[2rem] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_28px_90px_rgba(15,23,42,0.26)] md:px-6 md:py-6">
+      <section className="relative w-full max-w-5xl rounded-hero border border-slate-200/80 bg-white px-5 py-5 shadow-[0_28px_90px_rgba(15,23,42,0.26)] md:px-6 md:py-6">
         <button
           type="button"
           onClick={handleClose}
@@ -172,7 +172,7 @@ export function DashboardCustomizePanel({
           {savedViews.length ? (
             <div className="mt-4 space-y-3">
               {savedViews.map((view) => (
-                <div key={view.id} className="flex flex-col gap-3 rounded-[1.1rem] border border-slate-200/70 bg-slate-50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                <div key={view.id} className="flex flex-col gap-3 rounded-card border border-slate-200/70 bg-slate-50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-950">{view.name}</p>
                     <p className="text-xs text-slate-500">{view.layout.hiddenSections.length} hidden sections · {view.layout.activeWidgetIds.length} widgets</p>
@@ -185,7 +185,7 @@ export function DashboardCustomizePanel({
               ))}
             </div>
           ) : (
-            <div className="mt-4 rounded-[1.1rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">No saved views yet.</div>
+            <div className="mt-4 rounded-card border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">No saved views yet.</div>
           )}
         </div>
 
@@ -203,7 +203,7 @@ export function DashboardCustomizePanel({
               const isLast = index === orderedWidgets.length - 1;
 
               return (
-                <div key={widgetId} className="flex items-center justify-between gap-4 rounded-[1.1rem] border border-slate-200/70 bg-slate-50 px-4 py-3">
+                <div key={widgetId} className="flex items-center justify-between gap-4 rounded-card border border-slate-200/70 bg-slate-50 px-4 py-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-950">{widgetTitle}</p>
                     <p className="text-xs text-slate-500">Position {index + 1}</p>

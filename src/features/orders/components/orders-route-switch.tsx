@@ -29,7 +29,7 @@ export function OrdersRouteSwitch({ children, ordersView }: { children: React.Re
   if (supplierRoute) return <>{children}</>;
   if (supplierMode) {
     return (
-      <div className="rounded-[1.5rem] border border-teal-200 bg-teal-50 p-6 text-sm text-teal-900">
+      <div className="rounded-panel border border-teal-200 bg-teal-50 p-6 text-sm text-teal-900">
         Opening supplier execution links…
       </div>
     );

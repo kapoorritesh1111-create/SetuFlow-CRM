@@ -271,7 +271,7 @@ function buildRows(type: ReportKey, data: ReportsData, range: RangeKey, market: 
 
 function Metric({ label, value, helper, Icon }: { label: string; value: string | number; helper: string; Icon: LucideIcon }) {
   return (
-    <article className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+    <article className="rounded-panel border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
       <div className="flex items-center gap-4">
         <span className="grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-blue-600"><Icon className="h-6 w-6" /></span>
         <div>
@@ -294,7 +294,7 @@ function ReportCards({ cards, selected, onOpen }: { cards: ReportCard[]; selecte
             key={card.type}
             type="button"
             onClick={() => onOpen(card.type)}
-            className={`rounded-[1.35rem] border bg-white p-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 ${selected === card.type ? 'border-blue-300 ring-2 ring-blue-50' : 'border-slate-200'}`}
+            className={`rounded-panel border bg-white p-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 ${selected === card.type ? 'border-blue-300 ring-2 ring-blue-50' : 'border-slate-200'}`}
           >
             <div className="flex gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon className="h-5 w-5" /></span>
@@ -333,7 +333,7 @@ function Preview({ type, rows, onBack }: { type: ReportKey; rows: ReportRow[]; o
   }, [headers, sortKey]);
 
   return (
-    <section id="active-report" className="scroll-mt-28 rounded-[1.45rem] border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+    <section id="active-report" className="scroll-mt-28 rounded-panel border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Active report</p>
@@ -430,7 +430,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
         </div>
       </section>
 
-      {readOnlyMessage ? <section className="rounded-[1.35rem] border border-blue-100 bg-blue-50/70 p-4 text-sm font-medium text-blue-800">{readOnlyMessage}</section> : null}
+      {readOnlyMessage ? <section className="rounded-panel border border-blue-100 bg-blue-50/70 p-4 text-sm font-medium text-blue-800">{readOnlyMessage}</section> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric label="Reports Generated" value={fmt(Math.max(3, (selected ? rows.length : 0) + openQuotes.length))} helper="live filtered scope" Icon={FileText} />
@@ -443,7 +443,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
       {selected ? <Preview type={selected} rows={rows} onBack={() => setScrollTarget('report-cards')} /> : null}
 
       <section className="grid gap-5 xl:grid-cols-[1fr_17rem]">
-        <div className="rounded-[1.45rem] border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-950">Recently Generated Reports</h2>
             {selected ? <button type="button" onClick={() => downloadCsv(rows, `setu-flow-${selected}-${range}.csv`)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><FileSpreadsheet className="h-3.5 w-3.5" />Export current preview</button> : null}
@@ -461,7 +461,7 @@ export function ReportsWorkspace({ data, readOnlyMessage }: { data: ReportsData;
             ))}
           </div>
         </div>
-        <aside className="rounded-[1.45rem] border border-slate-200 bg-white p-5 text-center shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+        <aside className="rounded-panel border border-slate-200 bg-white p-5 text-center shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
           <p className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-950"><Sparkles className="h-4 w-4 text-blue-600" />Need help with reports?</p>
           <p className="mt-3 text-sm leading-6 text-slate-600">Setu Guru can help you build custom reports and insights tailored to your export business.</p>
           <div className="mt-5 flex justify-center"><GuruAvatar size="lg" /></div>

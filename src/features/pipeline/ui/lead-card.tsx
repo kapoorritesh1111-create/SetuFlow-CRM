@@ -177,7 +177,7 @@ export function LeadCard({ canManageLeads, readOnlyMessage, lead, stageLabel, st
       tabIndex={0}
       className={cn(
         'group border bg-white/96 transition hover:-translate-y-0.5 dark:bg-slate-900/88',
-        density === 'full' ? 'rounded-[1.35rem] p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)]' :
+        density === 'full' ? 'rounded-panel p-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.12)]' :
         density === 'compact' ? 'rounded-2xl p-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_20px_rgba(15,23,42,0.10)]' :
         /* micro */ 'rounded-xl px-2.5 py-2 shadow-none hover:shadow-[0_2px_8px_rgba(15,23,42,0.08)]',
         isSelected ? 'border-slate-900 ring-2 ring-slate-900/10 dark:border-white dark:ring-white/10' : 'border-slate-200/80 dark:border-slate-700/70',

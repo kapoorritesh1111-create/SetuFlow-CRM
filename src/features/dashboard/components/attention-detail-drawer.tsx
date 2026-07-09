@@ -128,9 +128,9 @@ export function AttentionDetailDrawer({
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Next actions</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-700">
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Check company, market, and stage.</li>
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Open the related record and continue the workflow.</li>
-              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-[#1F487C]" />Mark reviewed or snooze for tomorrow.</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-brand-700" />Check company, market, and stage.</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-brand-700" />Open the related record and continue the workflow.</li>
+              <li className="flex gap-2"><span className="mt-1 h-2 w-2 rounded-full bg-brand-700" />Mark reviewed or snooze for tomorrow.</li>
             </ul>
           </div>
         </div>
@@ -138,11 +138,11 @@ export function AttentionDetailDrawer({
         <div className="border-t border-slate-200 px-6 py-4">
           <div className="flex flex-wrap gap-2">
             {primaryHref ? (
-              <Link href={primaryHref} className="rounded-xl bg-[#1F487C] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#193769]">
+              <Link href={primaryHref} className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">
                 {primaryLabel}
               </Link>
             ) : (
-              <button type="button" onClick={persistReviewed} className="rounded-xl bg-[#1F487C] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#193769]">
+              <button type="button" onClick={persistReviewed} className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">
                 Mark reviewed
               </button>
             )}

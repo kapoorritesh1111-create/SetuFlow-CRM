@@ -94,7 +94,7 @@ export function ProfileVcardContactEditor({
       </p>
 
       {message ? (
-        <p className={`mt-3 text-sm font-semibold ${saveState === 'error' ? 'text-red-700' : 'text-[#1F487C]'}`}>{message}</p>
+        <p className={`mt-3 text-sm font-semibold ${saveState === 'error' ? 'text-red-700' : 'text-brand-700'}`}>{message}</p>
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">

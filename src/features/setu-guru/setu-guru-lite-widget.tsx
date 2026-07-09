@@ -117,7 +117,7 @@ export function SetuGuruLiteWidget() {
   return (
     <div ref={rootRef} className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 print:hidden" data-no-translate="true">
       {open ? (
-        <section ref={panelRef} className="w-[min(calc(100vw-2rem),24rem)] overflow-hidden rounded-[1.7rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.20)]" aria-label="Setu Guru Lite public assistant">
+        <section ref={panelRef} className="w-[min(calc(100vw-2rem),24rem)] overflow-hidden rounded-hero border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.20)]" aria-label="Setu Guru Lite public assistant">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-950 px-4 py-3 text-white">
             <div className="flex items-center gap-3">
               <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">

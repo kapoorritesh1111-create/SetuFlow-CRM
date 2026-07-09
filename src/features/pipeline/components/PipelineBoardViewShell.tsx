@@ -224,7 +224,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
               key={view}
               type="button"
               onClick={() => setBoardView(view)}
-              className={`h-9 px-4 text-[11px] font-bold transition ${boardView === view ? 'bg-[#0b1f3a] text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
+              className={`h-9 px-4 text-[11px] font-bold transition ${boardView === view ? 'bg-brand-950 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
             >
               {tabLabel[view]}
             </button>
@@ -252,7 +252,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
                 key={option}
                 type="button"
                 onClick={() => setPipelineDensity(option)}
-                className={`h-9 px-4 text-[11px] font-bold capitalize transition ${density === option ? 'bg-[#0b1f3a] text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
+                className={`h-9 px-4 text-[11px] font-bold capitalize transition ${density === option ? 'bg-brand-950 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
               >
                 {option}
               </button>

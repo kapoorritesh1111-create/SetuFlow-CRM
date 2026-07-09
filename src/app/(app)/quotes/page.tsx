@@ -464,7 +464,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   if (!quotes.length) {
     return (
       <div style={{padding:'24px',background:'#f0f4f8',minHeight:'100vh'}}>
-        <div className="rounded-[1.375rem] border border-slate-200 bg-white p-8 text-center">
+        <div className="rounded-panel border border-slate-200 bg-white p-8 text-center">
           <p style={{fontSize:'14px',color:'#64748b'}}>No quotes yet.</p>
           <Link href={PRODUCT_ROUTES.app.leads} style={{display:'inline-block',marginTop:'16px',padding:'8px 18px',background:'#0b2e4a',color:'white',borderRadius:'8px',fontSize:'13px',fontWeight:700,textDecoration:'none'}}>+ New quote</Link>
         </div>

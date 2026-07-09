@@ -303,7 +303,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="space-y-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-soft">
+        <div className="rounded-hero border border-slate-200 bg-white/95 p-6 shadow-soft">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Card profile</p>
@@ -313,17 +313,17 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{statusCopy}</span>
           </div>
 
-          <div className="mt-6 rounded-[1.5rem] border border-[#1F487C]/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
+          <div className="mt-6 rounded-panel border border-brand-700/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <UserAvatar name={identity.fullName} email={identity.email} avatarUrl={avatarUrl} size="xl" className="h-20 w-20 border border-slate-200 shadow-sm" />
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Profile photo</p>
                   <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">Large phone photos are welcome. Setu Flow crops and compresses them before saving.</p>
-                  {avatarMessage ? <p className="mt-2 text-xs font-medium text-[#1F487C]">{avatarMessage}</p> : null}
+                  {avatarMessage ? <p className="mt-2 text-xs font-medium text-brand-700">{avatarMessage}</p> : null}
                 </div>
               </div>
-              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-[#1F487C]/12 bg-white px-5 py-2 text-sm font-semibold text-[#1F487C] shadow-sm transition hover:bg-[#eef6fb]">
+              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-brand-700/12 bg-white px-5 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:bg-[#eef6fb]">
                 Upload photo
                 <input type="file" accept="image/*" className="sr-only" onChange={(event) => handleAvatarFile(event.target.files?.[0])} />
               </label>
@@ -350,14 +350,14 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-500">{isDirty ? 'Save to refresh the public card, QR code, and contact download.' : 'Your latest saved details are ready to share.'}</p>
-            <button type="button" onClick={() => void persistSettings()} disabled={isSaving} className="inline-flex min-h-[48px] items-center justify-center rounded-[1rem] bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+            <button type="button" onClick={() => void persistSettings()} disabled={isSaving} className="inline-flex min-h-[48px] items-center justify-center rounded-card bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
               {isSaving ? 'Saving…' : 'Save card'}
             </button>
           </div>
           {saveMessage ? <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${saveState === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{saveMessage}</p> : null}
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-soft">
+        <div className="rounded-hero border border-slate-200 bg-white/95 p-6 shadow-soft">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Share</p>
@@ -368,10 +368,10 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <a href={publicCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Open card</a>
-            <button type="button" onClick={() => void handleShare()} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{shareSupported ? 'Share' : copied === 'link' ? 'Copied' : 'Copy link'}</button>
-            <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Copied' : 'Copy intro'}</button>
-            <a href={publicVcfUrl} download className="inline-flex min-h-[52px] items-center justify-center rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Save contact</a>
+            <a href={publicCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[52px] items-center justify-center rounded-card bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Open card</a>
+            <button type="button" onClick={() => void handleShare()} className="inline-flex min-h-[52px] items-center justify-center rounded-card border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{shareSupported ? 'Share' : copied === 'link' ? 'Copied' : 'Copy link'}</button>
+            <button type="button" onClick={() => void copy(shareIntro, 'summary')} className="inline-flex min-h-[52px] items-center justify-center rounded-card border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{copied === 'summary' ? 'Copied' : 'Copy intro'}</button>
+            <a href={publicVcfUrl} download className="inline-flex min-h-[52px] items-center justify-center rounded-card border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">Save contact</a>
           </div>
           <div className="mt-3 flex items-center gap-2" aria-label="Wallet actions">
             <a href={`/api/public/apple-wallet?url=${encodeURIComponent(publicCardUrl)}&name=${encodeURIComponent(cardIdentity.fullName)}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 shadow-sm" aria-label="Add to Apple Wallet" title="Add to Apple Wallet"><img src="/marketing/apple-wallet-icon.png" alt="Apple Wallet" className="h-7 w-7 object-contain" /></a>
@@ -380,7 +380,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
           </div>
           <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{shareStateCopy}</p>
 
-          <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+          <div className="mt-5 rounded-panel border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">QR destination</p>
@@ -391,26 +391,26 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
                 </div>
                 <p className="mt-2 truncate rounded-xl bg-white px-3 py-2 text-xs text-slate-500">{qrDestinationUrl}</p>
               </div>
-              {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-40 w-40 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-36 w-36 items-center justify-center rounded-[1.25rem] border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR loading</div>}
+              {qrCodeDataUrl ? <img src={qrCodeDataUrl} alt="QR code for digital vCard share" className="h-40 w-40 rounded-card border border-slate-200 bg-white p-3 shadow-sm" /> : <div className="flex h-36 w-36 items-center justify-center rounded-card border border-dashed border-slate-300 bg-white/70 p-4 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-400">QR loading</div>}
             </div>
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-soft">
+        <div className="rounded-hero border border-slate-200 bg-white/95 p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Responses</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Card activity</h3>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quotes</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.quoteRequestCount ?? 0}</p></div>
-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Appointments</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.appointmentCount ?? 0}</p></div>
-            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Leads</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.recentLeads.length ?? 0}</p></div>
+            <div className="rounded-card border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quotes</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.quoteRequestCount ?? 0}</p></div>
+            <div className="rounded-card border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Appointments</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.appointmentCount ?? 0}</p></div>
+            <div className="rounded-card border border-slate-200 bg-slate-50/80 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Leads</p><p className="mt-2 text-3xl font-semibold text-slate-900">{insights?.recentLeads.length ?? 0}</p></div>
           </div>
           <div className="mt-5 space-y-3">
             {(insights?.recentLeads?.length ?? 0) ? insights!.recentLeads.slice(0, 4).map((item) => (
-              <div key={item.id} className="flex flex-col gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div key={item.id} className="flex flex-col gap-3 rounded-card border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div><p className="text-sm font-semibold text-slate-900">{item.company_name || item.contact_name || 'Public card lead'}</p><p className="mt-1 text-xs text-slate-600">{formatRecency(item.created_at)}</p></div>
                 <a href={`/leads/${item.id}`} className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Open lead</a>
               </div>
-            )) : <div className="rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-slate-500">Requests and appointments will appear here after your card is shared.</div>}
+            )) : <div className="rounded-card border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-slate-500">Requests and appointments will appear here after your card is shared.</div>}
           </div>
         </div>
       </div>
@@ -427,7 +427,7 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
 
       {cropDraft ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[2rem] bg-white p-5 shadow-2xl">
+          <div className="w-full max-w-lg rounded-hero bg-white p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Photo editor</p>

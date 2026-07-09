@@ -75,7 +75,7 @@ export default async function Page() {
         </div>
       </div>
       <div id="catalog-add-category" className="space-y-4 px-5 py-4 lg:px-5 lg:py-4" data-admin-v2-foundation="S24-ADMUX-24" data-admin-v2-page="catalog">
-        <div className="flex gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3.5 py-3">
+        <div className="flex gap-2.5 rounded-ctl border border-slate-200 bg-white px-3.5 py-3">
           <span aria-hidden="true" className="text-base">🔗</span>
           <div>
             <p className="text-xs font-bold text-slate-900">Why is this one admin page?</p>

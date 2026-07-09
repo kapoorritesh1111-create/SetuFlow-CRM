@@ -176,7 +176,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
       </div>
       <div className="hidden md:block">
       {activeTradeEvent ? (
-        <section className="mb-5 rounded-[2rem] border border-emerald-200 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(16,185,129,0.18),rgba(255,255,255,0.96))] p-5 shadow-[0_20px_52px_rgba(15,118,110,0.12)] sm:p-6">
+        <section className="mb-5 rounded-hero border border-emerald-200 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(16,185,129,0.18),rgba(255,255,255,0.96))] p-5 shadow-[0_20px_52px_rgba(15,118,110,0.12)] sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-800">Trade show live</p>

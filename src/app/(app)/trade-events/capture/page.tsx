@@ -120,7 +120,7 @@ export default async function TradeEventsCapturePage({
 
   return (
     <div className="space-y-5 pb-4">
-      <div className="flex flex-col gap-3 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-hero border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Trade event entries</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{modeLabel}: Type, Dictate, or Scan Capture</h1>

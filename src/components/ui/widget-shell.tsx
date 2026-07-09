@@ -29,7 +29,7 @@ export function WidgetShell({
   contentClassName?: string;
 }) {
   return (
-    <section className={cn('group relative overflow-hidden rounded-[1.85rem] ring-1 ring-slate-950/[0.04] backdrop-blur before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.96),transparent)] dark:ring-white/[0.04] dark:before:bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.36),transparent)]', workspaceGlassClass, className)}>
+    <section className={cn('group relative overflow-hidden rounded-hero ring-1 ring-slate-950/[0.04] backdrop-blur before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.96),transparent)] dark:ring-white/[0.04] dark:before:bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.36),transparent)]', workspaceGlassClass, className)}>
       <div className="border-b border-slate-200/70 px-5 py-4.5 dark:border-slate-700/70 sm:px-6 sm:py-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 max-w-3xl">
@@ -50,7 +50,7 @@ export function WidgetShell({
 
 export function WidgetToolbar({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex flex-col gap-3 rounded-[1.5rem] border p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_16px_32px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.03] dark:ring-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:p-4', workspaceGlassClass, className)}>
+    <div className={cn('flex flex-col gap-3 rounded-panel border p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_16px_32px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.03] dark:ring-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:p-4', workspaceGlassClass, className)}>
       {children}
     </div>
   );
@@ -79,10 +79,10 @@ export function WidgetFilterChip({
 
 function EmptyMarketSetupState() {
   return (
-    <div className="mb-5 rounded-[1.35rem] border border-sky-100 bg-[linear-gradient(135deg,#f8fbff,#eef6ff)] p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] ring-1 ring-slate-950/[0.03]">
+    <div className="mb-5 rounded-panel border border-sky-100 bg-[linear-gradient(135deg,#f8fbff,#eef6ff)] p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.88)] ring-1 ring-slate-950/[0.03]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0c7fff]">Map setup mode</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-500">Map setup mode</p>
           <h4 className="mt-2 text-lg font-black tracking-tight text-slate-950">No market pins yet</h4>
           <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-slate-600">The live world map appears after the first buyer or supplier lead has a country. Until then, use the setup checklist above to create catalog, lead, and quote data.</p>
         </div>
@@ -121,7 +121,7 @@ export function WidgetEmptyState({
   const showMarketPreview = title.toLowerCase().includes('no markets match');
 
   return (
-    <div className={cn('rounded-[1.5rem] border border-dashed px-5 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]', workspaceInsetClass, showMarketPreview && 'px-4 py-4 text-left', className)}>
+    <div className={cn('rounded-panel border border-dashed px-5 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]', workspaceInsetClass, showMarketPreview && 'px-4 py-4 text-left', className)}>
       {showMarketPreview ? <EmptyMarketSetupState /> : null}
       <div className={showMarketPreview ? 'text-center' : undefined}>
         <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{title}</p>
@@ -142,7 +142,7 @@ export function WidgetLoadingState({
     <div className={cn('animate-pulse space-y-3', className)} aria-hidden="true">
       <div className="h-4 w-32 rounded-full bg-slate-200 dark:bg-slate-700" />
       {Array.from({ length: lines }).map((_, index) => (
-        <div key={index} className="h-16 rounded-[1.25rem] bg-slate-100 dark:bg-slate-800" />
+        <div key={index} className="h-16 rounded-card bg-slate-100 dark:bg-slate-800" />
       ))}
     </div>
   );
@@ -160,7 +160,7 @@ export function WidgetMetric({
   className?: string;
 }) {
   return (
-    <div className={cn('relative overflow-hidden rounded-[1.75rem] border p-4 ring-1 ring-slate-950/[0.03] before:pointer-events-none before:absolute before:inset-x-6 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.98),transparent)] dark:ring-white/[0.04] dark:before:bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.34),transparent)]', workspaceGlassClass, className)}>
+    <div className={cn('relative overflow-hidden rounded-hero border p-4 ring-1 ring-slate-950/[0.03] before:pointer-events-none before:absolute before:inset-x-6 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.98),transparent)] dark:ring-white/[0.04] dark:before:bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.34),transparent)]', workspaceGlassClass, className)}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">{label}</p>
       <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{value}</p>
       {helper ? <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{helper}</p> : null}

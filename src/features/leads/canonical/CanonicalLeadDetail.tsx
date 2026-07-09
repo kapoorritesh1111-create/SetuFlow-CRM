@@ -170,7 +170,7 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
         </div>
       </header>
 
-      <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-hero border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-5 p-6">
           <div className="flex min-w-0 gap-4">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-sky-500 text-xl font-black text-white">{initials(lead.company_name)}</div>
@@ -189,7 +189,7 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
         <StageStrip data={data} />
       </section>
 
-      <section className="grid rounded-[1.5rem] border border-slate-200 bg-white py-4 shadow-sm md:grid-cols-5">
+      <section className="grid rounded-panel border border-slate-200 bg-white py-4 shadow-sm md:grid-cols-5">
         <Kpi icon="↗" label="Readiness Score" value={`${score} / 100`} />
         <Kpi icon="▣" label="Current Quote" value={latestQuote ? `${latestQuote.quote_number || 'v1'} · ${title(latestQuote.status)}` : 'No quote'} />
         <Kpi icon="▰" label="Products Selected" value={`${data.linkedProducts.length} selected`} />
@@ -198,7 +198,7 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr_320px]">
-        <div id="follow-up" className="rounded-[1.5rem] border border-rose-200 bg-rose-50/50 p-5 shadow-sm">
+        <div id="follow-up" className="rounded-panel border border-rose-200 bg-rose-50/50 p-5 shadow-sm">
           <div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-[0.16em] text-rose-600">1. Follow-up</p><span className="rounded-full bg-rose-500 px-3 py-1 text-[10px] font-black text-white">{pendingFollowUp ? 'ACTIVE' : 'NEEDED'}</span></div>
           <h3 className="mt-4 text-xl font-black text-slate-950">{pendingFollowUp ? fmtDate(pendingFollowUp.scheduled_at) : 'Schedule the next touchpoint'}</h3>
           <p className="mt-1 text-sm font-semibold text-slate-600">Keep the commercial thread moving with a clear agenda and owner.</p>
@@ -211,7 +211,7 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
           {pendingFollowUp ? <form action={completeCanonicalLeadFollowUp} className="mt-3"><input type="hidden" name="lead_id" value={lead.id} /><input type="hidden" name="follow_up_id" value={pendingFollowUp.id} /><button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700">✓ Mark Completed</button></form> : null}
         </div>
 
-        <form id="qualification" action={saveCanonicalQualificationMapping} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <form id="qualification" action={saveCanonicalQualificationMapping} className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
           <input type="hidden" name="lead_id" value={lead.id} />
           {data.linkedProducts.map((product) => <input key={product.id} type="hidden" name="product_ids" value={product.id} />)}
           {data.linkedMarkets.map((market) => <input key={market.id} type="hidden" name="market_ids" value={market.id} />)}
@@ -225,7 +225,7 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
           <button className="mt-4 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white">Save qualification</button>
         </form>
 
-        <aside className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+        <aside className="rounded-panel border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
           <div className="flex items-center gap-2"><span className="rounded-xl bg-emerald-600 px-2 py-1 text-xs font-black text-white">G</span><h3 className="font-black text-slate-950">Setu Guru</h3></div>
           <p className="mt-4 text-sm font-bold text-slate-800">Recommended action</p>
           <p className="mt-1 text-sm leading-6 text-slate-600">{latestQuote ? 'Review compliance before sending the current draft.' : 'Finish qualification and create a quote from mapped product interests.'}</p>
@@ -234,7 +234,7 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
         </aside>
       </section>
 
-      <form action={saveCanonicalQualificationMapping} className="rounded-[1.5rem] border border-blue-100 bg-white p-5 shadow-sm">
+      <form action={saveCanonicalQualificationMapping} className="rounded-panel border border-blue-100 bg-white p-5 shadow-sm">
         <input type="hidden" name="lead_id" value={lead.id} />
         <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Map Products & Markets</p><h3 className="mt-1 text-xl font-black text-slate-950">Coverage for quote creation</h3></div><button className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white">Save mapping</button></div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -245,19 +245,19 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
       </form>
 
       <section id="mapping" className="grid gap-4 xl:grid-cols-[1fr_1.25fr_1fr]">
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="font-black text-slate-950">About Buyer</h3>
           <dl className="mt-4 grid gap-3 text-sm"><div className="flex justify-between"><dt className="font-bold text-slate-400">Account</dt><dd className="font-black text-slate-900">{title(lead.lead_type)}</dd></div><div className="flex justify-between"><dt className="font-bold text-slate-400">Market</dt><dd className="font-black text-slate-900">{data.linkedMarkets.map((m) => m.name).join(', ') || lead.country || '—'}</dd></div><div className="flex justify-between"><dt className="font-bold text-slate-400">Deal Value</dt><dd className="font-black text-slate-900">{money(lead.deal_value, lead.deal_currency)}</dd></div><div className="flex justify-between"><dt className="font-bold text-slate-400">Stage</dt><dd className="font-black text-slate-900">{currentStageName(data)}</dd></div></dl>
           <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-600">{lead.notes || 'No notes yet.'}</p>
         </div>
 
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between"><h3 className="font-black text-slate-950">Quotes on this Lead</h3><Link href={latestQuote ? `/leads/${lead.id}/quote?quoteId=${latestQuote.id}` : `/leads/${lead.id}/quote`} className="text-sm font-black text-blue-600">Open Quote Builder →</Link></div>
           <div className="mt-4 grid gap-3">{quotes.length ? quotes.map((quote) => <div key={quote.id} className="rounded-2xl border border-blue-200 bg-blue-50 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{quote.quote_number || `Quote ${quote.id.slice(0, 8)}`}</p><p className="mt-1 font-black text-slate-950">{title(quote.status)} {TERMINAL.has(String(quote.status).toLowerCase()) ? '· Locked' : '· Current'}</p></div><Link href={`/leads/${lead.id}/quote?quoteId=${quote.id}`} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700">Open</Link></div></div>) : <p className="rounded-2xl border border-dashed border-slate-200 p-5 text-sm font-bold text-slate-500">No quotes yet.</p>}</div>
           <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500"><span>{quotes.filter((q) => !TERMINAL.has(String(q.status).toLowerCase())).length} open quote</span><span>{quotes.filter((q) => TERMINAL.has(String(q.status).toLowerCase())).length} locked</span></div>
         </div>
 
-        <div id="edit-lead" className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div id="edit-lead" className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="font-black text-slate-950">Quick Edit</h3>
           <p className="mt-1 text-sm font-semibold text-slate-500">Lead, contact, deal value, country, and notes.</p>
           <form action={saveCanonicalLeadDetails} className="mt-4 grid gap-2">
@@ -269,12 +269,12 @@ export default function CanonicalLeadDetail({ data, saved, backHref = '/leads' }
         </div>
       </section>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="font-black text-slate-950">Recent Activities</h3>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{data.activities.slice(0, 4).map((activity) => <div key={activity.id} className="rounded-2xl bg-slate-50 p-4"><p className="text-sm font-black text-slate-800">{activity.message || title(activity.kind)}</p><p className="mt-2 text-xs font-semibold text-slate-400">{fmtDate(activity.occurred_at || activity.created_at)}</p></div>)}</div>
       </section>
 
-      <div className="fixed bottom-4 left-[calc(8rem+1rem)] right-4 z-20 hidden rounded-[1.5rem] border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur md:flex md:items-center md:justify-between">
+      <div className="fixed bottom-4 left-[calc(8rem+1rem)] right-4 z-20 hidden rounded-panel border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur md:flex md:items-center md:justify-between">
         <div className="flex gap-2"><Link href={backHref} className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Back to Leads</Link><QuotePrimaryActions leadId={lead.id} quote={latestQuote} /><a href="#follow-up" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Schedule Follow-up</a><a href="#edit-lead" className="inline-flex h-12 items-center rounded-2xl border border-slate-200 px-5 text-sm font-black text-slate-700">Quick Edit</a></div>
         <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-blue-600">Command Center · One Page Workspace</span>
       </div>

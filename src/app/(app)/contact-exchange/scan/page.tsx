@@ -68,19 +68,19 @@ export default async function ScanContactInfoPage({
 
       <SectionCard>
         <div className="grid gap-4 lg:grid-cols-3">
-          <article className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+          <article className="rounded-panel border border-slate-200 bg-white/85 p-4">
             <p className="text-sm font-semibold text-slate-900">Source-first review</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Keep the uploaded source visible while reviewing the extracted contact block.
             </p>
           </article>
-          <article className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+          <article className="rounded-panel border border-slate-200 bg-white/85 p-4">
             <p className="text-sm font-semibold text-slate-900">Human check before import</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Verify names, company, contact details, and notes before creating any downstream follow-up.
             </p>
           </article>
-          <article className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+          <article className="rounded-panel border border-slate-200 bg-white/85 p-4">
             <p className="text-sm font-semibold text-slate-900">Made for buyer handoff</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Use this surface to turn messy inbound contact inputs into clean CRM-ready information.
@@ -98,7 +98,7 @@ export default async function ScanContactInfoPage({
         </h2>
         <div className="mt-5 grid gap-4 xl:grid-cols-4">
           {inputMethods.map((method) => (
-            <article key={method.title} className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+            <article key={method.title} className="rounded-panel border border-slate-200 bg-white/85 p-4">
               <p className="text-sm font-semibold text-slate-900">{method.title}</p>
               <p className="mt-3 text-sm leading-6 text-slate-600">{method.detail}</p>
             </article>
@@ -108,7 +108,7 @@ export default async function ScanContactInfoPage({
 
       <SectionCard>
         <div className="grid gap-4 lg:grid-cols-[1fr,1fr,0.9fr]">
-          <article className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+          <article className="rounded-panel border border-slate-200 bg-white/85 p-4">
             <p className="text-sm font-semibold text-slate-900">Ideal user flow</p>
             <ol className="mt-3 space-y-2 text-sm text-slate-600">
               {reviewSteps.map((step, index) => (
@@ -121,7 +121,7 @@ export default async function ScanContactInfoPage({
               ))}
             </ol>
           </article>
-          <article className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+          <article className="rounded-panel border border-slate-200 bg-white/85 p-4">
             <p className="text-sm font-semibold text-slate-900">Best practice</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               <li>Check spelling against the source before import.</li>
@@ -130,7 +130,7 @@ export default async function ScanContactInfoPage({
               <li>Route approved details into Leads once the record is ready.</li>
             </ul>
           </article>
-          <article className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+          <article className="rounded-panel border border-slate-200 bg-white/85 p-4">
             <p className="text-sm font-semibold text-slate-900">Need outbound sharing?</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Use your digital card to share contact details, QR access, and a trusted response path.

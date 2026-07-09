@@ -26,7 +26,7 @@ function money(value: number) {
 
 function Metric({ label, value, helper, Icon }: { label: string; value: string; helper: string; Icon: typeof Users }) {
   return (
-    <article className="rounded-[1.5rem] border border-teal-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+    <article className="rounded-panel border border-teal-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
       <div className="flex items-center gap-4">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-teal-50 text-teal-700"><Icon className="h-6 w-6" /></span>
         <div>
@@ -52,10 +52,10 @@ export default async function SupplierInsightsPage() {
       if (!_enabled.has('supplier_procurement')) {
         return (
           <div className="mx-auto max-w-xl px-4 py-16 text-center">
-            <p className="text-xs font-black uppercase tracking-widest text-[#279491]">Supplier Procurement Module</p>
+            <p className="text-xs font-black uppercase tracking-widest text-accent-600">Supplier Procurement Module</p>
             <h2 className="mt-3 text-2xl font-bold text-slate-950">Supplier insights locked</h2>
             <p className="mt-3 text-sm text-slate-500">The Supplier Insights dashboard, sourcing funnel, and Guru recommendations require the Supplier Procurement add-on.</p>
-            <a href="mailto:admin@setugroups.com?subject=Supplier Procurement Module" className="mt-6 inline-block rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white">Request module access</a>
+            <a href="mailto:admin@setugroups.com?subject=Supplier Procurement Module" className="mt-6 inline-block rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white">Request module access</a>
           </div>
         );
       }
@@ -87,7 +87,7 @@ export default async function SupplierInsightsPage() {
 
   return (
     <main data-s41-supplier-dashboard-insights="true" className="space-y-6 text-slate-900">
-      <section className="rounded-[2rem] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-6 shadow-soft">
+      <section className="rounded-hero border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-6 shadow-soft">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Supplier sourcing command center</p>
         <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -111,7 +111,7 @@ export default async function SupplierInsightsPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-950">Supplier analytics funnel</h2>
             <BarChart3 className="h-5 w-5 text-teal-600" />
@@ -126,7 +126,7 @@ export default async function SupplierInsightsPage() {
           </div>
         </div>
 
-        <div className="rounded-[1.5rem] border border-teal-200 bg-teal-50/70 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+        <div className="rounded-panel border border-teal-200 bg-teal-50/70 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><Sparkles className="h-5 w-5 text-teal-700" />Setu Guru supplier recommendations</h2>
           <div className="mt-4 space-y-3">
             {guruRecommendations.length ? guruRecommendations.map((item) => <p key={item} className="rounded-2xl border border-teal-100 bg-white px-4 py-3 text-sm text-slate-700">{item}</p>) : <p className="rounded-2xl border border-teal-100 bg-white px-4 py-3 text-sm text-slate-700">Supplier sourcing looks clean. Keep linking approved suppliers to buyer demand.</p>}
@@ -135,7 +135,7 @@ export default async function SupplierInsightsPage() {
         </div>
       </section>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+      <section className="rounded-panel border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-950">Supplier sourcing report preview</h2>
           <Link href="/reports/suppliers" className="text-sm font-semibold text-teal-700">Open full report</Link>

@@ -161,7 +161,7 @@ export default function LeadBasicInfoSection({
       </div>
 
       {postApplyAssist ? (
-        <div className="rounded-[1.25rem] border border-sky-200 bg-sky-50/70 p-4">
+        <div className="rounded-card border border-sky-200 bg-sky-50/70 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Post-apply assist</p>
           <p className="mt-2 text-sm leading-6 text-slate-700">{postApplyAssist.summary}</p>
         </div>
@@ -282,7 +282,7 @@ export default function LeadBasicInfoSection({
         </label>
       </div>
 
-      <details className="group rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+      <details className="group rounded-panel border border-slate-200 bg-slate-50/70 p-4">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900">More contact fields</summary>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">

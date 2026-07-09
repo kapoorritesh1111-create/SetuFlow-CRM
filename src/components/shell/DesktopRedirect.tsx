@@ -58,13 +58,13 @@ export function DesktopRedirect({
         <button
           type="button"
           onClick={copyLink}
-          className="w-full py-4 rounded-[14px] bg-[linear-gradient(135deg,#0b2e4a,#1a4f7a)] text-white text-[15px] font-extrabold"
+          className="w-full py-4 rounded-card bg-[linear-gradient(135deg,#0b2e4a,#1a4f7a)] text-white text-[15px] font-extrabold"
         >
           📋 {copied ? 'Copied!' : 'Copy link for desktop'}
         </button>
         <a
           href={href ? `mailto:?subject=${encodeURIComponent('Open this SETU Flow workspace on desktop')}&body=${encodeURIComponent(href)}` : 'mailto:?subject=Open%20this%20SETU%20Flow%20workspace%20on%20desktop'}
-          className="w-full py-4 rounded-[14px] bg-slate-100 border border-slate-200 text-slate-700 text-[15px] font-extrabold text-center"
+          className="w-full py-4 rounded-card bg-slate-100 border border-slate-200 text-slate-700 text-[15px] font-extrabold text-center"
         >
           📧 Email link to myself
         </a>
@@ -75,7 +75,7 @@ export function DesktopRedirect({
         Available on tablet in landscape mode (≥ 1024px).
       </p>
 
-      <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-[18px] p-4 text-left">
+      <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-card p-4 text-left">
         <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-[0.08em] mb-3">
           Available on mobile right now
         </p>

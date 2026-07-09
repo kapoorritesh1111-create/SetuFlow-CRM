@@ -1,4 +1,6 @@
 /* Plus Jakarta Sans is loaded via next/font/google in layout.tsx */
+@import './design-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,7 +28,7 @@ body.drawer-open {
 }
 
 body {
-  @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
+  @apply bg-surface-app text-content-primary antialiased;
   min-height: 100vh;
   overflow-anchor: none;
   background-image:

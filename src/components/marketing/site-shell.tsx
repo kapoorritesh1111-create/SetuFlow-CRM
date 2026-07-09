@@ -52,7 +52,7 @@ function SharedMarketingHeroBackground({ strong = false }: { strong?: boolean })
 }
 
 function FooterLink({ href, children, active }: { href: string; children: ReactNode; active: boolean }) {
-  return <Link href={href} className={`text-sm font-medium transition hover:text-[#108477] ${active ? 'text-[#108477] font-semibold' : 'text-slate-600'}`}>{children}</Link>;
+  return <Link href={href} className={`text-sm font-medium transition hover:text-accent-700 ${active ? 'text-accent-700 font-semibold' : 'text-slate-600'}`}>{children}</Link>;
 }
 
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -64,10 +64,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const hasSharedHeroBackground = sharedHeroRoutes.has(pathname);
   const headerClassName = isVideoHeroPage
     ? 'sticky top-0 z-40 border-b border-white/10 bg-[#061e34]/78 shadow-[0_12px_38px_rgba(0,0,0,0.14)] backdrop-blur-2xl'
-    : 'sticky top-0 z-40 border-b border-[#1F487C]/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl';
+    : 'sticky top-0 z-40 border-b border-brand-700/10 bg-white/95 shadow-[0_8px_24px_rgba(31,72,124,0.06)] backdrop-blur-xl';
   const navLinkClassName = (active: boolean) => isVideoHeroPage
     ? `relative rounded-lg px-3 py-2 text-[13px] font-semibold transition ${active ? 'bg-white/12 text-white' : 'text-white/78 hover:bg-white/10 hover:text-white'}`
-    : `relative rounded-lg px-3 py-2 text-[13px] font-semibold transition ${active ? 'bg-teal-50 text-[#108477]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`;
+    : `relative rounded-lg px-3 py-2 text-[13px] font-semibold transition ${active ? 'bg-teal-50 text-accent-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`;
 
   const shellClassName = hasSharedHeroBackground
     ? `setu-shared-hero-shell ${isVideoHeroPage ? 'setu-shared-hero-shell--trial' : 'setu-shared-hero-shell--home'}`
@@ -86,31 +86,31 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
             {navItems.map(([href, label]) => {
               const active = isActive(href);
-              return <Link key={href} href={href} className={navLinkClassName(active)}>{label}{active && <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 translate-y-[1px] rounded-full bg-[#108477]" />}</Link>;
+              return <Link key={href} href={href} className={navLinkClassName(active)}>{label}{active && <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 translate-y-[1px] rounded-full bg-accent-700" />}</Link>;
             })}
             <div className="ml-3 flex items-center gap-2">
               <LanguageSelector />
-              <Link href="/roi-calculator" className={`rounded-full border px-5 py-2 text-[13px] font-semibold transition hover:-translate-y-0.5 ${isVideoHeroPage ? 'border-white/20 bg-white/92 text-[#108477] hover:bg-white' : isActive('/roi-calculator') ? 'border-[#108477] bg-teal-50 text-[#108477]' : 'border-[#108477]/25 bg-white text-[#108477] hover:bg-[#eef6fb]'}`}>ROI Calculator</Link>
-              <Link href="/book-demo" className={`rounded-full border px-5 py-2 text-[13px] font-semibold transition hover:-translate-y-0.5 ${isVideoHeroPage ? 'border-white/20 bg-white/92 text-[#108477] hover:bg-white' : isActive('/book-demo') ? 'border-[#108477] bg-teal-50 text-[#108477]' : 'border-[#108477]/25 bg-white text-[#108477] hover:bg-[#eef6fb]'}`}>Book Demo</Link>
-              <Link href="/client-login" className="rounded-full bg-[#06263f] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0b2e4a]">Enter workspace</Link>
+              <Link href="/roi-calculator" className={`rounded-full border px-5 py-2 text-[13px] font-semibold transition hover:-translate-y-0.5 ${isVideoHeroPage ? 'border-white/20 bg-white/92 text-accent-700 hover:bg-white' : isActive('/roi-calculator') ? 'border-accent-700 bg-teal-50 text-accent-700' : 'border-accent-700/25 bg-white text-accent-700 hover:bg-[#eef6fb]'}`}>ROI Calculator</Link>
+              <Link href="/book-demo" className={`rounded-full border px-5 py-2 text-[13px] font-semibold transition hover:-translate-y-0.5 ${isVideoHeroPage ? 'border-white/20 bg-white/92 text-accent-700 hover:bg-white' : isActive('/book-demo') ? 'border-accent-700 bg-teal-50 text-accent-700' : 'border-accent-700/25 bg-white text-accent-700 hover:bg-[#eef6fb]'}`}>Book Demo</Link>
+              <Link href="/client-login" className="rounded-full bg-surface-2 px-5 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-surface-1">Enter workspace</Link>
             </div>
           </nav>
 
           <div className="flex items-center gap-2 md:hidden">
             {!isHome && <Link href="/" className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold ${isVideoHeroPage ? 'border-white/15 text-white/80' : 'border-slate-200 text-slate-500'}`}><HomeIcon />Home</Link>}
             <LanguageSelector compact />
-            <Link href="/client-login" className="rounded-full bg-[#06263f] px-3 py-1.5 text-xs font-semibold text-white shadow-md">Enter</Link>
+            <Link href="/client-login" className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-semibold text-white shadow-md">Enter</Link>
             <button onClick={() => setMobileOpen(!mobileOpen)} className={`flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm ${isVideoHeroPage ? 'border-white/15 bg-white/10 text-white' : 'border-slate-200 bg-white text-slate-700'}`} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>{mobileOpen ? <CloseIcon /> : <MenuIcon />}</button>
           </div>
         </div>
 
         {mobileOpen && (
-          <nav className="border-t border-[#1F487C]/10 bg-white/96 px-4 pb-5 pt-3 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
+          <nav className="border-t border-brand-700/10 bg-white/96 px-4 pb-5 pt-3 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
             <div className="flex flex-col gap-0.5">
-              <Link href="/" onClick={() => setMobileOpen(false)} className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${isHome ? 'bg-teal-50 text-[#108477]' : 'text-slate-700 hover:bg-slate-50'}`}><HomeIcon />Home{isHome && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#108477]" />}</Link>
+              <Link href="/" onClick={() => setMobileOpen(false)} className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${isHome ? 'bg-teal-50 text-accent-700' : 'text-slate-700 hover:bg-slate-50'}`}><HomeIcon />Home{isHome && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent-700" />}</Link>
               {[...navItems, ['/roi-calculator', 'ROI Calculator'] as [string, string], ['/book-demo', 'Book Demo'] as [string, string]].map(([href, label]) => {
                 const active = isActive(href);
-                return <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition ${active ? 'bg-teal-50 text-[#108477]' : 'text-slate-700 hover:bg-slate-50 hover:text-[#108477]'}`}>{label}{active && <span className="h-1.5 w-1.5 rounded-full bg-[#108477]" />}</Link>;
+                return <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition ${active ? 'bg-teal-50 text-accent-700' : 'text-slate-700 hover:bg-slate-50 hover:text-accent-700'}`}>{label}{active && <span className="h-1.5 w-1.5 rounded-full bg-accent-700" />}</Link>;
               })}
             </div>
           </nav>
@@ -123,13 +123,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
       </div>
       <SetuGuruLiteWidget />
 
-      <footer className="border-t border-[#1F487C]/10 bg-white">
+      <footer className="border-t border-brand-700/10 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
             <div>
               <Link href="/"><Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={150} height={46} className="h-10 w-auto" /></Link>
               <p className="mt-4 max-w-[22rem] text-sm leading-7 text-slate-500">Trade execution software for import-export teams, built around leads, quotes, documents, orders and shipment readiness.</p>
-              <a href="mailto:help@setugroups.com" className="mt-4 inline-flex text-sm font-semibold text-[#108477] underline-offset-4 hover:underline">help@setugroups.com</a>
+              <a href="mailto:help@setugroups.com" className="mt-4 inline-flex text-sm font-semibold text-accent-700 underline-offset-4 hover:underline">help@setugroups.com</a>
             </div>
 
             <div>
@@ -151,8 +151,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.20em] text-slate-400">Access</p>
               <ul className="mt-4 space-y-3">
-                <li><a href="mailto:help@setugroups.com" className="text-sm font-medium text-slate-600 transition hover:text-[#108477]">Contact support</a></li>
-                <li><a href="mailto:admin@setugroups.com" className="text-sm font-medium text-slate-600 transition hover:text-[#108477]">Sales &amp; demos</a></li>
+                <li><a href="mailto:help@setugroups.com" className="text-sm font-medium text-slate-600 transition hover:text-accent-700">Contact support</a></li>
+                <li><a href="mailto:admin@setugroups.com" className="text-sm font-medium text-slate-600 transition hover:text-accent-700">Sales &amp; demos</a></li>
                 <li><FooterLink href="/trade-show-trial" active={isActive('/trade-show-trial')}>Trade show trial</FooterLink></li>
                 <li><FooterLink href="/client-login" active={isActive('/client-login')}>Enter workspace</FooterLink></li>
               </ul>

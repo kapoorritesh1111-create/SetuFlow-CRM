@@ -75,7 +75,7 @@ export function RoleAwareLeadList({
 
   return (
     <section className="sf-mobile-lead-queue space-y-4">
-      <div className="sf-mobile-lead-filter-card rounded-[1.75rem] bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
+      <div className="sf-mobile-lead-filter-card rounded-hero bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
         <div className="sf-mobile-lead-heading">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{leadTypeLabel(initialLeadType)} lead queue</h1>

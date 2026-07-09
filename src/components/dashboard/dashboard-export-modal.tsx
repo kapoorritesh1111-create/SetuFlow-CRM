@@ -77,7 +77,7 @@ export function DashboardExportModal({ active, tone = 'navy', label = 'Export' }
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Export dashboard data">
-          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[1.75rem] bg-white p-5 shadow-[0_28px_80px_rgba(15,23,42,0.25)]">
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-hero bg-white p-5 shadow-[0_28px_80px_rgba(15,23,42,0.25)]">
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Export</p>

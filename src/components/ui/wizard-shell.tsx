@@ -32,7 +32,7 @@ export function WizardShell({
 
   return (
     <div className={cn('space-y-5', className)}>
-      <section className="rounded-[1.75rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(248,250,252,0.92))] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)] sm:p-5">
+      <section className="rounded-hero border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(248,250,252,0.92))] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)] sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700">Guided workflow</p>
@@ -114,7 +114,7 @@ export function WizardStepBody({
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0">{children}</div>
       <aside className="space-y-4"> 
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+        <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Current step</p>
           <h4 className="mt-2 text-base font-semibold text-slate-900">{title}</h4>
           {description ? <p className="mt-2 text-sm text-slate-600">{description}</p> : null}

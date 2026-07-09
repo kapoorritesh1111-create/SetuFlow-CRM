@@ -95,8 +95,8 @@ export function OrganizationWorkspace({
         actions={
           <>
             <Link href={primaryLaneHref} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">{primaryLaneLabel}</Link>
-            <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
-            <Link href="/admin/organization#settings-lists" className="inline-flex min-h-12 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
+            <Link href="/admin/invitations" className="inline-flex min-h-12 items-center justify-center rounded-ctl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Invitations</Link>
+            <Link href="/admin/organization#settings-lists" className="inline-flex min-h-12 items-center justify-center rounded-ctl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Settings lists</Link>
           </>
         }
         meta={
@@ -145,7 +145,7 @@ export function OrganizationWorkspace({
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {governanceContext.missingItems.map((item) => (
-              <div key={item.label} className="rounded-[1.5rem] border border-amber-200 bg-amber-50/70 p-4">
+              <div key={item.label} className="rounded-panel border border-amber-200 bg-amber-50/70 p-4">
                 <p className="text-sm font-semibold text-slate-900">{item.label}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-700">{item.reason}</p>
                 {item.href ? (
@@ -205,23 +205,23 @@ export function OrganizationWorkspace({
             </div>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Link href="/admin/users" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/admin/users" className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">Users</p>
               <p className="mt-1 text-sm text-slate-600">Review members, reset access, and adjust roles inside the existing users workspace.</p>
             </Link>
-            <Link href="/admin/invitations" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/admin/invitations" className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">Invitations</p>
               <p className="mt-1 text-sm text-slate-600">Create, resend, revoke, and monitor open invites without leaving the admin lane.</p>
             </Link>
-            <Link href="/contact-exchange/vcard" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/contact-exchange/vcard" className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">My Card settings</p>
               <p className="mt-1 text-sm text-slate-600">Update the digital vCard, social links, QR destination, and public share details used by signed-in workspace users.</p>
             </Link>
-            <Link href="/admin/organization#settings-lists" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/admin/organization#settings-lists" className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">Settings lists</p>
               <p className="mt-1 text-sm text-slate-600">Maintain organization-scoped reference data that powers pipelines, products, markets, and next steps.</p>
             </Link>
-            <Link href="/admin/audit" className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
+            <Link href="/admin/audit" className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-slate-50">
               <p className="text-sm font-semibold text-slate-900">Audit log</p>
               <p className="mt-1 text-sm text-slate-600">Trace access-sensitive changes from the admin audit surface once deeper audit work is enabled.</p>
             </Link>
@@ -252,19 +252,19 @@ export function OrganizationWorkspace({
             </div>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <Link href="/dashboard" className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
+            <Link href="/dashboard" className="rounded-panel border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
               <p className="text-sm font-semibold text-slate-900">Dashboard</p>
               <p className="mt-2 text-sm text-slate-600">Summary widgets now expose missing context instead of silently drifting from governance reality.</p>
             </Link>
-            <Link href="/reports" className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
+            <Link href="/reports" className="rounded-panel border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
               <p className="text-sm font-semibold text-slate-900">Reports</p>
               <p className="mt-2 text-sm text-slate-600">Reporting totals stay explainable because governance gaps are surfaced here before operators trust exports or drill-through totals.</p>
             </Link>
-            <Link href="/pipeline" className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
+            <Link href="/pipeline" className="rounded-panel border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
               <p className="text-sm font-semibold text-slate-900">Pipeline</p>
               <p className="mt-2 text-sm text-slate-600">Pipeline stage setup depends on settings readiness and remains linked from the admin lane instead of being reconfigured ad hoc.</p>
             </Link>
-            <Link href="/products" className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
+            <Link href="/products" className="rounded-panel border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80">
               <p className="text-sm font-semibold text-slate-900">Products</p>
               <p className="mt-2 text-sm text-slate-600">Catalog pricing and market coverage remain grounded in the same reference data tracked in this admin overview.</p>
             </Link>
@@ -279,7 +279,7 @@ export function OrganizationWorkspace({
           </div>
           <div className="mt-5 grid gap-3">
             {settingsSummaries.map((item) => (
-              <div key={item.label} className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+              <div key={item.label} className="rounded-panel border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{item.label}</p>
@@ -307,7 +307,7 @@ export function OrganizationWorkspace({
           {userPreview.length ? (
             <div className="mt-5 space-y-3">
               {userPreview.map((row) => (
-                <Link key={row.id} href={row.destination} className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80 sm:flex-row sm:items-center sm:justify-between">
+                <Link key={row.id} href={row.destination} className="flex flex-col gap-3 rounded-panel border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-900">{row.name}</p>
                     <p className="truncate text-sm text-slate-600">{row.email ?? 'No email available'}</p>
@@ -339,7 +339,7 @@ export function OrganizationWorkspace({
           {invitationPreview.length ? (
             <div className="mt-5 space-y-3">
               {invitationPreview.map((row) => (
-                <Link key={row.id} href={row.destination} className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80 sm:flex-row sm:items-center sm:justify-between">
+                <Link key={row.id} href={row.destination} className="flex flex-col gap-3 rounded-panel border border-slate-200 bg-slate-50/70 p-4 transition hover:bg-slate-100/80 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-900">{row.name}</p>
                     <p className="truncate text-sm text-slate-600">{row.email ?? 'No email available'}</p>
@@ -372,7 +372,7 @@ export function OrganizationWorkspace({
           </div>
           <div className="mt-5 space-y-3">
             {roleSummaries.map((role) => (
-              <div key={role.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+              <div key={role.id} className="rounded-panel border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -397,7 +397,7 @@ export function OrganizationWorkspace({
             <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Reference data and defaults</h2>
             <p className="mt-2 text-sm text-slate-600">Use the existing settings lists workspace for safe schema-aligned edits. This summary keeps organization-level readiness visible from the admin lane.</p>
           </div>
-          <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.05)]">
+          <div className="mt-5 rounded-panel border border-slate-200 bg-white p-4 shadow-[0_10px_25px_rgba(15,23,42,0.05)]">
             <p className="text-sm font-semibold text-slate-900">Settings guidance</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Keep role changes in the users workspace, invitation actions in the invitations workspace, and reference data edits in settings lists so organization administration stays clear and schema-safe.

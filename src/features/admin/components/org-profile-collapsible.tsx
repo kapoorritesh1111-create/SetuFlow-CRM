@@ -14,7 +14,7 @@ export function OrgProfileCollapsible({ sections }: { sections: Section[] }) {
   return (
     <div className="space-y-3" id="company-profile">
       {sections.map((section, index) => (
-        <details key={section.id} open={index === 0} className="group overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <details key={section.id} open={index === 0} className="group overflow-hidden rounded-ctl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50">
             <span className="flex min-w-0 items-center gap-2.5">
               <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm" aria-hidden="true">{section.icon}</span>

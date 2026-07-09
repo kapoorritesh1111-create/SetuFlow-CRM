@@ -64,7 +64,7 @@ function statusClass(order: ProductionOrder8S) {
 
 function StatCard({ label, value, helper }: { label: string; value: number; helper: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-4 shadow-inner backdrop-blur">
+    <div className="rounded-panel border border-white/10 bg-white/10 p-4 shadow-inner backdrop-blur">
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-200">{label}</p>
       <p className="mt-3 text-4xl font-black text-white">{value}</p>
       <p className="mt-1 text-xs font-semibold text-white/65">{helper}</p>
@@ -75,7 +75,7 @@ function StatCard({ label, value, helper }: { label: string; value: number; help
 function OrderCard({ order, selected, onClick }: { order: ProductionOrder8S; selected: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="w-full text-left">
-      <article className={`rounded-[1.65rem] border bg-white/95 p-4 shadow-[0_18px_45px_rgba(15,23,42,.08)] ring-1 ring-slate-950/[0.03] transition active:scale-[0.99] ${selected ? 'border-blue-300' : 'border-white/80'}`}>
+      <article className={`rounded-hero border bg-white/95 p-4 shadow-[0_18px_45px_rgba(15,23,42,.08)] ring-1 ring-slate-950/[0.03] transition active:scale-[0.99] ${selected ? 'border-blue-300' : 'border-white/80'}`}>
         <div className="flex items-start gap-3">
           <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
             <SetuIcon name="orders" className="h-6 w-6" />
@@ -103,7 +103,7 @@ function LineEditor({ order }: { order: ProductionOrder8S }) {
   return (
     <div className="space-y-3">
       {order.lines.slice(0, 4).map((line) => (
-        <form action={updateActualOrderLineAction} key={line.id} className="rounded-[1.35rem] border border-slate-200 bg-white p-3 shadow-sm">
+        <form action={updateActualOrderLineAction} key={line.id} className="rounded-panel border border-slate-200 bg-white p-3 shadow-sm">
           <input type="hidden" name="quote_id" value={order.quoteId} />
           <input type="hidden" name="order_line_id" value={line.id} />
           <p className="text-sm font-black text-slate-950">{line.productName}</p>
@@ -116,7 +116,7 @@ function LineEditor({ order }: { order: ProductionOrder8S }) {
           <button type="submit" disabled={!line.isActual} className="mt-3 min-h-11 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.25)] disabled:bg-slate-200 disabled:shadow-none">Save line</button>
         </form>
       ))}
-      <form action={approveActualOrderLinesGateAction} className="rounded-[1.35rem] bg-emerald-50 p-3">
+      <form action={approveActualOrderLinesGateAction} className="rounded-panel bg-emerald-50 p-3">
         <input type="hidden" name="quote_id" value={order.quoteId} />
         <button type="submit" className="min-h-12 w-full rounded-2xl bg-emerald-500 text-sm font-black text-white shadow-[0_12px_28px_rgba(16,185,129,.24)]">Approve actual lines</button>
       </form>
@@ -129,7 +129,7 @@ function OrderActionSheet({ order, catalogOptions, onClose }: { order: Productio
   if (!order) return null;
   return (
     <div className="fixed inset-0 z-[500] bg-slate-950/35 backdrop-blur-sm" onClick={onClose}>
-      <section className="absolute bottom-[calc(86px+env(safe-area-inset-bottom))] left-1/2 flex max-h-[calc(100dvh-126px)] w-full max-w-[430px] -translate-x-1/2 flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-[0_-30px_80px_rgba(15,23,42,.28)]" onClick={(event) => event.stopPropagation()}>
+      <section className="absolute bottom-[calc(86px+env(safe-area-inset-bottom))] left-1/2 flex max-h-[calc(100dvh-126px)] w-full max-w-[430px] -translate-x-1/2 flex-col overflow-hidden rounded-t-hero bg-white shadow-[0_-30px_80px_rgba(15,23,42,.28)]" onClick={(event) => event.stopPropagation()}>
         <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-300" />
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Order actions</p>
@@ -166,9 +166,9 @@ export function MobileOrdersWorkspace({ orders, catalogOptions }: Props) {
   return (
     <div className="space-y-5 pb-5">
       <div className="flex gap-3 overflow-x-auto pb-1 pt-2">{filters.map((item) => <button key={item.key} type="button" onClick={() => setFilter(item.key)} className={`min-h-12 min-w-[6.25rem] rounded-full px-5 text-sm font-black shadow-sm ${filter === item.key ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-blue-500/30' : 'bg-white/85 text-slate-800 ring-1 ring-white/80'}`}>{item.label}</button>)}</div>
-      <section className="rounded-[2rem] bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,.20),transparent_34%),linear-gradient(135deg,#061c2e,#0b2e4a_62%,#061426)] p-5 text-white shadow-[0_28px_80px_rgba(15,23,42,.28)]"><div className="flex items-start gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400/20 text-amber-200"><SetuIcon name="orders" className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-[0.2em] text-white/90">Order command center</p><p className="mt-1 text-sm text-white/68">Execution queue and mobile edits</p></div></div><div className="mt-5 grid grid-cols-3 gap-3"><StatCard label="All" value={orders.length} helper="Orders" /><StatCard label="Ready" value={ready.length} helper="No blocker" /><StatCard label="Blocked" value={blocked.length} helper="Review" /></div></section>
-      <section className="rounded-[2rem] bg-white/95 p-4 shadow-[0_20px_60px_rgba(15,23,42,.08)] ring-1 ring-white/80"><p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Queues</p><div className="mt-3 grid grid-cols-2 gap-3"><div className="rounded-2xl bg-blue-50 p-3"><p className="text-2xl font-black text-blue-900">{finance.length}</p><p className="text-xs font-bold text-blue-600">Finance-ready</p></div><div className="rounded-2xl bg-cyan-50 p-3"><p className="text-2xl font-black text-cyan-900">{freight.length}</p><p className="text-xs font-bold text-cyan-600">Freight-ready</p></div></div></section>
-      <div className="space-y-3">{filtered.map((order) => <OrderCard key={orderKey(order)} order={order} selected={selectedId === orderKey(order)} onClick={() => setSelectedId(orderKey(order))} />)}{filtered.length === 0 ? <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-white/80 p-6 text-center"><p className="text-sm font-black text-slate-900">No matching orders</p><p className="mt-1 text-xs text-slate-500">Choose another filter to see the queue.</p></div> : null}</div>
+      <section className="rounded-hero bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,.20),transparent_34%),linear-gradient(135deg,#061c2e,#0b2e4a_62%,#061426)] p-5 text-white shadow-[0_28px_80px_rgba(15,23,42,.28)]"><div className="flex items-start gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400/20 text-amber-200"><SetuIcon name="orders" className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-[0.2em] text-white/90">Order command center</p><p className="mt-1 text-sm text-white/68">Execution queue and mobile edits</p></div></div><div className="mt-5 grid grid-cols-3 gap-3"><StatCard label="All" value={orders.length} helper="Orders" /><StatCard label="Ready" value={ready.length} helper="No blocker" /><StatCard label="Blocked" value={blocked.length} helper="Review" /></div></section>
+      <section className="rounded-hero bg-white/95 p-4 shadow-[0_20px_60px_rgba(15,23,42,.08)] ring-1 ring-white/80"><p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Queues</p><div className="mt-3 grid grid-cols-2 gap-3"><div className="rounded-2xl bg-blue-50 p-3"><p className="text-2xl font-black text-blue-900">{finance.length}</p><p className="text-xs font-bold text-blue-600">Finance-ready</p></div><div className="rounded-2xl bg-cyan-50 p-3"><p className="text-2xl font-black text-cyan-900">{freight.length}</p><p className="text-xs font-bold text-cyan-600">Freight-ready</p></div></div></section>
+      <div className="space-y-3">{filtered.map((order) => <OrderCard key={orderKey(order)} order={order} selected={selectedId === orderKey(order)} onClick={() => setSelectedId(orderKey(order))} />)}{filtered.length === 0 ? <div className="rounded-panel border border-dashed border-slate-200 bg-white/80 p-6 text-center"><p className="text-sm font-black text-slate-900">No matching orders</p><p className="mt-1 text-xs text-slate-500">Choose another filter to see the queue.</p></div> : null}</div>
       <OrderActionSheet order={selected} catalogOptions={catalogOptions} onClose={() => setSelectedId(null)} />
     </div>
   );

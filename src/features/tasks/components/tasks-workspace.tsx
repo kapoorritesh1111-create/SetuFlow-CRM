@@ -241,7 +241,7 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
                     {dayTasks.slice(0, 3).map((task) => (
                       <div
                         key={task.id}
-                        className={`rounded-[4px] text-[11px] font-semibold truncate px-1 py-0.5 mb-0.5 ${pillClasses(task, ds)}`}
+                        className={`rounded text-[11px] font-semibold truncate px-1 py-0.5 mb-0.5 ${pillClasses(task, ds)}`}
                         onClick={(e) => { e.stopPropagation(); setEditingTask(task); setTaskDrawerOpen(true); }}
                         title={taskTitle(task)}
                       >
@@ -301,7 +301,7 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
                 onClick={() => { setFocusFilter(key); setVisibleCount(PAGE_SIZE); }}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   focusFilter === key
-                    ? 'bg-[#0b2e4a] text-white'
+                    ? 'bg-surface-1 text-white'
                     : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >

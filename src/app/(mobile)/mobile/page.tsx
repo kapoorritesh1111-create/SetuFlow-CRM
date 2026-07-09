@@ -19,7 +19,7 @@ export default function MobileHomePage() {
       <MobileHomeHero />
       {/* SF-18-120: Primary full-width Leads tile */}
       <Link href={primaryAction.href}
-        className="flex items-center gap-4 rounded-[2rem] bg-blue-600 p-5 text-white shadow-xl shadow-blue-600/20 active:scale-[.98] transition">
+        className="flex items-center gap-4 rounded-hero bg-blue-600 p-5 text-white shadow-xl shadow-blue-600/20 active:scale-[.98] transition">
         <span className="text-4xl">◎</span>
         <div>
           <p className="font-black text-lg leading-none">{primaryAction.title}</p>
@@ -33,7 +33,7 @@ export default function MobileHomePage() {
             key={action.href}
             href={action.href}
             aria-label={action.title}
-            className="rounded-[1.75rem] bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90"
+            className="rounded-hero bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90"
           >
             <ThreeDIconOrb icon={action.icon} tone={action.tone} />
             <h2 className="mt-3 text-base font-black text-slate-950 dark:text-white">

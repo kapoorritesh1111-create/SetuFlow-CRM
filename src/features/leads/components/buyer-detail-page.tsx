@@ -121,7 +121,7 @@ export function BuyerDetailPage({ data }: { data: any }) {
 
   return (
     <div className="space-y-6 p-4 md:p-6" data-s41-buyer-command-center="true">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-soft">
+      <div className="rounded-hero border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Lead command center</p>
@@ -164,7 +164,7 @@ export function BuyerDetailPage({ data }: { data: any }) {
         <Link href={contracts.length ? '/contracts' : '#'} aria-disabled={!contracts.length} className={`rounded-3xl border px-4 py-4 text-sm ${contracts.length ? 'border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100' : 'pointer-events-none border-slate-200 bg-slate-50 text-slate-400'}`}><p className="text-[11px] font-semibold uppercase tracking-[0.16em]">Contract handoff</p><p className="mt-2 font-semibold">Open contracts</p><p className="mt-1 text-xs">{contracts.length ? `${contracts.length} contract workspace${contracts.length === 1 ? '' : 's'} linked.` : 'Contracts unlock after quote acceptance.'}</p></Link>
       </div>
 
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <div className="rounded-hero border border-slate-200 bg-white p-4 shadow-soft">
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={activeTab === tab.id ? 'rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white' : 'rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200'}>

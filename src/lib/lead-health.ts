@@ -1,3 +1,5 @@
+import { TONE_CLASSES } from '@/components/ui/status-badge';
+
 export type LeadHealth = 'fresh' | 'overdue' | 'stalled' | 'at_risk';
 
 export type LeadHealthInput = {
@@ -36,13 +38,13 @@ export function getLeadHealthLabel(health: LeadHealth) {
 export function getLeadHealthBadgeClasses(health: LeadHealth) {
   switch (health) {
     case 'at_risk':
-      return 'bg-rose-100 text-rose-700 border border-rose-200';
+      return `border ${TONE_CLASSES.danger}`;
     case 'stalled':
-      return 'bg-amber-100 text-amber-700 border border-amber-200';
+      return `border ${TONE_CLASSES.warning}`;
     case 'overdue':
-      return 'bg-orange-100 text-orange-700 border border-orange-200';
+      return `border ${TONE_CLASSES.warning}`;
     default:
-      return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+      return `border ${TONE_CLASSES.success}`;
   }
 }
 

@@ -151,7 +151,7 @@ function RfqReviewPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workflow snapshot</p>
         <h4 className="mt-2 text-base font-semibold text-slate-900">{title || 'Untitled RFQ'}</h4>
         <p className="mt-2 text-sm text-slate-600">{requestSummary || 'Buyer request summary will appear here once provided.'}</p>
@@ -162,7 +162,7 @@ function RfqReviewPanel({
           <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Supplier replies</p><p className="mt-2 text-sm font-medium text-slate-900">{respondedSuppliers}/{suppliers.length || 0}</p></div>
         </div>
       </div>
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
         <div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-slate-900">Submission review</p><span className={`rounded-full px-3 py-1 text-xs font-semibold ${getRfqStatusBadgeClasses(status as any)}`}>{status.replaceAll('_', ' ')}</span></div>
         <ul className="mt-3 space-y-2 text-sm text-slate-600">
           <li>{activeLineItems.length} requested items prepared for supplier comparison.</li>
@@ -267,7 +267,7 @@ export function RfqCreateWizardForm({ leadId, products, onClose, onSaved }: { le
               </div>
               <div className="mt-4 space-y-3">
                 {lineItems.map((item, index) => (
-                  <div key={`rfq-line-${index}`} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                  <div key={`rfq-line-${index}`} className="rounded-panel border border-slate-200 bg-slate-50 p-4">
                     <div className="grid gap-3 md:grid-cols-[1.3fr_0.55fr_0.75fr_auto]">
                       <select className={inputClassName()} value={item.product_id} onChange={(event) => setLineItems((current) => current.map((entry, entryIndex) => entryIndex === index ? hydrateLineFromProduct(entry, products.find((product) => product.id === event.target.value), currency) : entry))} aria-label={`Requested item ${index + 1} product`}>
                         <option value="">Select product</option>
@@ -466,7 +466,7 @@ export function RfqEditWizardForm({ rfq, products, onClose, onSaved }: { rfq: Rf
               <div className="flex items-center justify-between gap-3"><div><h4 className="text-sm font-semibold text-slate-900">Requested items</h4><p className="mt-1 text-xs text-slate-500">Update baseline-linked target pricing directly from the RFQ workspace.</p></div><button type="button" onClick={() => setLineItems((current) => [...current, buildLineFromProduct(undefined, currency)])} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200">Add line</button></div>
               <div className="mt-4 space-y-3">
                 {lineItems.map((item, index) => (
-                  <div key={`rfq-edit-line-${index}`} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                  <div key={`rfq-edit-line-${index}`} className="rounded-panel border border-slate-200 bg-slate-50 p-4">
                     <div className="grid gap-3 md:grid-cols-[1.3fr_0.55fr_0.75fr_auto]">
                       <select className={inputClassName()} value={item.product_id} onChange={(event) => setLineItems((current) => current.map((entry, entryIndex) => entryIndex === index ? hydrateLineFromProduct(entry, products.find((product) => product.id === event.target.value), currency) : entry))}><option value="">Select product</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select>
                       <input className={inputClassName()} type="number" min="1" value={item.quantity} onChange={(event) => setLineItems((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, quantity: Number(event.target.value) || 0 } : entry))} />

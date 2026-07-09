@@ -138,7 +138,7 @@ export default async function ApprovalQueuePage({ searchParams }: { searchParams
   if (!workspace.membership || !workspace.organization) {
     return (
       <main className="min-h-screen bg-slate-100 p-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+        <section className="rounded-hero border border-slate-200 bg-white p-8 shadow-sm">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Approval Queue</p>
           <h1 className="mt-2 text-3xl font-black text-slate-950">Workspace membership needed</h1>
           <p className="mt-2 text-sm font-semibold text-slate-500">Your account must have an active organization membership to review approvals.</p>
@@ -178,7 +178,7 @@ export default async function ApprovalQueuePage({ searchParams }: { searchParams
         {saved ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800">Approval request {saved}.</div> : null}
         {error || loadError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-black text-rose-800">Approval queue needs attention: {decodeURIComponent(error || loadError?.message || 'load-failed')}</div> : null}
 
-        <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-hero border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">Pending approvals</p>
@@ -193,7 +193,7 @@ export default async function ApprovalQueuePage({ searchParams }: { searchParams
               const version = approval.quote_versions;
               const lead = quote?.leads;
               return (
-                <article key={approval.id} className="rounded-[1.25rem] border border-amber-200 bg-amber-50/40 p-4">
+                <article key={approval.id} className="rounded-card border border-amber-200 bg-amber-50/40 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{approval.rule || 'quote approval'}</p>
@@ -228,7 +228,7 @@ export default async function ApprovalQueuePage({ searchParams }: { searchParams
                 </article>
               );
             }) : (
-              <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+              <div className="rounded-card border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
                 <p className="text-lg font-black text-slate-950">No pending approvals found</p>
                 <p className="mt-2 text-sm font-semibold text-slate-500">If a quote says approval is pending, return to the quote and confirm the version/request state.</p>
                 <Link href="/quotes" className="mt-4 inline-flex rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white">Open Quotes</Link>

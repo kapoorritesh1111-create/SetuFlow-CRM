@@ -471,7 +471,7 @@ function MiniLabel({ label, value }: { label: string; value: string }) {
 function SetuGuruPlaceholder() {
   return (
     <div className="flex h-full min-h-[360px] items-center justify-center bg-gradient-to-b from-sky-50 to-white p-6">
-      <div className="mx-auto w-full max-w-[18rem] rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_22px_60px_rgba(15,23,42,.12)]">
+      <div className="mx-auto w-full max-w-[18rem] rounded-hero border border-slate-200 bg-white p-4 shadow-[0_22px_60px_rgba(15,23,42,.12)]">
         <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-xl">🧘</div>
           <div>
@@ -501,7 +501,7 @@ function WorkflowCard({ stage, index }: { stage: TrainingStage; index: number })
   const isLast = index === trainingStages.length - 1;
   return (
     <div className="relative">
-      <a href={`#${stage.id}`} className="group block h-full rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:border-teal-200 hover:shadow-[0_24px_65px_rgba(15,23,42,.1)]">
+      <a href={`#${stage.id}`} className="group block h-full rounded-panel border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:border-teal-200 hover:shadow-[0_24px_65px_rgba(15,23,42,.1)]">
         <div className="flex items-start gap-4">
           <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${stage.accent} text-xl font-black text-white shadow-lg`}>
             {stage.icon}
@@ -536,7 +536,7 @@ function TrainingWorkflowMap() {
   const secondRow = trainingStages.slice(5);
   return (
     <section id="workflow-map" className="px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_22px_75px_rgba(15,23,42,.08)]">
+      <div className="mx-auto max-w-7xl overflow-hidden rounded-hero border border-slate-200 bg-white shadow-[0_22px_75px_rgba(15,23,42,.08)]">
         <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-r from-white via-slate-50 to-teal-50 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-700">Setu Flow workflow map</p>
@@ -562,11 +562,11 @@ function TrainingWorkflowMap() {
           </div>
 
           <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.72fr]">
-            <div className="rounded-[1.5rem] border border-teal-100 bg-teal-50 p-5">
+            <div className="rounded-panel border border-teal-100 bg-teal-50 p-5">
               <p className="text-sm font-bold text-teal-900">How to use this map</p>
               <p className="mt-2 text-sm leading-6 text-teal-800/80">Start at Dashboard for daily queue health, then move through capture, qualification, tasks, guidance, quote, order readiness, and dispatch. The screenshot cards below show the exact buttons and checks.</p>
             </div>
-            <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-5">
+            <div className="rounded-panel border border-emerald-100 bg-emerald-50 p-5">
               <p className="text-sm font-bold text-emerald-900">End-to-end success</p>
               <ul className="mt-2 space-y-1 text-sm leading-6 text-emerald-800/85">
                 <li>✓ Capture quality leads</li>
@@ -584,10 +584,10 @@ function TrainingWorkflowMap() {
 
 function ScreenCard({ screen }: { screen: TrainingScreen }) {
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,.08)]">
+    <article className="overflow-hidden rounded-hero border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,.08)]">
       <div className="grid gap-0 lg:grid-cols-[1.12fr_0.88fr]">
         <div className="bg-slate-100 p-3">
-          <div className="relative overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white">
+          <div className="relative overflow-hidden rounded-panel border border-slate-200 bg-white">
             {screen.placeholder ? (
               <SetuGuruPlaceholder />
             ) : (
@@ -649,13 +649,13 @@ export default function TrainingWorkspacePage() {
                 </Link>
               </div>
             </div>
-            <div className="rounded-[2rem] border border-white/70 bg-white/85 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
+            <div className="rounded-hero border border-white/70 bg-white/85 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur">
               <Image
                 src={`${screenshotBase}/ss-dashboard.jpg`}
                 alt="Setu Flow dashboard training overview"
                 width={1600}
                 height={1000}
-                className="rounded-[1.55rem] object-contain object-top"
+                className="rounded-panel object-contain object-top"
                 priority
               />
             </div>
@@ -672,7 +672,7 @@ export default function TrainingWorkspacePage() {
           />
           <div className="mx-auto mt-10 grid max-w-7xl gap-4 md:grid-cols-2 lg:grid-cols-4">
             {roles.map((role) => (
-              <article key={role.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,.06)]">
+              <article key={role.title} className="rounded-panel border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,.06)]">
                 <h3 className="text-lg font-semibold tracking-[-0.03em] text-slate-950">{role.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-slate-500">{role.body}</p>
               </article>
@@ -690,7 +690,7 @@ export default function TrainingWorkspacePage() {
           <div className="mx-auto mt-12 max-w-7xl space-y-12">
             {trainingStages.map((stage) => (
               <section key={stage.id} id={stage.id} className="scroll-mt-28">
-                <div className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_16px_45px_rgba(15,23,42,.06)] sm:p-7">
+                <div className="mb-6 rounded-hero border border-slate-200 bg-white p-6 shadow-[0_16px_45px_rgba(15,23,42,.06)] sm:p-7">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-sm font-bold text-teal-700">{stage.number}</span>
                     <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{stage.audience}</span>
@@ -709,7 +709,7 @@ export default function TrainingWorkspacePage() {
         </section>
 
         <section className="px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl rounded-[2rem] bg-slate-950 px-7 py-9 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)]">
+          <div className="mx-auto max-w-7xl rounded-hero bg-slate-950 px-7 py-9 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)]">
             <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-teal-200">Trainer notes</p>
@@ -718,7 +718,7 @@ export default function TrainingWorkspacePage() {
                   Trainers can start with the workflow map for orientation, then use each screenshot card as a talk track: press this first, check this before saving, and only move forward when the done condition is true.
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
+              <div className="rounded-panel border border-white/10 bg-white/10 p-5">
                 <p className="text-sm font-semibold text-white">Future video sequence</p>
                 <ol className="mt-4 space-y-3 text-sm leading-6 text-white/70">
                   <li>1. Dashboard and queue health</li>

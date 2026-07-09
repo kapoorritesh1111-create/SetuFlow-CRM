@@ -1,0 +1,420 @@
+<title>SETU Flow Design System</title>
+<style>
+  :root {
+    /* SetuFlow tokens — light */
+    --navy-50:#F0F5FB; --navy-100:#DCE7F4; --navy-200:#BDD0E8; --navy-300:#92B1D6; --navy-400:#5F8ABE;
+    --navy-500:#3A69A3; --navy-600:#2A5590; --navy-700:#1F487C; --navy-800:#193769; --navy-900:#142C54; --navy-950:#0B1B36;
+    --teal-50:#EDF9F6; --teal-100:#D4F0EA; --teal-200:#ADE1D7; --teal-300:#7DCCBE; --teal-400:#52B5A4;
+    --teal-500:#359F91; --teal-600:#2A8378; --teal-700:#246A62; --teal-800:#1F544E; --teal-900:#1A443F; --teal-950:#0C2724;
+
+    --bg-app:#F6F9FC; --surface-1:#FFFFFF; --surface-2:#F1F5F9; --surface-3:#E2E8F0;
+    --line:#E2E8F0; --line-strong:#CBD5E1;
+    --tx-1:#0F172A; --tx-2:#475569; --tx-3:#64748B; --tx-4:#94A3B8; --tx-inv:#F8FAFC;
+    --tx-brand:var(--navy-700); --tx-accent:var(--teal-700);
+    --focus:rgba(58,105,163,.45);
+    --act-bg:var(--navy-700); --act-hover:var(--navy-800); --act-fg:#fff;
+    --acc-bg:var(--teal-600); --acc-hover:var(--teal-700);
+
+    --ok-bg:#ECFDF5; --ok-fg:#065F46; --ok-bd:#A7F3D0; --ok:#059669;
+    --warn-bg:#FFFBEB; --warn-fg:#92400E; --warn-bd:#FDE68A; --warn:#D97706;
+    --bad-bg:#FFF1F2; --bad-fg:#9F1239; --bad-bd:#FECDD3; --bad:#E11D48;
+    --info-bg:#EFF6FF; --info-fg:#1E40AF; --info-bd:#BFDBFE; --info:#2563EB;
+    --neu-bg:#F1F5F9; --neu-fg:#334155; --neu-bd:#E2E8F0; --neu:#64748B;
+
+    --st-new:#3B82F6; --st-new-bg:#EFF6FF; --st-new-fg:#1D4ED8; --st-new-bd:#BFDBFE;
+    --st-con:#6366F1; --st-con-bg:#EEF2FF; --st-con-fg:#4338CA; --st-con-bd:#C7D2FE;
+    --st-qua:#22C55E; --st-qua-bg:#F0FDF4; --st-qua-fg:#15803D; --st-qua-bd:#BBF7D0;
+    --st-sam:#F59E0B; --st-sam-bg:#FFFBEB; --st-sam-fg:#B45309; --st-sam-bd:#FDE68A;
+    --st-neg:#A855F7; --st-neg-bg:#FAF5FF; --st-neg-fg:#7E22CE; --st-neg-bd:#E9D5FF;
+    --st-won:#10B981; --st-won-bg:#ECFDF5; --st-won-fg:#047857; --st-won-bd:#A7F3D0;
+    --st-los:#EF4444; --st-los-bg:#FEF2F2; --st-los-fg:#B91C1C; --st-los-bd:#FECACA;
+
+    --r-ctl:12px; --r-card:16px; --r-panel:24px; --r-hero:28px;
+    --sh-soft:0 1px 3px rgba(15,23,42,.06);
+    --sh-card:0 8px 24px rgba(15,23,42,.05);
+    --sh-panel:0 18px 45px rgba(15,23,42,.06);
+    --sh-hero:0 24px 64px rgba(15,23,42,.08);
+    --glow-1:rgba(53,159,145,.10); --glow-2:rgba(31,72,124,.10);
+    --swatch-label:#fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-app:#0B1220; --surface-1:#101A2E; --surface-2:#16233C; --surface-3:#1D2E4D;
+      --line:#24344F; --line-strong:#33466B;
+      --tx-1:#F1F5F9; --tx-2:#B6C2D4; --tx-3:#8CA0BC; --tx-4:#64748B; --tx-inv:#0F172A;
+      --tx-brand:var(--navy-300); --tx-accent:var(--teal-300);
+      --focus:rgba(125,204,190,.5);
+      --act-bg:var(--navy-500); --act-hover:var(--navy-400);
+      --acc-bg:var(--teal-500); --acc-hover:var(--teal-400);
+      --ok-bg:rgba(5,150,105,.16); --ok-fg:#6EE7B7; --ok-bd:rgba(110,231,183,.35);
+      --warn-bg:rgba(217,119,6,.16); --warn-fg:#FCD34D; --warn-bd:rgba(252,211,77,.35);
+      --bad-bg:rgba(225,29,72,.16); --bad-fg:#FDA4AF; --bad-bd:rgba(253,164,175,.35);
+      --info-bg:rgba(37,99,235,.16); --info-fg:#93C5FD; --info-bd:rgba(147,197,253,.35);
+      --neu-bg:rgba(100,116,139,.16); --neu-fg:#CBD5E1; --neu-bd:rgba(203,213,225,.25);
+      --st-new-bg:rgba(59,130,246,.16); --st-new-fg:#93C5FD; --st-new-bd:rgba(147,197,253,.3);
+      --st-con-bg:rgba(99,102,241,.16); --st-con-fg:#A5B4FC; --st-con-bd:rgba(165,180,252,.3);
+      --st-qua-bg:rgba(34,197,94,.16); --st-qua-fg:#86EFAC; --st-qua-bd:rgba(134,239,172,.3);
+      --st-sam-bg:rgba(245,158,11,.16); --st-sam-fg:#FCD34D; --st-sam-bd:rgba(252,211,77,.3);
+      --st-neg-bg:rgba(168,85,247,.16); --st-neg-fg:#D8B4FE; --st-neg-bd:rgba(216,180,254,.3);
+      --st-won-bg:rgba(16,185,129,.16); --st-won-fg:#6EE7B7; --st-won-bd:rgba(110,231,183,.3);
+      --st-los-bg:rgba(239,68,68,.16); --st-los-fg:#FCA5A5; --st-los-bd:rgba(252,165,165,.3);
+      --sh-soft:0 1px 3px rgba(2,6,23,.5); --sh-card:0 8px 24px rgba(2,6,23,.35);
+      --sh-panel:0 18px 45px rgba(2,6,23,.45); --sh-hero:0 24px 64px rgba(2,6,23,.5);
+      --glow-1:rgba(53,159,145,.10); --glow-2:rgba(59,130,246,.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg-app:#0B1220; --surface-1:#101A2E; --surface-2:#16233C; --surface-3:#1D2E4D;
+    --line:#24344F; --line-strong:#33466B;
+    --tx-1:#F1F5F9; --tx-2:#B6C2D4; --tx-3:#8CA0BC; --tx-4:#64748B; --tx-inv:#0F172A;
+    --tx-brand:var(--navy-300); --tx-accent:var(--teal-300);
+    --focus:rgba(125,204,190,.5);
+    --act-bg:var(--navy-500); --act-hover:var(--navy-400);
+    --acc-bg:var(--teal-500); --acc-hover:var(--teal-400);
+    --ok-bg:rgba(5,150,105,.16); --ok-fg:#6EE7B7; --ok-bd:rgba(110,231,183,.35);
+    --warn-bg:rgba(217,119,6,.16); --warn-fg:#FCD34D; --warn-bd:rgba(252,211,77,.35);
+    --bad-bg:rgba(225,29,72,.16); --bad-fg:#FDA4AF; --bad-bd:rgba(253,164,175,.35);
+    --info-bg:rgba(37,99,235,.16); --info-fg:#93C5FD; --info-bd:rgba(147,197,253,.35);
+    --neu-bg:rgba(100,116,139,.16); --neu-fg:#CBD5E1; --neu-bd:rgba(203,213,225,.25);
+    --st-new-bg:rgba(59,130,246,.16); --st-new-fg:#93C5FD; --st-new-bd:rgba(147,197,253,.3);
+    --st-con-bg:rgba(99,102,241,.16); --st-con-fg:#A5B4FC; --st-con-bd:rgba(165,180,252,.3);
+    --st-qua-bg:rgba(34,197,94,.16); --st-qua-fg:#86EFAC; --st-qua-bd:rgba(134,239,172,.3);
+    --st-sam-bg:rgba(245,158,11,.16); --st-sam-fg:#FCD34D; --st-sam-bd:rgba(252,211,77,.3);
+    --st-neg-bg:rgba(168,85,247,.16); --st-neg-fg:#D8B4FE; --st-neg-bd:rgba(216,180,254,.3);
+    --st-won-bg:rgba(16,185,129,.16); --st-won-fg:#6EE7B7; --st-won-bd:rgba(110,231,183,.3);
+    --st-los-bg:rgba(239,68,68,.16); --st-los-fg:#FCA5A5; --st-los-bd:rgba(252,165,165,.3);
+    --sh-soft:0 1px 3px rgba(2,6,23,.5); --sh-card:0 8px 24px rgba(2,6,23,.35);
+    --sh-panel:0 18px 45px rgba(2,6,23,.45); --sh-hero:0 24px 64px rgba(2,6,23,.5);
+    --glow-1:rgba(53,159,145,.10); --glow-2:rgba(59,130,246,.12);
+  }
+  :root[data-theme="light"] {
+    --bg-app:#F6F9FC; --surface-1:#FFFFFF; --surface-2:#F1F5F9; --surface-3:#E2E8F0;
+    --line:#E2E8F0; --line-strong:#CBD5E1;
+    --tx-1:#0F172A; --tx-2:#475569; --tx-3:#64748B; --tx-4:#94A3B8; --tx-inv:#F8FAFC;
+    --tx-brand:var(--navy-700); --tx-accent:var(--teal-700);
+    --focus:rgba(58,105,163,.45);
+    --act-bg:var(--navy-700); --act-hover:var(--navy-800);
+    --acc-bg:var(--teal-600); --acc-hover:var(--teal-700);
+    --ok-bg:#ECFDF5; --ok-fg:#065F46; --ok-bd:#A7F3D0;
+    --warn-bg:#FFFBEB; --warn-fg:#92400E; --warn-bd:#FDE68A;
+    --bad-bg:#FFF1F2; --bad-fg:#9F1239; --bad-bd:#FECDD3;
+    --info-bg:#EFF6FF; --info-fg:#1E40AF; --info-bd:#BFDBFE;
+    --neu-bg:#F1F5F9; --neu-fg:#334155; --neu-bd:#E2E8F0;
+    --st-new-bg:#EFF6FF; --st-new-fg:#1D4ED8; --st-new-bd:#BFDBFE;
+    --st-con-bg:#EEF2FF; --st-con-fg:#4338CA; --st-con-bd:#C7D2FE;
+    --st-qua-bg:#F0FDF4; --st-qua-fg:#15803D; --st-qua-bd:#BBF7D0;
+    --st-sam-bg:#FFFBEB; --st-sam-fg:#B45309; --st-sam-bd:#FDE68A;
+    --st-neg-bg:#FAF5FF; --st-neg-fg:#7E22CE; --st-neg-bd:#E9D5FF;
+    --st-won-bg:#ECFDF5; --st-won-fg:#047857; --st-won-bd:#A7F3D0;
+    --st-los-bg:#FEF2F2; --st-los-fg:#B91C1C; --st-los-bd:#FECACA;
+    --sh-soft:0 1px 3px rgba(15,23,42,.06); --sh-card:0 8px 24px rgba(15,23,42,.05);
+    --sh-panel:0 18px 45px rgba(15,23,42,.06); --sh-hero:0 24px 64px rgba(15,23,42,.08);
+    --glow-1:rgba(53,159,145,.10); --glow-2:rgba(31,72,124,.10);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background:
+      radial-gradient(circle at 20% -5%, var(--glow-1), transparent 32%),
+      radial-gradient(circle at 90% -5%, var(--glow-2), transparent 34%),
+      var(--bg-app);
+    color: var(--tx-1);
+    font-size: 14px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--tx-3); }
+  .eyebrow.brand { color: var(--tx-brand); }
+  h1 { font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -.02em; margin: 8px 0 6px; text-wrap: balance; }
+  h2 { font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 4px; }
+  .lede { color: var(--tx-2); max-width: 62ch; margin: 0; }
+  section { margin-top: 40px; }
+  .sec-head { margin-bottom: 16px; }
+  .sec-head p { margin: 2px 0 0; color: var(--tx-3); font-size: 13px; max-width: 70ch; }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: var(--sh-panel); padding: 24px; }
+  .grid { display: grid; gap: 16px; }
+
+  /* color ramps */
+  .ramp { display: grid; grid-template-columns: repeat(11, 1fr); border-radius: var(--r-ctl); overflow: hidden; border: 1px solid var(--line); }
+  .ramp div { aspect-ratio: 1 / 1.35; position: relative; min-width: 0; }
+  .ramp span { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 9px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ramp-label { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 8px; }
+  .ramp-label strong { font-size: 13px; font-weight: 600; }
+  .ramp-label code { font-size: 11px; color: var(--tx-3); }
+
+  .triads { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .triad { border-radius: var(--r-card); padding: 12px 14px; border: 1px solid; }
+  .triad b { display: block; font-size: 13px; }
+  .triad small { font-size: 11px; opacity: .85; }
+
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid; border-radius: 999px; padding: 4px 11px; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .chip i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: .8; }
+
+  /* type scale */
+  .type-row { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .type-row:last-child { border-bottom: 0; }
+  .type-meta { font-size: 11px; color: var(--tx-3); font-variant-numeric: tabular-nums; }
+  .type-meta b { display: block; color: var(--tx-2); font-size: 12px; }
+
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: var(--r-ctl); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: background .12s, transform .12s; }
+  .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus); }
+  .btn-primary { background: var(--act-bg); color: var(--act-fg); }
+  .btn-primary:hover { background: var(--act-hover); transform: translateY(-2px); }
+  .btn-accent { background: var(--acc-bg); color: #fff; }
+  .btn-accent:hover { background: var(--acc-hover); transform: translateY(-2px); }
+  .btn-secondary { background: var(--surface-1); color: var(--tx-2); border-color: var(--line-strong); box-shadow: var(--sh-soft); }
+  .btn-secondary:hover { background: var(--surface-2); transform: translateY(-2px); }
+  .btn-ghost { background: transparent; color: var(--tx-brand); }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .btn-danger { background: var(--bad-bg); color: var(--bad-fg); border-color: var(--bad-bd); }
+
+  /* stat cards */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .stat { background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 18px 20px; }
+  .stat .eyebrow { font-size: 10.5px; }
+  .stat .val { font-size: 28px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 8px; }
+  .delta { font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .up { color: var(--teal-500); } .down { color: var(--bad); }
+
+  /* table */
+  .tbl-shell { border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; box-shadow: var(--sh-panel); background: var(--surface-1); }
+  .tbl-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  thead th { background: var(--surface-2); color: var(--tx-3); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; text-align: left; padding: 12px 16px; }
+  tbody td { padding: 12px 16px; border-top: 1px solid var(--line); font-size: 13px; }
+  tbody tr:hover { background: var(--surface-2); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .who b { display: block; font-weight: 600; font-size: 13.5px; }
+  .who small { color: var(--tx-3); font-size: 11.5px; }
+
+  /* field kit */
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .field input { width: 100%; height: 40px; padding: 0 14px; font: inherit; font-size: 14px; color: var(--tx-1); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); transition: box-shadow .12s, background .12s; }
+  .field input:focus { outline: none; background: var(--surface-1); box-shadow: 0 0 0 3px var(--focus); border-color: var(--navy-400); }
+  .field .help { font-size: 12px; color: var(--tx-3); margin-top: 6px; }
+  .field.err input { border-color: var(--bad); }
+  .field.err .help { color: var(--bad-fg); }
+
+  .banner { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--bad-bd); background: var(--bad-bg); color: var(--bad-fg); border-radius: var(--r-card); padding: 14px 16px; font-size: 13px; }
+  .banner b { font-weight: 700; }
+
+  /* radius + shadow specimens */
+  .spec-row { display: flex; flex-wrap: wrap; gap: 20px; }
+  .spec { width: 128px; }
+  .spec .box { height: 76px; background: var(--surface-1); border: 1px solid var(--line-strong); }
+  .spec figcaption { font-size: 11px; color: var(--tx-3); margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .spec figcaption b { color: var(--tx-2); display: block; font-size: 12px; }
+  figure { margin: 0; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } .type-row { grid-template-columns: 1fr; gap: 4px; } }
+
+  .rules { margin: 0; padding-left: 18px; color: var(--tx-2); font-size: 13.5px; }
+  .rules li { margin-bottom: 8px; }
+  .rules code, .inline-code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; color: var(--tx-brand); }
+  @media (prefers-reduced-motion: reduce) { .btn, .field input { transition: none; } .btn:hover { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow brand">SETU Flow · Export-Trade CRM</p>
+    <h1>SETU Flow Design System <span style="color:var(--tx-4);font-weight:500">v1.0</span></h1>
+    <p class="lede">One vocabulary for leads, pipeline, quotes, compliance, and field capture. Built from the product's existing navy-and-teal identity; every value here is a token in <span class="inline-code">design-tokens.css</span> and maps 1:1 to the Tailwind config. Toggle your theme — the whole page re-derives from dark tokens.</p>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2>Brand color</h2>
+      <p>Navy is the brand and carries actions and navigation; teal is the accent for positive trends, AI/Guru affordances, and the mobile field CTA. These ramps also fix the ~240 currently-broken <span class="inline-code">brand-*</span> classes in the codebase.</p>
+    </div>
+    <div class="panel">
+      <div class="ramp-label"><strong>brand / navy</strong><code>anchor 700 = #1F487C</code></div>
+      <div class="ramp">
+        <div style="background:#F0F5FB"><span style="color:#1F487C">50</span></div>
+        <div style="background:#DCE7F4"><span style="color:#1F487C">100</span></div>
+        <div style="background:#BDD0E8"><span style="color:#142C54">200</span></div>
+        <div style="background:#92B1D6"><span style="color:#0B1B36">300</span></div>
+        <div style="background:#5F8ABE"><span style="color:#fff">400</span></div>
+        <div style="background:#3A69A3"><span style="color:#fff">500</span></div>
+        <div style="background:#2A5590"><span style="color:#fff">600</span></div>
+        <div style="background:#1F487C"><span style="color:#fff">700</span></div>
+        <div style="background:#193769"><span style="color:#fff">800</span></div>
+        <div style="background:#142C54"><span style="color:#fff">900</span></div>
+        <div style="background:#0B1B36"><span style="color:#fff">950</span></div>
+      </div>
+      <div class="ramp-label"><strong>accent / teal</strong><code>anchor 500 = #359F91 · retires #279491 · #108477 · #0c7fff</code></div>
+      <div class="ramp">
+        <div style="background:#EDF9F6"><span style="color:#246A62">50</span></div>
+        <div style="background:#D4F0EA"><span style="color:#246A62">100</span></div>
+        <div style="background:#ADE1D7"><span style="color:#1A443F">200</span></div>
+        <div style="background:#7DCCBE"><span style="color:#0C2724">300</span></div>
+        <div style="background:#52B5A4"><span style="color:#fff">400</span></div>
+        <div style="background:#359F91"><span style="color:#fff">500</span></div>
+        <div style="background:#2A8378"><span style="color:#fff">600</span></div>
+        <div style="background:#246A62"><span style="color:#fff">700</span></div>
+        <div style="background:#1F544E"><span style="color:#fff">800</span></div>
+        <div style="background:#1A443F"><span style="color:#fff">900</span></div>
+        <div style="background:#0C2724"><span style="color:#fff">950</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Feedback triads</h2>
+      <p>Every status-like element uses a <b>bg / fg / border</b> triad plus a <b>solid</b> for icons and charts. Chips and banners never invent local colors.</p>
+    </div>
+    <div class="triads">
+      <div class="triad" style="background:var(--ok-bg);color:var(--ok-fg);border-color:var(--ok-bd)"><b>Success</b><small>ready · accepted · won</small></div>
+      <div class="triad" style="background:var(--warn-bg);color:var(--warn-fg);border-color:var(--warn-bd)"><b>Warning</b><small>pending approval · watch</small></div>
+      <div class="triad" style="background:var(--bad-bg);color:var(--bad-fg);border-color:var(--bad-bd)"><b>Danger</b><small>blocked · rejected · at risk</small></div>
+      <div class="triad" style="background:var(--info-bg);color:var(--info-fg);border-color:var(--info-bd)"><b>Info</b><small>approved · review · new</small></div>
+      <div class="triad" style="background:var(--neu-bg);color:var(--neu-fg);border-color:var(--neu-bd)"><b>Neutral</b><small>draft · expired · dormant</small></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Domain semantics</h2>
+      <p>The specialised layer: pipeline stages, quote lifecycle, and compliance readiness are named tokens, so the kanban board, the mobile pipeline, and every chart agree.</p>
+    </div>
+    <div class="panel grid" style="gap:20px">
+      <div>
+        <p class="eyebrow" style="margin:0 0 10px">Pipeline stages</p>
+        <div class="chips">
+          <span class="chip" style="background:var(--st-new-bg);color:var(--st-new-fg);border-color:var(--st-new-bd)"><i></i>New</span>
+          <span class="chip" style="background:var(--st-con-bg);color:var(--st-con-fg);border-color:var(--st-con-bd)"><i></i>Contacted</span>
+          <span class="chip" style="background:var(--st-qua-bg);color:var(--st-qua-fg);border-color:var(--st-qua-bd)"><i></i>Qualified</span>
+          <span class="chip" style="background:var(--st-sam-bg);color:var(--st-sam-fg);border-color:var(--st-sam-bd)"><i></i>Sample</span>
+          <span class="chip" style="background:var(--st-neg-bg);color:var(--st-neg-fg);border-color:var(--st-neg-bd)"><i></i>Negotiation · 12</span>
+          <span class="chip" style="background:var(--st-won-bg);color:var(--st-won-fg);border-color:var(--st-won-bd)"><i></i>Won</span>
+          <span class="chip" style="background:var(--st-los-bg);color:var(--st-los-fg);border-color:var(--st-los-bd)"><i></i>Lost</span>
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow" style="margin:0 0 10px">Quote lifecycle → aliases, never new colors</p>
+        <div class="chips">
+          <span class="chip" style="background:var(--neu-bg);color:var(--neu-fg);border-color:var(--neu-bd)"><i></i>Draft</span>
+          <span class="chip" style="background:var(--warn-bg);color:var(--warn-fg);border-color:var(--warn-bd)"><i></i>Pending approval</span>
+          <span class="chip" style="background:var(--info-bg);color:var(--info-fg);border-color:var(--info-bd)"><i></i>Approved</span>
+          <span class="chip" style="background:var(--st-con-bg);color:var(--st-con-fg);border-color:var(--st-con-bd)"><i></i>Sent</span>
+          <span class="chip" style="background:var(--ok-bg);color:var(--ok-fg);border-color:var(--ok-bd)"><i></i>Accepted · v3</span>
+          <span class="chip" style="background:var(--bad-bg);color:var(--bad-fg);border-color:var(--bad-bd)"><i></i>Rejected</span>
+        </div>
+      </div>
+      <div class="banner" role="alert">
+        <b>⛔</b>
+        <div><b>Quote blocked by compliance.</b> Phytosanitary certificate for HS 0904.11 is missing. Upload the document or remove line 4 to send this quote. <span style="text-decoration:underline;cursor:pointer">Open document checklist</span>
+        <div style="opacity:.75;margin-top:4px">Full-width danger banners are reserved for compliance blockers that gate quote-send — nothing else.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Typography</h2>
+      <p>Plus Jakarta Sans (loaded via <span class="inline-code">next/font</span>; this preview may fall back to your system face). Weights 400–700 only — <span class="inline-code">font-black</span> (834 uses) and <span class="inline-code">font-extrabold</span> (189) retire from product UI. Numbers in tables and pricing always set <span class="inline-code">tabular-nums</span>.</p>
+    </div>
+    <div class="panel">
+      <div class="type-row"><div class="type-meta"><b>display</b>30 / 36 · 600 · −2%</div><div style="font-size:30px;line-height:36px;font-weight:600;letter-spacing:-.02em">Pipeline overview — Q3</div></div>
+      <div class="type-row"><div class="type-meta"><b>title</b>20 / 28 · 600 · −1%</div><div style="font-size:20px;line-height:28px;font-weight:600;letter-spacing:-.01em">Quote SF-2041 · Basmati 1121, 3 containers</div></div>
+      <div class="type-row"><div class="type-meta"><b>section</b>16 / 24 · 600</div><div style="font-size:16px;line-height:24px;font-weight:600">Freight &amp; incoterms</div></div>
+      <div class="type-row"><div class="type-meta"><b>body</b>14 / 22 · 400–500</div><div>Buyer confirmed CIF Jebel Ali. Awaiting revised freight profile before compiling version 3 of the quote.</div></div>
+      <div class="type-row"><div class="type-meta"><b>small</b>13 / 20 · 400–600</div><div style="font-size:13px;line-height:20px;color:var(--tx-2)">Last activity 2 days ago · Owner: R. Kapoor · Source: Gulfood 2026 booth scan</div></div>
+      <div class="type-row"><div class="type-meta"><b>caption</b>11 / 16 · 600 · +16%</div><div class="eyebrow">Follow-ups due this week</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Shape &amp; elevation</h2>
+      <p>Four radii and five shadows replace 15+ arbitrary <span class="inline-code">rounded-[…]</span> values. One shadow per element.</p>
+    </div>
+    <div class="panel spec-row">
+      <figure class="spec"><div class="box" style="border-radius:12px;box-shadow:var(--sh-soft)"></div><figcaption><b>ctl · 12px</b>buttons, inputs, chips · shadow-soft</figcaption></figure>
+      <figure class="spec"><div class="box" style="border-radius:16px;box-shadow:var(--sh-card)"></div><figcaption><b>card · 16px</b>tiles, kanban cards · shadow-card</figcaption></figure>
+      <figure class="spec"><div class="box" style="border-radius:24px;box-shadow:var(--sh-panel)"></div><figcaption><b>panel · 24px</b>panels, tables · shadow-panel</figcaption></figure>
+      <figure class="spec"><div class="box" style="border-radius:28px;box-shadow:var(--sh-hero)"></div><figcaption><b>hero · 28px</b>page headers · shadow-hero</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Actions</h2>
+      <p>Navy primary, teal accent (AI/Guru + mobile CTA only), quiet secondary. Focus is a token ring — replacing the <span class="inline-code">ring-brand-500</span> classes that currently compile to nothing. Tab to try it.</p>
+    </div>
+    <div class="panel chips" style="gap:12px">
+      <button class="btn btn-primary">Create quote</button>
+      <button class="btn btn-accent">Ask Setu Guru</button>
+      <button class="btn btn-secondary">Export CSV</button>
+      <button class="btn btn-ghost">View audit trail</button>
+      <button class="btn btn-danger">Void version</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Data display</h2>
+      <p>Metric tiles and the workspace table: money right-aligned with currency code, deltas carry glyphs (never color alone), statuses are chips.</p>
+    </div>
+    <div class="stats" style="margin-bottom:16px">
+      <div class="stat"><p class="eyebrow" style="margin:0">Open pipeline</p><div class="val">USD 4.28M</div><div class="delta up">▲ 12.4% vs last quarter</div></div>
+      <div class="stat"><p class="eyebrow" style="margin:0">Quotes awaiting approval</p><div class="val">7</div><div class="delta" style="color:var(--warn)">● 2 overdue</div></div>
+      <div class="stat"><p class="eyebrow" style="margin:0">Compliance blocked</p><div class="val">3</div><div class="delta down">▼ needs documents</div></div>
+      <div class="stat"><p class="eyebrow" style="margin:0">Won this month</p><div class="val">USD 612K</div><div class="delta up">▲ 5 orders</div></div>
+    </div>
+    <div class="tbl-shell"><div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Lead</th><th>Market</th><th>Stage</th><th class="num">Est. value</th><th>Compliance</th></tr></thead>
+        <tbody>
+          <tr><td class="who"><b>Al Rashid Trading LLC</b><small>Rice · spices · 3 SKUs</small></td><td>🇦🇪 UAE</td><td><span class="chip" style="background:var(--st-neg-bg);color:var(--st-neg-fg);border-color:var(--st-neg-bd)"><i></i>Negotiation</span></td><td class="num">USD 184,000</td><td><span class="chip" style="background:var(--ok-bg);color:var(--ok-fg);border-color:var(--ok-bd)"><i></i>Ready</span></td></tr>
+          <tr><td class="who"><b>Hamburg Feinkost GmbH</b><small>Organic pulses · 2 SKUs</small></td><td>🇩🇪 Germany</td><td><span class="chip" style="background:var(--st-sam-bg);color:var(--st-sam-fg);border-color:var(--st-sam-bd)"><i></i>Sample</span></td><td class="num">USD 96,500</td><td><span class="chip" style="background:var(--warn-bg);color:var(--warn-fg);border-color:var(--warn-bd)"><i></i>In progress</span></td></tr>
+          <tr><td class="who"><b>Mekong Fresh Imports</b><small>Frozen seafood · 5 SKUs</small></td><td>🇻🇳 Vietnam</td><td><span class="chip" style="background:var(--st-qua-bg);color:var(--st-qua-fg);border-color:var(--st-qua-bd)"><i></i>Qualified</span></td><td class="num">USD 240,800</td><td><span class="chip" style="background:var(--bad-bg);color:var(--bad-fg);border-color:var(--bad-bd)"><i></i>Blocked</span></td></tr>
+          <tr><td class="who"><b>Nairobi AgriHub Ltd</b><small>Tea · booth scan, Gulfood</small></td><td>🇰🇪 Kenya</td><td><span class="chip" style="background:var(--st-new-bg);color:var(--st-new-fg);border-color:var(--st-new-bd)"><i></i>New</span></td><td class="num">USD 38,200</td><td><span class="chip" style="background:var(--neu-bg);color:var(--neu-fg);border-color:var(--neu-bd)"><i></i>Not started</span></td></tr>
+        </tbody>
+      </table>
+    </div></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Field kit</h2>
+      <p>Inputs sit on <span class="inline-code">surface-2</span> and lift to white on focus with the token ring. Errors use the danger triad. On mobile field routes, heights grow to 48px inside the <span class="inline-code">.sf-field</span> theme.</p>
+    </div>
+    <div class="panel two-col">
+      <div class="field">
+        <label for="f1">Buyer company</label>
+        <input id="f1" placeholder="e.g. Al Rashid Trading LLC">
+        <div class="help">As it should appear on the quote PDF.</div>
+      </div>
+      <div class="field err">
+        <label for="f2">HS code</label>
+        <input id="f2" value="0904.1">
+        <div class="help">HS codes need 6–8 digits. Try 0904.11 for pepper, whole.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Governance</h2>
+      <p>The rules that keep this from decaying back into 95 unique hex values.</p>
+    </div>
+    <div class="panel">
+      <ol class="rules">
+        <li>No <code>[#hex]</code> colors, no <code>rounded-[…]</code>, no <code>tracking-[…]</code>, no inline style colors in <code>src/app</code> or <code>src/features</code>. If a token is missing, add the token.</li>
+        <li>Weights 400–700 only in product UI; 800–900 are marketing display.</li>
+        <li>Status-like UI goes through a semantic mapper (<code>getStatusTone</code>, <code>getQuoteTone</code>, <code>getComplianceTone</code>) — never local class strings.</li>
+        <li><code>globals.css</code> holds resets and token imports only. No <code>!important</code> patches targeting DOM shape — fix the component.</li>
+        <li>Enforce with a grep-based <code>design-tokens.test.mjs</code> in the existing test suite, failing on regressions in changed files.</li>
+      </ol>
+    </div>
+  </section>
+</div>

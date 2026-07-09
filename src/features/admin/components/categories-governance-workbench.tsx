@@ -19,12 +19,12 @@ type CategoryRow = {
 type Tab = "tree" | "mappings" | "imports" | "audit";
 
 const inputClass = "min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
-const buttonClass = "inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]";
-const secondaryButtonClass = "inline-flex min-h-8 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50";
+const buttonClass = "inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800";
+const secondaryButtonClass = "inline-flex min-h-8 items-center justify-center rounded-ctl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50";
 
 function metricClass(tone: "blue" | "green" | "amber" | "slate") {
   const border = tone === "blue" ? "border-t-brand-500" : tone === "green" ? "border-t-emerald-500" : tone === "amber" ? "border-t-amber-500" : "border-t-slate-300";
-  return `rounded-[11px] border border-slate-200 ${border} border-t-4 bg-white p-4 shadow-sm`;
+  return `rounded-ctl border border-slate-200 ${border} border-t-4 bg-white p-4 shadow-sm`;
 }
 
 function statusClass(active: boolean | null | undefined, empty = false) {
@@ -55,10 +55,10 @@ function CategoryFields({ category, categories }: { category?: CategoryRow; cate
       {category ? (
         <label className="block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
           Products using this category
-          <div className="mt-2 rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-800">{category.product_count ?? 0}</div>
+          <div className="mt-2 rounded-ctl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-800">{category.product_count ?? 0}</div>
         </label>
       ) : null}
-      <label className="flex items-center gap-2 rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+      <label className="flex items-center gap-2 rounded-ctl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
         <input type="checkbox" name="is_active" defaultChecked={category?.is_active ?? true} /> Active
       </label>
     </div>
@@ -138,7 +138,7 @@ export function CategoriesGovernanceWorkbench({ categories, uncategorizedProduct
         <div className={metricClass(items.length ? "green" : "amber")}><p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-slate-500">Import readiness</p><p className="mt-2 text-2xl font-semibold text-slate-950">{importReady}</p><p className="mt-1 text-xs text-slate-500">taxonomy status</p></div>
       </section>
 
-      <section className="rounded-[11px] border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-ctl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div><h2 className="text-xl font-semibold tracking-tight text-slate-950">Taxonomy workbench</h2><p className="mt-1 text-sm text-slate-500">Drag rows to reorder. Click a row or Edit to open the category drawer.</p></div>
           <div className="flex flex-wrap gap-2">{(["tree", "mappings", "imports", "audit"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-full px-3 py-2 text-xs font-semibold capitalize ${tab === item ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{item}</button>)}</div>
@@ -147,7 +147,7 @@ export function CategoriesGovernanceWorkbench({ categories, uncategorizedProduct
         {tab === "tree" ? (
           <div className="p-5">
             <div className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Drag to reorder · changes save automatically</div>
-            <div className="overflow-x-auto rounded-[11px] border border-slate-200">
+            <div className="overflow-x-auto rounded-ctl border border-slate-200">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500"><tr><th className="px-4 py-3">Move</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Parent</th><th className="px-4 py-3">Products</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Sort</th><th className="px-4 py-3">Edit</th></tr></thead>
                 <tbody>{items.map((category, index) => {
@@ -183,5 +183,5 @@ export function CategoriesGovernanceWorkbench({ categories, uncategorizedProduct
 }
 
 function InfoPanel({ title, body, cta, href }: { title: string; body: string; cta?: string; href?: string }) {
-  return <div className="p-5"><div className="rounded-[11px] border border-slate-200 bg-slate-50 p-5"><h3 className="font-semibold text-slate-950">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>{cta && href ? <Link href={href} className="mt-4 inline-flex rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white">{cta}</Link> : null}</div></div>;
+  return <div className="p-5"><div className="rounded-ctl border border-slate-200 bg-slate-50 p-5"><h3 className="font-semibold text-slate-950">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>{cta && href ? <Link href={href} className="mt-4 inline-flex rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white">{cta}</Link> : null}</div></div>;
 }

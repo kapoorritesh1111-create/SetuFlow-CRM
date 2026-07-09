@@ -143,7 +143,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
         </div>
       )}
 
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
+      <section className="rounded-hero border border-slate-200 bg-white p-6 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2"><GuruAvatar size="sm" showOnlineDot /><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-sky-700">Setu Guru workspace</p></div>
@@ -194,7 +194,7 @@ export function AISuggestionsWorkspace({ data, initialFilters }: Props) {
       ) : null}
 
       {activeTab === 'review' ? (
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft">
+        <section className="rounded-hero border border-slate-200 bg-white p-6 shadow-soft">
           {/* SF-18-121: Bulk dismiss */}
           {selectedIds.size > 0 && (
             <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 mb-4">

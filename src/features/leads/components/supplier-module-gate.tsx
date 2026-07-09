@@ -13,16 +13,16 @@ type Props = {
 function LockedScreen({ companyName, leadId }: { companyName: string; leadId: string }) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <div className="rounded-[2rem] border border-teal-200 bg-white p-8 shadow-sm">
+      <div className="rounded-hero border border-teal-200 bg-white p-8 shadow-sm">
         {/* Icon */}
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50">
-          <svg className="h-7 w-7 text-[#279491]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-7 w-7 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </div>
 
         {/* Label */}
-        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#279491]">
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-accent-600">
           Supplier Procurement Module
         </p>
 
@@ -56,7 +56,7 @@ function LockedScreen({ companyName, leadId }: { companyName: string; leadId: st
               'Supplier sourcing reports + analytics dashboard',
             ].map((item) => (
               <li key={item} className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                <svg className="h-3.5 w-3.5 shrink-0 text-[#279491]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-3.5 w-3.5 shrink-0 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
                 {item}
@@ -74,7 +74,7 @@ function LockedScreen({ companyName, leadId }: { companyName: string; leadId: st
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <a
             href="mailto:admin@setugroups.com?subject=Supplier Procurement Module&body=I'd like to enable the Supplier Procurement module for my organisation."
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#163561]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-800"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -121,7 +121,7 @@ export function SupplierModuleGate({ children, companyName, leadId }: Props) {
   if (grants === null) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#279491] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
       </div>
     );
   }

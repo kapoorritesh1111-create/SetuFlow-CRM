@@ -55,13 +55,13 @@ export function MobileTabBar() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative flex flex-1 flex-col items-center justify-center gap-[3px] border-none bg-transparent text-[10px] font-bold tracking-[0.02em] transition-colors',
-                active ? 'text-[#0c7fff]' : 'text-slate-400',
+                active ? 'text-brand-500' : 'text-slate-400',
               )}
             >
               <span
                 className={cn(
                   'absolute inset-x-3 top-0 h-[2px] rounded-b-full transition-colors',
-                  active ? 'bg-[#0c7fff]' : 'bg-transparent',
+                  active ? 'bg-brand-500' : 'bg-transparent',
                 )}
               />
               <SetuIcon name={tab.icon} className="h-[22px] w-[22px]" />

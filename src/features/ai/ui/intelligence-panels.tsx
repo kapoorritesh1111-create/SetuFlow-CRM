@@ -55,7 +55,7 @@ export function AICompactActionBrief({
       : 'bg-sky-100 text-sky-700';
 
   return (
-    <section className={`rounded-[1.5rem] border p-4 ${toneClasses}`}>
+    <section className={`rounded-panel border p-4 ${toneClasses}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -91,7 +91,7 @@ export function AIGovernedDecisionPanel({ items, summary }: { items: AIGovernedD
       </div>
       <div className="space-y-3">
         {items.map((item) => (
-          <article key={item.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+          <article key={item.id} className="rounded-panel border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +113,7 @@ export function AIGovernedDecisionPanel({ items, summary }: { items: AIGovernedD
                 </div>
                 <p className="mt-3 text-xs text-slate-500">Bounded by: {item.boundedBy}</p>
               </div>
-              <Link href={item.href} className="rounded-full bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#193769]">Open workspace</Link>
+              <Link href={item.href} className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">Open workspace</Link>
             </div>
           </article>
         ))}

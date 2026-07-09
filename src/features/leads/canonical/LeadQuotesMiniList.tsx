@@ -27,7 +27,7 @@ export default function LeadQuotesMiniList({ data }: { data: LeadProfileData }) 
   const quotes = sortedQuotes(data);
   if (!quotes.length) return null;
   return (
-    <section className="mx-auto mt-4 max-w-[1600px] rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="mx-auto mt-4 max-w-[1600px] rounded-panel border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Quotes on this Lead</p>

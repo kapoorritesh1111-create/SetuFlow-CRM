@@ -59,7 +59,7 @@ export function ProfileCompactAvatarManager({
   }
 
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-soft">
+    <div className="rounded-hero border border-slate-200 bg-white/95 p-5 shadow-soft">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <UserAvatar name={fullName} email={email ?? undefined} avatarUrl={avatarUrl} size="xl" className="h-20 w-20 border border-slate-200 shadow-sm" />
@@ -67,7 +67,7 @@ export function ProfileCompactAvatarManager({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Profile image</p>
             <h2 className="mt-1 text-lg font-semibold text-slate-900">Photo or avatar</h2>
             <p className="mt-1 max-w-xl text-sm leading-6 text-slate-600">Upload a photo or pick a Setu Flow avatar without opening the full vCard gallery.</p>
-            {message ? <p className="mt-2 text-xs font-semibold text-[#1F487C]">{message}</p> : null}
+            {message ? <p className="mt-2 text-xs font-semibold text-brand-700">{message}</p> : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -83,7 +83,7 @@ export function ProfileCompactAvatarManager({
 
       {isPickerOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div className="max-h-[86vh] w-full max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+          <div className="max-h-[86vh] w-full max-w-3xl overflow-hidden rounded-hero bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Avatar library</p>
@@ -94,7 +94,7 @@ export function ProfileCompactAvatarManager({
             </div>
             <div className="grid max-h-[62vh] gap-3 overflow-y-auto p-5 sm:grid-cols-2 lg:grid-cols-4">
               {SETU_FLOW_AVATAR_PRESETS.map((preset) => (
-                <button key={preset.id} type="button" onClick={() => void saveAvatar({ avatarUrl: preset.url }, `${preset.name} saved.`)} disabled={isSaving} className={`rounded-2xl border p-3 text-center transition hover:shadow-md ${avatarUrl === preset.url ? 'border-[#1F487C] bg-[#eef6fb]' : 'border-slate-200 bg-white'}`}>
+                <button key={preset.id} type="button" onClick={() => void saveAvatar({ avatarUrl: preset.url }, `${preset.name} saved.`)} disabled={isSaving} className={`rounded-2xl border p-3 text-center transition hover:shadow-md ${avatarUrl === preset.url ? 'border-brand-700 bg-[#eef6fb]' : 'border-slate-200 bg-white'}`}>
                   <img src={preset.url} alt="" className="mx-auto h-20 w-20 rounded-2xl border border-slate-100 object-cover" />
                   <p className="mt-3 text-sm font-semibold text-slate-900">{preset.name}</p>
                 </button>

@@ -26,7 +26,7 @@ export function PremiumCommandBar({
   reset?: ReactNode;
 }) {
   return (
-    <section className="rounded-[1.65rem] border border-slate-200/90 bg-white px-3 py-3 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02] sm:px-5">
+    <section className="rounded-hero border border-slate-200/90 bg-white px-3 py-3 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02] sm:px-5">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
         <div className="min-w-0 flex-1">
           <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-400">{label}</p>
@@ -46,7 +46,7 @@ export function PremiumCommandBar({
 
 export function PremiumField({ label, icon, children, className = '' }: { label: string; icon?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <label className={`group min-w-0 rounded-[1.15rem] border border-slate-200 bg-slate-50/80 px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:border-slate-300 hover:bg-white md:min-w-[170px] ${className}`}>
+    <label className={`group min-w-0 rounded-card border border-slate-200 bg-slate-50/80 px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:border-slate-300 hover:bg-white md:min-w-[170px] ${className}`}>
       <span className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
         {icon ? <span aria-hidden="true" className="text-[12px] leading-none">{icon}</span> : null}
         {label}

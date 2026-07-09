@@ -78,7 +78,7 @@ function ApprovalPendingSendGate({ props, quote, version, request }: { props: Pr
       {quoteActionError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-800">Action could not finish: {decodeURIComponent(quoteActionError)}</div> : null}
       {saved ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">Saved {saved}. Continue from the next step.</div> : null}
 
-      <section className="rounded-[1.4rem] bg-gradient-to-r from-[#061c2e] via-[#0b2e4a] to-blue-700 p-4 text-white shadow-sm">
+      <section className="rounded-panel bg-gradient-to-r from-surface-app via-surface-1 to-blue-700 p-4 text-white shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ function ApprovalPendingSendGate({ props, quote, version, request }: { props: Pr
         </div>
       </section>
 
-      <section className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-card border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <h2 className="font-black text-slate-950">Quote Builder</h2>
@@ -128,7 +128,7 @@ function ApprovalPendingSendGate({ props, quote, version, request }: { props: Pr
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="rounded-[1.25rem] border border-amber-200 bg-white p-5 shadow-sm">
+        <div className="rounded-card border border-amber-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Send Gate</p>
           <h2 className="mt-2 text-xl font-black text-slate-950">Approval is pending before this quote can be sent</h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">The database shows the current quote version is already in approval review. The quote cannot be sent until the pending approval request is approved.</p>
@@ -169,7 +169,7 @@ function ApprovalPendingSendGate({ props, quote, version, request }: { props: Pr
         </div>
 
         <aside className="space-y-4">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Quote Summary</p>
             <dl className="mt-4 grid gap-3 text-sm">
               <div className="flex justify-between"><dt className="font-bold text-slate-500">Quote ID</dt><dd className="font-black text-slate-900">{quote.quote_number || `Q-${quote.id.slice(0, 8)}`}</dd></div>
@@ -179,7 +179,7 @@ function ApprovalPendingSendGate({ props, quote, version, request }: { props: Pr
               <div className="flex justify-between"><dt className="font-bold text-slate-500">Total</dt><dd className="font-black text-slate-900">{total ? money(total, currency) : '-'}</dd></div>
             </dl>
           </div>
-          <aside className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <aside className="rounded-panel border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
             <div className="flex items-center gap-2"><span className="rounded-xl bg-emerald-600 px-2 py-1 text-xs font-black text-white">G</span><h3 className="font-black text-slate-950">Setu Guru</h3></div>
             <p className="mt-4 text-sm font-black text-slate-800">Approval guidance</p>
             <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">This quote is already submitted for approval. Sending is intentionally blocked until approval is complete.</p>

@@ -65,15 +65,15 @@ export default async function Page() {
         { label: `${pipelines.length} pipeline${pipelines.length === 1 ? '' : 's'}`, tone: pipelines.length ? 'ok' : 'warn' },
         { label: `${stages.length} stage${stages.length === 1 ? '' : 's'}`, tone: stages.length ? 'neutral' : 'warn' },
       ]}
-      tbarAction={<a href="#add-pipeline-drawer" className="inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">+ New pipeline</a>}
+      tbarAction={<a href="#add-pipeline-drawer" className="inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800">+ New pipeline</a>}
     >
       {counts.markets === 0 ? (
-        <div className="rounded-[9px] border border-dashed border-amber-300 bg-amber-50 p-3.5 text-[11.5px] leading-[1.6] text-amber-900">
+        <div className="rounded-ctl border border-dashed border-amber-300 bg-amber-50 p-3.5 text-[11.5px] leading-[1.6] text-amber-900">
           <strong>⚠ Configure markets first</strong>
           <p className="mt-1">Pipelines require at least one market. Add a market, then return here.</p>
         </div>
       ) : pipelines.length === 0 ? (
-        <div className="rounded-[9px] border border-dashed border-amber-300 bg-amber-50 p-3.5 text-[11.5px] leading-[1.6] text-amber-900">
+        <div className="rounded-ctl border border-dashed border-amber-300 bg-amber-50 p-3.5 text-[11.5px] leading-[1.6] text-amber-900">
           <strong>⚠ No pipelines yet</strong>
           <p className="mt-1">Create your first pipeline to define the stages your leads move through.</p>
         </div>

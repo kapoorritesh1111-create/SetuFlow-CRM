@@ -50,7 +50,7 @@ function QuoteCard({ item, active, onSelect }: { item: QuoteWorkspaceListItem; a
       type="button"
       onClick={onSelect}
       className={cn(
-        'w-full rounded-[1.5rem] border bg-white p-4 text-left shadow-sm transition',
+        'w-full rounded-panel border bg-white p-4 text-left shadow-sm transition',
         active ? 'border-blue-400 shadow-blue-100' : 'border-slate-200 hover:border-slate-300',
       )}
     >
@@ -86,7 +86,7 @@ function QuoteCard({ item, active, onSelect }: { item: QuoteWorkspaceListItem; a
 
 function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose: () => void }) {
   return (
-    <aside className="fixed inset-x-0 bottom-0 z-[320] max-h-[82vh] overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-white p-5 pb-[calc(92px+env(safe-area-inset-bottom))] shadow-[0_-18px_45px_rgba(15,23,42,0.18)] md:hidden">
+    <aside className="fixed inset-x-0 bottom-0 z-[320] max-h-[82vh] overflow-y-auto rounded-t-hero border border-slate-200 bg-white p-5 pb-[calc(92px+env(safe-area-inset-bottom))] shadow-[0_-18px_45px_rgba(15,23,42,0.18)] md:hidden">
       <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -148,7 +148,7 @@ export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] })
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-28 pt-4">
-      <section className="rounded-[2rem] bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white shadow-xl shadow-blue-950/20">
+      <section className="rounded-hero bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white shadow-xl shadow-blue-950/20">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Quotes</p>
         <h1 className="mt-2 text-2xl font-black">Work queue</h1>
         <div className="mt-5 grid grid-cols-3 gap-2">
@@ -167,7 +167,7 @@ export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] })
       </section>
 
       <section className="mt-4 space-y-3">
-        {filteredItems.length ? filteredItems.map((item) => <QuoteCard key={item.id} item={item} active={selected?.id === item.id} onSelect={() => setSelectedId(item.id)} />) : <div className="rounded-[1.5rem] bg-white p-6 text-center text-sm font-semibold text-slate-500">No quotes match this KPI filter.</div>}
+        {filteredItems.length ? filteredItems.map((item) => <QuoteCard key={item.id} item={item} active={selected?.id === item.id} onSelect={() => setSelectedId(item.id)} />) : <div className="rounded-panel bg-white p-6 text-center text-sm font-semibold text-slate-500">No quotes match this KPI filter.</div>}
       </section>
       {selected ? <QuoteDetail item={selected} onClose={() => setSelectedId(null)} /> : null}
     </main>

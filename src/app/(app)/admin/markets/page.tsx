@@ -18,8 +18,8 @@ type MarketRow = Record<string, unknown> & {
 };
 
 const inputClass = 'min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]';
-const secondaryButtonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50';
+const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800';
+const secondaryButtonClass = 'inline-flex min-h-8 items-center justify-center rounded-ctl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50';
 
 function MarketStatus({ active }: { active: boolean | null }) {
   return (
@@ -38,18 +38,18 @@ function getErrorDigest(err: unknown) {
 function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
   return (
     <div id="markets" className="space-y-6">
-      <section className="overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <section className="overflow-hidden rounded-ctl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
           <div className="min-w-0 flex-1">
             <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">Operational coverage</p>
             <h2 className="text-[13px] font-bold text-slate-950">Markets</h2>
           </div>
-          <a href="#add-market" className="inline-flex shrink-0 items-center rounded-[7px] border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 transition hover:bg-teal-100">+ Add market</a>
+          <a href="#add-market" className="inline-flex shrink-0 items-center rounded-lg border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 transition hover:bg-teal-100">+ Add market</a>
         </div>
         <div className="px-4 py-1.5">
           {markets.map((market) => (
             <div key={market.id} className={`flex items-center gap-2.5 border-b border-slate-50 py-2 last:border-b-0${market.is_active ? '' : ' opacity-60'}`}>
-              <span aria-hidden="true" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] bg-cyan-50 text-[13px]">🌍</span>
+              <span aria-hidden="true" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-[13px]">🌍</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-slate-900">{market.name}</p>
                 <p className="text-[10.5px] text-slate-500">{market.market_code ? `${String(market.market_code).toUpperCase()} · ` : ''}{market.country_count ?? 0} countr{(market.country_count ?? 0) === 1 ? 'y' : 'ies'} · Sort {market.sort_order ?? 0}</p>
@@ -60,7 +60,7 @@ function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
           ))}
         </div>
         {markets.length === 0 ? (
-          <div className="mx-4 mb-4 rounded-[9px] border border-dashed border-amber-300 bg-amber-50 p-4 text-[11.5px] leading-[1.6] text-amber-900">
+          <div className="mx-4 mb-4 rounded-ctl border border-dashed border-amber-300 bg-amber-50 p-4 text-[11.5px] leading-[1.6] text-amber-900">
             <strong>⚠ No markets configured</strong>
             <p className="mt-2">Markets drive lead routing, pipeline defaults, Setu Guru context, and pricing rules. Add your first market.</p>
             <p className="mt-2 text-[11px] italic">Common starting set: Europe, North America, Middle East &amp; Africa, Asia Pacific</p>
@@ -68,7 +68,7 @@ function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
         ) : null}
       </section>
 
-      <section className="overflow-hidden rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <section className="overflow-hidden rounded-ctl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
           <div className="min-w-0 flex-1">
             <p className="text-[8.5px] font-bold uppercase tracking-[0.15em] text-slate-400">Add market</p>
@@ -105,7 +105,7 @@ function MarketsWorkspace({ markets }: { markets: MarketRow[] }) {
                 <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Market name<input className={`${inputClass} mt-1 w-full`} name="name" defaultValue={market.name} required /></label>
                 <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Market code<input className={`${inputClass} mt-1 w-full uppercase`} name="market_code" defaultValue={market.market_code ?? ''} /></label>
                 <label className="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Sort order<input className={`${inputClass} mt-1 w-full`} name="sort_order" type="number" defaultValue={market.sort_order ?? 0} /></label>
-                <label className="flex items-center gap-2 rounded-[9px] border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_active" defaultChecked={market.is_active ?? true} /> Active market</label>
+                <label className="flex items-center gap-2 rounded-ctl border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-semibold text-slate-700"><input type="checkbox" name="is_active" defaultChecked={market.is_active ?? true} /> Active market</label>
               </div>
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4"><a href="#markets" className={secondaryButtonClass}>Cancel</a><button type="submit" className={buttonClass}>Save market</button></div>
             </form>

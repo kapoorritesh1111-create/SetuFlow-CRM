@@ -78,7 +78,7 @@ export function BookDemoForm() {
 
   if (state === 'success') {
     return (
-      <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-10 text-center shadow-[0_24px_70px_rgba(5,150,105,0.12)]">
+      <div className="rounded-hero border border-emerald-200 bg-emerald-50 p-10 text-center shadow-[0_24px_70px_rgba(5,150,105,0.12)]">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-3xl">✓</div>
         <h3 className="mt-5 text-2xl font-semibold tracking-[-0.025em] text-slate-950">Demo request confirmed</h3>
         <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-600">{message}</p>
@@ -87,7 +87,7 @@ export function BookDemoForm() {
             <span>📅</span> {selectedSlotLabel}
           </div>
         )}
-        <p className="mt-6 text-sm text-slate-500">Questions? Write to <a href={`mailto:${supportEmail}`} className="font-semibold text-[#1F487C] hover:underline">{supportEmail}</a></p>
+        <p className="mt-6 text-sm text-slate-500">Questions? Write to <a href={`mailto:${supportEmail}`} className="font-semibold text-brand-700 hover:underline">{supportEmail}</a></p>
       </div>
     );
   }
@@ -98,14 +98,14 @@ export function BookDemoForm() {
     const byDate: Record<string, typeof slots> = {};
     slots.forEach(s => { (byDate[s.date] = byDate[s.date] || []).push(s); });
     return (
-      <div className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-5 shadow-[0_24px_70px_rgba(31,72,124,0.10)] sm:p-7">
+      <div className="rounded-hero border border-brand-700/10 bg-white p-5 shadow-[0_24px_70px_rgba(31,72,124,0.10)] sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#108477]">Schedule a demo</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Schedule a demo</p>
             <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Pick a time that works for you.</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">30-minute guided walkthrough built around your trade workflow. A calendar invite arrives from <span className="font-semibold text-slate-800">help@setugroups.com</span>.</p>
           </div>
-          <a href={mailtoHref} className="shrink-0 text-sm font-semibold text-[#1F487C] underline-offset-4 hover:underline">Prefer email?</a>
+          <a href={mailtoHref} className="shrink-0 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline">Prefer email?</a>
         </div>
         <div className="mt-6 space-y-5">
           {Object.entries(byDate).slice(0, 5).map(([date, daySlots]) => (
@@ -117,7 +117,7 @@ export function BookDemoForm() {
                     key={slot.iso}
                     type="button"
                     onClick={() => handleSlotSelect(slot)}
-                    className="rounded-2xl border border-[#1F487C]/12 bg-[#f8fbff] px-3 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-[#359F91] hover:bg-[#eef6fb] hover:text-[#108477] focus:outline-none focus:ring-2 focus:ring-[#359F91]/30"
+                    className="rounded-2xl border border-brand-700/12 bg-brand-50 px-3 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-accent-500 hover:bg-[#eef6fb] hover:text-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500/30"
                   >
                     {slot.time} <span className="block text-[10px] font-medium text-slate-400">UTC</span>
                   </button>
@@ -140,44 +140,44 @@ export function BookDemoForm() {
   // Form step
   return (
     <form
-      className="rounded-[2rem] border border-[#1F487C]/10 bg-white p-5 shadow-[0_24px_70px_rgba(31,72,124,0.10)] sm:p-7"
+      className="rounded-hero border border-brand-700/10 bg-white p-5 shadow-[0_24px_70px_rgba(31,72,124,0.10)] sm:p-7"
       onSubmit={handleSubmit}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#108477]">Almost done</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Almost done</p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Tell us about your trade operation.</h3>
           {selectedSlotLabel && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-[#eef6fb] px-4 py-2 text-sm font-semibold text-[#108477]">
+            <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-[#eef6fb] px-4 py-2 text-sm font-semibold text-accent-700">
               <span>📅</span> {selectedSlotLabel}
               <button type="button" onClick={() => { setSelectedSlot(''); setSelectedSlotLabel(''); setState('calendar'); }} className="ml-1 text-slate-400 hover:text-slate-600">✕</button>
             </div>
           )}
         </div>
-        <a href={mailtoHref} className="shrink-0 text-sm font-semibold text-[#1F487C] underline-offset-4 hover:underline">Prefer email?</a>
+        <a href={mailtoHref} className="shrink-0 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline">Prefer email?</a>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <label className="text-sm font-medium text-slate-700">Your name
-          <input name="name" required placeholder="Full name" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+          <input name="name" required placeholder="Full name" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10" />
         </label>
         <label className="text-sm font-medium text-slate-700">Work email
-          <input name="email" type="email" required placeholder="you@company.com" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+          <input name="email" type="email" required placeholder="you@company.com" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10" />
         </label>
         <label className="text-sm font-medium text-slate-700">Company
-          <input name="company" required placeholder="Company name" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+          <input name="company" required placeholder="Company name" className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10" />
         </label>
         <label className="text-sm font-medium text-slate-700">Phone / WhatsApp
-          <input name="phone" placeholder="+1 555..." className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+          <input name="phone" placeholder="+1 555..." className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10" />
         </label>
         <label className="text-sm font-medium text-slate-700">Team size
-          <select name="teamSize" required className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10">
+          <select name="teamSize" required className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10">
             <option value="">Select team size</option>
             {teamSizes.map((size) => <option key={size}>{size}</option>)}
           </select>
         </label>
         <label className="text-sm font-medium text-slate-700">Primary interest
-          <select name="interest" required className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10">
+          <select name="interest" required className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10">
             <option value="">What should we focus on?</option>
             {interests.map((item) => <option key={item}>{item}</option>)}
           </select>
@@ -185,7 +185,7 @@ export function BookDemoForm() {
       </div>
 
       <label className="mt-4 block text-sm font-medium text-slate-700">What is currently slowing your team down?
-        <textarea name="notes" rows={3} placeholder="Describe your biggest trade workflow challenge..." className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#359F91] focus:ring-4 focus:ring-[#359F91]/10" />
+        <textarea name="notes" rows={3} placeholder="Describe your biggest trade workflow challenge..." className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10" />
       </label>
 
       {(state === 'error') && message && (

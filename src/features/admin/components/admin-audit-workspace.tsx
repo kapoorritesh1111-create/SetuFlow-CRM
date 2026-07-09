@@ -124,7 +124,7 @@ export function AdminAuditWorkspace({
                 key={option.id}
                 href={buildViewHref({ view: option.id, selectedEventType, selectedActorId, since, until })}
                 className={[
-                  'rounded-[1.5rem] border px-4 py-4 transition',
+                  'rounded-panel border px-4 py-4 transition',
                   isActive
                     ? 'border-slate-900 bg-slate-900 text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)]'
                     : 'border-slate-200 bg-white text-slate-900 hover:-translate-y-0.5 hover:bg-slate-50',
@@ -218,7 +218,7 @@ export function AdminAuditWorkspace({
         </div>
 
         {events.length ? (
-          <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
+          <div className="mt-5 overflow-x-auto rounded-hero border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
             <table className="min-w-[980px] divide-y divide-slate-200">
               <thead className="bg-slate-50/90">
                 <tr>

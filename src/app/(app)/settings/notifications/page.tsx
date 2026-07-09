@@ -23,7 +23,7 @@ function UserPreferenceMatrix({ workspaceRows, userRows }: { workspaceRows: Noti
   const userByType = new Map(userRows.map((row) => [row.notif_type, row]));
 
   return (
-    <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-panel border border-slate-200 bg-white">
       <div className="grid min-w-[760px] grid-cols-[minmax(240px,1.5fr)_repeat(5,minmax(96px,0.6fr))] border-b border-slate-200 bg-slate-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">
         <span>Alert type</span>
         {notificationChannels.map((channel) => <span key={channel.key} className="text-center">{channel.label}</span>)}

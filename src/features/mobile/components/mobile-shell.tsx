@@ -38,7 +38,7 @@ export function MobileShell({
       <a
         href="/leads?quickLead=1"
         aria-label="Quick capture"
-        className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-[70] ml-[106px] grid h-16 w-16 -translate-x-1/2 place-items-center rounded-[24px] bg-[linear-gradient(145deg,#ffd27b,#f59e0b)] text-3xl font-black text-amber-950 shadow-[0_20px_60px_rgba(15,23,42,.22)]"
+        className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-[70] ml-[106px] grid h-16 w-16 -translate-x-1/2 place-items-center rounded-panel bg-[linear-gradient(145deg,#ffd27b,#f59e0b)] text-3xl font-black text-amber-950 shadow-[0_20px_60px_rgba(15,23,42,.22)]"
       >
         +
       </a>

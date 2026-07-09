@@ -191,14 +191,14 @@ export function WorldCoverageMap({
 
   if (!worldMap) {
     return (
-      <div className={cn('relative overflow-hidden rounded-[1.6rem] border border-slate-700/60 bg-[#071326] p-4', className)}>
+      <div className={cn('relative overflow-hidden rounded-panel border border-slate-700/60 bg-[#071326] p-4', className)}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/12 pb-3">
           <span className="h-6 w-32 animate-pulse rounded-full bg-slate-800" />
           <div className="flex gap-1.5">
             {[1,2,3].map(i => <span key={i} className="h-8 w-10 animate-pulse rounded-full bg-slate-800" />)}
           </div>
         </div>
-        <div className="flex h-[430px] items-center justify-center rounded-[1.4rem] bg-[#0a1a31] lg:h-[460px]">
+        <div className="flex h-[430px] items-center justify-center rounded-panel bg-[#0a1a31] lg:h-[460px]">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-slate-400" />
             <p className="mt-3 text-xs font-semibold text-slate-500">Loading trade map…</p>
@@ -209,7 +209,7 @@ export function WorldCoverageMap({
   }
 
   return (
-    <div className={cn('relative overflow-hidden rounded-[1.7rem] border border-slate-700/80 bg-gradient-to-br from-[#061224] via-[#081a33] to-[#020917] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.55)] ring-1 ring-white/10', className)}>
+    <div className={cn('relative overflow-hidden rounded-hero border border-slate-700/80 bg-gradient-to-br from-[#061224] via-[#081a33] to-[#020917] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.55)] ring-1 ring-white/10', className)}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           {selectedCountryCode ? (
@@ -232,7 +232,7 @@ export function WorldCoverageMap({
       </div>
 
       <div
-        className={cn('relative h-[430px] overflow-hidden rounded-[1.4rem] bg-[#08182f] shadow-inner ring-1 ring-white/10 transition-opacity duration-300 lg:h-[460px]', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
+        className={cn('relative h-[430px] overflow-hidden rounded-panel bg-[#08182f] shadow-inner ring-1 ring-white/10 transition-opacity duration-300 lg:h-[460px]', mapReady ? 'opacity-100' : 'opacity-80', dragging ? 'cursor-grabbing' : 'cursor-grab')}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onPointerLeave={onPointerLeave}
       >

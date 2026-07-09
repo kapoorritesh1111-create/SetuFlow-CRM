@@ -69,9 +69,9 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
                 aria-current={active ? 'page' : undefined}
                 title={PRIMARY_NAV_LABELS[item.href]}
                 className={cn(
-                  'relative flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+                  'relative flex h-11 flex-col items-center justify-center rounded-card text-[9px] font-semibold uppercase tracking-[0.08em] transition',
                   active
-                    ? 'bg-white/12 text-white before:absolute before:left-[-8px] before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-[#0c7fff]'
+                    ? 'bg-white/12 text-white before:absolute before:left-[-8px] before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-brand-500'
                     : 'text-white/60 hover:bg-white/8 hover:text-white',
                 )}
               >
@@ -94,9 +94,9 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
                   aria-current={active ? 'page' : undefined}
                   title={UTILITY_NAV_LABELS[item.href]}
                   className={cn(
-                    'relative flex h-11 flex-col items-center justify-center rounded-[0.9rem] text-[9px] font-semibold uppercase tracking-[0.08em] transition',
+                    'relative flex h-11 flex-col items-center justify-center rounded-card text-[9px] font-semibold uppercase tracking-[0.08em] transition',
                     active
-                      ? 'bg-white/12 text-white before:absolute before:left-[-8px] before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-[#0c7fff]'
+                      ? 'bg-white/12 text-white before:absolute before:left-[-8px] before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-brand-500'
                       : 'text-white/60 hover:bg-white/8 hover:text-white',
                   )}
                 >
@@ -116,7 +116,7 @@ export function ShellNavigation({ pathname, canAccessAdmin, workspaceMode, compa
       {items.map((item) => {
         const active = isNavItemActive(pathname, item);
         return (
-          <a key={item.href} href={withWorkspaceMode(item.href, workspaceMode)} onClick={onNavigate} aria-current={active ? 'page' : undefined} className={cn('flex items-center justify-between rounded-[1rem] px-4 py-3 text-sm font-medium transition', active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')}>
+          <a key={item.href} href={withWorkspaceMode(item.href, workspaceMode)} onClick={onNavigate} aria-current={active ? 'page' : undefined} className={cn('flex items-center justify-between rounded-card px-4 py-3 text-sm font-medium transition', active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')}>
             <span className="flex items-center gap-3"><FaIcon icon={getNavItemIcon(item.href)} fixedWidth className="text-sm" />{item.label}</span>
           </a>
         );

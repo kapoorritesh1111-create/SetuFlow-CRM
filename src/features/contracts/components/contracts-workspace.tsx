@@ -231,13 +231,13 @@ export function ContractsWorkspace({
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft xl:grid-cols-[0.9fr_1.1fr_auto]">
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+      <section className="grid gap-3 rounded-panel border border-slate-200 bg-white p-4 shadow-soft xl:grid-cols-[0.9fr_1.1fr_auto]">
+        <div className="rounded-card border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Where am I</p>
           <p className="mt-2 text-base font-semibold text-slate-900">Contract progression desk</p>
           <p className="mt-1 text-sm text-slate-600">Track signed commitments and only open full detail when the blocker or status actually needs action.</p>
         </div>
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="rounded-card border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">What is blocking me</p>
           <p className="mt-2 text-base font-semibold text-slate-900">{linkedContextMissingCount > 0 ? `${linkedContextMissingCount} missing linked records` : contractsWithBlockers > 0 ? `${contractsWithBlockers} compliance-blocked contracts` : 'No contract blockers right now'}</p>
           <p className="mt-1 text-sm text-slate-600">Progress contracts only after linked quote context and compliance are both clean.</p>
@@ -253,13 +253,13 @@ export function ContractsWorkspace({
       {contractsWithBlockers > 0 ? <StateMessage title="Compliance blockers still affect contract progression" description={`${contractsWithBlockers} contract${contractsWithBlockers === 1 ? '' : 's'} still have open compliance blockers tied to the linked lead. Resolve them before progressing contract status.`} tone="warning" /> : null}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Contracts</p><p className="mt-2 text-3xl font-semibold text-slate-900">{data.contracts.length}</p></div>
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Active contracts</p><p className="mt-2 text-3xl font-semibold text-slate-900">{activeContracts}</p></div>
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Open blockers</p><p className="mt-2 text-3xl font-semibold text-slate-900">{contractsWithBlockers}</p></div>
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Missing context</p><p className="mt-2 text-3xl font-semibold text-slate-900">{linkedContextMissingCount}</p></div>
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Contracts</p><p className="mt-2 text-3xl font-semibold text-slate-900">{data.contracts.length}</p></div>
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Active contracts</p><p className="mt-2 text-3xl font-semibold text-slate-900">{activeContracts}</p></div>
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Open blockers</p><p className="mt-2 text-3xl font-semibold text-slate-900">{contractsWithBlockers}</p></div>
+        <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Missing context</p><p className="mt-2 text-3xl font-semibold text-slate-900">{linkedContextMissingCount}</p></div>
       </div>
 
-      <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-soft">
+      <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
         <FilterBar className="px-0 border-0 bg-transparent">
           <FilterSearch value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Company, quote, status..." minWidth={240} />
           <FilterSelect icon="⚡" label="Status" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} active={statusFilter !== 'all'}>
@@ -277,7 +277,7 @@ export function ContractsWorkspace({
         <p className="mt-3 text-sm text-slate-600">Showing {paginatedContracts.length} of {filteredContracts.length} matching contracts.</p>
       </div>
 
-      <div className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-soft">
+      <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Recent audit events</p>
@@ -312,7 +312,7 @@ export function ContractsWorkspace({
           const contractLines = data.contractLineItems.filter((item) => item.contract_id === contract.id);
           const contractOverrideCount = contractLines.filter((item) => item.is_price_overridden).length;
           return (
-            <article key={contract.id} className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-soft">
+            <article key={contract.id} className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Contract workspace</p>
@@ -398,7 +398,7 @@ export function ContractsWorkspace({
           );
         })}
       </div>
-      {pageCount > 1 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"><span>Page {currentPage} of {pageCount}</span><div className="flex gap-2"><button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1} className="rounded-xl border border-slate-200 px-3 py-2 font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400">Previous</button><button type="button" onClick={() => setPage((value) => Math.min(pageCount, value + 1))} disabled={currentPage === pageCount} className="rounded-xl border border-slate-200 px-3 py-2 font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400">Next</button></div></div> : null}
+      {pageCount > 1 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"><span>Page {currentPage} of {pageCount}</span><div className="flex gap-2"><button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={currentPage === 1} className="rounded-xl border border-slate-200 px-3 py-2 font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400">Previous</button><button type="button" onClick={() => setPage((value) => Math.min(pageCount, value + 1))} disabled={currentPage === pageCount} className="rounded-xl border border-slate-200 px-3 py-2 font-medium text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400">Next</button></div></div> : null}
     </div>
   );
 }

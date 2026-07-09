@@ -99,7 +99,7 @@ function ProfileCard({ profile }: { profile: TermsProfile }) {
   const displayCompact = compactCount > 0 ? profile.page_one_terms! : defaults.page_one;
 
   return (
-    <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
+    <article className="rounded-hero border border-slate-200 bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">
@@ -209,7 +209,7 @@ export default async function AdminDocumentTemplatesPage() {
         cta={
           <Link
             href="/orders"
-            className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-[#13305a]"
+            className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-800"
           >
             Open Orders
           </Link>
