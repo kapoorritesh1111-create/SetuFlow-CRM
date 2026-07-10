@@ -35,6 +35,7 @@ const MORE_GROUPS: { label: string; items: Tab[] }[] = [
   { label: "Delivery", items: [
     { id: "issues", path: "/smc/issues", label: "Issues", icon: "issues" },
     { id: "board", path: "/smc/board", label: "Board", icon: "board" },
+    { id: "agents", path: "/smc/agents", label: "Agents", icon: "ops" },
     { id: "qa", path: "/smc/qa", label: "QA", icon: "qa" },
     { id: "incidents", path: "/smc/incidents", label: "Incidents", icon: "alert" },
     { id: "deploy", path: "/smc/deploy", label: "Deployments", icon: "deploy" },

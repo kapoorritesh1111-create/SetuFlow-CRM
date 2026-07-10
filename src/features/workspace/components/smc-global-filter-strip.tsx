@@ -24,7 +24,7 @@ const SMC_NAV: NavItem[] = [
   { href: '/workspace', label: 'Dashboard', icon: 'mission', exact: true },
   { href: '/workspace/issues', label: 'Issues', icon: 'board' },
   { href: '/workspace/sprints', label: 'Sprints', icon: 'sprint' },
-  { href: '/workspace/agents', label: 'Agents', icon: 'agent' },
+  { href: '/smc/agents', label: 'Agents', icon: 'agent' },
   { href: '/workspace/clients', label: 'Client Impact', icon: 'client' },
   { href: DOCS_WORKSPACE_HREF, label: 'Docs', icon: 'docs', external: true },
   { href: E2E_WORKSPACE_HREF, label: 'QA', icon: 'qa', external: true },
