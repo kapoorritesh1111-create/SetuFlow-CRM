@@ -102,7 +102,7 @@ export async function generateRecommendationsForOrganization(orgId: string): Pro
     }
 
     if (isBuyer && lead.products_or_needs && (quotesByLead.get(lead.id) ?? []).length === 0) {
-      push({ org_id: orgId, entity_type: 'buyer', entity_id: lead.id, recommendation_type: 'buyer_quote_request', title: `Prepare a quote for ${label}`, summary: 'The buyer has product needs recorded but no quote exists.', reason: 'Products or requirements are present on the buyer lead and no linked quote was found.', recommended_action: 'Open the buyer lead and create a user-approved quote.', action_href: `/leads/${lead.id}/quote`, priority: 'high', metadata: { source: 'buyer_need_without_quote' } });
+      push({ org_id: orgId, entity_type: 'buyer', entity_id: lead.id, recommendation_type: 'buyer_quote_request', title: `Prepare a quote for ${label}`, summary: 'The buyer has product needs recorded but no quote exists.', reason: 'Products or requirements are present on the buyer lead and no linked quote was found.', recommended_action: 'Open the buyer lead and create a user-approved quote.', action_href: `/leads/${lead.id}`, priority: 'high', metadata: { source: 'buyer_need_without_quote' } });
     }
 
     if (lead.stage_id && ageDays(lead.updated_at) >= 14) {
@@ -129,7 +129,7 @@ export async function generateRecommendationsForOrganization(orgId: string): Pro
     const overdueByDate = rfq.validity_date && Date.parse(rfq.validity_date) < nowMs();
     const stalePending = !['completed', 'closed', 'approved'].includes(String(rfq.status ?? '').toLowerCase()) && ageDays(rfq.updated_at) >= 7;
     if (!overdueByDate && !stalePending) continue;
-    push({ org_id: orgId, entity_type: 'rfq', entity_id: rfq.id, recommendation_type: 'supplier_rfq_overdue', title: 'Review an overdue supplier RFQ', summary: 'A supplier cost request needs attention.', reason: overdueByDate ? 'The RFQ validity date has passed.' : `The RFQ has not been updated for ${ageDays(rfq.updated_at)} day(s).`, recommended_action: 'Open the supplier RFQ and request or review the response.', action_href: `/leads/${rfq.lead_id}/rfq`, priority: overdueByDate ? 'urgent' : 'high', metadata: { lead_id: rfq.lead_id } });
+    push({ org_id: orgId, entity_type: 'rfq', entity_id: rfq.id, recommendation_type: 'supplier_rfq_overdue', title: `Review overdue RFQ for ${lead.company_name || lead.contact_name || 'supplier'}`, summary: 'A supplier cost request needs attention.', reason: overdueByDate ? 'The RFQ validity date has passed.' : `The RFQ has not been updated for ${ageDays(rfq.updated_at)} day(s).`, recommended_action: 'Open the supplier record and review the RFQ response.', action_href: `/leads/${rfq.lead_id}`, priority: overdueByDate ? 'urgent' : 'high', metadata: { lead_id: rfq.lead_id, rfq_id: rfq.id } });
   }
 
   const generatedKeys = new Set(generated.map(keyOf));
