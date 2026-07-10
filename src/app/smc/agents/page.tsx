@@ -87,7 +87,7 @@ export default async function SmcAgentsPage({ searchParams }: { searchParams?: S
               <h3 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{nextIssue.title}</h3>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">S{nextIssue.sprint_number} · {selectedIssueArea} · {nextIssue.status}</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={`/smc/issues?q=${encodeURIComponent(nextIssue.issue_ref)}`} className="rounded-2xl bg-[#0c7fff] px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-[#075ec2]">Open selected issue</Link>
+                <Link href={`/smc/issues?q=${encodeURIComponent(nextIssue.issue_ref ?? '')}`} className="rounded-2xl bg-[#0c7fff] px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-[#075ec2]">Open selected issue</Link>
                 <Link href="/smc/issues" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:border-[#0c7fff]/40 hover:text-[#0c7fff] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">Review issue queue</Link>
               </div>
             </div>
