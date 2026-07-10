@@ -154,9 +154,11 @@ function labelForProfile(profile?: Profile) {
   return profile.full_name ?? profile.username ?? 'Unassigned';
 }
 
-export function getLeadCommandCenterHref(leadId: string, initialStepId: LeadOpenStep = 'basics') {
-  const focus = initialStepId === 'quotes' ? '?focus=commercial' : '';
-  return `/leads/${leadId}${focus}`;
+export function getLeadCommandCenterHref(leadId: string, initialStepId: LeadOpenStep = 'basics', mode?: string) {
+  const focus = initialStepId === 'quotes' ? 'focus=commercial' : '';
+  const modeParam = mode ? `mode=${encodeURIComponent(mode)}` : '';
+  const query = [focus, modeParam].filter(Boolean).join('&');
+  return `/leads/${leadId}${query ? `?${query}` : ''}`;
 }
 
 
@@ -302,8 +304,16 @@ export function LeadsWorkspace({
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const [isBatchPending, startBatchTransition] = useTransition();
   const [inlineActionState, setInlineActionState] = useState<FormState>({});
-  const [inlineFollowUpAt, setInlineFollowUpAt] = useState(getDefaultFollowUpLocalValue());
+  const [inlineFollowUpAt, setInlineFollowUpAt] = useState('');
   const [isInlineActionPending, startInlineActionTransition] = useTransition();
+
+  // getDefaultFollowUpLocalValue() calls new Date(), which produces a
+  // different value on the server render vs. the client's first render —
+  // exactly the hydration-mismatch pattern already worked around below via
+  // hydratedNowIso. Populating it post-mount instead keeps this one safe too.
+  useEffect(() => {
+    setInlineFollowUpAt(getDefaultFollowUpLocalValue());
+  }, []);
 
   useEffect(() => {
     const explicitMode = searchParams.get('mode');

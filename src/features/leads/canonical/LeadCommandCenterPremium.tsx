@@ -98,9 +98,12 @@ export default function LeadCommandCenterPremium({ data, canReassignOwner = fals
   // if not, it shows a locked upgrade screen instead of the full sourcing workspace.
   if (normalize(lead.lead_type) === 'supplier') {
     return (
-      <SupplierModuleGate companyName={lead.company_name ?? 'Supplier'} leadId={lead.id}>
-        <SupplierCommandCenter data={data as any} />
-      </SupplierModuleGate>
+      <div className="mx-auto max-w-[1560px] space-y-3 pb-24">
+        <Link href={backHref} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-xs font-semibold text-content-secondary">← Back to Leads</Link>
+        <SupplierModuleGate companyName={lead.company_name ?? 'Supplier'} leadId={lead.id}>
+          <SupplierCommandCenter data={data as any} />
+        </SupplierModuleGate>
+      </div>
     );
   }
   const quotes = sortedQuotes(data);

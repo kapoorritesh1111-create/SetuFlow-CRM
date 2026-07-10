@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   filterLeadsForRole,
@@ -22,11 +22,17 @@ type SignedInSummary = {
   avatarUrl?: string | null;
 };
 
-function followUpState(lead: MobileLead): 'overdue' | 'today' | 'upcoming' | 'none' {
-  if (!lead.nextFollowUpAt) return 'none';
-  const now = Date.now(); const fu = new Date(lead.nextFollowUpAt).getTime();
-  const today = new Date(); today.setHours(0,0,0,0);
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+// `now` is null on the server render and on React's first client render
+// (before hydration completes) — both must produce byte-identical output,
+// so every lead falls into the same deterministic 'none' bucket until then.
+// Once mounted, an effect supplies the real clock and this re-buckets
+// leads correctly — a normal client-side state update, not a hydration
+// diff, so it can never desync server/client output again.
+function followUpState(lead: MobileLead, now: number | null): 'overdue' | 'today' | 'upcoming' | 'none' {
+  if (now === null || !lead.nextFollowUpAt) return 'none';
+  const fu = new Date(lead.nextFollowUpAt).getTime();
+  const today = new Date(now); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
   if (fu < today.getTime()) return 'overdue';
   if (fu < tomorrow.getTime()) return 'today';
   return 'upcoming';
@@ -47,7 +53,7 @@ function initialsFor(company: string) {
 /** Maps a lead's free-text status to a semantic pill tone. Falls back to a
  * neutral/urgency-based tone when the status string doesn't match a known
  * pipeline stage name, rather than guessing at a color. */
-function statusToneFor(lead: MobileLead): PillTone {
+function statusToneFor(lead: MobileLead, now: number | null): PillTone {
   const s = lead.status.toLowerCase();
   if (s.includes('won') || s.includes('accepted') || s.includes('received')) return 'stage-won';
   if (s.includes('negotiat')) return 'stage-negotiation';
@@ -55,7 +61,7 @@ function statusToneFor(lead: MobileLead): PillTone {
   if (s.includes('qualif')) return 'stage-qualified';
   if (s.includes('contact')) return 'stage-contacted';
   if (s.includes('lost') || s.includes('reject')) return 'stage-lost';
-  if (followUpState(lead) === 'overdue') return 'danger';
+  if (followUpState(lead, now) === 'overdue') return 'danger';
   return 'stage-new';
 }
 
@@ -85,6 +91,9 @@ export function RoleAwareLeadList({
   const [role, setRole] = useState<MobileUserRole>(providedUser?.role ?? 'owner');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('All');
+  // Deliberately null until mounted — see the comment on followUpState above.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => { setNow(Date.now()); }, []);
 
   const activeUser = useMemo(() => {
     if (providedUser && (!demoMode || !allowRolePreview)) return providedUser;
@@ -128,9 +137,9 @@ export function RoleAwareLeadList({
 
       {/* SF-18-118: urgency-based grouping */}
       {[
-        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: MobileLead) => followUpState(l) === 'overdue' },
-        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: MobileLead) => followUpState(l) === 'today' },
-        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: MobileLead) => followUpState(l) !== 'overdue' && followUpState(l) !== 'today' },
+        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: MobileLead) => followUpState(l, now) === 'overdue' },
+        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: MobileLead) => followUpState(l, now) === 'today' },
+        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: MobileLead) => followUpState(l, now) !== 'overdue' && followUpState(l, now) !== 'today' },
       ].map(group => {
         const groupLeads = leads.filter(group.filter);
         if (!groupLeads.length) return null;
@@ -154,14 +163,14 @@ export function RoleAwareLeadList({
                     name={lead.company}
                     meta={`${lead.contact} · ${lead.market} · ${lead.valueUsd ? `$${lead.valueUsd.toLocaleString()}` : 'No value yet'}`}
                     statusLabel={lead.status}
-                    statusTone={statusToneFor(lead)}
-                    onOpen={() => { window.location.href = `/leads/${encodeURIComponent(lead.id)}`; }}
+                    statusTone={statusToneFor(lead, now)}
+                    onOpen={() => { window.location.href = `/leads/${encodeURIComponent(lead.id)}?mode=${isSupplier ? 'suppliers' : 'buyers'}`; }}
                     onCall={call ? () => { window.location.href = call!; } : undefined}
                     onWhatsApp={whatsapp ? () => window.open(whatsapp, '_blank', 'noreferrer') : undefined}
                     thirdAction={
                       isSupplier
-                        ? { icon: '⏰', label: 'Nudge supplier', tone: 'warning', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}`; } }
-                        : { icon: '▤', label: 'Create quote', tone: 'stage-contacted', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}/quote?handoff=mobile-lead-row`; } }
+                        ? { icon: '⏰', label: 'Nudge supplier', tone: 'warning', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}?mode=suppliers`; } }
+                        : { icon: '▤', label: 'Create quote', tone: 'stage-contacted', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}/quote?handoff=mobile-lead-row&mode=buyers`; } }
                     }
                   />
                 );

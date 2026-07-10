@@ -123,7 +123,7 @@ export function LeadTableRow({
   const readiness = readinessMap.get(lead.id);
   const blockerCount = readiness?.blockerCount ?? 0;
   const followUpState = getFollowUpState(lead.next_follow_up_at, hydratedNowIso);
-  const commandCenterHref = getLeadCommandCenterHref(lead.id);
+  const commandCenterHref = getLeadCommandCenterHref(lead.id, undefined, lead.lead_type === 'supplier' ? 'suppliers' : 'buyers');
   const health = computeLeadHealth({
     created_at: lead.created_at,
     updated_at: lead.updated_at,
