@@ -47,7 +47,7 @@ export function MobileShell({
 
   return (
     <div
-      className="sfm-app min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(98,166,255,.55),rgba(124,58,237,.14)_36%,rgba(255,255,255,0)_58%),linear-gradient(180deg,#eaf3ff_0%,#edf3fb_48%,#edf3fb_100%)] text-slate-950 dark:bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,.24),transparent_34%),linear-gradient(180deg,#020617,#0f172a)] dark:text-white"
+      className="sfm-app min-h-screen overflow-x-hidden bg-surface-2 text-slate-950 dark:bg-slate-950 dark:text-white"
       data-feature-flag="feature/mobile_app_v1"
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
 import {
   approveActualOrderLinesGateAction,
@@ -8,7 +9,7 @@ import {
   updateActualOrderLineAction,
 } from '@/features/orders/server';
 import type { CatalogOrderOption8S, ProductionOrder8S } from './OrdersProductionWorkspace81DRepair3';
-import { SearchBar } from '@/features/mobile/components/primitives';
+import { SearchBar, SwipeRow, PullToRefresh, SegmentedControl, StatusPill, PILL_TONE_SOLID_VAR, type PillTone } from '@/features/mobile/components/primitives';
 import { DiscussionButton } from '@/components/chat/discussion-button';
 
 type FilterKey = 'all' | 'ready' | 'blocked' | 'finance' | 'freight';
@@ -60,11 +61,11 @@ function orderStatus(order: ProductionOrder8S) {
   return 'Ready now';
 }
 
-function statusClass(order: ProductionOrder8S) {
-  if (isBlocked(order)) return 'bg-danger-bg text-danger-fg';
-  if (isFinanceReady(order)) return 'bg-info-bg text-info-fg';
-  if (isFreightReady(order)) return 'bg-stage-contacted-bg text-stage-contacted-fg';
-  return 'bg-success-bg text-success-fg';
+function orderStatusTone(order: ProductionOrder8S): PillTone {
+  if (isBlocked(order)) return 'danger';
+  if (isFinanceReady(order)) return 'info';
+  if (isFreightReady(order)) return 'stage-contacted';
+  return 'success';
 }
 
 function StatCard({ label, value, helper }: { label: string; value: number; helper: string }) {
@@ -78,29 +79,31 @@ function StatCard({ label, value, helper }: { label: string; value: number; help
 }
 
 function OrderCard({ order, selected, onClick }: { order: ProductionOrder8S; selected: boolean; onClick: () => void }) {
+  const tone = orderStatusTone(order);
   return (
-    <button type="button" onClick={onClick} className="w-full text-left">
-      <article className={`rounded-hero border bg-white/95 p-4 shadow-[0_18px_45px_rgba(15,23,42,.08)] ring-1 ring-slate-950/[0.03] transition active:scale-[0.99] ${selected ? 'border-blue-300' : 'border-white/80'}`}>
-        <div className="flex items-start gap-3">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
-            <SetuIcon name="orders" className="h-6 w-6" />
-          </div>
+    <SwipeRow
+      leftAction={{ label: '📄 Docs', tone: 'info' }}
+      rightAction={{ label: '📞 Call', tone: 'success' }}
+      onSwipeRight={onClick}
+      onSwipeLeft={onClick}
+    >
+      <button type="button" onClick={onClick} className="w-full text-left">
+        <article className={`flex gap-2.5 rounded-card border bg-white p-3.5 shadow-soft transition ${selected ? 'border-brand-400 shadow-[0_0_0_2px_rgba(31,72,124,.15)]' : 'border-line'}`}>
+          <span className="w-[3px] shrink-0 self-stretch rounded-full" style={{ background: PILL_TONE_SOLID_VAR[tone] }} />
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-950">{order.companyName}</p>
-                <p className="mt-1 truncate text-xs font-bold text-slate-500">{order.orderNumber ?? 'Order number pending'} • {titleCase(order.orderType)}</p>
+              <p className="truncate text-[13.5px] font-semibold text-content-primary">{order.companyName}</p>
+              <div className="shrink-0 text-right">
+                <p className="text-[13px] font-semibold tabular-nums text-content-primary">{money(order.actualTotal ?? order.quotedTotal, order.currency)}</p>
+                <p className="text-right text-[9px] font-semibold text-content-faint">{order.lines.length} line{order.lines.length === 1 ? '' : 's'}</p>
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${statusClass(order)}`}>{orderStatus(order)}</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-2xl bg-slate-50 p-2"><b className="block text-slate-900">{money(order.actualTotal ?? order.quotedTotal, order.currency)}</b><span className="text-slate-500">Value</span></div>
-              <div className="rounded-2xl bg-slate-50 p-2"><b className="block text-slate-900">{order.lines.length}</b><span className="text-slate-500">Lines</span></div>
-            </div>
+            <p className="mt-0.5 truncate text-[11px] font-medium text-content-muted">{order.orderNumber ?? 'Order number pending'} · {titleCase(order.orderType)}</p>
+            <div className="mt-1.5"><StatusPill tone={tone}>{orderStatus(order)}</StatusPill></div>
           </div>
-        </div>
-      </article>
-    </button>
+        </article>
+      </button>
+    </SwipeRow>
   );
 }
 
@@ -173,7 +176,7 @@ function OrderActionSheet({ order, catalogOptions, onClose, organizationId, curr
 export function MobileOrdersWorkspace({ orders, catalogOptions, organizationId, currentUserId, currentUserName }: Props) {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(orders[0] ? orderKey(orders[0]) : null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const ready = orders.filter((order) => !isBlocked(order));
   const blocked = orders.filter(isBlocked);
   const finance = orders.filter(isFinanceReady);
@@ -186,8 +189,16 @@ export function MobileOrdersWorkspace({ orders, catalogOptions, organizationId, 
     return matchesFilter && matchesQuery;
   });
   const filters: Array<{ key: FilterKey; label: string }> = [{ key: 'all', label: 'All' }, { key: 'ready', label: 'Ready' }, { key: 'blocked', label: 'Blocked' }, { key: 'finance', label: 'Finance' }, { key: 'freight', label: 'Freight' }];
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentMode = searchParams.get('mode') === 'buyers' ? 'buyer' : searchParams.get('mode') === 'suppliers' ? 'supplier' : 'all';
+  function changeMode(next: 'all' | 'buyer' | 'supplier') {
+    router.push(`/orders?mode=${next === 'buyer' ? 'buyers' : next === 'supplier' ? 'suppliers' : 'all'}`);
+  }
   return (
+    <PullToRefresh onRefresh={() => { router.refresh(); return new Promise((resolve) => setTimeout(resolve, 500)); }}>
     <div className="space-y-5 pb-5">
+      <SegmentedControl options={[{ value: 'all' as const, label: 'All' }, { value: 'buyer' as const, label: 'Buyer' }, { value: 'supplier' as const, label: 'Supplier' }]} value={currentMode} onChange={changeMode} />
       <SearchBar placeholder="Search orders" value={query} onChange={setQuery} />
       <div className="flex gap-3 overflow-x-auto pb-1 pt-2">{filters.map((item) => <button key={item.key} type="button" onClick={() => setFilter(item.key)} className={`min-h-12 min-w-[6.25rem] rounded-full px-5 text-sm font-black shadow-sm ${filter === item.key ? 'bg-brand-700 text-white shadow-black/20' : 'bg-white/85 text-slate-800 ring-1 ring-white/80'}`}>{item.label}</button>)}</div>
       <section className="rounded-hero bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,.20),transparent_34%),linear-gradient(135deg,#061c2e,#0b2e4a_62%,#061426)] p-5 text-white shadow-[0_28px_80px_rgba(15,23,42,.28)]"><div className="flex items-start gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400/20 text-amber-200"><SetuIcon name="orders" className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-[0.2em] text-white/90">Order command center</p><p className="mt-1 text-sm text-white/68">Execution queue and mobile edits</p></div></div><div className="mt-5 grid grid-cols-3 gap-3"><StatCard label="All" value={orders.length} helper="Orders" /><StatCard label="Ready" value={ready.length} helper="No blocker" /><StatCard label="Blocked" value={blocked.length} helper="Review" /></div></section>
@@ -195,5 +206,6 @@ export function MobileOrdersWorkspace({ orders, catalogOptions, organizationId, 
       <div className="space-y-3">{filtered.map((order) => <OrderCard key={orderKey(order)} order={order} selected={selectedId === orderKey(order)} onClick={() => setSelectedId(orderKey(order))} />)}{filtered.length === 0 ? <div className="rounded-panel border border-dashed border-slate-200 bg-white/80 p-6 text-center"><p className="text-sm font-black text-slate-900">No matching orders</p><p className="mt-1 text-xs text-slate-500">Choose another filter to see the queue.</p></div> : null}</div>
       <OrderActionSheet order={selected} catalogOptions={catalogOptions} onClose={() => setSelectedId(null)} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} />
     </div>
+    </PullToRefresh>
   );
 }

@@ -1,10 +1,12 @@
+'use client';
+
 // Shared mobile primitives — built on the tokens in design-tokens.css.
 // Consumers (MobileDashboardHome, role-aware-lead-list, MobileQuotesList,
 // MobileOrdersWorkspace, MobileTasksWorkspace) compose these instead of
 // hand-rolling raw Tailwind palette classes (bg-blue-50, bg-rose-50, etc.)
 // per screen. See DESIGN-SYSTEM.md section 4 for the source spec.
 
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -296,4 +298,134 @@ export function LeadRow({
 
 export function MonthDivider({ label }: { label: string }) {
   return <p className="mb-2 mt-3.5 text-center text-[11px] font-semibold text-content-faint">{label}</p>;
+}
+
+// ---------------------------------------------------------------------------
+// SwipeRow — reveals a left/right action on drag, snaps back after firing.
+// Built on vanilla touch events; no gesture library dependency. Used to wrap
+// ListCard/LeadRow-style rows on Leads, Quotes, Orders, Tasks.
+// ---------------------------------------------------------------------------
+export function SwipeRow({
+  children,
+  leftAction,
+  rightAction,
+  onSwipeLeft,
+  onSwipeRight,
+  threshold = 64,
+}: {
+  children: ReactNode;
+  leftAction?: { label: string; tone: PillTone };
+  rightAction?: { label: string; tone: PillTone };
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
+  threshold?: number;
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const start = useRef(0);
+  const dragging = useRef(false);
+
+  function setX(x: number) {
+    if (rowRef.current) rowRef.current.style.transform = `translateX(${x}px)`;
+  }
+
+  function onStart(clientX: number) {
+    dragging.current = true;
+    start.current = clientX;
+    if (rowRef.current) rowRef.current.style.transition = 'none';
+  }
+  function onMove(clientX: number) {
+    if (!dragging.current) return;
+    const dx = clientX - start.current;
+    const clamped = Math.max(-96, Math.min(96, dx));
+    if ((clamped > 0 && !onSwipeRight) || (clamped < 0 && !onSwipeLeft)) return;
+    setX(clamped);
+  }
+  function onEnd(clientX: number) {
+    if (!dragging.current) return;
+    dragging.current = false;
+    const dx = clientX - start.current;
+    if (rowRef.current) rowRef.current.style.transition = 'transform .25s cubic-bezier(.2,0,0,1)';
+    if (dx > threshold && onSwipeRight) onSwipeRight();
+    else if (dx < -threshold && onSwipeLeft) onSwipeLeft();
+    setX(0);
+  }
+
+  return (
+    <div className="relative mb-2 overflow-hidden rounded-card">
+      {leftAction || rightAction ? (
+        <div className="absolute inset-0 flex items-stretch justify-between">
+          {rightAction ? (
+            <div className="flex items-center gap-1.5 px-4 text-[11px] font-semibold text-white" style={{ background: PILL_TONE_SOLID_VAR[rightAction.tone] }}>{rightAction.label}</div>
+          ) : <div />}
+          {leftAction ? (
+            <div className="ml-auto flex items-center gap-1.5 px-4 text-[11px] font-semibold text-white" style={{ background: PILL_TONE_SOLID_VAR[leftAction.tone] }}>{leftAction.label}</div>
+          ) : null}
+        </div>
+      ) : null}
+      <div
+        ref={rowRef}
+        className="relative"
+        onTouchStart={(e) => onStart(e.touches[0].clientX)}
+        onTouchMove={(e) => onMove(e.touches[0].clientX)}
+        onTouchEnd={(e) => onEnd(e.changedTouches[0].clientX)}
+        onMouseDown={(e) => onStart(e.clientX)}
+        onMouseMove={(e) => { if (dragging.current) onMove(e.clientX); }}
+        onMouseUp={(e) => onEnd(e.clientX)}
+        onMouseLeave={(e) => { if (dragging.current) onEnd(e.clientX); }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PullToRefresh — wraps a scrollable list; pulling down past threshold at
+// scrollTop===0 triggers onRefresh. Vanilla touch events, no dependency.
+// ---------------------------------------------------------------------------
+export function PullToRefresh({ children, onRefresh }: { children: ReactNode; onRefresh: () => Promise<void> | void }) {
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const start = useRef(0);
+  const pulling = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  function onStart(clientY: number) {
+    // These screens scroll at the document level (no nested overflow-y-auto
+    // container), so "at top" means window.scrollY, not a div's scrollTop.
+    if (window.scrollY <= 0) {
+      start.current = clientY;
+      pulling.current = true;
+    }
+  }
+  function onMove(clientY: number) {
+    if (!pulling.current || !indicatorRef.current) return;
+    const dy = clientY - start.current;
+    if (dy > 0) indicatorRef.current.style.transform = `translateY(${Math.min(60, dy * 0.5)}px)`;
+  }
+  async function onEnd() {
+    if (!pulling.current || !indicatorRef.current) return;
+    pulling.current = false;
+    const t = indicatorRef.current.style.transform;
+    const dist = t ? parseFloat(t.replace(/[^\d.]/g, '')) : 0;
+    if (dist > 40) {
+      setRefreshing(true);
+      await onRefresh();
+      setRefreshing(false);
+    }
+    indicatorRef.current.style.transform = 'translateY(0)';
+  }
+
+  return (
+    <div
+      className="relative"
+      onTouchStart={(e) => onStart(e.touches[0].clientY)}
+      onTouchMove={(e) => onMove(e.touches[0].clientY)}
+      onTouchEnd={onEnd}
+    >
+      <div ref={indicatorRef} className="pointer-events-none absolute inset-x-0 -top-9 flex h-9 items-center justify-center text-[11px] font-semibold text-content-muted transition-transform">
+        {refreshing ? 'Refreshing…' : 'Pull to refresh'}
+      </div>
+      {children}
+    </div>
+  );
 }

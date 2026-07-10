@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
 import type { QuoteWorkspaceListItem } from '@/features/quotes/types/workspace';
 import { cn } from '@/lib/utils';
-import { SearchBar } from '@/features/mobile/components/primitives';
+import { SearchBar, SwipeRow, PullToRefresh, SegmentedControl, StatusPill, PILL_TONE_SOLID_VAR, type PillTone } from '@/features/mobile/components/primitives';
 import { DiscussionButton } from '@/components/chat/discussion-button';
 
 type QuoteFilter = 'all' | 'needs_action' | 'accepted';
@@ -25,12 +26,12 @@ function filterQuote(item: QuoteWorkspaceListItem, filter: QuoteFilter) {
   return true;
 }
 
-function statusClasses(item: QuoteWorkspaceListItem) {
-  if (item.status === 'pending_approval') return 'bg-warning-bg text-warning-fg ring-1 ring-warning-border';
-  if (item.status === 'approved' || item.status === 'accepted' || item.hasAcceptedContract) return 'bg-success-bg text-success-fg ring-1 ring-success-border';
-  if (item.status === 'sent' || item.status === 'negotiating') return 'bg-stage-contacted-bg text-stage-contacted-fg ring-1 ring-stage-contacted-border';
-  if (item.status === 'rejected' || item.status === 'expired') return 'bg-danger-bg text-danger-fg ring-1 ring-danger-border';
-  return 'bg-surface-2 text-content-secondary ring-1 ring-line';
+function statusTone(item: QuoteWorkspaceListItem): PillTone {
+  if (item.status === 'pending_approval') return 'warning';
+  if (item.status === 'approved' || item.status === 'accepted' || item.hasAcceptedContract) return 'success';
+  if (item.status === 'sent' || item.status === 'negotiating') return 'stage-contacted';
+  if (item.status === 'rejected' || item.status === 'expired') return 'danger';
+  return 'neutral';
 }
 
 function nextStepClasses(tone: QuoteWorkspaceListItem['nextStep']['tone']) {
@@ -47,42 +48,39 @@ function whatsappHref(item: QuoteWorkspaceListItem) {
 }
 
 function QuoteCard({ item, active, onSelect }: { item: QuoteWorkspaceListItem; active: boolean; onSelect: () => void }) {
+  const tone = statusTone(item);
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'w-full rounded-panel border bg-white p-4 text-left shadow-sm transition',
-        active ? 'border-blue-400 shadow-blue-100' : 'border-slate-200 hover:border-slate-300',
-      )}
+    <SwipeRow
+      leftAction={item.status === 'pending_approval' ? { label: '✓ Approve', tone: 'success' } : undefined}
+      rightAction={{ label: '✎ Revise', tone: 'stage-contacted' }}
+      onSwipeRight={item.status === 'pending_approval' ? onSelect : undefined}
+      onSwipeLeft={onSelect}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-base font-black text-slate-950">{item.companyName}</p>
-          <p className="mt-1 text-xs font-semibold text-slate-500">{item.contactName ?? 'No contact'} · {item.quoteNumber ?? item.id.slice(0, 8)}</p>
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cn(
+          'flex w-full gap-2.5 rounded-card border bg-white p-3.5 text-left shadow-soft transition',
+          active ? 'border-brand-400 shadow-[0_0_0_2px_rgba(31,72,124,.15)]' : 'border-line',
+        )}
+      >
+        <span className="w-[3px] shrink-0 self-stretch rounded-full" style={{ background: PILL_TONE_SOLID_VAR[tone] }} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-[13.5px] font-semibold text-content-primary">{item.companyName}</p>
+            <div className="shrink-0 text-right">
+              <p className="text-[13px] font-semibold tabular-nums text-content-primary">{formatQuoteMoney(item.subtotal, item.currency)}</p>
+              <p className="text-right text-[9px] font-semibold text-content-faint">{item.quoteNumber ?? item.id.slice(0, 8)}</p>
+            </div>
+          </div>
+          <p className="mt-0.5 truncate text-[11px] font-medium text-content-muted">{item.contactName ?? 'No contact'} · {item.lineItems.length} line{item.lineItems.length === 1 ? '' : 's'}</p>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <StatusPill tone={tone}>{labelizeStatus(item.status)}</StatusPill>
+            <p className="max-w-[55%] truncate text-[10.5px] font-medium text-content-faint">{item.nextStep.label}</p>
+          </div>
         </div>
-        <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em]', statusClasses(item))}>{labelizeStatus(item.status)}</span>
-      </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-2xl bg-slate-50 p-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Value</p>
-          <p className="mt-1 text-xs font-black text-slate-900">{formatQuoteMoney(item.subtotal, item.currency)}</p>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Lines</p>
-          <p className="mt-1 text-xs font-black text-slate-900">{item.lineItems.length}</p>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">History</p>
-          <p className="mt-1 text-xs font-black text-slate-900">{item.historyCount}</p>
-        </div>
-      </div>
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">Next move</p>
-        <p className="mt-1 text-sm font-black text-slate-950">{item.nextStep.label}</p>
-        <p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-500">{item.nextStep.detail}</p>
-      </div>
-    </button>
+      </button>
+    </SwipeRow>
   );
 }
 
@@ -155,6 +153,12 @@ export function MobileQuotesList({ items, organizationId, currentUserId, current
   const [filter, setFilter] = useState<QuoteFilter>('all');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentMode = searchParams.get('mode') === 'buyers' ? 'buyer' : searchParams.get('mode') === 'suppliers' ? 'supplier' : 'all';
+  function changeMode(next: 'all' | 'buyer' | 'supplier') {
+    router.push(`/quotes?mode=${next === 'buyer' ? 'buyers' : next === 'supplier' ? 'suppliers' : 'all'}`);
+  }
   const filteredItems = useMemo(() => {
     const byKpi = items.filter((item) => filterQuote(item, filter));
     const q = query.trim().toLowerCase();
@@ -167,6 +171,7 @@ export function MobileQuotesList({ items, organizationId, currentUserId, current
   const activeLabel = filter === 'needs_action' ? 'Needs action' : filter === 'accepted' ? 'Accepted' : 'All quotes';
 
   return (
+    <PullToRefresh onRefresh={() => { router.refresh(); return new Promise((resolve) => setTimeout(resolve, 500)); }}>
     <main className="min-h-screen bg-slate-50 px-4 pb-28 pt-4">
       <section className="rounded-hero bg-gradient-to-br from-brand-900 to-brand-700 p-5 text-white shadow-xl shadow-black/20">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-200">Quotes</p>
@@ -178,7 +183,8 @@ export function MobileQuotesList({ items, organizationId, currentUserId, current
         </div>
       </section>
 
-      <div className="mt-4"><SearchBar placeholder="Search quotes" value={query} onChange={setQuery} /></div>
+      <div className="mt-4"><SegmentedControl options={[{ value: 'all' as const, label: 'All' }, { value: 'buyer' as const, label: 'Buyer' }, { value: 'supplier' as const, label: 'Supplier' }]} value={currentMode} onChange={changeMode} /></div>
+      <SearchBar placeholder="Search quotes" value={query} onChange={setQuery} />
 
       <section className="mt-4 flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
         <div>
@@ -193,5 +199,6 @@ export function MobileQuotesList({ items, organizationId, currentUserId, current
       </section>
       {selected ? <QuoteDetail item={selected} onClose={() => setSelectedId(null)} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} /> : null}
     </main>
+    </PullToRefresh>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   filterLeadsForRole,
   mobileLeadDemoData,
@@ -10,7 +11,7 @@ import {
   type MobileUserContext,
   type MobileUserRole,
 } from '../lib/role-aware-leads';
-import { LeadRow, SearchBar, type PillTone } from './primitives';
+import { LeadRow, SearchBar, SwipeRow, PullToRefresh, SegmentedControl, type PillTone } from './primitives';
 
 type SignedInSummary = {
   name: string;
@@ -92,13 +93,29 @@ export function RoleAwareLeadList({
 
   const sourceLeads = providedLeads ?? mobileLeadDemoData;
   const leads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status, leadType: initialLeadType }), [activeUser, initialLeadType, query, sourceLeads, status]);
+  const router = useRouter();
+  function changeLeadTypeMode(next: 'all' | 'buyer' | 'supplier') {
+    const params = new URLSearchParams();
+    params.set('mode', next === 'buyer' ? 'buyers' : next === 'supplier' ? 'suppliers' : 'all');
+    router.push(`/leads?${params.toString()}`);
+  }
 
   return (
+    <PullToRefresh onRefresh={() => { router.refresh(); return new Promise((resolve) => setTimeout(resolve, 500)); }}>
     <section className="sf-mobile-lead-queue space-y-3.5">
       <div className="flex items-baseline justify-between gap-2">
         <h1 className="text-lg font-semibold tracking-tight text-content-primary">{leadTypeLabel(initialLeadType)} leads</h1>
         <p className="shrink-0 text-xs font-medium text-content-muted">{leads.length} shown</p>
       </div>
+      <SegmentedControl
+        options={[
+          { value: 'all' as const, label: 'All' },
+          { value: 'buyer' as const, label: 'Buyer' },
+          { value: 'supplier' as const, label: 'Supplier' },
+        ]}
+        value={initialLeadType || 'all'}
+        onChange={changeLeadTypeMode}
+      />
       {demoMode && allowRolePreview ? (
         <div className="grid grid-cols-4 gap-1.5">
           {(['owner', 'admin', 'manager', 'member'] as MobileUserRole[]).map((item) => (
@@ -130,7 +147,7 @@ export function RoleAwareLeadList({
                 const call = telHref(lead.phone);
                 const whatsapp = whatsappHref(lead);
                 const isSupplier = lead.leadType === 'supplier';
-                return (
+                const row = (
                   <LeadRow
                     key={lead.id}
                     id={lead.id}
@@ -140,7 +157,7 @@ export function RoleAwareLeadList({
                     statusLabel={lead.status}
                     statusTone={statusToneFor(lead)}
                     onOpen={() => { window.location.href = `/leads/${encodeURIComponent(lead.id)}`; }}
-                    onCall={call ? () => { window.location.href = call; } : undefined}
+                    onCall={call ? () => { window.location.href = call!; } : undefined}
                     onWhatsApp={whatsapp ? () => window.open(whatsapp, '_blank', 'noreferrer') : undefined}
                     thirdAction={
                       isSupplier
@@ -149,12 +166,25 @@ export function RoleAwareLeadList({
                     }
                   />
                 );
+                if (!call && !whatsapp) return <div key={lead.id}>{row}</div>;
+                return (
+                  <SwipeRow
+                    key={lead.id}
+                    leftAction={call ? { label: '📞 Call', tone: 'success' } : undefined}
+                    rightAction={whatsapp ? { label: '💬 WhatsApp', tone: 'stage-won' } : undefined}
+                    onSwipeRight={call ? () => { window.location.href = call!; } : undefined}
+                    onSwipeLeft={whatsapp ? () => window.open(whatsapp, '_blank', 'noreferrer') : undefined}
+                  >
+                    {row}
+                  </SwipeRow>
+                );
               })}
             </div>
           </div>
         );
       })}
     </section>
+    </PullToRefresh>
   );
 }
 

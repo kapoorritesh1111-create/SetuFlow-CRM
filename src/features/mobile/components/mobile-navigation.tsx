@@ -238,7 +238,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} />
         <MetricTile tone="warning" icon={<SetuIcon name="security" className="h-4 w-4" />} value={complianceBlockers} label="Compliance" sub="Needs review" href={scopedHref('/compliance', scope)} />
       </MetricGrid>
-      <section className="rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
+      <section className="overflow-hidden rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Activity feed</p>
@@ -248,13 +248,13 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         </div>
         <div className="mt-3 grid gap-2">
           {recentActivity.length ? recentActivity.map((activity) => (
-            <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 rounded-card bg-surface-2 p-3 transition hover:bg-surface-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-brand-700 text-xs font-semibold uppercase text-white">{activity.iconKey.slice(0, 2)}</span>
-              <div className="min-w-0 flex-1">
+            <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 overflow-hidden rounded-card bg-surface-2 p-3 transition hover:bg-surface-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-brand-700 text-xs font-semibold uppercase text-white">{activity.iconKey.slice(0, 2)}</span>
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="truncate text-[13px] font-semibold text-content-primary">{activityTitle(activity)}</p>
                 <p className="truncate text-[11px] font-medium text-content-muted">{activity.message}</p>
               </div>
-              <span className="text-[10px] font-semibold text-content-faint">{formatActivityTime(activity.timestamp)}</span>
+              <span className="shrink-0 text-[10px] font-semibold text-content-faint">{formatActivityTime(activity.timestamp)}</span>
             </Link>
           )) : <div className="rounded-card bg-surface-2 p-4 text-sm font-semibold text-content-muted">No recent activity yet.</div>}
         </div>
