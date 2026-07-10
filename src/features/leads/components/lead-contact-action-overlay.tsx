@@ -84,7 +84,7 @@ export function LeadContactActionOverlay({ leads }: { leads: LeadContactActionLe
 
         <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           {phone ? (
-            <a href={telHref} className="rounded-xl bg-surface-1 px-4 py-2 text-center text-xs font-extrabold text-white shadow-sm hover:bg-surface-app">Call</a>
+            <a href={telHref} className="rounded-xl bg-brand-700 px-4 py-2 text-center text-xs font-extrabold text-white shadow-sm hover:bg-brand-800">Call</a>
           ) : (
             <a href={`/leads?leadId=${activeLead.id}`} className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-center text-xs font-extrabold text-orange-800">Missing phone</a>
           )}

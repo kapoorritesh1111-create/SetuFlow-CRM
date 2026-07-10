@@ -210,7 +210,7 @@ export function LeadTableRow({
       </div>
 
       <div className="relative flex items-center justify-end gap-1.5">
-        <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-brand-800 bg-surface-1 px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
+        <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-brand-800 bg-brand-700 px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
         {onDeleteLead ? <button type="button" onClick={(event) => { event.stopPropagation(); onDeleteLead(lead.id, lead.company_name); }} className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50">Remove</button> : null}
         <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:bg-slate-50">More</button>
         {actionsOpen ? (

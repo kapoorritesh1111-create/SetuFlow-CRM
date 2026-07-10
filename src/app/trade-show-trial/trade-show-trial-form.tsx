@@ -37,7 +37,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-surface-2 px-5 py-4 text-sm font-extrabold text-white shadow-[0_18px_38px_rgba(6,38,63,0.18)] transition hover:-translate-y-0.5 hover:bg-surface-1 disabled:cursor-not-allowed disabled:opacity-70 sm:text-base"
+      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-700 px-5 py-4 text-sm font-extrabold text-white shadow-[0_18px_38px_rgba(6,38,63,0.18)] transition hover:-translate-y-0.5 hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-70 sm:text-base"
     >
       {pending ? 'Preparing your workspace...' : 'Start My Free Trial'}
       <span aria-hidden className="text-xl leading-none">›</span>

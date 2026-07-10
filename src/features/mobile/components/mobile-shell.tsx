@@ -32,7 +32,9 @@ export function MobileShell({
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >
       <BrandedMobileTopBar signedIn={signedIn} canonical={canonical} />
-      <main className="mx-auto w-full max-w-[430px] space-y-4 px-4 py-4 pb-[calc(108px+env(safe-area-inset-bottom))]">
+      {/* pb must clear the quick-capture FAB: 88px offset + 64px height + 16px margin = 168px.
+          Previously 108px, leaving a ~44px dead zone where the FAB overlapped the last card. */}
+      <main className="mx-auto w-full max-w-[430px] space-y-4 px-4 py-4 pb-[calc(168px+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <a

@@ -11,6 +11,7 @@ import { canonicalMobileNavItems, standaloneMobileNavItems } from '@/lib/navigat
 import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
+import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
@@ -101,6 +102,7 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
             <p className="truncate text-lg font-black tracking-tight">{greeting}, {firstName}</p>
             <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-gradient-to-br from-teal-500 to-brand-800 text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Ask Setu Guru" title="Setu Guru"><SetuIcon name="sparkles" className="h-5 w-5" /></button>
           <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button>
           <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
           <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
@@ -131,6 +133,8 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { 
         <div className="mt-4 grid gap-2">
           <button type="button" onClick={() => { onClose(); onShareVCard?.(); }} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</button>
           <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile card</Link>
+          <Link href="/documents" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>📄</span>Documents</Link>
+          <Link href="/compliance" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>🛡</span>Compliance</Link>
           <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
           {signedIn?.primaryPhone ? <a href={`tel:${signedIn.primaryPhone}`} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>☎</span>Call profile phone</a> : null}
           {signedIn?.website ? <a href={signedIn.website} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>↗</span>Open website</a> : null}
@@ -206,30 +210,45 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
   const complianceBlockers = getKpiValue(data, 'compliance-blockers');
   const trackedOrders = data.executionReadiness.trackedOrders;
   const recentActivity = data.recentActivity.slice(0, 5);
-  const scopeLabel = scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier';
-  const metrics: MobileMetric[] = [
-    { label: 'Leads', value: openLeads, sub: `${scopeLabel} open`, href: scopedHref('/leads', scope), icon: 'lead', tone: 'bg-blue-50 text-blue-600', valueTone: 'text-blue-600' },
-    { label: 'Follow-ups', value: overdueFollowUps, sub: 'Overdue', href: scopedHref('/leads?handoff=dashboard-overdue', scope), icon: 'calendar', tone: 'bg-rose-50 text-rose-500', valueTone: 'text-rose-500' },
-    { label: 'Pipeline', value: formatCompactCurrency(pipelineValue), sub: 'Live value', href: scopedHref('/pipeline', scope), icon: 'workflow', tone: 'bg-emerald-50 text-emerald-600', valueTone: 'text-emerald-600' },
-    { label: 'Quotes', value: activeQuotes, sub: 'Active now', href: scopedHref('/quotes', scope), icon: 'quote', tone: 'bg-sky-50 text-sky-600', valueTone: 'text-sky-600' },
-    { label: 'Orders', value: trackedOrders, sub: 'Execution', href: scopedHref('/orders', scope), icon: 'orders', tone: 'bg-amber-50 text-amber-600', valueTone: 'text-amber-600' },
-    { label: 'Compliance', value: complianceBlockers, sub: 'Needs review', href: scopedHref('/compliance', scope), icon: 'security', tone: 'bg-violet-50 text-violet-600', valueTone: 'text-violet-600' },
-  ];
 
   return (
     <div className="space-y-4">
-      <section className="rounded-hero border border-white/70 bg-white/90 p-3 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="grid grid-cols-3 gap-1 rounded-panel bg-slate-100 p-1 dark:bg-slate-950">
-          {(['all', 'buyer', 'supplier'] as const).map((item) => <button key={item} type="button" onClick={() => changeScope(item)} className={`min-h-11 rounded-card px-3 text-sm font-black transition ${scope === item ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 dark:text-slate-300'}`}>{item === 'all' ? 'All' : item === 'buyer' ? 'Buyer' : 'Supplier'}</button>)}
+      <SegmentedControl
+        options={[
+          { value: 'all' as const, label: 'All' },
+          { value: 'buyer' as const, label: 'Buyer' },
+          { value: 'supplier' as const, label: 'Supplier' },
+        ]}
+        value={scope}
+        onChange={changeScope}
+      />
+      <MetricGrid>
+        <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} open`} href={scopedHref('/leads', scope)} />
+        <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} />
+        <MetricTile tone="brand" icon={<span className="text-sm font-bold">$</span>} value={formatCompactCurrency(pipelineValue)} label="Pipeline" sub="Live value" href={scopedHref('/pipeline', scope)} />
+        <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} />
+        <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} />
+        <MetricTile tone="warning" icon={<SetuIcon name="security" className="h-4 w-4" />} value={complianceBlockers} label="Compliance" sub="Needs review" href={scopedHref('/compliance', scope)} />
+      </MetricGrid>
+      <section className="rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Activity feed</p>
+            <h2 className="mt-1 text-[15px] font-semibold text-content-primary">Latest movement</h2>
+          </div>
+          <Link href="/dashboard" className="text-xs font-semibold text-brand-700">View all</Link>
         </div>
-      </section>
-      <section className="grid grid-cols-2 gap-3">
-        {metrics.map((metric) => <Link key={metric.label} href={metric.href} className="rounded-panel border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 transition active:scale-[.98] dark:border-slate-800 dark:bg-slate-900/90"><div className="flex items-start justify-between gap-3"><span className={`grid h-11 w-11 place-items-center rounded-2xl ${metric.tone}`}><SetuIcon name={metric.icon} className="h-5 w-5" /></span><span className="text-lg font-black text-slate-300">›</span></div><b className={`mt-3 block text-3xl ${metric.valueTone}`}>{metric.value}</b><p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{metric.label}</p><p className="text-xs font-semibold text-slate-500 dark:text-slate-300">{metric.sub}</p></Link>)}
-      </section>
-      <section className="rounded-hero border border-slate-200 bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Activity feed</p><h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">Latest movement</h2></div><Link href="/dashboard" className="text-xs font-black text-blue-600 dark:text-sky-300">View all</Link></div>
         <div className="mt-3 grid gap-2">
-          {recentActivity.length ? recentActivity.map((activity) => <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 transition hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800"><span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black uppercase text-white dark:bg-slate-700">{activity.iconKey.slice(0, 2)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-950 dark:text-white">{activityTitle(activity)}</p><p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-300">{activity.message}</p></div><span className="text-[10px] font-bold text-slate-400">{formatActivityTime(activity.timestamp)}</span></Link>) : <div className="rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300">No recent activity yet.</div>}
+          {recentActivity.length ? recentActivity.map((activity) => (
+            <Link key={activity.id} href={activity.href ?? "/leads"} className="flex items-center gap-3 rounded-card bg-surface-2 p-3 transition hover:bg-surface-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-brand-700 text-xs font-semibold uppercase text-white">{activity.iconKey.slice(0, 2)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-content-primary">{activityTitle(activity)}</p>
+                <p className="truncate text-[11px] font-medium text-content-muted">{activity.message}</p>
+              </div>
+              <span className="text-[10px] font-semibold text-content-faint">{formatActivityTime(activity.timestamp)}</span>
+            </Link>
+          )) : <div className="rounded-card bg-surface-2 p-4 text-sm font-semibold text-content-muted">No recent activity yet.</div>}
         </div>
       </section>
     </div>

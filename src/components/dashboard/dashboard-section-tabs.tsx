@@ -53,7 +53,7 @@ export function DashboardSectionTabs({ active }: { active: DashboardSectionTab }
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'rounded-card px-4 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2',
-                  isActive ? 'bg-surface-1 text-white shadow-[0_12px_28px_rgba(11,46,74,0.2)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950',
+                  isActive ? 'bg-brand-700 text-white shadow-[0_12px_28px_rgba(11,46,74,0.2)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950',
                 )}
               >
                 <span className="block text-sm font-semibold">{tab.label}</span>

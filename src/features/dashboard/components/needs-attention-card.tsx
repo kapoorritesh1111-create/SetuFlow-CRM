@@ -96,7 +96,7 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                 key={entry.key}
                 type="button"
                 onClick={() => setTab(entry.key)}
-                className={active ? 'rounded-full bg-surface-1 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)]' : 'rounded-full border border-transparent px-3.5 py-2 text-xs font-semibold text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}
+                className={active ? 'rounded-full bg-brand-700 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)]' : 'rounded-full border border-transparent px-3.5 py-2 text-xs font-semibold text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}
               >
                 {entry.label}
                 {entry.count > 0 ? (
@@ -156,14 +156,14 @@ export function NeedsAttentionCard({ items, mode = 'all', marketCode, onFocus }:
                       Review
                     </button>
                     {item.ctaHref ? (
-                      <Link href={item.ctaHref} className="rounded-full bg-surface-1 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]">
+                      <Link href={item.ctaHref} className="rounded-full bg-brand-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-brand-800">
                         {primaryAction}
                       </Link>
                     ) : (
                       <button
                         type="button"
                         onClick={() => onFocus?.(item)}
-                        className="rounded-full bg-surface-1 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-[#08253b]"
+                        className="rounded-full bg-brand-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(11,46,74,0.18)] transition hover:bg-brand-800"
                       >
                         {primaryAction}
                       </button>

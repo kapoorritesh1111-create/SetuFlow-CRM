@@ -119,7 +119,7 @@ function clearSendGateActiveBlocker(status: SendSyncStatus | null) {
       button.disabled = false;
       button.removeAttribute('disabled');
       button.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-200', 'text-slate-400');
-      button.classList.add('bg-surface-1', 'text-white');
+      button.classList.add('bg-brand-700', 'text-white');
       changed = true;
     }
   });

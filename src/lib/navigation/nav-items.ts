@@ -53,9 +53,9 @@ export const UTILITY_NAV_LABELS: Record<string, string> = {
 const MOBILE_NAV_META: Record<string, Pick<SharedNavItem, 'mobileHref' | 'mobileLabel' | 'mobileIcon' | 'mobileMatch'>> = {
   '/dashboard': { mobileHref: '/dashboard', mobileLabel: 'Home', mobileIcon: 'home', mobileMatch: ['/dashboard', '/mobile'] },
   '/leads': { mobileHref: '/leads', mobileLabel: 'Leads', mobileIcon: 'lead', mobileMatch: ['/leads', '/mobile/leads'] },
-  '/quotes': { mobileHref: '/mobile/quote', mobileLabel: 'Quotes', mobileIcon: 'quote', mobileMatch: ['/mobile/quote', '/quotes'] },
+  '/quotes': { mobileHref: '/quotes', mobileLabel: 'Quotes', mobileIcon: 'quote', mobileMatch: ['/quotes'] },
   '/orders': { mobileHref: '/orders', mobileLabel: 'Orders', mobileIcon: 'orders', mobileMatch: ['/orders', '/mobile/orders'] },
-  '/tasks': { mobileHref: '/tasks', mobileLabel: 'More', mobileIcon: 'more', mobileMatch: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance', '/mobile/settings'] },
+  '/tasks': { mobileHref: '/tasks', mobileLabel: 'Tasks', mobileIcon: 'clipboard', mobileMatch: ['/tasks'] },
   '/pipeline': { mobileHref: null, mobileLabel: 'Pipeline', mobileIcon: 'workflow', mobileMatch: ['/mobile/pipeline', '/pipeline'] },
   '/catalog': { mobileHref: null, mobileLabel: 'Catalog', mobileIcon: 'box', mobileMatch: ['/catalog'] },
   '/products': { mobileHref: null, mobileLabel: 'Products', mobileIcon: 'box', mobileMatch: ['/products'] },
@@ -108,9 +108,9 @@ export function getCanonicalMobileNavItems(): MobileNavItem[] {
 export const standaloneMobileNavItems: MobileNavItem[] = [
   { href: '/dashboard', label: 'Home', icon: 'home', match: ['/dashboard', '/mobile'] },
   { href: '/leads', label: 'Leads', icon: 'lead', match: ['/leads', '/mobile/leads'] },
-  { href: '/mobile/quote', label: 'Quotes', icon: 'quote', match: ['/mobile/quote', '/quotes'] },
+  { href: '/quotes', label: 'Quotes', icon: 'quote', match: ['/quotes', '/mobile/quote'] },
   { href: '/orders', label: 'Orders', icon: 'orders', match: ['/orders', '/mobile/orders'] },
-  { href: '/tasks', label: 'More', icon: 'more', match: ['/tasks', '/contact-exchange/vcard', '/ai-suggestions', '/documents', '/compliance', '/mobile/settings'] },
+  { href: '/tasks', label: 'Tasks', icon: 'clipboard', match: ['/tasks'] },
 ];
 
 export const canonicalMobileNavItems = getCanonicalMobileNavItems();

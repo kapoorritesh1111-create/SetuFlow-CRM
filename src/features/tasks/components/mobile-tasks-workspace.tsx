@@ -26,7 +26,7 @@ function safeDate(value: string | null) { if (!value) return null; const date = 
 function statusLabel(task: TaskRow, now: Date) { if (task.status === 'completed') return 'Done'; const due = safeDate(task.scheduled_for); if (due && due < now) return 'Overdue'; if (due && isSameDay(due, now)) return 'Planned'; return 'Scheduled'; }
 function taskIcon(task: TaskRow): SetuIconName { if (task.task_type.includes('quote')) return 'quote'; if (task.task_type.includes('document')) return 'file'; if (task.lead_id) return 'lead'; return 'clipboard'; }
 function taskTone(task: TaskRow, now: Date) { const status = statusLabel(task, now); if (status === 'Overdue') return 'from-rose-500 to-pink-500'; if (task.task_type.includes('quote')) return 'from-violet-500 to-purple-500'; if (status === 'Done') return 'from-emerald-400 to-teal-500'; return 'from-blue-500 to-indigo-600'; }
-function statusPillClasses(task: TaskRow, now: Date) { const status = statusLabel(task, now); if (status === 'Overdue') return 'bg-rose-50 text-rose-700'; if (status === 'Done' || status === 'Planned') return 'bg-emerald-50 text-emerald-700'; return 'bg-amber-50 text-amber-700'; }
+function statusPillClasses(task: TaskRow, now: Date) { const status = statusLabel(task, now); if (status === 'Overdue') return 'bg-danger-bg text-danger-fg'; if (status === 'Done' || status === 'Planned') return 'bg-success-bg text-success-fg'; return 'bg-warning-bg text-warning-fg'; }
 
 function MobileStatCard({ label, value, helper, tone }: { label: string; value: number; helper: string; tone: 'rose' | 'amber' | 'blue' }) {
   const iconClass = tone === 'rose' ? 'bg-rose-400/20 text-rose-200' : tone === 'amber' ? 'bg-amber-400/20 text-amber-200' : 'bg-blue-400/20 text-blue-200';

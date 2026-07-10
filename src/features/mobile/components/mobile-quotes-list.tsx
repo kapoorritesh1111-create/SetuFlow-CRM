@@ -24,18 +24,18 @@ function filterQuote(item: QuoteWorkspaceListItem, filter: QuoteFilter) {
 }
 
 function statusClasses(item: QuoteWorkspaceListItem) {
-  if (item.status === 'pending_approval') return 'bg-amber-100 text-amber-800 ring-1 ring-amber-200';
-  if (item.status === 'approved' || item.status === 'accepted' || item.hasAcceptedContract) return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200';
-  if (item.status === 'sent' || item.status === 'negotiating') return 'bg-blue-100 text-blue-700 ring-1 ring-blue-200';
-  if (item.status === 'rejected' || item.status === 'expired') return 'bg-rose-100 text-rose-700 ring-1 ring-rose-200';
-  return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200';
+  if (item.status === 'pending_approval') return 'bg-warning-bg text-warning-fg ring-1 ring-warning-border';
+  if (item.status === 'approved' || item.status === 'accepted' || item.hasAcceptedContract) return 'bg-success-bg text-success-fg ring-1 ring-success-border';
+  if (item.status === 'sent' || item.status === 'negotiating') return 'bg-stage-contacted-bg text-stage-contacted-fg ring-1 ring-stage-contacted-border';
+  if (item.status === 'rejected' || item.status === 'expired') return 'bg-danger-bg text-danger-fg ring-1 ring-danger-border';
+  return 'bg-surface-2 text-content-secondary ring-1 ring-line';
 }
 
 function nextStepClasses(tone: QuoteWorkspaceListItem['nextStep']['tone']) {
-  if (tone === 'orders') return 'from-emerald-600 to-teal-600';
-  if (tone === 'approval') return 'from-amber-500 to-orange-500';
-  if (tone === 'follow_up') return 'from-blue-600 to-sky-600';
-  return 'from-slate-900 to-slate-700';
+  if (tone === 'orders') return 'bg-success-solid';
+  if (tone === 'approval') return 'bg-warning-solid';
+  if (tone === 'follow_up') return 'bg-stage-contacted-solid';
+  return 'bg-brand-700';
 }
 
 function whatsappHref(item: QuoteWorkspaceListItem) {
@@ -114,7 +114,7 @@ function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose:
       </section>
       {item.lastNegotiationMessage ? <p className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm font-semibold text-blue-900">{item.lastNegotiationMessage}</p> : null}
       <div className="sticky bottom-0 mt-5 flex gap-2 bg-white pb-1 pt-3">
-        <Link href={item.nextStep.href} className={cn('flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-gradient-to-r px-4 text-sm font-black text-white shadow-lg', nextStepClasses(item.nextStep.tone))}>{item.nextStep.label}</Link>
+        <Link href={item.nextStep.href} className={cn('flex min-h-12 flex-1 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white shadow-lg', nextStepClasses(item.nextStep.tone))}>{item.nextStep.label}</Link>
         <a href={whatsappHref(item)} target="_blank" rel="noreferrer" className="flex min-h-12 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg" aria-label="Share quote update on WhatsApp"><SetuIcon name="mail" className="h-5 w-5" /></a>
       </div>
     </aside>
@@ -128,7 +128,7 @@ function KpiFilterCard({ label, value, active, onClick }: { label: string; value
       onClick={onClick}
       className={cn(
         'rounded-2xl p-3 text-center transition',
-        active ? 'bg-white text-blue-700 shadow-lg shadow-blue-950/20' : 'bg-white/10 text-white hover:bg-white/15',
+        active ? 'bg-white text-brand-700 shadow-lg shadow-black/20' : 'bg-white/10 text-white hover:bg-white/15',
       )}
     >
       <p className="text-2xl font-black">{value}</p>
@@ -148,8 +148,8 @@ export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] })
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-28 pt-4">
-      <section className="rounded-hero bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white shadow-xl shadow-blue-950/20">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Quotes</p>
+      <section className="rounded-hero bg-gradient-to-br from-brand-900 to-brand-700 p-5 text-white shadow-xl shadow-black/20">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-200">Quotes</p>
         <h1 className="mt-2 text-2xl font-black">Work queue</h1>
         <div className="mt-5 grid grid-cols-3 gap-2">
           <KpiFilterCard label="Total" value={items.length} active={filter === 'all'} onClick={() => setFilter('all')} />

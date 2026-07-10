@@ -92,14 +92,14 @@ export function SiteShell({ children }: { children: ReactNode }) {
               <LanguageSelector />
               <Link href="/roi-calculator" className={`rounded-full border px-5 py-2 text-[13px] font-semibold transition hover:-translate-y-0.5 ${isVideoHeroPage ? 'border-white/20 bg-white/92 text-accent-700 hover:bg-white' : isActive('/roi-calculator') ? 'border-accent-700 bg-teal-50 text-accent-700' : 'border-accent-700/25 bg-white text-accent-700 hover:bg-[#eef6fb]'}`}>ROI Calculator</Link>
               <Link href="/book-demo" className={`rounded-full border px-5 py-2 text-[13px] font-semibold transition hover:-translate-y-0.5 ${isVideoHeroPage ? 'border-white/20 bg-white/92 text-accent-700 hover:bg-white' : isActive('/book-demo') ? 'border-accent-700 bg-teal-50 text-accent-700' : 'border-accent-700/25 bg-white text-accent-700 hover:bg-[#eef6fb]'}`}>Book Demo</Link>
-              <Link href="/client-login" className="rounded-full bg-surface-2 px-5 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-surface-1">Enter workspace</Link>
+              <Link href="/client-login" className="rounded-full bg-brand-700 px-5 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-brand-800">Enter workspace</Link>
             </div>
           </nav>
 
           <div className="flex items-center gap-2 md:hidden">
             {!isHome && <Link href="/" className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold ${isVideoHeroPage ? 'border-white/15 text-white/80' : 'border-slate-200 text-slate-500'}`}><HomeIcon />Home</Link>}
             <LanguageSelector compact />
-            <Link href="/client-login" className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-semibold text-white shadow-md">Enter</Link>
+            <Link href="/client-login" className="rounded-full bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-md">Enter</Link>
             <button onClick={() => setMobileOpen(!mobileOpen)} className={`flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm ${isVideoHeroPage ? 'border-white/15 bg-white/10 text-white' : 'border-slate-200 bg-white text-slate-700'}`} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>{mobileOpen ? <CloseIcon /> : <MenuIcon />}</button>
           </div>
         </div>

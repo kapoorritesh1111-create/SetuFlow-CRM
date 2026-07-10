@@ -63,7 +63,7 @@ export default function TradeShowTrialSuccessPage({
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
               href={signedIn ? workspacePath : '/client-login'}
-              className="rounded-full bg-surface-2 px-7 py-3 text-sm font-bold text-white shadow-[0_18px_42px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-surface-1"
+              className="rounded-full bg-brand-700 px-7 py-3 text-sm font-bold text-white shadow-[0_18px_42px_rgba(6,38,63,0.22)] transition hover:-translate-y-0.5 hover:bg-brand-800"
             >
               {signedIn ? 'Enter workspace' : 'Go to login'}
             </Link>

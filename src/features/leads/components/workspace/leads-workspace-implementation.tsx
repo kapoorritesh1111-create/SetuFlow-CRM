@@ -2397,7 +2397,7 @@ export function InlineQuoteBuilder({
           {steps.map((step, index) => (
             <React.Fragment key={step}>
               <button type="button" onClick={() => setBuilderStep(index)} className="relative z-[1] flex flex-1 flex-col items-center gap-[4px]">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold transition-all ${index < builderStep ? 'bg-success-solid text-white shadow-[0_0_0_3px_#d1fae5]' : index === builderStep ? 'bg-surface-1 text-white shadow-[0_0_0_3px_rgba(11,46,74,.1)]' : 'border-2 border-line bg-white text-content-faint'}`}>
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold transition-all ${index < builderStep ? 'bg-success-solid text-white shadow-[0_0_0_3px_#d1fae5]' : index === builderStep ? 'bg-brand-700 text-white shadow-[0_0_0_3px_rgba(11,46,74,.1)]' : 'border-2 border-line bg-white text-content-faint'}`}>
                   {index < builderStep ? '✓' : index + 1}
                 </div>
                 <div className={`text-center text-[9px] font-bold ${index < builderStep ? 'text-success-solid' : index === builderStep ? 'text-content-primary' : 'text-content-faint'}`}>{step}</div>
@@ -2453,7 +2453,7 @@ export function InlineQuoteBuilder({
                   )) : (
                     <div className="space-y-2">
                       <div className="text-[11px] text-content-faint">No products mapped yet</div>
-                      <button type="button" onClick={onOpenCoverageManager} className="rounded-md bg-surface-1 px-[10px] py-[6px] text-[10px] font-bold text-white">
+                      <button type="button" onClick={onOpenCoverageManager} className="rounded-md bg-brand-700 px-[10px] py-[6px] text-[10px] font-bold text-white">
                         Open coverage manager
                       </button>
                     </div>
@@ -2557,7 +2557,7 @@ export function InlineQuoteBuilder({
                       <p>This quote is blocked because compliance or required evidence is still open. Upload the matching document in the Lead or Order document area, then return here and create/open the draft preview again.</p>
                       <div className="rounded-ctl border border-danger-border bg-white p-[10px]">Active blockers: {blockerCount}. Latest document: {documents[0]?.file_name ?? 'none linked'}.</div>
                       <div className="flex flex-wrap gap-[8px]">
-                        <button type="button" onClick={onOpenCommandCenter} className="rounded-lg bg-surface-1 px-[12px] py-[7px] text-[11px] font-bold text-white">Back to Command Center</button>
+                        <button type="button" onClick={onOpenCommandCenter} className="rounded-lg bg-brand-700 px-[12px] py-[7px] text-[11px] font-bold text-white">Back to Command Center</button>
                         <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-lg border border-line bg-white px-[12px] py-[7px] text-[11px] font-bold text-content-secondary disabled:opacity-60">Refresh draft after fix</button>
                       </div>
                     </div>
@@ -2614,7 +2614,7 @@ export function InlineQuoteBuilder({
                 </div>
                 <div className="flex gap-[8px] border-t p-[12px_18px]" style={{ borderColor: sendReady ? '#a7f3d0' : '#fecaca' }}>
                   {sendReady && latestQuote?.id ? (
-                    <Link href={`/quotes?quoteId=${latestQuote.id}&send=1`} className="flex-1 rounded-md bg-surface-1 p-[10px] text-center text-[13px] font-extrabold text-white no-underline">
+                    <Link href={`/quotes?quoteId=${latestQuote.id}&send=1`} className="flex-1 rounded-md bg-brand-700 p-[10px] text-center text-[13px] font-extrabold text-white no-underline">
                       Open send workflow
                     </Link>
                   ) : (
@@ -2644,7 +2644,7 @@ export function InlineQuoteBuilder({
                       onClick={() => onMarkDirectOrder(lead.id, latestQuote?.id ?? null, directOrderNote)}
                       disabled={!latestQuote?.id || !pricingReady || isInlineActionPending}
                       title={!latestQuote?.id ? 'Create or open a quote draft first.' : !pricingReady ? 'Fix missing prices before creating an order.' : 'Create the order directly from this quote.'}
-                      className="rounded-lg bg-surface-1 px-[14px] py-[9px] text-[12px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-surface-3"
+                      className="rounded-lg bg-brand-700 px-[14px] py-[9px] text-[12px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-surface-3"
                     >
                       ✓ Mark as direct order
                     </button>
@@ -2673,7 +2673,7 @@ export function InlineQuoteBuilder({
             {steps.map((step, index) => (
               <button key={step} type="button" onClick={() => setBuilderStep(index)}
                 className={`flex w-full items-center gap-[8px] rounded-md border p-[7px_10px] text-left text-[11px] font-bold transition-colors ${index < builderStep ? 'border-success-border bg-success-bg text-success-fg' : index === builderStep ? 'border-brand-500 bg-[rgba(12,127,255,.06)] text-content-primary' : 'border-line bg-white text-content-secondary hover:bg-surface-2'}`}>
-                <span className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${index < builderStep ? 'bg-success-solid text-white' : index === builderStep ? 'bg-surface-1 text-white' : 'border-[1.5px] border-line bg-surface-2 text-content-faint'}`}>
+                <span className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${index < builderStep ? 'bg-success-solid text-white' : index === builderStep ? 'bg-brand-700 text-white' : 'border-[1.5px] border-line bg-surface-2 text-content-faint'}`}>
                   {index < builderStep ? '✓' : index + 1}
                 </span>
                 {step}
@@ -2689,7 +2689,7 @@ export function InlineQuoteBuilder({
             {approvalPending ? (
               <div className="mt-3 grid gap-2">
                 {quoteAdjustmentApprovalRequired && !latestQuoteApprovalRequired ? (
-                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="w-full rounded-lg bg-surface-1 px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="w-full rounded-lg bg-brand-700 px-3 py-2 text-[12px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60">
                     Save adjustment for approval
                   </button>
                 ) : (
@@ -2718,7 +2718,7 @@ export function InlineQuoteBuilder({
       <div className="sticky bottom-3 z-10 rounded-panel border border-line bg-white/95 p-3 shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={continueQuotePreviewStep} disabled={builderStep >= steps.length - 1}
-            className="rounded-panel bg-surface-1 px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
+            className="rounded-panel bg-brand-700 px-5 py-3 text-[13px] font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" title={builderStep >= steps.length - 1 ? 'Send is disabled in the inline builder until the governed quote send workflow is connected.' : undefined}>
             {builderStep < steps.length - 1 ? `Continue ${steps[builderStep + 1]} step` : canSendQuote ? 'Send ready in quote workflow' : 'Review blockers'}
           </button>
           <button type="button" onClick={saveQuotePreview} disabled={isInlineActionPending} className="rounded-panel border border-line px-5 py-3 text-[13px] font-bold text-content-secondary disabled:opacity-60">Create/open draft preview</button>

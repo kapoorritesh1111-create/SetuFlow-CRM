@@ -102,7 +102,7 @@ export function MobileVCardShareSheet({
               <p className="mt-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Scan to open card</p>
             </div>
 
-            <a href={downloadUrl} download className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-surface-1 px-4 text-sm font-black text-white shadow-lg shadow-sky-950/20">⬇️ Save contact</a>
+            <a href={downloadUrl} download className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-4 text-sm font-black text-white shadow-lg shadow-sky-950/20">⬇️ Save contact</a>
             <button type="button" onClick={() => copy(publicCardUrl, 'Card link copied.')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800">🔗 Copy link</button>
             <a href={`mailto:?subject=${encodeURIComponent(`${signedIn?.name ?? 'SETU Flow'} digital business card`)}&body=${encodeURIComponent(intro)}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800">✉️ Send email</a>
             <button type="button" onClick={shareNow} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-800">{shareSupported ? '📲 Share card' : '📋 Copy link'}</button>

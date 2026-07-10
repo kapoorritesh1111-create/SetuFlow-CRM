@@ -185,6 +185,15 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   const quickPrompts = useMemo(() => getSetuGuruRouteTopics(pathname).slice(0, 4), [pathname]);
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
+  // Mobile consolidation: the header's Guru icon (BrandedMobileTopBar) dispatches this
+  // event instead of duplicating drawer-open logic — keeps a single source of truth
+  // for the chat state while giving mobile a docked, predictable entry point alongside
+  // the free-floating SetuGuruFab.
+  useEffect(() => {
+    function handleDockOpen() { setDrawerOpen(true); }
+    window.addEventListener('setu-guru:open', handleDockOpen);
+    return () => window.removeEventListener('setu-guru:open', handleDockOpen);
+  }, []);
   useEffect(() => { setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
   useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
 

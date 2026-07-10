@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { SupplierCostRequestsWorkspace } from '@/features/leads/components/supplier-cost-requests-workspace';
+import { MobileQuotesList } from '@/features/mobile/components/mobile-quotes-list';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -712,6 +713,9 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const customerSections = buildCustomerSections(customerGroups, filters.group);
 
   return (
+    <>
+      <div className="md:hidden"><MobileQuotesList items={filteredItems} /></div>
+      <div className="hidden md:block">
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
       <div style={{padding:'10px 24px 0'}}>
         <section style={{background:'white',border:'1px solid #dbe4ef',borderRadius:'20px',boxShadow:'0 10px 28px rgba(15,23,42,.06)',padding:'10px 12px'}}>
@@ -979,9 +983,10 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
         </div>
       </div>
     </div>
+      </div>
+    </>
   );
 }
-
 function badgeStyle(bg: string, border: string, color: string): CSSProperties {
   return { display:'inline-flex',border:'1px solid',borderColor:border,background:bg,color,borderRadius:'999px',padding:'4px 8px',fontSize:'10px',fontWeight:950 };
 }

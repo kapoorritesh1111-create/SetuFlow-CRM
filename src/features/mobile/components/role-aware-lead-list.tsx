@@ -118,28 +118,28 @@ export function RoleAwareLeadList({
       </div>
       {/* SF-18-118: Group banners */}
       {[
-        { id: 'critical', label: '⚠ Critical', dot: 'bg-rose-500 animate-pulse', style: 'from-rose-50 to-red-50 border-rose-200', filter: (l: any) => followUpState(l) === 'overdue' },
-        { id: 'today', label: '⏰ Due today', dot: 'bg-amber-400 animate-pulse', style: 'from-amber-50 to-yellow-50 border-amber-200', filter: (l: any) => followUpState(l) === 'today' },
-        { id: 'active', label: '✓ Active', dot: 'bg-emerald-400', style: 'from-emerald-50 to-green-50 border-emerald-100', filter: (l: any) => followUpState(l) !== 'overdue' && followUpState(l) !== 'today' },
+        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: any) => followUpState(l) === 'overdue' },
+        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: any) => followUpState(l) === 'today' },
+        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: any) => followUpState(l) !== 'overdue' && followUpState(l) !== 'today' },
       ].map(group => {
         const groupLeads = leads.filter(group.filter);
         if (!groupLeads.length) return null;
         return (
           <div key={group.id}>
-            <div className={`flex items-center gap-2 rounded-2xl border bg-gradient-to-r ${group.style} px-4 py-2.5 mb-2`}>
+            <div className={`flex items-center gap-2 rounded-2xl border ${group.style} px-4 py-2.5 mb-2`}>
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${group.dot}`} />
-              <span className="text-[10.5px] font-extrabold uppercase tracking-[.1em] text-slate-700">{group.label}</span>
-              <span className="ml-auto text-[10px] font-bold text-slate-500">{groupLeads.length} leads</span>
+              <span className="text-[10.5px] font-semibold uppercase tracking-[.1em] text-content-secondary">{group.label}</span>
+              <span className="ml-auto text-[10px] font-semibold text-content-muted">{groupLeads.length} leads</span>
             </div>
             <div className="grid gap-2">
               {groupLeads.map(lead => (
                 <div key={lead.id} className="relative">
                   {/* SF-18-118: Urgency rail */}
-                  <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full z-10 ${followUpState(lead)==='overdue'?'bg-rose-500':followUpState(lead)==='today'?'bg-amber-400':'bg-emerald-400'}`} />
+                  <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full z-10 ${followUpState(lead)==='overdue'?'bg-danger-solid':followUpState(lead)==='today'?'bg-warning-solid':'bg-success-solid'}`} />
                   {/* SF-18-118: Priority badge overlay */}
                   <div className="relative">
                     <div className="absolute top-3 right-3 z-10">
-                      {(() => { const s = mobilePriorityScore(lead); const cls = s>=75?'bg-rose-100 text-rose-700':s>=50?'bg-amber-100 text-amber-700':'bg-blue-50 text-blue-600'; return <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-black ${cls}`}>{s}</span>; })()}
+                      {(() => { const s = mobilePriorityScore(lead); const cls = s>=75?'bg-danger-bg text-danger-fg':s>=50?'bg-warning-bg text-warning-fg':'bg-stage-new-bg text-stage-new-fg'; return <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${cls}`}>{s}</span>; })()}
                     </div>
                     <LeadStatusCard lead={lead} />
                   </div>

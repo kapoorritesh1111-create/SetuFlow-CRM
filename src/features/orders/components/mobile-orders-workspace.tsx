@@ -56,10 +56,10 @@ function orderStatus(order: ProductionOrder8S) {
 }
 
 function statusClass(order: ProductionOrder8S) {
-  if (isBlocked(order)) return 'bg-rose-50 text-rose-700';
-  if (isFinanceReady(order)) return 'bg-blue-50 text-blue-700';
-  if (isFreightReady(order)) return 'bg-cyan-50 text-cyan-700';
-  return 'bg-emerald-50 text-emerald-700';
+  if (isBlocked(order)) return 'bg-danger-bg text-danger-fg';
+  if (isFinanceReady(order)) return 'bg-info-bg text-info-fg';
+  if (isFreightReady(order)) return 'bg-stage-contacted-bg text-stage-contacted-fg';
+  return 'bg-success-bg text-success-fg';
 }
 
 function StatCard({ label, value, helper }: { label: string; value: number; helper: string }) {

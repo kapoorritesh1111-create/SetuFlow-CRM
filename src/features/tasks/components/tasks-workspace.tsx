@@ -301,7 +301,7 @@ export function TasksWorkspace({ data, currentUserId }: Props) {
                 onClick={() => { setFocusFilter(key); setVisibleCount(PAGE_SIZE); }}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   focusFilter === key
-                    ? 'bg-surface-1 text-white'
+                    ? 'bg-brand-700 text-white'
                     : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
