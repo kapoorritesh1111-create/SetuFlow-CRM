@@ -112,7 +112,7 @@ export async function generateRecommendationsForOrganization(orgId: string): Pro
 
   for (const quote of quotes) {
     if (!quote.sent_at || quote.last_customer_response_at || ageDays(quote.sent_at) < 3) continue;
-    push({ org_id: orgId, entity_type: 'quote', entity_id: quote.id, recommendation_type: 'quote_no_follow_up', title: 'Follow up on a sent quote', summary: 'A sent quote has no recorded buyer response.', reason: `The quote was sent ${ageDays(quote.sent_at)} day(s) ago and no customer response is recorded.`, recommended_action: 'Open the quote and prepare an approved follow-up.', action_href: `/quotes/${quote.id}`, priority: ageDays(quote.sent_at) >= 7 ? 'high' : 'medium', metadata: { lead_id: quote.lead_id } });
+    push({ org_id: orgId, entity_type: 'quote', entity_id: quote.id, recommendation_type: 'quote_no_follow_up', title: 'Follow up on a sent quote', summary: 'A sent quote has no recorded buyer response.', reason: `The quote was sent ${ageDays(quote.sent_at)} day(s) ago and no customer response is recorded.`, recommended_action: quote.lead_id ? 'Open the buyer record and prepare an approved quote follow-up.' : 'Open the quote workspace and prepare an approved follow-up.', action_href: quote.lead_id ? `/leads/${quote.lead_id}` : '/quotes', priority: ageDays(quote.sent_at) >= 7 ? 'high' : 'medium', metadata: { lead_id: quote.lead_id, quote_id: quote.id } });
   }
 
   for (const share of shares) {
