@@ -39,7 +39,8 @@ test('Every initial recommendation type is generated deterministically', () => {
   assert.match(generator, /\.eq\('organization_id', orgId\)/);
   assert.match(generator, /\.eq\('org_id', orgId\)/);
   assert.match(generator, /skippedDuplicates/);
-  assert.match(generator, /status='completed'|status: 'completed'|status = 'completed'/);
+  assert.match(generator, /const status = isExpired \? 'expired' : 'completed'/);
+  assert.match(generator, /completed_at/);
   assert.match(generator, /expired_at/);
 });
 
