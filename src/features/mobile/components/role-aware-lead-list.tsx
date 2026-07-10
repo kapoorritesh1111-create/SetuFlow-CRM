@@ -11,7 +11,7 @@ import {
   type MobileUserContext,
   type MobileUserRole,
 } from '../lib/role-aware-leads';
-import { LeadRow, SearchBar, SegmentedControl, type PillTone } from './primitives';
+import { LeadRow, SearchBar, SegmentedControl, SwipeRow, type PillTone } from './primitives';
 
 type SignedInSummary = {
   name: string;
@@ -155,7 +155,7 @@ export function RoleAwareLeadList({
                 const call = telHref(lead.phone);
                 const whatsapp = whatsappHref(lead);
                 const isSupplier = lead.leadType === 'supplier';
-                return (
+                const row = (
                   <LeadRow
                     key={lead.id}
                     id={lead.id}
@@ -173,6 +173,18 @@ export function RoleAwareLeadList({
                         : { icon: '▤', label: 'Create quote', tone: 'stage-contacted', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}/quote?handoff=mobile-lead-row&mode=buyers`; } }
                     }
                   />
+                );
+                if (!call && !whatsapp) return <div key={lead.id}>{row}</div>;
+                return (
+                  <SwipeRow
+                    key={lead.id}
+                    leftAction={call ? { label: '📞 Call', tone: 'success' } : undefined}
+                    rightAction={whatsapp ? { label: '💬 WhatsApp', tone: 'stage-won' } : undefined}
+                    onSwipeRight={call ? () => { window.location.href = call!; } : undefined}
+                    onSwipeLeft={whatsapp ? () => window.open(whatsapp, '_blank', 'noreferrer') : undefined}
+                  >
+                    {row}
+                  </SwipeRow>
                 );
               })}
             </div>

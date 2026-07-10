@@ -269,14 +269,18 @@ export function LeadRow({
   onWhatsApp?: () => void;
 }) {
   return (
-    <div className="mb-2 flex gap-2.5 rounded-card border border-line bg-surface-1 p-3">
-      <button type="button" onClick={onOpen} className="h-10 w-10 shrink-0 rounded-full text-[13px] font-bold text-white" style={{ background: avatarGradientFor(id) }}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+      className="mb-2 flex cursor-pointer gap-2.5 rounded-card border border-line bg-surface-1 p-3"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white" style={{ background: avatarGradientFor(id) }}>
         {initials}
-      </button>
+      </span>
       <div className="min-w-0 flex-1">
-        <button type="button" onClick={onOpen} className="flex w-full items-baseline justify-between gap-2 text-left">
-          <span className="truncate text-[13.5px] font-semibold text-content-primary">{name}</span>
-        </button>
+        <span className="block truncate text-[13.5px] font-semibold text-content-primary">{name}</span>
         <p className="mt-0.5 truncate text-[11px] font-medium text-content-muted">{meta}</p>
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-[10.5px] font-semibold" style={{ color: `var(--sf-${statusTone}-fg)` }}>
@@ -284,9 +288,9 @@ export function LeadRow({
             {statusLabel}
           </span>
           <div className="flex shrink-0 gap-1.5">
-            {onCall ? <button type="button" onClick={onCall} aria-label="Call" className="flex h-[26px] w-[26px] items-center justify-center rounded-[8px] bg-success-bg text-[12px]">📞</button> : null}
-            {onWhatsApp ? <button type="button" onClick={onWhatsApp} aria-label="WhatsApp" className="flex h-[26px] w-[26px] items-center justify-center rounded-[8px] bg-stage-won-bg text-[12px]">💬</button> : null}
-            <button type="button" onClick={thirdAction.onClick} aria-label={thirdAction.label} title={thirdAction.label} className="flex h-[26px] w-[26px] items-center justify-center rounded-[8px] text-[12px] text-white" style={{ background: PILL_TONE_SOLID_VAR[thirdAction.tone] }}>
+            {onCall ? <button type="button" onClick={(e) => { e.stopPropagation(); onCall(); }} aria-label="Call" className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-success-bg text-[12px]">📞</button> : null}
+            {onWhatsApp ? <button type="button" onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} aria-label="WhatsApp" className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-stage-won-bg text-[12px]">💬</button> : null}
+            <button type="button" onClick={(e) => { e.stopPropagation(); thirdAction.onClick(); }} aria-label={thirdAction.label} title={thirdAction.label} className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-[12px] text-white" style={{ background: PILL_TONE_SOLID_VAR[thirdAction.tone] }}>
               {thirdAction.icon}
             </button>
           </div>
