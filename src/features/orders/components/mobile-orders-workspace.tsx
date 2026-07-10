@@ -88,7 +88,7 @@ function OrderCard({ order, selected, onClick }: { order: ProductionOrder8S; sel
       onSwipeLeft={onClick}
     >
       <button type="button" onClick={onClick} className="w-full text-left">
-        <article className={`flex gap-2.5 rounded-card border bg-white p-3.5 shadow-soft transition ${selected ? 'border-brand-400 shadow-[0_0_0_2px_rgba(31,72,124,.15)]' : 'border-line'}`}>
+        <article className={`flex gap-2.5 rounded-card border bg-surface-1 p-3.5 shadow-soft transition ${selected ? 'border-brand-400 shadow-[0_0_0_2px_rgba(31,72,124,.15)]' : 'border-line'}`}>
           <span className="w-[3px] shrink-0 self-stretch rounded-full" style={{ background: PILL_TONE_SOLID_VAR[tone] }} />
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
@@ -139,6 +139,7 @@ function OrderActionSheet({ order, catalogOptions, onClose, organizationId, curr
     <div className="fixed inset-0 z-[500] bg-slate-950/35 backdrop-blur-sm" onClick={onClose}>
       <section className="absolute bottom-[calc(86px+env(safe-area-inset-bottom))] left-1/2 flex max-h-[calc(100dvh-126px)] w-full max-w-[430px] -translate-x-1/2 flex-col overflow-hidden rounded-t-hero bg-white shadow-[0_-30px_80px_rgba(15,23,42,.28)]" onClick={(event) => event.stopPropagation()}>
         <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-300" />
+        <button type="button" onClick={onClose} aria-label="Close" className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">✕</button>
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Order actions</p>
           <h2 className="mt-1 text-xl font-black text-slate-950">{order.companyName}</h2>

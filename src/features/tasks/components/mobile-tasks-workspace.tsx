@@ -41,7 +41,7 @@ function MobileTaskCard({ task, lead, assignee, now, onOpen, onComplete }: { tas
   const tone: PillTone = status === 'Overdue' ? 'danger' : status === 'Done' ? 'success' : status === 'Planned' ? 'warning' : 'neutral';
   const card = (
     <button type="button" onClick={onOpen} className="w-full text-left">
-      <article className={`flex gap-2.5 rounded-card border bg-white p-3.5 shadow-soft ${done ? 'border-line opacity-55' : 'border-line'}`}>
+      <article className={`flex gap-2.5 rounded-card border bg-surface-1 p-3.5 shadow-soft ${done ? 'border-line opacity-55' : 'border-line'}`}>
         <span className="mt-0.5 flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-[6px] border-2 border-slate-300 text-[11px] text-white" style={done ? { background: 'var(--sf-success-solid)', borderColor: 'var(--sf-success-solid)' } : undefined}>{done ? '✓' : ''}</span>
         <div className="min-w-0 flex-1">
           <h3 className={`line-clamp-2 text-[13.5px] font-semibold leading-5 text-content-primary ${done ? 'line-through' : ''}`}>{taskTitle(task)}</h3>

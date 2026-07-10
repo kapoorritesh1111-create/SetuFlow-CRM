@@ -368,10 +368,6 @@ export function SwipeRow({
         onTouchStart={(e) => onStart(e.touches[0].clientX)}
         onTouchMove={(e) => onMove(e.touches[0].clientX)}
         onTouchEnd={(e) => onEnd(e.changedTouches[0].clientX)}
-        onMouseDown={(e) => onStart(e.clientX)}
-        onMouseMove={(e) => { if (dragging.current) onMove(e.clientX); }}
-        onMouseUp={(e) => onEnd(e.clientX)}
-        onMouseLeave={(e) => { if (dragging.current) onEnd(e.clientX); }}
       >
         {children}
       </div>

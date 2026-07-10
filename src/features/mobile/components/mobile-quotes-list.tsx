@@ -60,7 +60,7 @@ function QuoteCard({ item, active, onSelect }: { item: QuoteWorkspaceListItem; a
         type="button"
         onClick={onSelect}
         className={cn(
-          'flex w-full gap-2.5 rounded-card border bg-white p-3.5 text-left shadow-soft transition',
+          'flex w-full gap-2.5 rounded-card border bg-surface-1 p-3.5 text-left shadow-soft transition',
           active ? 'border-brand-400 shadow-[0_0_0_2px_rgba(31,72,124,.15)]' : 'border-line',
         )}
       >
