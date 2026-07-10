@@ -70,6 +70,13 @@ test('Recommendation cards remain explainable and action linked', () => {
   assert.match(growthCenter, /Nothing is sent or changed without your approval/);
 });
 
+test('Generated action links use supported CRM routes only', () => {
+  assert.doesNotMatch(generator, /\/leads\/\$\{[^}]+\}\/rfq/);
+  assert.doesNotMatch(generator, /\/leads\/\$\{[^}]+\}\/quote/);
+  assert.match(generator, /action_href: `\/leads\/\$\{rfq\.lead_id\}`/);
+  assert.match(generator, /action_href: `\/quotes\/\$\{quote\.id\}`/);
+});
+
 test('Growth Agent foundation has no autonomous outbound communication', () => {
   const foundation = [generator, triggerRoute, query, growthCenter, dashboardStrip].join('\n');
   assert.doesNotMatch(foundation, /send_email|sendEmail|send_whatsapp|sendWhatsApp|provider_message_id/);
@@ -77,6 +84,16 @@ test('Growth Agent foundation has no autonomous outbound communication', () => {
   assert.doesNotMatch(generator, /from\(['"]quotes['"]\)\.update/);
   assert.doesNotMatch(generator, /from\(['"]leads['"]\)\.update/);
   assert.doesNotMatch(generator, /from\(['"]orders['"]\)\.update/);
+});
+
+test('Growth Center avoids repeating priority cards and collapses long queues', () => {
+  assert.match(growthCenter, /priorityItems = ordered\.slice\(0, 4\)/);
+  assert.match(growthCenter, /priorityIds/);
+  assert.match(growthCenter, /remainingItems/);
+  assert.match(growthCenter, /visible = items\.slice\(0, 3\)/);
+  assert.match(growthCenter, /<details/);
+  assert.match(growthCenter, /Show \{remaining\.length\} more/);
+  assert.match(growthCenter, /Priority cards are not repeated below/);
 });
 
 test('Dashboard strip is bounded, ordered, responsive, and resilient', () => {
