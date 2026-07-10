@@ -327,12 +327,14 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   }
 
   const launcher = (
-    <SetuGuruFab
-      label="Toggle Setu Guru"
-      online={guruOnline}
-      onClick={() => setDrawerOpen((current) => !current)}
-      className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[610] md:bottom-6 md:right-6"
-    />
+    <div className="hidden md:block">
+      <SetuGuruFab
+        label="Toggle Setu Guru"
+        online={guruOnline}
+        onClick={() => setDrawerOpen((current) => !current)}
+        className="fixed bottom-6 right-6 z-[610]"
+      />
+    </div>
   );
 
   return (

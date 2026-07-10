@@ -9,6 +9,8 @@ import type { RecentActivityItem } from '@/features/dashboard/types';
 import type { DashboardData } from '@/lib/queries/dashboard';
 import { canonicalMobileNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
 import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
+import { ThemeToggle } from "./theme-toggle";
+import { QuickCaptureSheet } from "./quick-capture-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
@@ -82,6 +84,7 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [dateLabel, setDateLabel] = useState("");
   const [greeting, setGreeting] = useState("Good day");
   const displayName = signedIn?.name ?? "SETU Flow";
@@ -102,7 +105,8 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
             <p className="truncate text-lg font-black tracking-tight">{greeting}, {firstName}</p>
             <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
-          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-gradient-to-br from-teal-500 to-brand-800 text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Ask Setu Guru" title="Setu Guru"><SetuIcon name="sparkles" className="h-5 w-5" /></button>
+          <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button>
           <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button>
           <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
           <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
@@ -110,6 +114,7 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
       </header>
       <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} onShareVCard={() => setShareOpen(true)} />
       <MobileVCardShareSheet open={shareOpen} onClose={() => setShareOpen(false)} signedIn={signedIn} />
+      <QuickCaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} />
     </>
   );
 }
@@ -136,6 +141,10 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { 
           <Link href="/documents" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>📄</span>Documents</Link>
           <Link href="/compliance" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>🛡</span>Compliance</Link>
           <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Appearance</p>
+            <ThemeToggle />
+          </div>
           {signedIn?.primaryPhone ? <a href={`tel:${signedIn.primaryPhone}`} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>☎</span>Call profile phone</a> : null}
           {signedIn?.website ? <a href={signedIn.website} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>↗</span>Open website</a> : null}
           <form action="/api/logout" method="post"><button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 text-left font-black text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200"><span>↪</span>Sign out</button></form>
@@ -199,8 +208,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
 
   function changeScope(nextScope: MobileScope) {
     setScope(nextScope);
-    const href = nextScope === 'all' ? '/dashboard' : `/dashboard?mode=${modeParam(nextScope)}`;
-    router.replace(href, { scroll: false });
+    router.replace(`/dashboard?mode=${modeParam(nextScope)}`, { scroll: false });
   }
 
   const openLeads = getKpiValue(data, 'open-leads');
@@ -223,7 +231,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         onChange={changeScope}
       />
       <MetricGrid>
-        <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} open`} href={scopedHref('/leads', scope)} />
+        <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} />
         <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} />
         <MetricTile tone="brand" icon={<span className="text-sm font-bold">$</span>} value={formatCompactCurrency(pipelineValue)} label="Pipeline" sub="Live value" href={scopedHref('/pipeline', scope)} />
         <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} />

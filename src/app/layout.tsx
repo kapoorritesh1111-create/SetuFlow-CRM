@@ -7,6 +7,7 @@ import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegis
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
 import { ProductsUiPolish } from '@/components/shell/ProductsUiPolish';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -135,6 +136,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="SETU Flow" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
         <script
           nonce={nonce}
           type="application/ld+json"

@@ -192,3 +192,108 @@ export function SegmentedControl<T extends string>({
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// SearchBar — shared across Leads, Quotes, Orders.
+// ---------------------------------------------------------------------------
+export function SearchBar({
+  placeholder,
+  value,
+  onChange,
+  onSort,
+}: {
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSort?: () => void;
+}) {
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-ctl border border-line bg-surface-1 px-3.5 py-2.5 shadow-soft">
+      <span className="text-content-faint">⌕</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-content-primary outline-none placeholder:text-content-faint"
+      />
+      {onSort ? (
+        <button type="button" onClick={onSort} aria-label="Sort" className="border-l border-line pl-2.5 text-[13px] text-content-muted">⇅</button>
+      ) : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LeadRow — colored avatar, one meta line, status dot, inline Call/WhatsApp/
+// Quote actions. Same shape for buyer and supplier rows; only the third
+// action icon and its color change (Quote vs Nudge vs Approve cost).
+// ---------------------------------------------------------------------------
+const AVATAR_GRADIENTS = [
+  'linear-gradient(145deg,#60A5FA,#2563EB)',
+  'linear-gradient(145deg,#C084FC,#7E22CE)',
+  'linear-gradient(145deg,#FBBF24,#B45309)',
+  'linear-gradient(145deg,#34D399,#047857)',
+  'linear-gradient(145deg,#FB7185,#BE123C)',
+];
+
+/** Deterministic gradient per id so the same lead always gets the same color. */
+export function avatarGradientFor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+}
+
+export function LeadRow({
+  id,
+  initials,
+  name,
+  meta,
+  statusLabel,
+  statusTone,
+  thirdAction,
+  onOpen,
+  onCall,
+  onWhatsApp,
+}: {
+  id: string;
+  initials: string;
+  name: string;
+  meta: string;
+  statusLabel: string;
+  statusTone: PillTone;
+  thirdAction: { icon: string; label: string; tone: PillTone; onClick: () => void };
+  onOpen: () => void;
+  onCall?: () => void;
+  onWhatsApp?: () => void;
+}) {
+  return (
+    <div className="mb-2 flex gap-2.5 rounded-card border border-line bg-surface-1 p-3">
+      <button type="button" onClick={onOpen} className="h-10 w-10 shrink-0 rounded-full text-[13px] font-bold text-white" style={{ background: avatarGradientFor(id) }}>
+        {initials}
+      </button>
+      <div className="min-w-0 flex-1">
+        <button type="button" onClick={onOpen} className="flex w-full items-baseline justify-between gap-2 text-left">
+          <span className="truncate text-[13.5px] font-semibold text-content-primary">{name}</span>
+        </button>
+        <p className="mt-0.5 truncate text-[11px] font-medium text-content-muted">{meta}</p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-[10.5px] font-semibold" style={{ color: `var(--sf-${statusTone}-fg)` }}>
+            <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: PILL_TONE_SOLID_VAR[statusTone] }} />
+            {statusLabel}
+          </span>
+          <div className="flex shrink-0 gap-1.5">
+            {onCall ? <button type="button" onClick={onCall} aria-label="Call" className="flex h-[26px] w-[26px] items-center justify-center rounded-[8px] bg-success-bg text-[12px]">📞</button> : null}
+            {onWhatsApp ? <button type="button" onClick={onWhatsApp} aria-label="WhatsApp" className="flex h-[26px] w-[26px] items-center justify-center rounded-[8px] bg-stage-won-bg text-[12px]">💬</button> : null}
+            <button type="button" onClick={thirdAction.onClick} aria-label={thirdAction.label} title={thirdAction.label} className="flex h-[26px] w-[26px] items-center justify-center rounded-[8px] text-[12px] text-white" style={{ background: PILL_TONE_SOLID_VAR[thirdAction.tone] }}>
+              {thirdAction.icon}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function MonthDivider({ label }: { label: string }) {
+  return <p className="mb-2 mt-3.5 text-center text-[11px] font-semibold text-content-faint">{label}</p>;
+}

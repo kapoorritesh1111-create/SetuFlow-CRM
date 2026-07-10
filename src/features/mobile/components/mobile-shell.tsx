@@ -1,4 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { BrandedMobileTopBar, MobileBottomTabs } from './mobile-navigation';
 
 export type MobileSignedInIdentity = {
@@ -16,6 +19,20 @@ export type MobileSignedInIdentity = {
   downloadVcfHref?: string;
 };
 
+// Full-width "+ Create" bar, route-aware. Replaces the old floating circular
+// FAB, which had two real problems: it visually overlapped whatever content
+// happened to sit at bottom-right (KPI tiles, cards), and on Home/Tasks it
+// pointed at "create a lead" regardless of context, which was simply wrong
+// on the Tasks screen. The bar reserves its own space above the tab bar and
+// each route gets its own correct label + destination.
+function createBarConfig(pathname: string): { label: string; href: string } | null {
+  if (pathname.startsWith('/leads')) return { label: '+ Create lead', href: '/leads?quickLead=1' };
+  if (pathname.startsWith('/tasks')) return { label: '+ Add task', href: '/tasks?quickTask=1' };
+  // Quotes and Orders don't have a verified quick-create entry point yet —
+  // omit the bar rather than guess at a destination.
+  return null;
+}
+
 export function MobileShell({
   children,
   signedIn,
@@ -25,6 +42,9 @@ export function MobileShell({
   signedIn?: MobileSignedInIdentity;
   canonical?: boolean;
 }) {
+  const pathname = usePathname();
+  const createBar = createBarConfig(pathname);
+
   return (
     <div
       className="sfm-app min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(98,166,255,.55),rgba(124,58,237,.14)_36%,rgba(255,255,255,0)_58%),linear-gradient(180deg,#eaf3ff_0%,#edf3fb_48%,#edf3fb_100%)] text-slate-950 dark:bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,.24),transparent_34%),linear-gradient(180deg,#020617,#0f172a)] dark:text-white"
@@ -32,18 +52,19 @@ export function MobileShell({
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >
       <BrandedMobileTopBar signedIn={signedIn} canonical={canonical} />
-      {/* pb must clear the quick-capture FAB: 88px offset + 64px height + 16px margin = 168px.
-          Previously 108px, leaving a ~44px dead zone where the FAB overlapped the last card. */}
-      <main className="mx-auto w-full max-w-[430px] space-y-4 px-4 py-4 pb-[calc(168px+env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-[430px] space-y-4 px-4 py-4 pb-[calc(150px+env(safe-area-inset-bottom))]">
         {children}
       </main>
-      <a
-        href="/leads?quickLead=1"
-        aria-label="Quick capture"
-        className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-[70] ml-[106px] grid h-16 w-16 -translate-x-1/2 place-items-center rounded-panel bg-[linear-gradient(145deg,#ffd27b,#f59e0b)] text-3xl font-black text-amber-950 shadow-[0_20px_60px_rgba(15,23,42,.22)]"
-      >
-        +
-      </a>
+      {createBar ? (
+        <div className="fixed bottom-[78px] left-1/2 z-[70] w-full max-w-[430px] -translate-x-1/2 px-4 pb-2.5 pt-2">
+          <a
+            href={createBar.href}
+            className="block rounded-card bg-brand-800 py-3.5 text-center text-[13.5px] font-semibold text-white shadow-[0_12px_30px_rgba(20,44,84,.35)]"
+          >
+            {createBar.label}
+          </a>
+        </div>
+      ) : null}
       <MobileBottomTabs canonical={canonical} />
     </div>
   );

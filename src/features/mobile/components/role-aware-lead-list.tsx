@@ -10,7 +10,7 @@ import {
   type MobileUserContext,
   type MobileUserRole,
 } from '../lib/role-aware-leads';
-import { LeadStatusCard } from './lead-status-card';
+import { LeadRow, SearchBar, type PillTone } from './primitives';
 
 type SignedInSummary = {
   name: string;
@@ -21,15 +21,6 @@ type SignedInSummary = {
   avatarUrl?: string | null;
 };
 
-// SF-18-118: Priority score for mobile lead cards
-function mobilePriorityScore(lead: MobileLead): number {
-  const now = Date.now();
-  const fuDate = lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt).getTime() : null;
-  const overdueDays = fuDate && fuDate < now ? Math.floor((now - fuDate) / 86400000) : 0;
-  const urgency = Math.min(overdueDays / 14, 1) * 45;
-  const value = lead.dealValue ? Math.min(lead.dealValue / 50000, 1) * 25 : 0;
-  return Math.round(Math.min(Math.max(urgency + value, 0), 99));
-}
 function followUpState(lead: MobileLead): 'overdue' | 'today' | 'upcoming' | 'none' {
   if (!lead.nextFollowUpAt) return 'none';
   const now = Date.now(); const fu = new Date(lead.nextFollowUpAt).getTime();
@@ -44,6 +35,36 @@ function leadTypeLabel(leadType: MobileLeadType) {
   if (leadType === 'buyer') return 'Buyer';
   if (leadType === 'supplier') return 'Supplier';
   return 'All';
+}
+
+function initialsFor(company: string) {
+  const parts = company.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return company.slice(0, 2).toUpperCase();
+}
+
+/** Maps a lead's free-text status to a semantic pill tone. Falls back to a
+ * neutral/urgency-based tone when the status string doesn't match a known
+ * pipeline stage name, rather than guessing at a color. */
+function statusToneFor(lead: MobileLead): PillTone {
+  const s = lead.status.toLowerCase();
+  if (s.includes('won') || s.includes('accepted') || s.includes('received')) return 'stage-won';
+  if (s.includes('negotiat')) return 'stage-negotiation';
+  if (s.includes('sample')) return 'stage-sample';
+  if (s.includes('qualif')) return 'stage-qualified';
+  if (s.includes('contact')) return 'stage-contacted';
+  if (s.includes('lost') || s.includes('reject')) return 'stage-lost';
+  if (followUpState(lead) === 'overdue') return 'danger';
+  return 'stage-new';
+}
+
+function telHref(phone?: string | null) {
+  return phone ? `tel:${phone.replace(/[^+0-9]/g, '')}` : null;
+}
+function whatsappHref(lead: MobileLead) {
+  const source = lead.whatsappNumber || lead.phone || '';
+  const digits = source.replace(/[^0-9]/g, '');
+  return digits ? `https://wa.me/${digits}` : null;
 }
 
 export function RoleAwareLeadList({
@@ -70,85 +91,73 @@ export function RoleAwareLeadList({
   }, [allowRolePreview, demoMode, providedUser, role]);
 
   const sourceLeads = providedLeads ?? mobileLeadDemoData;
-  const statuses = useMemo(() => ['All', ...Array.from(new Set(sourceLeads.map((lead) => lead.status)))], [sourceLeads]);
   const leads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status, leadType: initialLeadType }), [activeUser, initialLeadType, query, sourceLeads, status]);
 
   return (
-    <section className="sf-mobile-lead-queue space-y-4">
-      <div className="sf-mobile-lead-filter-card rounded-hero bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90">
-        <div className="sf-mobile-lead-heading">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Role-aware leads</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{leadTypeLabel(initialLeadType)} lead queue</h1>
-          <p className="sf-mobile-lead-helper mt-1 text-sm text-slate-500 dark:text-slate-300">
-            {initialLeadType ? `Filtered to ${leadTypeLabel(initialLeadType).toLowerCase()} leads from the global workspace filter.` : activeUser.role === 'owner' || activeUser.role === 'admin'
-              ? 'Owner and admin can see every lead in the workspace.'
-              : activeUser.role === 'manager'
-                ? 'Managers see assigned, direct-report, and managed-team leads.'
-                : 'Members only see leads assigned to them.'}
-          </p>
-        </div>
-        {demoMode && allowRolePreview ? (
-          <div className="mt-4 grid grid-cols-4 gap-2">
-            {(['owner', 'admin', 'manager', 'member'] as MobileUserRole[]).map((item) => (
-              <button key={item} onClick={() => setRole(item)} className={`min-h-11 rounded-2xl text-xs font-black capitalize ${role === item ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
-                {item}
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <div className="sf-mobile-lead-controls">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search company, contact, owner, team, status, next action"
-            className="mt-3 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-          />
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="mt-3 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-            aria-label="Filter by lead status"
-          >
-            {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-        </div>
-        <p className="sf-mobile-lead-count mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-          Showing {leads.length} lead{leads.length === 1 ? '' : 's'} for {activeUser.name}.
-        </p>
+    <section className="sf-mobile-lead-queue space-y-3.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <h1 className="text-lg font-semibold tracking-tight text-content-primary">{leadTypeLabel(initialLeadType)} leads</h1>
+        <p className="shrink-0 text-xs font-medium text-content-muted">{leads.length} shown</p>
       </div>
-      {/* SF-18-118: Group banners */}
+      {demoMode && allowRolePreview ? (
+        <div className="grid grid-cols-4 gap-1.5">
+          {(['owner', 'admin', 'manager', 'member'] as MobileUserRole[]).map((item) => (
+            <button key={item} onClick={() => setRole(item)} className={`min-h-9 rounded-[9px] text-[11px] font-semibold capitalize ${role === item ? 'bg-brand-700 text-white' : 'bg-surface-2 text-content-secondary'}`}>
+              {item}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <SearchBar placeholder="Search leads" value={query} onChange={setQuery} onSort={() => setStatus(status === 'All' ? statusOptions(sourceLeads)[1] ?? 'All' : 'All')} />
+
+      {/* SF-18-118: urgency-based grouping */}
       {[
-        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: any) => followUpState(l) === 'overdue' },
-        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: any) => followUpState(l) === 'today' },
-        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: any) => followUpState(l) !== 'overdue' && followUpState(l) !== 'today' },
+        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: MobileLead) => followUpState(l) === 'overdue' },
+        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: MobileLead) => followUpState(l) === 'today' },
+        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: MobileLead) => followUpState(l) !== 'overdue' && followUpState(l) !== 'today' },
       ].map(group => {
         const groupLeads = leads.filter(group.filter);
         if (!groupLeads.length) return null;
         return (
           <div key={group.id}>
-            <div className={`flex items-center gap-2 rounded-2xl border ${group.style} px-4 py-2.5 mb-2`}>
-              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${group.dot}`} />
+            <div className={`mb-2 flex items-center gap-2 rounded-2xl border ${group.style} px-4 py-2.5`}>
+              <span className={`h-2 w-2 shrink-0 rounded-full ${group.dot}`} />
               <span className="text-[10.5px] font-semibold uppercase tracking-[.1em] text-content-secondary">{group.label}</span>
               <span className="ml-auto text-[10px] font-semibold text-content-muted">{groupLeads.length} leads</span>
             </div>
-            <div className="grid gap-2">
-              {groupLeads.map(lead => (
-                <div key={lead.id} className="relative">
-                  {/* SF-18-118: Urgency rail */}
-                  <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full z-10 ${followUpState(lead)==='overdue'?'bg-danger-solid':followUpState(lead)==='today'?'bg-warning-solid':'bg-success-solid'}`} />
-                  {/* SF-18-118: Priority badge overlay */}
-                  <div className="relative">
-                    <div className="absolute top-3 right-3 z-10">
-                      {(() => { const s = mobilePriorityScore(lead); const cls = s>=75?'bg-danger-bg text-danger-fg':s>=50?'bg-warning-bg text-warning-fg':'bg-stage-new-bg text-stage-new-fg'; return <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${cls}`}>{s}</span>; })()}
-                    </div>
-                    <LeadStatusCard lead={lead} />
-                  </div>
-                </div>
-              ))}
+            <div>
+              {groupLeads.map(lead => {
+                const call = telHref(lead.phone);
+                const whatsapp = whatsappHref(lead);
+                const isSupplier = lead.leadType === 'supplier';
+                return (
+                  <LeadRow
+                    key={lead.id}
+                    id={lead.id}
+                    initials={initialsFor(lead.company)}
+                    name={lead.company}
+                    meta={`${lead.contact} · ${lead.market} · ${lead.valueUsd ? `$${lead.valueUsd.toLocaleString()}` : 'No value yet'}`}
+                    statusLabel={lead.status}
+                    statusTone={statusToneFor(lead)}
+                    onOpen={() => { window.location.href = `/leads/${encodeURIComponent(lead.id)}`; }}
+                    onCall={call ? () => { window.location.href = call; } : undefined}
+                    onWhatsApp={whatsapp ? () => window.open(whatsapp, '_blank', 'noreferrer') : undefined}
+                    thirdAction={
+                      isSupplier
+                        ? { icon: '⏰', label: 'Nudge supplier', tone: 'warning', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}`; } }
+                        : { icon: '▤', label: 'Create quote', tone: 'stage-contacted', onClick: () => { window.location.href = `/leads/${encodeURIComponent(lead.id)}/quote?handoff=mobile-lead-row`; } }
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
         );
       })}
     </section>
   );
+}
+
+function statusOptions(leads: MobileLead[]) {
+  return ['All', ...Array.from(new Set(leads.map((lead) => lead.status)))];
 }

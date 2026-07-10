@@ -6,6 +6,8 @@ import { SetuIcon } from '@/components/ui/setu-icon';
 import { formatQuoteMoney } from '@/features/quotes/logic/formatting';
 import type { QuoteWorkspaceListItem } from '@/features/quotes/types/workspace';
 import { cn } from '@/lib/utils';
+import { SearchBar } from '@/features/mobile/components/primitives';
+import { DiscussionButton } from '@/components/chat/discussion-button';
 
 type QuoteFilter = 'all' | 'needs_action' | 'accepted';
 
@@ -84,7 +86,7 @@ function QuoteCard({ item, active, onSelect }: { item: QuoteWorkspaceListItem; a
   );
 }
 
-function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose: () => void }) {
+function QuoteDetail({ item, onClose, organizationId, currentUserId, currentUserName }: { item: QuoteWorkspaceListItem; onClose: () => void; organizationId: string; currentUserId: string; currentUserName: string }) {
   return (
     <aside className="fixed inset-x-0 bottom-0 z-[320] max-h-[82vh] overflow-y-auto rounded-t-hero border border-slate-200 bg-white p-5 pb-[calc(92px+env(safe-area-inset-bottom))] shadow-[0_-18px_45px_rgba(15,23,42,0.18)] md:hidden">
       <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
@@ -113,6 +115,18 @@ function QuoteDetail({ item, onClose }: { item: QuoteWorkspaceListItem; onClose:
         </div>
       </section>
       {item.lastNegotiationMessage ? <p className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm font-semibold text-blue-900">{item.lastNegotiationMessage}</p> : null}
+      <section className="mt-4">
+        <DiscussionButton
+          entityType="quote"
+          entityId={item.id}
+          organizationId={organizationId}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          title={`Quote ${item.quoteNumber ?? item.id.slice(0, 8)} discussion`}
+          autoEnrollUsers={[currentUserId].filter(Boolean)}
+          label="Team discussion"
+        />
+      </section>
       <div className="sticky bottom-0 mt-5 flex gap-2 bg-white pb-1 pt-3">
         <Link href={item.nextStep.href} className={cn('flex min-h-12 flex-1 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white shadow-lg', nextStepClasses(item.nextStep.tone))}>{item.nextStep.label}</Link>
         <a href={whatsappHref(item)} target="_blank" rel="noreferrer" className="flex min-h-12 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg" aria-label="Share quote update on WhatsApp"><SetuIcon name="mail" className="h-5 w-5" /></a>
@@ -137,10 +151,16 @@ function KpiFilterCard({ label, value, active, onClick }: { label: string; value
   );
 }
 
-export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] }) {
+export function MobileQuotesList({ items, organizationId, currentUserId, currentUserName }: { items: QuoteWorkspaceListItem[]; organizationId: string; currentUserId: string; currentUserName: string }) {
   const [filter, setFilter] = useState<QuoteFilter>('all');
+  const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const filteredItems = useMemo(() => items.filter((item) => filterQuote(item, filter)), [items, filter]);
+  const filteredItems = useMemo(() => {
+    const byKpi = items.filter((item) => filterQuote(item, filter));
+    const q = query.trim().toLowerCase();
+    if (!q) return byKpi;
+    return byKpi.filter((item) => item.companyName.toLowerCase().includes(q) || (item.quoteNumber ?? '').toLowerCase().includes(q));
+  }, [items, filter, query]);
   const selected = selectedId ? filteredItems.find((item) => item.id === selectedId) ?? null : null;
   const actionCount = items.filter(isNeedsAction).length;
   const acceptedCount = items.filter((item) => item.status === 'accepted' || item.hasAcceptedContract).length;
@@ -158,6 +178,8 @@ export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] })
         </div>
       </section>
 
+      <div className="mt-4"><SearchBar placeholder="Search quotes" value={query} onChange={setQuery} /></div>
+
       <section className="mt-4 flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">{activeLabel}</p>
@@ -169,7 +191,7 @@ export function MobileQuotesList({ items }: { items: QuoteWorkspaceListItem[] })
       <section className="mt-4 space-y-3">
         {filteredItems.length ? filteredItems.map((item) => <QuoteCard key={item.id} item={item} active={selected?.id === item.id} onSelect={() => setSelectedId(item.id)} />) : <div className="rounded-panel bg-white p-6 text-center text-sm font-semibold text-slate-500">No quotes match this KPI filter.</div>}
       </section>
-      {selected ? <QuoteDetail item={selected} onClose={() => setSelectedId(null)} /> : null}
+      {selected ? <QuoteDetail item={selected} onClose={() => setSelectedId(null)} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} /> : null}
     </main>
   );
 }

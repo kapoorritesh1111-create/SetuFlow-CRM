@@ -21,13 +21,17 @@ export default async function DashboardPage({
 }: {
   searchParams?: { mode?: string | string[]; notice?: string | string[] };
 }) {
+  const rawMode = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] : searchParams?.mode;
+  const explicitAll = rawMode === 'all';
   const mode = parseWorkspaceMode(searchParams?.mode);
-  const dashboard = await renderDashboardPage(mode);
+  const dashboard = await renderDashboardPage(mode, explicitAll);
   const notice = noticeMessage(searchParams?.notice);
 
   return (
     <>
-      <DashboardSectionTabs active="home" />
+      {/* Desktop-only: Reports isn't mobile-ready yet and this nav card is too
+          tall for a phone screen — mobile navigation lives in the bottom tab bar. */}
+      <div className="hidden md:block"><DashboardSectionTabs active="home" /></div>
       {notice ? <div className="mb-4"><StateMessage title={notice.title} description={notice.description} tone={notice.tone} /></div> : null}
       {dashboard}
     </>

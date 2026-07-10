@@ -8,12 +8,17 @@ import {
   updateActualOrderLineAction,
 } from '@/features/orders/server';
 import type { CatalogOrderOption8S, ProductionOrder8S } from './OrdersProductionWorkspace81DRepair3';
+import { SearchBar } from '@/features/mobile/components/primitives';
+import { DiscussionButton } from '@/components/chat/discussion-button';
 
 type FilterKey = 'all' | 'ready' | 'blocked' | 'finance' | 'freight';
 
 type Props = {
   orders: ProductionOrder8S[];
   catalogOptions: CatalogOrderOption8S[];
+  organizationId: string;
+  currentUserId: string;
+  currentUserName: string;
 };
 
 function orderKey(order: ProductionOrder8S) {
@@ -124,8 +129,8 @@ function LineEditor({ order }: { order: ProductionOrder8S }) {
   );
 }
 
-function OrderActionSheet({ order, catalogOptions, onClose }: { order: ProductionOrder8S | null; catalogOptions: CatalogOrderOption8S[]; onClose: () => void }) {
-  const [tab, setTab] = useState<'summary' | 'edit'>('summary');
+function OrderActionSheet({ order, catalogOptions, onClose, organizationId, currentUserId, currentUserName }: { order: ProductionOrder8S | null; catalogOptions: CatalogOrderOption8S[]; onClose: () => void; organizationId: string; currentUserId: string; currentUserName: string }) {
+  const [tab, setTab] = useState<'summary' | 'edit' | 'team'>('summary');
   if (!order) return null;
   return (
     <div className="fixed inset-0 z-[500] bg-slate-950/35 backdrop-blur-sm" onClick={onClose}>
@@ -135,7 +140,7 @@ function OrderActionSheet({ order, catalogOptions, onClose }: { order: Productio
           <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Order actions</p>
           <h2 className="mt-1 text-xl font-black text-slate-950">{order.companyName}</h2>
           <p className="mt-1 text-sm font-semibold text-slate-500">{order.orderNumber ?? 'Order number pending'} • {money(order.actualTotal ?? order.quotedTotal, order.currency)}</p>
-          <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1"><button type="button" onClick={() => setTab('summary')} className={`min-h-10 rounded-xl text-sm font-black ${tab === 'summary' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Summary</button><button type="button" onClick={() => setTab('edit')} className={`min-h-10 rounded-xl text-sm font-black ${tab === 'edit' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Edit lines</button></div>
+          <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1"><button type="button" onClick={() => setTab('summary')} className={`min-h-10 rounded-xl text-sm font-black ${tab === 'summary' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Summary</button><button type="button" onClick={() => setTab('edit')} className={`min-h-10 rounded-xl text-sm font-black ${tab === 'edit' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Edit lines</button><button type="button" onClick={() => setTab('team')} className={`min-h-10 rounded-xl text-sm font-black ${tab === 'team' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Team</button></div>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {tab === 'summary' ? (
@@ -145,31 +150,50 @@ function OrderActionSheet({ order, catalogOptions, onClose }: { order: Productio
               {order.blockerReasons.length ? <div className="rounded-2xl bg-rose-50 p-3"><p className="text-xs font-black uppercase tracking-[0.12em] text-rose-600">Blockers</p>{order.blockerReasons.slice(0, 3).map((reason) => <p key={reason} className="mt-2 text-sm font-semibold text-rose-800">• {reason}</p>)}</div> : null}
               <form action={closeOrderAction}><input type="hidden" name="quote_id" value={order.quoteId} /><button type="submit" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-800">Close order</button></form>
             </div>
-          ) : <LineEditor order={order} />}
-          {tab === 'edit' && catalogOptions.length ? <p className="mt-3 text-xs font-semibold text-slate-400">Catalog add-line options are available on desktop; mobile currently focuses on editing loaded order lines.</p> : null}
+          ) : tab === 'edit' ? (
+            <>
+              <LineEditor order={order} />
+              {catalogOptions.length ? <p className="mt-3 text-xs font-semibold text-slate-400">Catalog add-line options are available on desktop; mobile currently focuses on editing loaded order lines.</p> : null}
+            </>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold leading-5 text-slate-500">Internal team discussion on this order — not visible to the buyer or supplier.</p>
+              <DiscussionButton entityType="order" entityId={order.orderId ?? order.quoteId} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} title={`Order ${order.orderNumber ?? 'pending'} discussion`} label="Order discussion" />
+              {order.shipment?.id ? (
+                <DiscussionButton entityType="dispatch" entityId={order.shipment.id} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} title={`Dispatch ${order.shipment.trackingNumber ?? order.shipment.bookingReference ?? ''} discussion`} label="Dispatch discussion" />
+              ) : null}
+            </div>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
-export function MobileOrdersWorkspace({ orders, catalogOptions }: Props) {
+export function MobileOrdersWorkspace({ orders, catalogOptions, organizationId, currentUserId, currentUserName }: Props) {
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(orders[0] ? orderKey(orders[0]) : null);
   const ready = orders.filter((order) => !isBlocked(order));
   const blocked = orders.filter(isBlocked);
   const finance = orders.filter(isFinanceReady);
   const freight = orders.filter(isFreightReady);
   const selected = selectedId ? orders.find((order) => orderKey(order) === selectedId) ?? null : null;
-  const filtered = orders.filter((order) => filter === 'all' || (filter === 'ready' && !isBlocked(order)) || (filter === 'blocked' && isBlocked(order)) || (filter === 'finance' && isFinanceReady(order)) || (filter === 'freight' && isFreightReady(order)));
+  const q = query.trim().toLowerCase();
+  const filtered = orders.filter((order) => {
+    const matchesFilter = filter === 'all' || (filter === 'ready' && !isBlocked(order)) || (filter === 'blocked' && isBlocked(order)) || (filter === 'finance' && isFinanceReady(order)) || (filter === 'freight' && isFreightReady(order));
+    const matchesQuery = !q || order.companyName.toLowerCase().includes(q) || (order.orderNumber ?? '').toLowerCase().includes(q);
+    return matchesFilter && matchesQuery;
+  });
   const filters: Array<{ key: FilterKey; label: string }> = [{ key: 'all', label: 'All' }, { key: 'ready', label: 'Ready' }, { key: 'blocked', label: 'Blocked' }, { key: 'finance', label: 'Finance' }, { key: 'freight', label: 'Freight' }];
   return (
     <div className="space-y-5 pb-5">
-      <div className="flex gap-3 overflow-x-auto pb-1 pt-2">{filters.map((item) => <button key={item.key} type="button" onClick={() => setFilter(item.key)} className={`min-h-12 min-w-[6.25rem] rounded-full px-5 text-sm font-black shadow-sm ${filter === item.key ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-blue-500/30' : 'bg-white/85 text-slate-800 ring-1 ring-white/80'}`}>{item.label}</button>)}</div>
+      <SearchBar placeholder="Search orders" value={query} onChange={setQuery} />
+      <div className="flex gap-3 overflow-x-auto pb-1 pt-2">{filters.map((item) => <button key={item.key} type="button" onClick={() => setFilter(item.key)} className={`min-h-12 min-w-[6.25rem] rounded-full px-5 text-sm font-black shadow-sm ${filter === item.key ? 'bg-brand-700 text-white shadow-black/20' : 'bg-white/85 text-slate-800 ring-1 ring-white/80'}`}>{item.label}</button>)}</div>
       <section className="rounded-hero bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,.20),transparent_34%),linear-gradient(135deg,#061c2e,#0b2e4a_62%,#061426)] p-5 text-white shadow-[0_28px_80px_rgba(15,23,42,.28)]"><div className="flex items-start gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-400/20 text-amber-200"><SetuIcon name="orders" className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-[0.2em] text-white/90">Order command center</p><p className="mt-1 text-sm text-white/68">Execution queue and mobile edits</p></div></div><div className="mt-5 grid grid-cols-3 gap-3"><StatCard label="All" value={orders.length} helper="Orders" /><StatCard label="Ready" value={ready.length} helper="No blocker" /><StatCard label="Blocked" value={blocked.length} helper="Review" /></div></section>
       <section className="rounded-hero bg-white/95 p-4 shadow-[0_20px_60px_rgba(15,23,42,.08)] ring-1 ring-white/80"><p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Queues</p><div className="mt-3 grid grid-cols-2 gap-3"><div className="rounded-2xl bg-blue-50 p-3"><p className="text-2xl font-black text-blue-900">{finance.length}</p><p className="text-xs font-bold text-blue-600">Finance-ready</p></div><div className="rounded-2xl bg-cyan-50 p-3"><p className="text-2xl font-black text-cyan-900">{freight.length}</p><p className="text-xs font-bold text-cyan-600">Freight-ready</p></div></div></section>
       <div className="space-y-3">{filtered.map((order) => <OrderCard key={orderKey(order)} order={order} selected={selectedId === orderKey(order)} onClick={() => setSelectedId(orderKey(order))} />)}{filtered.length === 0 ? <div className="rounded-panel border border-dashed border-slate-200 bg-white/80 p-6 text-center"><p className="text-sm font-black text-slate-900">No matching orders</p><p className="mt-1 text-xs text-slate-500">Choose another filter to see the queue.</p></div> : null}</div>
-      <OrderActionSheet order={selected} catalogOptions={catalogOptions} onClose={() => setSelectedId(null)} />
+      <OrderActionSheet order={selected} catalogOptions={catalogOptions} onClose={() => setSelectedId(null)} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} />
     </div>
   );
 }

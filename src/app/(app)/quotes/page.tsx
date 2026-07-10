@@ -714,7 +714,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
 
   return (
     <>
-      <div className="md:hidden"><MobileQuotesList items={filteredItems} /></div>
+      <div className="md:hidden"><MobileQuotesList items={filteredItems} organizationId={organizationId} currentUserId={workspace?.user?.id ?? ''} currentUserName={workspace?.profile?.full_name ?? workspace?.user?.email ?? 'User'} /></div>
       <div className="hidden md:block">
     <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
       <div style={{padding:'10px 24px 0'}}>

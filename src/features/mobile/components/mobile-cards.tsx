@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ThreeDIconOrb } from './icon-3d-orb';
+import { ThemeToggle } from './theme-toggle';
 
 export function EntitySwitch({ value, onChange }: { value: 'buyer' | 'supplier'; onChange: (value: 'buyer' | 'supplier') => void }) {
   return <div className="grid grid-cols-2 gap-2 rounded-3xl bg-slate-100 p-1 dark:bg-slate-800"><button onClick={() => onChange('buyer')} className={`min-h-12 rounded-2xl font-black ${value === 'buyer' ? 'bg-white text-blue-600 shadow dark:bg-slate-950 dark:text-sky-300' : 'text-slate-500'}`}>Buyer</button><button onClick={() => onChange('supplier')} className={`min-h-12 rounded-2xl font-black ${value === 'supplier' ? 'bg-white text-violet-600 shadow dark:bg-slate-950 dark:text-violet-300' : 'text-slate-500'}`}>Supplier</button></div>;
@@ -17,8 +18,7 @@ export function TradeCaptureForm() {
 }
 
 export function AppearancePreview() {
-  const [mode, setMode] = useState<'system' | 'light' | 'dark'>('system');
-  return <section className="rounded-hero bg-white/90 p-5 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90"><h2 className="text-xl font-black text-slate-950 dark:text-white">Appearance</h2><div className="mt-3 grid grid-cols-3 gap-2">{(['system','light','dark'] as const).map((item) => <button key={item} onClick={() => setMode(item)} className={`min-h-11 rounded-2xl text-xs font-black capitalize ${mode === item ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{item}</button>)}</div><div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-3xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-black text-slate-500">Light</p><p className="mt-2 font-black text-slate-950">Clean field work</p></div><div className="rounded-3xl bg-slate-950 p-4 text-white"><p className="text-xs font-black text-slate-400">Dark</p><p className="mt-2 font-black">Night trade floor</p></div></div></section>;
+  return <section className="rounded-hero bg-white/90 p-5 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90"><h2 className="text-xl font-black text-slate-950 dark:text-white">Appearance</h2><div className="mt-3"><ThemeToggle /></div></section>;
 }
 
 export function NotificationToast({ message = 'Saved and synced' }: { message?: string }) { return <div role="status" aria-live="polite" className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-xl">{message}</div>; }

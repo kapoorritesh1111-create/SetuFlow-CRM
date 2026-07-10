@@ -88,8 +88,13 @@ async function getActiveTradeEventStripData(organizationId: string): Promise<Act
 function resolveRoleAwareDashboardScope(
   requestedScope: DashboardScope,
   currentRoles: string[],
+  explicitAll = false,
 ): DashboardScope {
   if (requestedScope !== 'all') return requestedScope;
+  // A user who explicitly picked "All" (mode=all in the URL) always gets literal
+  // all-scope data. The role-based default below only applies when scope was
+  // never specified at all (first touch), not when it was actively chosen.
+  if (explicitAll) return 'all';
 
   const normalizedRoles = new Set(currentRoles.map((role) => role.trim().toLowerCase()).filter(Boolean));
   const hasBuyerDefaultRole = BUYER_DEFAULT_ROLE_NAMES.some((role) => normalizedRoles.has(role));
@@ -106,7 +111,7 @@ function workspaceModeToDashboardScope(mode: WorkspaceMode): DashboardScope {
   return 'all';
 }
 
-export async function renderDashboardPage(mode: WorkspaceMode) {
+export async function renderDashboardPage(mode: WorkspaceMode, explicitAll = false) {
   const scope = workspaceModeToDashboardScope(mode);
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
@@ -117,7 +122,7 @@ export async function renderDashboardPage(mode: WorkspaceMode) {
       />    );
   }
 
-  const resolvedScope = resolveRoleAwareDashboardScope(scope, workspace.currentRoles);
+  const resolvedScope = resolveRoleAwareDashboardScope(scope, workspace.currentRoles, explicitAll);
   const canManageLeads = hasWorkspaceCapability(workspace.currentRoles, 'lead.manage');
   const readOnlyMessage = canManageLeads
     ? null
