@@ -11,7 +11,7 @@ import {
   type MobileUserContext,
   type MobileUserRole,
 } from '../lib/role-aware-leads';
-import { LeadRow, SearchBar, SwipeRow, PullToRefresh, SegmentedControl, type PillTone } from './primitives';
+import { LeadRow, SearchBar, SegmentedControl, type PillTone } from './primitives';
 
 type SignedInSummary = {
   name: string;
@@ -101,7 +101,6 @@ export function RoleAwareLeadList({
   }
 
   return (
-    <PullToRefresh onRefresh={() => { router.refresh(); return new Promise((resolve) => setTimeout(resolve, 500)); }}>
     <section className="sf-mobile-lead-queue space-y-3.5">
       <div className="flex items-baseline justify-between gap-2">
         <h1 className="text-lg font-semibold tracking-tight text-content-primary">{leadTypeLabel(initialLeadType)} leads</h1>
@@ -147,7 +146,7 @@ export function RoleAwareLeadList({
                 const call = telHref(lead.phone);
                 const whatsapp = whatsappHref(lead);
                 const isSupplier = lead.leadType === 'supplier';
-                const row = (
+                return (
                   <LeadRow
                     key={lead.id}
                     id={lead.id}
@@ -166,25 +165,12 @@ export function RoleAwareLeadList({
                     }
                   />
                 );
-                if (!call && !whatsapp) return <div key={lead.id}>{row}</div>;
-                return (
-                  <SwipeRow
-                    key={lead.id}
-                    leftAction={call ? { label: '📞 Call', tone: 'success' } : undefined}
-                    rightAction={whatsapp ? { label: '💬 WhatsApp', tone: 'stage-won' } : undefined}
-                    onSwipeRight={call ? () => { window.location.href = call!; } : undefined}
-                    onSwipeLeft={whatsapp ? () => window.open(whatsapp, '_blank', 'noreferrer') : undefined}
-                  >
-                    {row}
-                  </SwipeRow>
-                );
               })}
             </div>
           </div>
         );
       })}
     </section>
-    </PullToRefresh>
   );
 }
 

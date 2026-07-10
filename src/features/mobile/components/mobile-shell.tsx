@@ -56,7 +56,7 @@ export function MobileShell({
         {children}
       </main>
       {createBar ? (
-        <div className="fixed bottom-[78px] left-1/2 z-[70] w-full max-w-[430px] -translate-x-1/2 px-4 pb-2.5 pt-2">
+        <div className="fixed bottom-[86px] left-1/2 z-[450] w-full max-w-[430px] -translate-x-1/2 px-4 pb-3 pt-2">
           <a
             href={createBar.href}
             className="block rounded-card bg-brand-800 py-3.5 text-center text-[13.5px] font-semibold text-white shadow-[0_12px_30px_rgba(20,44,84,.35)]"
