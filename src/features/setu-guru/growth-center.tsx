@@ -9,6 +9,7 @@ import {
   History,
   PackageCheck,
   Sparkles,
+  Target,
   Users,
 } from 'lucide-react';
 
@@ -23,12 +24,18 @@ import {
   workspaceSecondaryButtonClass,
 } from '@/components/ui/workspace-surfaces';
 import type { SetuGuruRecommendation } from '@/lib/setu-guru/recommendations';
+import type { OpportunityCard } from '@/lib/setu-guru/opportunity-finder';
 import { cn } from '@/lib/utils';
+
+type TradeEventSummary = { id: string; name: string; starts_on: string | null; ends_on: string | null };
 
 type GrowthCenterProps = {
   organizationName?: string | null;
   recommendations: SetuGuruRecommendation[];
   history: SetuGuruRecommendation[];
+  opportunities?: OpportunityCard[];
+  icpConfigured?: boolean;
+  tradeEvents?: TradeEventSummary[];
 };
 
 type ActionSection = {
@@ -176,7 +183,7 @@ function ActionArea({ section, items }: { section: ActionSection; items: SetuGur
   );
 }
 
-export function GrowthCenter({ organizationName, recommendations, history }: GrowthCenterProps) {
+export function GrowthCenter({ organizationName, recommendations, history, opportunities = [], icpConfigured = false, tradeEvents = [] }: GrowthCenterProps) {
   const ordered = [...recommendations].sort((a, b) => {
     const priorityDifference = priorityRank[b.priority] - priorityRank[a.priority];
     return priorityDifference || Date.parse(b.created_at) - Date.parse(a.created_at);
@@ -206,13 +213,29 @@ export function GrowthCenter({ organizationName, recommendations, history }: Gro
               </p>
             </div>
           </div>
-          <Link
-            href="/setu-guru"
-            className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-11 items-center justify-center gap-2 rounded-ctl px-5 text-sm font-semibold')}
-          >
-            Open Setu Guru
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              href="/growth-agent/suppliers"
+              className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-11 items-center justify-center gap-2 rounded-ctl px-5 text-sm font-semibold')}
+            >
+              Compare suppliers
+              <PackageCheck className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/growth-agent/icp"
+              className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-11 items-center justify-center gap-2 rounded-ctl px-5 text-sm font-semibold')}
+            >
+              Set up your ICP
+              <Users className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/setu-guru"
+              className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-11 items-center justify-center gap-2 rounded-ctl px-5 text-sm font-semibold')}
+            >
+              Open Setu Guru
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -257,6 +280,94 @@ export function GrowthCenter({ organizationName, recommendations, history }: Gro
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
             {priorityItems.map((item) => <RecommendationCard key={item.id} recommendation={item} />)}
+          </div>
+        </section>
+      ) : null}
+
+      <section className={cn(workspacePanelClass, 'p-5 lg:p-6')} aria-labelledby="opportunity-finder-heading">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-card bg-accent-50 p-2.5 text-accent-700">
+              <Target className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 id="opportunity-finder-heading" className="text-base font-semibold text-content-primary">Opportunity Finder</h2>
+              <p className="mt-1 text-sm leading-6 text-content-secondary">
+                Existing CRM leads scored against your ICP profile. No public enrichment yet — phase 1 uses only what is already in Setu Flow.
+              </p>
+            </div>
+          </div>
+          {!icpConfigured ? (
+            <Link
+              href="/growth-agent/icp"
+              className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-ctl px-3.5 text-sm font-semibold')}
+            >
+              Set up your ICP
+            </Link>
+          ) : null}
+        </div>
+
+        {!icpConfigured ? (
+          <div className={cn(workspaceInsetClass, 'mt-4 p-4')}>
+            <p className="text-sm font-semibold text-content-primary">Set up your ICP to see scored opportunities</p>
+            <p className="mt-1 text-sm text-content-secondary">
+              Setu Guru needs your target products, markets, and buyer types before it can score existing leads.
+            </p>
+          </div>
+        ) : opportunities.length ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {opportunities.map((opportunity) => (
+              <Link
+                key={opportunity.leadId}
+                href={`/leads/${opportunity.leadId}`}
+                className={cn(workspaceInsetClass, 'block p-4 transition hover:-translate-y-0.5 hover:shadow-card')}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-content-primary">{opportunity.label}</p>
+                    <p className="mt-1 text-xs text-content-muted">
+                      {opportunity.signalSource}
+                      {opportunity.country ? ` · ${opportunity.country}` : ''}
+                    </p>
+                  </div>
+                  <StatusBadge
+                    label={`Fit ${opportunity.fitScore.score}`}
+                    tone={opportunity.fitScore.score >= 65 ? 'success' : 'info'}
+                  />
+                </div>
+                <p className="mt-3 text-sm text-content-secondary">{opportunity.recommendedAction}</p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className={cn(workspaceInsetClass, 'mt-4 p-4')}>
+            <p className="text-sm font-semibold text-content-primary">No high-fit opportunities found right now</p>
+            <p className="mt-1 text-sm text-content-secondary">Setu Guru checked your existing leads against your ICP and found no strong matches today.</p>
+          </div>
+        )}
+      </section>
+
+      {tradeEvents.length ? (
+        <section className={cn(workspacePanelClass, 'p-5 lg:p-6')} aria-labelledby="trade-event-assistant-heading">
+          <div className="flex items-start gap-3">
+            <div className="rounded-card bg-accent-50 p-2.5 text-accent-700">
+              <CalendarDays className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 id="trade-event-assistant-heading" className="text-base font-semibold text-content-primary">Trade Event Assistant</h2>
+              <p className="mt-1 text-sm leading-6 text-content-secondary">Pre-show prioritization and post-show follow-up, per event.</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {tradeEvents.map((event) => (
+              <Link
+                key={event.id}
+                href={`/growth-agent/trade-events/${event.id}`}
+                className={cn(workspaceInsetClass, 'inline-flex items-center gap-2 rounded-ctl px-3.5 py-2 text-sm font-semibold text-content-primary transition hover:-translate-y-0.5 hover:shadow-card')}
+              >
+                {event.name}
+              </Link>
+            ))}
           </div>
         </section>
       ) : null}
