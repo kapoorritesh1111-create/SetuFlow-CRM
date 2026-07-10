@@ -10,6 +10,7 @@ const growthCenter = readFileSync('src/features/setu-guru/growth-center.tsx', 'u
 const growthRoute = readFileSync('src/app/(app)/growth-agent/page.tsx', 'utf8');
 const dashboardStrip = readFileSync('src/features/setu-guru/setu-guru-dashboard-strip.tsx', 'utf8');
 const dashboardPage = readFileSync('src/app/(app)/dashboard/page.tsx', 'utf8');
+const routeManifest = JSON.parse(readFileSync('src/lib/routes/manifest.json', 'utf8'));
 
 const initialTypes = [
   'lead_no_outreach',
@@ -70,11 +71,14 @@ test('Recommendation cards remain explainable and action linked', () => {
   assert.match(growthCenter, /Nothing is sent or changed without your approval/);
 });
 
-test('Generated action links use supported CRM routes only', () => {
+test('Generated action links use only confirmed CRM routes', () => {
+  assert.equal(routeManifest.routes.app.quotes, '/quotes');
+  assert.equal(routeManifest.routes.app.leads, '/leads');
   assert.doesNotMatch(generator, /\/leads\/\$\{[^}]+\}\/rfq/);
   assert.doesNotMatch(generator, /\/leads\/\$\{[^}]+\}\/quote/);
+  assert.doesNotMatch(generator, /\/quotes\/\$\{[^}]+\}/);
   assert.match(generator, /action_href: `\/leads\/\$\{rfq\.lead_id\}`/);
-  assert.match(generator, /action_href: `\/quotes\/\$\{quote\.id\}`/);
+  assert.match(generator, /action_href: quote\.lead_id \? `\/leads\/\$\{quote\.lead_id\}` : '\/quotes'/);
 });
 
 test('Growth Agent foundation has no autonomous outbound communication', () => {
