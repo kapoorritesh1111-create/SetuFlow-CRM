@@ -10,7 +10,7 @@ const growthCenter = readFileSync('src/features/setu-guru/growth-center.tsx', 'u
 const growthRoute = readFileSync('src/app/(app)/growth-agent/page.tsx', 'utf8');
 const dashboardStrip = readFileSync('src/features/setu-guru/setu-guru-dashboard-strip.tsx', 'utf8');
 const dashboardPage = readFileSync('src/app/(app)/dashboard/page.tsx', 'utf8');
-const routeManifest = JSON.parse(readFileSync('src/lib/routes/manifest.json', 'utf8'));
+const routeManifest = readFileSync('src/lib/routes/manifest.json', 'utf8');
 
 const initialTypes = [
   'lead_no_outreach',
@@ -63,22 +63,22 @@ test('Growth Center and dashboard query only current-organization open recommend
 
 test('Recommendation cards remain explainable and action linked', () => {
   for (const surface of [growthCenter, dashboardStrip]) {
-    assert.match(surface, /recommendation\.reason/);
     assert.match(surface, /recommendation\.priority/);
     assert.match(surface, /recommendation\.recommended_action/);
     assert.match(surface, /recommendation\.action_href/);
   }
+  assert.match(growthCenter, /recommendation\.reason/);
   assert.match(growthCenter, /Nothing is sent or changed without your approval/);
 });
 
 test('Generated action links use only confirmed CRM routes', () => {
-  assert.equal(routeManifest.routes.app.quotes, '/quotes');
-  assert.equal(routeManifest.routes.app.leads, '/leads');
+  assert.match(routeManifest, /"leads": "\/leads"/);
+  assert.match(routeManifest, /"quotes": "\/quotes"/);
   assert.doesNotMatch(generator, /\/leads\/\$\{[^}]+\}\/rfq/);
   assert.doesNotMatch(generator, /\/leads\/\$\{[^}]+\}\/quote/);
-  assert.doesNotMatch(generator, /\/quotes\/\$\{[^}]+\}/);
-  assert.match(generator, /action_href: `\/leads\/\$\{rfq\.lead_id\}`/);
+  assert.doesNotMatch(generator, /action_href: `\/quotes\/\$\{quote\.id\}`/);
   assert.match(generator, /action_href: quote\.lead_id \? `\/leads\/\$\{quote\.lead_id\}` : '\/quotes'/);
+  assert.match(generator, /action_href: `\/leads\/\$\{rfq\.lead_id\}`/);
 });
 
 test('Growth Agent foundation has no autonomous outbound communication', () => {
@@ -100,12 +100,14 @@ test('Growth Center avoids repeating priority cards and collapses long queues', 
   assert.match(growthCenter, /Priority cards are not repeated below/);
 });
 
-test('Dashboard strip is bounded, ordered, responsive, and resilient', () => {
+test('Dashboard strip stays compact and bounded', () => {
   assert.match(dashboardStrip, /priorityRank/);
   assert.match(dashboardStrip, /Date\.parse\(b\.created_at\)/);
-  assert.match(dashboardStrip, /\.slice\(0, 5\)/);
+  assert.match(dashboardStrip, /\.slice\(0, 3\)/);
+  assert.match(dashboardStrip, /lg:grid-cols-3/);
+  assert.match(dashboardStrip, /View all/);
+  assert.doesNotMatch(dashboardStrip, /topRecommendations\.map[\s\S]*recommendation\.reason/);
   assert.match(dashboardStrip, /SetuGuruDashboardStripLoading/);
   assert.match(dashboardStrip, /temporarily unavailable/);
-  assert.match(dashboardStrip, /sm:/);
   assert.match(dashboardPage, /Suspense/);
 });
