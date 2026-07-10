@@ -82,6 +82,15 @@ test('Generated action links use only confirmed CRM routes', () => {
   assert.match(generator, /action_href: `\/leads\/\$\{rfq\.lead_id\}`/);
 });
 
+test('Quote follow-up recommendations identify the buyer and quote', () => {
+  assert.match(generator, /select\('id,lead_id,quote_number,status,sent_at/);
+  assert.match(generator, /const buyer = leads\.find/);
+  assert.match(generator, /const buyerLabel = buyer\?\.company_name \|\| buyer\?\.contact_name \|\| 'buyer'/);
+  assert.match(generator, /const quoteLabel = quote\.quote_number \|\| 'sent quote'/);
+  assert.match(generator, /title: `Follow up on \$\{quoteLabel\} for \$\{buyerLabel\}`/);
+  assert.match(generator, /metadata: \{ lead_id: quote\.lead_id, quote_id: quote\.id, quote_number: quote\.quote_number, buyer_name: buyerLabel \}/);
+});
+
 test('Growth Agent foundation has no autonomous outbound communication', () => {
   const foundation = [generator, triggerRoute, query, growthCenter, dashboardStrip, dashboardPopover].join('\n');
   assert.doesNotMatch(foundation, /send_email|sendEmail|send_whatsapp|sendWhatsApp|provider_message_id/);
