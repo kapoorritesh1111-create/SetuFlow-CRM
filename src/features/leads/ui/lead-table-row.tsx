@@ -23,7 +23,7 @@ export interface LeadTableRowProps {
   stageHistoryMap: Map<string, string>;
   stageMetaMap: Map<string, { sortOrder: number | null; stageCount: number | null; isClosed: boolean | null | undefined }>;
   readinessMap: Map<string, LeadCommercialReadiness>;
-  getLeadCommandCenterHref: (leadId: string) => string;
+  getLeadCommandCenterHref: (leadId: string, initialStepId?: undefined, mode?: string) => string;
   openLeadCommandCenter: (router: ReturnType<typeof useRouter>, href: string) => void;
   shouldIgnoreLeadNavigationTarget: (target: EventTarget | null) => boolean;
   handleLeadCommandCenterKeyDown: (event: KeyboardEvent<HTMLElement>, router: ReturnType<typeof useRouter>, href: string) => void;
