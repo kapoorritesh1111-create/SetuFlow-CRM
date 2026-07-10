@@ -2,6 +2,38 @@ import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { SupplierCostRequestsWorkspace } from '@/features/leads/components/supplier-cost-requests-workspace';
 import { MobileQuotesList } from '@/features/mobile/components/mobile-quotes-list';
+import { StateMessage } from '@/components/ui/state-message';
+
+// Every server action on this page (recordOutcomeAction, and the approve/
+// reject/order handlers below) redirects with a `notice=` param on both
+// success and failure — but until now nothing on this page ever read or
+// displayed it. That's why clicking Mark accepted/rejected/etc. looked like
+// it did nothing: for 4 of the 5 outcomes the redirect target is this same
+// page, so the only visible sign of anything happening was the notice param
+// silently sitting unused in the URL. This maps every notice code the
+// actions below actually emit to a real banner.
+function quoteNoticeMessage(notice?: string | string[]) {
+  const value = Array.isArray(notice) ? notice[0] : notice;
+  const success = (title: string, description?: string) => ({ title, description, tone: 'success' as const });
+  const error = (title: string, description?: string) => ({ title, description, tone: 'danger' as const });
+  switch (value) {
+    case 'quote-accepted': return success('Quote accepted', 'Locked and moved to Orders.');
+    case 'quote-approved': return success('Quote approved');
+    case 'quote-rejected': return success('Quote rejected', 'Reason captured and archived.');
+    case 'quote-revision-requested': return success('Revision requested', 'Create a governed new version — the sent record stays locked.');
+    case 'quote-follow-up-scheduled': return success('No response logged', 'Follow-up scheduled in three days.');
+    case 'quote-follow-up-logged': return success('Follow-up logged');
+    case 'quote-expired-archived': return success('Quote expired', 'Moved to archive. Clone a new version if the customer re-engages.');
+    case 'quote-outcome-error': return error('Could not record that outcome', 'Please try again, or contact support if this keeps happening.');
+    case 'quote-approval-error': return error('Could not approve this quote', 'Please try again.');
+    case 'quote-rejection-error': return error('Could not reject this quote', 'Please try again.');
+    case 'quote-order-error': return error('Could not move this quote to Orders', 'Please try again.');
+    case 'quote-order-missing': return error('No quote selected', 'Select a quote before moving it to Orders.');
+    case 'quote-outcome-missing': return error('No quote selected', 'Select a quote before recording an outcome.');
+    case 'quote-auth-required': return error('Session expired', 'Please sign in again.');
+    default: return null;
+  }
+}
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -425,7 +457,7 @@ async function SupplierCostRequestsData({ db, organizationId, selectedId }: { db
   />;
 }
 
-export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[]; group?: string|string[] } }) {
+export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[]; group?: string|string[]; notice?: string|string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>>|null = null;
   try { workspace = await getWorkspaceAccess(); } catch { return <EmptyState title="Workspace unavailable" description="Could not load workspace." />; }
   if (!hasSupabaseEnv || workspace?.missingEnv) return <EmptyState title="Configuration required" description="SETU Flow needs Supabase environment values." />;
@@ -712,11 +744,17 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selectedProducts = selected?.lineItems.slice(0, 4) ?? [];
   const customerSections = buildCustomerSections(customerGroups, filters.group);
 
+  const quoteNotice = quoteNoticeMessage(searchParams?.notice);
+
   return (
     <>
-      <div className="md:hidden"><MobileQuotesList items={filteredItems} organizationId={organizationId} currentUserId={workspace?.user?.id ?? ''} currentUserName={workspace?.profile?.full_name ?? workspace?.user?.email ?? 'User'} /></div>
+      <div className="md:hidden">
+        {quoteNotice ? <div className="px-4 pt-3"><StateMessage title={quoteNotice.title} description={quoteNotice.description} tone={quoteNotice.tone} /></div> : null}
+        <MobileQuotesList items={filteredItems} organizationId={organizationId} currentUserId={workspace?.user?.id ?? ''} currentUserName={workspace?.profile?.full_name ?? workspace?.user?.email ?? 'User'} />
+      </div>
       <div className="hidden md:block">
-    <div style={{fontFamily:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
+    <div style={{fontFamily:'var(--font-jakarta), -apple-system, BlinkMacSystemFont, system-ui, sans-serif',fontSize:'13px',lineHeight:'1.5',color:'#1e293b'}}>
+      {quoteNotice ? <div style={{padding:'10px 24px 0'}}><StateMessage title={quoteNotice.title} description={quoteNotice.description} tone={quoteNotice.tone} /></div> : null}
       <div style={{padding:'10px 24px 0'}}>
         <section style={{background:'white',border:'1px solid #dbe4ef',borderRadius:'20px',boxShadow:'0 10px 28px rgba(15,23,42,.06)',padding:'10px 12px'}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(6,minmax(0,1fr))',gap:'8px',marginBottom:'10px'}}>

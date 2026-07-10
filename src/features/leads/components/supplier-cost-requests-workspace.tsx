@@ -80,7 +80,12 @@ export function SupplierCostRequestsWorkspace(props: Props) {
         </div>
       </div>
 
-      {/* KPI row */}
+      {/* Mobile-only mode switcher — without this there was no way back to Buyer/All from here */}
+      <div className="flex gap-0.5 rounded-ctl bg-surface-2 p-[3px] md:hidden">
+        <Link href="/quotes?mode=all" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">All</Link>
+        <Link href="/quotes?mode=buyers" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">Buyer</Link>
+        <Link href="/quotes?mode=suppliers" className="flex-1 rounded-[9px] bg-brand-700 py-2 text-center text-[12.5px] font-semibold text-white">Supplier</Link>
+      </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         {[
           { label: 'Suppliers in queue', value: suppliers.length, sub: 'Active suppliers' },

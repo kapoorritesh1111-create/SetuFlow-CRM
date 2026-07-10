@@ -102,6 +102,13 @@ export default async function SupplierOrderLinksPage() {
         <p className="mt-1 text-sm text-slate-500">PO execution, inbound tracking, quality checks, approvals, and supplier performance.</p>
       </div>
 
+      {/* Mobile-only mode switcher — without this there was no way back to Buyer/All from here */}
+      <div className="flex gap-0.5 rounded-ctl bg-surface-2 p-[3px] md:hidden">
+        <Link href="/orders?mode=all" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">All</Link>
+        <Link href="/orders?mode=buyers" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">Buyer</Link>
+        <Link href="/orders?mode=suppliers" className="flex-1 rounded-[9px] bg-brand-700 py-2 text-center text-[12.5px] font-semibold text-white">Supplier</Link>
+      </div>
+
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         {[
