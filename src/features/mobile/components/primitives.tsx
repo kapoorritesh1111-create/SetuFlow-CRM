@@ -134,7 +134,6 @@ export function ListCard({
   const Wrapper = href ? 'a' : onClick ? 'button' : 'div';
   return (
     <Wrapper
-      // @ts-expect-error — polymorphic wrapper: href/type only apply for their respective tags
       href={href}
       type={onClick && !href ? 'button' : undefined}
       onClick={onClick}
