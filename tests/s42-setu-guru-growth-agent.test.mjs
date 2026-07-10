@@ -9,6 +9,7 @@ const query = readFileSync('src/lib/setu-guru/recommendations.ts', 'utf8');
 const growthCenter = readFileSync('src/features/setu-guru/growth-center.tsx', 'utf8');
 const growthRoute = readFileSync('src/app/(app)/growth-agent/page.tsx', 'utf8');
 const dashboardStrip = readFileSync('src/features/setu-guru/setu-guru-dashboard-strip.tsx', 'utf8');
+const dashboardPopover = readFileSync('src/features/setu-guru/setu-guru-dashboard-popover.tsx', 'utf8');
 const dashboardPage = readFileSync('src/app/(app)/dashboard/page.tsx', 'utf8');
 const routeManifest = readFileSync('src/lib/routes/manifest.json', 'utf8');
 
@@ -62,12 +63,12 @@ test('Growth Center and dashboard query only current-organization open recommend
 });
 
 test('Recommendation cards remain explainable and action linked', () => {
-  for (const surface of [growthCenter, dashboardStrip]) {
+  for (const surface of [growthCenter, dashboardPopover]) {
     assert.match(surface, /recommendation\.priority/);
     assert.match(surface, /recommendation\.recommended_action/);
     assert.match(surface, /recommendation\.action_href/);
+    assert.match(surface, /recommendation\.reason/);
   }
-  assert.match(growthCenter, /recommendation\.reason/);
   assert.match(growthCenter, /Nothing is sent or changed without your approval/);
 });
 
@@ -82,7 +83,7 @@ test('Generated action links use only confirmed CRM routes', () => {
 });
 
 test('Growth Agent foundation has no autonomous outbound communication', () => {
-  const foundation = [generator, triggerRoute, query, growthCenter, dashboardStrip].join('\n');
+  const foundation = [generator, triggerRoute, query, growthCenter, dashboardStrip, dashboardPopover].join('\n');
   assert.doesNotMatch(foundation, /send_email|sendEmail|send_whatsapp|sendWhatsApp|provider_message_id/);
   assert.doesNotMatch(generator, /from\(['"]communications['"]\)\.insert/);
   assert.doesNotMatch(generator, /from\(['"]quotes['"]\)\.update/);
@@ -100,14 +101,17 @@ test('Growth Center avoids repeating priority cards and collapses long queues', 
   assert.match(growthCenter, /Priority cards are not repeated below/);
 });
 
-test('Dashboard strip stays compact and bounded', () => {
-  assert.match(dashboardStrip, /priorityRank/);
-  assert.match(dashboardStrip, /Date\.parse\(b\.created_at\)/);
-  assert.match(dashboardStrip, /\.slice\(0, 3\)/);
-  assert.match(dashboardStrip, /lg:grid-cols-3/);
-  assert.match(dashboardStrip, /View all/);
-  assert.doesNotMatch(dashboardStrip, /topRecommendations\.map[\s\S]*recommendation\.reason/);
+test('Dashboard uses one small strip and an on-demand top-three overlay', () => {
+  assert.match(dashboardStrip, /selectDiverseTopRecommendations/);
+  assert.match(dashboardStrip, /usedTypes/);
+  assert.match(dashboardStrip, /selected\.length === 3/);
+  assert.match(dashboardStrip, /SetuGuruDashboardPopover/);
+  assert.doesNotMatch(dashboardStrip, /grid-cols-3/);
+  assert.match(dashboardPopover, /View top 3/);
+  assert.match(dashboardPopover, /role="dialog"/);
+  assert.match(dashboardPopover, /View all \{totalOpen\}/);
+  assert.match(dashboardPopover, /Three different actions selected/);
+  assert.match(dashboardPopover, /max-h-\[86vh\]/);
   assert.match(dashboardStrip, /SetuGuruDashboardStripLoading/);
-  assert.match(dashboardStrip, /temporarily unavailable/);
   assert.match(dashboardPage, /Suspense/);
 });
