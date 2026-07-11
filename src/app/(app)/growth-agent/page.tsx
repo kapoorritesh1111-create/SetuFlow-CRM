@@ -1,4 +1,3 @@
-import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
 import { GrowthCenter } from '@/features/setu-guru/growth-center';
 import { getSetuGuruAuditHistory } from '@/lib/setu-guru/audit-history';
 import { getGrowthCenterRecommendations } from '@/lib/setu-guru/recommendations';
@@ -21,6 +20,7 @@ export default async function GrowthAgentPage() {
         opportunities={[]}
         icpConfigured={false}
         tradeEvents={[]}
+        auditItems={[]}
       />
     );
   }
@@ -41,16 +41,14 @@ export default async function GrowthAgentPage() {
   ]);
 
   return (
-    <div className="space-y-5">
-      <GrowthCenter
-        organizationName={workspace.organization?.name}
-        recommendations={recommendations.open}
-        history={recommendations.history}
-        opportunities={opportunityResult.opportunities}
-        icpConfigured={opportunityResult.icpConfigured}
-        tradeEvents={tradeEventsResult.data ?? []}
-      />
-      <AuditHistoryPanel items={auditHistory} />
-    </div>
+    <GrowthCenter
+      organizationName={workspace.organization?.name}
+      recommendations={recommendations.open}
+      history={recommendations.history}
+      opportunities={opportunityResult.opportunities}
+      icpConfigured={opportunityResult.icpConfigured}
+      tradeEvents={tradeEventsResult.data ?? []}
+      auditItems={auditHistory}
+    />
   );
 }
