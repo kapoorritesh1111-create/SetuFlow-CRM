@@ -1,0 +1,8 @@
+/* Sprint 47: keep the application-shell Setu Guru as the only Guru identity.
+   Lead-specific tools remain available through the neutral Smart actions menu. */
+aside.rounded-panel.border-emerald-200.bg-emerald-50:has(h3) {
+  display: none !important;
+}
+
+section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
+  grid-template-columns: minmax(0, 1fr) !important;
