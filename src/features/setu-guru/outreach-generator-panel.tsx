@@ -200,7 +200,7 @@ export function OutreachGeneratorLauncher({ leadId, email, phone, whatsappNumber
                       className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-60')}
                     >
                       {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Save className="h-3.5 w-3.5" aria-hidden="true" />}
-                      Save draft
+                      Save as draft activity
                     </button>
                   </div>
                   {savedMessage ? <p className="mt-3 text-xs font-medium text-success-fg">{savedMessage}</p> : null}
