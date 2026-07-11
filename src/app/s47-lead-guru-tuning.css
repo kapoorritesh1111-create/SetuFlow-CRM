@@ -6,3 +6,4 @@ aside.rounded-panel.border-emerald-200.bg-emerald-50:has(h3) {
 
 section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
   grid-template-columns: minmax(0, 1fr) !important;
+}
