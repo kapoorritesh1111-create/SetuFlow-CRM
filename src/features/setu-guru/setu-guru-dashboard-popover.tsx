@@ -18,9 +18,13 @@ function tone(priority: SetuGuruRecommendation['priority']): StatusTone {
 export function SetuGuruDashboardPopover({
   recommendations,
   totalOpen,
+  urgentCount,
+  importantCount,
 }: {
   recommendations: SetuGuruRecommendation[];
   totalOpen: number;
+  urgentCount: number;
+  importantCount: number;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -52,6 +56,11 @@ export function SetuGuruDashboardPopover({
             <span className="mt-0.5 block truncate text-sm font-semibold text-content-primary">
               {totalOpen ? `${totalOpen} actions need attention` : 'No urgent actions right now'}
             </span>
+            {totalOpen ? (
+              <span className="mt-1 block text-xs text-content-muted">
+                {urgentCount} urgent · {importantCount} important
+              </span>
+            ) : null}
           </span>
         </span>
         <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand-700">
