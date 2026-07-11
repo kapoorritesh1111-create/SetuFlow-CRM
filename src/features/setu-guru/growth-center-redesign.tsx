@@ -26,6 +26,7 @@ import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
 import { IcpSetupWizard } from '@/features/setu-guru/icp-setup-wizard';
+import { RevenueWorkspace, SupplierWorkspace } from '@/features/setu-guru/growth-center-workspaces';
 import {
   workspaceInsetClass,
   workspaceMetricClass,
@@ -202,9 +203,11 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
           <button type="button" onClick={() => setShowIcp(true)} className={cn(workspacePanelClass, 'w-full p-3 text-left hover:bg-surface-2')}><div className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-brand-700" /><p className="text-xs font-medium text-content-primary">Set up ICP</p></div><p className="mt-1 text-xs leading-5 text-content-muted">{icpConfigured ? 'Review matching preferences' : 'Configure products, markets and buyer fit'}</p><span className="mt-3 inline-flex text-xs font-medium text-brand-700">Open setup</span></button>
         </aside>
         <section className={cn(workspacePanelClass, 'min-w-0 overflow-hidden')}>
-          <header className="border-b border-line px-5 py-5"><p className="text-xs font-medium uppercase text-brand-700">Today · Business brief</p><h1 className="mt-2 text-2xl font-medium text-content-primary">Trade Growth Command Center</h1><p className="mt-1 text-sm text-content-secondary">Here is what needs attention across {organizationName || 'your business'} today.</p></header>
+          <header className="border-b border-line px-5 py-5"><p className="text-xs font-medium uppercase text-brand-700">{filter === 'revenue' ? 'Revenue workspace' : filter === 'suppliers' ? 'Supplier workspace' : 'Today · Business brief'}</p><h1 className="mt-2 text-2xl font-medium text-content-primary">Trade Growth Command Center</h1><p className="mt-1 text-sm text-content-secondary">Here is what needs attention across {organizationName || 'your business'} today.</p></header>
           <div className="grid gap-3 p-4 sm:grid-cols-2 2xl:grid-cols-4">{metrics.map(({ label: metricLabel, value, icon: Icon, color }) => <div key={metricLabel} className={workspaceMetricClass}><p className="text-caption uppercase text-content-muted">{metricLabel}</p><div className="mt-3 flex items-end justify-between"><p className={cn('text-2xl font-medium', color)}>{value}</p><Icon className={cn('h-5 w-5', color)} /></div></div>)}</div>
           <div className="flex overflow-x-auto border-y border-line px-4" role="tablist">{tabs.map(([key, name, count, Icon]) => <button key={key} type="button" onClick={() => changeFilter(key)} role="tab" aria-selected={filter === key} className={cn('flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-normal', filter === key ? 'border-brand-700 font-medium text-content-primary' : 'border-transparent text-content-muted')}><Icon className="h-4 w-4" />{name} ({count})</button>)}</div>
+          {filter === 'revenue' ? <RevenueWorkspace selected={selected} /> : null}
+          {filter === 'suppliers' ? <SupplierWorkspace recommendations={ordered} /> : null}
           <div className="min-h-72">{filtered.length ? filtered.map((item) => <WorkItem key={item.id} item={item} active={item.id === selected?.id} onSelect={() => setSelectedId(item.id)} />) : <div className="grid min-h-72 place-items-center p-8 text-center"><div><ShieldCheck className="mx-auto h-9 w-9 text-success-fg" /><p className="mt-3 text-sm font-medium text-content-primary">No actions in this view</p><p className="mt-1 text-xs text-content-muted">Setu Guru will place verified work here when attention is needed.</p></div></div>}</div>
           {tradeEvents.length ? <div className="border-t border-line p-4">{tradeEvents.slice(0, 2).map((event) => <Link key={event.id} href={`/growth-agent/trade-events/${event.id}`} className="mr-4 text-sm font-medium text-brand-700">{event.name}</Link>)}</div> : null}
         </section>
