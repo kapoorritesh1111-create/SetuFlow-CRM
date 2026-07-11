@@ -13,6 +13,7 @@
 // <details
 // Show {remaining.length} more
 // Priority cards are not repeated below.
+// Opportunity Finder
 // /growth-agent/trade-events/${event.id}
 
 import { useState } from 'react';
