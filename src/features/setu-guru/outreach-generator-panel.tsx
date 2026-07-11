@@ -114,7 +114,7 @@ export function OutreachGeneratorLauncher({ leadId, email, phone, whatsappNumber
                 <GuruAvatar size="md" />
                 <div>
                   <p className="text-sm font-medium text-content-primary">Outreach Generator</p>
-                  <p className="text-xs text-content-muted">Review the message, then send it directly</p>
+                  <p className="text-xs text-content-muted">You review and send — nothing goes out automatically</p>
                 </div>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="rounded-ctl p-1.5 text-content-muted transition hover:bg-surface-2" aria-label="Close">
