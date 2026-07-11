@@ -9,6 +9,7 @@ import { OutreachGeneratorLauncher } from '@/features/setu-guru/outreach-generat
 import { ReplyAnalyzerLauncher } from '@/features/setu-guru/reply-analyzer-modal';
 import { QuoteAssistantLauncher } from '@/features/setu-guru/quote-assistant-panel';
 import { SupplierRfqAssistantLauncher } from '@/features/setu-guru/supplier-rfq-assistant-panel';
+import { LeadGuruTools } from '@/features/setu-guru/lead-guru-tools';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -67,16 +68,21 @@ export default async function Page({
     <>
       {toastMessage ? <WorkflowToast kind="success" message={toastMessage} /> : null}
       {hasStageError ? <WorkflowToast kind="warning" message="Lead action needs attention. Please refresh and try again." /> : null}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+      <LeadGuruTools>
         <ResearchDrawerLauncher leadId={data.lead.id} leadType={data.lead.lead_type} />
-        <OutreachGeneratorLauncher leadId={data.lead.id} />
+        <OutreachGeneratorLauncher
+          leadId={data.lead.id}
+          email={data.lead.email}
+          phone={data.lead.phone}
+          whatsappNumber={data.lead.whatsapp_number}
+        />
         <ReplyAnalyzerLauncher leadId={data.lead.id} />
         {String(data.lead.lead_type ?? '').toLowerCase() === 'supplier' ? (
           <SupplierRfqAssistantLauncher leadId={data.lead.id} />
         ) : (
           <QuoteAssistantLauncher leadId={data.lead.id} />
         )}
-      </div>
+      </LeadGuruTools>
       <LeadCommandCenterPremium
         data={data}
         canReassignOwner={workspace.canAccessAdmin}
