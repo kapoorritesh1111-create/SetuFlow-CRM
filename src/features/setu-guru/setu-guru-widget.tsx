@@ -341,7 +341,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     <>
       {launcher}
       <RightDrawer open={drawerOpen} onClose={closeDrawer} title={undefined} widthClassName="sm:max-w-[430px]" bodyClassName="!p-0" hideHeader>
-        <div className="flex h-full min-h-[100dvh] flex-col bg-brand-50 sm:min-h-[calc(100dvh-1.5rem)]">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden bg-brand-50">
           <header className="shrink-0 border-b border-slate-200 bg-white px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -357,7 +357,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
               <button type="button" onClick={closeDrawer} className="rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50">Hide</button>
             </div>
           </header>
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             <div className="rounded-panel border border-sky-100 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Quick starts</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">{routeHelp.summary}</p>
