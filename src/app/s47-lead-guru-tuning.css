@@ -8,24 +8,51 @@ section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
   grid-template-columns: minmax(0, 1fr) !important;
 }
 
-/* The Setu Guru drawer owns one viewport-height flex column. The previous
-   min-height on its child made the message area and composer exceed the
-   drawer viewport, hiding the next prompt and making scroll feel broken. */
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex.h-full {
+/* Setu Guru drawer scroll contract
+   RightDrawer already owns the viewport height. Its body must not become a
+   second page scroller, otherwise the composer is pushed below the viewport
+   and the conversation appears frozen. */
+[role="dialog"] > .flex-1.overflow-y-auto:has(> .bg-brand-50) {
+  display: flex !important;
   min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex {
+  flex: 1 1 0% !important;
+  width: 100% !important;
   height: 100% !important;
+  min-height: 0 !important;
   max-height: 100% !important;
   overflow: hidden !important;
 }
 
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex.h-full > div[ref] {
-  min-height: 0 !important;
+/* Header and composer remain fixed inside the drawer. Only the message stream
+   scrolls, including mouse wheel, trackpad, touch, and keyboard scrolling. */
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > header,
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > footer {
+  flex: 0 0 auto !important;
 }
 
-/* Keep the drawer message stream visibly scrollable while the composer stays
-   in view at the bottom. */
-[role="dialog"] .bg-brand-50 > .flex-1.overflow-y-auto {
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > div.flex-1.overflow-y-auto {
+  flex: 1 1 0% !important;
   min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > div.flex-1.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > div.flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.45);
+  background-clip: padding-box;
 }
