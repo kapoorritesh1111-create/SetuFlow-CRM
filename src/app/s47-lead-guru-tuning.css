@@ -7,3 +7,25 @@ aside.rounded-panel.border-emerald-200.bg-emerald-50:has(h3) {
 section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
   grid-template-columns: minmax(0, 1fr) !important;
 }
+
+/* The Setu Guru drawer owns one viewport-height flex column. The previous
+   min-height on its child made the message area and composer exceed the
+   drawer viewport, hiding the next prompt and making scroll feel broken. */
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex.h-full {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex.h-full > div[ref] {
+  min-height: 0 !important;
+}
+
+/* Keep the drawer message stream visibly scrollable while the composer stays
+   in view at the bottom. */
+[role="dialog"] .bg-brand-50 > .flex-1.overflow-y-auto {
+  min-height: 0 !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
