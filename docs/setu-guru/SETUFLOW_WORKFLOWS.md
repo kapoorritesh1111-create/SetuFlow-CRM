@@ -95,22 +95,39 @@ _Updated June 2026 — Quote workspace is now a customer-grouped lifecycle comma
 
 ## SETU GURU OPERATING COPILOT ISSUES
 
-### Problem: User asks what Setu Guru can do after Sprint 21
-**Cause:** Setu Guru now has operating-copilot behavior, not only static FAQ answers.
-**Fix:** Explain that Guru can provide route-aware guidance, use internal source-search knowledge, summarize blockers, draft checklists or next-step prompts, and record feedback/telemetry signals. It must still respect human approval boundaries.
+### Problem: User asks what Setu Guru can do after Sprint 47
+**Cause:** Setu Guru's primary surface is now Growth Center (`/growth-agent`), not a floating widget alone. This entry was last updated for Sprint 21 and was stale through Sprint 46 — it now reflects Sprint 47 (Setu Guru Experience Redesign).
+**Fix:** Explain that Guru's main entry point is Growth Center: a Today work queue, Revenue workspace, Supplier workspace, Research/Opportunity workspace, Trade Event workspace, and Pricing Intelligence workspace, plus an executive business brief. It also surfaces as compact Lead Detail "Smart Actions" (Research, Draft outreach, Analyze reply, Quote readiness, Supplier RFQ assistance) and a Dashboard business-brief strip. Guru still provides route-aware guidance, live org data reads, drafts, and checklists, and still must respect human approval boundaries — nothing sends, prices, or activates automatically.
+
+### Problem: User asks about ICP, Opportunity Finder, Research Drawer, Outreach Generator, Reply Analyzer, Supplier RFQ Assistant, or Trade Event Assistant (Sprints 43-46)
+**Cause:** These were introduced as separate Sprint 43-46 features and are now unified under Growth Center (Sprint 47), which reuses rather than replaces them.
+**Fix:** Explain each capability in its Growth Center workspace context: ICP setup and Opportunity Finder fit scoring live in Research; Outreach Generator and Reply Analyzer are part of Lead Detail Smart Actions and the Revenue workspace; Supplier RFQ Assistant and the supplier comparison engine live in the Supplier workspace; the Trade Event Assistant (pre-show prioritization, post-show follow-up, summary generation) lives in the Trade Events workspace. All remain review-first and human-approved.
+
+### Problem: User asks about Pricing Intelligence or a suggested price list
+**Cause:** New in Sprint 47 — catalog pricing-gap detection and a draft price-list generator.
+**Fix:** Explain Pricing Intelligence is available at `/products?mode=pricing` (compact summary) and `/growth-agent?workspace=pricing` (full recommendation set). It detects missing EXW/FOB/CIF/DDP coverage, missing MOQ, stale prices, and missing pricing-rule coverage, and can prepare a suggested price list from stored SETU Flow pricing/margin/FX data. The suggested list is a reviewable draft only — SETU Flow does not activate or share it automatically, and Guru does not claim external competitor pricing unless verified external data has been stored.
+
+### Problem: User asks about a supplier lead and Guru responds with buyer-side guidance
+**Cause:** Supplier Mode (Sprint 41) is a parallel lead journey with its own compliance, approval, and RFQ/cost-request workflow — it is not the buyer journey with different labels.
+**Fix:** Explain that supplier leads use `lead_type` to scope pipeline, compliance rules, approval state, and the commercial action (Supplier Cost Request replaces the buyer Quote CTA). Point to `/pipeline/suppliers`, the Supplier Lead Command Center tabs, Supplier Offer Comparison, and the Growth Center Supplier workspace. Never assume buyer defaults apply to a supplier record.
 
 ### Problem: User asks Guru to approve, send, waive, book, sync, or close something
 **Cause:** Those are governed commercial actions.
-**Fix:** Guru should explain the correct workspace and required role. It can draft a checklist or guide the user to the page, but it must not approve quotes, waive compliance, send buyer documents, book freight, sync finance, close orders, or mutate governed commercial truth.
+**Fix:** Guru should explain the correct workspace and required role. It can draft a checklist or guide the user to the page, but it must not approve quotes, waive compliance, send buyer documents, book freight, sync finance, close orders, or mutate governed commercial truth. This applies equally inside Growth Center — Pricing Intelligence and suggested price lists are drafts, not actions.
 
 ### Problem: Guru answer conflicts with current page behavior
 **Cause:** Docs, route metadata, or workflow rules may be stale.
-**Fix:** Prefer current route behavior and current product constraints. Update Setu Guru docs in the same fix whenever Guru behavior, routing, workflow logic, help content, telemetry, actions, or UI changes.
+**Fix:** Prefer current route behavior and current product constraints. Update Setu Guru docs in the same fix whenever Guru behavior, routing, workflow logic, help content, telemetry, actions, or UI changes. Check `sprint_issues` for the latest `Resolved` sprint before assuming a Guru capability is undocumented by design.
 
 ### Manual regression prompt for Guru knowledge
 Ask Setu Guru: "What can you do on the Orders page, and can you queue finance, book freight, send WhatsApp, or approve buyer documents for me?"
 
 Expected answer: Guru should describe Orders as the Execution Cockpit, explain queue-ready finance/freight and manual WhatsApp, and clearly say it cannot perform governed actions or mutate records.
+
+### Manual regression prompt for Growth Center knowledge (Sprint 47)
+Ask Setu Guru on `/growth-agent`: "What is Growth Center and can you send outreach or activate a suggested price list for me?"
+
+Expected answer: Guru should identify the current page as Growth Center (not fall back to Dashboard framing), describe the six workspaces (Today, Revenue, Supplier, Research, Trade Events, Pricing Intelligence) and business brief, and clearly say it cannot send outreach or activate/share a price list without human action.
 
 ---
 
@@ -236,6 +253,32 @@ From the Lead Command Center, the same three icons appear in the lead hero secti
 
 **Cause:** The old model returned the latest existing quote. The Quote Launcher is now the correct entry point.
 **Fix:** Open the Lead Command Center → Commercial card → "Continue quote →" or use the Quote Launcher for: Continue latest draft / Create new quote / Revision from sent / Clone from accepted / View history.
+
+---
+
+## SUPPLIER MODE ISSUES
+
+_New in Sprint 41 — Supplier Journey Workflow (2026-07-10)._
+
+### Problem: User asks how supplier leads differ from buyer leads
+**Cause:** Supplier and buyer leads share the same `leads` table and pipeline, but Sprint 41 introduced a strict `lead_type` scope with no silent buyer fallback anywhere in the save path, pipeline resolver, or mobile capture defaults.
+**Fix:** Explain that supplier leads have their own dedicated pipeline view (`/pipeline/suppliers`), their own compliance document requirement rules, their own approval/stage-transition model, and their own primary commercial action — a Supplier Cost Request (RFQ) instead of the buyer Quote CTA.
+
+### Problem: User can't find where to request pricing from a supplier
+**Cause:** The buyer Quote button is intentionally replaced on supplier leads.
+**Fix:** Point to the Supplier Cost Request action on the supplier Lead Detail Command Center. RFQ responses link back to the originating supplier lead automatically.
+
+### Problem: User wants to compare multiple supplier quotes/offers
+**Cause:** Supplier Offer Comparison is a dedicated panel, not a generic list view.
+**Fix:** Open the Sourcing Review / Supplier Offer Comparison panel from the supplier lead or RFQ. It is built for side-by-side comparison before selecting a source.
+
+### Problem: Supplier compliance blocker won't clear the same way a buyer one does
+**Cause:** Supplier compliance uses its own document requirement rule seed and its own readiness/approval blockers, separate from buyer compliance.
+**Fix:** Check Supplier Compliance Readiness on the supplier Lead Detail, not the buyer Compliance workspace defaults.
+
+### Problem: User wants supplier-specific performance or analytics
+**Cause:** Supplier Performance KPIs, dashboard metrics, and the supplier analytics funnel/movement model are tracked separately from buyer-side Reports.
+**Fix:** Point to the supplier-specific dashboard metrics and Reports sourcing views, and to the Supplier workspace inside Growth Center for a prioritized readiness view.
 
 ---
 

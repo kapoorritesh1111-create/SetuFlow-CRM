@@ -1,4 +1,4 @@
-export type SetuGuruRouteKey = 'dashboard' | 'leads' | 'pipeline' | 'products' | 'quotes' | 'orders' | 'compliance' | 'trade-events' | 'admin-organization' | 'pricing-calculator' | 'trial' | 'setu-guru';
+export type SetuGuruRouteKey = 'dashboard' | 'leads' | 'pipeline' | 'products' | 'quotes' | 'orders' | 'compliance' | 'trade-events' | 'admin-organization' | 'pricing-calculator' | 'trial' | 'setu-guru' | 'growth-agent';
 export type SetuGuruLiveSearchMode = 'page_help' | 'catalog_search' | 'buyer_search' | 'supplier_search' | 'lead_search' | 'quote_compliance' | 'pricing_defaults' | 'hsn_enrichment' | 'document_requirements' | 'margin_benchmark';
 
 export type SetuGuruPageContext = {
@@ -60,6 +60,7 @@ export const SETU_GURU_PAGE_CONTEXTS: SetuGuruPageContext[] = [
   makeContext('pricing-calculator', 'Pricing calculator', ['/products', '/quotes', '/admin/product-management'], 'Pricing hierarchy and landed-cost guidance.', ['page_help', 'pricing_defaults', 'margin_benchmark'], ['Which pricing default is active?', 'Should this be quote-only?']),
   makeContext('trial', 'Guided Trial', ['/trial'], 'Guided trial workspace for two-lead capture-to-dispatch validation and Stark Packmate pricing onboarding.', ['page_help', 'pricing_defaults', 'catalog_search'], ['How do I test this trial workspace?', 'How do I validate Stark Packmate dimensional pricing?']),
   makeContext('setu-guru', 'Setu Guru', ['/setu-guru'], 'Assistant policy and source guidance.', ['page_help', 'catalog_search', 'lead_search', 'quote_compliance', 'document_requirements', 'margin_benchmark'], ['What can you help with?', 'What source should you use?']),
+  makeContext('growth-agent', 'Growth Center', ['/growth-agent'], 'Trade Growth Command Center: Today work queue, Revenue, Supplier, Research/Opportunity, Trade Event, and Pricing Intelligence workspaces, plus the executive business brief.', ['page_help', 'lead_search', 'buyer_search', 'supplier_search', 'quote_compliance', 'pricing_defaults', 'document_requirements', 'margin_benchmark'], ['What needs my attention today?', 'Which quotes are at risk?', 'Which suppliers need follow-up?', 'Where are the pricing gaps?']),
 ];
 
 export function getSetuGuruPageContext(pathname: string) {

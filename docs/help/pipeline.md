@@ -54,6 +54,35 @@ Pipeline should prioritize:
 
 The page should not feel like a generic SaaS walkthrough. It should look like a trade command center where the user can make decisions quickly.
 
+## Supplier Mode (Sprint 41 — Supplier Journey Workflow)
+
+Supplier leads run a parallel journey to buyer leads on the same underlying data model
+(`leads`, `pipeline_stage_id`), strictly scoped by `lead_type` — there is no silent
+buyer fallback anywhere in the supplier path (save, pipeline resolver, or mobile
+capture defaults).
+
+- Dedicated routes `/pipeline/suppliers` and `/pipeline/buyers` filter the same board
+  by `lead_type`, in addition to the workspace mode strip (All / Buyers / Suppliers).
+- Lead Detail Command Center shows supplier-specific tabs and primary actions for
+  supplier leads, distinct from the buyer command center.
+- Supplier compliance has its own document requirement rule seed and its own
+  readiness/approval blockers, separate from buyer compliance.
+- Supplier approval follows its own state and stage-transition model, separate from
+  buyer quote approval.
+- On the supplier side, a **Supplier Cost Request** replaces the buyer Quote CTA — this
+  is the RFQ/cost-request workflow, and RFQ responses link back to the supplier lead.
+- **Supplier Offer Comparison** lets an operator compare multiple supplier
+  responses/offers side by side before selecting a source.
+- Supplier capability data links to buyer demand (demand linkage) so sourcing gaps are
+  visible.
+- **Supplier Performance KPIs** and periodic review metadata are tracked, along with
+  supplier-specific dashboard metrics and a supplier analytics funnel/movement model —
+  separate from buyer-side analytics and reports.
+- Order/execution screens show supplier link visibility for sourced orders, and
+  supplier communications/audit events use their own taxonomy.
+- Setu Guru has supplier-aware context and recommendations (see `docs/help/growth-agent.md`
+  and the Supplier workspace inside Growth Center).
+
 ## Common blockers
 
 - User cannot tell whether to work in Pipeline or Leads.
@@ -77,3 +106,5 @@ Setu Guru must not move stages, convert to quote, approve pricing, waive complia
 - Which stage has the most value at risk?
 - Which deals are ready to convert to quote?
 - What is blocking this Pipeline card?
+- What is different about a supplier lead versus a buyer lead?
+- Which suppliers have overdue RFQ responses?
