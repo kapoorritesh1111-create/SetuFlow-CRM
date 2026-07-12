@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowRight, ChevronDown, ChevronUp, Globe2, Percent, ShieldAlert, Sparkles, TimerReset } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, FilePlus2, Globe2, Percent, ShieldAlert, Sparkles, TimerReset } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import type { ProductPricingSnapshot, ProductsSpreadsheetRow } from '@/types/products';
@@ -59,67 +59,20 @@ function buildActions(rows: ProductsSpreadsheetRow[]): PricingAction[] {
     const hasCatalogGap = getProductGapState(row) !== 'complete';
 
     if (hasCatalogGap) {
-      actions.push({
-        id: `gap-${row.product_variant_id}`,
-        title: `${name}${variant}`,
-        reason: 'The catalog marks this product variant as incomplete for pricing or quote readiness.',
-        impact: 'Quotes may be delayed or priced inconsistently across buyers.',
-        suggestion: suggestedMarketPrice(snapshot) ?? undefined,
-        label: 'Complete pricing',
-        productId: row.product_id,
-        variantId: row.product_variant_id,
-        icon: ShieldAlert,
-        kind: 'pricing-gap',
-        targetTab: 'pricing',
-      });
+      actions.push({ id: `gap-${row.product_variant_id}`, title: `${name}${variant}`, reason: 'The catalog marks this product variant as incomplete for pricing or quote readiness.', impact: 'Quotes may be delayed or priced inconsistently across buyers.', suggestion: suggestedMarketPrice(snapshot) ?? undefined, label: 'Complete pricing', productId: row.product_id, variantId: row.product_variant_id, icon: ShieldAlert, kind: 'pricing-gap', targetTab: 'pricing' });
       continue;
     }
 
     if (isStale(row.updated_at)) {
-      actions.push({
-        id: `stale-${row.product_variant_id}`,
-        title: `${name}${variant}`,
-        reason: 'The stored product price has not been refreshed in more than 90 days.',
-        impact: 'Freight, FX, duty, or cost changes may have reduced competitiveness or margin.',
-        suggestion: suggestedMarketPrice(snapshot) ?? undefined,
-        label: 'Review price',
-        productId: row.product_id,
-        variantId: row.product_variant_id,
-        icon: TimerReset,
-        kind: 'readiness',
-        targetTab: 'pricing',
-      });
+      actions.push({ id: `stale-${row.product_variant_id}`, title: `${name}${variant}`, reason: 'The stored product price has not been refreshed in more than 90 days.', impact: 'Freight, FX, duty, or cost changes may have reduced competitiveness or margin.', suggestion: suggestedMarketPrice(snapshot) ?? undefined, label: 'Review price', productId: row.product_id, variantId: row.product_variant_id, icon: TimerReset, kind: 'readiness', targetTab: 'pricing' });
     }
 
     if (!row.moq_display && row.moq_value == null) {
-      actions.push({
-        id: `moq-${row.product_variant_id}`,
-        title: `${name}${variant}`,
-        reason: 'No MOQ is stored for this product variant.',
-        impact: 'Discount guidance cannot be assessed safely without a commercial volume floor.',
-        label: 'Set MOQ',
-        productId: row.product_id,
-        variantId: row.product_variant_id,
-        icon: Percent,
-        kind: 'readiness',
-        targetTab: 'variants',
-      });
+      actions.push({ id: `moq-${row.product_variant_id}`, title: `${name}${variant}`, reason: 'No MOQ is stored for this product variant.', impact: 'Discount guidance cannot be assessed safely without a commercial volume floor.', label: 'Set MOQ', productId: row.product_id, variantId: row.product_variant_id, icon: Percent, kind: 'readiness', targetTab: 'variants' });
     }
 
     if (snapshot && (snapshot.distributor_price == null || snapshot.retail_price == null)) {
-      actions.push({
-        id: `market-${row.product_variant_id}`,
-        title: `${name}${variant}`,
-        reason: 'Distributor or retail market layers are not calculated for this item.',
-        impact: 'Country price lists and buyer discounts lack a reliable market reference point.',
-        suggestion: suggestedMarketPrice(snapshot) ?? undefined,
-        label: 'Review suggested price',
-        productId: row.product_id,
-        variantId: row.product_variant_id,
-        icon: Globe2,
-        kind: 'readiness',
-        targetTab: 'pricing',
-      });
+      actions.push({ id: `market-${row.product_variant_id}`, title: `${name}${variant}`, reason: 'Distributor or retail market layers are not calculated for this item.', impact: 'Country price lists and buyer discounts lack a reliable market reference point.', suggestion: suggestedMarketPrice(snapshot) ?? undefined, label: 'Review suggested price', productId: row.product_id, variantId: row.product_variant_id, icon: Globe2, kind: 'readiness', targetTab: 'pricing' });
     }
   }
 
@@ -137,12 +90,10 @@ export function ProductPricingIntelligence({ rows, onOpenPricing, onShowPricingG
   const gapActions = allActions.filter((action) => action.kind === 'pricing-gap');
   const readinessActions = allActions.filter((action) => action.kind === 'readiness');
   const gapCount = rows.filter((row) => getProductGapState(row) !== 'complete').length;
+  const marketReadyCount = rows.filter((row) => row.pricing_snapshot?.distributor_price != null && row.pricing_snapshot?.retail_price != null).length;
   const prioritizedActions = gapActions.length ? [...gapActions, ...readinessActions] : readinessActions;
 
-  useEffect(() => {
-    setExpanded(!compact);
-  }, [compact]);
-
+  useEffect(() => { setExpanded(!compact); }, [compact]);
   if (!rows.length) return null;
 
   return (
@@ -153,11 +104,12 @@ export function ProductPricingIntelligence({ rows, onOpenPricing, onShowPricingG
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-brand-700">Pricing intelligence</p>
             <h2 id="pricing-intelligence-title" className="mt-1 text-base font-medium text-content-primary">{gapCount ? `${gapCount} pricing gaps need attention` : 'Catalog pricing gaps are clear'}</h2>
-            <p className="mt-1 text-xs text-content-muted">{prioritizedActions.length} commercial readiness suggestion{prioritizedActions.length === 1 ? '' : 's'} across MOQ, freshness, discounts, and market layers.</p>
+            <p className="mt-1 text-xs text-content-muted">{prioritizedActions.length} commercial readiness suggestions · {marketReadyCount} variants have complete distributor and retail layers.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {compact ? <button type="button" onClick={() => setExpanded((value) => !value)} className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>{expanded ? 'Hide suggestions' : `Review ${prioritizedActions.length} suggestions`}{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button> : null}
+          {!compact ? <Link href="/price-lists?source=setu-guru" className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}><FilePlus2 className="h-4 w-4" />Create suggested price list</Link> : null}
           <Link href="/price-lists" className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>Market price lists<ArrowRight className="h-4 w-4" /></Link>
         </div>
       </div>
