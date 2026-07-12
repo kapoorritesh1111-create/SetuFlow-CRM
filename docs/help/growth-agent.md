@@ -2,7 +2,7 @@
 
 Route: `/growth-agent`
 Owner: Setu Guru knowledge base
-Last updated: 2026-07-12 (Sprint 47 — Setu Guru Experience Redesign)
+Last updated: 2026-07-12
 
 ## Purpose
 
@@ -32,11 +32,11 @@ Use Growth Center when the user is asking:
   actions. Reuses existing supplier, RFQ, and compliance services — no parallel data
   model.
 - **Research** — reuses the existing ICP, Opportunity Finder, and grounded research
-  services (Sprint 43) to surface opportunity matching, fit context, missing
+  services to surface opportunity matching, fit context, missing
   information, and sourced research signals. Review-first; does not write to product,
   pricing, or compliance records automatically.
 - **Trade Events** — pre-show buyer prioritization and post-show follow-up queue, built
-  on the Sprint 46 Trade Event Meeting Assistant and summary generator.
+  on the Trade Event Meeting Assistant and summary generator.
 - **Pricing Intelligence** — also reachable at `/products?mode=pricing`. Detects catalog
   pricing gaps: missing EXW/FOB/CIF/DDP coverage, missing MOQ, stale prices, missing
   pricing-rule coverage, missing market-layer references, discount-readiness risk. Can

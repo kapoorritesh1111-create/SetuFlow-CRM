@@ -2,7 +2,7 @@ const Docs = (() => {
   const shared = { active: false, token: null, recipient: null, expiry: null };
   let authUser = null;
   let screenshots = [];
-  let metrics = { open: 0, resolved: 273, criticalHigh: 0, milestones: 4 }; // updated 2026-06-04 — all documentation issues resolved this pass
+  let metrics = { open: 0, resolved: 273, criticalHigh: 0, milestones: 2 }; // milestones = roadmap_items with status beta or in_progress (checked 2026-07-12: Real-Time Order Tracking @ beta, AI-Powered Lead Scoring @ in_progress). Not live-wired — roadmap_items RLS requires org membership, so an anon-key fetch (like the sprint_issues one below) can't read it. Update this manually when roadmap status changes, or wire a real live fetch via an authenticated API route.
 
 
   const topics = [
@@ -2294,190 +2294,6 @@ flowchart LR
   }
 
 
-  function topicContentGuru(id) {
-    if (id === 'guru-ai') return `
-<div class="guru-hero">
-  <div class="guru-avatar" style="position:relative;width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#2563eb,#4f46e5);padding:3px;flex-shrink:0">
-    <img src="/setu-guru/setu-guru-avatar.svg" alt="Setu Guru" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=&quot;font-size:36px;color:#fff;display:grid;place-items:center;width:100%;height:100%&quot;>&#x2726;</span>'">
-    <span style="position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid #0f172a"></span>
-  </div>
-  <div class="guru-hero-text">
-    <h2>Setu Guru &mdash; Context-Aware AI Assistant</h2>
-    <p>Setu Guru is SETU Flow's built-in AI panel that understands the current page, live organization data, and commercial workflows. Guru helps operators understand blockers, draft next steps, and research product and compliance information &mdash; without autonomously bypassing any human approval gate.</p>
-    <div class="guru-caps">
-      <span class="guru-cap">Page Context Help</span>
-      <span class="guru-cap">Live Org Search</span>
-      <span class="guru-cap">HSN Research</span>
-      <span class="guru-cap">Pricing Defaults</span>
-      <span class="guru-cap">Compliance Guidance</span>
-      <span class="guru-cap">Catalog Sharing</span>
-      <span class="guru-cap">Human Approval Required</span>
-    </div>
-  </div>
-</div>
-<div class="guru-grid">
-  <div class="guru-card" style="--gc1:#38bdf8;--gc2:#2563eb">
-    <div class="guru-card-icon" style="background:#eff6ff;font-size:20px">&#x1F916;</div>
-    <h3>Page Context Help</h3>
-    <p>Guru reads the current route, role, and organization context automatically. Ask "what should I do next?" on any page and Guru surfaces the most relevant workflow guidance &mdash; Leads, Quotes, Orders, or Pipeline.</p>
-  </div>
-  <div class="guru-card" style="--gc1:#f97316;--gc2:#db2777">
-    <div class="guru-card-icon" style="background:#fff7ed;font-size:20px">&#x1F4E6;</div>
-    <h3>Catalog Sharing Assistant</h3>
-    <p>Inside the Share Catalog wizard, Guru recommends products for a specific buyer (matched to the lead&rsquo;s interest), warns about missing product data before sharing, and drafts the buyer email and WhatsApp message. After a catalog is shared, Guru summarizes buyer engagement on the lead timeline and recommends the next action (create quote, follow up, resend, or switch channel). All suggestions are assistive and fall back to deterministic templates when AI keys are not configured.</p>
-  </div>
-  <div class="guru-card" style="--gc1:#ec4899;--gc2:#7c3aed">
-    <div class="guru-card-icon" style="background:#fdf2f8;font-size:20px">&#x1F4F7;</div>
-    <h3>Business Card Scan</h3>
-    <p>On mobile, Setu Guru processes captured business card images through AI vision. Parsed contact data (name, company, email, phone) is surfaced as a reviewable lead draft. Operators always approve before it becomes a commercial record.</p>
-  </div>
-  <div class="guru-card" style="--gc1:#0d9488;--gc2:#2563eb">
-    <div class="guru-card-icon" style="background:#f0fdfa;font-size:20px">&#x1F4C7;</div>
-    <h3>Smart vCard</h3>
-    <p>Field teams share a professional digital contact card via QR code or link. When a buyer submits their details through the public capture form, the resulting contact is linked to follow-up context, product interest, and trade event source.</p>
-  </div>
-  <div class="guru-card" style="--gc1:#f59e0b;--gc2:#ef4444">
-    <div class="guru-card-icon" style="background:#fffbeb;font-size:20px">&#x1F50D;</div>
-    <h3>Live Org Search</h3>
-    <p>Guru can query live organization data to check for open blockers, existing leads, quote status, and order state. All results are read-only &mdash; Guru cannot write to the database without human approval.</p>
-  </div>
-  <div class="guru-card" style="--gc1:#059669;--gc2:#0d9488">
-    <div class="guru-card-icon" style="background:#f0fdf4;font-size:20px">&#x1F4B0;</div>
-    <h3>Pricing Defaults</h3>
-    <p>Guru suggests pricing calculator defaults based on product, market, and historical context. Suggested defaults are shown for review &mdash; operators enter and confirm all pricing manually. Guru never sets or overrides pricing autonomously.</p>
-  </div>
-  <div class="guru-card" style="--gc1:#7c3aed;--gc2:#db2777">
-    <div class="guru-card-icon" style="background:#faf5ff;font-size:20px">&#x1F4CB;</div>
-    <h3>HSN Code Research</h3>
-    <p>Guru researches Harmonized System (HS) classification codes for catalog items, pulling from sources and suggesting the best match with justification. Operators review and approve any catalog write-back via a confirm dialog.</p>
-  </div>
-</div>
-<div class="section-block"><h2>What Guru Does and Does Not Do</h2></div>
-<div class="tbl-wrap"><table>
-<thead><tr><th>Capability</th><th>Guru Can</th><th>Guru Cannot</th></tr></thead>
-<tbody>
-<tr><td>Workflow guidance</td><td>Explain blockers, suggest next steps, surface help topics for the current route</td><td>Advance order stages, approve gates, or skip compliance checks</td></tr>
-<tr><td>Drafting</td><td>Draft follow-up emails, cover notes, compliance evidence summaries, dispatch checklists</td><td>Send emails, submit forms, or trigger external communication autonomously</td></tr>
-<tr><td>Pricing</td><td>Suggest pricing defaults, explain pricing rule logic</td><td>Set prices, override pricing rules, or apply discounts without human review</td></tr>
-<tr><td>Compliance</td><td>Explain what evidence is needed, draft an evidence checklist</td><td>Clear compliance blockers, waive requirements, or approve compliance actions</td></tr>
-<tr><td>Catalog</td><td>Research HSN codes, suggest classification with sourced justification</td><td>Apply HSN updates without explicit operator confirmation via confirm dialog</td></tr>
-<tr><td>Data access</td><td>Read live org data: leads, quotes, orders, blockers</td><td>Write, delete, or mutate any database record without human approval</td></tr>
-<tr><td>External sends</td><td>Draft message text for review before sending</td><td>Send WhatsApp messages, trigger email delivery, or dispatch documents externally</td></tr>
-</tbody></table></div>
-<div class="guru-guardrails">
-  <h3>&#x1F6E1; AI Guardrails &mdash; Non-Negotiable</h3>
-  <ul>
-    <li><strong>Human approval on all external sends.</strong> Guru cannot trigger WhatsApp messages, email deliveries, or document sends. Operators always click the send button after reviewing the draft.</li>
-    <li><strong>No autonomous order state changes.</strong> Guru cannot approve actual lines, approve packing, approve documents, create shipments, or move orders between stages.</li>
-    <li><strong>No autonomous compliance decisions.</strong> Guru cannot waive compliance blockers, attach evidence, or defer requirements. These require human reviewer reason and explicit action.</li>
-    <li><strong>No service-role key usage.</strong> Guru API calls use user-scoped authentication. No privileged database access from AI context.</li>
-    <li><strong>Every AI action is attributable.</strong> Actions Guru suggests or applies (like HSN updates) are logged with the human approver's identity &mdash; not as system-initiated.</li>
-    <li><strong>Feedback is captured.</strong> Helpful / Missing detail buttons let operators improve Guru quality locally without sending data externally.</li>
-  </ul>
-</div>
-<div class="section-block"><h2>How to Use Setu Guru Effectively</h2></div>
-<div class="doc-card-grid">
-  <div class="doc-card border-blue"><div class="doc-card-title">On Any CRM Page</div><ul><li>Click the Guru floating button (bottom right or right edge tab)</li><li>Choose a quick start from the panel header</li><li>Or type your question &mdash; Guru reads page context automatically</li><li>Use action buttons in Guru's reply to queue follow-up questions</li></ul></div>
-  <div class="doc-card border-green"><div class="doc-card-title">For Blockers</div><ul><li>Ask: "What is blocking this order?" or "What is blocking this quote send?"</li><li>Guru checks live org data and returns a specific blocker list</li><li>Click "Draft dispatch evidence checklist" for structured guidance</li><li>Humans resolve each blocker &mdash; Guru documents the path</li></ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">For Research</div><ul><li>Ask about HSN codes, trade requirements, or product classifications</li><li>Guru returns sourced results for review</li><li>Click "Review sources" before applying any write-back</li><li>Approve catalog updates via the confirm dialog &mdash; not silently</li></ul></div>
-  <div class="doc-card border-red"><div class="doc-card-title">For Trade Events</div><ul><li>Use mobile scan at events &rarr; Guru parses card &rarr; operator reviews</li><li>Share vCard QR &rarr; buyer submits &rarr; linked to event and lead</li><li>Post-event: ask Guru to summarize event leads and suggest follow-ups</li><li>Guru drafts follow-up messages &mdash; operators send after review</li></ul></div>
-</div>
-<div class="section-block"><h2>Setu Guru — In-App Widget</h2>
-<p>Setu Guru lives in the authenticated app shell as a bottom-right bot avatar with a right-drawer help surface. It is route-aware — the context it provides changes based on the current page. All Guru responses are advisory; operators approve before any action is taken.</p>
-</div>
-<div class="doc-card-grid">
-  <div class="doc-card border-purple"><div class="doc-card-title">&#10024; Widget Controls</div><ul>
-    <li>Avatar shown bottom-right of the app shell in authenticated routes</li>
-    <li>Click avatar → right-drawer opens with context-aware help</li>
-    <li>Hide Guru: collapse the widget; restore from the right-edge "Guru" tab</li>
-    <li>Route-aware: drawer content updates based on current page (leads, quotes, compliance, etc.)</li>
-    <li>Local feedback capture: thumbs up/down on each response — future backend pass will persist and improve</li>
-  </ul></div>
-  <div class="doc-card border-blue"><div class="doc-card-title">&#128270; Capabilities</div><ul>
-    <li><strong>Page context help</strong> — explains what the current screen does and what operator should check</li>
-    <li><strong>Org search</strong> — search across leads, contacts, and org data without navigating away</li>
-    <li><strong>HSN research</strong> — Harmonized System code lookup for compliance and export declarations</li>
-    <li><strong>Pricing defaults</strong> — suggest pricing basis and margin ranges based on product/market context</li>
-    <li><strong>AI suggestions</strong> — draft follow-up, intro, and quote cover notes (all require approval)</li>
-  </ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">&#128683; Guardrails</div><ul>
-    <li>Guru cannot bypass approval gates, compliance checks, or send quote autonomously</li>
-    <li>All external-facing suggestions (emails, quotes, compliance) require explicit operator approval</li>
-    <li>No autonomous external API calls — Guru only assists with drafts and research</li>
-    <li>Configured per org at <code>/admin/guru-config</code>: model, daily budget, 4 feature toggles</li>
-    <li>Knowledge base: <code>docs/setu-guru/</code> — chatbot-ready onboarding, workflow, troubleshooting instructions</li>
-  </ul></div>
-</div>
-<div class="section-block"><h2>Setu Guru — Improvements</h2>
-</div>
-<div class="doc-card-grid">
-  <div class="doc-card border-purple"><div class="doc-card-title">&#128272; Rate Limiting</div><ul>
-    <li>Research API: <strong>20 requests/org/day</strong> via LRU cache in memory</li>
-    <li>Org search: <strong>100 requests/org/day</strong></li>
-    <li>429 response: "Research limit reached (20/day). Try again tomorrow."</li>
-    <li>Monitor usage in <code>/admin/guru-config</code> monthly usage bar</li>
-  </ul></div>
-  <div class="doc-card border-blue"><div class="doc-card-title">&#128202; Feedback Persisted to audit_logs</div><ul>
-    <li>Route: <code>POST /api/setu-guru/feedback</code></li>
-    <li>Writes: <code>entity_type="guru_feedback"</code>, <code>action="helpful"|"missing"</code></li>
-    <li>LocalStorage retained as offline cache (last 50 items)</li>
-    <li>Previously feedback was lost on page refresh — now permanently logged</li>
-  </ul></div>
-  <div class="doc-card border-teal"><div class="doc-card-title">&#128162; Dynamic Online/Offline Badge</div><ul>
-    <li>Health check: <code>GET /api/setu-guru/health</code> — verifies <code>ANTHROPIC_API_KEY</code> configured</li>
-    <li>States: <span style="color:#059669;font-weight:700">Online</span> | <span style="color:#dc2626;font-weight:700">Offline</span> | <span style="color:#64748b">Checking…</span></li>
-    <li>Previously: hardcoded green badge regardless of API availability</li>
-  </ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">&#128201; Repositioned Launcher</div><ul>
-    <li><strong>Desktop</strong>: sidebar footer — no more floating fixed element over page content</li>
-    <li><strong>Mobile</strong>: dedicated tab in bottom tab bar — replaces the floating FAB that stacked with bell and Quick Lead</li>
-    <li>Eliminates the three-element z-index stack (bell + Guru + FAB) entirely</li>
-  </ul></div>
-</div>
-<div class="section-block"><h2>Setu Guru API Surface</h2>
-<p>Setu Guru has 11 dedicated API routes under <code>/api/setu-guru/</code>. All require authenticated session with organization context except <code>/health</code>. Routes that write to the database include operator confirmation guardrails.</p>
-</div>
-<div class="tbl-wrap"><table>
-<thead><tr><th>Route</th><th>Method</th><th>Auth</th><th>Purpose</th></tr></thead>
-<tbody>
-<tr><td><code>/api/setu-guru/health</code></td><td>GET</td><td>None</td><td>Checks ANTHROPIC_API_KEY is set. Returns {ok:true/false}. Used by widget on load for online/offline badge.</td></tr>
-<tr><td><code>/api/setu-guru/brain</code></td><td>POST</td><td>Session</td><td>Core inference. Accepts {messages, context, route} and streams AI response with route-aware system prompt injection.</td></tr>
-<tr><td><code>/api/setu-guru/org-search</code></td><td>POST</td><td>Session</td><td>Queries live org data (leads, quotes, orders) for Guru context. Read-only snapshots — no mutations.</td></tr>
-<tr><td><code>/api/setu-guru/org-search-v2</code></td><td>POST</td><td>Session</td><td>Upgraded search with richer context: blockers, pipeline state, compliance posture, stage history.</td></tr>
-<tr><td><code>/api/setu-guru/feedback</code></td><td>POST</td><td>Session</td><td>Stores thumbs-up/down feedback to setu_guru_feedback table. Body: {label, lastMessage, pathname, missingAnswer?}.</td></tr>
-<tr><td><code>/api/setu-guru/research</code></td><td>POST</td><td>Session</td><td>Live industry research via OpenAI Responses API web search. HS/HSN codes, tariffs, margin benchmarks. Requires OPENAI_API_KEY.</td></tr>
-<tr><td><code>/api/setu-guru/apply-hsn</code></td><td>POST</td><td>Session + Confirm</td><td>Guarded HSN write-back. Only applies after explicit operator confirm dialog. Logs to audit_logs.</td></tr>
-<tr><td><code>/api/setu-guru/action</code></td><td>POST</td><td>Session</td><td>Safe copilot actions with preview. Returns preview for operator review — no writes without approval.</td></tr>
-<tr><td><code>/api/setu-guru/playbook</code></td><td>POST</td><td>Session</td><td>Onboarding wizard and lead-conversion playbook content. Context-aware per stage.</td></tr>
-<tr><td><code>/api/setu-guru/pricing-defaults</code></td><td>GET</td><td>Session</td><td>Fetches org/category pricing defaults from pricing_calculator_default_rules for Guru suggestions panel.</td></tr>
-<tr><td><code>/api/setu-guru/source-search</code></td><td>POST</td><td>Session</td><td>Searches Guru knowledge base sources for live research context injection.</td></tr>
-</tbody></table></div>
-<div class="section-block"><h2>Setu Guru Learning Loop</h2>
-<p>The learning loop captures operator feedback and missing-answer reports to continuously improve Guru responses. It uses two Supabase tables and a bridge component.</p>
-</div>
-<div class="doc-card-grid">
-  <div class="doc-card border-blue"><div class="doc-card-title">&#128202; setu_guru_feedback Table</div><ul>
-    <li>Backing migration: <code>20260529000001_sprint21_setu_guru_feedback.sql</code></li>
-    <li>Columns: id, org_id, user_id, route (page where feedback given), label ('helpful' or 'missing'), last_message (last AI response), missing_answer (what the user expected), created_at</li>
-    <li>RLS: org members insert own rows; SETU admin reads all for analysis</li>
-    <li>Thumbs-up → label='helpful'; Thumbs-down → label='missing' + missingAnswer prompt</li>
-  </ul></div>
-  <div class="doc-card border-teal"><div class="doc-card-title">&#128202; setu_guru_telemetry Table</div><ul>
-    <li>Backing migration: <code>20260529000002_sprint21_setu_guru_telemetry.sql</code></li>
-    <li>Records usage events: route visited, Guru opened, query type, response latency, token count</li>
-    <li>Used for usage monitoring in <code>/admin/guru-config</code> monthly usage bar</li>
-    <li>Powers daily budget enforcement and per-org rate limit tracking</li>
-  </ul></div>
-  <div class="doc-card border-amber"><div class="doc-card-title">&#128101; SetuGuruFeedbackBridge Component</div><ul>
-    <li>File: <code>src/features/setu-guru/setu-guru-feedback-bridge.tsx</code></li>
-    <li>Thin bridge between the Guru widget thumbs buttons and the <code>/api/setu-guru/feedback</code> POST route</li>
-    <li>Handles optimistic LocalStorage write (offline cache) + async Supabase persist</li>
-    <li>Shows inline "Thank you" or "Missing answer" prompt depending on button pressed</li>
-    <li>Feedback data is periodically reviewed to identify knowledge base gaps</li>
-  </ul></div>
-</div>`;
-    return null;
-  }
 
   function topicContentNewModules(id) {
     if (id === 'notifications') return `
@@ -3772,6 +3588,10 @@ flowchart LR
 
 <div class="section-block"><h2>Command & Analytics</h2></div>
 <div class="doc-card-grid">
+  <div class="doc-card border-purple"><div class="doc-card-title">&#10024; Growth Center — Trade Command Center</div>
+    <a href="docs-screenshots/ss-growth-center.jpg" target="_blank"><img src="docs-screenshots/ss-growth-center.jpg" alt="Growth Center Trade Growth Command Center Today tab" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
+    <p style="font-size:11px;color:#64748b;margin-top:6px">Today work queue: actions at risk, revenue actions, RFQ review list, business brief. Route: /growth-agent</p>
+  </div>
   <div class="doc-card border-blue"><div class="doc-card-title">&#127968; Dashboard — Command Center</div>
     <a href="docs-screenshots/ss-dashboard.jpg" target="_blank"><img src="docs-screenshots/ss-dashboard.jpg" alt="SETU Flow dashboard command center" style="width:100%;border-radius:10px;margin-top:8px;border:1px solid #e2e8f0" loading="lazy"/></a>
     <p style="font-size:11px;color:#64748b;margin-top:6px">KPI tiles, pipeline value, market coverage, overdue follow-ups. Route: /dashboard</p>
@@ -4312,8 +4132,6 @@ flowchart LR
     if (c3) return c3;
     const c4 = topicContentGuides(id);
     if (c4) return c4;
-    const c5 = topicContentGuru(id);
-    if (c5) return c5;
     const c6 = topicContentNewModules(id);
     if (c6) return c6;
     if (id === 'glossary') return topicContentNewModules('glossary') || topicContentOther(id) || '';

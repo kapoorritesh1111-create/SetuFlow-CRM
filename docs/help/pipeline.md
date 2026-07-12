@@ -54,7 +54,7 @@ Pipeline should prioritize:
 
 The page should not feel like a generic SaaS walkthrough. It should look like a trade command center where the user can make decisions quickly.
 
-## Supplier Mode (Sprint 41 — Supplier Journey Workflow)
+## Supplier Mode
 
 Supplier leads run a parallel journey to buyer leads on the same underlying data model
 (`leads`, `pipeline_stage_id`), strictly scoped by `lead_type` — there is no silent
