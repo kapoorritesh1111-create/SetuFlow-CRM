@@ -21,34 +21,43 @@ export function GlobalGrowthCenterEntry() {
   const [topHost, setTopHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
+    let frame = 0;
+
     const mount = () => {
-      const header = document.querySelector<HTMLElement>('main#app-content > header')
-        ?? document.querySelector<HTMLElement>('header.sticky')
-        ?? document.querySelector<HTMLElement>('header');
-      if (!header) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const headers = Array.from(document.querySelectorAll<HTMLElement>('header'));
+        const header = headers.find((node) => node.querySelector('a[href*="card"], [aria-label="Global workspace filter"]'))
+          ?? document.querySelector<HTMLElement>('main#app-content > header')
+          ?? document.querySelector<HTMLElement>('header.sticky');
+        if (!header) return;
 
-      header.querySelectorAll<HTMLAnchorElement>('a[href="/growth-agent"]').forEach((node) => {
-        if (!node.closest(`#${TOP_HOST_ID}`)) node.remove();
+        header.querySelectorAll<HTMLAnchorElement>('a[href="/growth-agent"]').forEach((node) => {
+          if (!node.closest(`#${TOP_HOST_ID}`)) node.remove();
+        });
+
+        const filter = header.querySelector<HTMLElement>('[aria-label="Global workspace filter"]');
+        const shareLink = Array.from(header.querySelectorAll<HTMLAnchorElement>('a')).find((node) => /share\s*v?card/i.test(node.textContent ?? ''));
+        const actionRow = filter?.parentElement ?? shareLink?.parentElement ?? header.querySelector<HTMLElement>(':scope > div > div:last-child');
+        if (!(actionRow instanceof HTMLElement)) return;
+
+        const host = ensureHost();
+        const anchor = filter ?? shareLink ?? actionRow.firstChild;
+        if (!host.isConnected || host.parentElement !== actionRow) actionRow.insertBefore(host, anchor);
+        setTopHost(host);
       });
-
-      const filter = header.querySelector<HTMLElement>('[aria-label="Global workspace filter"]');
-      const actionRow = filter?.parentElement
-        ?? header.querySelector<HTMLElement>(':scope > div > div:last-child')
-        ?? header.lastElementChild;
-      if (!(actionRow instanceof HTMLElement)) return;
-
-      const host = ensureHost();
-      if (!host.isConnected) actionRow.insertBefore(host, filter ?? actionRow.firstChild);
-      setTopHost(host);
     };
 
     mount();
     const observer = new MutationObserver(mount);
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('resize', mount);
+    window.addEventListener('popstate', mount);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('resize', mount);
+      window.removeEventListener('popstate', mount);
     };
   }, []);
 
