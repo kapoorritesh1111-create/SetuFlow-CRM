@@ -16,7 +16,8 @@
 // Opportunity Finder
 // /growth-agent/trade-events/${event.id}
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChevronDown, History, LayoutDashboard, Sparkles, Tags } from 'lucide-react';
 import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
 import { GrowthCenter as GrowthCenterRedesign } from '@/features/setu-guru/growth-center-redesign';
@@ -41,33 +42,27 @@ type Props = {
 type GrowthWorkspace = 'operations' | 'pricing';
 
 export function GrowthCenter(props: Props) {
-  const [workspace, setWorkspace] = useState<GrowthWorkspace>('operations');
+  const searchParams = useSearchParams();
+  const requestedWorkspace = searchParams.get('workspace') === 'pricing' ? 'pricing' : 'operations';
+  const [workspace, setWorkspace] = useState<GrowthWorkspace>(requestedWorkspace);
   const [showIntelligence, setShowIntelligence] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const opportunities = props.opportunities ?? [];
   const tradeEvents = props.tradeEvents ?? [];
   const auditItems = props.auditItems ?? [];
 
+  useEffect(() => {
+    setWorkspace(requestedWorkspace);
+  }, [requestedWorkspace]);
+
   return (
     <>
       <nav className={cn(workspacePanelClass, 'mb-4 flex flex-wrap items-center gap-2 p-2')} aria-label="Growth Center workspaces">
-        <button
-          type="button"
-          onClick={() => setWorkspace('operations')}
-          aria-pressed={workspace === 'operations'}
-          className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'operations' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Growth work queue
+        <button type="button" onClick={() => setWorkspace('operations')} aria-pressed={workspace === 'operations'} className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'operations' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}>
+          <LayoutDashboard className="h-4 w-4" />Growth work queue
         </button>
-        <button
-          type="button"
-          onClick={() => setWorkspace('pricing')}
-          aria-pressed={workspace === 'pricing'}
-          className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'pricing' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}
-        >
-          <Tags className="h-4 w-4" />
-          Pricing Intelligence
+        <button type="button" onClick={() => setWorkspace('pricing')} aria-pressed={workspace === 'pricing'} className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'pricing' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}>
+          <Tags className="h-4 w-4" />Pricing Intelligence
         </button>
       </nav>
 
@@ -75,42 +70,15 @@ export function GrowthCenter(props: Props) {
 
       {workspace === 'operations' ? (
         <section className="mt-5 space-y-3" aria-label="Growth intelligence and history">
-          <button
-            type="button"
-            onClick={() => setShowIntelligence((value) => !value)}
-            aria-expanded={showIntelligence}
-            className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-info-bg text-brand-700"><Sparkles className="h-4 w-4" /></span>
-              <span className="min-w-0">
-                <span className="block text-sm font-medium text-content-primary">Growth intelligence</span>
-                <span className="mt-0.5 block text-xs text-content-muted">{opportunities.length} opportunity matches · {tradeEvents.length} trade events</span>
-              </span>
-            </span>
+          <button type="button" onClick={() => setShowIntelligence((value) => !value)} aria-expanded={showIntelligence} className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}>
+            <span className="flex min-w-0 items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-info-bg text-brand-700"><Sparkles className="h-4 w-4" /></span><span className="min-w-0"><span className="block text-sm font-medium text-content-primary">Growth intelligence</span><span className="mt-0.5 block text-xs text-content-muted">{opportunities.length} opportunity matches · {tradeEvents.length} trade events</span></span></span>
             <ChevronDown className={cn('h-4 w-4 shrink-0 text-content-muted transition-transform', showIntelligence && 'rotate-180')} />
           </button>
-
-          {showIntelligence ? (
-            <div className="space-y-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1">
-              <ResearchWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} />
-              <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} />
-            </div>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={() => setShowHistory((value) => !value)}
-            aria-expanded={showHistory}
-            className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><History className="h-4 w-4" /></span>
-              <span className="min-w-0"><span className="block text-sm font-medium text-content-primary">History and audit</span><span className="mt-0.5 block text-xs text-content-muted">{auditItems.length} recorded Setu Guru actions and approvals</span></span>
-            </span>
+          {showIntelligence ? <div className="space-y-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1"><ResearchWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} /><TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} /></div> : null}
+          <button type="button" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory} className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}>
+            <span className="flex min-w-0 items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><History className="h-4 w-4" /></span><span className="min-w-0"><span className="block text-sm font-medium text-content-primary">History and audit</span><span className="mt-0.5 block text-xs text-content-muted">{auditItems.length} recorded Setu Guru actions and approvals</span></span></span>
             <ChevronDown className={cn('h-4 w-4 shrink-0 text-content-muted transition-transform', showHistory && 'rotate-180')} />
           </button>
-
           {showHistory ? <div className={cn(workspacePanelClass, 'p-4 motion-safe:animate-in motion-safe:fade-in')}><AuditHistoryPanel items={auditItems} /></div> : null}
         </section>
       ) : null}
