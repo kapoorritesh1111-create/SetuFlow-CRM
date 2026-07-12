@@ -5,7 +5,7 @@ import { getProductsSpreadsheet } from '@/features/products/api/get-products-spr
 import type { ProductsSpreadsheetRow } from '@/types/products';
 import { ProductPricingIntelligence } from './product-pricing-intelligence';
 
-export function ProductPricingIntelligencePanel() {
+export function ProductPricingIntelligencePanel({ compact = false }: { compact?: boolean }) {
   const [rows, setRows] = useState<ProductsSpreadsheetRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,9 +36,8 @@ export function ProductPricingIntelligencePanel() {
 
   if (loading) {
     return (
-      <section className="rounded-panel border border-slate-200 bg-white px-4 py-4 shadow-sm" aria-label="Loading pricing intelligence">
+      <section className="rounded-panel border border-slate-200 bg-white px-4 py-3 shadow-sm" aria-label="Loading pricing intelligence">
         <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
-        <div className="mt-3 h-10 animate-pulse rounded-xl bg-slate-100" />
       </section>
     );
   }
@@ -48,8 +47,10 @@ export function ProductPricingIntelligencePanel() {
   return (
     <ProductPricingIntelligence
       rows={rows}
-      onOpenPricing={(productId, variantId) => {
-        window.location.href = `/products?mode=pricing&productId=${encodeURIComponent(productId)}&variantId=${encodeURIComponent(variantId)}`;
+      compact={compact}
+      onOpenPricing={(productId, variantId, tab) => {
+        const params = new URLSearchParams({ mode: 'pricing', productId, variantId, tab });
+        window.location.href = `/products?${params.toString()}`;
       }}
       onShowPricingGaps={() => {
         window.location.href = '/products?mode=pricing&gap=has_gap';
