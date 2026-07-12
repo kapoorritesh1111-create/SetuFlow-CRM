@@ -41,7 +41,7 @@ export default async function ProductsPage({ searchParams }: { searchParams?: Pr
 
   return (
     <div className="space-y-3">
-      {mode === 'pricing' ? <ProductPricingIntelligencePanel /> : null}
+      <ProductPricingIntelligencePanel />
       <ProductsSpreadsheetPage
         canManageCatalog={canManageCatalog}
         readOnlyMessage={readOnlyMessage}
