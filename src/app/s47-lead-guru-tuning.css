@@ -8,18 +8,12 @@ section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
   grid-template-columns: minmax(0, 1fr) !important;
 }
 
-/* Setu Guru drawer scroll contract
-   RightDrawer already owns the viewport height. Its body must not become a
-   second page scroller, otherwise the composer is pushed below the viewport
-   and the conversation appears frozen. */
-[role="dialog"] > .flex-1.overflow-y-auto:has(> .bg-brand-50) {
-  display: flex !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
-
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex {
-  flex: 1 1 0% !important;
+/* Setu Guru drawer layout contract.
+   RightDrawer owns the viewport. The widget owns exactly three rows:
+   header, scrollable conversation, and composer. */
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
   width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
@@ -27,32 +21,33 @@ section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
   overflow: hidden !important;
 }
 
-/* Header and composer remain fixed inside the drawer. Only the message stream
-   scrolls, including mouse wheel, trackpad, touch, and keyboard scrolling. */
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > header,
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > footer {
-  flex: 0 0 auto !important;
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > header,
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > footer {
+  min-height: 0 !important;
 }
 
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > div.flex-1.overflow-y-auto {
-  flex: 1 1 0% !important;
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2) {
   min-height: 0 !important;
-  max-height: none !important;
+  max-height: 100% !important;
   overflow-x: hidden !important;
-  overflow-y: auto !important;
+  overflow-y: scroll !important;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > div.flex-1.overflow-y-auto::-webkit-scrollbar {
-  width: 8px;
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2)::-webkit-scrollbar {
+  width: 10px;
 }
 
-[role="dialog"] > .flex-1.overflow-y-auto > .bg-brand-50.flex > div.flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2)::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.65);
+}
+
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2)::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
-  background: rgba(100, 116, 139, 0.45);
+  background: rgba(71, 85, 105, 0.65);
   background-clip: padding-box;
 }
