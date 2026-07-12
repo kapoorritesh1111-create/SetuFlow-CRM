@@ -2,8 +2,11 @@ import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
+import { S47FinalUiPolish } from '@/components/shell/s47-final-ui-polish';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
+import { GlobalGrowthCenterEntry } from '@/features/setu-guru/global-growth-center-entry';
+import { ProductPricingDeepLinkDrawer } from '@/features/products/components/product-pricing-deep-link-drawer';
 import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
 import { TrialTourProvider } from '@/features/trial/tour-provider';
 import { getTrialCapability } from '@/lib/trial/capability';
@@ -82,6 +85,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const inner = (
     <>
       <DocumentsUiPolish />
+      <S47FinalUiPolish />
+      <GlobalGrowthCenterEntry />
+      <ProductPricingDeepLinkDrawer />
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />

@@ -1,5 +1,6 @@
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { ProductsSpreadsheetPage } from '@/features/products/components/products-spreadsheet-page';
+import { ProductPricingIntelligencePanel } from '@/features/products/components/product-pricing-intelligence-panel';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
 
@@ -36,20 +37,24 @@ export default async function ProductsPage({ searchParams }: { searchParams?: Pr
   const readOnlyMessage = canManageCatalog
     ? null
     : getReadOnlyWorkspaceMessage(workspace.currentRoles, 'catalog.manage') ?? 'Your current role can review products, but only catalog managers can create or edit pricing.';
+  const mode = normalizeMode(searchParams?.mode);
 
   return (
-    <ProductsSpreadsheetPage
-      canManageCatalog={canManageCatalog}
-      readOnlyMessage={readOnlyMessage}
-      initialFilters={{
-        search: searchParams?.search,
-        category: searchParams?.category,
-        pricingMode: searchParams?.pricing_mode,
-        gap: searchParams?.gap,
-        active: searchParams?.active,
-        quoteable: searchParams?.quoteable,
-        mode: normalizeMode(searchParams?.mode),
-      }}
-    />
+    <div className="space-y-3">
+      {mode === 'pricing' ? <ProductPricingIntelligencePanel compact /> : null}
+      <ProductsSpreadsheetPage
+        canManageCatalog={canManageCatalog}
+        readOnlyMessage={readOnlyMessage}
+        initialFilters={{
+          search: searchParams?.search,
+          category: searchParams?.category,
+          pricingMode: searchParams?.pricing_mode,
+          gap: searchParams?.gap,
+          active: searchParams?.active,
+          quoteable: searchParams?.quoteable,
+          mode,
+        }}
+      />
+    </div>
   );
 }

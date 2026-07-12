@@ -1,5 +1,6 @@
 import './globals.css';
 import './marketing-hero-tuning.css';
+import './s47-lead-guru-tuning.css';
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { Plus_Jakarta_Sans } from 'next/font/google';

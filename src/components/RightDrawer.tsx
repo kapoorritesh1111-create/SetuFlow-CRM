@@ -87,7 +87,6 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
-
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
 
@@ -125,23 +124,22 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
       }
     };
 
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (event: TouchEvent) => {
       const panel = panelRef.current;
       if (!panel) return;
-      const touch = e.touches[0];
-      if (panel.contains(e.target as Node)) {
+      const touch = event.touches[0];
+      if (panel.contains(event.target as Node)) {
         touchStartXRef.current = touch.clientX;
         touchStartYRef.current = touch.clientY;
       }
     };
-    const handleTouchEnd = (e: TouchEvent) => {
+
+    const handleTouchEnd = (event: TouchEvent) => {
       if (touchStartXRef.current === null || touchStartYRef.current === null) return;
-      const touch = e.changedTouches[0];
+      const touch = event.changedTouches[0];
       const dx = touch.clientX - touchStartXRef.current;
       const dy = Math.abs(touch.clientY - touchStartYRef.current);
-      if (dx > 80 && dy < 60) {
-        onClose();
-      }
+      if (dx > 80 && dy < 60) onClose();
       touchStartXRef.current = null;
       touchStartYRef.current = null;
     };
@@ -161,6 +159,22 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const bodyLayoutClass = hideHeader
+    ? 'grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden overscroll-none p-0'
+    : 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5';
+
+  const fittedChildren = hideHeader && React.isValidElement(children)
+    ? React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
+        style: {
+          ...((children as React.ReactElement<React.HTMLAttributes<HTMLElement>>).props.style ?? {}),
+          height: '100%',
+          minHeight: 0,
+          maxHeight: '100%',
+          overflow: 'hidden',
+        },
+      })
+    : children;
 
   const drawer = (
     <div className="fixed inset-0 z-[920] flex h-[100dvh] overflow-hidden overscroll-none" role="presentation">
@@ -189,7 +203,7 @@ const RightDrawer: React.FC<RightDrawerProps> = ({
             </div>
           </div>
         ) : null}
-        <div className={['flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5', bodyClassName].join(' ')}>{children}</div>
+        <div className={[bodyLayoutClass, bodyClassName].join(' ')}>{fittedChildren}</div>
         {footer ? <div className="sticky bottom-0 z-20 shrink-0 border-t border-slate-200/80 bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(15,23,42,.12)] sm:px-5 sm:pb-3">{footer}</div> : null}
       </div>
     </div>
