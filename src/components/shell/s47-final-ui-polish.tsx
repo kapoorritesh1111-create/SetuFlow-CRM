@@ -14,8 +14,29 @@ export function S47FinalUiPolish() {
 
   useEffect(() => {
     document.body.dataset.s47Route = routeKind(pathname);
+
+    const synchronizeCatalogMode = (event: MouseEvent) => {
+      if (pathname !== '/products') return;
+      const button = (event.target as HTMLElement | null)?.closest('button');
+      if (!button) return;
+      const label = (button.textContent ?? '').trim().toLowerCase();
+      if (label === 'pricing view' || label === 'pricing calculator') {
+        event.preventDefault();
+        window.location.href = '/products?mode=pricing';
+      }
+      if (label === 'products') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('mode') === 'pricing') {
+          event.preventDefault();
+          window.location.href = '/products?mode=products';
+        }
+      }
+    };
+
+    document.addEventListener('click', synchronizeCatalogMode, true);
     return () => {
       delete document.body.dataset.s47Route;
+      document.removeEventListener('click', synchronizeCatalogMode, true);
     };
   }, [pathname]);
 
@@ -76,7 +97,7 @@ export function S47FinalUiPolish() {
       }
 
       @media (prefers-reduced-motion: reduce) {
-        [data-growth-center-topbar-host='true'] a {
+        #setu-growth-center-topbar-host a {
           transition: none !important;
           transform: none !important;
         }
