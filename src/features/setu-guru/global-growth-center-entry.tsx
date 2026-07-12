@@ -4,9 +4,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
+import { BadgeDollarSign } from 'lucide-react';
 
 const TOP_HOST_ID = 'setu-growth-center-topbar-host';
 const SIDE_HOST_ID = 'setu-growth-center-sidebar-host';
+const PRICING_HOST_ID = 'setu-growth-center-pricing-host';
 
 function ensureHost(id: string, className: string) {
   let host = document.getElementById(id);
@@ -21,6 +23,7 @@ function ensureHost(id: string, className: string) {
 export function GlobalGrowthCenterEntry() {
   const [topHost, setTopHost] = useState<HTMLElement | null>(null);
   const [sideHost, setSideHost] = useState<HTMLElement | null>(null);
+  const [pricingHost, setPricingHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const mount = () => {
@@ -30,7 +33,7 @@ export function GlobalGrowthCenterEntry() {
           if (!node.closest(`#${TOP_HOST_ID}`)) node.remove();
         });
         const filter = header.querySelector<HTMLElement>('[aria-label="Global workspace filter"]');
-        const actions = filter?.parentElement ?? header.lastElementChild;
+        const actions = filter?.parentElement ?? header.querySelector<HTMLElement>('div.flex.items-center.gap-2') ?? header.lastElementChild;
         if (actions instanceof HTMLElement) {
           const host = ensureHost(TOP_HOST_ID, 'hidden md:flex items-center shrink-0');
           if (!host.isConnected) actions.insertBefore(host, filter ?? actions.firstChild);
@@ -40,9 +43,21 @@ export function GlobalGrowthCenterEntry() {
 
       const nav = document.querySelector<HTMLElement>('aside nav[aria-label="Desktop workflow navigation"]');
       if (nav) {
+        nav.querySelectorAll<HTMLAnchorElement>('a[href="/growth-agent"]').forEach((node) => {
+          if (!node.closest(`#${SIDE_HOST_ID}`)) node.remove();
+        });
         const host = ensureHost(SIDE_HOST_ID, 'px-2 pb-2');
         if (!host.isConnected) nav.insertBefore(host, nav.firstChild);
         setSideHost(host);
+      }
+
+      const growthNav = document.querySelector<HTMLElement>('nav[aria-label="Growth Center filters"]');
+      if (growthNav) {
+        const host = ensureHost(PRICING_HOST_ID, 'mt-1');
+        if (!host.isConnected) growthNav.appendChild(host);
+        setPricingHost(host);
+      } else {
+        setPricingHost(null);
       }
     };
 
@@ -78,5 +93,16 @@ export function GlobalGrowthCenterEntry() {
     sideHost,
   ) : null;
 
-  return <>{topEntry}{sideEntry}</>;
+  const pricingEntry = pricingHost ? createPortal(
+    <Link
+      href="/products?mode=pricing"
+      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-normal text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+    >
+      <BadgeDollarSign className="h-4 w-4 text-teal-700" aria-hidden="true" />
+      <span>Pricing Intelligence</span>
+    </Link>,
+    pricingHost,
+  ) : null;
+
+  return <>{topEntry}{sideEntry}{pricingEntry}</>;
 }
