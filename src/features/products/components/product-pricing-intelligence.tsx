@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronDown, ChevronUp, Globe2, Percent, ShieldAlert, Sparkles, TimerReset } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -132,14 +132,16 @@ export function ProductPricingIntelligence({ rows, onOpenPricing, onShowPricingG
   onShowPricingGaps: () => void;
   compact?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [showAll, setShowAll] = useState(false);
+  const [expanded, setExpanded] = useState(!compact);
   const allActions = buildActions(rows);
   const gapActions = allActions.filter((action) => action.kind === 'pricing-gap');
   const readinessActions = allActions.filter((action) => action.kind === 'readiness');
   const gapCount = rows.filter((row) => getProductGapState(row) !== 'complete').length;
   const prioritizedActions = gapActions.length ? [...gapActions, ...readinessActions] : readinessActions;
-  const visibleActions = showAll ? prioritizedActions : prioritizedActions.slice(0, 4);
+
+  useEffect(() => {
+    setExpanded(!compact);
+  }, [compact]);
 
   if (!rows.length) return null;
 
@@ -155,27 +157,24 @@ export function ProductPricingIntelligence({ rows, onOpenPricing, onShowPricingG
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setExpanded((value) => !value)} className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>{expanded ? 'Hide suggestions' : `Review ${prioritizedActions.length} suggestions`}{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button>
+          {compact ? <button type="button" onClick={() => setExpanded((value) => !value)} className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>{expanded ? 'Hide suggestions' : `Review ${prioritizedActions.length} suggestions`}{expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button> : null}
           <Link href="/price-lists" className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>Market price lists<ArrowRight className="h-4 w-4" /></Link>
         </div>
       </div>
 
       {expanded && prioritizedActions.length ? (
-        <>
-          <div className="divide-y divide-line border-t border-line">
-            {visibleActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <article key={action.id} className="grid gap-3 px-4 py-3 md:grid-cols-[minmax(180px,1fr)_minmax(260px,1.8fr)_auto] md:items-center">
-                  <div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><Icon className="h-4 w-4" /></span><p className="truncate text-sm font-medium text-content-primary">{action.title}</p></div>
-                  <div><p className="text-sm text-content-secondary">{action.reason}</p>{action.suggestion ? <p className="mt-1 text-xs font-medium text-brand-700">{action.suggestion}</p> : null}<p className="mt-1 text-xs text-content-muted">Business impact: {action.impact}</p></div>
-                  <button type="button" onClick={() => action.productId && action.variantId && onOpenPricing(action.productId, action.variantId, action.targetTab)} className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>{action.label}<ArrowRight className="h-4 w-4" /></button>
-                </article>
-              );
-            })}
-          </div>
-          {prioritizedActions.length > 4 ? <button type="button" onClick={() => setShowAll((value) => !value)} className="flex w-full items-center justify-center gap-2 border-t border-line px-4 py-3 text-sm font-medium text-brand-700 hover:bg-surface-2">{showAll ? <>Show top 4<ChevronUp className="h-4 w-4" /></> : <>View all {prioritizedActions.length} suggestions<ChevronDown className="h-4 w-4" /></>}</button> : null}
-        </>
+        <div className="divide-y divide-line border-t border-line">
+          {prioritizedActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <article key={action.id} className="grid gap-3 px-4 py-3 md:grid-cols-[minmax(180px,1fr)_minmax(260px,1.8fr)_auto] md:items-center">
+                <div className="flex min-w-0 items-center gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><Icon className="h-4 w-4" /></span><p className="truncate text-sm font-medium text-content-primary">{action.title}</p></div>
+                <div><p className="text-sm text-content-secondary">{action.reason}</p>{action.suggestion ? <p className="mt-1 text-xs font-medium text-brand-700">{action.suggestion}</p> : null}<p className="mt-1 text-xs text-content-muted">Business impact: {action.impact}</p></div>
+                <button type="button" onClick={() => action.productId && action.variantId && onOpenPricing(action.productId, action.variantId, action.targetTab)} className={cn(workspaceSecondaryButtonClass, 'inline-flex min-h-9 items-center justify-center gap-2 rounded-ctl px-3 text-sm font-medium')}>{action.label}<ArrowRight className="h-4 w-4" /></button>
+              </article>
+            );
+          })}
+        </div>
       ) : null}
     </section>
   );
