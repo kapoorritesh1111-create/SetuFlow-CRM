@@ -226,8 +226,8 @@ const Docs = (() => {
   <div class="metric">
     <span class="metric-icon">&#x25a6;</span>
     <small>Total Modules</small>
-    <strong>28</strong>
-    <div class="metric-badge up">&#x2191; 3 this month</div>
+    <strong>30</strong>
+    <div class="metric-badge up">&#x2191; Growth Center added</div>
   </div>
   <div class="metric internal-only">
     <span class="metric-icon">&#x25CE;</span>
@@ -244,7 +244,7 @@ const Docs = (() => {
   <div class="metric">
     <span class="metric-icon">&#x25C8;</span>
     <small>Latest Release</small>
-    <strong>v2026.05</strong>
+    <strong>v2026.07</strong>
     <div class="metric-badge latest">Latest</div>
   </div>
 </section>
@@ -253,6 +253,14 @@ const Docs = (() => {
   <div class="arch-highlight-text">
     <h3>System Architecture — Detailed View</h3>
     <p>Operators &rarr; Frontend routes &rarr; Server actions &rarr; Supabase &rarr; Document engine &amp; integrations. Risks and gaps flagged.</p>
+  </div>
+  <div class="arch-highlight-arrow">&#8599;</div>
+</div>
+<div class="arch-highlight" onclick="Docs.openTopic('guru-ai')" style="background:linear-gradient(120deg,#fdf2f8,#eff6ff)">
+  <div class="arch-highlight-icon" style="background:#db2777">&#10024;</div>
+  <div class="arch-highlight-text">
+    <h3>Growth Center — Setu Guru's Command Center</h3>
+    <p>New at <code>/growth-agent</code>: Today, Revenue, Supplier, Research, Trade Events, and Pricing Intelligence workspaces, plus Lead Detail Smart Actions and an executive business brief on the Dashboard.</p>
   </div>
   <div class="arch-highlight-arrow">&#8599;</div>
 </div>
@@ -270,13 +278,13 @@ const Docs = (() => {
     const links = {
       'architecture':     ['High-Level Architecture','Component Diagram','Deployment Topology','Tech Stack'],
       'workflows':        ['Lead to Opportunity','Quote to Contract','Order to Cash','Renewal & Upsell'],
-      'diagrams':         ['Lead Flowchart','Quote Flowchart','Order Execution','Catalog Sharing','Swimlane Diagrams'],
+      'diagrams':         ['Lead Flowchart','Quote Flowchart','Order Execution','Growth Center Flow','Supplier Workflow','Trade Show Trial Flow'],
       'operator-guides':  ['Lead to Quote','Quote Build & Send','Order Execution','Finance Closeout'],
-      'guru-ai':          ['Page Context Help','Business Card Scan','Smart vCard','Live Org Search'],
+      'guru-ai':          ['Growth Center','Pricing Intelligence','Lead Smart Actions','Business Card Scan'],
       'live-ui':          ['Dashboard Snapshots','Pipeline Workspace','Orders Cockpit','Mobile Capture'],
       'data-security':    ['Data Model Overview','Entity Relationship','Roles & Permissions','Security Practices'],
       'api-integrations': ['API Reference','Authentication','Webhooks','SDKs & Libraries'],
-      'modules':          ['Dashboard','Leads','Pipeline','Quotes & Orders'],
+      'modules':          ['Dashboard','Leads','Pipeline','Growth Center'],
       'mobile':           ['Business Card Scan','Smart vCard','Trade Event Capture','Field Qualification'],
       'quick-reference':  ['Never Break Rules','Always Verify','Core Routes','Quality Signals'],
     };
@@ -534,14 +542,14 @@ const Docs = (() => {
     <div class="mod-card-head">
       <div class="mod-card-icon">&#10024;</div>
       <div>
-        <div class="mod-card-name">Growth Center (Sprint 47)</div>
+        <div class="mod-card-name">Growth Center</div>
         <code class="mod-card-route">/growth-agent</code>
       </div>
       <span class="mod-ready-badge">&#10003; Ready signal</span>
     </div>
     <ul class="mod-card-bullets">
       <li>Trade Growth Command Center — Today, Revenue, Supplier, Research, Trade Events, and Pricing Intelligence workspaces plus an executive business brief</li>
-      <li>Folds in Sprints 42&ndash;46 (ICP/research, outreach/reply intelligence, supplier RFQ assistance, trade-event intelligence) as workspaces rather than separate surfaces</li>
+      <li>Brings ICP/research, outreach/reply intelligence, supplier RFQ assistance, and trade-event intelligence together as workspaces rather than separate surfaces</li>
       <li>Reuses existing source-of-truth tables — no parallel data model</li>
       <li>Also reachable via Lead Detail Smart Actions and a Dashboard business-brief strip</li>
     </ul>
@@ -1612,6 +1620,84 @@ flowchart LR
   S --> U([Draft Quote - Approval and Send])
   </pre>
 </div>
+<h3 style="margin:18px 0 6px">Growth Center — Attention to Action</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Growth Center Flowchart</div>
+  <pre class="mermaid">
+flowchart LR
+  A([Open Growth Center]) --> B[Business Brief and Attention Count]
+  B --> C{Which Workspace?}
+  C -->|Quote follow-up| D[Revenue Workspace]
+  C -->|Supplier readiness| E[Supplier Workspace]
+  C -->|Buyer or supplier context| F[Research Workspace]
+  C -->|Show follow-up| G[Trade Events Workspace]
+  C -->|Catalog pricing gaps| H[Pricing Intelligence]
+  D --> I[One Primary Action Per Item]
+  E --> I
+  F --> I
+  G --> I
+  H --> J{Draft or Recommendation}
+  J -->|Outreach or reply| K[Lead Detail Smart Actions]
+  J -->|Suggested price list| L[Reviewable Draft]
+  I --> M{Human Reviews}
+  K --> M
+  L --> M
+  M -->|Approve and send| N([Action Taken])
+  M -->|Discard or edit| C
+  </pre>
+</div>
+<h3 style="margin:18px 0 6px">Supplier Lead to Sourced Order</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Supplier Workflow Flowchart</div>
+  <pre class="mermaid">
+flowchart LR
+  A([Capture Supplier Lead]) --> B{lead_type = supplier}
+  B -->|No| B1([Buyer Journey - Different Flow])
+  B -->|Yes| C[Supplier Command Center]
+  C --> D[Supplier Compliance Readiness]
+  D --> E{Compliance Cleared?}
+  E -->|No| F[Attach Evidence or Waive]
+  F --> D
+  E -->|Yes| G[Supplier Cost Request]
+  G --> H([RFQ Sent])
+  H --> I[RFQ Response Linked to Lead]
+  I --> J{Multiple Offers?}
+  J -->|Yes| K[Supplier Offer Comparison]
+  K --> L[Select Source]
+  J -->|No| L
+  L --> M[Supplier Approval State]
+  M --> N{Approved?}
+  N -->|No| O([Rejected or On Hold])
+  N -->|Yes| P[Link to Order]
+  P --> Q([Order Shows Supplier Link])
+  </pre>
+</div>
+<h3 style="margin:18px 0 6px">Trade Show Trial — Booth to Workspace</h3>
+<div class="mermaid-wrap">
+  <div class="diagram-title">Trade Show Trial Flowchart</div>
+  <pre class="mermaid">
+flowchart LR
+  A([Prospect at Booth]) --> B[Open /trade-show-trial]
+  B --> C[Signup Form]
+  C --> D{Valid Email and Phone?}
+  D -->|No| C
+  D -->|Yes| E[Provisioning RPC]
+  E --> F[Create Org, Trade Event, Workspace]
+  F --> G[Auto-Sign-In with Temp Credential]
+  G --> H[Internal CRM Lead Created]
+  H --> I[client_onboarding_requests Row Raised]
+  I --> J[Trial Workspace - Capability Mode]
+  J --> K{Capability Type}
+  K -->|Active| L[Behaves Like Paid Product, Within Caps]
+  K -->|Preview| M[Visible but Gated - Upgrade Prompt]
+  L --> N{Prospect Ready?}
+  M --> N
+  N -->|ROI calculator| O[/roi-calculator/]
+  N -->|Book demo| P[/book-demo/]
+  N -->|Upgrade intent| Q[api/trial/upgrade-intent]
+  O & P & Q --> R([SETU Reviews for Conversion])
+  </pre>
+</div>
 
 <div class="section-block" style="margin-top:28px"><h2>Swimlane Diagrams</h2><p>Operator and system responsibilities shown side by side so testers can validate both UI behavior and data writes.</p></div>
 <h3 style="margin:18px 0 6px">Lead to Quote Swimlane</h3>
@@ -1687,12 +1773,36 @@ flowchart LR
     </div>
   </div>
 </div>
+<h3 style="margin:18px 0 6px">Supplier Workflow Swimlane</h3>
+<div class="swimlane">
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>Operator</small><b>Source &amp; Approve</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step"><b>Capture supplier lead</b><span>Set lead_type = supplier at capture, not after.</span></div>
+      <div class="lane-step"><b>Clear compliance</b><span>Attach evidence or waive using supplier-specific requirement rules.</span></div>
+      <div class="lane-step"><b>Send cost request</b><span>Supplier Cost Request replaces the buyer Quote CTA.</span></div>
+      <div class="lane-step"><b>Compare offers</b><span>Use Supplier Offer Comparison when multiple RFQ responses exist.</span></div>
+      <div class="lane-step"><b>Approve supplier</b><span>Own approval/stage-transition model, separate from buyer quote approval.</span></div>
+    </div>
+  </div>
+  <div class="swimlane-row">
+    <div class="swimlane-label"><small>System</small><b>Persistence</b></div>
+    <div class="swimlane-steps">
+      <div class="lane-step system"><b>Strict lead_type scope</b><span>No silent buyer fallback in save path, pipeline resolver, or mobile capture.</span></div>
+      <div class="lane-step system"><b>Seed supplier compliance</b><span>Apply supplier document requirement rule seed, distinct from buyer rules.</span></div>
+      <div class="lane-step system"><b>Link RFQ to lead</b><span>RFQ response writes back to the originating supplier lead.</span></div>
+      <div class="lane-step system"><b>Track supplier performance</b><span>Write supplier performance KPIs and periodic review metadata.</span></div>
+      <div class="lane-step system"><b>Link to order</b><span>Order shows supplier link visibility once sourced.</span></div>
+    </div>
+  </div>
+</div>
 
 <div class="section-block" style="margin-top:28px"><h2>Slide Diagrams</h2></div>
 <div class="slide"><div class="slide-title">Lead Workflow</div><div class="slide-sub">Turn captured contacts into quote-ready leads</div><div class="slide-flow"><div class="slide-node">Capture</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Follow-up</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Command Center</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Coverage</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Quote Ready</div></div><div class="slide-rules"><div class="slide-rule">No product coverage = No quote</div><div class="slide-rule">Disqualified = Dead end</div><div class="slide-rule">Compliance can block send later</div><div class="slide-rule">Waive / Defer requires reviewer reason</div></div></div>
 <div class="slide"><div class="slide-title">Quote Versioning</div><div class="slide-sub">Keep sent offers locked and traceable</div><div class="slide-flow"><div class="slide-node">Draft</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Sent <small style="opacity:.6">LOCKED</small></div><div class="slide-arrow">&rarr;</div><div class="slide-node">Accepted <small style="opacity:.6">LOCKED</small></div><div class="slide-arrow">&rarr;</div><div class="slide-node">Order Source</div></div><div class="slide-rules"><div class="slide-rule">current_version_id &ne; accepted_version_id</div><div class="slide-rule">Revision creates NEW version</div><div class="slide-rule">History preserved for audit</div><div class="slide-rule">Orders start from accepted_version_id only</div></div></div>
 <div class="slide"><div class="slide-title">Order Execution</div><div class="slide-sub">Turn an accepted quote into controlled execution</div><div class="slide-flow"><div class="slide-node">Actual Lines</div><div class="slide-arrow">&rarr;</div><div class="slide-node">First Document</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Packing</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Dispatch</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Close</div></div><div class="slide-rules"><div class="slide-rule">Actual lines can differ from quote lines &mdash; record reason</div><div class="slide-rule">Approve before any external send</div><div class="slide-rule">link_created &ne; provider delivered</div><div class="slide-rule">Each gate is sequential &mdash; no skipping</div></div></div>
-<div class="slide"><div class="slide-title">Finance &amp; Closeout</div><div class="slide-sub">Close only when all financial evidence is confirmed</div><div class="slide-flow"><div class="slide-node">Final Invoice &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Payment &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Reconciliation &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Archive &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Closed</div></div><div class="slide-rules"><div class="slide-rule">Final invoice &ne; proforma invoice</div><div class="slide-rule">Outstanding amount must be zero</div><div class="slide-rule">Finance sync is not automatic</div><div class="slide-rule">All 5 closeout checks must pass</div></div></div>`;
+<div class="slide"><div class="slide-title">Finance &amp; Closeout</div><div class="slide-sub">Close only when all financial evidence is confirmed</div><div class="slide-flow"><div class="slide-node">Final Invoice &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Payment &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Reconciliation &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Archive &#x2713;</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Closed</div></div><div class="slide-rules"><div class="slide-rule">Final invoice &ne; proforma invoice</div><div class="slide-rule">Outstanding amount must be zero</div><div class="slide-rule">Finance sync is not automatic</div><div class="slide-rule">All 5 closeout checks must pass</div></div></div>
+<div class="slide"><div class="slide-title">Growth Center</div><div class="slide-sub">One prioritized view of what needs attention across the business</div><div class="slide-flow"><div class="slide-node">Today Queue</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Revenue / Supplier / Research / Trade Events</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Pricing Intelligence</div><div class="slide-arrow">&rarr;</div><div class="slide-node">Human Reviews and Acts</div></div><div class="slide-rules"><div class="slide-rule">One primary action per recommendation</div><div class="slide-rule">Reuses existing tables &mdash; no parallel data model</div><div class="slide-rule">Nothing sends, prices, or activates automatically</div><div class="slide-rule">Also reachable via Lead Smart Actions and the Dashboard brief</div></div></div>`;
   }
 
 
@@ -4057,7 +4167,7 @@ flowchart LR
     <li>Lead detail: clicking a card opens PipelineDetailPanel in a right drawer without page navigation</li>
   </ul></div>
 </div>
-<div class="section-block"><h2>Supplier Mode (Sprint 41 — Supplier Journey Workflow)</h2>
+<div class="section-block"><h2>Supplier Mode</h2>
 <p>Supplier leads run a parallel journey to buyer leads on the same underlying data model (<code>leads</code>, <code>pipeline_stage_id</code>), strictly scoped by <code>lead_type</code> — there is no silent buyer fallback anywhere in the supplier path (save, pipeline resolver, or mobile capture defaults).</p>
 </div>
 <div class="doc-card-grid">
@@ -4086,8 +4196,8 @@ flowchart LR
     <span style="position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid #0f172a"></span>
   </div>
   <div class="guru-hero-text">
-    <h2>Setu Guru &mdash; Growth Center (Sprint 47)</h2>
-    <p>Setu Guru's primary surface is now <b>Growth Center</b> at <code>/growth-agent</code> &mdash; a first-class "Trade Growth Command Center," not a floating helper panel. It unifies the assistive capabilities built in Sprints 42&ndash;46 (ICP &amp; research, outreach &amp; reply intelligence, quote &amp; supplier RFQ assistance, trade-event intelligence) into six prioritized workspaces plus an executive business brief. The in-app widget/drawer still exists for route-aware help, but Growth Center is where operators go to see what needs attention across the whole business.</p>
+    <h2>Setu Guru &mdash; Growth Center</h2>
+    <p>Setu Guru's primary surface is now <b>Growth Center</b> at <code>/growth-agent</code> &mdash; a first-class "Trade Growth Command Center," not a floating helper panel. It unifies ICP &amp; research, outreach &amp; reply intelligence, quote &amp; supplier RFQ assistance, and trade-event intelligence into six prioritized workspaces plus an executive business brief. The in-app widget/drawer still exists for route-aware help, but Growth Center is where operators go to see what needs attention across the whole business.</p>
     <div class="guru-caps">
       <span class="guru-cap">Today Work Queue</span>
       <span class="guru-cap">Revenue Workspace</span>
@@ -4109,7 +4219,7 @@ flowchart LR
   </ul></div>
   <div class="doc-card border-green"><div class="doc-card-title">&#128176; Revenue</div><ul>
     <li>Portfolio-level quote follow-up queue: status, age, buyer/lead context, revenue impact, urgency</li>
-    <li>Direct route into the relevant quote or lead; invalid quote-to-lead lookups ("Lead not found") were removed in Sprint 47</li>
+    <li>Direct route into the relevant quote or lead; invalid quote-to-lead lookups ("Lead not found") have been fixed</li>
   </ul></div>
   <div class="doc-card border-purple"><div class="doc-card-title">&#128230; Supplier</div><ul>
     <li>Supplier verification readiness, document completion, RFQ response and open counts</li>
@@ -4117,12 +4227,12 @@ flowchart LR
     <li>Reuses existing supplier, RFQ, and compliance services &mdash; see Supplier Mode in the Pipeline topic</li>
   </ul></div>
   <div class="doc-card border-amber"><div class="doc-card-title">&#128270; Research &amp; Opportunity</div><ul>
-    <li>Reuses the Sprint 43 ICP, Opportunity Finder, and grounded research services</li>
+    <li>Reuses the ICP, Opportunity Finder, and grounded research services</li>
     <li>Opportunity matching, fit context, missing-information visibility, source-aware research signals, direct next actions</li>
     <li>Review-first &mdash; does not write to product, pricing, or compliance records automatically</li>
   </ul></div>
   <div class="doc-card border-teal"><div class="doc-card-title">&#127917; Trade Events</div><ul>
-    <li>Pre-show buyer prioritization and a post-show follow-up queue (Sprint 46)</li>
+    <li>Pre-show buyer prioritization and a post-show follow-up queue</li>
     <li>Trade-event summary generator and activity/approval audit trail</li>
   </ul></div>
   <div class="doc-card border-red"><div class="doc-card-title">&#128176; Pricing Intelligence</div><ul>
@@ -4135,16 +4245,16 @@ flowchart LR
 <div class="section-block"><h2>Lead Detail Smart Actions</h2>
 <p>Lead Detail now exposes compact Smart Actions instead of a permanent stack of Setu Guru controls: <b>Research</b>, <b>Draft outreach</b> (email/WhatsApp draft, copy, direct <code>mailto:</code>/<code>wa.me</code> handoff, save as draft activity), <b>Analyze reply</b>, <b>Quote readiness</b>, and <b>Supplier RFQ assistance</b>. Nothing is sent automatically.</p>
 </div>
-<div class="section-block"><h2>What Sprint 42&ndash;46 Introduced (now surfaced through Growth Center)</h2></div>
+<div class="section-block"><h2>Capability Areas Inside Growth Center</h2></div>
 <div class="tbl-wrap"><table>
-<thead><tr><th>Sprint</th><th>Capability</th><th>Where it surfaces now</th></tr></thead>
+<thead><tr><th>Capability Area</th><th>What it does</th><th>Where it surfaces</th></tr></thead>
 <tbody>
-<tr><td>42</td><td>Growth Agent Foundation &mdash; AI recommendations data model, recommendation generator service</td><td>Powers the <code>ai_recommendations</code> table behind Today and the Dashboard recommendations strip</td></tr>
-<tr><td>43</td><td>ICP Setup Wizard, org ICP profile storage, buyer/supplier Research Drawer, Opportunity Finder &amp; fit scoring</td><td>Research &amp; Opportunity workspace; org-level ICP config</td></tr>
-<tr><td>44</td><td>Outreach Generator, CRM-grounded personalization, AI drafts saved to activity history, Reply Analyzer, reply-to-stage recommendations</td><td>Lead Detail Smart Actions (Draft outreach, Analyze reply)</td></tr>
-<tr><td>45</td><td>Quote Assistant integration, quote readiness/risk panel, Supplier RFQ Assistant, supplier comparison engine, quote/RFQ approval guardrails</td><td>Revenue workspace (quote readiness) and Supplier workspace (RFQ assistance, offer comparison)</td></tr>
-<tr><td>46</td><td>Trade Event Meeting Assistant, pre-show prioritization, post-show follow-up queue, trade-event summary generator</td><td>Trade Events workspace</td></tr>
-<tr><td>47</td><td>Growth Center shell, Today/Revenue/Supplier/Research/Trade Event workspaces, Pricing Intelligence, suggested price lists, Lead Smart Actions, dashboard business brief</td><td>The unifying release &mdash; <code>/growth-agent</code></td></tr>
+<tr><td>Recommendations foundation</td><td>AI recommendations data model and recommendation generator service</td><td>Powers the <code>ai_recommendations</code> table behind Today and the Dashboard recommendations strip</td></tr>
+<tr><td>ICP &amp; research</td><td>ICP Setup Wizard, org ICP profile storage, buyer/supplier Research Drawer, Opportunity Finder &amp; fit scoring</td><td>Research &amp; Opportunity workspace; org-level ICP config</td></tr>
+<tr><td>Outreach &amp; reply intelligence</td><td>Outreach Generator, CRM-grounded personalization, AI drafts saved to activity history, Reply Analyzer, reply-to-stage recommendations</td><td>Lead Detail Smart Actions (Draft outreach, Analyze reply)</td></tr>
+<tr><td>Quote &amp; supplier RFQ assistance</td><td>Quote Assistant integration, quote readiness/risk panel, Supplier RFQ Assistant, supplier comparison engine, quote/RFQ approval guardrails</td><td>Revenue workspace (quote readiness) and Supplier workspace (RFQ assistance, offer comparison)</td></tr>
+<tr><td>Trade-event intelligence</td><td>Trade Event Meeting Assistant, pre-show prioritization, post-show follow-up queue, trade-event summary generator</td><td>Trade Events workspace</td></tr>
+<tr><td>Growth Center shell</td><td>Today/Revenue/Supplier/Research/Trade Event workspaces, Pricing Intelligence, suggested price lists, Lead Smart Actions, dashboard business brief</td><td>The unifying workspace &mdash; <code>/growth-agent</code></td></tr>
 </tbody></table></div>
 <div class="section-block"><h2>What Guru Does and Does Not Do</h2></div>
 <div class="tbl-wrap"><table>
@@ -4176,7 +4286,7 @@ flowchart LR
 <thead><tr><th>Route</th><th>Method</th><th>Auth</th><th>Purpose</th></tr></thead>
 <tbody>
 <tr><td><code>/api/setu-guru/health</code></td><td>GET</td><td>None</td><td>Checks the configured AI provider key is set. Returns {ok:true/false}. Used for the online/offline badge.</td></tr>
-<tr><td><code>/api/setu-guru/brain</code></td><td>POST</td><td>Session</td><td>Core inference. Accepts {messages, context, route} and streams AI response with route-aware system prompt injection (route-aware for <code>/growth-agent</code> as of Sprint 47).</td></tr>
+<tr><td><code>/api/setu-guru/brain</code></td><td>POST</td><td>Session</td><td>Core inference. Accepts {messages, context, route} and streams AI response with route-aware system prompt injection (route-aware for <code>/growth-agent</code>).</td></tr>
 <tr><td><code>/api/setu-guru/org-search</code> / <code>org-search-v2</code></td><td>POST</td><td>Session</td><td>Queries live org data (leads, quotes, orders, suppliers) for Guru context. Read-only &mdash; no mutations.</td></tr>
 <tr><td><code>/api/setu-guru/feedback</code></td><td>POST</td><td>Session</td><td>Stores thumbs-up/down feedback to <code>setu_guru_feedback</code>.</td></tr>
 <tr><td><code>/api/setu-guru/research</code></td><td>POST</td><td>Session</td><td>Live industry research. HS/HSN codes, tariffs, margin benchmarks. Powers the Research workspace.</td></tr>
