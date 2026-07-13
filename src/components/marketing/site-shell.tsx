@@ -140,7 +140,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.20em] text-slate-400">Company</p>
               <ul className="mt-4 space-y-3">
-                <li><FooterLink href="/training" active={isActive('/training')}>Product Overview</FooterLink></li>
+                <li><FooterLink href="/product-overview" active={isActive('/product-overview')}>Product Overview</FooterLink></li>
+                <li><FooterLink href="/training" active={isActive('/training')}>Setu Flow Academy</FooterLink></li>
                 <li><FooterLink href="/pricing" active={isActive('/pricing')}>Pricing</FooterLink></li>
                 <li><FooterLink href="/compare" active={isActive('/compare')}>Compare</FooterLink></li>
                 <li><FooterLink href="/roi-calculator" active={isActive('/roi-calculator')}>ROI Calculator</FooterLink></li>
