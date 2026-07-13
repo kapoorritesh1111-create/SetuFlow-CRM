@@ -8,7 +8,7 @@ Last updated: 2026-05-20
 
 In Orders Execution Cockpit v2, the **Actual Lines** stage lets an operator add a new actual buyer order line from live Catalog pricing without mutating the accepted quote version.
 
-This is the canonical behavior after the Sprint 18 production hardening pass: live Catalog products must come from the current workspace organization, selected Catalog rows must be re-verified on submit, and catalog-linked order lines must preserve pricing lineage.
+This is the canonical behavior: live Catalog products must come from the current workspace organization, selected Catalog rows must be re-verified on submit, and catalog-linked order lines must preserve pricing lineage.
 
 ## Current fixed behavior
 

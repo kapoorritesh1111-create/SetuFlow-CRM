@@ -46,7 +46,7 @@ export const PRIMARY_NAV_LABELS: Record<string, string> = {
 };
 
 export const UTILITY_NAV_LABELS: Record<string, string> = {
-  '/workspace': 'SMC',
+  '/smc': 'SMC',
   '/admin/organization': 'Admin',
 };
 

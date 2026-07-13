@@ -10,7 +10,7 @@ Setu Guru behavior on this route is guidance and routing only — it must not ad
 
 Use Orders after quote acceptance to manage execution readiness, documents, trade requirements, packing, freight, shipment, dispatch invoice, payment, and closeout. Orders should make it clear that an accepted quote is commercially important, but it is not the same as being ready to release, dispatch, invoice, or close execution.
 
-## Sprint 18 active truth: Orders Execution Cockpit v2
+## Orders Execution Cockpit v2 — current behavior
 
 Orders is now the **Orders Execution Cockpit**, not a Quote clone. It is the execution workspace created from an accepted quote version.
 
@@ -55,7 +55,7 @@ Required approvals and boundaries:
 
 Setu Guru may explain blockers, draft checklists, and identify what to review. It must not silently approve, send, waive, close, delete, mutate accepted commercial truth, sync finance, book freight, or claim provider delivery.
 
-### Sprint 18 Setu Guru Q&A examples
+### Setu Guru Q&A examples
 
 **What is blocking this order?** Check the Action Stack and blocker list. Separate accepted-quote/source issues, actual line approval, buyer document approval, packing approval, freight payload readiness, processing/QC, delivery note, final invoice, finance queue, payment/reconciliation, and archive blockers.
 
@@ -77,13 +77,13 @@ Setu Guru may explain blockers, draft checklists, and identify what to review. I
 
 **What do the KPI filters show?** They show counts derived from currently loaded order data only. If data cannot be computed, the app should show zero or not available honestly.
 
-## Sprint 8.1B channel-aware tracked links
+## Channel-aware tracked links
 
-Sprint 8.1B keeps Orders inside Sprint 8 and tightens the document send workflow.
+This tightens the document send workflow.
 
-New behavior:
+Behavior:
 
-1. The `/orders` workspace continues to use the focused Sprint 8.1 UI shell.
+1. The `/orders` workspace uses a focused Orders UI shell.
 2. Preview / PDF opens an existing tracked preview link when available.
 3. If no preview link exists, Preview / PDF creates a preview-only tracked link and redirects to `/order-documents/preview/[token]`.
 4. Email channel defaults only to the lead email.
@@ -99,9 +99,9 @@ Important rule:
 
 > Do not say an order document was delivered by email or WhatsApp unless a transport provider confirms delivery. Until then, it is a tracked link created for that channel.
 
-## Sprint 8.1A Orders preview/send CTA fix
+## Orders preview/send CTA behavior
 
-Sprint 8.1A fixed placeholder buttons in the Orders page.
+Orders uses live preview/send CTAs, not placeholder buttons.
 
 Behavior:
 
@@ -113,9 +113,9 @@ Behavior:
 6. The route still uses `/order-documents/preview/[token]` as the source for browser print/PDF.
 7. Quote history remains untouched.
 
-## Sprint 8Z print PDF action and Admin T&C placeholder
+## Print PDF action and Admin T&C placeholder
 
-Sprint 8Z adds the first user-facing PDF path and an Admin visibility surface for future document terms management.
+The first user-facing PDF path and an Admin visibility surface for future document terms management.
 
 New behavior:
 
@@ -132,7 +132,7 @@ New behavior:
 
 Important limitation:
 
-- Sprint 8Z does not add a server-side PDF binary generator yet. Users can choose **Download / Print PDF** and use the browser print dialog to save the preview as PDF.
+- There is no server-side PDF binary generator yet. Users can choose **Download / Print PDF** and use the browser print dialog to save the preview as PDF.
 - The Admin page is a safe visibility/readiness page. It is not the final T&C editor.
 
 Future Admin T&C editor requirements remain:
@@ -154,9 +154,9 @@ Future Admin T&C editor requirements remain:
 - approval workflow;
 - preview before publish.
 
-## Sprint 8Y v3 document body renderer and default terms profiles
+## v3 document body renderer and default terms profiles
 
-Sprint 8Y implements the approved v3 document direction from the reviewed sample pack. The preview route now renders real document bodies instead of only showing tracking metadata.
+The approved v3 document direction from the reviewed sample pack. The preview route renders real document bodies instead of only showing tracking metadata.
 
 Approved sample reference:
 
@@ -191,9 +191,9 @@ The terms are default operational templates and not final legal/tax advice. They
 
 Setu Guru must explain that every sendable document should include default industry-standard terms based on organization country and document type when an org is created. Guru must also make clear that Admin-managed templates will override defaults later.
 
-## Sprint 8X order document send history and preview routes
+## Order document send history and preview routes
 
-Sprint 8X adds the missing document-send foundation below the clean Sprint 8W Orders UI.
+The document-send foundation sits below the clean Orders UI.
 
 Behavior:
 
@@ -212,9 +212,9 @@ Setu Guru should distinguish between:
 
 If a user asks “did we send this again?” Guru should look for send-history rows, not only parent `sent_at`.
 
-## Sprint 8W clean Orders UI pattern
+## Clean Orders UI pattern
 
-Sprint 8W pivots the Orders UI back to the approved walkthrough pattern from the uploaded HTML preview: one queue, one open order, one compact stage strip, and one active stage panel.
+The Orders UI follows the approved walkthrough pattern: one queue, one open order, one compact stage strip, and one active stage panel.
 
 New behavior:
 
@@ -255,9 +255,9 @@ Target document behavior:
 
 A single document may have many sends to many recipients through `order_document_sends`.
 
-## Sprint 8U industry-neutral trade requirement search and attach
+## Industry-neutral trade requirement search and attach
 
-Sprint 8U introduced order-stage trade requirements using `trade_requirements` and `trade_requirement_sources`. After Sprint 8W/8X/8Y/8Z, these should be presented inside the relevant active stage panel or drawer, not as a full-width permanent section below Orders.
+Order-stage trade requirements use `trade_requirements` and `trade_requirement_sources`. These should be presented inside the relevant active stage panel or drawer, not as a full-width permanent section below Orders.
 
 Rules remain:
 
@@ -267,9 +267,9 @@ Rules remain:
 - Order execution blockers use order-stage `trade_requirements`.
 - Do not auto-waive, auto-approve, or advance order stages.
 
-## Sprint 8T packing, freight, dispatch, and closeout UI
+## Packing, freight, dispatch, and closeout UI
 
-Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and finance queue records. In Sprint 18, active queue truth is `finance_integration_events` and `freight_booking_events` with pending adapters. That data should appear inside the relevant stage panel or drawer:
+Logistics readiness data comes from `packing_plans`, `freight_rate_requests`, `freight_rate_quotes`, `shipments`, `order_documents`, and finance queue records. Active queue truth is `finance_integration_events` and `freight_booking_events` with pending adapters. That data should appear inside the relevant stage panel or drawer:
 
 - Packing / Freight stage shows packing sheet, freight request, and selected quote.
 - Processing stage shows pick/pack/QC and packing list readiness.
@@ -277,9 +277,9 @@ Sprint 8T introduced logistics readiness data from `packing_plans`, `freight_rat
 - Dispatch / Invoice stage shows dispatch invoice evidence and send status.
 - Paid & Closed stage shows finance queue/manual reference, payment, receipt, archive, and closeout.
 
-## Sprint 8S order document gates and send tracking
+## Order document gates and send tracking
 
-Sprint 8S added the first structured order-document send gate on top of the stage shell. Sprint 8X extends that with child send history, Sprint 8Y adds v3 document bodies, and Sprint 8Z adds the print/PDF path.
+The order-document send gate sits on top of the stage shell, extended with child send history, v3 document bodies, and the print/PDF path.
 
 Behavior:
 
@@ -295,9 +295,9 @@ Behavior:
 7. The current send action records structured send state but does not yet guarantee external email/WhatsApp delivery.
 8. Quote history is not mutated.
 
-## Sprint 8R structured Orders shell
+## Structured Orders shell
 
-Sprint 8R made the Orders workspace structured-order first. Sprint 8W/8X/8Y/8Z keep that but simplify the user-facing shell.
+The Orders workspace is structured-order first, with a simplified user-facing shell.
 
 Protected behavior:
 
@@ -407,7 +407,7 @@ Setu Guru may explain what a human reviewer should check, but it must not perfor
 - marking shipment dispatched or delivered;
 - queueing finance, retrying queue events, marking manual finance/freight references complete, or closing payment/receipt without human action.
 
-## Sprint 8.1B smoke-check checklist
+## Channel-aware tracked links smoke-check checklist
 
 Use this checklist before the next Orders pass:
 
@@ -422,7 +422,7 @@ Use this checklist before the next Orders pass:
 - Does quote history remain untouched?
 - Are quote/compliance/catalog/lead protected flows untouched?
 
-## Sprint 8Z smoke-check checklist
+## Print PDF smoke-check checklist
 
 Use this checklist before the next Orders pass:
 
@@ -436,7 +436,7 @@ Use this checklist before the next Orders pass:
 - Does quote history remain untouched?
 - Are quote/compliance/catalog/lead protected flows untouched?
 
-## Sprint 8Y smoke-check checklist
+## v3 document body smoke-check checklist
 
 Use this checklist before the next Orders pass:
 
@@ -453,7 +453,7 @@ Use this checklist before the next Orders pass:
 - Does quote history remain untouched?
 - Are quote/compliance/catalog/lead protected flows untouched?
 
-## Sprint 8X smoke-check checklist
+## Document send history smoke-check checklist
 
 Use this checklist before the next Orders pass:
 

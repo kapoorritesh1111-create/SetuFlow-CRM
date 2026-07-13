@@ -5,6 +5,10 @@
     {
       "path": "/api/cron/analytics-snapshot",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/generate-changelog-drafts",
+      "schedule": "0 8 * * 1"
     }
   ]
 }

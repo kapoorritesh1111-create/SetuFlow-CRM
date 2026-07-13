@@ -1,4 +1,4 @@
-# Sprint 18 integration-ready help
+# Orders integration-ready help
 
 Route: `/orders`
 Owner: Setu Guru knowledge base
@@ -6,7 +6,7 @@ Last updated: 2026-05-20
 
 ## Active product truth
 
-Sprint 18 implements the Orders Execution Cockpit v2 direction. Orders is an execution cockpit, not a quote clone.
+Orders implements the Execution Cockpit v2 direction — an execution cockpit, not a quote clone.
 
 Finance and Freight are integration-ready queues only. No live Xero, QuickBooks, Tally, Flexport, Freightos, DHL, carrier booking, bank feed, payment processor, or WhatsApp Business API integration is live.
 

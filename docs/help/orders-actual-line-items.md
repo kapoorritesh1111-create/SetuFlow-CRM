@@ -4,9 +4,9 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-11
 
-## Sprint 8R purpose
+## Purpose
 
-Sprint 8R adds the missing actual line-item workspace to the approved Orders redesign.
+The actual line-item workspace shows the buyer commitment before internal approval, on top of the approved Orders redesign.
 
 The Orders workspace must show the buyer commitment before internal approval:
 

@@ -873,6 +873,61 @@ const Docs = (() => {
     <li>Both dashboards share the same underlying data model but filter by contact type</li>
     <li>Executive command center: KPIs, market coverage map, priority actions, activity feed</li>
   </ul></div>
+</div>
+
+<div class="mod-group-label">Supporting Modules &amp; Utility Routes</div>
+<p style="font-size:12.5px;color:#64748b;margin:4px 0 12px">These routes have their own full documentation topic elsewhere in this hub (linked below) but didn't have a Module Reference entry — added so no shipped route is invisible from this page.</p>
+<div class="doc-card-grid">
+  <div class="doc-card mod-card--purple"><div class="doc-card-title">&#10024; AI Suggestions</div><ul>
+    <li><code>/ai-suggestions</code> — AI-drafted follow-up emails, quote cover notes, compliance evidence summaries, all requiring explicit operator approval. See the AI Suggestions topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--teal"><div class="doc-card-title">&#9989; Compliance</div><ul>
+    <li><code>/compliance</code> — Evidence upload, waive/defer actions, document requirement rules, quote send gate. See the Compliance topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--blue"><div class="doc-card-title">&#128231; Contact Exchange</div><ul>
+    <li><code>/contact-exchange/scan</code> — Business card scan capture. <code>/contact-exchange/vcard</code> — Smart vCard identity editor and preview. See Mobile Workspace and Profile &amp; My Card topics.</li>
+  </ul></div>
+  <div class="doc-card mod-card--navy"><div class="doc-card-title">&#9878; Contracts</div><ul>
+    <li><code>/contracts</code> — Contract lifecycle from draft to closeout: status progression, commercial lock, audit trail. See the Contracts topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--slate"><div class="doc-card-title">&#128172; Order &amp; Dispatch Discussions</div><ul>
+    <li><code>/order-discussions/[orderId]</code> and <code>/dispatch-discussions/[shipmentId]</code> — entity-linked Team Chat threads tied to a specific order or shipment. See Team Chat &amp; Discussions.</li>
+  </ul></div>
+  <div class="doc-card mod-card--orange"><div class="doc-card-title">&#128279; Integration Hub</div><ul>
+    <li><code>/integrations</code> — status overview of governed connectors (Email, Documents, AI, vCard, Trade Events, Tasks). See the Integration Hub topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--green"><div class="doc-card-title">&#128179; Price Lists</div><ul>
+    <li><code>/price-lists</code> — standalone price-list management, part of Catalog Sharing. See the Products &amp; Catalog topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--purple"><div class="doc-card-title">&#128100; Profile &amp; My Card</div><ul>
+    <li><code>/profile</code> — user profile basics, avatar manager, vCard identity editor. See the Profile &amp; My Card topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--teal"><div class="doc-card-title">&#128230; Catalog</div><ul>
+    <li><code>/catalog</code> — catalog sharing workspace (distinct from <code>/products</code>, the operating product catalog). See the Products &amp; Catalog topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--indigo"><div class="doc-card-title">&#10024; Setu Guru (legacy launcher)</div><ul>
+    <li><code>/setu-guru</code> — a context-aware launcher page that opens the Setu Guru drawer with route-specific copy (e.g. Trade Events context). Growth Center at <code>/growth-agent</code> is the primary Setu Guru surface now; this route is a lightweight entry point, not a separate workspace. See the Setu Guru AI topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--amber"><div class="doc-card-title">&#127919; Guided Trial</div><ul>
+    <li><code>/trial</code> — two-lead capture-to-dispatch guided trial workspace. See the Guided Trial section of the Trade Show Trial topic.</li>
+  </ul></div>
+  <div class="doc-card mod-card--slate"><div class="doc-card-title">&#9989; Approval Action Handlers</div><ul>
+    <li><code>/approval-queue</code> and <code>/approval-send</code> are not separate workspaces — they're server-action redirect targets for the quote approve/reject and send decisions made from <code>/quotes</code>. They always redirect back into Quotes; there is nothing to browse at these routes directly.</li>
+  </ul></div>
+</div>
+
+<div class="mod-group-label">Public-Facing Pages (no login required)</div>
+<div class="doc-card-grid">
+  <div class="doc-card mod-card--teal"><div class="doc-card-title">&#128218; Customer Help Center</div><ul>
+    <li><code>/help</code> — public knowledge base, grouped by category. <code>/help/[slug]</code> for an individual article.</li>
+    <li>Backed by <code>kb_articles</code> (draft → review → published). Only <code>status='published'</code> rows with a <code>published_at</code> are visible to customers.</li>
+    <li>Authored and published internally from <code>/smc/kb</code>.</li>
+  </ul></div>
+  <div class="doc-card mod-card--blue"><div class="doc-card-title">&#128225; Customer Changelog</div><ul>
+    <li><code>/changelog</code> — public "what's new" page.</li>
+    <li>Backed by <code>smc_changelog</code>, filtered to <code>is_client_facing=true</code> with a <code>published_at</code>.</li>
+    <li>A weekly cron (<code>/api/cron/generate-changelog-drafts</code>) auto-drafts an internal-only entry per newly resolved sprint from <code>sprint_issues</code> — it never publishes automatically. A human rewrites the draft into customer language and publishes from <code>/smc/changelog</code>.</li>
+  </ul></div>
 </div>`;
 
 

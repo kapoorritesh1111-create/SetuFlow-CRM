@@ -28,6 +28,7 @@ const NAV_GROUPS: NavGroup[] = [
     { id: "incidents", path: "/smc/incidents", icon: "!", label: "Incidents" },
     { id: "deploy", path: "/smc/deploy", icon: "Deploy", label: "Deployments" },
     { id: "changelog", path: "/smc/changelog", icon: "Log", label: "Changelog" },
+    { id: "kb", path: "/smc/kb", icon: "Docs", label: "Knowledge Base" },
     { id: "runbooks", path: "/smc/runbooks", icon: "Docs", label: "Runbooks" },
     { id: "protocol", path: "/smc/protocol", icon: "Ops", label: "Protocol" },
   ] },

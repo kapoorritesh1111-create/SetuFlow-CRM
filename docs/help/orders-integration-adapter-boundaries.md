@@ -4,7 +4,7 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-20
 
-## Sprint 18 active boundary
+## Active integration boundary
 
 The active Orders UI exposes Finance and Freight as pending-adapter queues only.
 
@@ -16,9 +16,9 @@ The active Orders UI exposes Finance and Freight as pending-adapter queues only.
 
 No live Xero, QuickBooks, Tally, Flexport, Freightos, DHL, carrier booking, bank feed, payment processor, or WhatsApp Business API integration is live.
 
-## Sprint 8P purpose
+## Purpose
 
-Sprint 8P defines safe freight and finance adapter boundaries for the additive Orders execution workflow.
+Safe freight and finance adapter boundaries for the additive Orders execution workflow.
 
 This pass does **not** turn on external integrations by default. It creates explicit interfaces, disabled adapters, and pending queue events so future integrations can plug into the workflow without changing core Orders logic or causing regression.
 
@@ -54,7 +54,7 @@ Freight adapter methods are defined as:
 - `track()`
 - `documents()`
 
-Sprint 8P uses a disabled adapter by default. It returns safe disabled payloads and performs no carrier booking, no live quote request, no tracking call, and no document fetch.
+The adapter is disabled by default. It returns safe disabled payloads and performs no carrier booking, no live quote request, no tracking call, and no document fetch.
 
 ## Finance boundary
 
@@ -81,7 +81,7 @@ Finance adapter methods are defined as:
 - `voidInvoice()`
 - `syncCustomer()`
 
-Sprint 8P uses a disabled adapter by default. It creates no external invoice, payment, customer, or accounting mutation.
+The adapter is disabled by default. It creates no external invoice, payment, customer, or accounting mutation.
 
 ## Setu Guru policy
 

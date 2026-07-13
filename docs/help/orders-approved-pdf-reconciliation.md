@@ -4,7 +4,7 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-11
 
-## Sprint 8T decision
+## Reconciliation decision
 
 Some historical quotes have a correct buyer-facing approved PDF in Lead Command Center, but the stored `quote_versions`, `quote_version_line_items`, or contract line snapshots may not match the sent PDF.
 
