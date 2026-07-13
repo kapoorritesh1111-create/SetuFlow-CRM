@@ -1,0 +1,37 @@
+name: Apply Product Overview UX Polish
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/apply-product-overview-ux-polish.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-polish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply Product Overview UX polish
+        run: python scripts/apply-product-overview-ux-polish.py
+
+      - name: Commit updated Product Overview
+        run: |
+          if git diff --quiet; then
+            echo "No changes required."
+            exit 0
+          fi
+          git config user.name "Setu Flow Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/components/marketing/product-overview-experience.tsx
+          git commit -m "polish: simplify product overview learning experience"
+          git push origin main
