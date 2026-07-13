@@ -2,163 +2,91 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { SiteShell } from '@/components/marketing/site-shell';
 
-const stages = [
-  { id: 'discover', label: 'Discover', title: 'Find the right opportunities', text: 'Use ICP matching, Growth Center recommendations, market intelligence, and Setu Guru research to identify buyers and suppliers worth pursuing.', accent: 'emerald' },
-  { id: 'capture', label: 'Capture', title: 'Capture leads anywhere', text: 'Collect leads from trade shows, business cards, QR codes, WhatsApp, website forms, email imports, or fast manual entry.', accent: 'blue' },
-  { id: 'research', label: 'Research', title: 'Know before you connect', text: 'Bring company, contact, product, market, import-export, certification, supplier, and competitor context into one decision-ready view.', accent: 'violet' },
-  { id: 'communicate', label: 'Communicate', title: 'Keep every conversation connected', text: 'Coordinate email, WhatsApp, LinkedIn, calls, meetings, tasks, reminders, and follow-ups from one shared timeline.', accent: 'fuchsia' },
-  { id: 'convert', label: 'Convert', title: 'Turn interest into controlled commercial action', text: 'Build quotes, compare suppliers, manage price lists, protect margin, route approvals, and track every buyer outcome.', accent: 'orange' },
-  { id: 'execute', label: 'Execute', title: 'Deliver with confidence', text: 'Move accepted business into orders, documents, packing, freight, dispatch, shipment tracking, and proof of delivery.', accent: 'cyan' },
-  { id: 'grow', label: 'Grow', title: 'Learn what is working', text: 'Use funnel analytics, pipeline movement, trade-show ROI, supplier performance, pricing intelligence, and Setu Guru recommendations.', accent: 'rose' },
-] as const;
+type Panel = {
+  number: number;
+  title: string;
+  eyebrow?: string;
+  description: string;
+  bullets?: string[];
+  stats?: Array<[string, string]>;
+  accent?: 'navy' | 'teal' | 'blue';
+  visual: 'hero' | 'journey' | 'workspaces' | 'discover' | 'capture' | 'relationship' | 'research' | 'communication' | 'catalog' | 'vcard' | 'commercial' | 'supplier' | 'orders' | 'analytics' | 'integrations' | 'security';
+};
 
-const workspaceCards = [
-  ['Lead Workspace', 'Buyer and supplier relationships, tasks, notes, products, documents, communications, and next actions.'],
-  ['Catalog & Price Lists', 'Manage categories, products, collections, market-specific price lists, currency views, and tracked sharing.'],
-  ['Digital Business Card', 'Share your vCard, company profile, catalog, price list, website, and QR identity from one branded experience.'],
-  ['Commercial Workspace', 'Create quotes, compare suppliers, review pricing, protect margins, manage approvals, and record outcomes.'],
-  ['Supplier Workspace', 'Capture, verify, compare, approve, and manage suppliers, RFQs, documents, capabilities, and performance.'],
-  ['Order Execution', 'Coordinate documents, packing, freight, dispatch, shipment milestones, readiness, ownership, and proof.'],
-  ['Analytics & Insights', 'Understand conversion, value, movement, bottlenecks, team performance, event ROI, and growth signals.'],
-  ['Setu Guru', 'Research, communicate, price, compare, guide, recommend, and explain across the entire workflow—with human approval.'],
+const panels: Panel[] = [
+  { number: 1, title: 'Welcome — The Big Picture', description: 'One platform. Every step of global trade.', stats: [['10K+', 'Active users'], ['80+', 'Countries'], ['25K+', 'Companies'], ['$2B+', 'Trade value']], accent: 'navy', visual: 'hero' },
+  { number: 2, title: 'Business Journey — End to End', description: 'A connected workflow built for importers and exporters.', bullets: ['Discover', 'Capture', 'Research', 'Convert', 'Execute', 'Grow'], visual: 'journey' },
+  { number: 3, title: 'Connected Workspaces', description: 'Everything your team needs, in one connected platform.', bullets: ['Lead Workspace', 'Supplier Workspace', 'Commercial Workspace', 'Order Workspace', 'Catalog & Price Lists', 'Analytics & Insights', 'Setu Guru'], visual: 'workspaces' },
+  { number: 4, title: 'Discover Opportunities', description: 'AI-powered discovery to find the right buyers, suppliers, and markets.', bullets: ['AI Opportunity Discovery', 'Growth Center', 'ICP Builder', 'Market Intelligence', 'Competitor Insights'], visual: 'discover' },
+  { number: 5, title: 'Capture Leads — Anywhere', description: 'Capture leads from any source, at any time, on any device.', bullets: ['Trade Shows', 'Business Card Scan', 'QR Capture', 'Manual Entry', 'Website Forms', 'WhatsApp', 'Email Import'], visual: 'capture' },
+  { number: 6, title: 'Relationship Workspace', description: 'Everything about your buyer or supplier in one place.', bullets: ['Timeline & Activities', 'Contacts & Companies', 'Tasks & Follow-ups', 'Notes & Documents', 'Products of Interest', 'Communication History'], visual: 'relationship' },
+  { number: 7, title: 'Research & Intelligence', description: 'Know before you reach out with deeper company and market intelligence.', bullets: ['Buyer & Company Insights', 'Import / Export Intelligence', 'Product Intelligence', 'Supplier Intelligence', 'Certifications', 'Market News'], visual: 'research' },
+  { number: 8, title: 'Communication Hub', description: 'One timeline. Every conversation. Never miss a follow-up.', bullets: ['Email', 'WhatsApp', 'LinkedIn', 'Calls & Meetings', 'Tasks', 'Calendar Sync'], visual: 'communication' },
+  { number: 9, title: 'Catalog & Price Lists', description: 'Create, manage, and share catalogs and market-specific price lists.', bullets: ['Product Catalog', 'Categories', 'Collections', 'Market Prices', 'Currency Views', 'Tracked Sharing'], visual: 'catalog' },
+  { number: 10, title: 'Digital Business Card & Identity', description: 'Share your professional identity in seconds.', bullets: ['Digital vCard', 'Company Profile', 'QR Code', 'WhatsApp Share', 'Email Share', 'Catalog & Price List'], visual: 'vcard' },
+  { number: 11, title: 'Commercial Workspace', description: 'Create, compare, approve, and win more deals.', bullets: ['Quote Builder', 'Pricing Intelligence', 'RFQs', 'Supplier Comparison', 'Margin Analysis', 'Approvals'], visual: 'commercial' },
+  { number: 12, title: 'Supplier Workspace', description: 'Build strong supplier relationships with verification and performance visibility.', bullets: ['Supplier Capture', 'Verification', 'Compliance', 'Documents', 'RFQ / Cost Requests', 'Preferred Suppliers'], visual: 'supplier' },
+  { number: 13, title: 'Order Execution', description: 'From confirmation to delivery, manage every step.', bullets: ['Orders', 'Documents', 'Packing & Labeling', 'Freight & Shipping', 'Dispatch', 'Shipment Timeline'], visual: 'orders' },
+  { number: 14, title: 'Analytics & Insights', description: 'Real-time insights to grow revenue and improve performance.', stats: [['$2.45M', 'Pipeline value'], ['312', 'Qualified'], ['32%', 'Win rate'], ['28', 'Orders won']], visual: 'analytics' },
+  { number: 15, title: 'Integrations', description: 'Connect Setu Flow with the tools you already use.', bullets: ['Outlook', 'Gmail', 'WhatsApp Business', 'Google Calendar', 'Supabase', 'More integrations'], visual: 'integrations' },
+  { number: 16, title: 'Security & Trust', description: 'Enterprise-grade security you can trust.', bullets: ['SOC 2 Type II', 'GDPR Compliant', 'Role-based access', 'Data encryption', 'Audit logs', 'Backup & recovery'], visual: 'security' },
 ];
 
-const shareItems = ['Digital business card', 'Company profile', 'Product catalog', 'Market price list', 'Selected collection', 'Website and social links'];
+function Badge({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex rounded-full bg-[#0b1f4f] px-2.5 py-1 text-[10px] font-black text-white shadow-sm">{children}</span>;
+}
 
-function StageIcon({ index }: { index: number }) {
-  const symbols = ['⌕', '+', '◎', '◌', '▤', '▣', '↗'];
-  return <span aria-hidden="true" className="text-xl font-black">{symbols[index]}</span>;
+function MiniCard({ title, value }: { title: string; value?: string }) {
+  return <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-[0_4px_14px_rgba(15,23,42,.04)]"><p className="text-[10px] font-black text-slate-900">{title}</p>{value ? <p className="mt-1 text-[10px] text-teal-700">{value}</p> : <div className="mt-2 h-1.5 rounded-full bg-slate-100"><div className="h-1.5 w-2/3 rounded-full bg-teal-500" /></div>}</div>;
+}
+
+function Visual({ panel }: { panel: Panel }) {
+  const card = 'rounded-xl border border-slate-200 bg-white p-2 shadow-[0_4px_14px_rgba(15,23,42,.04)]';
+  switch (panel.visual) {
+    case 'hero':
+      return <div className="relative h-full min-h-[180px] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_70%_30%,rgba(59,130,246,.18),transparent_35%),linear-gradient(180deg,#f8fbff,#eef7ff)] p-4"><div className="absolute right-4 top-4 h-24 w-24 rounded-full border border-blue-200 bg-blue-50" /><div className="absolute bottom-7 right-8 flex items-end gap-2"><div className="h-9 w-20 rounded-t bg-[#0f2f63]"/><div className="h-14 w-10 rounded-t bg-teal-600"/><div className="h-7 w-14 rounded bg-slate-300"/></div><div className="relative max-w-[58%]"><h3 className="text-2xl font-black leading-tight text-[#0b1f4f]">One Platform.<br/>Every Step of<br/><span className="text-teal-600">Global Trade.</span></h3><p className="mt-3 text-xs leading-5 text-slate-600">From first contact to final delivery.</p></div></div>;
+    case 'journey':
+      return <div className="grid grid-cols-6 gap-1.5">{panel.bullets?.map((item, i) => <div key={item} className="text-center"><div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-xs font-black text-teal-700">{i + 1}</div><p className="mt-1 text-[9px] font-bold text-slate-700">{item}</p></div>)}</div>;
+    case 'workspaces':
+      return <div className="grid grid-cols-4 gap-2">{panel.bullets?.map((item) => <MiniCard key={item} title={item} />)}</div>;
+    case 'discover':
+      return <div className="space-y-2">{['FreshMart LLC', 'GreenFoods GmbH', 'HealthyLife UK', 'EuroFoods BV'].map((name, i) => <div key={name} className={`${card} flex items-center justify-between`}><div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-slate-200"/><div><p className="text-[10px] font-bold">{name}</p><p className="text-[9px] text-slate-400">Buyer opportunity</p></div></div><span className="text-[9px] font-bold text-emerald-600">Match {92-i*4}%</span></div>)}</div>;
+    case 'capture':
+      return <div className="grid grid-cols-[.9fr_1.1fr] gap-3"><div className="rounded-[1.5rem] border-[5px] border-slate-900 bg-white p-3 shadow-lg"><p className="text-[10px] font-black">New Lead Captured</p><div className="mt-3 h-8 rounded-lg bg-slate-100"/><div className="mt-2 space-y-1.5">{[1,2,3,4].map(i => <div key={i} className="h-2 rounded bg-slate-100"/>)}</div><button className="mt-4 w-full rounded-lg bg-teal-600 py-2 text-[9px] font-bold text-white">Save Lead</button></div><div className="space-y-2">{['Business Card','WhatsApp','Web Form','Email Import','Manual Entry'].map(x => <MiniCard key={x} title={x}/>)}</div></div>;
+    case 'relationship':
+      return <div className="grid grid-cols-[1.3fr_.7fr] gap-3"><div className="space-y-2">{['WhatsApp message','Email opened','Call logged','Meeting scheduled'].map(x => <MiniCard key={x} title={x}/>)}</div><div className={`${card}`}><p className="text-[10px] font-black">Next Action</p><p className="mt-2 text-[10px] text-slate-600">Follow up call</p><p className="text-[9px] text-slate-400">Tomorrow, 10:00 AM</p><div className="mt-3 h-1.5 rounded bg-slate-100"><div className="h-1.5 w-4/5 rounded bg-teal-500"/></div></div></div>;
+    case 'research':
+      return <div className={`${card} h-full`}><div className="flex gap-2 border-b border-slate-100 pb-2 text-[9px] font-bold text-slate-500"><span className="text-teal-700">Overview</span><span>Trade Data</span><span>Suppliers</span><span>Insights</span></div><div className="mt-3 rounded-xl bg-teal-50 p-3"><p className="text-[10px] font-black text-teal-800">AI Summary by Setu Guru</p><p className="mt-2 text-[10px] leading-4 text-slate-600">Strong buyer profile with active demand, supplier history, and relevant market signals.</p></div></div>;
+    case 'communication':
+      return <div className="grid grid-cols-[.8fr_1.2fr] gap-3"><div className="space-y-2">{['Email','WhatsApp','LinkedIn','Calls','Meetings'].map(x => <MiniCard key={x} title={x}/>)}</div><div className="space-y-2">{['Product catalog shared','Price list sent','LinkedIn accepted','Call logged'].map((x,i) => <div key={x} className={`${card} ${i===0?'bg-emerald-50':''}`}><p className="text-[10px] font-bold">{x}</p><p className="text-[9px] text-slate-400">Today</p></div>)}</div></div>;
+    case 'catalog':
+      return <div className="grid grid-cols-[1.2fr_.8fr] gap-3"><div className="grid grid-cols-4 gap-2">{['Dry Fruits','Spices','Dates','Snacks'].map(x => <div key={x} className={card}><div className="h-12 rounded-lg bg-gradient-to-br from-amber-100 to-orange-200"/><p className="mt-2 text-[9px] font-bold">{x}</p></div>)}</div><div className={`${card}`}><p className="text-[10px] font-black">Dubai Price List</p>{['Almonds','Pistachios','Cashews','Walnuts'].map((x,i)=><div key={x} className="mt-2 flex justify-between text-[9px]"><span>{x}</span><span className="font-bold">${(6.45+i*.8).toFixed(2)}</span></div>)}</div></div>;
+    case 'vcard':
+      return <div className="grid grid-cols-[1.1fr_.9fr] gap-3"><div className="rounded-2xl border border-teal-200 bg-white p-3 shadow-lg"><div className="flex items-center gap-2"><Image src="/setu-guru/guru-avatar-128.png" alt="" width={34} height={34} className="h-8 w-8 rounded-full"/><div><p className="text-[10px] font-black">Ritesh Kapoor</p><p className="text-[9px] text-slate-500">VP Sales & Operations</p></div></div><div className="mt-3 space-y-1 text-[9px] text-slate-600"><p>+91 510 123 4567</p><p>ritesh@setuflow.com</p><p>Dubai, UAE</p></div></div><div className={`${card} flex flex-col items-center justify-center`}><div className="grid h-20 w-20 grid-cols-5 gap-1 bg-white p-1">{Array.from({length:25}).map((_,i)=><span key={i} className={i%3===0||i%4===0?'bg-slate-900':'bg-white'}/>)}</div><p className="mt-2 text-[9px] font-bold">Share your card</p></div></div>;
+    case 'commercial':
+      return <div className={`${card}`}><div className="flex items-start justify-between"><div><p className="text-[10px] text-slate-400">Quote Q-0305-117</p><p className="mt-1 text-xl font-black text-[#0b1f4f]">$125,430</p></div><div className="rounded-lg bg-emerald-50 p-2 text-center"><p className="text-[9px] text-slate-500">Win Probability</p><p className="text-sm font-black text-emerald-600">75%</p></div></div><div className="mt-4 grid grid-cols-3 gap-2"><MiniCard title="Items" value="12"/><MiniCard title="Margin" value="22%"/><MiniCard title="Valid Till" value="25 May"/></div><div className="mt-4 flex items-center justify-between">{['Draft','Sent','Viewed','Revised','Approved'].map((x,i)=><div key={x} className="text-center"><span className={`mx-auto block h-3 w-3 rounded-full ${i<4?'bg-blue-600':'border border-blue-500 bg-white'}`}/><p className="mt-1 text-[8px]">{x}</p></div>)}</div></div>;
+    case 'supplier':
+      return <div className={`${card}`}><div className="flex justify-between"><div><p className="text-[10px] font-black">Elite Foods Pvt. Ltd.</p><p className="text-[9px] text-emerald-600">Verified Supplier</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[8px] font-bold text-emerald-700">Approved</span></div><div className="mt-4 grid grid-cols-2 gap-2">{[['Category','Dehydrated Fruits'],['Location','Maharashtra, India'],['On-time Delivery','96%'],['Quality Score','4.7/5']].map(([a,b])=><MiniCard key={a} title={a} value={b}/>)}</div></div>;
+    case 'orders':
+      return <div className={`${card}`}><div className="flex justify-between"><div><p className="text-[10px] font-black">Order PO-6517</p><p className="text-[9px] text-slate-400">Acme Imports Ltd.</p></div><span className="rounded-full border border-blue-200 px-2 py-1 text-[8px] font-bold text-blue-600">In Transit</span></div><div className="mt-4 grid grid-cols-4 gap-2"><MiniCard title="Order Date" value="15 Apr"/><MiniCard title="Value" value="$125,430"/><MiniCard title="ETA" value="25 Apr"/><MiniCard title="Items" value="12"/></div><div className="mt-5 flex justify-between">{['Confirmed','Packed','Shipped','In Transit','Delivered'].map((x,i)=><div key={x} className="text-center"><span className={`mx-auto block h-3 w-3 rounded-full ${i<4?'bg-teal-600':'border border-teal-500 bg-white'}`}/><p className="mt-1 text-[8px]">{x}</p></div>)}</div></div>;
+    case 'analytics':
+      return <div className="grid grid-cols-[.8fr_1.2fr] gap-3"><div className="space-y-2">{panel.stats?.map(([v,l])=><MiniCard key={l} title={l} value={v}/>)}</div><div className={`${card} relative overflow-hidden`}><p className="text-[10px] font-black">Revenue Trend</p><svg viewBox="0 0 220 110" className="mt-2 h-28 w-full"><polyline fill="none" stroke="#2563eb" strokeWidth="4" points="0,95 35,82 70,70 105,52 140,44 175,22 220,8"/><line x1="0" y1="100" x2="220" y2="100" stroke="#e2e8f0"/></svg></div></div>;
+    case 'integrations':
+      return <div className="grid grid-cols-3 gap-3">{['Outlook','Gmail','WhatsApp','Calendar','Supabase','More'].map((x,i)=><div key={x} className={`${card} flex h-20 flex-col items-center justify-center`}><div className={`h-8 w-8 rounded-lg ${['bg-blue-500','bg-red-500','bg-green-500','bg-amber-500','bg-emerald-500','bg-slate-400'][i]}`}/><p className="mt-2 text-[9px] font-bold">{x}</p></div>)}</div>;
+    case 'security':
+      return <div className="grid grid-cols-[.8fr_1.2fr] gap-3"><div className="space-y-2">{panel.bullets?.map(x=><div key={x} className="flex items-center gap-2 text-[9px] font-semibold text-slate-700"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">✓</span>{x}</div>)}</div><div className="flex items-center justify-center"><div className="relative flex h-28 w-24 items-center justify-center rounded-[2rem_2rem_2.5rem_2.5rem] bg-gradient-to-b from-teal-500 to-[#0b1f4f] shadow-xl"><span className="text-4xl text-white">🔒</span><span className="absolute -bottom-3 -right-8 rounded-xl bg-[#0b1f4f] px-3 py-2 text-[9px] font-black text-white">SOC 2<br/>TYPE II</span></div></div>;
+  }
+}
+
+function ProductPanel({ panel, onOpen }: { panel: Panel; onOpen: () => void }) {
+  return <article className="group flex min-h-[310px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_8px_24px_rgba(15,23,42,.045)] transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Badge>{panel.number}</Badge><h2 className="text-[12px] font-black tracking-tight text-[#0b1f4f]">{panel.title}</h2></div>{panel.number % 3 === 1 ? <Image src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" width={28} height={28} className="h-7 w-7 rounded-full"/> : <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={78} height={24} className="h-5 w-auto"/>}</div><p className="mt-2 text-[10px] leading-4 text-slate-500">{panel.description}</p><div className="mt-3 flex-1"><Visual panel={panel}/></div>{panel.stats && panel.visual !== 'analytics' ? <div className="mt-3 grid grid-cols-4 gap-2">{panel.stats.map(([v,l])=><div key={l} className="text-center"><p className="text-[12px] font-black text-[#0b1f4f]">{v}</p><p className="text-[8px] text-slate-400">{l}</p></div>)}</div> : null}<button type="button" onClick={onOpen} className="mt-3 self-start text-[10px] font-black text-teal-700 hover:text-teal-800">Explore page →</button></article>;
 }
 
 export function ProductOverviewExperience() {
-  const [activeStage, setActiveStage] = useState<(typeof stages)[number]['id']>('discover');
-  const active = useMemo(() => stages.find((stage) => stage.id === activeStage) ?? stages[0], [activeStage]);
+  const [selected, setSelected] = useState<Panel | null>(null);
 
-  return (
-    <SiteShell>
-      <main className="overflow-hidden bg-white text-slate-950">
-        <section className="relative border-b border-slate-100 bg-[radial-gradient(circle_at_75%_20%,rgba(52,179,168,.18),transparent_30%),linear-gradient(180deg,#f8fcff_0%,#ffffff_85%)]">
-          <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8 lg:py-24">
-            <div className="flex flex-col justify-center">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-teal-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-teal-700 shadow-sm">
-                Product overview
-              </div>
-              <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-[-0.05em] text-[#0f2f63] sm:text-6xl">
-                One platform. Every step of <span className="text-[#199c8b]">global trade.</span>
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Setu Flow connects opportunity discovery, lead capture, relationship management, catalogs, price lists, quotes, suppliers, orders, documents, shipment execution, and growth intelligence.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#journey" className="rounded-full bg-[#0f766e] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(15,118,110,.25)] transition hover:-translate-y-0.5 hover:bg-[#0b665f]">Explore the journey</a>
-                <Link href="/training" className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-[#0f2f63] shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:bg-teal-50">Open Setu Flow Academy</Link>
-              </div>
-              <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                {['Importers', 'Exporters', 'Manufacturers', 'Trade teams'].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-center text-sm font-bold text-slate-700 shadow-sm">{item}</div>)}
-              </div>
-            </div>
-
-            <div className="relative min-h-[420px] rounded-[2rem] border border-white/80 bg-[#082f49] p-5 shadow-[0_35px_90px_rgba(15,47,99,.22)] sm:p-8">
-              <div className="absolute inset-0 overflow-hidden rounded-[2rem]">
-                <div className="absolute -right-16 -top-20 h-72 w-72 rounded-full bg-teal-400/30 blur-3xl" />
-                <div className="absolute -bottom-28 left-10 h-72 w-72 rounded-full bg-blue-500/25 blur-3xl" />
-              </div>
-              <div className="relative flex items-center justify-between">
-                <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={180} height={54} className="h-12 w-auto rounded-xl bg-white px-3 py-1.5" />
-                <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white">
-                  <Image src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" width={30} height={30} className="h-7 w-7 rounded-full" /> Setu Guru
-                </div>
-              </div>
-              <div className="relative mt-10 grid grid-cols-3 gap-3">
-                {['Buyer discovered', 'Lead captured', 'Quote approved', 'Supplier selected', 'Order dispatched', 'Growth insight'].map((label, index) => (
-                  <div key={label} className={`rounded-2xl border p-4 ${index === 2 || index === 5 ? 'border-teal-300/40 bg-teal-300/15' : 'border-white/10 bg-white/8'}`}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-lg font-black text-teal-200">{index + 1}</div>
-                    <p className="mt-5 text-sm font-bold text-white">{label}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-300">Connected context, ownership, and next action.</p>
-                  </div>
-                ))}
-              </div>
-              <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-200 backdrop-blur">
-                <span className="font-bold text-teal-200">Setu Guru insight:</span> Three high-fit opportunities are ready for research, and one accepted quote needs order handoff.
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="journey" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-          <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-700">The Setu Flow journey</p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#0f2f63] sm:text-5xl">From first signal to final delivery.</h2>
-            <p className="mt-4 text-lg leading-8 text-slate-600">Click each stage to see how the platform keeps people, products, commercial context, and execution connected.</p>
-          </div>
-
-          <div className="mt-10 grid gap-3 md:grid-cols-7">
-            {stages.map((stage, index) => (
-              <button key={stage.id} type="button" onClick={() => setActiveStage(stage.id)} className={`group rounded-2xl border px-3 py-5 text-left transition ${activeStage === stage.id ? 'border-teal-300 bg-teal-50 shadow-[0_16px_36px_rgba(15,118,110,.13)]' : 'border-slate-200 bg-white hover:-translate-y-1 hover:border-teal-200 hover:shadow-lg'}`}>
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${activeStage === stage.id ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-500'}`}><StageIcon index={index} /></div>
-                <p className="mt-4 text-sm font-black text-slate-900">{index + 1}. {stage.label}</p>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-5 grid gap-6 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 shadow-[0_24px_60px_rgba(15,23,42,.12)] lg:grid-cols-[0.8fr_1.2fr] lg:p-10">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-300">{active.label}</p>
-              <h3 className="mt-3 text-3xl font-black tracking-[-0.03em] text-white">{active.title}</h3>
-              <p className="mt-4 text-base leading-7 text-slate-300">{active.text}</p>
-              <div className="mt-7 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white"><Image src="/setu-guru/guru-avatar-128.png" alt="" width={26} height={26} className="h-6 w-6 rounded-full" /> Setu Guru works inside this stage</div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {['What needs attention', 'Who owns the next action', 'What is ready to progress', 'What evidence supports the decision'].map((item, index) => <div key={item} className="rounded-2xl border border-white/10 bg-white/5 p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-teal-300">0{index + 1}</p><p className="mt-3 font-bold leading-6 text-white">{item}</p></div>)}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-y border-slate-100 bg-slate-50/70">
-          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-              <div className="max-w-3xl"><p className="text-xs font-black uppercase tracking-[0.2em] text-teal-700">Connected workspaces</p><h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#0f2f63] sm:text-5xl">Everything your trade team needs. Connected.</h2></div>
-              <p className="max-w-xl text-base leading-7 text-slate-600">Each workspace is focused, but every record shares the same customer, supplier, product, pricing, document, and execution context.</p>
-            </div>
-            <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {workspaceCards.map(([title, description], index) => <article key={title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,.05)] transition hover:-translate-y-1 hover:border-teal-200 hover:shadow-xl"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-lg font-black text-teal-700">{String(index + 1).padStart(2, '0')}</div><h3 className="mt-5 text-lg font-black text-slate-950">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{description}</p></article>)}
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-24">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-[0_24px_60px_rgba(15,23,42,.08)] sm:p-10">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-700">Catalog, price lists, and buyer sharing</p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#0f2f63]">Present your business professionally.</h2>
-            <p className="mt-4 leading-7 text-slate-600">Build product catalogs, create market-specific price lists, share selected collections, and see what buyers engage with before the next conversation.</p>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">{['Product categories and variants', 'Country and currency price lists', 'Buyer-safe tracked links', 'Catalog and price-list analytics', 'Multi-language sales assets', 'Setu Guru recommendations'].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">✓ {item}</div>)}</div>
-          </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(145deg,#06263f,#0f766e)] p-7 text-white shadow-[0_24px_60px_rgba(15,118,110,.22)] sm:p-10">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-200">Digital business identity</p>
-            <div className="mt-6 flex items-start gap-5"><Image src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" width={92} height={92} className="h-20 w-20 rounded-3xl border border-white/20 bg-white/10 p-2" /><div><h2 className="text-3xl font-black tracking-[-0.04em]">Share more than a vCard.</h2><p className="mt-3 leading-7 text-slate-200">Give buyers one branded place to understand who you are, what you sell, and how to continue the conversation.</p></div></div>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">{shareItems.map((item) => <div key={item} className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm font-bold">{item}</div>)}</div>
-          </div>
-        </section>
-
-        <section className="border-y border-slate-100 bg-[#f7fbff]">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.75fr_1.25fr] lg:px-8 lg:py-24">
-            <div><Image src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" width={150} height={150} className="h-32 w-32 rounded-[2rem] bg-[#082f49] p-3 shadow-xl" /><p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-teal-700">Setu Guru</p><h2 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#0f2f63]">Your AI copilot across every workflow.</h2><p className="mt-4 leading-7 text-slate-600">Guru helps the team understand context, prepare decisions, find blockers, and choose the next action. Humans approve every commercial, compliance, and data-changing decision.</p></div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{['Buyer and supplier research', 'Personalized outreach', 'Reply analysis', 'Quote and RFQ assistance', 'Pricing intelligence', 'Supplier comparison', 'Trade-event guidance', 'Execution blocker detection', 'Growth recommendations'].map((item) => <div key={item} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="h-2 w-12 rounded-full bg-teal-500" /><p className="mt-5 font-black leading-6 text-slate-900">{item}</p></div>)}</div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-          <div className="rounded-[2.5rem] bg-[#082f49] px-6 py-12 text-center text-white shadow-[0_30px_80px_rgba(8,47,73,.25)] sm:px-12">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-300">See Setu Flow in action</p>
-            <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-black tracking-[-0.04em] sm:text-5xl">Connect your complete trade workflow.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300">Explore the Academy for step-by-step learning, or book a focused walkthrough built around your buyer, supplier, quote, and order process.</p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/book-demo" className="rounded-full bg-teal-500 px-7 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-teal-400">Book a demo</Link><Link href="/training" className="rounded-full border border-white/20 bg-white/10 px-7 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/15">Explore Setu Flow Academy</Link></div>
-          </div>
-        </section>
-      </main>
-    </SiteShell>
-  );
+  return <SiteShell><main className="bg-[#f7fafc] px-3 py-4 sm:px-5 lg:px-6"><div className="mx-auto max-w-[1800px]"><div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700">Setu Flow CRM</p><h1 className="text-xl font-black tracking-tight text-[#0b1f4f]">Product Overview</h1></div><div className="flex flex-wrap items-center gap-2"><Link href="/training" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-[#0b1f4f] hover:border-teal-200 hover:bg-teal-50">Open Academy</Link><Link href="/book-demo" className="rounded-full bg-[#0b1f4f] px-4 py-2 text-xs font-bold text-white hover:bg-[#14336f]">Request Demo</Link></div></div><section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{panels.map(panel => <ProductPanel key={panel.number} panel={panel} onOpen={()=>setSelected(panel)}/>)}</section></div>{selected ? <div className="fixed inset-0 z-[10060] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm" onClick={()=>setSelected(null)}><div className="max-h-[92vh] w-full max-w-5xl overflow-auto rounded-[2rem] bg-white p-5 shadow-2xl sm:p-7" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-3"><Badge>{selected.number}</Badge><div><h2 className="text-xl font-black text-[#0b1f4f]">{selected.title}</h2><p className="mt-1 text-sm text-slate-500">{selected.description}</p></div></div><button onClick={()=>setSelected(null)} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-500 hover:bg-slate-50">×</button></div><div className="mt-6 min-h-[420px] rounded-3xl border border-slate-200 bg-slate-50 p-5"><Visual panel={selected}/></div>{selected.bullets ? <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{selected.bullets.map(item=><div key={item} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">✓ {item}</div>)}</div>:null}</div></div>:null}</main></SiteShell>;
 }
