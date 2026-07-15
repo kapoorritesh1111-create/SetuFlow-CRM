@@ -12,14 +12,19 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDays, Compass, History, LayoutDashboard, Search, Tags } from 'lucide-react';
 import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
+import { CrmMatchesWorkspace } from '@/features/setu-guru/crm-matches-workspace';
+import { ExternalDiscoveryWorkspace } from '@/features/setu-guru/external-discovery-workspace';
 import { GrowthCenter as GrowthCenterRedesign } from '@/features/setu-guru/growth-center-redesign';
-import { ResearchWorkspace, TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-guru/growth-center-workspaces';
+import { TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-guru/growth-center-workspaces';
 import { ProductPricingIntelligencePanel } from '@/features/products/components/product-pricing-intelligence-panel';
 import { workspacePanelClass } from '@/components/ui/workspace-surfaces';
 import type { OpportunityCard } from '@/lib/setu-guru/opportunity-finder';
 import type { SetuGuruRecommendation } from '@/lib/setu-guru/recommendations';
 import type { SetuGuruAuditItem } from '@/lib/setu-guru/audit-history';
 import { cn } from '@/lib/utils';
+
+type DiscoveryCampaign = { id: string; name: string; status: string; created_at: string; updated_at: string };
+type ExternalOpportunity = { id: string; campaign_id: string | null; company_name: string; country: string | null; company_type: string | null; source_label: string; source_url: string | null; verification_state: string; duplicate_state: string; fit_score: number; review_status: string; created_at: string };
 
 type Props = {
   organizationName?: string | null;
@@ -29,6 +34,8 @@ type Props = {
   icpConfigured?: boolean;
   tradeEvents?: TradeEventSummary[];
   auditItems?: SetuGuruAuditItem[];
+  discoveryCampaigns?: DiscoveryCampaign[];
+  externalOpportunities?: ExternalOpportunity[];
 };
 
 type GrowthWorkspace = 'operations' | 'pricing';
@@ -51,62 +58,24 @@ export function GrowthCenter(props: Props) {
   const tradeEvents = props.tradeEvents ?? [];
   const auditItems = props.auditItems ?? [];
 
-  useEffect(() => {
-    setWorkspace(requestedWorkspace);
-  }, [requestedWorkspace]);
+  useEffect(() => { setWorkspace(requestedWorkspace); }, [requestedWorkspace]);
 
   return (
     <>
       <nav className={cn(workspacePanelClass, 'mb-4 flex flex-wrap items-center gap-2 p-2')} aria-label="Growth Center workspaces">
-        <button type="button" onClick={() => setWorkspace('operations')} aria-pressed={workspace === 'operations'} className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'operations' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}>
-          <LayoutDashboard className="h-4 w-4" />Growth Work Queue
-        </button>
-        <button type="button" onClick={() => setWorkspace('pricing')} aria-pressed={workspace === 'pricing'} className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'pricing' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}>
-          <Tags className="h-4 w-4" />Pricing Intelligence
-        </button>
+        <button type="button" onClick={() => setWorkspace('operations')} aria-pressed={workspace === 'operations'} className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'operations' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}><LayoutDashboard className="h-4 w-4" />Growth Work Queue</button>
+        <button type="button" onClick={() => setWorkspace('pricing')} aria-pressed={workspace === 'pricing'} className={cn('inline-flex min-h-10 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', workspace === 'pricing' ? 'bg-brand-800 text-white shadow-sm' : 'text-content-secondary hover:bg-surface-2')}><Tags className="h-4 w-4" />Pricing Intelligence</button>
       </nav>
 
-      {workspace === 'operations' ? (
-        <nav className={cn(workspacePanelClass, 'mb-4 flex overflow-x-auto p-1.5')} aria-label="Growth Work Queue views">
-          {operationViews.map(({ key, label, icon: Icon }) => (
-            <button key={key} type="button" onClick={() => setOperationsView(key)} aria-pressed={operationsView === key} className={cn('inline-flex min-h-10 shrink-0 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', operationsView === key ? 'bg-info-bg text-brand-800' : 'text-content-secondary hover:bg-surface-2')}>
-              <Icon className="h-4 w-4" />{label}
-            </button>
-          ))}
-        </nav>
-      ) : null}
+      {workspace === 'operations' ? <nav className={cn(workspacePanelClass, 'mb-4 flex overflow-x-auto p-1.5')} aria-label="Growth Work Queue views">{operationViews.map(({ key, label, icon: Icon }) => <button key={key} type="button" onClick={() => setOperationsView(key)} aria-pressed={operationsView === key} className={cn('inline-flex min-h-10 shrink-0 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', operationsView === key ? 'bg-info-bg text-brand-800' : 'text-content-secondary hover:bg-surface-2')}><Icon className="h-4 w-4" />{label}</button>)}</nav> : null}
 
       {workspace === 'pricing' ? <ProductPricingIntelligencePanel /> : null}
       {workspace === 'operations' && operationsView === 'work-queue' ? <GrowthCenterRedesign {...props} /> : null}
-      {workspace === 'operations' && operationsView === 'crm-matches' ? (
-        <ResearchWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} />
-      ) : null}
-      {workspace === 'operations' && operationsView === 'trade-events' ? (
-        <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} />
-      ) : null}
-      {workspace === 'operations' && operationsView === 'external-discovery' ? (
-        <section className={cn(workspacePanelClass, 'p-6')} aria-label="External Discovery foundation">
-          <div className="max-w-3xl">
-            <p className="text-xs font-medium uppercase tracking-wide text-brand-700">External Discovery</p>
-            <h1 className="mt-2 text-2xl font-medium text-content-primary">Find new companies outside your CRM</h1>
-            <p className="mt-3 text-sm leading-6 text-content-secondary">This workspace is reserved for verified external importer and distributor discovery. Existing CRM records will never be presented here as newly discovered prospects.</p>
-            <div className="mt-5 rounded-card border border-line bg-surface-2 p-4">
-              <p className="text-sm font-medium text-content-primary">Phase 1 foundation active</p>
-              <p className="mt-1 text-xs leading-5 text-content-muted">ICP ownership, navigation, terminology, and regression protection are being established first. Research providers and discovery jobs are introduced in Phase 3.</p>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} /> : null}
+      {workspace === 'operations' && operationsView === 'trade-events' ? <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} /> : null}
+      {workspace === 'operations' && operationsView === 'external-discovery' ? <ExternalDiscoveryWorkspace campaigns={props.discoveryCampaigns ?? []} opportunities={props.externalOpportunities ?? []} /> : null}
 
-      {workspace === 'operations' ? (
-        <section className="mt-5 space-y-3" aria-label="Growth history">
-          <button type="button" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory} className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}>
-            <span className="flex min-w-0 items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><History className="h-4 w-4" /></span><span className="min-w-0"><span className="block text-sm font-medium text-content-primary">History and audit</span><span className="mt-0.5 block text-xs text-content-muted">{auditItems.length} recorded Setu Guru actions and approvals</span></span></span>
-            <span className="text-xs font-medium text-brand-700">{showHistory ? 'Hide' : 'View'}</span>
-          </button>
-          {showHistory ? <div className={cn(workspacePanelClass, 'p-4 motion-safe:animate-in motion-safe:fade-in')}><AuditHistoryPanel items={auditItems} /></div> : null}
-        </section>
-      ) : null}
+      {workspace === 'operations' ? <section className="mt-5 space-y-3" aria-label="Growth history"><button type="button" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory} className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}><span className="flex min-w-0 items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><History className="h-4 w-4" /></span><span className="min-w-0"><span className="block text-sm font-medium text-content-primary">History and audit</span><span className="mt-0.5 block text-xs text-content-muted">{auditItems.length} recorded Setu Guru actions and approvals</span></span></span><span className="text-xs font-medium text-brand-700">{showHistory ? 'Hide' : 'View'}</span></button>{showHistory ? <div className={cn(workspacePanelClass, 'p-4 motion-safe:animate-in motion-safe:fade-in')}><AuditHistoryPanel items={auditItems} /></div> : null}</section> : null}
     </>
   );
 }
