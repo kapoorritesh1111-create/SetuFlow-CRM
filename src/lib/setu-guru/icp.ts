@@ -57,6 +57,24 @@ const ICP_COLUMNS = [
   'outreach_tone', 'created_by', 'updated_by', 'created_at', 'updated_at',
 ].join(',');
 
+type OwnerResolution = {
+  ownerType: IcpOwnerType;
+  ownerUserId: string | null;
+  campaignKey: string | null;
+};
+
+export function resolveOwner(input: IcpProfileInput, userId: string): OwnerResolution {
+  const ownerType = input.owner_type ?? 'personal';
+  const ownerUserId = ownerType === 'personal' ? userId : null;
+  const campaignKey = ownerType === 'campaign' ? input.campaign_key?.trim() || null : null;
+
+  if (ownerType === 'campaign' && !campaignKey) {
+    throw new Error('Campaign profiles require a campaign key.');
+  }
+
+  return { ownerType, ownerUserId, campaignKey };
+}
+
 export async function listIcpProfiles(orgId: string): Promise<IcpProfile[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -91,52 +109,54 @@ export async function saveIcpProfile(orgId: string, input: IcpProfileInput): Pro
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Authentication is required to save an ICP profile.');
 
-  const ownerType = input.owner_type ?? 'personal';
   const existing = input.id ? await getIcpProfile(orgId, input.id) : null;
   if (input.id && !existing) throw new Error('ICP profile not found or not accessible.');
 
-  const ownerUserId = ownerType === 'personal' ? user.id : null;
-  const campaignKey = ownerType === 'campaign' ? input.campaign_key?.trim() || null : null;
-  if (ownerType === 'campaign' && !campaignKey) throw new Error('Campaign profiles require a campaign key.');
+  const { ownerType, ownerUserId, campaignKey } = resolveOwner(input, user.id);
+  const current = existing;
 
   const payload = {
     org_id: orgId,
-    name: input.name?.trim() || existing?.name || 'Default ICP',
+    name: input.name?.trim() || current?.name || 'Default ICP',
     owner_type: ownerType,
     owner_user_id: ownerUserId,
     campaign_key: campaignKey,
-    version: (existing?.version ?? 0) + 1,
+    version: current ? current.version + 1 : 1,
     is_active: true,
     archived_at: null,
-    products: input.products ?? existing?.products ?? [],
-    target_countries: input.target_countries ?? existing?.target_countries ?? [],
-    buyer_types: input.buyer_types ?? existing?.buyer_types ?? [],
-    supplier_types: input.supplier_types ?? existing?.supplier_types ?? [],
-    moq_rules: input.moq_rules ?? existing?.moq_rules ?? {},
-    certifications: input.certifications ?? existing?.certifications ?? {},
-    preferred_currency: input.preferred_currency ?? existing?.preferred_currency ?? null,
-    outreach_style: input.outreach_style ?? existing?.outreach_style ?? null,
-    available_documents: input.available_documents ?? existing?.available_documents ?? [],
-    required_documents: input.required_documents ?? existing?.required_documents ?? [],
-    outreach_channel: input.outreach_channel ?? existing?.outreach_channel ?? null,
-    outreach_tone: input.outreach_tone ?? existing?.outreach_tone ?? null,
-    created_by: existing?.created_by ?? user.id,
+    products: input.products ?? current?.products ?? [],
+    target_countries: input.target_countries ?? current?.target_countries ?? [],
+    buyer_types: input.buyer_types ?? current?.buyer_types ?? [],
+    supplier_types: input.supplier_types ?? current?.supplier_types ?? [],
+    moq_rules: input.moq_rules ?? current?.moq_rules ?? {},
+    certifications: input.certifications ?? current?.certifications ?? {},
+    preferred_currency: input.preferred_currency ?? current?.preferred_currency ?? null,
+    outreach_style: input.outreach_style ?? current?.outreach_style ?? null,
+    available_documents: input.available_documents ?? current?.available_documents ?? [],
+    required_documents: input.required_documents ?? current?.required_documents ?? [],
+    outreach_channel: input.outreach_channel ?? current?.outreach_channel ?? null,
+    outreach_tone: input.outreach_tone ?? current?.outreach_tone ?? null,
+    created_by: current?.created_by ?? user.id,
     updated_by: user.id,
   };
 
-  const identityFilter = ownerType === 'organization'
-    ? client.from('org_icp_profiles').update({ is_active: false }).eq('org_id', orgId).eq('owner_type', 'organization').eq('is_active', true)
-    : ownerType === 'personal'
-      ? client.from('org_icp_profiles').update({ is_active: false }).eq('org_id', orgId).eq('owner_type', 'personal').eq('owner_user_id', user.id).eq('is_active', true)
-      : client.from('org_icp_profiles').update({ is_active: false }).eq('org_id', orgId).eq('owner_type', 'campaign').eq('campaign_key', campaignKey).eq('is_active', true);
+  if (!current) {
+    let deactivateQuery = client
+      .from('org_icp_profiles')
+      .update({ is_active: false, updated_by: user.id })
+      .eq('org_id', orgId)
+      .eq('owner_type', ownerType)
+      .eq('is_active', true);
 
-  if (!existing) {
-    const { error: deactivateError } = await identityFilter;
+    if (ownerType === 'personal') deactivateQuery = deactivateQuery.eq('owner_user_id', user.id);
+    if (ownerType === 'campaign') deactivateQuery = deactivateQuery.eq('campaign_key', campaignKey);
+
+    const { error: deactivateError } = await deactivateQuery;
     if (deactivateError) throw deactivateError;
   }
 
-  const query = existing
-    ? client.from('org_icp_profiles').update(payload).eq('id', existing.id).eq('org_id', orgId)
+  const query = current
+    ? client.from('org_icp_profiles').update(payload).eq('id', current.id).eq('org_id', orgId)
     : client.from('org_icp_profiles').insert(payload);
 
   const { data, error } = await query.select(ICP_COLUMNS).single();
