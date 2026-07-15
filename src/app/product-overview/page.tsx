@@ -1,5 +1,5 @@
 import { ProductOverviewExperience } from '@/components/marketing/product-overview-experience';
-import { ProductOverviewLanding } from '@/components/marketing/product-overview-landing';
+import { ProductOverviewHub } from '@/components/marketing/product-overview-hub';
 
 export const metadata = {
   title: 'Product Overview | Setu Flow CRM',
@@ -16,8 +16,8 @@ type ProductOverviewPageProps = {
 export default function ProductOverviewPage({ searchParams }: ProductOverviewPageProps) {
   const selectedPage = searchParams?.page;
 
-  if (!selectedPage) {
-    return <ProductOverviewLanding />;
+  if (!selectedPage || selectedPage === 'welcome') {
+    return <ProductOverviewHub />;
   }
 
   return <ProductOverviewExperience />;
