@@ -16,7 +16,7 @@ type ProductOverviewPageProps = {
 export default function ProductOverviewPage({ searchParams }: ProductOverviewPageProps) {
   const selectedPage = searchParams?.page;
 
-  if (!selectedPage || selectedPage === 'welcome') {
+  if (!selectedPage) {
     return <ProductOverviewLanding />;
   }
 
