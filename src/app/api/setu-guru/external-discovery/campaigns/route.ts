@@ -21,4 +21,3 @@ export async function GET() {
 
   try {
     const result = await listExternalDiscovery(orgId);
-    return NextResponse.json
