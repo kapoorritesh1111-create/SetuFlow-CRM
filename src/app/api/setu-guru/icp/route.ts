@@ -6,10 +6,12 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 
 export const dynamic = 'force-dynamic';
 
+const OwnerTypeSchema = z.enum(['organization', 'personal', 'campaign']);
+
 const IcpProfileSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().max(120).optional(),
-  owner_type: z.enum(['organization', 'personal', 'campaign']).optional(),
+  owner_type: OwnerTypeSchema.optional(),
   campaign_key: z.string().max(120).nullish(),
   products: z.array(z.string().max(160)).max(50).optional(),
   target_countries: z.array(z.string().max(120)).max(50).optional(),
