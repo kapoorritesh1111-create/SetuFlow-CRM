@@ -142,7 +142,7 @@ describe('guru RAG isolation — retrieval code properties', () => {
   });
 
   test('retrieval returns empty without an org or question', { skip }, () => {
-    assert.match(code, /if\s*\(!input\.organizationId[\s\S]*?return \[\]/);
+    assert.match(code, /if\s*\(!input\.organizationId[\s\S]*?return NOT_FOUND/);
   });
 });
 
