@@ -8,7 +8,7 @@ export type OpportunityCard = {
   country: string | null;
   leadType: 'buyer' | 'supplier';
   companyType: string | null;
-  status: string | null;
+  ownerUserId: string | null;
   signalSource: string;
   fitScore: FitScoreResult;
   scoreVersion: string;
@@ -51,9 +51,13 @@ export async function listTopFitOpportunities(orgId: string, limit = 500): Promi
   const icp = await getIcpProfile(orgId);
   if (!icp) return { opportunities: [], icpConfigured: false };
 
+  // S48-GROWTH-006/009 fix: the previous select referenced `status` and `buyer_type`, neither of
+  // which exists on public.leads (verified live 2026-07-16). That caused PostgREST to reject the
+  // query with a 400 and CRM Matches to silently render empty/broken in production. `lead_type`
+  // already distinguishes buyer vs supplier; `owner_user_id` powers the new owner filter.
   const { data: leads, error } = await client
     .from('leads')
-    .select('id,company_name,contact_name,country,lead_type,buyer_type,status,products_or_needs,main_product_category,source_type,trade_event_id,last_contacted_at,intro_sent,email,phone,whatsapp_number,created_at')
+    .select('id,company_name,contact_name,country,lead_type,products_or_needs,main_product_category,source_type,trade_event_id,last_contacted_at,intro_sent,email,phone,whatsapp_number,owner_user_id,created_at')
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 1000));
@@ -72,8 +76,8 @@ export async function listTopFitOpportunities(orgId: string, limit = 500): Promi
         label: lead.company_name || lead.contact_name || 'Untitled record',
         country: lead.country,
         leadType: isSupplier ? 'supplier' : 'buyer',
-        companyType: lead.buyer_type || null,
-        status: lead.status || null,
+        companyType: lead.main_product_category || null,
+        ownerUserId: lead.owner_user_id || null,
         signalSource: signalLabel(lead.source_type, lead.trade_event_id),
         fitScore,
         scoreVersion: `icp-${icp.version ?? 1}-s48-v1`,

@@ -9,11 +9,13 @@ import {
   CalendarDays,
   CheckCircle2,
   CircleDollarSign,
+  Compass,
   FileText,
   FlaskConical,
   History,
   LayoutDashboard,
   PackageCheck,
+  Search,
   Settings2,
   ShieldCheck,
   Target,
@@ -45,6 +47,7 @@ type GrowthCenterProps = {
   recommendations: SetuGuruRecommendation[];
   history: SetuGuruRecommendation[];
   opportunities?: OpportunityCard[];
+  externalOpportunities?: Array<{ review_status: string }>;
   icpConfigured?: boolean;
   tradeEvents?: TradeEventSummary[];
   auditItems?: SetuGuruAuditItem[];
@@ -165,7 +168,7 @@ function ActionPanel({ item, onClose }: { item: SetuGuruRecommendation; onClose:
   );
 }
 
-export function GrowthCenter({ organizationName, recommendations, history, opportunities = [], icpConfigured = false, tradeEvents = [], auditItems = [] }: GrowthCenterProps) {
+export function GrowthCenter({ organizationName, recommendations, history, opportunities = [], externalOpportunities = [], icpConfigured = false, tradeEvents = [], auditItems = [] }: GrowthCenterProps) {
   const ordered = useMemo(() => [...recommendations].sort((a, b) => priorityRank[b.priority] - priorityRank[a.priority] || Date.parse(b.created_at) - Date.parse(a.created_at)), [recommendations]);
   const completedItems = useMemo(() => [...history].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)), [history]);
   const urgent = ordered.filter((item) => item.priority === 'urgent').length;
@@ -187,6 +190,12 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
     { label: 'Completed this week', value: completed, icon: CheckCircle2, color: 'text-info-fg' },
     { label: 'New opportunities', value: opportunities.length, icon: Target, color: 'text-brand-700' },
   ];
+  // S48-GROWTH-022: New CRM matches and External prospects are counted and shown separately —
+  // they never combine into a single badge, and this never redefines "New opportunities" above.
+  const growthCounts = {
+    newCrmMatches: opportunities.length,
+    externalProspects: externalOpportunities.length,
+  };
 
   function changeFilter(next: QueueFilter) {
     setFilter(next);
@@ -205,6 +214,10 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
         <section className={cn(workspacePanelClass, 'min-w-0 overflow-hidden')}>
           <header className="border-b border-line px-5 py-5"><p className="text-xs font-medium uppercase text-brand-700">{filter === 'revenue' ? 'Revenue workspace' : filter === 'suppliers' ? 'Supplier workspace' : 'Today · Business brief'}</p><h1 className="mt-2 text-2xl font-medium text-content-primary">Trade Growth Command Center</h1><p className="mt-1 text-sm text-content-secondary">Here is what needs attention across {organizationName || 'your business'} today.</p></header>
           <div className="grid gap-3 p-4 sm:grid-cols-2 2xl:grid-cols-4">{metrics.map(({ label: metricLabel, value, icon: Icon, color }) => <div key={metricLabel} className={workspaceMetricClass}><p className="text-caption uppercase text-content-muted">{metricLabel}</p><div className="mt-3 flex items-end justify-between"><p className={cn('text-2xl font-medium', color)}>{value}</p><Icon className={cn('h-5 w-5', color)} /></div></div>)}</div>
+          <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2" aria-label="Internal vs external opportunity counts (never combined)">
+            <div className={workspaceMetricClass}><p className="text-caption uppercase text-content-muted">New CRM matches</p><div className="mt-3 flex items-end justify-between"><p className="text-2xl font-medium text-brand-700">{growthCounts.newCrmMatches}</p><Search className="h-5 w-5 text-brand-700" /></div><p className="mt-1 text-[11px] text-content-muted">Existing Setu Flow records only.</p></div>
+            <div className={workspaceMetricClass}><p className="text-caption uppercase text-content-muted">External prospects</p><div className="mt-3 flex items-end justify-between"><p className="text-2xl font-medium text-info-fg">{growthCounts.externalProspects}</p><Compass className="h-5 w-5 text-info-fg" /></div><p className="mt-1 text-[11px] text-content-muted">Outside the CRM until Save/Convert.</p></div>
+          </div>
           <div className="flex overflow-x-auto border-y border-line px-4" role="tablist">{tabs.map(([key, name, count, Icon]) => <button key={key} type="button" onClick={() => changeFilter(key)} role="tab" aria-selected={filter === key} className={cn('flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-normal', filter === key ? 'border-brand-700 font-medium text-content-primary' : 'border-transparent text-content-muted')}><Icon className="h-4 w-4" />{name} ({count})</button>)}</div>
           {filter === 'revenue' ? <RevenueWorkspace selected={selected} /> : null}
           {filter === 'suppliers' ? <SupplierWorkspace recommendations={ordered} /> : null}

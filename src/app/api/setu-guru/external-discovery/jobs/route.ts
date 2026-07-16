@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { runDiscoveryJob } from '@/lib/setu-guru/external-discovery';
+import { listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ jobs: data ?? [] });
+    return NextResponse.json({ jobs: data ?? [], providers: listDiscoveryProviders().map((p) => ({ key: p.key, label: p.label, configured: p.configured })) });
   } catch (error) {
     console.error('[external-discovery-jobs] list failed', {
       orgId,
@@ -55,6 +57,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// S48-GROWTH-011/013: creates (or reuses via idempotency key) a job and runs the selected
+// provider inline through the registry. See runDiscoveryJob for the full lifecycle — it never
+// creates leads and never sends outbound communication.
 export async function POST(request: NextRequest) {
   const orgId = await organizationId();
   if (!orgId) {
@@ -66,63 +71,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid discovery job payload.', details: parsed.error.flatten() }, { status: 422 });
   }
 
-  const supabase = await createClient();
-  const client = supabase as any;
-
   try {
-    const { data: campaign, error: campaignError } = await client
-      .from('external_discovery_campaigns')
-      .select('id,status,icp_snapshot')
-      .eq('org_id', orgId)
-      .eq('id', parsed.data.campaignId)
-      .single();
-
-    if (campaignError || !campaign) {
-      return NextResponse.json({ error: 'Discovery campaign was not found.' }, { status: 404 });
-    }
-
-    const idempotencyKey = `${parsed.data.campaignId}:${parsed.data.providerKey}:${JSON.stringify(campaign.icp_snapshot ?? {})}`;
-    const { data: job, error: jobError } = await client
-      .from('external_discovery_jobs')
-      .upsert(
-        {
-          org_id: orgId,
-          campaign_id: parsed.data.campaignId,
-          status: 'queued',
-          idempotency_key: idempotencyKey,
-          provider_key: parsed.data.providerKey,
-          provider_request: {
-            countries: campaign.icp_snapshot?.target_countries ?? [],
-            products: campaign.icp_snapshot?.products ?? [],
-            buyerTypes: campaign.icp_snapshot?.buyer_types ?? [],
-          },
-          attempt_count: 0,
-          last_error: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'org_id,idempotency_key' },
-      )
-      .select('*')
-      .single();
-
-    if (jobError) throw jobError;
-
-    await client
-      .from('external_discovery_campaigns')
-      .update({ status: 'queued', updated_at: new Date().toISOString() })
-      .eq('org_id', orgId)
-      .eq('id', parsed.data.campaignId);
-
-    return NextResponse.json({ job }, { status: 201 });
+    const result = await runDiscoveryJob(orgId, parsed.data.campaignId, parsed.data.providerKey);
+    return NextResponse.json({ result }, { status: 201 });
   } catch (error) {
-    console.error('[external-discovery-jobs] create failed', {
+    console.error('[external-discovery-jobs] run failed', {
       orgId,
       campaignId: parsed.data.campaignId,
       providerKey: parsed.data.providerKey,
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'External Discovery job could not be created.' },
+      { error: error instanceof Error ? error.message : 'External Discovery job could not be run.' },
       { status: 500 },
     );
   }

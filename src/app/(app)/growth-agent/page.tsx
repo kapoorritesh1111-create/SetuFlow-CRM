@@ -38,6 +38,7 @@ export default async function GrowthAgentPage() {
       auditItems={auditHistory}
       discoveryCampaigns={discovery.campaigns}
       externalOpportunities={discovery.opportunities}
+      currentUserId={workspace.profile?.id ?? null}
     />
   );
 }

@@ -13,7 +13,7 @@ import { useSearchParams } from 'next/navigation';
 import { CalendarDays, Compass, History, LayoutDashboard, Search, Tags } from 'lucide-react';
 import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
 import { CrmMatchesWorkspace } from '@/features/setu-guru/crm-matches-workspace';
-import { ExternalDiscoveryWorkspace } from '@/features/setu-guru/external-discovery-workspace';
+import { ExternalDiscoveryWorkspace, type DiscoveryCampaign, type ExternalOpportunity } from '@/features/setu-guru/external-discovery-workspace';
 import { GrowthCenter as GrowthCenterRedesign } from '@/features/setu-guru/growth-center-redesign';
 import { TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-guru/growth-center-workspaces';
 import { ProductPricingIntelligencePanel } from '@/features/products/components/product-pricing-intelligence-panel';
@@ -22,9 +22,6 @@ import type { OpportunityCard } from '@/lib/setu-guru/opportunity-finder';
 import type { SetuGuruRecommendation } from '@/lib/setu-guru/recommendations';
 import type { SetuGuruAuditItem } from '@/lib/setu-guru/audit-history';
 import { cn } from '@/lib/utils';
-
-type DiscoveryCampaign = { id: string; name: string; status: string; created_at: string; updated_at: string };
-type ExternalOpportunity = { id: string; campaign_id: string | null; company_name: string; country: string | null; company_type: string | null; source_label: string; source_url: string | null; verification_state: string; duplicate_state: string; fit_score: number; review_status: string; created_at: string };
 
 type Props = {
   organizationName?: string | null;
@@ -36,6 +33,7 @@ type Props = {
   auditItems?: SetuGuruAuditItem[];
   discoveryCampaigns?: DiscoveryCampaign[];
   externalOpportunities?: ExternalOpportunity[];
+  currentUserId?: string | null;
 };
 
 type GrowthWorkspace = 'operations' | 'pricing';
@@ -70,8 +68,8 @@ export function GrowthCenter(props: Props) {
       {workspace === 'operations' ? <nav className={cn(workspacePanelClass, 'mb-4 flex overflow-x-auto p-1.5')} aria-label="Growth Work Queue views">{operationViews.map(({ key, label, icon: Icon }) => <button key={key} type="button" onClick={() => setOperationsView(key)} aria-pressed={operationsView === key} className={cn('inline-flex min-h-10 shrink-0 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', operationsView === key ? 'bg-info-bg text-brand-800' : 'text-content-secondary hover:bg-surface-2')}><Icon className="h-4 w-4" />{label}</button>)}</nav> : null}
 
       {workspace === 'pricing' ? <ProductPricingIntelligencePanel /> : null}
-      {workspace === 'operations' && operationsView === 'work-queue' ? <GrowthCenterRedesign {...props} /> : null}
-      {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} /> : null}
+      {workspace === 'operations' && operationsView === 'work-queue' ? <GrowthCenterRedesign {...props} externalOpportunities={props.externalOpportunities ?? []} /> : null}
+      {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} currentUserId={props.currentUserId} /> : null}
       {workspace === 'operations' && operationsView === 'trade-events' ? <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} /> : null}
       {workspace === 'operations' && operationsView === 'external-discovery' ? <ExternalDiscoveryWorkspace campaigns={props.discoveryCampaigns ?? []} opportunities={props.externalOpportunities ?? []} /> : null}
 
