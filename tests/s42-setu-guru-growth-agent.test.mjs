@@ -7,6 +7,7 @@ const generator = readFileSync('src/lib/setu-guru/recommendation-generator.ts', 
 const triggerRoute = readFileSync('src/app/api/setu-guru/recommendations/generate/route.ts', 'utf8');
 const query = readFileSync('src/lib/setu-guru/recommendations.ts', 'utf8');
 const growthCenter = readFileSync('src/features/setu-guru/growth-center.tsx', 'utf8');
+const growthCenterRedesign = readFileSync('src/features/setu-guru/growth-center-redesign.tsx', 'utf8');
 const growthRoute = readFileSync('src/app/(app)/growth-agent/page.tsx', 'utf8');
 const dashboardStrip = readFileSync('src/features/setu-guru/setu-guru-dashboard-strip.tsx', 'utf8');
 const dashboardPopover = readFileSync('src/features/setu-guru/setu-guru-dashboard-popover.tsx', 'utf8');
@@ -63,13 +64,12 @@ test('Growth Center and dashboard query only current-organization open recommend
 });
 
 test('Recommendation cards remain explainable and action linked', () => {
-  for (const surface of [growthCenter, dashboardPopover]) {
-    assert.match(surface, /recommendation\.priority/);
-    assert.match(surface, /recommendation\.recommended_action/);
-    assert.match(surface, /recommendation\.action_href/);
-    assert.match(surface, /recommendation\.reason/);
-  }
-  assert.match(growthCenter, /Nothing is sent or changed without your approval/);
+  const surfaces = [growthCenter, growthCenterRedesign, dashboardPopover].join('\n');
+  assert.match(surfaces, /recommendation\.priority/);
+  assert.match(surfaces, /recommendation\.recommended_action/);
+  assert.match(surfaces, /recommendation\.action_href/);
+  assert.match(surfaces, /recommendation\.reason/);
+  assert.match(surfaces, /Nothing is sent or changed without your approval/);
 });
 
 test('Generated action links use only confirmed CRM routes', () => {
@@ -92,7 +92,7 @@ test('Quote follow-up recommendations identify the buyer and quote', () => {
 });
 
 test('Growth Agent foundation has no autonomous outbound communication', () => {
-  const foundation = [generator, triggerRoute, query, growthCenter, dashboardStrip, dashboardPopover].join('\n');
+  const foundation = [generator, triggerRoute, query, growthCenter, growthCenterRedesign, dashboardStrip, dashboardPopover].join('\n');
   assert.doesNotMatch(foundation, /send_email|sendEmail|send_whatsapp|sendWhatsApp|provider_message_id/);
   assert.doesNotMatch(generator, /from\(['"]communications['"]\)\.insert/);
   assert.doesNotMatch(generator, /from\(['"]quotes['"]\)\.update/);
@@ -100,14 +100,20 @@ test('Growth Agent foundation has no autonomous outbound communication', () => {
   assert.doesNotMatch(generator, /from\(['"]orders['"]\)\.update/);
 });
 
-test('Growth Center avoids repeating priority cards and collapses long queues', () => {
-  assert.match(growthCenter, /priorityItems = ordered\.slice\(0, 4\)/);
-  assert.match(growthCenter, /priorityIds/);
-  assert.match(growthCenter, /remainingItems/);
-  assert.match(growthCenter, /visible = items\.slice\(0, 3\)/);
-  assert.match(growthCenter, /<details/);
-  assert.match(growthCenter, /Show \{remaining\.length\} more/);
-  assert.match(growthCenter, /Priority cards are not repeated below/);
+test('Growth Center keeps the redesigned queue and approved workspace navigation', () => {
+  assert.match(growthCenter, /GrowthCenterRedesign/);
+  assert.match(growthCenter, /Growth Work Queue/);
+  assert.match(growthCenter, /Pricing Intelligence/);
+  assert.match(growthCenter, /CRM Matches/);
+  assert.match(growthCenter, /External Discovery/);
+  assert.match(growthCenter, /Trade Events/);
+  assert.match(growthCenterRedesign, /Today/);
+  assert.match(growthCenterRedesign, /Revenue/);
+  assert.match(growthCenterRedesign, /Suppliers/);
+  assert.match(growthCenterRedesign, /Opportunities/);
+  assert.match(growthCenterRedesign, /Completed/);
+  assert.match(growthCenterRedesign, /ActionPanel/);
+  assert.match(growthCenterRedesign, /Setu Guru activity/);
 });
 
 test('Dashboard uses one small strip and an on-demand top-three overlay', () => {

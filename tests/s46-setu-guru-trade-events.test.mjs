@@ -7,6 +7,7 @@ const tradeEventPage = readFileSync('src/app/(app)/growth-agent/trade-events/[ev
 const tradeEventView = readFileSync('src/features/setu-guru/trade-event-assistant-view.tsx', 'utf8');
 const growthAgentPage = readFileSync('src/app/(app)/growth-agent/page.tsx', 'utf8');
 const growthCenter = readFileSync('src/features/setu-guru/growth-center.tsx', 'utf8');
+const growthWorkspaces = readFileSync('src/features/setu-guru/growth-center-workspaces.tsx', 'utf8');
 
 test('Trade Event Assistant is organization scoped and read-only', () => {
   assert.match(tradeEventAssistant, /\.eq\('organization_id', orgId\)/);
@@ -32,5 +33,6 @@ test('Trade Event Assistant page and view are organization scoped and require wo
 test('Growth Center links out to per-event Trade Event Assistant pages', () => {
   assert.match(growthAgentPage, /trade_events/);
   assert.match(growthAgentPage, /\.eq\('organization_id', organizationId\)/);
-  assert.match(growthCenter, /\/growth-agent\/trade-events\/\$\{event\.id\}/);
+  assert.match(growthCenter, /TradeEventWorkspace/);
+  assert.match(growthWorkspaces, /\/growth-agent\/trade-events\/\$\{event\.id\}/);
 });
