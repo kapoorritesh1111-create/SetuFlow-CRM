@@ -18,6 +18,10 @@ const crmMatchesWorkspace = readFileSync('src/features/setu-guru/crm-matches-wor
 const externalDiscoveryWorkspace = readFileSync('src/features/setu-guru/external-discovery-workspace.tsx', 'utf8');
 const growthCenter = readFileSync('src/features/setu-guru/growth-center.tsx', 'utf8');
 const growthAgentPage = readFileSync('src/app/(app)/growth-agent/page.tsx', 'utf8');
+const crmMatchesRoute = readFileSync('src/app/api/setu-guru/crm-matches/route.ts', 'utf8');
+const crmMatchCampaignsRoute = readFileSync('src/app/api/setu-guru/crm-matches/campaigns/route.ts', 'utf8');
+const crmMatchBulkRoute = readFileSync('src/app/api/setu-guru/crm-matches/bulk/route.ts', 'utf8');
+const crmMatchCampaignMigration = readFileSync('supabase/migrations/20260718010000_s48_bug_004_crm_match_campaigns.sql', 'utf8');
 
 test('S48-GROWTH-011/012: base external discovery schema is organization scoped with RLS on every table', () => {
   const tables = ['external_discovery_campaigns', 'external_discovery_jobs', 'external_opportunities', 'external_opportunity_contacts', 'external_opportunity_history'];
@@ -119,6 +123,57 @@ test('S48-GROWTH-006/009: CRM Matches no longer selects nonexistent leads column
   assert.doesNotMatch(opportunityFinder, /lead\.buyer_type|,buyer_type,|,buyer_type'/);
   assert.match(opportunityFinder, /\.eq\('organization_id', orgId\)/);
   assert.match(opportunityFinder, /owner_user_id/);
+});
+
+test('S48-BUG-001: Opportunities KPI and Opportunities view use the same CRM match dataset', () => {
+  assert.match(growthCenterRedesign2, /'New opportunities', value: opportunities\.length/);
+  assert.match(growthCenterRedesign2, /'Opportunities', opportunities\.length/);
+  assert.match(growthCenterRedesign2, /filter === 'opportunities'.*opportunities\.map\(\(item\) => <OpportunityItem/s);
+  assert.match(growthCenterRedesign2, /href=\{`\/leads\/\$\{item\.leadId\}`\}/);
+});
+
+test('S48-BUG-002: CRM Match cards expose the scored ICP version, reasons, matched criteria, and missing criteria', () => {
+  for (const field of ['icpProfileName', 'icpProfileVersion', 'matchedCriteria', 'missingCriteria']) assert.match(opportunityFinder, new RegExp(field));
+  assert.match(crmMatchesWorkspace, /item\.icpProfileName/);
+  assert.match(crmMatchesWorkspace, /item\.icpProfileVersion/);
+  assert.match(crmMatchesWorkspace, /item\.fitScore\.reasons/);
+  assert.match(crmMatchesWorkspace, /Missing criteria:/);
+});
+
+test('S48-BUG-003: operators can select and compare versioned ICP profiles and recalculate matches inside their organization', () => {
+  assert.match(crmMatchesWorkspace, /Score against/);
+  assert.match(crmMatchesWorkspace, /Compare with/);
+  assert.match(crmMatchesWorkspace, /api\/setu-guru\/crm-matches\?profile_id=/);
+  assert.match(crmMatchesRoute, /requireWorkspace\(\)/);
+  assert.match(crmMatchesRoute, /listTopFitOpportunities\(orgId, 1000, profileId\)/);
+  assert.doesNotMatch(crmMatchesRoute, /organizationId:\s*request/i);
+});
+
+test('S48-BUG-004: internal CRM Match campaigns persist ICP snapshots and filters with organization-scoped RLS', () => {
+  assert.match(crmMatchCampaignMigration, /create table if not exists public\.crm_match_campaigns/);
+  assert.match(crmMatchCampaignMigration, /icp_profile_version integer not null/);
+  assert.match(crmMatchCampaignMigration, /filters jsonb not null/);
+  assert.match(crmMatchCampaignMigration, /enable row level security/);
+  assert.match(crmMatchCampaignMigration, /is_org_member\(org_id\)/);
+  assert.match(crmMatchCampaignsRoute, /requireWorkspace\(\)/);
+  assert.match(crmMatchesWorkspace, /Save current campaign/);
+  assert.match(crmMatchesWorkspace, /runCampaign/);
+});
+
+test('S48-BUG-005: CRM Matches bulk actions are bounded, organization scoped, permission checked, auditable, and preserve lead records', () => {
+  assert.match(crmMatchBulkRoute, /max\(200\)/);
+  assert.match(crmMatchBulkRoute, /requireWorkspace\(\)/);
+  assert.match(crmMatchBulkRoute, /\.eq\('organization_id', orgId\)/);
+  assert.match(crmMatchBulkRoute, /canAssign\(workspace\.currentRoles/);
+  assert.match(crmMatchBulkRoute, /organization_members/);
+  assert.match(crmMatchBulkRoute, /crm_match_tags/);
+  assert.match(crmMatchBulkRoute, /crm_match_archived_at/);
+  assert.match(crmMatchBulkRoute, /scheduleLeadFollowUp/);
+  assert.match(crmMatchBulkRoute, /listTopFitOpportunities\(orgId, 1000/);
+  assert.match(crmMatchBulkRoute, /lead_activities/);
+  assert.doesNotMatch(crmMatchBulkRoute, /from\('leads'\)\.delete/);
+  assert.match(crmMatchesWorkspace, /window\.confirm/);
+  assert.match(crmMatchesWorkspace, /crm-matches\.csv/);
 });
 
 test('S48-GROWTH-006: CRM Matches never performs external/provider research (stays grounded in existing leads)', () => {

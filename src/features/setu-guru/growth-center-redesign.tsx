@@ -151,6 +151,20 @@ function WorkItem({ item, active, onSelect }: { item: SetuGuruRecommendation; ac
   );
 }
 
+function OpportunityItem({ item }: { item: OpportunityCard }) {
+  return (
+    <article className="grid gap-4 border-b border-line px-4 py-4 last:border-0 lg:grid-cols-[minmax(220px,1.45fr)_minmax(160px,.8fr)_minmax(130px,.7fr)_auto] lg:items-center">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-card border border-line bg-surface-2 text-brand-700"><Target className="h-5 w-5" /></span>
+        <span className="min-w-0"><span className="block truncate text-sm font-medium text-content-primary">{item.label}</span><span className="mt-1 block text-xs text-content-muted">{item.country || 'Country missing'} · {label(item.leadType)}</span></span>
+      </div>
+      <div><span className="block text-caption uppercase text-content-muted">Source</span><span className="mt-1 block text-sm text-content-primary">{item.signalSource}</span></div>
+      <div><span className="block text-caption uppercase text-content-muted">Fit</span><span className="mt-1 block text-sm font-medium text-success-fg">{item.fitScore.score}%</span></div>
+      <Link href={`/leads/${item.leadId}`} className={cn(workspacePrimaryButtonClass, 'inline-flex min-h-9 min-w-28 items-center justify-center gap-2 rounded-ctl px-4 text-sm font-medium')}>Open record<ArrowRight className="h-4 w-4" /></Link>
+    </article>
+  );
+}
+
 function ActionPanel({ item, onClose }: { item: SetuGuruRecommendation; onClose: () => void }) {
   return (
     <aside className={cn(workspacePanelClass, 'sticky top-4 overflow-hidden')} aria-label="Action detail panel">
@@ -181,8 +195,8 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
   const [showIcp, setShowIcp] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const urgentItems = ordered.filter((item) => item.priority === 'urgent' || item.priority === 'high');
-  const filtered = filter === 'completed' ? completedItems : filter === 'do-first' ? (urgentItems.length ? urgentItems : ordered) : ordered.filter((item) => area(item) === filter);
-  const selected = [...ordered, ...completedItems].find((item) => item.id === selectedId) ?? filtered[0] ?? null;
+  const filtered = filter === 'completed' ? completedItems : filter === 'do-first' ? (urgentItems.length ? urgentItems : ordered) : filter === 'opportunities' ? [] : ordered.filter((item) => area(item) === filter);
+  const selected = filter === 'opportunities' ? null : ([...ordered, ...completedItems].find((item) => item.id === selectedId) ?? filtered[0] ?? null);
   const tabs: Array<[QueueFilter, string, number, LucideIcon]> = [['do-first', 'Do First', urgent + important, TriangleAlert], ['revenue', 'Revenue', counts.revenue, CircleDollarSign], ['suppliers', 'Suppliers', counts.suppliers, PackageCheck], ['trade-events', 'Trade Events', counts.events, CalendarDays], ['opportunities', 'Opportunities', opportunities.length, Target]];
   const metrics: Metric[] = [
     { label: 'Actions at risk', value: urgent + important, icon: TriangleAlert, color: 'text-danger-fg' },
@@ -199,7 +213,7 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
 
   function changeFilter(next: QueueFilter) {
     setFilter(next);
-    const source = next === 'completed' ? completedItems : next === 'do-first' ? (urgentItems.length ? urgentItems : ordered) : ordered.filter((item) => area(item) === next);
+    const source = next === 'completed' ? completedItems : next === 'do-first' ? (urgentItems.length ? urgentItems : ordered) : next === 'opportunities' ? [] : ordered.filter((item) => area(item) === next);
     setSelectedId(source[0]?.id ?? null);
   }
 
@@ -221,7 +235,7 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
           <div className="flex overflow-x-auto border-y border-line px-4" role="tablist">{tabs.map(([key, name, count, Icon]) => <button key={key} type="button" onClick={() => changeFilter(key)} role="tab" aria-selected={filter === key} className={cn('flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-normal', filter === key ? 'border-brand-700 font-medium text-content-primary' : 'border-transparent text-content-muted')}><Icon className="h-4 w-4" />{name} ({count})</button>)}</div>
           {filter === 'revenue' ? <RevenueWorkspace selected={selected} /> : null}
           {filter === 'suppliers' ? <SupplierWorkspace recommendations={ordered} /> : null}
-          <div className="min-h-72">{filtered.length ? filtered.map((item) => <WorkItem key={item.id} item={item} active={item.id === selected?.id} onSelect={() => setSelectedId(item.id)} />) : <div className="grid min-h-72 place-items-center p-8 text-center"><div><ShieldCheck className="mx-auto h-9 w-9 text-success-fg" /><p className="mt-3 text-sm font-medium text-content-primary">No actions in this view</p><p className="mt-1 text-xs text-content-muted">Setu Guru will place verified work here when attention is needed.</p></div></div>}</div>
+          <div className="min-h-72">{filter === 'opportunities' ? (opportunities.length ? opportunities.map((item) => <OpportunityItem key={item.leadId} item={item} />) : <div className="grid min-h-72 place-items-center p-8 text-center"><div><ShieldCheck className="mx-auto h-9 w-9 text-success-fg" /><p className="mt-3 text-sm font-medium text-content-primary">No opportunities in this view</p><p className="mt-1 text-xs text-content-muted">CRM matches will appear here when records meet the active ICP.</p></div></div>) : (filtered.length ? filtered.map((item) => <WorkItem key={item.id} item={item} active={item.id === selected?.id} onSelect={() => setSelectedId(item.id)} />) : <div className="grid min-h-72 place-items-center p-8 text-center"><div><ShieldCheck className="mx-auto h-9 w-9 text-success-fg" /><p className="mt-3 text-sm font-medium text-content-primary">No actions in this view</p><p className="mt-1 text-xs text-content-muted">Setu Guru will place verified work here when attention is needed.</p></div></div>)}</div>
           {tradeEvents.length ? <div className="border-t border-line p-4">{tradeEvents.slice(0, 2).map((event) => <Link key={event.id} href={`/growth-agent/trade-events/${event.id}`} className="mr-4 text-sm font-medium text-brand-700">{event.name}</Link>)}</div> : null}
         </section>
         <div className="space-y-4">

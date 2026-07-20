@@ -19,6 +19,8 @@ import { TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-gur
 import { ProductPricingIntelligencePanel } from '@/features/products/components/product-pricing-intelligence-panel';
 import { workspacePanelClass } from '@/components/ui/workspace-surfaces';
 import type { OpportunityCard } from '@/lib/setu-guru/opportunity-finder';
+import type { IcpProfile } from '@/lib/setu-guru/icp';
+import type { CrmMatchCampaign } from '@/lib/setu-guru/crm-match-campaigns';
 import type { SetuGuruRecommendation } from '@/lib/setu-guru/recommendations';
 import type { SetuGuruAuditItem } from '@/lib/setu-guru/audit-history';
 import { cn } from '@/lib/utils';
@@ -34,6 +36,8 @@ type Props = {
   discoveryCampaigns?: DiscoveryCampaign[];
   externalOpportunities?: ExternalOpportunity[];
   currentUserId?: string | null;
+  icpProfiles?: IcpProfile[];
+  crmMatchCampaigns?: CrmMatchCampaign[];
 };
 
 type GrowthWorkspace = 'operations' | 'pricing';
@@ -69,7 +73,7 @@ export function GrowthCenter(props: Props) {
 
       {workspace === 'pricing' ? <ProductPricingIntelligencePanel /> : null}
       {workspace === 'operations' && operationsView === 'work-queue' ? <GrowthCenterRedesign {...props} externalOpportunities={props.externalOpportunities ?? []} /> : null}
-      {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} currentUserId={props.currentUserId} /> : null}
+      {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} currentUserId={props.currentUserId} profiles={props.icpProfiles ?? []} campaigns={props.crmMatchCampaigns ?? []} /> : null}
       {workspace === 'operations' && operationsView === 'trade-events' ? <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} /> : null}
       {workspace === 'operations' && operationsView === 'external-discovery' ? <ExternalDiscoveryWorkspace campaigns={props.discoveryCampaigns ?? []} opportunities={props.externalOpportunities ?? []} /> : null}
 

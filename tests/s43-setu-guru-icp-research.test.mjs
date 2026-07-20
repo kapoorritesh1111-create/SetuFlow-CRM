@@ -94,5 +94,5 @@ test('CRM Matches scores only existing CRM leads and is not described as externa
   assert.doesNotMatch(opportunityFinder, /fetch\(['"]https?:\/\//);
   assert.match(growthCenter, /CRM Matches/);
   assert.match(growthCenter, /External Discovery/);
-  assert.match(growthPage, /listTopFitOpportunities\(organizationId(?:,\s*\d+)?\)/);
+  assert.match(growthPage, /listTopFitOpportunities\(organizationId(?:,\s*\d+)?(?:,\s*[^)]+)?\)/);
 });
