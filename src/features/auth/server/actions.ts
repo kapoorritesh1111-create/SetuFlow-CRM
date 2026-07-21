@@ -4,8 +4,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { loginOtpSchema, loginSchema, requestPasswordResetSchema } from '@/lib/validation/auth';
 import { checkRateLimit } from '@/lib/rate-limit/simple';
-import { env } from '@/lib/env';
-import { safeAppUrl } from '@/lib/security/url';
+import { buildAuthConfirmRedirect } from '@/lib/security/url';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { persistActiveOrganization } from '@/lib/workspace/auth';
@@ -236,13 +235,10 @@ export async function requestPasswordReset(email: string) {
   }
 
   const supabase = await createServerSupabaseClient();
-  const requestOrigin = safeAppUrl(headers().get('origin'));
-  const baseUrl = requestOrigin || safeAppUrl(env.appUrl);
-  const redirectTo = new URL('/auth/confirm', baseUrl);
-  redirectTo.searchParams.set('next', '/reset-password');
+  const redirectTo = buildAuthConfirmRedirect('/reset-password', headers());
 
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: redirectTo.toString(),
+    redirectTo,
   });
 
   if (error) return { error: error.message };
