@@ -1,5 +1,13 @@
 import { env } from '@/lib/env';
 
+type HeaderReader = {
+  get(name: string): string | null;
+};
+
+function firstHeaderValue(value?: string | null) {
+  return value?.split(',')[0]?.trim() || null;
+}
+
 function normalizeOrigin(value?: string | null) {
   if (!value) return null;
   try {
@@ -9,12 +17,4 @@ function normalizeOrigin(value?: string | null) {
   }
 }
 
-const allowedOrigins = new Set(
-  [normalizeOrigin(env.appUrl), 'http://localhost:3000', 'http://127.0.0.1:3000'].filter(Boolean) as string[]
-);
-
-export function safeAppUrl(origin?: string | null) {
-  const normalizedOrigin = normalizeOrigin(origin);
-  if (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) return normalizedOrigin;
-  return normalizeOrigin(env.appUrl) ?? 'http://localhost:3000';
-}
+function isTrustedApp
