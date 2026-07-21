@@ -72,6 +72,7 @@ export function RunBoard({ suiteKey, suiteTitle, environment, cases }: { suiteKe
         <div style={{ flex: 1, minWidth: 120, height: 9, borderRadius: 6, background: '#e2e8f0', overflow: 'hidden' }}><div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#279491,#1f487c)' }} /></div>
         <button className="smc-btn smc-btn-p" disabled={pending || done === 0} onClick={finish}>{pending ? 'Saving…' : 'Finish & save run'}</button>
       </div>
+      <div className="smc-cs">
       {err && <div style={{ margin: '12px 24px 0', padding: 10, borderRadius: 8, border: '1px solid #f3b4b4', background: '#fff7f7', color: '#b91c1c', fontSize: 12.5 }}>{err}</div>}
       <div style={{ padding: '18px 24px' }}>
         {cases.map((c, i) => (
@@ -109,6 +110,7 @@ export function RunBoard({ suiteKey, suiteTitle, environment, cases }: { suiteKe
           </div>
         ))}
         {cases.length === 0 && <p style={{ color: '#64748b' }}>This suite has no cases yet.</p>}
+      </div>
       </div>
     </>
   );

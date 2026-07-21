@@ -29,6 +29,11 @@
 - tests/design-tokens.test.mjs                                   (ratchet re-baselined for pre-existing marketing files)
 - package.json                                                   (test:packaging script)
 
+## Scroll bugfixes (added after QA feedback — S24-SPEN-212 / -213)
+- src/app/smc/qa/run/[suiteKey]/run-board.tsx   (wrap cases in .smc-cs scroll region)
+- src/app/smc/qa/qa-workspace.tsx               (wrap tab body in .smc-cs)
+- src/app/globals.css                           (only-child override so headerless drawers — Setu Guru — keep flex height and scroll)
+
 ## Supabase (already applied to production project sjzfzloggabsmcuxktnl)
 - Migration s24_spen_packaging_vertical_foundation (tables, columns, RLS, backfill)
 - Seeds: 9 packaging_service_families + 5 packaging_pricing_templates (org 3f8ef935…, idempotent)
