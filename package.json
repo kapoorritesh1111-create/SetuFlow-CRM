@@ -33,7 +33,8 @@
     "test:integrations": "tsx --test tests/integrations/governance.test.ts",
     "test:security": "tsx --test tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts",
     "check:mobile-scan": "node scripts/check-mobile-scan-prod.mjs",
-    "test:docs-drift": "node --test tests/docs-drift.test.mjs"
+    "test:docs-drift": "node --test tests/docs-drift.test.mjs",
+    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts"
   },
   "dependencies": {
     "@sparticuz/chromium": "^137.0.1",
