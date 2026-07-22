@@ -1,7 +1,7 @@
 import './globals.css';
-import './action-contrast-safety.css';
 import './marketing-hero-tuning.css';
 import './s47-lead-guru-tuning.css';
+import './action-contrast-safety.css';
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { Plus_Jakarta_Sans } from 'next/font/google';
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_GB',
-    alternateLocale: ['en_US', 'en_IN', 'en_DE'],
+    alternateLocale: ['en_US', 'en_IN', 'de_DE'],
     url: 'https://www.setuflowcrm.com',
     siteName: 'Setu Flow',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
