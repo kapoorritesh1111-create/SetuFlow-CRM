@@ -25,6 +25,7 @@ export type PackagingServiceFamily = {
   default_lead_time: string | null;
   sort_order: number;
   is_active: boolean;
+  icon_key?: string | null;
 };
 
 export type DimensionRange = { min: number; max: number };
@@ -251,3 +252,48 @@ export const ARTWORK_STATUS_OPTIONS: Array<{ key: ArtworkStatus; label: string }
   { key: 'needs_prepress', label: 'Needs pre-press' },
   { key: 'not_provided', label: 'Not provided yet' },
 ];
+
+/**
+ * S27-STARK-REFLIB-01 — Shared reference-data library (materials, finishes,
+ * service items). Stored per customer (organization_id), separate from the
+ * global starter catalog in packaging_reference_item_defaults. Templates
+ * still store their own key/label/rate on save (JSONB snapshot, unchanged
+ * shape — MaterialRate / FinishAddonRate above), so nothing about pricing
+ * or existing quotes changes. The library only powers the *authoring*
+ * experience: instead of free-typing a material/finish/service name in the
+ * Pricing Template Builder, you pick from (or add to) this org's own list.
+ */
+export type PackagingReferenceCategory = 'material' | 'finish' | 'service_item';
+
+export type PackagingReferenceItem = {
+  id: string;
+  organization_id: string;
+  category: PackagingReferenceCategory;
+  key: string;
+  name: string;
+  description: string | null;
+  default_thickness: string | null;
+  default_unit_hint: string | null;
+  is_active: boolean;
+  source: 'default_seed' | 'migrated' | 'custom';
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type PackagingReferenceItemDefault = {
+  id: string;
+  category: PackagingReferenceCategory;
+  key: string;
+  name: string;
+  description: string | null;
+  default_thickness: string | null;
+  default_unit_hint: string | null;
+  sort_order: number;
+};
+
+export const REFERENCE_CATEGORY_LABELS: Record<PackagingReferenceCategory, string> = {
+  material: 'Materials',
+  finish: 'Finishes',
+  service_item: 'Service items',
+};

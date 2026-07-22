@@ -3,12 +3,12 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
-import { getPackagingFamilies, getPackagingReferenceItems, getPackagingTemplates } from '@/lib/packaging/queries';
-import PricingTemplateBuilder from '@/features/packaging/components/pricing-template-builder';
+import { getPackagingReferenceItemsForAdmin } from '@/lib/packaging/queries';
+import PackagingReferenceLibraryManager from '@/features/packaging/components/packaging-reference-library-manager';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PackagingTemplatesAdminPage() {
+export default async function PackagingReferenceLibraryAdminPage() {
   if (!hasSupabaseEnv) {
     return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning" />;
   }
@@ -21,17 +21,13 @@ export default async function PackagingTemplatesAdminPage() {
     return (
       <StateMessage
         title="Packaging vertical is not enabled"
-        description="Packaging pricing templates are available for packaging-vertical workspaces. Contact SETU Flow to enable it."
+        description="The reference library is available for packaging-vertical workspaces. Contact SETU Flow to enable it."
         tone="info"
       />
     );
   }
 
-  const [families, templates, referenceItems] = await Promise.all([
-    getPackagingFamilies(organization.id, supabase),
-    getPackagingTemplates(organization.id, supabase),
-    getPackagingReferenceItems(organization.id, supabase),
-  ]);
+  const items = await getPackagingReferenceItemsForAdmin(organization.id, supabase);
 
-  return <PricingTemplateBuilder families={families} templates={templates} referenceItems={referenceItems} />;
+  return <PackagingReferenceLibraryManager items={items} />;
 }

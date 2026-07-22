@@ -585,3 +585,165 @@ export async function uploadPackagingProof(formData: FormData): Promise<{ ok: bo
     return { ok: false, error: error instanceof Error ? error.message : 'Could not upload this proof.' };
   }
 }
+
+/**
+ * S27-STARK — Service families previously had no admin UI at all (only ever
+ * seeded via SQL/seed-data.ts). This is what /admin/packaging-families uses
+ * to create and edit them.
+ */
+export async function savePackagingFamily(draft: {
+  id: string | null;
+  slug: string;
+  name: string;
+  description: string | null;
+  pricing_mode: 'dimensional' | 'service';
+  quote_time_inputs: { key: string; label: string }[];
+  default_unit: string;
+  default_lead_time: string | null;
+  sort_order: number;
+  is_active: boolean;
+}): Promise<{ ok: boolean; error?: string; familyId?: string }> {
+  try {
+    const { supabase, organizationId } = await getContext();
+    const slug = draft.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const name = draft.name.trim();
+    if (!slug || !name) return { ok: false, error: 'Name and slug are required.' };
+
+    const row = {
+      organization_id: organizationId,
+      slug,
+      name,
+      description: draft.description?.trim() || null,
+      pricing_mode: draft.pricing_mode,
+      quote_time_inputs: draft.quote_time_inputs,
+      default_unit: draft.default_unit.trim() || 'pcs',
+      default_lead_time: draft.default_lead_time?.trim() || null,
+      sort_order: draft.sort_order,
+      is_active: draft.is_active,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (draft.id) {
+      const { error } = await supabase.from('packaging_service_families').update(row).eq('id', draft.id).eq('organization_id', organizationId);
+      if (error) return { ok: false, error: error.message };
+      revalidatePath('/admin/packaging-families');
+      revalidatePath('/products');
+      return { ok: true, familyId: draft.id };
+    }
+
+    const { data, error } = await supabase.from('packaging_service_families').insert(row).select('id').maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    revalidatePath('/admin/packaging-families');
+    revalidatePath('/products');
+    return { ok: true, familyId: data?.id };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not save this family.' };
+  }
+}
+
+/**
+ * S27-STARK-REFLIB-01 — Reference library (materials, finishes, service
+ * items) server actions. Stored per organization; every write is scoped to
+ * the caller's own org via getContext()/RLS, same as the rest of this file.
+ */
+
+function slugifyReferenceKey(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '') || `item_${Date.now()}`;
+}
+
+export async function seedPackagingReferenceDefaults(): Promise<{ ok: boolean; error?: string; addedCount?: number }> {
+  try {
+    const { supabase, organizationId } = await getContext();
+    const { data, error } = await supabase.rpc('seed_packaging_reference_defaults', { p_organization_id: organizationId });
+    if (error) return { ok: false, error: error.message };
+    revalidatePath('/admin/packaging-reference-library');
+    revalidatePath('/admin/packaging-templates');
+    return { ok: true, addedCount: typeof data === 'number' ? data : 0 };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not set up the starter library.' };
+  }
+}
+
+export type ReferenceItemDraft = {
+  id?: string | null;
+  category: 'material' | 'finish' | 'service_item';
+  key?: string | null;
+  name: string;
+  description?: string | null;
+  default_thickness?: string | null;
+  default_unit_hint?: string | null;
+  sort_order?: number;
+};
+
+export async function savePackagingReferenceItem(
+  draft: ReferenceItemDraft,
+): Promise<{ ok: boolean; error?: string; item?: import('@/lib/packaging/types').PackagingReferenceItem }> {
+  try {
+    const { supabase, organizationId } = await getContext();
+    const name = draft.name.trim();
+    if (!name) return { ok: false, error: 'Name is required.' };
+    const key = draft.key?.trim() ? slugifyReferenceKey(draft.key) : slugifyReferenceKey(name);
+
+    const row = {
+      organization_id: organizationId,
+      category: draft.category,
+      key,
+      name,
+      description: draft.description?.trim() || null,
+      default_thickness: draft.default_thickness?.trim() || null,
+      default_unit_hint: draft.default_unit_hint?.trim() || null,
+      source: 'custom' as const,
+      sort_order: draft.sort_order ?? 500,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (draft.id) {
+      const { data, error } = await supabase
+        .from('packaging_reference_items')
+        .update(row)
+        .eq('id', draft.id)
+        .eq('organization_id', organizationId)
+        .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order')
+        .maybeSingle();
+      if (error) return { ok: false, error: error.message };
+      revalidatePath('/admin/packaging-reference-library');
+      revalidatePath('/admin/packaging-templates');
+      return { ok: true, item: data };
+    }
+
+    const { data, error } = await supabase
+      .from('packaging_reference_items')
+      .insert(row)
+      .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order')
+      .maybeSingle();
+    if (error) {
+      // Unique (organization_id, category, key) collision — most likely the buyer
+      // typed a name that slugifies to an existing key. Surface a clear message
+      // instead of a raw constraint error.
+      if (error.code === '23505') return { ok: false, error: `An item with a matching key already exists in this category. Try a more specific name.` };
+      return { ok: false, error: error.message };
+    }
+    revalidatePath('/admin/packaging-reference-library');
+    revalidatePath('/admin/packaging-templates');
+    return { ok: true, item: data };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not save this item.' };
+  }
+}
+
+export async function setPackagingReferenceItemActive(id: string, isActive: boolean): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { supabase, organizationId } = await getContext();
+    const { error } = await supabase
+      .from('packaging_reference_items')
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('organization_id', organizationId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath('/admin/packaging-reference-library');
+    revalidatePath('/admin/packaging-templates');
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not update this item.' };
+  }
+}

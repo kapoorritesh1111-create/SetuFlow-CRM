@@ -62,8 +62,8 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
 
   return (
     <div className="mt-2">
-      <button onClick={toggle} className="text-xs font-semibold text-brand-700 hover:underline">
-        {open ? 'Hide artwork proofs' : 'Artwork proofs →'}
+      <button onClick={toggle} className="flex items-center gap-1.5 rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-xs font-semibold text-content-primary hover:border-brand-200">
+        <span aria-hidden="true">🖼️</span> {open ? 'Hide artwork proofs' : 'Artwork proofs — upload or review'}
       </button>
       {open ? (
         <div className="mt-2 rounded-ctl border border-line bg-surface-app p-3">

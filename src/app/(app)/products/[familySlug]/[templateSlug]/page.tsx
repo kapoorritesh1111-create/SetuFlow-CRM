@@ -30,7 +30,7 @@ export default async function PackagingProductDetailPage({ params }: { params: {
   const template = await getPackagingTemplateBySlug(workspace.organization.id, params.templateSlug, supabase);
   if (!family || !template || template.family_id !== family.id) notFound();
 
-  const visual = getFamilyVisual(family.slug);
+  const visual = getFamilyVisual(family.slug, family.icon_key);
   const price = estimateStartingPrice(template);
   const canManageCatalog = hasWorkspaceCapability(workspace.currentRoles, 'catalog.manage');
 

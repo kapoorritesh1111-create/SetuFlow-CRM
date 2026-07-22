@@ -34,7 +34,7 @@ export default async function PackagingCategoryDetailPage({ params }: { params: 
   const allTemplates = await getPackagingTemplates(workspace.organization.id, supabase);
   const templates = allTemplates.filter((template) => template.family_id === family.id && template.is_active);
   const linkedTemplate = templates[0] ?? null;
-  const visual = getFamilyVisual(family.slug);
+  const visual = getFamilyVisual(family.slug, family.icon_key);
 
   return (
     <div className="space-y-4 pb-16">

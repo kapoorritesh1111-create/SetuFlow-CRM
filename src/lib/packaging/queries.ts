@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import type {
   PackagingPricingTemplate,
   PackagingProof,
+  PackagingReferenceItem,
+  PackagingReferenceItemDefault,
   PackagingSavedSpec,
   PackagingServiceFamily,
   QuoteOptionalCharge,
@@ -21,9 +23,25 @@ export async function getPackagingFamilies(
   const supabase = ((client ?? (await createClient())) as any);
   const { data, error } = await supabase
     .from('packaging_service_families')
-    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active')
+    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active, icon_key')
     .eq('organization_id', organizationId)
     .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PackagingServiceFamily[];
+}
+
+/** S27-STARK — admin management view: includes inactive families too, unlike
+ * the customer-facing getPackagingFamilies above. */
+export async function getPackagingFamiliesForAdmin(
+  organizationId: string,
+  client?: QueryClient,
+): Promise<PackagingServiceFamily[]> {
+  const supabase = ((client ?? (await createClient())) as any);
+  const { data, error } = await supabase
+    .from('packaging_service_families')
+    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active, icon_key')
+    .eq('organization_id', organizationId)
     .order('sort_order', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as PackagingServiceFamily[];
@@ -358,4 +376,54 @@ export async function getQuoteOptionalCharges(
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as QuoteOptionalCharge[];
+}
+
+/**
+ * S27-STARK-REFLIB-01 — Customer reference library (materials, finishes,
+ * service items). Active-only, used by the Pricing Template Builder picker.
+ */
+export async function getPackagingReferenceItems(
+  organizationId: string,
+  client?: QueryClient,
+): Promise<PackagingReferenceItem[]> {
+  const supabase = ((client ?? (await createClient())) as any);
+  const { data, error } = await supabase
+    .from('packaging_reference_items')
+    .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order, created_at, updated_at')
+    .eq('organization_id', organizationId)
+    .eq('is_active', true)
+    .order('category', { ascending: true })
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PackagingReferenceItem[];
+}
+
+/** Admin management view: includes inactive items too. */
+export async function getPackagingReferenceItemsForAdmin(
+  organizationId: string,
+  client?: QueryClient,
+): Promise<PackagingReferenceItem[]> {
+  const supabase = ((client ?? (await createClient())) as any);
+  const { data, error } = await supabase
+    .from('packaging_reference_items')
+    .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order, created_at, updated_at')
+    .eq('organization_id', organizationId)
+    .order('category', { ascending: true })
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PackagingReferenceItem[];
+}
+
+/** The global starter catalog — used to preview what "Set up starter library" would add. */
+export async function getPackagingReferenceItemDefaults(client?: QueryClient): Promise<PackagingReferenceItemDefault[]> {
+  const supabase = ((client ?? (await createClient())) as any);
+  const { data, error } = await supabase
+    .from('packaging_reference_item_defaults')
+    .select('id, category, key, name, description, default_thickness, default_unit_hint, sort_order')
+    .order('category', { ascending: true })
+    .order('sort_order', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PackagingReferenceItemDefault[];
 }

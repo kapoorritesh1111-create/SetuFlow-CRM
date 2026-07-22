@@ -2,19 +2,23 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type {
   AreaFormula,
   FinishAddonRate,
   MaterialRate,
   PackagingCalculationInput,
   PackagingPricingTemplate,
+  PackagingReferenceItem,
   PackagingServiceFamily,
   RushOption,
   SetupCharge,
 } from '@/lib/packaging/types';
 import { calculatePackagingPrice } from '@/lib/packaging/pricing-engine';
 import { checkPackagingTemplateHealth } from '@/lib/setu-guru/packaging-guidance';
-import { savePackagingTemplate, duplicatePackagingTemplate } from '@/features/packaging/server/actions';
+import { savePackagingTemplate, duplicatePackagingTemplate, savePackagingReferenceItem } from '@/features/packaging/server/actions';
+import { PageHeader } from '@/components/ui/page-header';
+import { workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
 
 /**
  * S24-SPEN-204 — Pricing Template Builder.
@@ -27,6 +31,7 @@ import { savePackagingTemplate, duplicatePackagingTemplate } from '@/features/pa
 type Props = {
   families: PackagingServiceFamily[];
   templates: PackagingPricingTemplate[];
+  referenceItems: PackagingReferenceItem[];
 };
 
 type Draft = PackagingPricingTemplate;
@@ -68,13 +73,33 @@ const inputCls = 'mt-1 w-full rounded-ctl border border-line bg-surface-app px-2
 const labelCls = 'text-xs font-semibold text-content-primary';
 const chipBtn = 'rounded-ctl border border-line bg-surface-app px-2.5 py-1.5 text-xs font-semibold text-content-secondary';
 
-export default function PricingTemplateBuilder({ families, templates }: Props) {
+export default function PricingTemplateBuilder({ families, templates, referenceItems }: Props) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>(templates[0]?.id ?? 'new');
   const [draft, setDraft] = useState<Draft>(templates[0] ?? NEW_TEMPLATE(families));
   const [previewInput, setPreviewInput] = useState<PackagingCalculationInput>({ width_mm: 180, height_mm: 260, gusset_mm: 80, material_key: null, print_colors: 2, finish_keys: [], service_item_keys: [], quantity: 1000, designs: 1, artwork_status: 'print_ready', rush_key: null });
   const [saving, startSaving] = useTransition();
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [libraryItems, setLibraryItems] = useState<PackagingReferenceItem[]>(referenceItems);
+  const [savingToLibrary, setSavingToLibrary] = useState<string | null>(null);
+
+  /** S27-STARK-REFLIB-01 — save the currently-typed label into this org's
+   * reference library, so it's a pick from a list next time instead of a
+   * re-typed string. Never touches the row's own key/rate — purely additive. */
+  const saveLabelToLibrary = async (category: 'material' | 'finish' | 'service_item', label: string, extra?: { thickness?: string; basis?: string }) => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    if (libraryItems.some((item) => item.category === category && item.name.toLowerCase() === trimmed.toLowerCase())) return;
+    setSavingToLibrary(`${category}:${trimmed}`);
+    const response = await savePackagingReferenceItem({
+      category,
+      name: trimmed,
+      default_thickness: extra?.thickness || null,
+      default_unit_hint: extra?.basis || null,
+    });
+    setSavingToLibrary(null);
+    if (response.ok && response.item) setLibraryItems((previous) => [...previous, response.item!]);
+  };
 
   const isDimensional = draft.allowed_dimension_ranges_json?.area_formula !== 'service';
   const health = useMemo(() => checkPackagingTemplateHealth(draft), [draft]);
@@ -124,16 +149,17 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
 
   return (
     <div className="space-y-4 pb-16">
-      <section className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-content-primary">Packaging Pricing Templates</h1>
-          <p className="mt-1 text-sm text-content-secondary">Rules that drive live quote pricing. Preview uses the same calculation engine as the Quote Builder.</p>
-        </div>
-        <div className="flex gap-2">
-          {draft.id ? <button onClick={handleDuplicate} disabled={saving} className="rounded-ctl border border-line bg-surface-1 px-4 py-2 text-sm font-semibold text-content-primary disabled:opacity-50">Duplicate</button> : null}
-          <button onClick={handleSave} disabled={saving} className="rounded-ctl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save template'}</button>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Packaging Setup"
+        title="Pricing Templates"
+        description="Rules that drive live quote pricing. Preview uses the same calculation engine as the Quote Builder."
+        meta={[`${templates.length} template${templates.length === 1 ? '' : 's'}`, `${templates.filter((template) => template.is_active).length} active`]}
+      />
+
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {draft.id ? <button onClick={handleDuplicate} disabled={saving} className={`rounded-ctl px-4 py-2 text-sm font-semibold disabled:opacity-50 ${workspaceSecondaryButtonClass}`}>Duplicate</button> : null}
+        <button onClick={handleSave} disabled={saving} className={`rounded-ctl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${workspacePrimaryButtonClass}`}>{saving ? 'Saving…' : 'Save template'}</button>
+      </div>
 
       {feedback ? (
         <p className={`rounded-ctl px-3 py-2 text-sm font-medium ${feedback.tone === 'success' ? 'bg-success-bg text-success-fg' : 'bg-danger-bg text-danger-fg'}`}>{feedback.text}</p>
@@ -141,11 +167,11 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
 
       <div className="flex flex-wrap gap-2">
         {templates.map((template) => (
-          <button key={template.id} onClick={() => selectTemplate(template.id)} className={`rounded-ctl border px-3 py-2 text-sm font-semibold ${selectedId === template.id ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-line bg-surface-1 text-content-secondary'}`}>
+          <button key={template.id} onClick={() => selectTemplate(template.id)} className={`rounded-ctl border px-3 py-2 text-sm font-semibold transition ${selectedId === template.id ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-line bg-surface-1 text-content-secondary hover:bg-surface-2'}`}>
             {template.name}{template.is_active ? '' : ' (inactive)'}
           </button>
         ))}
-        <button onClick={() => selectTemplate('new')} className={`rounded-ctl border px-3 py-2 text-sm font-semibold ${selectedId === 'new' ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-line bg-surface-1 text-content-secondary'}`}>+ New template</button>
+        <button onClick={() => selectTemplate('new')} className={`rounded-ctl border px-3 py-2 text-sm font-semibold transition ${selectedId === 'new' ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-line bg-surface-1 text-content-secondary hover:bg-surface-2'}`}>+ New template</button>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -158,8 +184,16 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
               <label className={labelCls}>Slug<input value={draft.slug} onChange={(event) => patch({ slug: event.target.value })} className={inputCls} /></label>
               <label className={labelCls}>Service family
                 <select value={draft.family_id ?? ''} onChange={(event) => patch({ family_id: event.target.value || null })} className={inputCls}>
+                  <option value="">— No family selected —</option>
                   {families.map((family) => <option key={family.id} value={family.id}>{family.name}</option>)}
                 </select>
+                {draft.family_id ? (
+                  <Link href="/admin/packaging-families" className="mt-1 inline-block text-xs font-semibold text-brand-700 hover:underline">
+                    Edit {families.find((family) => family.id === draft.family_id)?.name ?? 'this family'} →
+                  </Link>
+                ) : (
+                  <p className="mt-1 text-xs font-medium text-warning-fg">No family selected — this template won't appear anywhere in the catalog.</p>
+                )}
               </label>
               <label className={labelCls}>Currency<input value={draft.currency} onChange={(event) => patch({ currency: event.target.value.toUpperCase() })} className={inputCls} /></label>
               <label className={labelCls}>Waste factor %<input type="number" value={draft.waste_factor_pct} onChange={(event) => patch({ waste_factor_pct: num(event.target.value) })} className={inputCls} /></label>
@@ -265,22 +299,40 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
               <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">{isDimensional ? 'Materials (rate per m²)' : 'Service items'}</p>
               <button onClick={() => patch({ material_rates_json: [...draft.material_rates_json, isDimensional ? { key: `mat_${draft.material_rates_json.length + 1}`, label: '', thickness: '', rate_per_sqm: 0 } : { key: `svc_${draft.material_rates_json.length + 1}`, label: '', basis: 'per_job', rate: 0 }] })} className={chipBtn}>+ Add</button>
             </div>
+            <p className="mt-1 text-xs text-content-muted">
+              Label picks up suggestions from your <Link href="/admin/packaging-reference-library" className="font-semibold text-brand-700 hover:underline">Reference Library</Link>. Use the bookmark to save a new label there for reuse on other templates.
+            </p>
+            <datalist id="reflib-material">
+              {libraryItems.filter((item) => item.category === (isDimensional ? 'material' : 'service_item')).map((item) => <option key={item.id} value={item.name} />)}
+            </datalist>
             <div className="mt-2 space-y-2">
-              {draft.material_rates_json.map((material, index) => (
-                <div key={index} className="grid gap-2 rounded-ctl border border-line bg-surface-app p-2 sm:grid-cols-[1fr_1fr_1fr_120px_auto]">
-                  <input placeholder="key" value={material.key} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
-                  <input placeholder="Label" value={material.label} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
-                  {isDimensional ? (
-                    <input placeholder="Thickness" value={material.thickness ?? ''} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, thickness: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
-                  ) : (
-                    <select value={material.basis ?? 'per_job'} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, basis: event.target.value as MaterialRate['basis'] } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm">
-                      <option value="per_job">per job</option><option value="per_design">per design</option><option value="per_unit">per piece</option>
-                    </select>
-                  )}
-                  <input type="number" placeholder="Rate" value={isDimensional ? material.rate_per_sqm ?? 0 : material.rate ?? 0} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? (isDimensional ? { ...row, rate_per_sqm: num(event.target.value) } : { ...row, rate: num(event.target.value) }) : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
-                  <button onClick={() => patch({ material_rates_json: draft.material_rates_json.filter((_, i) => i !== index) })} className={chipBtn}>Remove</button>
-                </div>
-              ))}
+              {draft.material_rates_json.map((material, index) => {
+                const category = isDimensional ? 'material' : 'service_item';
+                const alreadyInLibrary = libraryItems.some((item) => item.category === category && item.name.toLowerCase() === material.label.trim().toLowerCase());
+                return (
+                  <div key={index} className="grid gap-2 rounded-ctl border border-line bg-surface-app p-2 sm:grid-cols-[1fr_1fr_1fr_120px_auto_auto]">
+                    <input placeholder="key" value={material.key} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
+                    <input list="reflib-material" placeholder="Label" value={material.label} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
+                    {isDimensional ? (
+                      <input placeholder="Thickness" value={material.thickness ?? ''} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, thickness: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
+                    ) : (
+                      <select value={material.basis ?? 'per_job'} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, basis: event.target.value as MaterialRate['basis'] } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm">
+                        <option value="per_job">per job</option><option value="per_design">per design</option><option value="per_unit">per piece</option>
+                      </select>
+                    )}
+                    <input type="number" placeholder="Rate" value={isDimensional ? material.rate_per_sqm ?? 0 : material.rate ?? 0} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? (isDimensional ? { ...row, rate_per_sqm: num(event.target.value) } : { ...row, rate: num(event.target.value) }) : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
+                    <button
+                      title={alreadyInLibrary ? 'Already in your reference library' : 'Save this label to your reference library'}
+                      disabled={alreadyInLibrary || !material.label.trim() || savingToLibrary === `${category}:${material.label.trim()}`}
+                      onClick={() => saveLabelToLibrary(category, material.label, isDimensional ? { thickness: material.thickness } : { basis: material.basis })}
+                      className={`rounded-ctl border px-2 py-1.5 text-xs font-semibold disabled:opacity-40 ${alreadyInLibrary ? 'border-line bg-surface-2 text-content-muted' : 'border-line bg-surface-1 text-content-secondary hover:bg-surface-2'}`}
+                    >
+                      {alreadyInLibrary ? '✓' : '+ Lib'}
+                    </button>
+                    <button onClick={() => patch({ material_rates_json: draft.material_rates_json.filter((_, i) => i !== index) })} className={chipBtn}>Remove</button>
+                  </div>
+                );
+              })}
             </div>
           </section>
 
@@ -329,18 +381,32 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
                   <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Finish & add-on rates</p>
                   <button onClick={() => patch({ finish_addon_rates_json: [...draft.finish_addon_rates_json, { key: `finish_${draft.finish_addon_rates_json.length + 1}`, label: '', basis: 'per_sqm', rate: 0 }] })} className={chipBtn}>+ Add</button>
                 </div>
+                <datalist id="reflib-finish">
+                  {libraryItems.filter((item) => item.category === 'finish').map((item) => <option key={item.id} value={item.name} />)}
+                </datalist>
                 <div className="mt-2 space-y-2">
-                  {draft.finish_addon_rates_json.map((finish, index) => (
-                    <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1fr_130px_120px_auto]">
-                      <input placeholder="key" value={finish.key} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
-                      <input placeholder="Label" value={finish.label} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
-                      <select value={finish.basis} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, basis: event.target.value as FinishAddonRate['basis'] } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm">
-                        <option value="per_sqm">per m²</option><option value="per_unit">per piece</option>
-                      </select>
-                      <input type="number" step="0.01" value={finish.rate} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, rate: num(event.target.value) } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
-                      <button onClick={() => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.filter((_, i) => i !== index) })} className={chipBtn}>Remove</button>
-                    </div>
-                  ))}
+                  {draft.finish_addon_rates_json.map((finish, index) => {
+                    const alreadyInLibrary = libraryItems.some((item) => item.category === 'finish' && item.name.toLowerCase() === finish.label.trim().toLowerCase());
+                    return (
+                      <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1fr_130px_120px_auto_auto]">
+                        <input placeholder="key" value={finish.key} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                        <input list="reflib-finish" placeholder="Label" value={finish.label} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                        <select value={finish.basis} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, basis: event.target.value as FinishAddonRate['basis'] } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm">
+                          <option value="per_sqm">per m²</option><option value="per_unit">per piece</option>
+                        </select>
+                        <input type="number" step="0.01" value={finish.rate} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, rate: num(event.target.value) } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                        <button
+                          title={alreadyInLibrary ? 'Already in your reference library' : 'Save this label to your reference library'}
+                          disabled={alreadyInLibrary || !finish.label.trim() || savingToLibrary === `finish:${finish.label.trim()}`}
+                          onClick={() => saveLabelToLibrary('finish', finish.label, { basis: finish.basis })}
+                          className={`rounded-ctl border px-2 py-1.5 text-xs font-semibold disabled:opacity-40 ${alreadyInLibrary ? 'border-line bg-surface-2 text-content-muted' : 'border-line bg-surface-app text-content-secondary hover:bg-surface-2'}`}
+                        >
+                          {alreadyInLibrary ? '✓' : '+ Lib'}
+                        </button>
+                        <button onClick={() => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.filter((_, i) => i !== index) })} className={chipBtn}>Remove</button>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             </>

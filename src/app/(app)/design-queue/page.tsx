@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingDesignQueue } from '@/lib/packaging/queries';
 import { ARTWORK_STATUS_OPTIONS } from '@/lib/packaging/types';
+import PackagingProofPanel from '@/features/packaging/components/packaging-proof-panel';
 
 /**
  * S27-STARK-A3 — Design/Prepress role landing page.
@@ -64,22 +65,27 @@ export default async function DesignQueuePage() {
         <section className="rounded-panel border border-line bg-surface-1 p-4">
           <ul className="divide-y divide-line">
             {[...needsPrepress, ...notProvided].map((item) => (
-              <li key={item.lineId} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="font-semibold text-content-primary">{item.companyName ?? 'Unknown company'}</p>
-                  <p className="truncate text-sm text-content-secondary">{item.specSummary ?? 'Packaging line'}</p>
-                  <p className="text-xs text-content-muted">{Number(item.quantity).toLocaleString()} pcs · {money(item.unitPrice, item.currency)} / pc{item.leadTime ? ` · ${item.leadTime}` : ''}</p>
+              <li key={item.lineId} className="flex flex-col gap-2 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-content-primary">{item.companyName ?? 'Unknown company'}</p>
+                    <p className="truncate text-sm text-content-secondary">{item.specSummary ?? 'Packaging line'}</p>
+                    <p className="text-xs text-content-muted">{Number(item.quantity).toLocaleString()} pcs · {money(item.unitPrice, item.currency)} / pc{item.leadTime ? ` · ${item.leadTime}` : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.artworkStatus === 'needs_prepress' ? 'bg-warning-bg text-warning-fg' : 'bg-info-bg text-info-fg'}`}>
+                      {artworkLabel(item.artworkStatus)}
+                    </span>
+                    {item.leadId ? (
+                      <Link href={`/leads/${item.leadId}/quote?quoteId=${item.quoteId}`} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-sm font-semibold text-content-primary hover:border-brand-200">
+                        Open quote →
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.artworkStatus === 'needs_prepress' ? 'bg-warning-bg text-warning-fg' : 'bg-info-bg text-info-fg'}`}>
-                    {artworkLabel(item.artworkStatus)}
-                  </span>
-                  {item.leadId ? (
-                    <Link href={`/leads/${item.leadId}/quote?quoteId=${item.quoteId}`} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-sm font-semibold text-content-primary hover:border-brand-200">
-                      Open quote →
-                    </Link>
-                  ) : null}
-                </div>
+                {/* S27-STARK: act directly from the queue — upload or review artwork
+                    proofs here instead of only linking away to the quote. */}
+                {item.leadId ? <PackagingProofPanel quoteLineItemId={item.lineId} leadId={item.leadId} /> : null}
               </li>
             ))}
           </ul>

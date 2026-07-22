@@ -232,3 +232,68 @@ Artwork upload + proof versioning + client-facing approval link.
 - npx tsc --noEmit -> 0 errors
 - npm run test:packaging -> 19/19 pass
 - node --test tests/design-tokens.test.mjs -> 5/5 pass
+
+## Data integrity fixes + Design Queue discoverability (this session)
+
+### Fixed: Orders never created for accepted seeded quotes (S27-STARK-DATA-01, Resolved)
+Seeded quotes were set to status=accepted directly via SQL, bypassing the real
+acceptance transaction (app_safe_accept_sent_quote_tx RPC) that actually creates
+orders/contracts. Ran the RPC properly for all 6 accepted quotes — Orders now
+populated with correct totals. No code changed, Supabase data only.
+
+### Fixed: Analytics showed $0 everywhere (S27-STARK-DATA-02, Resolved)
+Pipeline Value reads leads.deal_value (was null for all seeded leads); Top
+Markets by Pipeline reads a lead_markets join table (seeded leads weren't
+linked to any market). Populated deal_value on all 9 leads and linked them to
+the existing "Asia" market. No code changed, Supabase data only.
+
+### Improved: Design Queue / artwork proof discoverability (S27-STARK-UX-01, In Review)
+- Edited: src/features/packaging/components/packaging-proof-panel.tsx (visible
+  button instead of small text link)
+- Edited: src/app/(app)/design-queue/page.tsx (proof panel embedded directly
+  in each row — act on artwork without leaving the queue)
+
+### Verification (this session)
+- npx tsc --noEmit -> 0 errors
+- npm run test:packaging -> 19/19 pass
+- node --test tests/design-tokens.test.mjs -> 5/5 pass
+
+## Flagged, not fixed — needs your direction (see chat response)
+- Quote Builder Terms step (Step 2) still shows export/FOB/Incoterm/Port
+  fields for every quote, including packaging ones — was never adapted for
+  a domestic packaging business. Pre-existing app behavior, not something
+  I introduced, but genuinely wrong for Stark's use case.
+- "Cannot edit accepted quotes" — this is intentional (accepted = locked,
+  revise via a new quote), not a bug. Flagging in case it's not what you
+  expected.
+
+## Domestic terms + Service Family admin (this session)
+
+### S27-STARK-TERMS-01 — Domestic-first Quote Terms (In Review)
+- New: src/features/quotes/canonical/terms-delivery-fields.tsx
+- Edited: CanonicalQuoteBuilder.tsx, actions-stabilized.ts
+- Terms step defaults to Domestic (India, INR, delivery/dispatch fields) for
+  packaging orgs; International toggle keeps the original export fields.
+  Non-packaging orgs unaffected.
+
+### S27-STARK-FAMILY-01 — Service Family admin page (In Review)
+- New: src/app/(app)/admin/packaging-families/page.tsx,
+  src/features/packaging/components/packaging-family-manager.tsx
+- Edited: types.ts (icon_key), queries.ts (getPackagingFamiliesForAdmin),
+  family-visuals.ts (icon_key-aware, FAMILY_ICON_OPTIONS picker), actions.ts
+  (savePackagingFamily), admin-settings-shell.tsx (nav entry), template
+  builder (cross-link to family), catalog + drill-down pages (icon_key wired
+  through)
+- Supabase: migration s27_stark_family_icon_column
+
+### Verification (this session)
+- npx tsc --noEmit -> 0 errors (fixed one real type mismatch)
+- npm run test:packaging -> 19/19 pass
+- node --test tests/design-tokens.test.mjs -> 5/5 pass
+
+## Still open — see chat response for the plan
+- Admin page visual polish ("dev looking", not premium) — not yet redesigned,
+  needs a focused pass, proposal given in chat
+- Shared reference-data library (materials/finishes/service items as a
+  reusable master list instead of per-template free text) — scoped as a
+  bigger V2 item, not started

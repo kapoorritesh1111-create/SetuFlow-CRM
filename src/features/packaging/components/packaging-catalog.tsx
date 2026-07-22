@@ -156,7 +156,7 @@ export default function PackagingCatalog({ families, templates, showTrialBadge }
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {families.map((family) => {
               const active = family.slug === selected?.slug;
-              const visual = getFamilyVisual(family.slug);
+              const visual = getFamilyVisual(family.slug, family.icon_key);
               const price = startingPrices.get(family.slug);
               return (
                 <div
@@ -191,8 +191,8 @@ export default function PackagingCatalog({ families, templates, showTrialBadge }
           <aside className="h-fit rounded-panel border border-line bg-surface-1 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Selected family</p>
             <div className="mt-2 flex items-center gap-3">
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getFamilyVisual(selected.slug).bg} ${getFamilyVisual(selected.slug).fg}`}>
-                <SetuIcon name={getFamilyVisual(selected.slug).icon} className="h-5 w-5" />
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getFamilyVisual(selected.slug, selected.icon_key).bg} ${getFamilyVisual(selected.slug, selected.icon_key).fg}`}>
+                <SetuIcon name={getFamilyVisual(selected.slug, selected.icon_key).icon} className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
