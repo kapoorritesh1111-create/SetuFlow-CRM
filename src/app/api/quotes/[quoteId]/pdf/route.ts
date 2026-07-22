@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { deflateSync, inflateSync } from 'zlib';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
+
+export const runtime = 'nodejs';
 
 const INK = '#0f172a';
 const MUTED = '#475569';
@@ -11,9 +14,11 @@ const LINE = '#cbd5e1';
 const PANEL = '#f8fafc';
 const NL = String.fromCharCode(10);
 const BS = String.fromCharCode(92);
+const LOGO_BUCKET = 'org-logos';
 
 type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
 type PdfRow = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number };
+type PdfImage = { width: number; height: number; data: Buffer; filter: 'DCTDecode' | 'FlateDecode'; smask?: Buffer };
 
 type PdfData = {
   quoteNo: string;
@@ -28,6 +33,7 @@ type PdfData = {
   validUntil: string;
   terms: string;
   rows: PdfRow[];
+  logoImage?: PdfImage | null;
 };
 
 function num(value: unknown, fallback = 0) {
@@ -85,6 +91,131 @@ function orgLogoMark(org: any) {
   return mark || 'ORG';
 }
 
+function safeLogoPath(value?: string | null) {
+  const path = String(value ?? '').trim();
+  return Boolean(path) && !path.includes('..') && !/^https?:\/\//i.test(path) && !path.startsWith('/') ? path : '';
+}
+
+function jpegSize(buffer: Buffer) {
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) return null;
+  let offset = 2;
+  while (offset + 9 < buffer.length) {
+    if (buffer[offset] !== 0xff) return null;
+    const marker = buffer[offset + 1];
+    if (marker === 0xd9 || marker === 0xda) break;
+    const len = buffer.readUInt16BE(offset + 2);
+    if ([0xc0, 0xc1, 0xc2, 0xc3].includes(marker)) {
+      return { height: buffer.readUInt16BE(offset + 5), width: buffer.readUInt16BE(offset + 7) };
+    }
+    if (len < 2) return null;
+    offset += 2 + len;
+  }
+  return null;
+}
+
+function unfilterPngRow(filter: number, row: Buffer, prev: Buffer, bpp: number) {
+  const out = Buffer.alloc(row.length);
+  for (let i = 0; i < row.length; i += 1) {
+    const left = i >= bpp ? out[i - bpp] : 0;
+    const up = prev[i] ?? 0;
+    const upLeft = i >= bpp ? (prev[i - bpp] ?? 0) : 0;
+    let predict = 0;
+    if (filter === 1) predict = left;
+    else if (filter === 2) predict = up;
+    else if (filter === 3) predict = Math.floor((left + up) / 2);
+    else if (filter === 4) {
+      const p = left + up - upLeft;
+      const pa = Math.abs(p - left), pb = Math.abs(p - up), pc = Math.abs(p - upLeft);
+      predict = pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
+    }
+    out[i] = (row[i] + predict) & 255;
+  }
+  return out;
+}
+
+function pngImage(buffer: Buffer): PdfImage | null {
+  if (buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') return null;
+  let offset = 8;
+  let imageWidth = 0;
+  let imageHeight = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idats: Buffer[] = [];
+  while (offset + 8 <= buffer.length) {
+    const len = buffer.readUInt32BE(offset);
+    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
+    const data = buffer.subarray(offset + 8, offset + 8 + len);
+    offset += len + 12;
+    if (type === 'IHDR') {
+      imageWidth = data.readUInt32BE(0);
+      imageHeight = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+      if (data[12] !== 0) return null;
+    }
+    if (type === 'IDAT') idats.push(data);
+    if (type === 'IEND') break;
+  }
+  if (!imageWidth || !imageHeight || bitDepth !== 8 || ![0, 2, 4, 6].includes(colorType)) return null;
+  const channels = colorType === 0 ? 1 : colorType === 2 ? 3 : colorType === 4 ? 2 : 4;
+  const raw = inflateSync(Buffer.concat(idats));
+  const stride = imageWidth * channels;
+  const imageRgb = Buffer.alloc(imageWidth * imageHeight * 3);
+  const alpha = colorType === 4 || colorType === 6 ? Buffer.alloc(imageWidth * imageHeight) : null;
+  let rawOffset = 0;
+  let rgbOffset = 0;
+  let alphaOffset = 0;
+  let prev = Buffer.alloc(stride);
+  for (let y = 0; y < imageHeight; y += 1) {
+    const filter = raw[rawOffset];
+    rawOffset += 1;
+    const row = unfilterPngRow(filter, raw.subarray(rawOffset, rawOffset + stride), prev, channels);
+    rawOffset += stride;
+    prev = row;
+    for (let x = 0; x < imageWidth; x += 1) {
+      const p = x * channels;
+      if (colorType === 0) {
+        imageRgb[rgbOffset++] = row[p]; imageRgb[rgbOffset++] = row[p]; imageRgb[rgbOffset++] = row[p];
+      } else if (colorType === 2) {
+        imageRgb[rgbOffset++] = row[p]; imageRgb[rgbOffset++] = row[p + 1]; imageRgb[rgbOffset++] = row[p + 2];
+      } else if (colorType === 4) {
+        imageRgb[rgbOffset++] = row[p]; imageRgb[rgbOffset++] = row[p]; imageRgb[rgbOffset++] = row[p];
+        if (alpha) alpha[alphaOffset++] = row[p + 1];
+      } else {
+        imageRgb[rgbOffset++] = row[p]; imageRgb[rgbOffset++] = row[p + 1]; imageRgb[rgbOffset++] = row[p + 2];
+        if (alpha) alpha[alphaOffset++] = row[p + 3];
+      }
+    }
+  }
+  return { width: imageWidth, height: imageHeight, filter: 'FlateDecode', data: deflateSync(imageRgb), smask: alpha ? deflateSync(alpha) : undefined };
+}
+
+function parseLogoImage(buffer: Buffer, type?: string | null): PdfImage | null {
+  const lower = String(type ?? '').toLowerCase();
+  if (lower.includes('jpeg') || lower.includes('jpg') || buffer.subarray(0, 2).toString('hex') === 'ffd8') {
+    const size = jpegSize(buffer);
+    return size ? { ...size, data: buffer, filter: 'DCTDecode' } : null;
+  }
+  return pngImage(buffer);
+}
+
+async function loadOrgLogo(db: any, organizationId: string, org: any): Promise<PdfImage | null> {
+  try {
+    const { data: brandSettings } = await db
+      .from('organization_brand_settings')
+      .select('workspace_logo_storage_path')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    const path = safeLogoPath((brandSettings as any)?.workspace_logo_storage_path ?? org?.logo_storage_path);
+    if (!path) return null;
+    const { data, error } = await db.storage.from(LOGO_BUCKET).download(path);
+    if (error || !data) return null;
+    return parseLogoImage(Buffer.from(await data.arrayBuffer()), data.type);
+  } catch {
+    return null;
+  }
+}
+
 function buildPdf(data: PdfData) {
   const objects: string[] = [];
   const add = (body: string) => {
@@ -93,6 +224,14 @@ function buildPdf(data: PdfData) {
   };
   const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const fontBold = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  let logoObj = 0;
+  let smaskObj = 0;
+  if (data.logoImage?.smask) {
+    smaskObj = add(`<< /Type /XObject /Subtype /Image /Width ${data.logoImage.width} /Height ${data.logoImage.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${data.logoImage.smask.length} >>${NL}stream${NL}${data.logoImage.smask.toString('binary')}${NL}endstream`);
+  }
+  if (data.logoImage) {
+    logoObj = add(`<< /Type /XObject /Subtype /Image /Width ${data.logoImage.width} /Height ${data.logoImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /${data.logoImage.filter} ${smaskObj ? `/SMask ${smaskObj} 0 R ` : ''}/Length ${data.logoImage.data.length} >>${NL}stream${NL}${data.logoImage.data.toString('binary')}${NL}endstream`);
+  }
   const ops: string[] = [];
   const copy: PdfText[] = [];
   const left = 24;
@@ -108,8 +247,16 @@ function buildPdf(data: PdfData) {
 
   box(0, 0, 612, 792, '#ffffff');
   box(left, 724, 564, 44, '#ffffff', LINE);
-  box(left, 724, 44, 44, NAVY);
-  put(46, 746, logo, logo.length > 2 ? 6.8 : 8.5, true, '#ffffff', true);
+  box(left, 724, 44, 44, '#ffffff', LINE);
+  if (logoObj && data.logoImage) {
+    const scale = Math.min(38 / data.logoImage.width, 38 / data.logoImage.height);
+    const renderedWidth = data.logoImage.width * scale;
+    const renderedHeight = data.logoImage.height * scale;
+    ops.push(`q ${renderedWidth.toFixed(2)} 0 0 ${renderedHeight.toFixed(2)} ${(left + 22 - renderedWidth / 2).toFixed(2)} ${(746 - renderedHeight / 2).toFixed(2)} cm /Logo Do Q`);
+  } else {
+    box(left, 724, 44, 44, NAVY);
+    put(46, 746, logo, logo.length > 2 ? 6.8 : 8.5, true, '#ffffff', true);
+  }
   put(78, 750, clip(data.org?.legal_name ?? data.org?.name, 34, 'SETU Groups LLC'), 10.5, true, NAVY);
   put(78, 736, clip(data.org?.website, 42, 'https://www.setuflowcrm.com'), 6.4, false, MUTED);
   put(204, 752, 'SETU Flow - Client Price List', 15.2, true, NAVY);
@@ -194,7 +341,8 @@ function buildPdf(data: PdfData) {
   });
   const stream = [...ops, ...textOps].join(NL);
   const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>${NL}stream${NL}${stream}${NL}endstream`);
-  const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${content} 0 R >>`);
+  const xobjects = logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
+  const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${xobjects} >> /Contents ${content} 0 R >>`);
   const pages = add(`<< /Type /Pages /Kids [${page} 0 R] /Count 1 >>`);
   objects[page - 1] = objects[page - 1].replace('/Parent 0 0 R', `/Parent ${pages} 0 R`);
   const catalog = add(`<< /Type /Catalog /Pages ${pages} 0 R >>`);
@@ -258,6 +406,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
+  const logoImage = await loadOrgLogo(db, organizationId, org);
   const { data: optionalCharges } = await db
     .from('quote_optional_charges')
     .select('label, amount, currency')
@@ -312,6 +461,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     validUntil: dateText(quote.valid_until),
     terms: text(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
     rows,
+    logoImage,
   });
 
   await db.from('documents').upsert({
