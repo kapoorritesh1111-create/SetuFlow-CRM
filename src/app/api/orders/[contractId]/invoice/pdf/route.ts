@@ -4,6 +4,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { buildOrderDocumentPdf, type OrderPdfLine } from '@/lib/orders/order-document-pdf';
 import { loadOrganizationLogo } from '@/lib/pdf/organization-logo';
+import { recordGeneratedDocument } from '@/lib/documents/generated-document-registry';
 
 function safeId(value: string) { return String(value ?? '').slice(0, 8); }
 
@@ -63,6 +64,18 @@ export async function GET(_request: Request, { params }: { params: { contractId:
     lines,
   });
 
-  await db.from('documents').upsert({ organization_id: organizationId, related_entity: 'contract', related_id: contract.id, file_name: filename, file_url: `/api/orders/${contract.id}/invoice/pdf`, doc_type: 'invoice', uploaded_by: workspace.user?.id ?? null, version: 1, status: 'ready' }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
+  await recordGeneratedDocument(db, {
+    organizationId,
+    relatedEntity: 'contract',
+    relatedId: contract.id,
+    fileName: filename,
+    fileUrl: `/api/orders/${contract.id}/invoice/pdf`,
+    docType: 'invoice',
+    uploadedBy: workspace.user?.id ?? null,
+    uploadedAt: new Date().toISOString(),
+    version: 1,
+    status: 'approved',
+  });
+
   return new Response(new Uint8Array(bytes), { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Cache-Control': 'no-store' } });
 }
