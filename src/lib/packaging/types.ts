@@ -76,6 +76,21 @@ export type RushOption = { key: string; label: string; uplift_pct: number };
 
 export type LeadTimeRules = Record<string, string>;
 
+export type AdhesiveOption = { key: string; label: string };
+
+export type PrintProcess = 'digital' | 'flexo';
+
+/** S27-STARK-B1 — Flexo cylinder cost tiers by repeat length. The rate is
+ * per color (each color = one cylinder); larger repeat lengths need larger,
+ * more expensive cylinders. Admin-configurable, same pattern as MOQ tiers. */
+export type CylinderRateTier = { max_repeat_mm: number; rate_per_color: number };
+
+export type FlexoRules = {
+  repeat_length_mm: DimensionRange;
+  web_width_mm: DimensionRange;
+  cylinder_rate_tiers: CylinderRateTier[];
+};
+
 export type PackagingPricingTemplate = {
   id: string;
   organization_id: string;
@@ -95,6 +110,12 @@ export type PackagingPricingTemplate = {
   rush_options_json: RushOption[];
   lead_time_rules_json: LeadTimeRules;
   waste_factor_pct: number;
+  /** S24-SPEN-214: descriptive adhesive/build options; no price impact by default. */
+  adhesive_options_json?: AdhesiveOption[];
+  /** S27-STARK-B1: 'flexo' unlocks cylinder cost calculation. Defaults to 'digital' for
+   * every existing template — no behavior change unless explicitly set. */
+  print_process?: PrintProcess;
+  flexo_rules_json?: FlexoRules | null;
 };
 
 export type PackagingCalculationInput = {
@@ -102,6 +123,7 @@ export type PackagingCalculationInput = {
   height_mm?: number | null;
   gusset_mm?: number | null;
   material_key?: string | null;
+  adhesive_key?: string | null;
   print_colors?: number | null;
   finish_keys?: string[];
   addon_keys?: string[];
@@ -111,6 +133,10 @@ export type PackagingCalculationInput = {
   artwork_status?: ArtworkStatus | null;
   rush_key?: string | null;
   include_optional_setups?: string[];
+  /** S27-STARK-B1: flexo cylinder repeat length. Ignored for digital templates. */
+  repeat_length_mm?: number | null;
+  /** S27-STARK-B3: buyer/job already has a cylinder on file — skip the cylinder charge. */
+  reuse_existing_cylinder?: boolean;
 };
 
 export type PackagingBreakdownLine = {
@@ -137,7 +163,42 @@ export type PackagingCalculationResult = {
     tier_adjustment_total: number;
     rush_uplift_pct: number;
     setup_total: number;
+    cylinder_cost?: number;
   };
+};
+
+export type PackagingProofStatus = 'pending' | 'approved' | 'rejected';
+
+export type PackagingProof = {
+  id: string;
+  organization_id: string;
+  quote_line_item_id: string;
+  version: number;
+  file_path: string;
+  file_name: string;
+  mime_type: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+  status: PackagingProofStatus;
+  reviewed_at: string | null;
+  review_comment: string | null;
+  approval_token: string;
+  token_expires_at: string;
+};
+
+export type PackagingSavedSpec = {
+  id: string;
+  organization_id: string;
+  lead_id: string;
+  family_id: string | null;
+  template_id: string | null;
+  name: string;
+  input_snapshot_json: { input: PackagingCalculationInput; family_name?: string; template_name?: string };
+  last_unit_price: number | null;
+  last_currency: string | null;
+  last_calculated_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type PackagingQuoteLineSnapshot = {

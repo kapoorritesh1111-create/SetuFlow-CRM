@@ -388,6 +388,9 @@ export async function savePackagingTemplate(draft: TemplateDraft): Promise<{ ok:
       rush_options_json: draft.rush_options_json ?? [],
       lead_time_rules_json: draft.lead_time_rules_json ?? {},
       waste_factor_pct: Number(draft.waste_factor_pct ?? 0),
+      adhesive_options_json: draft.adhesive_options_json ?? [],
+      print_process: draft.print_process ?? 'digital',
+      flexo_rules_json: draft.print_process === 'flexo' ? (draft.flexo_rules_json ?? null) : null,
       updated_at: new Date().toISOString(),
     };
 
@@ -441,6 +444,9 @@ export async function duplicatePackagingTemplate(templateId: string): Promise<{ 
         rush_options_json: template.rush_options_json,
         lead_time_rules_json: template.lead_time_rules_json,
         waste_factor_pct: template.waste_factor_pct,
+        adhesive_options_json: template.adhesive_options_json ?? [],
+        print_process: template.print_process ?? 'digital',
+        flexo_rules_json: template.flexo_rules_json ?? null,
       })
       .select('id')
       .maybeSingle();
@@ -449,5 +455,133 @@ export async function duplicatePackagingTemplate(templateId: string): Promise<{ 
     return { ok: true, templateId: data?.id };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Could not duplicate the template.' };
+  }
+}
+
+/**
+ * S27-STARK-C1/C2 — Saved SKU spec cards for fast reorder. A rep names and
+ * saves the exact input snapshot of a calculated packaging line against the
+ * client (lead); reordering just replays that snapshot into the configurator
+ * with the current template rules, instead of re-entering every field.
+ */
+export async function savePackagingSpec(params: {
+  leadId: string;
+  familyId: string;
+  templateId: string;
+  name: string;
+  input: PackagingCalculationInput;
+}): Promise<{ ok: boolean; error?: string; specId?: string }> {
+  try {
+    const { supabase, organizationId, userId } = await getContext();
+    const name = params.name.trim();
+    if (!name) return { ok: false, error: 'Give this spec a name (e.g. the client SKU or product name).' };
+
+    const template = await getPackagingTemplateById(organizationId, params.templateId, supabase);
+    if (!template) return { ok: false, error: 'Pricing template not found.' };
+    const result = calculatePackagingPrice(template, params.input);
+
+    const { data, error } = await supabase
+      .from('packaging_saved_specs')
+      .insert({
+        organization_id: organizationId,
+        lead_id: params.leadId,
+        family_id: params.familyId,
+        template_id: params.templateId,
+        name,
+        input_snapshot_json: { input: params.input },
+        last_unit_price: result.ok ? result.unit_price : null,
+        last_currency: result.currency,
+        last_calculated_at: new Date().toISOString(),
+        created_by: userId,
+      })
+      .select('id')
+      .maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    revalidatePath(`/leads/${params.leadId}/quote`);
+    return { ok: true, specId: data?.id };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not save this spec.' };
+  }
+}
+
+export async function deletePackagingSavedSpec(specId: string, leadId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { supabase, organizationId } = await getContext();
+    const { error } = await supabase.from('packaging_saved_specs').delete().eq('id', specId).eq('organization_id', organizationId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath(`/leads/${leadId}/quote`);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not delete this spec.' };
+  }
+}
+
+export async function listPackagingProofs(quoteLineItemId: string): Promise<{ ok: boolean; error?: string; proofs?: import('@/lib/packaging/types').PackagingProof[] }> {
+  try {
+    const { organizationId } = await getContext();
+    const { getPackagingProofs } = await import('@/lib/packaging/queries');
+    const proofs = await getPackagingProofs(organizationId, quoteLineItemId);
+    return { ok: true, proofs };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not load proofs.' };
+  }
+}
+
+const PROOF_MAX_BYTES = 15 * 1024 * 1024;
+const PROOF_ALLOWED_MIME = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/webp']);
+
+/**
+ * S27-STARK-D3 — Upload an artwork proof version. Authenticated (requireWorkspace)
+ * so only signed-in team members can upload. Storage write and the DB insert both
+ * go through the admin client since the app doesn't run per-user storage RLS for
+ * this bucket; access control is enforced at this action boundary instead. The
+ * approval_token is generated with crypto.randomUUID() (cryptographically random,
+ * effectively unguessable) — it is the only credential the public approval page
+ * accepts.
+ */
+export async function uploadPackagingProof(formData: FormData): Promise<{ ok: boolean; error?: string; approvalUrl?: string }> {
+  try {
+    const { organizationId, userId } = await getContext();
+    const quoteLineItemId = String(formData.get('quoteLineItemId') ?? '');
+    const leadId = String(formData.get('leadId') ?? '');
+    const file = formData.get('file');
+    if (!quoteLineItemId) return { ok: false, error: 'Missing quote line.' };
+    if (!(file instanceof File) || file.size === 0) return { ok: false, error: 'Choose a file to upload.' };
+    if (file.size > PROOF_MAX_BYTES) return { ok: false, error: 'File is too large (15MB limit).' };
+    if (!PROOF_ALLOWED_MIME.has(file.type)) return { ok: false, error: 'Only PDF, PNG, JPEG, or WEBP files are accepted.' };
+
+    const { createAdminSupabaseClient } = await import('@/lib/supabase/admin');
+    const admin = createAdminSupabaseClient() as any;
+    if (!admin) return { ok: false, error: 'File storage is not configured.' };
+
+    const { getPackagingProofs } = await import('@/lib/packaging/queries');
+    const existing = await getPackagingProofs(organizationId, quoteLineItemId, admin as any);
+    const nextVersion = (existing[0]?.version ?? 0) + 1;
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
+    const path = `packaging-proofs/${organizationId}/${quoteLineItemId}/v${nextVersion}-${safeName}`;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { error: uploadError } = await admin.storage.from('lead-attachments').upload(path, bytes, { contentType: file.type, upsert: false });
+    if (uploadError) return { ok: false, error: uploadError.message };
+
+    const approvalToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const { error: insertError } = await admin.from('packaging_proofs').insert({
+      organization_id: organizationId,
+      quote_line_item_id: quoteLineItemId,
+      version: nextVersion,
+      file_path: path,
+      file_name: file.name,
+      mime_type: file.type,
+      uploaded_by: userId,
+      status: 'pending',
+      approval_token: approvalToken,
+    });
+    if (insertError) return { ok: false, error: insertError.message };
+
+    revalidatePath(`/leads/${leadId}/quote`);
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://setuflowcrm.com';
+    return { ok: true, approvalUrl: `${origin}/proof-approval/${approvalToken}` };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not upload this proof.' };
   }
 }

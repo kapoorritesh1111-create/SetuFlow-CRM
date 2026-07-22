@@ -7,7 +7,7 @@ import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 import CanonicalQuoteBuilderApprovalQueueV2 from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
-import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges } from '@/lib/packaging/queries';
+import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges, getPackagingSavedSpecs } from '@/lib/packaging/queries';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -63,19 +63,20 @@ export default async function QuotePage({
 
   // S24-SPEN-203/208: packaging-vertical workspaces get the packaging section
   // inside the canonical builder. Everyone else sees no change.
-  let packaging: { enabled: boolean; families: any[]; templates: any[]; charges: any[] } | null = null;
+  let packaging: { enabled: boolean; families: any[]; templates: any[]; charges: any[]; savedSpecs: any[] } | null = null;
   try {
     const supabase = await createClient();
     const verticals = await getOrganizationVerticals(workspace.organization.id, supabase);
     if (verticals.packagingEnabled) {
       const sorted = [...data.quotes].sort((a: any, b: any) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
       const activeQuote = (quoteId ? sorted.find((quote: any) => quote.id === quoteId) : null) ?? sorted[0] ?? null;
-      const [families, templates, charges] = await Promise.all([
+      const [families, templates, charges, savedSpecs] = await Promise.all([
         getPackagingFamilies(workspace.organization.id, supabase),
         getPackagingTemplates(workspace.organization.id, supabase),
         activeQuote ? getQuoteOptionalCharges(workspace.organization.id, activeQuote.id, supabase) : Promise.resolve([]),
+        getPackagingSavedSpecs(workspace.organization.id, params.leadId, supabase),
       ]);
-      packaging = { enabled: true, families, templates, charges };
+      packaging = { enabled: true, families, templates, charges, savedSpecs };
     }
   } catch {
     packaging = null;

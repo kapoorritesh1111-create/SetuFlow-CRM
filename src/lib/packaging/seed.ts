@@ -61,6 +61,9 @@ export async function seedPackagingDefaults(
     rush_options_json: template.rush_options_json,
     lead_time_rules_json: template.lead_time_rules_json,
     waste_factor_pct: template.waste_factor_pct,
+    adhesive_options_json: template.adhesive_options_json ?? [],
+    print_process: template.print_process ?? 'digital',
+    flexo_rules_json: template.flexo_rules_json ?? null,
   }));
 
   const { error: templateError } = await admin

@@ -27,6 +27,16 @@ const iconPaths = {
   users: 'M15 8a4 4 0 1 0-8 0 4 4 0 0 0 8 0ZM3 21a8 8 0 0 1 16 0M18 9a3 3 0 0 1 0 6M21 21a6 6 0 0 0-3-5.2',
   workflow: 'M6 6h6v6H6V6ZM12 9h5a3 3 0 0 1 3 3v1M18 18h-6v-6h6v6ZM6 18h3M3 18h.01',
   zap: 'M13 2 4 14h7l-1 8 10-13h-7l1-7Z',
+  // S24-SPEN-215: packaging service-family icon set
+  tag: 'M12 2 2 12l10 10 10-10L12 2ZM7 7h.01',
+  pouch: 'M8 3h8l1 5v10a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V8l1-5ZM9 3l6 0M6 12h12',
+  ribbon: 'M4 8h16M4 16h16M8 4v16M16 4v16',
+  layers: 'M12 3 3 8l9 5 9-5-9-5ZM3 12l9 5 9-5M3 16l9 5 9-5',
+  cube: 'M12 2 3 7v10l9 5 9-5V7l-9-5ZM3 7l9 5 9-5M12 12v10',
+  barcode: 'M4 4v16M8 4v16M11 4v16M15 4v16M17 4v16M20 4v16',
+  camera: 'M4 8h3l2-2h6l2 2h3v11H4V8ZM12 18a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  check: 'M20 6 9 17l-5-5',
+  plus: 'M12 5v14M5 12h14',
 } as const;
 
 export type SetuIconName = keyof typeof iconPaths;

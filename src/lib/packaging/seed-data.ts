@@ -45,6 +45,13 @@ export type PackagingTemplateSeed = {
   rush_options_json: RushOption[];
   lead_time_rules_json: LeadTimeRules;
   waste_factor_pct: number;
+  adhesive_options_json?: { key: string; label: string }[];
+  print_process?: 'digital' | 'flexo';
+  flexo_rules_json?: {
+    repeat_length_mm: { min: number; max: number };
+    web_width_mm: { min: number; max: number };
+    cylinder_rate_tiers: { max_repeat_mm: number; rate_per_color: number }[];
+  } | null;
 };
 
 export const PACKAGING_FAMILY_SEEDS: PackagingFamilySeed[] = [
@@ -87,6 +94,11 @@ export const PACKAGING_TEMPLATE_SEEDS: PackagingTemplateSeed[] = [
     rush_options_json: [{ key: 'rush', label: 'Rush (3-5 days)', uplift_pct: 15 }, { key: 'express', label: 'Express (1-2 days)', uplift_pct: 25 }],
     lead_time_rules_json: { standard: '7-9 business days', rush: '3-5 business days', express: '1-2 business days' },
     waste_factor_pct: 8,
+    adhesive_options_json: [
+      { key: 'permanent', label: 'Permanent' },
+      { key: 'removable', label: 'Removable' },
+      { key: 'freezer_grade', label: 'Freezer-grade' },
+    ],
   },
   {
     family_slug: 'stand-up-pouches',
@@ -116,6 +128,49 @@ export const PACKAGING_TEMPLATE_SEEDS: PackagingTemplateSeed[] = [
     rush_options_json: [{ key: 'rush', label: 'Rush (5-7 days)', uplift_pct: 15 }, { key: 'express', label: 'Express (3-4 days)', uplift_pct: 25 }],
     lead_time_rules_json: { standard: '10-12 business days', rush: '5-7 business days', express: '3-4 business days' },
     waste_factor_pct: 10,
+  },
+  {
+    family_slug: 'stand-up-pouches',
+    slug: 'sup-flexo-high-volume',
+    name: 'SUP — Flexographic High-Volume',
+    description: 'High-volume stand up pouch on flexo cylinders. Best for repeat runs above 50,000 units — cylinder cost is a one-time plate charge, reusable on reorders of the same spec.',
+    currency: 'INR',
+    allowed_dimension_ranges_json: { area_formula: 'pouch_gusset', width_mm: { min: 100, max: 350 }, height_mm: { min: 150, max: 450 }, gusset_mm: { min: 40, max: 120 } },
+    material_rates_json: [
+      { key: 'pet_metpet_pe', label: 'PET / MET PET / PE', thickness: '120 / 12 / 80 micron', rate_per_sqm: 78 },
+      { key: 'pet_pe', label: 'PET / PE', thickness: '120 / 80 micron', rate_per_sqm: 65 },
+    ],
+    print_rules_json: { basis: 'color_multiplier', tiers: [{ max_colors: 1, multiplier: 1.0 }, { max_colors: 4, multiplier: 1.15 }, { max_colors: 6, multiplier: 1.25 }, { max_colors: 99, multiplier: 1.4 }] },
+    finish_addon_rates_json: [
+      { key: 'matte', label: 'Matte', basis: 'per_sqm', rate: 10 },
+      { key: 'gloss', label: 'Gloss', basis: 'per_sqm', rate: 8 },
+      { key: 'zipper', label: 'Zipper', basis: 'per_unit', rate: 0.5 },
+      { key: 'tear_notch', label: 'Tear notch', basis: 'per_unit', rate: 0.04 },
+      { key: 'valve', label: 'Valve', basis: 'per_unit', rate: 1.3 },
+      { key: 'hang_hole', label: 'Hang hole', basis: 'per_unit', rate: 0.04 },
+    ],
+    // Flexo economics: MOQ and tiers are volume-scaled for cylinder amortization —
+    // very different from the digital template's 1,000-10,000 range.
+    moq_tiers_json: { moq: 50000, tiers: [{ min_qty: 50000, max_qty: 149999, multiplier: 1.0 }, { min_qty: 150000, max_qty: 299999, multiplier: 0.88 }, { min_qty: 300000, max_qty: null, multiplier: 0.78 }] },
+    setup_charges_json: [
+      { key: 'extra_design', label: 'Extra design change-over', amount: 1500, basis: 'per_extra_design', required: false },
+    ],
+    rush_options_json: [{ key: 'rush', label: 'Rush (10-12 days)', uplift_pct: 12 }],
+    lead_time_rules_json: { standard: '18-22 business days', rush: '10-12 business days' },
+    waste_factor_pct: 6,
+    print_process: 'flexo',
+    flexo_rules_json: {
+      repeat_length_mm: { min: 150, max: 600 },
+      web_width_mm: { min: 300, max: 1400 },
+      // Rate per color cylinder, tiered by repeat length — larger repeat = larger,
+      // costlier cylinder. Reused automatically-detected-free on confirmed reorders
+      // of the same spec (S27-STARK-B3).
+      cylinder_rate_tiers: [
+        { max_repeat_mm: 250, rate_per_color: 4500 },
+        { max_repeat_mm: 400, rate_per_color: 6500 },
+        { max_repeat_mm: 600, rate_per_color: 9000 },
+      ],
+    },
   },
   {
     family_slug: 'digital-shrink-sleeves',
@@ -179,6 +234,88 @@ export const PACKAGING_TEMPLATE_SEEDS: PackagingTemplateSeed[] = [
     setup_charges_json: [],
     rush_options_json: [{ key: 'rush', label: 'Rush (2-3 days)', uplift_pct: 20 }],
     lead_time_rules_json: { standard: '5-7 business days', rush: '2-3 business days' },
+    waste_factor_pct: 0,
+  },
+  {
+    family_slug: 'digital-flexible-packaging',
+    slug: 'dfp-rollstock-standard',
+    name: 'DFP — Standard Rollstock',
+    description: 'Digitally printed flexible rollstock for flow-wrap and pillow-pack applications.',
+    currency: 'INR',
+    allowed_dimension_ranges_json: { area_formula: 'label_single', width_mm: { min: 80, max: 600 }, height_mm: { min: 80, max: 1000 } },
+    material_rates_json: [
+      { key: 'bopp_laminate', label: 'BOPP Laminate', thickness: '70 micron', rate_per_sqm: 70 },
+      { key: 'pet_laminate', label: 'PET Laminate', thickness: '90 micron', rate_per_sqm: 85 },
+    ],
+    print_rules_json: { basis: 'color_multiplier', tiers: [{ max_colors: 1, multiplier: 1.0 }, { max_colors: 4, multiplier: 1.2 }, { max_colors: 8, multiplier: 1.4 }, { max_colors: 99, multiplier: 1.6 }] },
+    finish_addon_rates_json: [
+      { key: 'matte', label: 'Matte', basis: 'per_sqm', rate: 9 },
+      { key: 'gloss', label: 'Gloss', basis: 'per_sqm', rate: 7 },
+    ],
+    moq_tiers_json: { moq: 2000, tiers: [{ min_qty: 2000, max_qty: 9999, multiplier: 1.0 }, { min_qty: 10000, max_qty: 49999, multiplier: 0.9 }, { min_qty: 50000, max_qty: null, multiplier: 0.8 }] },
+    setup_charges_json: [{ key: 'cylinder_prepress', label: 'Setup / Cylinder (pre-press)', amount: 1800, basis: 'per_job', required: true }],
+    rush_options_json: [{ key: 'rush', label: 'Rush (5-7 days)', uplift_pct: 15 }],
+    lead_time_rules_json: { standard: '9-11 business days', rush: '5-7 business days' },
+    waste_factor_pct: 9,
+  },
+  {
+    family_slug: 'prototypes-mockups',
+    slug: 'proto-concept-to-mockup',
+    name: 'Prototypes — Concept to Mockup',
+    description: 'Retail-ready functional mockups filled with actual product for launch review.',
+    currency: 'INR',
+    allowed_dimension_ranges_json: { area_formula: 'service' },
+    material_rates_json: [
+      { key: 'concept_mockup', label: 'Concept mockup (per design)', basis: 'per_design', rate: 3500 },
+      { key: 'retail_ready_sample', label: 'Retail-ready filled sample', basis: 'per_unit', rate: 450 },
+      { key: 'rapid_turnaround', label: 'Rapid turnaround fee', basis: 'per_job', rate: 2000 },
+    ],
+    print_rules_json: { basis: 'none' },
+    finish_addon_rates_json: [],
+    moq_tiers_json: { moq: 1, tiers: [] },
+    setup_charges_json: [],
+    rush_options_json: [{ key: 'rush', label: 'Rush (2-3 days)', uplift_pct: 20 }],
+    lead_time_rules_json: { standard: '5-7 business days', rush: '2-3 business days' },
+    waste_factor_pct: 0,
+  },
+  {
+    family_slug: '3d-packshots',
+    slug: 'packshot-render-standard',
+    name: '3D Packshots — Photorealistic Renders',
+    description: 'Photorealistic 3D packshot renders for marketing, e-commerce, and approvals.',
+    currency: 'INR',
+    allowed_dimension_ranges_json: { area_formula: 'service' },
+    material_rates_json: [
+      { key: 'single_render', label: 'Single packshot render', basis: 'per_design', rate: 2500 },
+      { key: 'render_bundle_5', label: 'Bundle of 5 renders', basis: 'per_job', rate: 9500 },
+      { key: 'turntable_animation', label: '360° turntable animation', basis: 'per_job', rate: 6000 },
+    ],
+    print_rules_json: { basis: 'none' },
+    finish_addon_rates_json: [],
+    moq_tiers_json: { moq: 1, tiers: [] },
+    setup_charges_json: [],
+    rush_options_json: [{ key: 'rush', label: 'Rush (24-48 hrs)', uplift_pct: 25 }],
+    lead_time_rules_json: { standard: '3-5 business days', rush: '24-48 hours' },
+    waste_factor_pct: 0,
+  },
+  {
+    family_slug: 'packaging-add-ons',
+    slug: 'addons-special-finishes',
+    name: 'Packaging Add-ons — Special Finishes',
+    description: 'Functional and decorative add-ons applied to any packaging line: spot UV, embossing, tear notches, and custom die-cuts.',
+    currency: 'INR',
+    allowed_dimension_ranges_json: { area_formula: 'service' },
+    material_rates_json: [
+      { key: 'spot_uv', label: 'Spot UV coating', basis: 'per_unit', rate: 0.8 },
+      { key: 'embossing_addon', label: 'Embossing', basis: 'per_unit', rate: 1.2 },
+      { key: 'custom_die_cut', label: 'Custom die-cut setup', basis: 'per_job', rate: 3500 },
+    ],
+    print_rules_json: { basis: 'none' },
+    finish_addon_rates_json: [],
+    moq_tiers_json: { moq: 500, tiers: [] },
+    setup_charges_json: [],
+    rush_options_json: [],
+    lead_time_rules_json: { standard: '4-6 business days' },
     waste_factor_pct: 0,
   },
 ];

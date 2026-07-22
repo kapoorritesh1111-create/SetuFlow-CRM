@@ -50,6 +50,9 @@ const NEW_TEMPLATE = (families: PackagingServiceFamily[]): Draft => ({
   rush_options_json: [],
   lead_time_rules_json: { standard: '' },
   waste_factor_pct: 0,
+  adhesive_options_json: [],
+  print_process: 'digital',
+  flexo_rules_json: null,
 });
 
 function money(value: number, currency: string) {
@@ -79,6 +82,8 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
     const input: PackagingCalculationInput = {
       ...previewInput,
       material_key: previewInput.material_key ?? draft.material_rates_json[0]?.key ?? null,
+      adhesive_key: previewInput.adhesive_key ?? draft.adhesive_options_json?.[0]?.key ?? null,
+      repeat_length_mm: previewInput.repeat_length_mm ?? (draft.print_process === 'flexo' ? draft.flexo_rules_json?.repeat_length_mm.min ?? null : null),
       service_item_keys: isDimensional
         ? []
         : (previewInput.service_item_keys?.length ? previewInput.service_item_keys : draft.material_rates_json.slice(0, 1).map((item) => item.key)),
@@ -158,12 +163,67 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
               </label>
               <label className={labelCls}>Currency<input value={draft.currency} onChange={(event) => patch({ currency: event.target.value.toUpperCase() })} className={inputCls} /></label>
               <label className={labelCls}>Waste factor %<input type="number" value={draft.waste_factor_pct} onChange={(event) => patch({ waste_factor_pct: num(event.target.value) })} className={inputCls} /></label>
+              <label className={labelCls}>Print process
+                <select
+                  value={draft.print_process ?? 'digital'}
+                  onChange={(event) => {
+                    const process = event.target.value as 'digital' | 'flexo';
+                    patch({
+                      print_process: process,
+                      flexo_rules_json: process === 'flexo'
+                        ? (draft.flexo_rules_json ?? { repeat_length_mm: { min: 150, max: 600 }, web_width_mm: { min: 300, max: 1400 }, cylinder_rate_tiers: [{ max_repeat_mm: 300, rate_per_color: 4500 }] })
+                        : null,
+                    });
+                  }}
+                  className={inputCls}
+                >
+                  <option value="digital">Digital</option>
+                  <option value="flexo">Flexographic (cylinder pricing)</option>
+                </select>
+              </label>
               <label className="flex items-end gap-2 text-sm font-semibold text-content-primary">
                 <input type="checkbox" checked={draft.is_active} onChange={(event) => patch({ is_active: event.target.checked })} className="h-4 w-4" /> Active (available in Quote Builder)
               </label>
             </div>
             <label className={`${labelCls} mt-3 block`}>Description<input value={draft.description ?? ''} onChange={(event) => patch({ description: event.target.value })} className={inputCls} /></label>
           </section>
+
+          {draft.print_process === 'flexo' ? (
+            <section className="rounded-card border border-line bg-surface-1 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Flexo cylinder rules</p>
+              <p className="mt-1 text-xs text-content-muted">Cylinder cost = rate for the matching repeat-length tier × number of print colors. A one-time plate charge, not scaled by rush.</p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className={labelCls}>Repeat length range (mm)</p>
+                  <div className="mt-1 flex gap-1">
+                    <input type="number" value={draft.flexo_rules_json?.repeat_length_mm.min ?? 0} onChange={(event) => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, repeat_length_mm: { ...draft.flexo_rules_json!.repeat_length_mm, min: num(event.target.value) } } })} className="w-full rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                    <input type="number" value={draft.flexo_rules_json?.repeat_length_mm.max ?? 0} onChange={(event) => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, repeat_length_mm: { ...draft.flexo_rules_json!.repeat_length_mm, max: num(event.target.value) } } })} className="w-full rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <p className={labelCls}>Web width range (mm)</p>
+                  <div className="mt-1 flex gap-1">
+                    <input type="number" value={draft.flexo_rules_json?.web_width_mm.min ?? 0} onChange={(event) => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, web_width_mm: { ...draft.flexo_rules_json!.web_width_mm, min: num(event.target.value) } } })} className="w-full rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                    <input type="number" value={draft.flexo_rules_json?.web_width_mm.max ?? 0} onChange={(event) => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, web_width_mm: { ...draft.flexo_rules_json!.web_width_mm, max: num(event.target.value) } } })} className="w-full rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <p className={labelCls}>Cylinder rate per color, by repeat length tier</p>
+                <button onClick={() => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, cylinder_rate_tiers: [...draft.flexo_rules_json!.cylinder_rate_tiers, { max_repeat_mm: 0, rate_per_color: 0 }] } })} className={chipBtn}>+ Add tier</button>
+              </div>
+              <div className="mt-2 space-y-2">
+                {(draft.flexo_rules_json?.cylinder_rate_tiers ?? []).map((tier, index) => (
+                  <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                    <label className={labelCls}>Up to repeat (mm)<input type="number" value={tier.max_repeat_mm} onChange={(event) => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, cylinder_rate_tiers: draft.flexo_rules_json!.cylinder_rate_tiers.map((row, i) => i === index ? { ...row, max_repeat_mm: num(event.target.value) } : row) } })} className={inputCls} /></label>
+                    <label className={labelCls}>Rate per color (₹)<input type="number" value={tier.rate_per_color} onChange={(event) => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, cylinder_rate_tiers: draft.flexo_rules_json!.cylinder_rate_tiers.map((row, i) => i === index ? { ...row, rate_per_color: num(event.target.value) } : row) } })} className={inputCls} /></label>
+                    <button onClick={() => patch({ flexo_rules_json: { ...draft.flexo_rules_json!, cylinder_rate_tiers: draft.flexo_rules_json!.cylinder_rate_tiers.filter((_, i) => i !== index) } })} className={`${chipBtn} self-end`}>Remove</button>
+                  </div>
+                ))}
+                {!(draft.flexo_rules_json?.cylinder_rate_tiers ?? []).length ? <p className="text-sm text-content-muted">No cylinder tiers configured — flexo quotes on this template will fail until at least one is added.</p> : null}
+              </div>
+            </section>
+          ) : null}
 
           {/* Dimension ranges */}
           <section className="rounded-card border border-line bg-surface-1 p-4">
@@ -223,6 +283,26 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
               ))}
             </div>
           </section>
+
+          {isDimensional ? (
+            <section className="rounded-card border border-line bg-surface-1 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Adhesive / build options (optional, descriptive)</p>
+                <button onClick={() => patch({ adhesive_options_json: [...(draft.adhesive_options_json ?? []), { key: `adh_${(draft.adhesive_options_json ?? []).length + 1}`, label: '' }] })} className={chipBtn}>+ Add</button>
+              </div>
+              <p className="mt-1 text-xs text-content-muted">Shown to buyers as a required selection at quote time. No price impact by default.</p>
+              <div className="mt-2 space-y-2">
+                {(draft.adhesive_options_json ?? []).map((option, index) => (
+                  <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                    <input placeholder="key" value={option.key} onChange={(event) => patch({ adhesive_options_json: (draft.adhesive_options_json ?? []).map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                    <input placeholder="Label" value={option.label} onChange={(event) => patch({ adhesive_options_json: (draft.adhesive_options_json ?? []).map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                    <button onClick={() => patch({ adhesive_options_json: (draft.adhesive_options_json ?? []).filter((_, i) => i !== index) })} className={chipBtn}>Remove</button>
+                  </div>
+                ))}
+                {!(draft.adhesive_options_json ?? []).length ? <p className="text-sm text-content-muted">No adhesive options — the quote drawer won't ask for one.</p> : null}
+              </div>
+            </section>
+          ) : null}
 
           {isDimensional ? (
             <>
@@ -360,7 +440,17 @@ export default function PricingTemplateBuilder({ families, templates }: Props) {
                       {draft.material_rates_json.map((material) => <option key={material.key} value={material.key}>{material.label || material.key}</option>)}
                     </select>
                   </label>
+                  {(draft.adhesive_options_json ?? []).length ? (
+                    <label className={labelCls}>Adhesive
+                      <select value={previewInput.adhesive_key ?? draft.adhesive_options_json?.[0]?.key ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, adhesive_key: event.target.value || null }))} className={inputCls}>
+                        {(draft.adhesive_options_json ?? []).map((option) => <option key={option.key} value={option.key}>{option.label || option.key}</option>)}
+                      </select>
+                    </label>
+                  ) : null}
                   <label className={labelCls}>Colors<input type="number" value={previewInput.print_colors ?? 1} onChange={(event) => setPreviewInput((previous) => ({ ...previous, print_colors: Number(event.target.value) || 1 }))} className={inputCls} /></label>
+                  {draft.print_process === 'flexo' ? (
+                    <label className={labelCls}>Repeat length<input type="number" value={previewInput.repeat_length_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>
+                  ) : null}
                 </>
               ) : null}
               <label className={labelCls}>Quantity<input type="number" value={previewInput.quantity ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, quantity: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>

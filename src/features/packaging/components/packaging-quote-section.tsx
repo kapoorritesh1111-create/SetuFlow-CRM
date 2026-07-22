@@ -2,9 +2,11 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type {
   PackagingCalculationInput,
   PackagingPricingTemplate,
+  PackagingSavedSpec,
   PackagingServiceFamily,
   QuoteOptionalCharge,
   QuoteOptionalChargeType,
@@ -13,9 +15,12 @@ import { OPTIONAL_CHARGE_TYPES } from '@/lib/packaging/types';
 import {
   addQuoteOptionalCharge,
   deletePackagingQuoteLine,
+  deletePackagingSavedSpec,
   removeQuoteOptionalCharge,
+  savePackagingSpec,
 } from '@/features/packaging/server/actions';
 import PackagingLineConfigurator from './packaging-line-configurator';
+import PackagingProofPanel from './packaging-proof-panel';
 
 /**
  * S24-SPEN-203 / S24-SPEN-208 — Packaging section inside the canonical Quote
@@ -44,21 +49,26 @@ type Props = {
   charges: QuoteOptionalCharge[];
   currency: string;
   locked?: boolean;
+  savedSpecs?: PackagingSavedSpec[];
 };
 
 function money(value: number, currency: string) {
   return `${currency} ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function PackagingQuoteSection({ quoteId, leadId, families, templates, packagingLines, charges, currency, locked }: Props) {
+export default function PackagingQuoteSection({ quoteId, leadId, families, templates, packagingLines, charges, currency, locked, savedSpecs = [] }: Props) {
   const router = useRouter();
   const [configuratorOpen, setConfiguratorOpen] = useState(false);
   const [editingLine, setEditingLine] = useState<PackagingQuoteLineView | null>(null);
+  const [reorderPrefill, setReorderPrefill] = useState<{ familyId: string | null; templateId: string | null; input: PackagingCalculationInput | null } | null>(null);
   const [chargeFormOpen, setChargeFormOpen] = useState(false);
   const [chargeType, setChargeType] = useState<QuoteOptionalChargeType>('freight');
   const [chargeLabel, setChargeLabel] = useState('');
   const [chargeAmount, setChargeAmount] = useState('');
   const [chargeError, setChargeError] = useState<string | null>(null);
+  const [savingSpecForLine, setSavingSpecForLine] = useState<string | null>(null);
+  const [specNameDraft, setSpecNameDraft] = useState('');
+  const [specError, setSpecError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const linesTotal = useMemo(
@@ -67,12 +77,47 @@ export default function PackagingQuoteSection({ quoteId, leadId, families, templ
   );
   const chargesTotal = useMemo(() => charges.reduce((sum, charge) => sum + Number(charge.amount || 0), 0), [charges]);
 
-  const openAdd = () => { setEditingLine(null); setConfiguratorOpen(true); };
-  const openEdit = (line: PackagingQuoteLineView) => { setEditingLine(line); setConfiguratorOpen(true); };
+  const openAdd = () => { setEditingLine(null); setReorderPrefill(null); setConfiguratorOpen(true); };
+  const openEdit = (line: PackagingQuoteLineView) => { setEditingLine(line); setReorderPrefill(null); setConfiguratorOpen(true); };
+  const openReorder = (spec: PackagingSavedSpec) => {
+    setEditingLine(null);
+    setReorderPrefill({ familyId: spec.family_id, templateId: spec.template_id, input: spec.input_snapshot_json?.input ?? null });
+    setConfiguratorOpen(true);
+  };
 
   const handleDeleteLine = (lineId: string) => {
     startTransition(async () => {
       await deletePackagingQuoteLine({ quoteId, leadId, lineId });
+      router.refresh();
+    });
+  };
+
+  const handleSaveSpec = (line: PackagingQuoteLineView) => {
+    setSpecError(null);
+    const name = specNameDraft.trim();
+    if (!name) { setSpecError('Give this spec a name.'); return; }
+    if (!line.packaging_family_id || !line.packaging_template_id || !line.input_snapshot_json?.input) {
+      setSpecError('This line is missing spec details and cannot be saved.');
+      return;
+    }
+    startTransition(async () => {
+      const response = await savePackagingSpec({
+        leadId,
+        familyId: line.packaging_family_id!,
+        templateId: line.packaging_template_id!,
+        name,
+        input: line.input_snapshot_json!.input!,
+      });
+      if (!response.ok) { setSpecError(response.error ?? 'Could not save this spec.'); return; }
+      setSavingSpecForLine(null);
+      setSpecNameDraft('');
+      router.refresh();
+    });
+  };
+
+  const handleDeleteSpec = (specId: string) => {
+    startTransition(async () => {
+      await deletePackagingSavedSpec(specId, leadId);
       router.refresh();
     });
   };
@@ -111,6 +156,7 @@ export default function PackagingQuoteSection({ quoteId, leadId, families, templ
         <div>
           <h3 className="font-bold text-content-primary">Custom Packaging Lines</h3>
           <p className="text-sm text-content-secondary">Configured from service families with live template pricing. Saved lines keep their calculation snapshot.</p>
+          <Link href={`/leads/${leadId}/packaging-history`} className="mt-1 inline-block text-xs font-semibold text-brand-700 hover:underline">View full order history for this client →</Link>
         </div>
         {!locked ? (
           <button onClick={openAdd} className="rounded-ctl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">+ Add packaging line</button>
@@ -123,23 +169,40 @@ export default function PackagingQuoteSection({ quoteId, leadId, families, templ
             const summary = line.input_snapshot_json?.spec_summary ?? line.notes ?? 'Packaging line';
             const leadTime = line.pricing_breakdown_json?.lead_time ?? null;
             return (
-              <li key={line.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-content-primary">{summary}</p>
-                  <p className="text-xs text-content-muted">
-                    {Number(line.quantity).toLocaleString()} pcs · {money(line.unit_price, line.currency)} / pc
-                    {leadTime ? ` · ${leadTime}` : ''}
-                  </p>
+              <li key={line.id} className="flex flex-col gap-2 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-content-primary">{summary}</p>
+                    <p className="text-xs text-content-muted">
+                      {Number(line.quantity).toLocaleString()} pcs · {money(line.unit_price, line.currency)} / pc
+                      {leadTime ? ` · ${leadTime}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-content-primary">{money(Number(line.quantity) * Number(line.unit_price), line.currency)}</p>
+                    {!locked ? (
+                      <>
+                        <button onClick={() => { setSavingSpecForLine(savingSpecForLine === line.id ? null : line.id); setSpecNameDraft(summary === 'Packaging line' ? '' : summary); setSpecError(null); }} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-xs font-semibold text-content-primary">Save as spec</button>
+                        <button onClick={() => openEdit(line)} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-xs font-semibold text-content-primary">Edit</button>
+                        <button onClick={() => handleDeleteLine(line.id)} disabled={pending} className="rounded-ctl border border-danger-border bg-danger-bg px-3 py-1.5 text-xs font-semibold text-danger-fg disabled:opacity-50">Remove</button>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-content-primary">{money(Number(line.quantity) * Number(line.unit_price), line.currency)}</p>
-                  {!locked ? (
-                    <>
-                      <button onClick={() => openEdit(line)} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-xs font-semibold text-content-primary">Edit</button>
-                      <button onClick={() => handleDeleteLine(line.id)} disabled={pending} className="rounded-ctl border border-danger-border bg-danger-bg px-3 py-1.5 text-xs font-semibold text-danger-fg disabled:opacity-50">Remove</button>
-                    </>
-                  ) : null}
-                </div>
+                {savingSpecForLine === line.id ? (
+                  <div className="flex flex-wrap items-center gap-2 rounded-ctl border border-line bg-surface-app p-2">
+                    <input
+                      value={specNameDraft}
+                      onChange={(event) => setSpecNameDraft(event.target.value)}
+                      placeholder="Spec name (e.g. client SKU or product name)"
+                      className="min-w-[220px] flex-1 rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm"
+                    />
+                    <button onClick={() => handleSaveSpec(line)} disabled={pending} className="rounded-ctl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Save</button>
+                    <button onClick={() => { setSavingSpecForLine(null); setSpecError(null); }} className="rounded-ctl border border-line bg-surface-1 px-3 py-1.5 text-xs font-semibold text-content-secondary">Cancel</button>
+                    {specError ? <p className="w-full text-xs font-medium text-danger-fg">{specError}</p> : null}
+                  </div>
+                ) : null}
+                <PackagingProofPanel quoteLineItemId={line.id} leadId={leadId} />
               </li>
             );
           })}
@@ -210,6 +273,29 @@ export default function PackagingQuoteSection({ quoteId, leadId, families, templ
         ) : null}
       </div>
 
+      {savedSpecs.length ? (
+        <div className="mt-4 border-t border-line pt-4">
+          <h4 className="text-sm font-bold text-content-primary">Saved specs for this client</h4>
+          <p className="text-sm text-content-secondary">Reorder in one click — the exact spec is replayed into the configurator with current template rules.</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {savedSpecs.map((spec) => (
+              <li key={spec.id} className="flex items-center justify-between gap-2 rounded-ctl border border-line bg-surface-app p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-content-primary">{spec.name}</p>
+                  <p className="text-xs text-content-muted">
+                    {spec.last_unit_price != null ? `Last: ${money(spec.last_unit_price, spec.last_currency ?? currency)} / pc` : 'Not yet priced'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {!locked ? <button onClick={() => openReorder(spec)} className="rounded-ctl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white">Reorder</button> : null}
+                  <button onClick={() => handleDeleteSpec(spec.id)} disabled={pending} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-xs font-semibold text-content-muted disabled:opacity-50">✕</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <PackagingLineConfigurator
         open={configuratorOpen}
         onClose={() => { setConfiguratorOpen(false); router.refresh(); }}
@@ -218,9 +304,9 @@ export default function PackagingQuoteSection({ quoteId, leadId, families, templ
         templates={templates}
         quoteId={quoteId}
         leadId={leadId}
-        initialFamilyId={editingLine?.packaging_family_id ?? null}
-        initialTemplateId={editingLine?.packaging_template_id ?? null}
-        initialInput={editingLine?.input_snapshot_json?.input ?? null}
+        initialFamilyId={editingLine?.packaging_family_id ?? reorderPrefill?.familyId ?? null}
+        initialTemplateId={editingLine?.packaging_template_id ?? reorderPrefill?.templateId ?? null}
+        initialInput={editingLine?.input_snapshot_json?.input ?? reorderPrefill?.input ?? null}
         lineId={editingLine?.id ?? null}
       />
     </section>

@@ -3,6 +3,9 @@ import { SetuIcon, type SetuIconName } from '@/components/ui/setu-icon';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { requireAdminWorkspace } from '@/lib/workspace/auth';
+import { createClient } from '@/lib/supabase/server';
+import { getOrganizationVerticals } from '@/lib/verticals/capability';
 
 export type AdminNavKey =
   | 'overview'
@@ -19,6 +22,8 @@ export type AdminNavKey =
   | 'pipelines'
   | 'trade-events'
   | 'product-management'
+  | 'packaging-templates'
+  | 'classic-catalog'
   | 'pricing-engine'
   | 'document-templates'
   | 'integrations'
@@ -43,6 +48,8 @@ type AdminNavItem = {
   badgeTone?: 'success' | 'warning' | 'danger' | 'info';
   statusDot?: AdminNavStatusDot;
   internalOnly?: boolean;
+  /** S24-SPEN-216: only shown when the org has the packaging vertical enabled. */
+  packagingOnly?: boolean;
   aliases?: AdminNavKey[];
 };
 
@@ -72,8 +79,10 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
       { key: 'markets', href: '/admin/markets', icon: 'globe', label: 'Markets', statusDot: 'ok' },
       { key: 'pipelines', href: '/admin/pipelines', icon: 'workflow', label: 'Pipelines & Stages', statusDot: 'ok', aliases: ['stages'] },
       { key: 'categories', href: '/admin/catalog', icon: 'box', label: 'Catalog', sublabel: 'Categories + pricing rules', statusDot: 'ok' },
+      { key: 'classic-catalog', href: '/products?mode=products', icon: 'box', label: 'Classic Product Catalog', sublabel: 'SKU manager (non-packaging items)', statusDot: 'ok', packagingOnly: true },
       { key: 'product-management', href: '/admin/catalog-governance', icon: 'clipboard', label: 'Catalog Governance', sublabel: 'Imports, cleanup, audit', statusDot: 'ok' },
       { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade Events', statusDot: 'ok' },
+      { key: 'packaging-templates', href: '/admin/packaging-templates', icon: 'box', label: 'Packaging Pricing Templates', sublabel: 'Rules & rates', statusDot: 'ok', packagingOnly: true },
     ],
   },
   {
@@ -177,16 +186,19 @@ function getDynamicStatus(item: AdminNavItem, navCounts?: Partial<Record<'users'
   return item.statusDot;
 }
 
-function visibleNavSections(showInternalOnlyTools: boolean) {
+function visibleNavSections(showInternalOnlyTools: boolean, packagingEnabled: boolean) {
   return nav
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => showInternalOnlyTools || (!item.internalOnly && !internalOnlyAdminKeys.includes(item.key))),
+      items: section.items.filter((item) =>
+        (showInternalOnlyTools || (!item.internalOnly && !internalOnlyAdminKeys.includes(item.key))) &&
+        (!item.packagingOnly || packagingEnabled),
+      ),
     }))
     .filter((section) => section.items.length > 0 && (!section.internalSection || showInternalOnlyTools));
 }
 
-export function AdminSettingsShell({
+export async function AdminSettingsShell({
   active,
   organizationName,
   missingCount = 0,
@@ -216,7 +228,21 @@ export function AdminSettingsShell({
   children?: ReactNode;
 }) {
   const showInternalOnlyTools = internalTools ?? isInternalOrg(organizationName);
-  const sections = visibleNavSections(showInternalOnlyTools);
+  // S24-SPEN-216: resolved here (not threaded through every admin page) so the
+  // Packaging Pricing Templates nav item shows for every packaging-enabled org
+  // without editing all 20 admin page call sites.
+  let packagingEnabled = false;
+  try {
+    const { organization } = await requireAdminWorkspace();
+    if (organization) {
+      const supabase = await createClient();
+      const verticals = await getOrganizationVerticals(organization.id, supabase);
+      packagingEnabled = verticals.packagingEnabled;
+    }
+  } catch {
+    packagingEnabled = false;
+  }
+  const sections = visibleNavSections(showInternalOnlyTools, packagingEnabled);
   const allItems = sections.flatMap((section) => section.items);
   const activeItem = allItems.find((item) => itemIsActive(item, active));
   const orgLabel = showInternalOnlyTools ? 'Owner · Full access' : 'Owner · Managed workspace';

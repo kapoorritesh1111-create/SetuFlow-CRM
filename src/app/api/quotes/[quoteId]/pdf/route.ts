@@ -239,7 +239,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
       : Promise.resolve({ data: null });
 
   const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
-    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes').eq('quote_id', quote.id).order('created_at', { ascending: true }),
+    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json').eq('quote_id', quote.id).order('created_at', { ascending: true }),
     db.from('organizations').select('id, name, legal_name, logo_url, logo_storage_path, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     countryPromise,
     quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -258,7 +258,29 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
+  const { data: optionalCharges } = await db
+    .from('quote_optional_charges')
+    .select('label, amount, currency')
+    .eq('organization_id', organizationId)
+    .eq('quote_id', quote.id);
+  // S27-STARK-D1: packaging lines were previously excluded from the branded
+  // quote PDF entirely (this route predates the packaging vertical). Include
+  // them using the same saved spec summary shown in-app, and include
+  // optional charges (freight, rush, etc.) so the PDF total always matches
+  // what the buyer sees on screen.
   const rows: PdfRow[] = lines.map((line) => {
+    if (line.line_type === 'packaging') {
+      const qty = num(line.quantity, 1);
+      const unitPrice = num(line.unit_price);
+      return {
+        sku: 'PKG',
+        product: text(line.input_snapshot_json?.spec_summary, 'Custom packaging line'),
+        qty,
+        basis: quoteBase,
+        casePrice: unitPrice,
+        total: qty * unitPrice,
+      };
+    }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
     const casePrice = num(line.unit_price ?? line.catalog_price_amount);
@@ -271,6 +293,11 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
       total: num(line.quantity, 1) * casePrice,
     };
   });
+  for (const charge of (optionalCharges ?? []) as any[]) {
+    const amount = num(charge.amount);
+    if (amount <= 0) continue;
+    rows.push({ sku: '—', product: text(charge.label, 'Additional charge'), qty: 1, basis: quoteBase, casePrice: amount, total: amount });
+  }
 
   const bytes = buildPdf({
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,

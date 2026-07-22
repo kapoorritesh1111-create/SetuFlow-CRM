@@ -45,6 +45,7 @@ const EMPTY_INPUT: PackagingCalculationInput = {
   height_mm: null,
   gusset_mm: null,
   material_key: null,
+  adhesive_key: null,
   print_colors: 1,
   finish_keys: [],
   addon_keys: [],
@@ -54,6 +55,8 @@ const EMPTY_INPUT: PackagingCalculationInput = {
   artwork_status: null,
   rush_key: null,
   include_optional_setups: [],
+  repeat_length_mm: null,
+  reuse_existing_cylinder: false,
 };
 
 export default function PackagingLineConfigurator({
@@ -261,6 +264,19 @@ export default function PackagingLineConfigurator({
                     </label>
                   ) : null}
                 </div>
+                {template.print_process === 'flexo' ? (
+                  <div className="mt-3 border-t border-line pt-3">
+                    <label className="text-sm font-semibold text-content-primary">
+                      Repeat length (cylinder)
+                      <input type="number" inputMode="decimal" value={input.repeat_length_mm ?? ''} onChange={(event) => update({ repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) })} className="mt-1 w-full max-w-[200px] rounded-ctl border border-line bg-surface-app px-3 py-2 text-sm" />
+                      {template.flexo_rules_json?.repeat_length_mm ? <span className="ml-2 text-xs font-normal text-content-muted">{template.flexo_rules_json.repeat_length_mm.min}–{template.flexo_rules_json.repeat_length_mm.max} mm</span> : null}
+                    </label>
+                    <label className="mt-2 flex items-center gap-2 text-sm font-semibold text-content-primary">
+                      <input type="checkbox" checked={Boolean(input.reuse_existing_cylinder)} onChange={(event) => update({ reuse_existing_cylinder: event.target.checked })} className="h-4 w-4" />
+                      Cylinder already on file for this client/spec — skip cylinder charge
+                    </label>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
@@ -277,6 +293,17 @@ export default function PackagingLineConfigurator({
                       ))}
                     </select>
                   </label>
+                  {(template.adhesive_options_json ?? []).length ? (
+                    <label className="text-sm font-semibold text-content-primary">
+                      Adhesive
+                      <select value={input.adhesive_key ?? ''} onChange={(event) => update({ adhesive_key: event.target.value || null })} className="mt-1 w-full rounded-ctl border border-line bg-surface-app px-3 py-2 text-sm font-medium">
+                        <option value="">Select adhesive</option>
+                        {(template.adhesive_options_json ?? []).map((option) => (
+                          <option key={option.key} value={option.key}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
                   <label className="text-sm font-semibold text-content-primary">
                     Print colors
                     <input type="number" min={1} max={12} value={input.print_colors ?? 1} onChange={(event) => update({ print_colors: Number(event.target.value) || 1 })} className="mt-1 w-full rounded-ctl border border-line bg-surface-app px-3 py-2 text-sm" />

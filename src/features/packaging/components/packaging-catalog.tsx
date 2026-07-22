@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { PackagingPricingTemplate, PackagingServiceFamily } from '@/lib/packaging/types';
 import { analyzePackagingInquiry } from '@/lib/setu-guru/packaging-guidance';
+import { getFamilyVisual } from '@/lib/packaging/family-visuals';
+import { estimateStartingPrice } from '@/lib/packaging/pricing-engine';
+import { SetuIcon } from '@/components/ui/setu-icon';
 
 /**
  * S24-SPEN-202 — Packaging Catalog.
@@ -38,6 +41,15 @@ export default function PackagingCatalog({ families, templates, showTrialBadge }
   );
   const recommendation = useMemo(() => analyzePackagingInquiry(inquiry, families), [inquiry, families]);
 
+  const startingPrices = useMemo(() => {
+    const map = new Map<string, { unitPrice: number; currency: string } | null>();
+    for (const family of families) {
+      const template = templates.find((item) => item.family_id === family.id && item.is_active);
+      map.set(family.slug, template ? estimateStartingPrice(template) : null);
+    }
+    return map;
+  }, [families, templates]);
+
   if (!families.length) {
     return (
       <section className="rounded-panel border border-line bg-surface-1 p-8 text-center">
@@ -58,7 +70,6 @@ export default function PackagingCatalog({ families, templates, showTrialBadge }
           </div>
           <p className="mt-1 text-sm text-content-secondary">Explore packaging service families. Configure custom size and options during quoting — no fixed size SKUs.</p>
         </div>
-        <Link href="/products?mode=products" className="rounded-ctl border border-line bg-surface-1 px-4 py-2 text-sm font-semibold text-content-primary">Open product catalog</Link>
       </section>
 
       <section className="rounded-panel border border-line bg-surface-1 p-5">
@@ -145,18 +156,32 @@ export default function PackagingCatalog({ families, templates, showTrialBadge }
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {families.map((family) => {
               const active = family.slug === selected?.slug;
+              const visual = getFamilyVisual(family.slug);
+              const price = startingPrices.get(family.slug);
               return (
-                <button
+                <div
                   key={family.id}
-                  onClick={() => setSelectedSlug(family.slug)}
-                  className={`rounded-card border p-4 text-left transition ${active ? 'border-brand-400 bg-brand-50 shadow-sm' : 'border-line bg-surface-1 hover:border-brand-200'}`}
+                  className={`rounded-card border p-4 transition ${active ? 'border-brand-400 bg-brand-50 shadow-sm' : 'border-line bg-surface-1 hover:border-brand-200'}`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-content-primary">{family.name}</p>
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-content-secondary">{PRICING_MODE_LABEL[family.pricing_mode]}</span>
+                  <button onClick={() => setSelectedSlug(family.slug)} className="block w-full text-left">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${visual.bg} ${visual.fg}`}>
+                        <SetuIcon name={visual.icon} className="h-4.5 w-4.5" />
+                      </span>
+                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-content-secondary">{PRICING_MODE_LABEL[family.pricing_mode]}</span>
+                    </div>
+                    <p className="mt-2 font-semibold text-content-primary">{family.name}</p>
+                    <p className="mt-1 text-sm text-content-secondary">{family.description}</p>
+                  </button>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-content-muted">
+                      {price ? `From ${price.currency} ${price.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${family.default_unit}` : 'Pricing set at quote time'}
+                    </p>
+                    <Link href={`/products/${family.slug}`} className="text-xs font-semibold text-brand-700 hover:underline">
+                      View details →
+                    </Link>
                   </div>
-                  <p className="mt-2 text-sm text-content-secondary">{family.description}</p>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -165,11 +190,21 @@ export default function PackagingCatalog({ families, templates, showTrialBadge }
         {selected ? (
           <aside className="h-fit rounded-panel border border-line bg-surface-1 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Selected family</p>
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-bold text-content-primary">{selected.name}</h3>
-              <span className="rounded-full bg-info-bg px-2 py-0.5 text-[11px] font-semibold text-info-fg">{PRICING_MODE_LABEL[selected.pricing_mode]}</span>
+            <div className="mt-2 flex items-center gap-3">
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getFamilyVisual(selected.slug).bg} ${getFamilyVisual(selected.slug).fg}`}>
+                <SetuIcon name={getFamilyVisual(selected.slug).icon} className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-lg font-bold text-content-primary">{selected.name}</h3>
+                  <span className="rounded-full bg-info-bg px-2 py-0.5 text-[11px] font-semibold text-info-fg">{PRICING_MODE_LABEL[selected.pricing_mode]}</span>
+                </div>
+              </div>
             </div>
-            <p className="mt-1 text-sm text-content-secondary">{selected.description}</p>
+            <p className="mt-3 text-sm text-content-secondary">{selected.description}</p>
+            <Link href={`/products/${selected.slug}`} className="mt-1 inline-block text-sm font-semibold text-brand-700 hover:underline">
+              View full category page →
+            </Link>
 
             <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">What we&apos;ll capture at quote time</p>
             <ul className="mt-2 space-y-1.5">

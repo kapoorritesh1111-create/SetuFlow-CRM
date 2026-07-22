@@ -19,7 +19,7 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
     key: 'full_crm',
     title: 'Full CRM',
     subtitle: 'Dashboard, leads, pipeline, quotes, tasks, catalog, and core CRM workspaces.',
-    routes: ['/dashboard', '/leads', '/pipeline', '/quotes', '/tasks', '/products'],
+    routes: ['/dashboard', '/leads', '/pipeline', '/quotes', '/tasks', '/products', '/design-queue', '/dispatch-board'],
   },
   {
     key: 'trade_show',

@@ -81,6 +81,7 @@ export function calculatePackagingPrice(
 
   const ranges = template.allowed_dimension_ranges_json ?? { area_formula: 'service' as const };
   const isDimensional = ranges.area_formula !== 'service';
+  const isFlexo = isDimensional && template.print_process === 'flexo';
   const quantity = Math.max(0, Math.floor(Number(input.quantity ?? 0)));
   const designs = Math.max(1, Math.floor(Number(input.designs ?? 1)));
   const moq = template.moq_tiers_json ?? { moq: 0, tiers: [] };
@@ -100,6 +101,22 @@ export function calculatePackagingPrice(
     }
     if (!input.material_key) validationErrors.push('Material is required.');
     else if (!findMaterial(template.material_rates_json ?? [], input.material_key)) validationErrors.push('Selected material is not configured on this template.');
+    if ((template.adhesive_options_json ?? []).length) {
+      const validAdhesive = (template.adhesive_options_json ?? []).some((option) => option.key === input.adhesive_key);
+      if (!input.adhesive_key) validationErrors.push('Adhesive is required.');
+      else if (!validAdhesive) validationErrors.push('Selected adhesive is not configured on this template.');
+    }
+    if (isFlexo) {
+      const flexo = template.flexo_rules_json;
+      const repeatLength = Number(input.repeat_length_mm ?? 0);
+      if (!flexo) {
+        validationErrors.push('This flexo template has no cylinder rules configured.');
+      } else {
+        if (!repeatLength || repeatLength <= 0) validationErrors.push('Repeat length is required.');
+        else if (!inRange(repeatLength, flexo.repeat_length_mm)) validationErrors.push(`Repeat length must be between ${flexo.repeat_length_mm?.min} and ${flexo.repeat_length_mm?.max} mm for this cylinder set.`);
+        if (!flexo.cylinder_rate_tiers?.length) validationErrors.push('This flexo template has no cylinder rate tiers configured.');
+      }
+    }
     if (!quantity) validationErrors.push('Quantity is required.');
   } else {
     const selected = (input.service_item_keys ?? []).filter(Boolean);
@@ -213,8 +230,31 @@ export function calculatePackagingPrice(
     breakdown.push({ key: 'tier', label: `MOQ / Tier adjustment (${effectiveQty >= (moq.tiers?.[0]?.min_qty ?? 0) ? tierMult.toFixed(2) : '1.00'}x)`, amount: tierAdjustmentTotal, scope: 'per_job' });
   }
 
+  // S27-STARK-B2 — Flexo cylinder cost: repeat-length tier rate x color count.
+  // A one-time plate cost, amortized into the job total like setup charges,
+  // never scaled by rush uplift. S27-STARK-B3: if the buyer already has a
+  // cylinder on file for this spec, the charge is waived (user-confirmed via
+  // input.reuse_existing_cylinder — never inferred/applied automatically).
+  let cylinderCost = 0;
+  if (isFlexo) {
+    const flexo = template.flexo_rules_json!;
+    const repeatLength = Number(input.repeat_length_mm ?? 0);
+    const colors = Math.max(1, Math.floor(Number(input.print_colors ?? 1)));
+    const sortedTiers = [...(flexo.cylinder_rate_tiers ?? [])].sort((a, b) => a.max_repeat_mm - b.max_repeat_mm);
+    const tier = sortedTiers.find((candidate) => repeatLength <= candidate.max_repeat_mm) ?? sortedTiers[sortedTiers.length - 1];
+    const ratePerColor = Number(tier?.rate_per_color ?? 0);
+    const fullCylinderCost = round2(ratePerColor * colors);
+    if (input.reuse_existing_cylinder) {
+      breakdown.push({ key: 'flexo_cylinder', label: `Cylinder set (${colors} colors) — reusing cylinder on file`, amount: 0, scope: 'per_job' });
+      if (fullCylinderCost > 0) warnings.push(`Cylinder charge waived (cylinder on file) — saved ${currency} ${fullCylinderCost.toLocaleString()}.`);
+    } else {
+      cylinderCost = fullCylinderCost;
+      breakdown.push({ key: 'flexo_cylinder', label: `Cylinder set (${colors} colors)`, amount: cylinderCost, scope: 'per_job' });
+    }
+  }
+
   // Setup / pre-press charges (job-level, amortized into the total).
-  let setupTotal = 0;
+  let setupTotal = cylinderCost;
   const optionalSetups = new Set(input.include_optional_setups ?? []);
   for (const setup of template.setup_charges_json ?? []) {
     const included = setup.required || optionalSetups.has(setup.key);
@@ -258,11 +298,54 @@ export function calculatePackagingPrice(
       tier_adjustment_total: tierAdjustmentTotal,
       rush_uplift_pct: rushPct,
       setup_total: round2(setupTotal),
+      cylinder_cost: round2(cylinderCost),
     },
   };
 }
 
 /** Human-readable one-line spec summary for quote rows and PDFs. */
+/**
+ * S24-SPEN-217 — indicative "from" price for a catalog family card, computed
+ * through the exact same engine used for real quotes, at the cheapest valid
+ * baseline (min dimensions, cheapest material/service item, 1 color, no
+ * finishes, minimum quantity). Directional only — never shown as a quote.
+ */
+export function estimateStartingPrice(template: PackagingPricingTemplate): { unitPrice: number; currency: string } | null {
+  const isDimensional = template.allowed_dimension_ranges_json?.area_formula !== 'service';
+  const baseQuantity = Math.max(1, template.moq_tiers_json?.moq ?? 1);
+
+  if (isDimensional) {
+    const ranges = template.allowed_dimension_ranges_json;
+    if (!ranges?.width_mm || !ranges?.height_mm) return null;
+    const cheapestMaterial = [...(template.material_rates_json ?? [])].sort(
+      (a, b) => (a.rate_per_sqm ?? Infinity) - (b.rate_per_sqm ?? Infinity),
+    )[0];
+    if (!cheapestMaterial) return null;
+    const input: PackagingCalculationInput = {
+      width_mm: ranges.width_mm.min,
+      height_mm: ranges.height_mm.min,
+      gusset_mm: ranges.gusset_mm?.min ?? null,
+      material_key: cheapestMaterial.key,
+      adhesive_key: template.adhesive_options_json?.[0]?.key ?? null,
+      print_colors: 1,
+      finish_keys: [],
+      quantity: baseQuantity,
+      designs: 1,
+      artwork_status: 'print_ready',
+    };
+    const result = calculatePackagingPrice(template, input);
+    if (!result.ok) return null;
+    return { unitPrice: result.unit_price, currency: result.currency };
+  }
+
+  const cheapestItem = [...(template.material_rates_json ?? [])].sort((a, b) => (a.rate ?? Infinity) - (b.rate ?? Infinity))[0];
+  if (!cheapestItem) return null;
+  const input: PackagingCalculationInput = { service_item_keys: [cheapestItem.key], quantity: baseQuantity, designs: 1 };
+  const result = calculatePackagingPrice(template, input);
+  if (!result.ok) return null;
+  return { unitPrice: result.unit_price, currency: result.currency };
+}
+
 export function buildPackagingSpecSummary(
   familyName: string,
   template: PackagingPricingTemplate,
@@ -275,8 +358,11 @@ export function buildPackagingSpecSummary(
       .filter((value) => Number(value) > 0)
       .join(' × ');
     if (dims) parts.push(`${dims} mm`);
+    if (template.print_process === 'flexo' && input.repeat_length_mm) parts.push(`${input.repeat_length_mm}mm repeat`);
     const material = (template.material_rates_json ?? []).find((m) => m.key === input.material_key);
     if (material) parts.push(material.label);
+    const adhesive = (template.adhesive_options_json ?? []).find((option) => option.key === input.adhesive_key);
+    if (adhesive) parts.push(adhesive.label);
     if (input.print_colors) parts.push(`${input.print_colors} color`);
     const finishes = [...(input.finish_keys ?? []), ...(input.addon_keys ?? [])]
       .map((key) => (template.finish_addon_rates_json ?? []).find((finish) => finish.key === key)?.label)
