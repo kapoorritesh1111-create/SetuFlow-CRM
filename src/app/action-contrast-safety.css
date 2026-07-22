@@ -1,0 +1,44 @@
+/* Global action contrast guard. Applies to every organization because it is loaded by the root layout. */
+a[target="_blank"][href*="/pdf"],
+a[target="_blank"][href$=".pdf"],
+button[data-contrast-action="strong"] {
+  background-color: #0f2744 !important;
+  border: 1px solid #0f2744 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+a[target="_blank"][href*="/pdf"] *,
+a[target="_blank"][href$=".pdf"] *,
+button[data-contrast-action="strong"] * {
+  color: #ffffff !important;
+  fill: currentColor !important;
+}
+
+a[target="_blank"][href*="/pdf"]:hover,
+a[target="_blank"][href$=".pdf"]:hover,
+button[data-contrast-action="strong"]:hover {
+  background-color: #193769 !important;
+  border-color: #193769 !important;
+  color: #ffffff !important;
+}
+
+a[target="_blank"][href*="/pdf"]:focus-visible,
+a[target="_blank"][href$=".pdf"]:focus-visible,
+button[data-contrast-action="strong"]:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35) !important;
+  outline-offset: 2px !important;
+}
+
+button:disabled,
+button[aria-disabled="true"],
+a[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+button:disabled:not([data-contrast-action="strong"]),
+button[aria-disabled="true"]:not([data-contrast-action="strong"]),
+a[aria-disabled="true"]:not([data-contrast-action="strong"]) {
+  color: #475569 !important;
+}
