@@ -178,10 +178,12 @@ export async function POST(request: Request) {
       });
       if (authError) throw authError;
       if (!authResult.user) throw new Error('Supabase did not return the new Auth user');
-      createdUserId = authResult.user.id;
+
+      const authUserId = authResult.user.id;
+      createdUserId = authUserId;
 
       const { error: profileError } = await admin.from('profiles').upsert({
-        id: createdUserId,
+        id: authUserId,
         email: row.email,
         full_name: row.fullName,
         username: row.username,
@@ -191,14 +193,17 @@ export async function POST(request: Request) {
 
       const { data: membership, error: membershipError } = await admin.from('organization_members').insert({
         organization_id: organizationId,
-        user_id: createdUserId,
+        user_id: authUserId,
         is_active: true,
       }).select('id').single();
       if (membershipError) throw membershipError;
-      membershipId = membership.id;
+      if (!membership?.id) throw new Error('Supabase did not return the new organization membership');
+
+      const createdMembershipId = String(membership.id);
+      membershipId = createdMembershipId;
 
       const { error: roleError } = await admin.from('user_roles').insert({
-        organization_member_id: membershipId,
+        organization_member_id: createdMembershipId,
         role_id: role.id,
       });
       if (roleError) throw roleError;
@@ -207,8 +212,8 @@ export async function POST(request: Request) {
         email: row.email,
         status: 'created',
         message: `${row.fullName} created as ${role.name}.`,
-        user_id: createdUserId,
-        membership_id: membershipId,
+        user_id: authUserId,
+        membership_id: createdMembershipId,
       });
     } catch (error) {
       if (createdUserId) await cleanupCreatedUser(admin, createdUserId, membershipId);
