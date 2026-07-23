@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function SmcClientUsersPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: { organization_id?: string };
 }) {
   const operator = await getRiteshClientUserOperator();
   if (!operator) redirect('/smc');
@@ -52,17 +52,24 @@ export default async function SmcClientUsersPage({
     organizationId: role.organization_id ?? null,
   }));
 
-  const requestedOrg = typeof searchParams?.org === 'string' ? searchParams.org : null;
-  const initialOrganizationId = requestedOrg
-    ? organizations.find((org) => org.id === requestedOrg || org.slug === requestedOrg)?.id ?? null
-    : null;
-
   return (
-    <ClientUserProvisioner
-      organizations={organizations}
-      roles={roles}
-      operatorName={operator.user.email ?? 'Ritesh'}
-      initialOrganizationId={initialOrganizationId}
-    />
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
+      }}
+    >
+      <ClientUserProvisioner
+        organizations={organizations}
+        roles={roles}
+        operatorName={operator.user.email ?? 'Ritesh'}
+        initialOrganizationId={searchParams?.organization_id ?? null}
+      />
+    </div>
   );
 }
