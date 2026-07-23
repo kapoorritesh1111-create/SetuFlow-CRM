@@ -71,7 +71,7 @@ export default async function PublicCardPage({ searchParams }: { searchParams: S
       <div className="mx-auto grid max-w-7xl gap-8 xl:grid-cols-[0.82fr_1.18fr]">
         <div className="space-y-4">
           {eventContext ? (
-            <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50/90 px-5 py-4 text-sm font-semibold text-emerald-900 shadow-sm">
+            <div className="rounded-hero border border-emerald-200 bg-emerald-50/90 px-5 py-4 text-sm font-semibold text-emerald-900 shadow-sm">
               {eventContext}. Save this card so you remember the booth conversation.
             </div>
           ) : null}

@@ -31,7 +31,7 @@ Purpose: Use Products as the operating catalog. Products should be quote-ready, 
 - Lead product interests and quotes using the product.
 - Document requirement rules when product and destination matter.
 
-## Sprint 4 catalog action clarity
+## Catalog action clarity
 
 Setu Guru should make the Products area feel action-led, not generic. Use these routes clearly:
 
@@ -76,9 +76,9 @@ Product Management is an admin workbench. Action rows should tell users whether 
 - Import rows should stay inside Product Management.
 - Approval-posture rows should monitor governed rows and avoid automatic write-back.
 
-## Sprint 4 closure rules
+## Standing product action rules
 
-Sprint 4 is complete. Future product passes must preserve:
+Future product passes must preserve:
 
 1. Product-default changes in Products.
 2. Governed category/organization defaults in Product Management.

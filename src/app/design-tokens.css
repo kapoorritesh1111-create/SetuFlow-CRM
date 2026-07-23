@@ -1,0 +1,230 @@
+/* ==========================================================================
+   SETU Flow CRM — Design Tokens (v1.0)
+   Single source of truth for color, type, space, radius, elevation.
+   Import once in src/app/globals.css, above @tailwind directives' output.
+   Dark theme is class-driven: <html class="dark">.
+   ========================================================================== */
+
+:root {
+  /* ---- Brand ramps (navy = primary, teal = accent) ------------------- */
+  --sf-navy-50:  #F0F5FB;
+  --sf-navy-100: #DCE7F4;
+  --sf-navy-200: #BDD0E8;
+  --sf-navy-300: #92B1D6;
+  --sf-navy-400: #5F8ABE;
+  --sf-navy-500: #3A69A3;
+  --sf-navy-600: #2A5590;
+  --sf-navy-700: #1F487C; /* brand anchor — existing brand.primary */
+  --sf-navy-800: #193769; /* existing brand.dark */
+  --sf-navy-900: #142C54;
+  --sf-navy-950: #0B1B36;
+
+  --sf-teal-50:  #EDF9F6;
+  --sf-teal-100: #D4F0EA;
+  --sf-teal-200: #ADE1D7;
+  --sf-teal-300: #7DCCBE;
+  --sf-teal-400: #52B5A4;
+  --sf-teal-500: #359F91; /* accent anchor — existing brand.teal */
+  --sf-teal-600: #2A8378;
+  --sf-teal-700: #246A62;
+  --sf-teal-800: #1F544E;
+  --sf-teal-900: #1A443F;
+  --sf-teal-950: #0C2724;
+
+  /* ---- Semantic surfaces & text (light theme) ------------------------ */
+  --sf-bg-app:        #F6F9FC;   /* page background */
+  --sf-bg-app-glow-1: rgba(53, 159, 145, 0.10); /* teal radial, top */
+  --sf-bg-app-glow-2: rgba(31, 72, 124, 0.10);  /* navy radial, top-right */
+  --sf-surface-1:     #FFFFFF;   /* panel / card */
+  --sf-surface-2:     #F1F5F9;   /* inset / metric well */
+  --sf-surface-3:     #E2E8F0;   /* pressed / selected well */
+  --sf-border:        #E2E8F0;
+  --sf-border-strong: #CBD5E1;
+
+  --sf-text-primary:   #0F172A;
+  --sf-text-secondary: #475569;
+  --sf-text-muted:     #64748B;
+  --sf-text-faint:     #94A3B8;
+  --sf-text-inverse:   #F8FAFC;
+  --sf-text-brand:     var(--sf-navy-700);
+  --sf-text-accent:    var(--sf-teal-700);
+
+  --sf-focus-ring: rgba(58, 105, 163, 0.45); /* navy-500 @ 45% */
+
+  /* ---- Interactive ---------------------------------------------------- */
+  --sf-action-primary-bg:     var(--sf-navy-700);
+  --sf-action-primary-hover:  var(--sf-navy-800);
+  --sf-action-primary-press:  var(--sf-navy-900);
+  --sf-action-primary-fg:     #FFFFFF;
+  --sf-action-accent-bg:      var(--sf-teal-600);
+  --sf-action-accent-hover:   var(--sf-teal-700);
+  --sf-action-accent-fg:      #FFFFFF;
+
+  /* ---- Feedback (bg / fg / border triads for chips & banners) -------- */
+  --sf-success-bg: #ECFDF5; --sf-success-fg: #065F46; --sf-success-border: #A7F3D0; --sf-success-solid: #059669;
+  --sf-warning-bg: #FFFBEB; --sf-warning-fg: #92400E; --sf-warning-border: #FDE68A; --sf-warning-solid: #D97706;
+  --sf-danger-bg:  #FFF1F2; --sf-danger-fg:  #9F1239; --sf-danger-border:  #FECDD3; --sf-danger-solid:  #E11D48;
+  --sf-info-bg:    #EFF6FF; --sf-info-fg:    #1E40AF; --sf-info-border:    #BFDBFE; --sf-info-solid:    #2563EB;
+  --sf-neutral-bg: #F1F5F9; --sf-neutral-fg: #334155; --sf-neutral-border: #E2E8F0; --sf-neutral-solid: #64748B;
+
+  /* ---- Domain: pipeline stages (chip triads + solid for charts) ------ */
+  --sf-stage-new-solid:         #3B82F6;
+  --sf-stage-new-bg:            #EFF6FF; --sf-stage-new-fg:          #1D4ED8; --sf-stage-new-border:          #BFDBFE;
+  --sf-stage-contacted-solid:   #6366F1;
+  --sf-stage-contacted-bg:      #EEF2FF; --sf-stage-contacted-fg:    #4338CA; --sf-stage-contacted-border:    #C7D2FE;
+  --sf-stage-qualified-solid:   #22C55E;
+  --sf-stage-qualified-bg:      #F0FDF4; --sf-stage-qualified-fg:    #15803D; --sf-stage-qualified-border:    #BBF7D0;
+  --sf-stage-sample-solid:      #F59E0B;
+  --sf-stage-sample-bg:         #FFFBEB; --sf-stage-sample-fg:       #B45309; --sf-stage-sample-border:       #FDE68A;
+  --sf-stage-negotiation-solid: #A855F7;
+  --sf-stage-negotiation-bg:    #FAF5FF; --sf-stage-negotiation-fg:  #7E22CE; --sf-stage-negotiation-border:  #E9D5FF;
+  --sf-stage-won-solid:         #10B981;
+  --sf-stage-won-bg:            #ECFDF5; --sf-stage-won-fg:          #047857; --sf-stage-won-border:          #A7F3D0;
+  --sf-stage-lost-solid:        #EF4444;
+  --sf-stage-lost-bg:           #FEF2F2; --sf-stage-lost-fg:         #B91C1C; --sf-stage-lost-border:         #FECACA;
+
+  /* ---- Domain: compliance / document readiness ----------------------- */
+  --sf-compliance-ready:    var(--sf-success-solid);
+  --sf-compliance-progress: var(--sf-warning-solid);
+  --sf-compliance-blocked:  var(--sf-danger-solid);
+  --sf-compliance-expired:  var(--sf-neutral-solid);
+
+  /* ---- Domain: quote lifecycle ---------------------------------------
+     draft→neutral, pending-approval→warning, approved→info,
+     sent→stage-contacted, negotiation→stage-negotiation,
+     accepted→success, rejected/expired→danger/neutral.
+     Always map through these aliases, never restyle per page. */
+  --sf-quote-draft:    var(--sf-neutral-solid);
+  --sf-quote-pending:  var(--sf-warning-solid);
+  --sf-quote-approved: var(--sf-info-solid);
+  --sf-quote-sent:     var(--sf-stage-contacted-solid);
+  --sf-quote-accepted: var(--sf-success-solid);
+  --sf-quote-rejected: var(--sf-danger-solid);
+
+  /* ---- Charts (recharts) — categorical order is fixed ----------------- */
+  --sf-chart-1: var(--sf-navy-600);
+  --sf-chart-2: var(--sf-teal-500);
+  --sf-chart-3: #F59E0B;
+  --sf-chart-4: #A855F7;
+  --sf-chart-5: #EC4899;
+  --sf-chart-6: #64748B;
+  --sf-chart-grid:  #E2E8F0;
+  --sf-chart-label: #64748B;
+
+  /* ---- Radius ---------------------------------------------------------
+     ctl: buttons/inputs/chips · card: metric tiles/list rows ·
+     panel: workspace panels/tables · hero: page headers · pill: badges */
+  --sf-radius-ctl:   0.75rem;  /* 12px */
+  --sf-radius-card:  1rem;     /* 16px */
+  --sf-radius-panel: 1.5rem;   /* 24px */
+  --sf-radius-hero:  1.75rem;  /* 28px */
+  --sf-radius-pill:  9999px;
+
+  /* ---- Elevation ------------------------------------------------------ */
+  --sf-shadow-soft:  0 1px 3px rgba(15, 23, 42, 0.06);
+  --sf-shadow-card:  0 8px 24px rgba(15, 23, 42, 0.05);
+  --sf-shadow-panel: 0 18px 45px rgba(15, 23, 42, 0.06);
+  --sf-shadow-hero:  0 24px 64px rgba(15, 23, 42, 0.08);
+  --sf-shadow-pop:   0 16px 40px rgba(15, 23, 42, 0.14);
+
+  /* ---- Typography ------------------------------------------------------
+     Family: Plus Jakarta Sans (--font-jakarta from next/font).
+     Weights allowed: 400 / 500 / 600 / 700. 800–900 are banned in
+     product UI (marketing display only). Numbers in tables, quotes and
+     pricing always use font-variant-numeric: tabular-nums. */
+  --sf-font-sans: var(--font-jakarta, 'Plus Jakarta Sans'), ui-sans-serif, system-ui, sans-serif;
+
+  --sf-text-display: 1.875rem; --sf-leading-display: 2.25rem; /* 30/36 page titles */
+  --sf-text-title:   1.25rem;  --sf-leading-title:   1.75rem; /* 20/28 panel titles */
+  --sf-text-section: 1rem;     --sf-leading-section: 1.5rem;  /* 16/24 section heads */
+  --sf-text-body:    0.875rem; --sf-leading-body:    1.375rem;/* 14/22 default */
+  --sf-text-small:   0.8125rem;--sf-leading-small:   1.25rem; /* 13/20 table cells, helpers */
+  --sf-text-caption: 0.6875rem;--sf-leading-caption: 1rem;    /* 11/16 eyebrows, badges */
+  --sf-tracking-eyebrow: 0.16em; /* uppercase eyebrows & badge labels */
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --sf-ease: cubic-bezier(0.2, 0, 0, 1);
+  --sf-duration-fast: 120ms;   /* hover, press */
+  --sf-duration-base: 200ms;   /* reveal, fade */
+  --sf-duration-slow: 320ms;   /* drawers, sheets */
+}
+
+/* ==========================================================================
+   Dark theme — class strategy. Set darkMode: 'class' in tailwind config
+   (today the repo mixes `.dark body` CSS with media-query dark: variants;
+   pick class and stamp it from the theme toggle).
+   ========================================================================== */
+.dark {
+  --sf-bg-app:        #0B1220;
+  --sf-bg-app-glow-1: rgba(53, 159, 145, 0.10);
+  --sf-bg-app-glow-2: rgba(59, 130, 246, 0.12);
+  --sf-surface-1:     #101A2E;
+  --sf-surface-2:     #16233C;
+  --sf-surface-3:     #1D2E4D;
+  --sf-border:        #24344F;
+  --sf-border-strong: #33466B;
+
+  --sf-text-primary:   #F1F5F9;
+  --sf-text-secondary: #B6C2D4;
+  --sf-text-muted:     #8CA0BC;
+  --sf-text-faint:     #64748B;
+  --sf-text-inverse:   #0F172A;
+  --sf-text-brand:     var(--sf-navy-300);
+  --sf-text-accent:    var(--sf-teal-300);
+
+  --sf-focus-ring: rgba(125, 204, 190, 0.5); /* teal-300 @ 50% */
+
+  --sf-action-primary-bg:    var(--sf-navy-500);
+  --sf-action-primary-hover: var(--sf-navy-400);
+  --sf-action-primary-press: var(--sf-navy-600);
+  --sf-action-accent-bg:     var(--sf-teal-500);
+  --sf-action-accent-hover:  var(--sf-teal-400);
+
+  --sf-success-bg: rgba(5, 150, 105, 0.16);  --sf-success-fg: #6EE7B7; --sf-success-border: rgba(110, 231, 183, 0.35);
+  --sf-warning-bg: rgba(217, 119, 6, 0.16);  --sf-warning-fg: #FCD34D; --sf-warning-border: rgba(252, 211, 77, 0.35);
+  --sf-danger-bg:  rgba(225, 29, 72, 0.16);  --sf-danger-fg:  #FDA4AF; --sf-danger-border:  rgba(253, 164, 175, 0.35);
+  --sf-info-bg:    rgba(37, 99, 235, 0.16);  --sf-info-fg:    #93C5FD; --sf-info-border:    rgba(147, 197, 253, 0.35);
+  --sf-neutral-bg: rgba(100, 116, 139, 0.16);--sf-neutral-fg: #CBD5E1; --sf-neutral-border: rgba(203, 213, 225, 0.25);
+
+  --sf-stage-new-bg:         rgba(59, 130, 246, 0.16);  --sf-stage-new-fg:         #93C5FD; --sf-stage-new-border:         rgba(147, 197, 253, 0.3);
+  --sf-stage-contacted-bg:   rgba(99, 102, 241, 0.16);  --sf-stage-contacted-fg:   #A5B4FC; --sf-stage-contacted-border:   rgba(165, 180, 252, 0.3);
+  --sf-stage-qualified-bg:   rgba(34, 197, 94, 0.16);   --sf-stage-qualified-fg:   #86EFAC; --sf-stage-qualified-border:   rgba(134, 239, 172, 0.3);
+  --sf-stage-sample-bg:      rgba(245, 158, 11, 0.16);  --sf-stage-sample-fg:      #FCD34D; --sf-stage-sample-border:      rgba(252, 211, 77, 0.3);
+  --sf-stage-negotiation-bg: rgba(168, 85, 247, 0.16);  --sf-stage-negotiation-fg: #D8B4FE; --sf-stage-negotiation-border: rgba(216, 180, 254, 0.3);
+  --sf-stage-won-bg:         rgba(16, 185, 129, 0.16);  --sf-stage-won-fg:         #6EE7B7; --sf-stage-won-border:         rgba(110, 231, 183, 0.3);
+  --sf-stage-lost-bg:        rgba(239, 68, 68, 0.16);   --sf-stage-lost-fg:        #FCA5A5; --sf-stage-lost-border:        rgba(252, 165, 165, 0.3);
+
+  --sf-chart-1: #7DA7DC;
+  --sf-chart-2: #52B5A4;
+  --sf-chart-grid:  #24344F;
+  --sf-chart-label: #8CA0BC;
+
+  --sf-shadow-soft:  0 1px 3px rgba(2, 6, 23, 0.5);
+  --sf-shadow-card:  0 8px 24px rgba(2, 6, 23, 0.35);
+  --sf-shadow-panel: 0 18px 45px rgba(2, 6, 23, 0.45);
+  --sf-shadow-hero:  0 24px 64px rgba(2, 6, 23, 0.5);
+  --sf-shadow-pop:   0 16px 40px rgba(2, 6, 23, 0.6);
+}
+
+/* ==========================================================================
+   Mobile field-capture theme (the current #061c2e / #0b2e4a ad-hoc navy).
+   Scope with .sf-field on the (mobile) route-group layout; components pick
+   up surface tokens automatically instead of hardcoding hexes.
+   ========================================================================== */
+.sf-field {
+  --sf-bg-app:        #061C2E;
+  --sf-surface-1:     #0B2E4A;
+  --sf-surface-2:     #10395A;
+  --sf-surface-3:     #16466C;
+  --sf-border:        #1D4A6E;
+  --sf-border-strong: #2A628E;
+  --sf-text-primary:   #F0F7FC;
+  --sf-text-secondary: #B9D2E4;
+  --sf-text-muted:     #86A9C4;
+  --sf-text-accent:    #7DE2D2;
+  --sf-action-primary-bg:    var(--sf-teal-500);
+  --sf-action-primary-hover: var(--sf-teal-400);
+  --sf-action-primary-fg:    #04211C;
+  --sf-focus-ring: rgba(125, 226, 210, 0.55);
+  /* Touch ergonomics: min target 44px, controls use --sf-radius-card. */
+}

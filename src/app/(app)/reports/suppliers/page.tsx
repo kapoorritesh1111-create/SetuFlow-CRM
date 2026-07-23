@@ -20,10 +20,10 @@ export default async function SupplierReportsPage() {
       if (!_emR.has('supplier_procurement')) {
         return (
           <div className="mx-auto max-w-xl px-4 py-16 text-center">
-            <p className="text-xs font-black uppercase tracking-widest text-[#279491]">Supplier Procurement Module</p>
+            <p className="text-xs font-black uppercase tracking-widest text-accent-600">Supplier Procurement Module</p>
             <h2 className="mt-3 text-2xl font-bold text-slate-950">Supplier reports locked</h2>
             <p className="mt-3 text-sm text-slate-500">Supplier sourcing reports require the Supplier Procurement add-on.</p>
-            <a href="mailto:admin@setugroups.com?subject=Supplier Procurement Module" className="mt-6 inline-block rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white">Request module access</a>
+            <a href="mailto:admin@setugroups.com?subject=Supplier Procurement Module" className="mt-6 inline-block rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white">Request module access</a>
           </div>
         );
       }
@@ -52,7 +52,7 @@ export default async function SupplierReportsPage() {
 
   return (
     <main data-s41-supplier-sourcing-reports="true" className="space-y-6 text-slate-900">
-      <section className="rounded-[2rem] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-6 shadow-soft">
+      <section className="rounded-hero border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-6 shadow-soft">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Supplier sourcing reports</p>
         <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -67,12 +67,12 @@ export default async function SupplierReportsPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm font-medium text-slate-600">Report rows</p><p className="mt-1 text-3xl font-semibold text-slate-950">{rows.length}</p><p className="mt-1 text-xs font-semibold text-teal-700">supplier sourcing records</p></article>
-        <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm font-medium text-slate-600">Export format</p><p className="mt-1 text-3xl font-semibold text-slate-950">Table</p><p className="mt-1 text-xs font-semibold text-teal-700">Excel/PDF-ready columns</p></article>
-        <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm font-medium text-slate-600">Guru actions</p><p className="mt-1 text-3xl font-semibold text-slate-950">{recommendations.length}</p><p className="mt-1 text-xs font-semibold text-teal-700">supplier recommendations</p></article>
+        <article className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm font-medium text-slate-600">Report rows</p><p className="mt-1 text-3xl font-semibold text-slate-950">{rows.length}</p><p className="mt-1 text-xs font-semibold text-teal-700">supplier sourcing records</p></article>
+        <article className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm font-medium text-slate-600">Export format</p><p className="mt-1 text-3xl font-semibold text-slate-950">Table</p><p className="mt-1 text-xs font-semibold text-teal-700">Excel/PDF-ready columns</p></article>
+        <article className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm font-medium text-slate-600">Guru actions</p><p className="mt-1 text-3xl font-semibold text-slate-950">{recommendations.length}</p><p className="mt-1 text-xs font-semibold text-teal-700">supplier recommendations</p></article>
       </section>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+      <section className="rounded-panel border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
         <div className="mb-4 flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><FileSpreadsheet className="h-5 w-5 text-teal-700" />Sourcing report table</h2><Link href="/dashboard/supplier-insights" className="text-sm font-semibold text-teal-700">Supplier insights</Link></div>
         <div className="overflow-x-auto">
           <table className="min-w-[760px] w-full divide-y divide-slate-100 text-sm">
@@ -84,7 +84,7 @@ export default async function SupplierReportsPage() {
         </div>
       </section>
 
-      <section className="rounded-[1.5rem] border border-teal-200 bg-teal-50/70 p-5">
+      <section className="rounded-panel border border-teal-200 bg-teal-50/70 p-5">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><Sparkles className="h-5 w-5 text-teal-700" />Setu Guru report guidance</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {recommendations.length ? recommendations.map((item) => <p key={item} className="rounded-2xl border border-teal-100 bg-white px-4 py-3 text-sm text-slate-700">{item}</p>) : <p className="rounded-2xl border border-teal-100 bg-white px-4 py-3 text-sm text-slate-700">No supplier report recommendations yet.</p>}

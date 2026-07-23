@@ -59,7 +59,7 @@ export default async function ProductManagementPage({ searchParams }: { searchPa
         {searchParams?.notice ? <StateMessage title="Catalog Admin notice" description={searchParams.notice} tone="neutral" /> : null}
         <QueryIssuesAlert issues={data.queryIssues} />
 
-        <div className="flex gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3.5 py-3">
+        <div className="flex gap-2.5 rounded-ctl border border-slate-200 bg-white px-3.5 py-3">
           <span aria-hidden="true" className="text-base">🗄️</span>
           <div>
             <p className="text-xs font-bold text-slate-900">Why is this separate from Catalog?</p>

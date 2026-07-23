@@ -33,7 +33,7 @@ export function AdminHelpDrawer({
       {open ? (
         <div className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
           <button type="button" className="absolute inset-0 cursor-default" aria-label="Close help" onClick={() => setOpen(false)} />
-          <section className="relative max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+          <section className="relative max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-hero border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-700">SETU Flow help</p>

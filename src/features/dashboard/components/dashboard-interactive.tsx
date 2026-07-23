@@ -512,9 +512,9 @@ export default function DashboardInteractive({
           fallbackTitle="Commercial risk unavailable"
           fallbackDescription="Commercial risk card hit a runtime issue."
         >
-          <div className="h-full rounded-[2rem] border border-slate-200/85 bg-white/96 p-5 shadow-[0_20px_52px_rgba(15,23,42,0.07)] sm:p-6">
+          <div className="h-full rounded-hero border border-slate-200/85 bg-white/96 p-5 shadow-[0_20px_52px_rgba(15,23,42,0.07)] sm:p-6">
             <div className="grid gap-3.5">
-              <div className="rounded-[1.5rem] border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,0.98))] p-5">
+              <div className="rounded-panel border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,0.98))] p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700">Blocked revenue</p>
@@ -524,7 +524,7 @@ export default function DashboardInteractive({
                 </div>
                 <p className="mt-2 text-sm leading-5 text-slate-600">Revenue currently stalled by blockers that need clearance before the next move.</p>
               </div>
-              <div className="rounded-[1.5rem] border border-amber-200 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,255,255,0.98))] p-5">
+              <div className="rounded-panel border border-amber-200 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,255,255,0.98))] p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">At-risk value</p>
@@ -534,7 +534,7 @@ export default function DashboardInteractive({
                 </div>
                 <p className="mt-2 text-sm leading-5 text-slate-600">Commercial value at risk if the next outreach or approval step slips any further.</p>
               </div>
-              <div className="rounded-[1.5rem] border border-emerald-200 bg-[linear-gradient(135deg,rgba(236,253,245,0.95),rgba(255,255,255,0.98))] p-5">
+              <div className="rounded-panel border border-emerald-200 bg-[linear-gradient(135deg,rgba(236,253,245,0.95),rgba(255,255,255,0.98))] p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Hot opportunities</p>
@@ -545,7 +545,7 @@ export default function DashboardInteractive({
                 <p className="mt-2 text-sm leading-5 text-slate-600">High-intent opportunities that deserve immediate attention while momentum is strongest.</p>
               </div>
             </div>
-            <div className="mt-4 rounded-[1.35rem] border border-slate-200 bg-slate-50/85 px-4 py-3">
+            <div className="mt-4 rounded-panel border border-slate-200 bg-slate-50/85 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Commercial view</p>
               <p className="mt-1 text-sm leading-5 text-slate-700">Use this card to spot what is blocked, what needs action, and what is ready to close.</p>
             </div>

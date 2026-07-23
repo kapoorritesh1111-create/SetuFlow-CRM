@@ -29,21 +29,21 @@ export function PipelineStageChartCard({ items }: { items: DashboardStageCount[]
       {visible.length ? (
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/90 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Open stages</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{activeStages}</p>
             </div>
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/90 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Open deals</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{totalCount.toLocaleString()}</p>
             </div>
-            <div className="rounded-[1.35rem] border border-emerald-200 bg-emerald-50/80 px-4 py-3">
+            <div className="rounded-panel border border-emerald-200 bg-emerald-50/80 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Pipeline value</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{formatCompactCurrency(totalValue)}</p>
             </div>
           </div>
 
-          <div className="space-y-3 rounded-[1.5rem] border border-slate-200/90 bg-white/90 p-4">
+          <div className="space-y-3 rounded-panel border border-slate-200/90 bg-white/90 p-4">
             {visible.map((item) => {
               const width = Math.max((item.count / max) * 100, item.count ? 10 : 0);
               return (
@@ -73,11 +73,11 @@ export function PipelineStageChartCard({ items }: { items: DashboardStageCount[]
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/80 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/80 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Average stage value</p>
               <p className="mt-1 text-lg font-semibold tracking-tight text-slate-950">{formatCompactCurrency(avgStageValue)}</p>
             </div>
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/80 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/80 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Reading guide</p>
               <p className="mt-1 text-sm leading-5 text-slate-600">Stage bars show flow volume while value labels keep commercial priority visible.</p>
             </div>

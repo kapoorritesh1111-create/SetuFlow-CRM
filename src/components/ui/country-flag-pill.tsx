@@ -132,12 +132,12 @@ export function CountryFlagPill({
           height="12"
           alt=""
           aria-hidden="true"
-          className="shrink-0 rounded-[2px] border border-black/10 object-cover"
+          className="shrink-0 rounded-sm border border-black/10 object-cover"
           loading="lazy"
           onError={() => setFallbackIndex((current) => current + 1)}
         />
       ) : (
-        <span aria-hidden="true" className="inline-flex h-3 w-4 shrink-0 items-center justify-center rounded-[2px] border border-slate-200 bg-white text-[8px] font-black text-slate-400">--</span>
+        <span aria-hidden="true" className="inline-flex h-3 w-4 shrink-0 items-center justify-center rounded-sm border border-slate-200 bg-white text-[8px] font-black text-slate-400">--</span>
       )}
       {compact ? null : <span>{name || 'No country'}</span>}
     </span>

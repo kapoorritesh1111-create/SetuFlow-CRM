@@ -38,7 +38,7 @@
       "capture": "/contact-exchange/scan",
       "myCard": "/contact-exchange/vcard",
       "tasks": "/tasks",
-      "workspace": "/workspace"
+      "workspace": "/smc"
     },
     "internal": {
       "dcc": "/internal-dcc/"
@@ -203,7 +203,7 @@
   ],
   "adminTabs": [
     {
-      "href": "/workspace",
+      "href": "/smc",
       "label": "Setu Mission Control",
       "exact": false
     },
@@ -446,7 +446,7 @@
           "navKey": "l"
         },
         {
-          "href": "/workspace",
+          "href": "/smc",
           "label": "Setu Mission Control",
           "exact": false,
           "description": "Live readiness cockpit for sprint health, issue risk, AI queue, docs proof, QA proof, and demo readiness.",

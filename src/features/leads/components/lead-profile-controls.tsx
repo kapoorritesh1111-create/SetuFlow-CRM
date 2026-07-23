@@ -105,7 +105,7 @@ export function LeadProfileControls({
 
   return (
     <div className="grid gap-4 xl:grid-cols-3">
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-hero border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Schedule follow-up</h3>
@@ -128,7 +128,7 @@ export function LeadProfileControls({
         <p className="mt-3 text-sm text-slate-500">{followUpSaving ? 'Saving follow-up…' : followUpState.error ? followUpState.error : followUpState.success || 'Pick a date to auto-save the next step.'}</p>
       </section>
 
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-hero border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Lead qualification</h3>
@@ -176,7 +176,7 @@ export function LeadProfileControls({
       </section>
 
       <form
-        className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm"
+        className="rounded-hero border border-slate-200 bg-white p-5 shadow-sm"
         onSubmit={async (event) => {
           event.preventDefault()
           setNoteSaving(true)

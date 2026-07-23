@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 function ActionButton({ href, label, primary = false, download, onClick }: { href?: string; label: string; primary?: boolean; download?: boolean; onClick?: () => void | Promise<void> }) {
   const className = primary
-    ? 'inline-flex min-h-[54px] items-center justify-center rounded-[1.35rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800'
-    : 'inline-flex min-h-[54px] items-center justify-center rounded-[1.35rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50';
+    ? 'inline-flex min-h-[54px] items-center justify-center rounded-panel bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800'
+    : 'inline-flex min-h-[54px] items-center justify-center rounded-panel border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50';
 
   if (href) {
     return (
@@ -33,7 +33,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function QrHint({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+    <div className="rounded-panel border border-slate-200 bg-white px-4 py-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
       <p className="text-sm font-semibold text-slate-900">{title}</p>
       <p className="mt-1 text-sm leading-6 text-slate-600">{detail}</p>
     </div>
@@ -122,7 +122,7 @@ export function VCardShareActions({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.04fr,0.96fr]">
-      <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
+      <div className="rounded-hero border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-700">Share system</p>
@@ -134,7 +134,7 @@ export function VCardShareActions({
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Live</span>
         </div>
 
-        <div className="mt-6 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
+        <div className="mt-6 rounded-hero border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
           <p className="text-sm font-semibold text-slate-900">Primary share actions</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">Open the card, share it, copy the intro, or download the contact file.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -145,7 +145,7 @@ export function VCardShareActions({
           </div>
         </div>
 
-        <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
+        <div className="mt-5 rounded-hero border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] sm:p-5">
           <p className="text-sm font-semibold text-slate-900">Share state</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {copied
@@ -157,12 +157,12 @@ export function VCardShareActions({
                   : 'Ready to send as a polished digital identity page.'}
           </p>
 
-          <div className="mt-4 rounded-[1.4rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <div className="mt-4 rounded-panel bg-slate-50 px-4 py-3 text-sm text-slate-600">
             <p className="font-medium text-slate-900">Recommended intro</p>
             <p className="mt-2 whitespace-pre-line">{shareText}</p>
           </div>
 
-          <div className="mt-4 rounded-[1.4rem] border border-slate-200 px-4 py-2">
+          <div className="mt-4 rounded-panel border border-slate-200 px-4 py-2">
             <DetailRow label="Public card URL" value={publicCardUrl} />
             <DetailRow label="Identity layer" value="Verified and save-first" />
             <DetailRow label="Recipient flow" value="Open → trust → save → contact" />
@@ -170,7 +170,7 @@ export function VCardShareActions({
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
+      <div className="rounded-hero border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-slate-900">QR as a premium handoff</p>
@@ -179,9 +179,9 @@ export function VCardShareActions({
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">Live</span>
         </div>
 
-        <div className="mt-5 rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-          <div className="flex min-h-[244px] items-center justify-center rounded-[1.6rem] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4">
-            <img src={qrImageUrl} alt="QR code for digital card" className="h-56 w-56 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm" />
+        <div className="mt-5 rounded-hero border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
+          <div className="flex min-h-[244px] items-center justify-center rounded-panel bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-4">
+            <img src={qrImageUrl} alt="QR code for digital card" className="h-56 w-56 rounded-hero border border-slate-200 bg-white p-3 shadow-sm" />
           </div>
 
           <div className="mt-4 space-y-3">

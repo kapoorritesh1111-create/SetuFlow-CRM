@@ -4,8 +4,8 @@ import { formatDate } from '@/lib/utils';
 import { createEnrichedTradeEvent, updateEnrichedTradeEvent } from '@/features/admin/server/trade-event-actions';
 
 const inputClass = 'min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]';
-const secondaryButtonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50';
+const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800';
+const secondaryButtonClass = 'inline-flex min-h-8 items-center justify-center rounded-ctl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50';
 
 type TradeEventRow = Record<string, any>;
 
@@ -99,7 +99,7 @@ export function TradeEventsAdminWorkspace({ events }: { events: TradeEventRow[] 
               const hasImage = Boolean(defaults.image_url);
               const hasWebsite = Boolean(defaults.website_url);
               return (
-                <div key={event.id} className="flex items-center gap-2.5 rounded-[12px] border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300 hover:shadow-[0_2px_6px_rgba(15,23,42,0.05)]">
+                <div key={event.id} className="flex items-center gap-2.5 rounded-ctl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300 hover:shadow-[0_2px_6px_rgba(15,23,42,0.05)]">
                   <span aria-hidden="true" className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm">🎪</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-slate-900">{event.name}</p>

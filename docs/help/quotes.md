@@ -1,13 +1,13 @@
 # Quotes help
 
 Route: `/quotes`
-Last updated: 2026-06-08 (S24-205, S24-206, S24-207, S24-208 resolved)
+Last updated: 2026-06-08
 
 Purpose: The Quote workspace is a customer-grouped lifecycle command center. Every active quote is organised by customer, lifecycle section, and value bucket. The primary job of this workspace is to help sales teams log outcomes, move accepted quotes to Orders, create governed revisions, and keep the commercial pipeline clean.
 
-## What changed in Sprint 24
+## Quote Command Center layout
 
-The quotes page is a complete overhaul from a flat quote-row table to a customer-grouped Quote Command Center.
+The quotes page is a customer-grouped Quote Command Center, not a flat quote-row table.
 
 ### Left panel — Grouped lifecycle worklist
 
@@ -82,7 +82,7 @@ One filter row: Search (customer/quote/product) · Lifecycle · Customer · From
 
 ---
 
-## Sending a quote — new flow (Sprint 24)
+## Sending a quote
 
 After a quote is sent, the Send page (`/send`) shows:
 - Large green OK badge with "Quote sent" status
@@ -94,7 +94,7 @@ The tracked quote link uses the production domain (`www.setuflowcrm.com`). Do no
 
 ---
 
-## Quote outcome actions (Sprint 24)
+## Quote outcome actions
 
 For any sent quote, the operator must log an explicit outcome. The five outcomes are:
 
@@ -108,7 +108,7 @@ For any sent quote, the operator must log an explicit outcome. The five outcomes
 
 ---
 
-## Accepted quote → Orders handoff (Sprint 24, S24-207)
+## Accepted quote → Orders handoff
 
 Once a quote is accepted and the order handoff is created:
 - The quote **exits** the active Quote workspace worklist
@@ -119,7 +119,7 @@ Once a quote is accepted and the order handoff is created:
 
 ---
 
-## Repeat customer and governed revisions (Sprint 24, S24-201)
+## Repeat customer and governed revisions
 
 The Quote Launcher (accessed from the Lead Command Center) gives explicit choices:
 - Continue latest draft
@@ -132,7 +132,7 @@ For a revision from a sent quote: the sent record is immutable. Setu Guru must a
 
 ---
 
-## Expiry and Setu Guru automation (Sprint 24, S24-208)
+## Expiry and Setu Guru automation
 
 - Quotes approaching expiry: Setu Guru should prompt the operator to follow up, revise, or remind the buyer before the validity date passes.
 - Expired quotes: leave the active display automatically; move to archive; remain available for review or clone-into-new-version.

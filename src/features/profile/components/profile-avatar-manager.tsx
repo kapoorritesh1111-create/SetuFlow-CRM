@@ -56,7 +56,7 @@ export function ProfileAvatarManager({ initialAvatarUrl, fullName, email }: Prop
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-soft sm:p-6">
+      <div className="rounded-hero border border-slate-200 bg-white p-5 shadow-soft sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">

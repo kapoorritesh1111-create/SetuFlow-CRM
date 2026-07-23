@@ -148,7 +148,7 @@ export function ReportsControlsPanel({ data }: { data: ReportsData }) {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-4">
+        <div className="rounded-hero border border-slate-200 bg-slate-50/70 p-4">
           <p className="text-sm font-semibold text-slate-900">Quotes created per week</p>
           <div className="mt-4 space-y-3">
             {filtered.quoteTrend.length ? filtered.quoteTrend.map((item) => (
@@ -161,7 +161,7 @@ export function ReportsControlsPanel({ data }: { data: ReportsData }) {
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-4">
+        <div className="rounded-hero border border-slate-200 bg-slate-50/70 p-4">
           <p className="text-sm font-semibold text-slate-900">Conversion funnel</p>
           <div className="mt-4 space-y-3">
             {funnel.map((item) => (

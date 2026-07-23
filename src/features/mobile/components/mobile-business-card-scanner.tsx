@@ -187,7 +187,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
+      <div className="rounded-hero bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Business card scan</p>
@@ -198,14 +198,14 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
+      <div className="rounded-hero border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
         <div className="grid grid-cols-2 gap-2 rounded-3xl bg-slate-100 p-1 dark:bg-slate-800">
           {(['buyer', 'supplier'] as const).map((item) => (
             <button key={item} type="button" onClick={() => setLeadType(item)} className={`min-h-12 rounded-2xl font-black capitalize ${leadType === item ? 'bg-white text-blue-600 shadow dark:bg-slate-950 dark:text-sky-300' : 'text-slate-500'}`}>{item}</button>
           ))}
         </div>
 
-        <label className="mt-4 flex min-h-[156px] cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-blue-200 bg-blue-50/70 px-4 py-5 text-center dark:border-blue-900 dark:bg-blue-950/30">
+        <label className="mt-4 flex min-h-[156px] cursor-pointer flex-col items-center justify-center rounded-hero border border-dashed border-blue-200 bg-blue-50/70 px-4 py-5 text-center dark:border-blue-900 dark:bg-blue-950/30">
           <span className="text-3xl">📇</span>
           <span className="mt-2 text-sm font-black text-slate-950 dark:text-white">Take or upload business card photo</span>
           <span className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">Camera capture is enabled on mobile. Large phone photos are optimized before scan.</span>
@@ -213,7 +213,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
         </label>
 
         {previewUrl ? (
-          <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
+          <div className="mt-4 overflow-hidden rounded-hero border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
             {previewKind === 'image' ? <img src={previewUrl} alt="Selected business card" className="max-h-72 w-full object-contain" /> : <iframe src={previewUrl} title="Selected business card PDF" className="h-72 w-full" />}
           </div>
         ) : null}
@@ -230,7 +230,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
         <p className={`mt-3 rounded-2xl px-4 py-3 text-xs font-semibold leading-5 ${error ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{status}</p>
       </div>
 
-      <div className="rounded-[2rem] border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
+      <div className="rounded-hero border border-white/70 bg-white/95 p-4 shadow-xl shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900/90">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600 dark:text-sky-300">Prefilled lead</p>

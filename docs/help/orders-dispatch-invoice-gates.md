@@ -4,19 +4,19 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-20
 
-## Sprint 8O purpose
+## Purpose
 
-Sprint 8O introduces the packing list, logistics/dispatch, shipment draft, and final invoice gate foundation for the additive Orders execution workflow.
+The packing list, logistics/dispatch, shipment draft, and final invoice gates are the foundation for the additive Orders execution workflow.
 
-This pass keeps the core Sprint 8 rule:
+This keeps the core rule:
 
 ```text
 Prepare → Preview → Approve → Send / Advance
 ```
 
-It does not mutate quote history, does not auto-dispatch, and does not sync finance records. Sprint 18 finance behavior is pending-adapter queue only through `finance_integration_events`.
+It does not mutate quote history, does not auto-dispatch, and does not sync finance records. Finance behavior is pending-adapter queue only through `finance_integration_events`.
 
-## What Sprint 8O adds
+## What this adds
 
 1. Packing List gate:
    - Prepare

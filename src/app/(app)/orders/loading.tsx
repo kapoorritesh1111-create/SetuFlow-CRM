@@ -4,7 +4,7 @@ function SkeletonBlock({ className = '' }: { className?: string }) {
 
 function SkeletonOrderCard() {
   return (
-    <div className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-card border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-3">
           <SkeletonBlock className="h-5 w-48" />
@@ -40,7 +40,7 @@ export default function OrdersLoading() {
 
   return (
     <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6" aria-busy="true" aria-label="Loading orders cockpit">
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
         <SkeletonBlock className="h-3 w-36 rounded-full" />
         <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -66,7 +66,7 @@ export default function OrdersLoading() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm" aria-label="Loading orders filters">
+        <aside className="rounded-card border border-slate-200 bg-white p-4 shadow-sm" aria-label="Loading orders filters">
           <SkeletonBlock className="h-5 w-32 rounded-full" />
           <div className="mt-4 space-y-3">
             {stageLabels.map((stage) => (

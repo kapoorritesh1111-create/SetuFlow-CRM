@@ -66,7 +66,7 @@ function whatsappContact(lead: any) {
 function ResponsiveOrdersWorkspace({ orders, catalogOptions, organizationId, currentUserId, currentUserName, children }: { orders: ProductionOrder8S[]; catalogOptions: CatalogOrderOption8S[]; organizationId: string; currentUserId: string; currentUserName: string; children?: React.ReactNode }) {
   const ordersView = (
     <>
-      <div className="md:hidden"><MobileOrdersWorkspace orders={orders} catalogOptions={catalogOptions} /></div>
+      <div className="md:hidden"><MobileOrdersWorkspace orders={orders} catalogOptions={catalogOptions} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} /></div>
       <div className="hidden md:block"><OrdersProductionWorkspace8S orders={orders} catalogOptions={catalogOptions} organizationId={organizationId} currentUserId={currentUserId} currentUserName={currentUserName} /></div>
     </>
   );

@@ -39,7 +39,7 @@ export function DashboardTopStrip({ kpis, mode = 'all' }: Props) {
         const style = intentStyles[kpi.intent ?? 'default'];
         const trendArrow = kpi.trendDirection === 'up' ? '↑' : kpi.trendDirection === 'down' ? '↓' : '•';
         const card = (
-          <article className={cn('group setu-kpi-card relative h-full min-h-[136px] overflow-hidden rounded-[1.25rem] border bg-white px-4 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)] focus-within:-translate-y-0.5 focus-within:shadow-[0_14px_30px_rgba(15,23,42,0.08)] 2xl:px-5 2xl:py-5', style.border)}>
+          <article className={cn('group setu-kpi-card relative h-full min-h-[136px] overflow-hidden rounded-card border bg-white px-4 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.05)] ring-1 ring-slate-950/[0.02] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)] focus-within:-translate-y-0.5 focus-within:shadow-[0_14px_30px_rgba(15,23,42,0.08)] 2xl:px-5 2xl:py-5', style.border)}>
             <div className={cn('absolute inset-x-0 top-0 h-1', style.accent)} />
             <p className="truncate text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-400">{kpi.label}</p>
             <div className="mt-3 flex items-start justify-between gap-3">

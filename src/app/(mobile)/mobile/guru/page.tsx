@@ -43,7 +43,7 @@ export default function MobileGuruPage() {
   return (
     <div className="flex flex-col min-h-[calc(100dvh-160px)]">
       {/* Header */}
-      <section className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d,#1a3a7c)] p-5 text-white shadow-xl flex items-center gap-3 mb-4">
+      <section className="rounded-hero bg-[linear-gradient(145deg,#0c172d,#1a3a7c)] p-5 text-white shadow-xl flex items-center gap-3 mb-4">
         <GuruAvatar size="lg" showOnlineDot />
         <div>
           <p className="text-xs font-black uppercase tracking-[.18em] text-sky-200">AI Assistant</p>
@@ -68,7 +68,7 @@ export default function MobileGuruPage() {
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} gap-2`}>
             {m.role === 'assistant' && <GuruAvatar size="sm" className="mt-1 flex-shrink-0" />}
-            <div className={`max-w-[85%] rounded-[1.5rem] px-4 py-3 text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'rounded-br-md bg-blue-600 text-white' : 'rounded-bl-md bg-white/95 text-slate-800 border border-slate-200/80'}`}>
+            <div className={`max-w-[85%] rounded-panel px-4 py-3 text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'rounded-br-md bg-blue-600 text-white' : 'rounded-bl-md bg-white/95 text-slate-800 border border-slate-200/80'}`}>
               {m.content}
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function MobileGuruPage() {
         {loading && (
           <div className="flex gap-2">
             <GuruAvatar size="sm" className="mt-1 flex-shrink-0" />
-            <div className="rounded-[1.5rem] rounded-bl-md bg-white/95 border border-slate-200/80 px-4 py-3">
+            <div className="rounded-panel rounded-bl-md bg-white/95 border border-slate-200/80 px-4 py-3">
               <div className="flex gap-1">{[0,1,2].map(i => <div key={i} className="h-2 w-2 rounded-full bg-blue-400 animate-bounce" style={{animationDelay:`${i*0.15}s`}} />)}</div>
             </div>
           </div>

@@ -3,7 +3,8 @@
 export function OrderPreviewPrintButton() {
   function openPdf() {
     const basePath = window.location.pathname.replace(/\/$/, '');
-    window.location.href = `${basePath}/pdf`;
+    const opened = window.open(`${basePath}/pdf`, '_blank', 'noopener,noreferrer');
+    if (opened) opened.opener = null;
   }
 
   return <button type="button" onClick={openPdf}>Download PDF</button>;

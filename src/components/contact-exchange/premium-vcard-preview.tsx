@@ -28,11 +28,11 @@ function Avatar({ fullName, avatarUrl }: { fullName: string; avatarUrl?: string 
 
 function LogoBadge({ organizationName, logoUrl }: { organizationName: string; logoUrl?: string | null }) {
   if (logoUrl) {
-    return <img src={logoUrl} alt={organizationName} className="h-12 w-12 rounded-[1rem] border border-slate-200 bg-white object-contain p-2 shadow-sm" />;
+    return <img src={logoUrl} alt={organizationName} className="h-12 w-12 rounded-card border border-slate-200 bg-white object-contain p-2 shadow-sm" />;
   }
 
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] border border-slate-200 bg-white text-sm font-semibold text-slate-900 shadow-sm">
+    <div className="flex h-12 w-12 items-center justify-center rounded-card border border-slate-200 bg-white text-sm font-semibold text-slate-900 shadow-sm">
       {organizationName.slice(0, 1).toUpperCase()}
     </div>
   );
@@ -50,19 +50,19 @@ function ActionTile({ label, href, icon }: { label: string; href?: string; icon:
     return (
       <a
         href={href}
-        className="flex min-h-[74px] items-center justify-center gap-3 rounded-[1.6rem] border border-slate-200 bg-white px-5 py-4 text-center shadow-[0_12px_34px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.1)]"
+        className="flex min-h-[74px] items-center justify-center gap-3 rounded-panel border border-slate-200 bg-white px-5 py-4 text-center shadow-[0_12px_34px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.1)]"
       >
         {body}
       </a>
     );
   }
 
-  return <div className="flex min-h-[74px] items-center justify-center gap-3 rounded-[1.6rem] border border-slate-200 bg-white px-5 py-4 text-center shadow-[0_12px_34px_rgba(15,23,42,0.07)]">{body}</div>;
+  return <div className="flex min-h-[74px] items-center justify-center gap-3 rounded-panel border border-slate-200 bg-white px-5 py-4 text-center shadow-[0_12px_34px_rgba(15,23,42,0.07)]">{body}</div>;
 }
 
 function GuidanceCard({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="rounded-[1.6rem] border border-slate-200 bg-white px-5 py-5 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
+    <div className="rounded-panel border border-slate-200 bg-white px-5 py-5 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
       <p className="text-sm font-semibold text-slate-900">{title}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{detail}</p>
     </div>
@@ -98,8 +98,8 @@ export function PremiumVCardPreview({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.02fr,0.98fr]">
-      <section className="rounded-[2.4rem] border border-slate-200/80 bg-[radial-gradient(circle_at_top,_rgba(191,219,254,0.5),_transparent_32%),linear-gradient(180deg,#fcfdff_0%,#f4f8fc_100%)] p-4 shadow-soft sm:p-6">
-        <div className="mx-auto max-w-[430px] rounded-[2.6rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_100%)] p-5 shadow-[0_30px_80px_rgba(15,23,42,0.12)] sm:p-7">
+      <section className="rounded-hero border border-slate-200/80 bg-[radial-gradient(circle_at_top,_rgba(191,219,254,0.5),_transparent_32%),linear-gradient(180deg,#fcfdff_0%,#f4f8fc_100%)] p-4 shadow-soft sm:p-6">
+        <div className="mx-auto max-w-[430px] rounded-hero border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_100%)] p-5 shadow-[0_30px_80px_rgba(15,23,42,0.12)] sm:p-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Global Contact Exchange</p>
@@ -118,20 +118,20 @@ export function PremiumVCardPreview({
               <p>{contextLine}</p>
             </div>
             {primaryPhone ? (
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#359F91]/20 bg-[#eefaf7] px-4 py-2 text-sm font-semibold text-[#0f766e]">
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent-500/20 bg-[#eefaf7] px-4 py-2 text-sm font-semibold text-[#0f766e]">
                 <span>☏</span>
                 <span>{primaryPhone}</span>
               </div>
             ) : null}
           </div>
 
-          <div className="mt-8 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5 text-center shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+          <div className="mt-8 rounded-hero border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5 text-center shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Save contact</p>
             <p className="mt-3 text-[1.7rem] font-semibold tracking-[-0.04em] text-slate-950 sm:text-[1.95rem]">Instantly add this person</p>
             <p className="mt-3 text-sm leading-6 text-slate-600">The card leads with one clear moment: save first while trust is highest, then call or email without hunting for the next step.</p>
             <button
               type="button"
-              className="mt-5 inline-flex min-h-[56px] w-full items-center justify-center rounded-[1.4rem] bg-slate-950 px-5 py-4 text-sm font-semibold text-white shadow-[0_14px_36px_rgba(15,23,42,0.22)] transition hover:bg-slate-800"
+              className="mt-5 inline-flex min-h-[56px] w-full items-center justify-center rounded-panel bg-slate-950 px-5 py-4 text-sm font-semibold text-white shadow-[0_14px_36px_rgba(15,23,42,0.22)] transition hover:bg-slate-800"
             >
               Save contact
             </button>
@@ -164,7 +164,7 @@ export function PremiumVCardPreview({
         </div>
       </section>
 
-      <aside className="space-y-4 rounded-[2.4rem] border border-slate-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
+      <aside className="space-y-4 rounded-hero border border-slate-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-5 shadow-soft sm:p-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">{mode === 'publicCard' ? 'Digital card layout' : 'Apple layout guidance'}</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">One calm screen with one decision path</h3>
@@ -177,7 +177,7 @@ export function PremiumVCardPreview({
         <GuidanceCard title="Why it matters" detail="Recipients can decide in seconds: this person is real, this page is trustworthy, and the best next step is to save first. That clarity is what makes the card feel premium instead of busy." />
         <GuidanceCard title="Acceptance criteria" detail="The hero feels human before it feels technical, save contact remains the strongest element on the screen, and call plus email stay obvious without competing with the main conversion moment." />
 
-        <div className="rounded-[1.6rem] border border-slate-200 bg-white px-5 py-5 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
+        <div className="rounded-panel border border-slate-200 bg-white px-5 py-5 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
           <p className="text-sm font-semibold text-slate-900">Action hierarchy</p>
           <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
             <li>1. Save the contact while the trust moment is strongest.</li>
@@ -187,12 +187,12 @@ export function PremiumVCardPreview({
         </div>
 
         {mode === 'publicCard' ? (
-          <div className="rounded-[1.6rem] border border-emerald-200 bg-emerald-50/80 px-5 py-5 text-sm text-emerald-950">
+          <div className="rounded-panel border border-emerald-200 bg-emerald-50/80 px-5 py-5 text-sm text-emerald-950">
             <p className="font-semibold">Leadership/demo callout</p>
             <p className="mt-2 leading-6">A simple, polished identity card built for fast saving and sharing.</p>
           </div>
         ) : (
-          <div className="rounded-[1.6rem] border border-slate-200 bg-white px-5 py-5 text-sm text-slate-600 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
+          <div className="rounded-panel border border-slate-200 bg-white px-5 py-5 text-sm text-slate-600 shadow-[0_12px_36px_rgba(15,23,42,0.05)]">
             <p className="font-semibold text-slate-900">Operator launch notes</p>
             <p className="mt-2 leading-6">Use the public card when you want recipients to experience the final layout. The front-end now feels calmer, clearer, and more demo-ready.</p>
             <div className="mt-4 flex flex-wrap gap-3">

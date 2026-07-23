@@ -23,7 +23,7 @@ export function QuoteSentConfirmation({ quoteRef, buyerName, trackedLink, whatsa
 
   return (
     <main className="space-y-6 p-4 sm:p-6">
-      <section className="rounded-[2rem] border border-emerald-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-hero border border-emerald-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-4">
             <div className="grid h-14 w-14 flex-none place-items-center rounded-2xl bg-emerald-500 text-3xl font-black text-white">OK</div>
@@ -61,7 +61,7 @@ export function QuoteSentConfirmation({ quoteRef, buyerName, trackedLink, whatsa
 
           <aside className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5">
             {whatsappLink ? (
-              <a href={whatsappLink} target="_blank" rel="noreferrer" className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#0c7fff] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0966cc]">
+              <a href={whatsappLink} target="_blank" rel="noreferrer" className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600">
                 Open WhatsApp
               </a>
             ) : (

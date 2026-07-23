@@ -1,0 +1,53 @@
+/* Sprint 47: keep the application-shell Setu Guru as the only Guru identity.
+   Lead-specific tools remain available through the neutral Smart actions menu. */
+aside.rounded-panel.border-emerald-200.bg-emerald-50:has(h3) {
+  display: none !important;
+}
+
+section.grid:has(> aside.rounded-panel.border-emerald-200.bg-emerald-50) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* Setu Guru drawer layout contract.
+   RightDrawer owns the viewport. The widget owns exactly three rows:
+   header, scrollable conversation, and composer. */
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > header,
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > footer {
+  min-height: 0 !important;
+}
+
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2) {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: scroll !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2)::-webkit-scrollbar {
+  width: 10px;
+}
+
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2)::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.65);
+}
+
+[role="dialog"] > div.grid.min-h-0.flex-1 > .bg-brand-50 > div:nth-child(2)::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(71, 85, 105, 0.65);
+  background-clip: padding-box;
+}

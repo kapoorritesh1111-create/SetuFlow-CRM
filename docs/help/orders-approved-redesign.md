@@ -4,7 +4,7 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-11
 
-## Sprint 8Q decision
+## Approved design direction
 
 The approved Orders UI source of truth is the uploaded HTML walkthrough named:
 
@@ -12,7 +12,7 @@ The approved Orders UI source of truth is the uploaded HTML walkthrough named:
 Orders Full Redesign Approval Walkthrough
 ```
 
-Sprint 8Q makes that design direction the active Orders workflow direction:
+This design direction is the active Orders workflow:
 
 ```text
 Order queue on the left

@@ -34,7 +34,10 @@ export function SetuGuruFab({ label, online = true, onClick, className }: SetuGu
         }
       } catch {}
     }
-    setPosition({ x: Math.max(16, window.innerWidth - 96), y: Math.max(16, window.innerHeight - 112) });
+    // Default to bottom-left: the quick-capture "+" FAB already occupies bottom-right
+    // (mobile-shell.tsx), and the header now also carries a docked Guru launcher, so
+    // this floating bubble is a secondary entry point, not the only one.
+    setPosition({ x: 16, y: Math.max(16, window.innerHeight - 112) });
   }, []);
 
   useEffect(() => {

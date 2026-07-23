@@ -31,12 +31,12 @@ function StageBadge({ stage }: { stage: string }) {
 function ProgressStep({ n, label, done, active }: { n: number; label: string; done: boolean; active: boolean }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${done ? 'bg-[#279491] text-white' : active ? 'border-2 border-[#1F487C] bg-[#1F487C] text-white' : 'border-2 border-slate-200 bg-white text-slate-400'}`}>
+      <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${done ? 'bg-accent-600 text-white' : active ? 'border-2 border-brand-700 bg-brand-700 text-white' : 'border-2 border-slate-200 bg-white text-slate-400'}`}>
         {done ? (
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
         ) : n}
       </div>
-      <span className={`text-[10px] font-semibold ${active ? 'text-[#1F487C]' : done ? 'text-[#279491]' : 'text-slate-400'}`}>{label}</span>
+      <span className={`text-[10px] font-semibold ${active ? 'text-brand-700' : done ? 'text-accent-600' : 'text-slate-400'}`}>{label}</span>
     </div>
   );
 }
@@ -102,6 +102,13 @@ export default async function SupplierOrderLinksPage() {
         <p className="mt-1 text-sm text-slate-500">PO execution, inbound tracking, quality checks, approvals, and supplier performance.</p>
       </div>
 
+      {/* Mobile-only mode switcher — without this there was no way back to Buyer/All from here */}
+      <div className="flex gap-0.5 rounded-ctl bg-surface-2 p-[3px] md:hidden">
+        <Link href="/orders?mode=all" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">All</Link>
+        <Link href="/orders?mode=buyers" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">Buyer</Link>
+        <Link href="/orders?mode=suppliers" className="flex-1 rounded-[9px] bg-brand-700 py-2 text-center text-[12.5px] font-semibold text-white">Supplier</Link>
+      </div>
+
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         {[
@@ -116,7 +123,7 @@ export default async function SupplierOrderLinksPage() {
             <p className="text-xs font-medium text-slate-500">{kpi.label}</p>
             <p className="mt-1.5 text-2xl font-bold text-slate-950">{kpi.value}</p>
             {kpi.subLabel && <p className="text-xs text-slate-400">{kpi.subLabel}</p>}
-            <p className="text-xs font-semibold text-[#279491]">{kpi.sub}</p>
+            <p className="text-xs font-semibold text-accent-600">{kpi.sub}</p>
           </article>
         ))}
       </div>
@@ -124,24 +131,24 @@ export default async function SupplierOrderLinksPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <input placeholder="Search by PO #, product, or keyword" className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#279491]" />
+          <input placeholder="Search by PO #, product, or keyword" className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-accent-600" />
           <svg className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         </div>
         {['Supplier', 'PO Number', 'Market', 'Product Category', 'Stage', 'ETA'].map((f) => (
-          <select key={f} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#279491]">
+          <select key={f} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-accent-600">
             <option>{f === 'Supplier' ? 'All Suppliers' : f === 'Market' ? 'All Markets' : f === 'Product Category' ? 'All Categories' : f === 'Stage' ? 'All Stages' : f}</option>
           </select>
         ))}
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#279491] bg-teal-50 px-3 py-2 text-sm font-semibold text-[#279491]">
+        <button className="flex items-center gap-1.5 rounded-xl border border-accent-600 bg-teal-50 px-3 py-2 text-sm font-semibold text-accent-600">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-          Filters <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#1F487C] text-[10px] font-bold text-white">1</span>
+          Filters <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-700 text-[10px] font-bold text-white">1</span>
         </button>
       </div>
 
       {/* Split: order queue + detail */}
       <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
         {/* Order queue */}
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-panel border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-4 py-3">
             <div className="flex items-center justify-between">
               <p className="font-bold text-slate-900">Order Queue</p>
@@ -157,7 +164,7 @@ export default async function SupplierOrderLinksPage() {
               const stage = String(order.current_stage || order.status || 'PO Draft');
               const etaDate = fmtDate(order.updated_at);
               return (
-                <Link key={order.id} href={`/orders/${order.id}`} className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${i === 0 ? 'bg-teal-50 border-l-2 border-l-[#279491]' : ''}`}>
+                <Link key={order.id} href={`/orders/${order.id}`} className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${i === 0 ? 'bg-teal-50 border-l-2 border-l-accent-600' : ''}`}>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-xs font-black text-teal-700">
                     {String(lead?.company_name ?? 'ORD').slice(0, 2).toUpperCase()}
                   </div>
@@ -178,7 +185,7 @@ export default async function SupplierOrderLinksPage() {
             )}
           </div>
           <div className="border-t border-slate-100 px-4 py-3">
-            <Link href="/orders" className="text-xs font-semibold text-[#279491] hover:underline">View all orders →</Link>
+            <Link href="/orders" className="text-xs font-semibold text-accent-600 hover:underline">View all orders →</Link>
           </div>
         </div>
 
@@ -186,7 +193,7 @@ export default async function SupplierOrderLinksPage() {
         {selectedOrder ? (
           <div className="space-y-4">
             {/* Order header */}
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-lg font-black text-teal-700">
@@ -206,7 +213,7 @@ export default async function SupplierOrderLinksPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
-                  <button className="flex items-center gap-1.5 rounded-xl bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163561] transition-colors">
+                  <button className="flex items-center gap-1.5 rounded-xl bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 transition-colors">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
                     Release PO
                   </button>
@@ -242,7 +249,7 @@ export default async function SupplierOrderLinksPage() {
                     return (
                       <div key={label} className="flex flex-1 items-center">
                         <ProgressStep n={i + 1} label={label} done={done} active={active} />
-                        {!isLast && <div className={`mx-1 h-0.5 flex-1 ${i < safeStageIdx ? 'bg-[#279491]' : 'bg-slate-200'}`} />}
+                        {!isLast && <div className={`mx-1 h-0.5 flex-1 ${i < safeStageIdx ? 'bg-accent-600' : 'bg-slate-200'}`} />}
                       </div>
                     );
                   })}
@@ -275,7 +282,7 @@ export default async function SupplierOrderLinksPage() {
                     </div>
                   ))}
                 </div>
-                <Link href="#" className="mt-3 block text-xs font-semibold text-[#279491] hover:underline">View all documents →</Link>
+                <Link href="#" className="mt-3 block text-xs font-semibold text-accent-600 hover:underline">View all documents →</Link>
               </div>
 
               {/* Shipment Milestones */}
@@ -291,7 +298,7 @@ export default async function SupplierOrderLinksPage() {
                     { label: 'Expected Arrival', date: 'May 19, 2026', done: false },
                   ].map((step) => (
                     <div key={step.label} className="flex items-center gap-3 text-xs">
-                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${step.done ? 'bg-[#279491]' : 'border-2 border-slate-200 bg-white'}`}>
+                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${step.done ? 'bg-accent-600' : 'border-2 border-slate-200 bg-white'}`}>
                         {step.done && <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                       </span>
                       <span className="flex-1 text-slate-700">{step.label}</span>
@@ -299,7 +306,7 @@ export default async function SupplierOrderLinksPage() {
                     </div>
                   ))}
                 </div>
-                <Link href="#" className="mt-3 block text-xs font-semibold text-[#279491] hover:underline">Track shipment →</Link>
+                <Link href="#" className="mt-3 block text-xs font-semibold text-accent-600 hover:underline">Track shipment →</Link>
               </div>
 
               {/* Sample / Quality Check */}
@@ -322,8 +329,8 @@ export default async function SupplierOrderLinksPage() {
                     </div>
                   ))}
                 </div>
-                <button className="mt-3 w-full rounded-xl border border-[#279491] bg-teal-50 py-2 text-xs font-semibold text-[#279491] hover:bg-teal-100 transition-colors">Upload QC Result</button>
-                <Link href="#" className="mt-2 block text-xs font-semibold text-[#279491] hover:underline">View QC history →</Link>
+                <button className="mt-3 w-full rounded-xl border border-accent-600 bg-teal-50 py-2 text-xs font-semibold text-accent-600 hover:bg-teal-100 transition-colors">Upload QC Result</button>
+                <Link href="#" className="mt-2 block text-xs font-semibold text-accent-600 hover:underline">View QC history →</Link>
               </div>
 
               {/* Supplier Performance */}
@@ -351,7 +358,7 @@ export default async function SupplierOrderLinksPage() {
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${kpi.color === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>{kpi.badge}</span>
                   </div>
                 ))}
-                <Link href={selectedLead ? `/leads/${selectedLead.id}?mode=suppliers#performance` : '#'} className="mt-2 block text-xs font-semibold text-[#279491] hover:underline">View full performance →</Link>
+                <Link href={selectedLead ? `/leads/${selectedLead.id}?mode=suppliers#performance` : '#'} className="mt-2 block text-xs font-semibold text-accent-600 hover:underline">View full performance →</Link>
               </div>
             </div>
 
@@ -374,7 +381,7 @@ export default async function SupplierOrderLinksPage() {
                     </div>
                   ))}
                 </div>
-                <Link href="#" className="mt-3 block text-xs font-semibold text-[#279491] hover:underline">View commercial details →</Link>
+                <Link href="#" className="mt-3 block text-xs font-semibold text-accent-600 hover:underline">View commercial details →</Link>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -382,21 +389,21 @@ export default async function SupplierOrderLinksPage() {
                 <div className="space-y-2">
                   {['LD-2026-0042', 'LD-2026-0043', 'LD-2026-0044'].map((id, i) => (
                     <div key={id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
-                      <Link href="#" className="font-bold text-[#279491] hover:underline">{id}</Link>
+                      <Link href="#" className="font-bold text-accent-600 hover:underline">{id}</Link>
                       <span className="text-slate-500">{['Organic Fertilizers', 'Plant Nutrition Blends', 'Soil Health Products'][i]}</span>
                     </div>
                   ))}
                 </div>
-                <Link href={selectedLead ? `/leads/${selectedLead.id}?mode=suppliers#linked_demand` : '#'} className="mt-3 block text-xs font-semibold text-[#279491] hover:underline">View full linked demand →</Link>
+                <Link href={selectedLead ? `/leads/${selectedLead.id}?mode=suppliers#linked_demand` : '#'} className="mt-3 block text-xs font-semibold text-accent-600 hover:underline">View full linked demand →</Link>
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+          <div className="flex items-center justify-center rounded-panel border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
             <div>
               <p className="font-semibold text-slate-700">No supplier-linked orders yet</p>
               <p className="mt-2 text-sm text-slate-400">Orders created from buyer quotes with supplier sourcing linkage will appear here.</p>
-              <Link href="/leads?mode=suppliers" className="mt-4 inline-block rounded-xl bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163561]">Go to Supplier Leads</Link>
+              <Link href="/leads?mode=suppliers" className="mt-4 inline-block rounded-xl bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">Go to Supplier Leads</Link>
             </div>
           </div>
         )}

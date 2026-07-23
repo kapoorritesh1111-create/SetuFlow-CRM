@@ -24,16 +24,22 @@ export default function MobilePipelinePage() {
 
   const totalValue = stages.reduce((s, st) => s + st.value, 0);
   const totalLeads = stages.reduce((s, st) => s + st.count, 0);
-  const STAGE_COLORS = ['#3b82f6','#22c55e','#f59e0b','#8b5cf6','#ec4899','#10b981','#6366f1'];
+  // Fixed categorical order per DESIGN-SYSTEM.md 3.2 — was a hand-copied,
+  // misordered hex array that didn't line up with the stage-* domain
+  // tokens used elsewhere (desktop pipeline board, charts).
+  const STAGE_COLORS = [
+    'var(--sf-chart-1)', 'var(--sf-chart-2)', 'var(--sf-chart-3)',
+    'var(--sf-chart-4)', 'var(--sf-chart-5)', 'var(--sf-chart-6)',
+  ];
   const fmt = (n: number) => n >= 1000 ? `$${(n/1000).toFixed(0)}K` : `$${n}`;
 
   return (
     <div className="space-y-4">
-      {/* Header KPIs */}
-      <section className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d,#122241)] p-5 text-white shadow-xl">
-        <p className="text-xs font-black uppercase tracking-[.18em] text-sky-200">Pipeline</p>
+      {/* Header KPIs — .sf-field scopes the dark-navy field-capture theme to this card only; the rest of the mobile shell stays on the light theme. */}
+      <section className="sf-field rounded-hero bg-surface-1 p-5 text-content-primary shadow-xl">
+        <p className="text-xs font-black uppercase tracking-[.18em] text-content-accent">Pipeline</p>
         <h1 className="mt-1 text-2xl font-black">{fmt(totalValue)}</h1>
-        <p className="text-xs text-slate-400 mt-0.5">{totalLeads} active leads · {stages.length} stages</p>
+        <p className="text-xs text-content-muted mt-0.5">{totalLeads} active leads · {stages.length} stages</p>
         {/* Mini waterfall */}
         <div className="flex gap-[2px] h-1.5 rounded-full overflow-hidden mt-3">
           {stages.map((st, i) => totalValue > 0 && (

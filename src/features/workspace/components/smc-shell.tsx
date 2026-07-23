@@ -43,11 +43,11 @@ export function SmcIcon({ name, className }: { name: SmcIconName; className?: st
 
 export function SmcHeader({ eyebrow = 'Setu Mission Control', title, description, actions }: { eyebrow?: string; title: string; description?: string; actions?: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(30,64,175,0.10)] ring-1 ring-slate-950/[0.03] backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_24px_80px_rgba(2,6,23,0.28)]">
+    <section className="overflow-hidden rounded-hero border border-slate-200/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(30,64,175,0.10)] ring-1 ring-slate-950/[0.03] backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_24px_80px_rgba(2,6,23,0.28)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#0c7fff] dark:text-violet-300">
-            <span className="grid h-8 w-8 place-items-center rounded-2xl bg-[#0c7fff]/10 text-[#0c7fff] dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name="mission" /></span>
+          <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-brand-500 dark:text-violet-300">
+            <span className="grid h-8 w-8 place-items-center rounded-2xl bg-brand-500/10 text-brand-500 dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name="mission" /></span>
             {eyebrow}
           </div>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">{title}</h1>
@@ -61,7 +61,7 @@ export function SmcHeader({ eyebrow = 'Setu Mission Control', title, description
 
 export function SmcMetricCard({ icon, label, value, sub, tone = 'text-slate-950 dark:text-white' }: { icon: SmcIconName; label: string; value: ReactNode; sub?: ReactNode; tone?: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-slate-200/70 bg-white/90 p-4 shadow-sm ring-1 ring-slate-950/[0.03] dark:border-white/10 dark:bg-slate-950/55">
+    <div className="rounded-panel border border-slate-200/70 bg-white/90 p-4 shadow-sm ring-1 ring-slate-950/[0.03] dark:border-white/10 dark:bg-slate-950/55">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
         <span className={cn('grid h-9 w-9 place-items-center rounded-2xl bg-slate-100 dark:bg-white/[0.06]', tone)}><SmcIcon name={icon} /></span>
@@ -73,8 +73,8 @@ export function SmcMetricCard({ icon, label, value, sub, tone = 'text-slate-950 
 }
 
 export function SmcActionLink({ href, icon, label, external = false }: { href: string; icon: SmcIconName; label: string; external?: boolean }) {
-  const className = "inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-[#0c7fff]/30 hover:text-[#0c7fff] dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-violet-300/40 dark:hover:text-white";
-  const inner = <><span className="grid h-7 w-7 place-items-center rounded-xl bg-[#0c7fff]/10 text-[#0c7fff] dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name={icon} /></span>{label}</>;
+  const className = "inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-500/30 hover:text-brand-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-violet-300/40 dark:hover:text-white";
+  const inner = <><span className="grid h-7 w-7 place-items-center rounded-xl bg-brand-500/10 text-brand-500 dark:bg-violet-500/15 dark:text-violet-200"><SmcIcon name={icon} /></span>{label}</>;
   if (external) {
     return <a href={href} target="_blank" rel="noreferrer" className={className}>{inner}</a>;
   }

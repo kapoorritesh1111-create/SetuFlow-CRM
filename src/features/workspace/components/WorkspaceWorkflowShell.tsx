@@ -36,7 +36,7 @@ export function WorkspaceWorkflowShell({
   return (
     <div className="space-y-2">
       {showHeader ? (
-        <section className={`rounded-[1.5rem] p-3 ring-1 ring-slate-950/[0.03] dark:ring-white/[0.04] ${workspaceGlassClass}`}>
+        <section className={`rounded-panel p-3 ring-1 ring-slate-950/[0.03] dark:ring-white/[0.04] ${workspaceGlassClass}`}>
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">

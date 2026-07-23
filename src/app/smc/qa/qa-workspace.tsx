@@ -70,7 +70,7 @@ export function QaWorkspace({ suites, runs, findings, links, snapshots, rollup }
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0', padding: '0 24px', background: '#fff' }}>
         {tabBtn('suites', 'Suites')}{tabBtn('runs', 'Runs', runs.length)}{tabBtn('findings', 'Findings', findings.length)}{tabBtn('reports', 'Reports')}{tabBtn('share', 'Share Links', links.filter((l) => !l.revoked_at).length)}
       </div>
-      <div style={{ padding: '18px 24px' }}>
+      <div className="smc-cs" style={{ padding: '18px 24px' }}>
         {tab === 'suites' && (
           <div style={{ display: 'grid', gap: 10 }}>
             {suites.map((s) => (

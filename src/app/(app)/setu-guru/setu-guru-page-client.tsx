@@ -37,7 +37,7 @@ export function SetuGuruPageClient() {
 
   return (
     <div className="flex min-h-[calc(100dvh-8rem)] items-center justify-center p-4">
-      <section className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-blue-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.10)]">
+      <section className="w-full max-w-2xl overflow-hidden rounded-hero border border-blue-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.10)]">
         <div className="bg-[radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.24),transparent_25%),linear-gradient(135deg,#07172f_0%,#0b2e63_64%,#0e7490_150%)] p-7 text-white">
           <div className="flex items-start gap-4">
             <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white p-1.5 shadow-xl">

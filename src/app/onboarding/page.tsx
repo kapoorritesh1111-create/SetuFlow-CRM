@@ -20,7 +20,7 @@ export default function ClientOnboardingPage({ searchParams }: { searchParams?: 
   return (
     <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,rgba(53,159,145,0.14),transparent_30%),linear-gradient(180deg,#f8fcff_0%,#eef6fb_100%)] px-3 py-4 text-slate-900 sm:px-5 lg:px-6">
       <div className="mx-auto max-w-[1240px] space-y-4">
-        <header className="sticky top-3 z-30 rounded-[1.5rem] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:px-5">
+        <header className="sticky top-3 z-30 rounded-panel border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:px-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <img src="/logos/setu-flow-logo.png" alt="Setu Flow" width={44} height={44} className="h-11 w-11 shrink-0 rounded-2xl object-contain" />

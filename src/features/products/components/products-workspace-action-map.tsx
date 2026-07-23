@@ -9,7 +9,7 @@ const actions = [
 
 export function ProductsWorkspaceActionMap() {
   return (
-    <section className="rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/25">
+    <section className="rounded-panel border border-blue-100 bg-blue-50/70 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/25">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700 dark:text-sky-200">Catalog shortcuts</p>

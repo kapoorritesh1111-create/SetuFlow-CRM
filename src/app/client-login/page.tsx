@@ -65,13 +65,13 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
 
   return (
     <main
-      className="min-h-screen bg-[#061c2e] text-slate-950"
+      className="min-h-screen bg-surface-app text-slate-950"
       style={{ fontFamily: "'Plus Jakarta Sans', var(--font-jakarta), ui-sans-serif, system-ui, sans-serif" }}
     >
       <div className="mx-auto grid min-h-screen max-w-[1440px] lg:grid-cols-[1fr_1.12fr]">
-        <section className="relative flex flex-col overflow-hidden bg-[#061c2e] text-white">
+        <section className="relative flex flex-col overflow-hidden bg-surface-app text-white">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_0%_0%,rgba(53,159,145,0.40),transparent_52%),radial-gradient(ellipse_60%_50%_at_100%_10%,rgba(12,127,255,0.22),transparent_48%),linear-gradient(170deg,#061c2e_0%,#08314e_55%,#061c2e_100%)]" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7de2d2]/50 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-300/50 to-transparent" />
 
           <div className="relative flex items-center justify-between px-7 pb-0 pt-7 sm:px-10 lg:px-10">
             <Link href="/" className="flex items-center" aria-label="Setu Flow - go to homepage">
@@ -93,7 +93,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
           </div>
 
           <div className="relative flex-1 px-7 pb-6 pt-10 sm:px-10 sm:pt-12 lg:px-10 lg:pt-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#7de2d2]/28 bg-[#7de2d2]/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#7de2d2]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent-300/28 bg-accent-300/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-accent-300">
               <MiniIcon />
               Trade Execution CRM
             </div>
@@ -107,8 +107,8 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
             </p>
 
             <div className="relative mt-10 hidden lg:block">
-              <div className="absolute -inset-3 rounded-[1.4rem] bg-[#7de2d2]/8 blur-xl" />
-              <div className="relative overflow-hidden rounded-[1.2rem] border border-white/14 bg-white/5 shadow-[0_20px_60px_rgba(0,0,0,0.40)]">
+              <div className="absolute -inset-3 rounded-panel bg-accent-300/8 blur-xl" />
+              <div className="relative overflow-hidden rounded-card border border-white/14 bg-white/5 shadow-[0_20px_60px_rgba(0,0,0,0.40)]">
                 <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/5 px-3 py-2">
                   {['#ff5f56', '#ffbd2e', '#27c93f'].map((color) => (
                     <span key={color} className="h-2 w-2 rounded-full" style={{ background: color, opacity: 0.8 }} />
@@ -122,7 +122,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
                   height={963}
                   className="h-[140px] w-full object-cover object-top opacity-60"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#061c2e]/82 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-surface-app/82 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-3">
                   {['Lead visibility', 'Quote control', 'Follow-up focus'].map((label) => (
                     <div key={label}>
@@ -136,11 +136,11 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
 
           <div className="relative hidden gap-3 px-10 pb-9 lg:grid lg:grid-cols-3">
             {points.map((card) => (
-              <div key={card.label} className="rounded-[1.2rem] border border-white/10 bg-white/[0.065] p-4 backdrop-blur">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/12 bg-white/10 text-[#7de2d2]">
+              <div key={card.label} className="rounded-card border border-white/10 bg-white/[0.065] p-4 backdrop-blur">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/12 bg-white/10 text-accent-300">
                   <MiniIcon />
                 </div>
-                <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7de2d2]">{card.label}</p>
+                <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-accent-300">{card.label}</p>
                 <p className="mt-1.5 text-[12px] leading-5 text-white/62">{card.text}</p>
               </div>
             ))}
@@ -160,7 +160,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
         </section>
 
         <section className="flex flex-col bg-[#f0f6fb] px-4 py-8 sm:px-8 sm:py-10 lg:items-center lg:justify-center lg:px-12 lg:py-12">
-          <div className="w-full max-w-[26rem] rounded-[1.75rem] border border-[#1F487C]/10 bg-white shadow-[0_24px_80px_rgba(31,72,124,0.12),0_0_0_1px_rgba(31,72,124,0.04)]">
+          <div className="w-full max-w-[26rem] rounded-hero border border-brand-700/10 bg-white shadow-[0_24px_80px_rgba(31,72,124,0.12),0_0_0_1px_rgba(31,72,124,0.04)]">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
               <div className="lg:hidden">
                 <Image src="/logos/setu-flow-logo.png" alt="Setu Flow" width={140} height={44} className="h-9 w-auto" />
@@ -168,14 +168,14 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
               <div className="hidden lg:block" />
               <Link
                 href="/"
-                className="flex items-center gap-1.5 rounded-full border border-[#1F487C]/12 px-4 py-2 text-[12px] font-semibold text-[#1F487C] transition hover:bg-[#eef6fb]"
+                className="flex items-center gap-1.5 rounded-full border border-brand-700/12 px-4 py-2 text-[12px] font-semibold text-brand-700 transition hover:bg-[#eef6fb]"
               >
                 Back to site
               </Link>
             </div>
 
             <div className="px-6 pb-6 pt-5 sm:px-7 sm:pb-7">
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#108477]">Secure login</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent-700">Secure login</p>
               <h2 className="mt-3 text-[1.7rem] font-bold leading-[1.1] tracking-[-0.04em] text-slate-950 sm:text-[1.9rem]">
                 Access your workspace
               </h2>
@@ -190,12 +190,12 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
                 </div>
               )}
 
-              <div className="mt-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 py-3">
+              <div className="mt-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-brand-50 px-4 py-3">
                 <div>
                   <p className="text-[13px] font-semibold text-slate-900">Client workspace</p>
                   <p className="mt-0.5 text-[11px] text-slate-500">Protected access for your team</p>
                 </div>
-                <span className="rounded-full bg-[#359F91]/12 px-3 py-1 text-[11px] font-bold text-[#108477]">Protected</span>
+                <span className="rounded-full bg-accent-500/12 px-3 py-1 text-[11px] font-bold text-accent-700">Protected</span>
               </div>
 
               <div className="mt-5">
@@ -210,7 +210,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
                 ['vCard', 'Share'],
               ].map(([label, detail]) => (
                 <div key={label} className="px-4 py-3 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#108477]">{label}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent-700">{label}</p>
                   <p className="mt-0.5 text-[12px] font-semibold text-slate-700">{detail}</p>
                 </div>
               ))}
@@ -219,7 +219,7 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
 
           <p className="mt-5 max-w-[26rem] text-center text-[12px] leading-5 text-slate-400">
             Need workspace access? Contact your trade team admin or{' '}
-            <a href="mailto:help@setugroups.com" className="font-semibold text-[#1F487C] underline-offset-2 hover:underline">
+            <a href="mailto:help@setugroups.com" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
               reach us at help@setugroups.com
             </a>
           </p>

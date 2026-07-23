@@ -76,7 +76,7 @@ export function QuoteReviewComplianceActions({ quoteId: quoteIdProp, leadId, quo
       : { title: 'Defer to dispatch', helper: 'Use when the quote can proceed now, but the document must be collected before dispatch.' };
 
   return (
-    <section className="rounded-[18px] border border-rose-200 bg-rose-50 p-4 shadow-[0_12px_34px_rgba(190,18,60,0.12)]">
+    <section className="rounded-card border border-rose-200 bg-rose-50 p-4 shadow-[0_12px_34px_rgba(190,18,60,0.12)]">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-black uppercase tracking-[0.22em] text-rose-700">Quote Review compliance blocker</p>

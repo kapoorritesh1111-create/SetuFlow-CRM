@@ -2038,19 +2038,19 @@ export function QuoteWorkspace({
                 </CollapsiblePanel>
               </div>
 
-              <div className="mt-5 rounded-[1.25rem] border border-slate-200 bg-white/90 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] xl:sticky xl:top-4 xl:z-10">
+              <div className="mt-5 rounded-card border border-slate-200 bg-white/90 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] xl:sticky xl:top-4 xl:z-10">
                 <div className="grid gap-3 xl:grid-cols-[0.95fr_1.15fr_1fr_auto]">
-                  <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="rounded-card border border-slate-200 bg-slate-50 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Current step</p>
                     <p className="mt-2 text-base font-semibold text-slate-900">{focusCurrentStep?.label ?? "Review"}</p>
                     <p className="mt-1 text-sm text-slate-600">{focusCurrentStep?.detail ?? "Stay in the focused quote and finish the next action."}</p>
                   </div>
-                  <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="rounded-card border border-slate-200 bg-slate-50 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Primary blocker</p>
                     <p className="mt-2 text-base font-semibold text-slate-900">{focusPrimaryBlocker}</p>
                     <p className="mt-1 text-sm text-slate-600">{focusSendDecision?.nextStep ?? "Use the next action button instead of scanning the full workspace."}</p>
                   </div>
-                  <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="rounded-card border border-slate-200 bg-slate-50 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Progress</p>
                     <p className="mt-2 text-base font-semibold text-slate-900">{focusCompactProgressLabel}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -2069,7 +2069,7 @@ export function QuoteWorkspace({
                       type="button"
                       onClick={() => openQuoteEditor(focusQuote)}
                       disabled={!canManageQuotes}
-                      className="rounded-[10px] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-ctl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {canManageQuotes ? `Continue ${getPreferredEditorStep(focusQuote).replace("_", " ")} step` : "Read-only quote details"}
                     </button>
@@ -2078,7 +2078,7 @@ export function QuoteWorkspace({
                         type="button"
                         disabled={focusApprovalActionView.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
                         onClick={() => runQuickAction(focusQuote, focusApprovalActionView)}
-                        className="rounded-[10px] border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-ctl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isWorkflowPending && quickActionQuoteId === focusQuote.id && focusApprovalActionView.run ? "Saving…" : focusApprovalActionView.label}
                       </button>
@@ -2088,7 +2088,7 @@ export function QuoteWorkspace({
                         type="button"
                         disabled={!canSendQuotes || focusSendActionView.disabled || (isWorkflowPending && quickActionQuoteId === focusQuote.id)}
                         onClick={() => setComposer({ quoteId: focusQuote.id, mode: "send" })}
-                        className="rounded-[10px] border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-ctl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {focusSendActionView.label}
                       </button>
@@ -2098,7 +2098,7 @@ export function QuoteWorkspace({
               </div>
 
               {focusSendDecision ? (
-                <div className={`mt-6 rounded-[1.5rem] border p-5 ${focusSendDecisionView.panelClasses}`}>
+                <div className={`mt-6 rounded-panel border p-5 ${focusSendDecisionView.panelClasses}`}>
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
@@ -2116,7 +2116,7 @@ export function QuoteWorkspace({
                         {focusSendDecisionView.summary}
                       </p>
                     </div>
-                    <div className="rounded-[1rem] border border-white/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm xl:max-w-sm">
+                    <div className="rounded-card border border-white/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm xl:max-w-sm">
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         Next obvious move
                       </p>
@@ -2126,7 +2126,7 @@ export function QuoteWorkspace({
                     </div>
                   </div>
                   <div className="mt-4 grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
-                    <div className="rounded-[1rem] border border-white/70 bg-white/85 p-4">
+                    <div className="rounded-card border border-white/70 bg-white/85 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         Why sending is or is not safe
                       </p>
@@ -2141,7 +2141,7 @@ export function QuoteWorkspace({
                           No active blockers are visible on this quote.
                         </p>
                       )}
-                      <div className="mt-4 rounded-[1rem] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                      <div className="mt-4 rounded-card border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote-version send readiness object</p>
                           <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
@@ -2149,49 +2149,49 @@ export function QuoteWorkspace({
                           </span>
                         </div>
                         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Version ID</p>
                             <p className="mt-2 font-semibold text-slate-900 break-all">{focusSendDecisionView.readiness.versionId ?? 'Not synced yet'}</p>
                           </div>
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Approval status</p>
                             <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.approvalStatus.replaceAll('_', ' ')}</p>
                           </div>
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Safe to send</p>
                             <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.safeToSend ? 'Yes' : 'No'}</p>
                           </div>
                         </div>
                         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Threshold + commercial proof</p>
                             <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                              <div className="rounded-card border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Required threshold</p>
                                 <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.configuredPercent != null ? formatPercent(focusSendDecisionView.readiness.threshold.configuredPercent) : 'Not configured'}</p>
                               </div>
-                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                              <div className="rounded-card border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{focusSendDecisionView.readiness.threshold.governedMetricLabel}</p>
                                 <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.governedMetricPercent != null ? formatPercent(focusSendDecisionView.readiness.threshold.governedMetricPercent) : 'Not exposed'}</p>
                               </div>
-                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                              <div className="rounded-card border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Pass / fail delta</p>
                                 <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.deltaToThresholdPercent != null ? `${(focusSendDecisionView.readiness.threshold.deltaToThresholdPercent ?? 0) >= 0 ? '+' : ''}${formatPercent(focusSendDecisionView.readiness.threshold.deltaToThresholdPercent ?? 0)}` : 'Not computable'}</p>
                               </div>
-                              <div className="rounded-[0.9rem] border border-slate-200 bg-slate-50 p-3">
+                              <div className="rounded-card border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">True margin proof</p>
                                 <p className="mt-2 font-semibold text-slate-900">{focusSendDecisionView.readiness.threshold.marginExposed ? (focusSendDecisionView.readiness.threshold.actualMarginPercent != null ? formatPercent(focusSendDecisionView.readiness.threshold.actualMarginPercent) : 'Visible') : 'Not exposed in repo'}</p>
                               </div>
                             </div>
                             <p className="mt-3">{focusSendDecisionView.thresholdLabel}</p>
                           </div>
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Override reason visibility</p>
                             <p className="mt-2">{focusSendDecisionView.overrideSummary}</p>
                           </div>
                         </div>
                         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Explicit blockers</p>
                             {focusSendDecisionView.readiness.blockers.length ? (
                               <ul className="mt-2 space-y-2 text-xs text-slate-700">
@@ -2205,7 +2205,7 @@ export function QuoteWorkspace({
                               <p className="mt-2 text-xs text-slate-600">No explicit blockers are recorded for this version.</p>
                             )}
                           </div>
-                          <div className="rounded-[0.9rem] border border-slate-200 bg-white p-3">
+                          <div className="rounded-card border border-slate-200 bg-white p-3">
                             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Decision snapshot proof</p>
                             <p className="mt-2 text-sm text-slate-700">
                               {focusSendDecisionView.readiness.snapshotRecordedAt
@@ -2217,7 +2217,7 @@ export function QuoteWorkspace({
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div className="rounded-[1rem] border border-white/70 bg-white/85 p-4">
+                      <div className="rounded-card border border-white/70 bg-white/85 p-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">What happens after send</p>
                         <ul className="mt-3 space-y-2 text-sm text-slate-700">
                           {focusSendDecisionView.afterSend.map((item) => (
@@ -2225,7 +2225,7 @@ export function QuoteWorkspace({
                           ))}
                         </ul>
                       </div>
-                      <div className="rounded-[1rem] border border-brand-200 bg-brand-50/80 p-4">
+                      <div className="rounded-card border border-brand-200 bg-brand-50/80 p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <AICompactActionBrief
@@ -2253,7 +2253,7 @@ export function QuoteWorkspace({
               ) : null}
 
               <div className="mt-6 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+                <div className="rounded-card border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     Product → Pricing → Terms → Review → Send
                   </p>
@@ -2267,7 +2267,7 @@ export function QuoteWorkspace({
                       </span>
                     ))}
                   </div>
-                  <div className="mt-4 rounded-[1rem] bg-slate-50 p-4 text-sm text-slate-600">
+                  <div className="mt-4 rounded-card bg-slate-50 p-4 text-sm text-slate-600">
                     <p className="font-semibold text-slate-900">
                       {focusBuilderGuidance?.title ?? "Builder posture"}
                     </p>
@@ -2276,7 +2276,7 @@ export function QuoteWorkspace({
                         "Keep the quote in the guided builder flow."}
                     </p>
                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+                      <div className="rounded-card border border-slate-200 bg-white p-3">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                           Validation prompts
                         </p>
@@ -2288,7 +2288,7 @@ export function QuoteWorkspace({
                           )}
                         </ul>
                       </div>
-                      <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+                      <div className="rounded-card border border-slate-200 bg-white p-3">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                           Recommendations
                         </p>
@@ -2306,7 +2306,7 @@ export function QuoteWorkspace({
                     {focusBuilderGuidance?.steps.map((step) => (
                       <div
                         key={`${step.id}-detail`}
-                        className="rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600"
+                        className="rounded-card border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600"
                       >
                         <div className="flex items-center justify-between gap-3">
                           <p className="font-semibold text-slate-900">
@@ -2325,7 +2325,7 @@ export function QuoteWorkspace({
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+                <div className="rounded-card border border-slate-200 bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -2342,7 +2342,7 @@ export function QuoteWorkspace({
                       type="button"
                       onClick={() => openQuoteEditor(focusQuote)}
                       disabled={!canManageQuotes}
-                      className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-ctl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {canManageQuotes
                         ? `Continue ${getPreferredEditorStep(focusQuote).replace("_", " ")} step`
@@ -2359,7 +2359,7 @@ export function QuoteWorkspace({
                         onClick={() =>
                           runQuickAction(focusQuote, focusApprovalActionView)
                         }
-                        className="rounded-[10px] border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-ctl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isWorkflowPending &&
                         quickActionQuoteId === focusQuote.id &&
@@ -2380,7 +2380,7 @@ export function QuoteWorkspace({
                         onClick={() =>
                           setComposer({ quoteId: focusQuote.id, mode: "send" })
                         }
-                        className="rounded-[10px] border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-ctl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isWorkflowPending &&
                         quickActionQuoteId === focusQuote.id &&
@@ -2404,7 +2404,7 @@ export function QuoteWorkspace({
                             mode: "accepted",
                           })
                         }
-                        className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-ctl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {focusAcceptActionView.label}
                       </button>
@@ -2424,7 +2424,7 @@ export function QuoteWorkspace({
                             mode: "rejected",
                           })
                         }
-                        className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-ctl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {focusRejectActionView.label}
                       </button>
@@ -2463,7 +2463,7 @@ export function QuoteWorkspace({
                     </div>
                   ) : null}
                   <div className="mt-4 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
-                    <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                    <div className="rounded-card border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Version history
                       </p>
@@ -2485,7 +2485,7 @@ export function QuoteWorkspace({
                             return (
                               <div
                                 key={version.id}
-                                className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600"
+                                className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                   <p className="font-semibold text-slate-900">
@@ -2505,7 +2505,7 @@ export function QuoteWorkspace({
                                   {snapshotForVersion ? <span>Snapshot recorded</span> : isSentVersion ? <span>Legacy send without snapshot</span> : null}
                                 </div>
                                 {version.approval_reason ? (
-                                  <p className="mt-2 rounded-[0.75rem] bg-white px-3 py-2 text-xs text-slate-600">Approval note: {version.approval_reason}</p>
+                                  <p className="mt-2 rounded-ctl bg-white px-3 py-2 text-xs text-slate-600">Approval note: {version.approval_reason}</p>
                                 ) : null}
                                 <p className="mt-2 text-xs text-slate-500">
                                   {isCurrentVersion && isLatestSentVersion
@@ -2524,13 +2524,13 @@ export function QuoteWorkspace({
                             );
                           })
                         ) : (
-                          <div className="rounded-[1rem] border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
+                          <div className="rounded-card border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
                             No quote versions are synced to this workspace yet.
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                    <div className="rounded-card border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Send checkpoint history
                       </p>
@@ -2538,7 +2538,7 @@ export function QuoteWorkspace({
                         Keep current draft truth, latest sent truth, and historical send-decision snapshots in one place without pretending legacy sends are equally auditable.
                       </p>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                        <div className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Current version
                           </p>
@@ -2553,7 +2553,7 @@ export function QuoteWorkspace({
                               : "No linked version has been created yet."}
                           </p>
                         </div>
-                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                        <div className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Latest sent
                           </p>
@@ -2568,7 +2568,7 @@ export function QuoteWorkspace({
                               : "The quote has not been sent from a synced version yet."}
                           </p>
                         </div>
-                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
+                        <div className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Current vs customer-facing continuity
                           </p>
@@ -2587,7 +2587,7 @@ export function QuoteWorkspace({
                                 : "Once a version is sent, it will remain visible here as the customer-facing checkpoint."}
                           </p>
                         </div>
-                        <div className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
+                        <div className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:col-span-2">
                           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Approval checkpoint
                           </p>
@@ -2607,7 +2607,7 @@ export function QuoteWorkspace({
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Recorded send-decision snapshots</p>
                         {focusSendSnapshots.length ? (
                           focusSendSnapshots.map((snapshot) => (
-                            <div key={snapshot.communicationId} className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                            <div key={snapshot.communicationId} className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <p className="font-semibold text-slate-900">{snapshot.versionLabel} · {snapshot.safeToSend ? "safe at send time" : "blocked at send time"}</p>
                                 <span className="text-xs text-slate-500">Recorded {formatDateTime(snapshot.recordedAt)}</span>
@@ -2626,12 +2626,12 @@ export function QuoteWorkspace({
                             </div>
                           ))
                         ) : (
-                          <div className="rounded-[1rem] border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
+                          <div className="rounded-card border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
                             No send-decision snapshots have been recorded for this quote yet.
                           </div>
                         )}
                         {legacySentFocusedVersions.length ? (
-                          <div className="rounded-[1rem] border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                          <div className="rounded-card border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
                             <p className="font-semibold">Legacy sent versions without snapshot proof</p>
                             <p className="mt-1 text-xs text-amber-800">
                               {legacySentFocusedVersions.map((version) => `v${version.version_no ?? "—"}`).join(", ")} were sent before send-decision snapshots were recorded in this workspace. They remain historically visible, but not equally auditable.
@@ -2765,7 +2765,7 @@ export function QuoteWorkspace({
                                 isWorkflowPending &&
                                 quickActionQuoteId === focusQuote.id
                               }
-                              className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                              className="rounded-ctl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                             >
                               {composerActiveView.cta}
                             </button>
@@ -2864,7 +2864,7 @@ export function QuoteWorkspace({
                                 isWorkflowPending &&
                                 quickActionQuoteId === focusQuote.id
                               }
-                              className="rounded-[10px] bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                              className="rounded-ctl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                             >
                               {composerActiveView.cta}
                             </button>
@@ -2962,7 +2962,7 @@ export function QuoteWorkspace({
                   );
                 })}
               </div>
-              <div className="mt-4 rounded-[1rem] bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="mt-4 rounded-card bg-slate-50 p-4 text-sm text-slate-600">
                 <p className="font-semibold text-slate-900">Daily sales rule</p>
                 <p className="mt-2">
                   Keep one quote in focus first. Use this secondary queue only after the focused quote blocker and next action are clear.

@@ -181,6 +181,9 @@ export function getRouteMeta(pathname: string): RouteMeta {
     };
   }
   if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Trade show command center. Capture leads on the floor, review entries, and track conversion to pipeline.', showWorkspaceModeSwitch: false };
+  if (pathname.startsWith('/design-queue')) return { title: 'Design Queue', description: 'Packaging jobs across active quotes still needing artwork attention.', sectionLabel: 'Production', showWorkspaceModeSwitch: false };
+  if (pathname.startsWith('/dispatch-board')) return { title: 'Dispatch Board', description: 'Accepted packaging jobs ready for production and dispatch.', sectionLabel: 'Production', showWorkspaceModeSwitch: false };
+  if (pathname.includes('/packaging-history')) return { title: 'Packaging Order History', description: 'Every packaging line ever quoted for this client, across every quote.', sectionLabel: 'Client history', showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/profile')) return { title: 'Profile Management', description: 'Manage your personal profile, name, avatar, and vCard entry points.', sectionLabel: 'Profile', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/settings/lists')) return { title: 'Admin & Settings', description: 'Settings lists are unified inside the Admin workspace.', sectionLabel: 'Workspace setup', tabs: PRODUCT_SHELL_TABS, showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/ai-suggestions')) return { title: 'AI help', description: 'Keep AI help contextual and bounded. It should point the team to the next safe action inside Follow-up, Quote, Approvals & Sending, or Orders instead of becoming its own product.', sectionLabel: 'Supporting tools' };

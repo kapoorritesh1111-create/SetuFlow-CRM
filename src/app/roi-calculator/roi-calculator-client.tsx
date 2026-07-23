@@ -188,7 +188,7 @@ export function RoiCalculatorClient() {
         </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.35fr_0.8fr] lg:items-start">
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_22px_70px_rgba(15,23,42,.08)] sm:p-6">
+          <div className="rounded-hero border border-slate-200 bg-white p-5 shadow-[0_22px_70px_rgba(15,23,42,.08)] sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-base font-extrabold text-slate-950">1. Tell us a few details about your lead process</h2>
               <button type="button" onClick={() => { setInputs(defaults); setCalculated(false); }} className="text-xs font-bold text-teal-700 hover:text-teal-800">Reset</button>
@@ -234,9 +234,9 @@ export function RoiCalculatorClient() {
             )}
           </div>
 
-          <aside className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-[0_22px_70px_rgba(15,23,42,.08)] sm:p-6 lg:sticky lg:top-24">
+          <aside className="rounded-hero border border-slate-200 bg-slate-50 p-5 shadow-[0_22px_70px_rgba(15,23,42,.08)] sm:p-6 lg:sticky lg:top-24">
             <h2 className="text-base font-extrabold text-slate-950">3. Your potential improvement range</h2>
-            <div className="mt-5 rounded-2xl bg-[#06263f] p-5 text-white shadow-sm">
+            <div className="mt-5 rounded-2xl bg-brand-900 p-5 text-white shadow-sm">
               <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-teal-200">Balanced estimate</p>
               <p className="mt-2 text-4xl font-black tracking-[-0.05em]">{money(results.balanced.monthlyImpact)}</p>
               <p className="text-sm font-bold text-slate-300">per month, not guaranteed revenue</p>
@@ -263,7 +263,7 @@ export function RoiCalculatorClient() {
           </aside>
         </div>
 
-        <div className="mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_16px_48px_rgba(15,23,42,.05)]">
+        <div className="mt-8 rounded-panel border border-slate-200 bg-white p-5 shadow-[0_16px_48px_rgba(15,23,42,.05)]">
           <div className="grid gap-4 sm:grid-cols-4">
             <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Conservative</p><p className="mt-1 text-sm font-extrabold text-slate-950">20% time · 10% recovery</p></div>
             <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Balanced</p><p className="mt-1 text-sm font-extrabold text-slate-950">25% time · 15% recovery</p></div>
@@ -275,7 +275,7 @@ export function RoiCalculatorClient() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:px-4 sm:py-6">
-          <div className="max-h-[92dvh] w-full overflow-y-auto overflow-x-hidden rounded-t-[1.75rem] bg-white shadow-[0_32px_90px_rgba(15,23,42,.28)] sm:max-w-4xl sm:rounded-[1.75rem]">
+          <div className="max-h-[92dvh] w-full overflow-y-auto overflow-x-hidden rounded-t-hero bg-white shadow-[0_32px_90px_rgba(15,23,42,.28)] sm:max-w-4xl sm:rounded-hero">
             <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 p-4 backdrop-blur sm:p-6">
               <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-700 sm:text-[11px]">SETU Flow ROI Report</p><h2 className="mt-2 text-xl font-extrabold tracking-[-0.04em] text-slate-950 sm:text-2xl">Send your branded ROI report</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">We will email a SETU Guru-powered ROI summary with conservative, balanced, and upside scenarios.</p></div>
               <button type="button" onClick={() => setModalOpen(false)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-xl font-bold text-slate-500 hover:bg-slate-50">×</button>

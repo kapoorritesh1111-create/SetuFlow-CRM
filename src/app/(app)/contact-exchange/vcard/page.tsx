@@ -112,7 +112,7 @@ export default async function DigitalVCardPage() {
 
       {loadWarning ? (
         <SectionCard>
-          <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-800">
+          <div className="rounded-panel border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-800">
             <p className="font-semibold text-amber-900">My Card loaded in recovery mode</p>
             <p className="mt-1 leading-6">{loadWarning}</p>
           </div>
@@ -122,7 +122,7 @@ export default async function DigitalVCardPage() {
       <SectionCard>
         <div className="grid gap-4 lg:grid-cols-3">
           {setupNotes.map((note) => (
-            <article key={note.title} className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4">
+            <article key={note.title} className="rounded-panel border border-slate-200 bg-white/85 p-4">
               <p className="text-sm font-semibold text-slate-900">{note.title}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">{note.body}</p>
             </article>

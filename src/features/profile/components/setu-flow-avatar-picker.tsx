@@ -27,8 +27,8 @@ export function SetuFlowAvatarPicker({
   );
 
   return (
-    <div className={`rounded-[1.75rem] border border-slate-200 bg-white ${compact ? 'p-4' : 'p-5 sm:p-6'} shadow-soft`}>
-      <div className="rounded-[1.5rem] border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-brand-50/60 px-5 py-6 sm:px-6">
+    <div className={`rounded-hero border border-slate-200 bg-white ${compact ? 'p-4' : 'p-5 sm:p-6'} shadow-soft`}>
+      <div className="rounded-panel border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-brand-50/60 px-5 py-6 sm:px-6">
         <div className="text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-brand-700">Setu Flow exclusive</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h3>
@@ -65,14 +65,14 @@ export function SetuFlowAvatarPicker({
               disabled={disabled}
               onClick={() => onSelect(preset.url)}
               aria-pressed={selected}
-              className={`group rounded-[1.4rem] border p-3 text-center transition ${
+              className={`group rounded-panel border p-3 text-center transition ${
                 selected
                   ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/15'
                   : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-white hover:shadow-sm'
               } disabled:opacity-60`}
             >
               <div className="mx-auto flex max-w-[10rem] flex-col items-center">
-                <div className="relative w-full rounded-[1.2rem] border border-slate-100 bg-white p-3">
+                <div className="relative w-full rounded-card border border-slate-100 bg-white p-3">
                   <img src={preset.url} alt={preset.name} className="aspect-square w-full rounded-full object-contain" />
                   <span className="absolute left-2.5 top-2.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm">
                     {String(preset.order).padStart(2, '0')}

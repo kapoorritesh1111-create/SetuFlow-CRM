@@ -146,7 +146,7 @@ export default async function AdminIntegrationsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {integrations.map((int) => (
-          <div key={int.id} className={`rounded-[1.5rem] border bg-white p-5 shadow-sm flex flex-col ${int.status === "planned" ? "border-dashed border-slate-300" : "border-slate-200"}`}>
+          <div key={int.id} className={`rounded-panel border bg-white p-5 shadow-sm flex flex-col ${int.status === "planned" ? "border-dashed border-slate-300" : "border-slate-200"}`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-2xl">{int.icon}</span>
               <StatusBadge label={statusLabel(int.status)} tone={statusTone(int.status)} dot={false} />

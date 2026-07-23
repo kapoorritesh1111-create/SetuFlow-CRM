@@ -102,15 +102,15 @@ function GuruMark({ dark = false, large = false }: { dark?: boolean; large?: boo
 }
 
 function Screenshot({ src, alt, label, className = '' }: { src: string; alt: string; label?: string; className?: string }) {
-  return <div className={`overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-2 shadow-[0_22px_70px_rgba(15,23,42,.10)] ${className}`}><Image src={src} alt={alt} width={1600} height={1000} className="h-full w-full rounded-[1.35rem] object-cover object-top" />{label && <p className="px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>}</div>;
+  return <div className={`overflow-hidden rounded-hero border border-slate-200 bg-white p-2 shadow-[0_22px_70px_rgba(15,23,42,.10)] ${className}`}><Image src={src} alt={alt} width={1600} height={1000} className="h-full w-full rounded-panel object-cover object-top" />{label && <p className="px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>}</div>;
 }
 
 function Phone({ src = img.vcard, className = '' }: { src?: string; className?: string }) {
-  return <div className={`mx-auto max-w-[17rem] rounded-[2rem] bg-slate-950 p-2 shadow-[0_22px_70px_rgba(15,23,42,.20)] ${className}`}><Image src={src} alt="Setu Flow mobile" width={720} height={1320} className="rounded-[1.55rem] object-contain" /></div>;
+  return <div className={`mx-auto max-w-[17rem] rounded-hero bg-slate-950 p-2 shadow-[0_22px_70px_rgba(15,23,42,.20)] ${className}`}><Image src={src} alt="Setu Flow mobile" width={720} height={1320} className="rounded-panel object-contain" /></div>;
 }
 
 function CTA({ title = 'See Setu Flow mapped to your trade workflow.', body = 'A focused walkthrough for your vCard, event capture, quote management, documents, dispatch, integrations and Setu Guru needs.' }: { title?: string; body?: string }) {
-  return <section className="px-4 py-12 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl rounded-[2rem] bg-slate-950 px-7 py-8 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)]"><div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><Eyebrow light>Product walkthrough</Eyebrow><h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/62">{body}</p></div><div className="flex flex-col gap-3 sm:flex-row"><Button href="/book-demo">Book a Demo</Button><Button href="/platform" variant="ghost">Explore Platform</Button></div></div></div></section>;
+  return <section className="px-4 py-12 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl rounded-hero bg-slate-950 px-7 py-8 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)]"><div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><Eyebrow light>Product walkthrough</Eyebrow><h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/62">{body}</p></div><div className="flex flex-col gap-3 sm:flex-row"><Button href="/book-demo">Book a Demo</Button><Button href="/platform" variant="ghost">Explore Platform</Button></div></div></div></section>;
 }
 
 /**
@@ -190,11 +190,11 @@ const workflow = [
 ] as [IconName, string][];
 
 function WorkflowRail() {
-  return <section className="bg-slate-50 px-4 py-10 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_16px_48px_rgba(15,23,42,.06)]"><div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-center"><div><Eyebrow>Workflow</Eyebrow><h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-3xl">From first share to final dispatch.</h2><p className="mt-2 text-sm leading-6 text-slate-500">Every step stays connected — source context, ownership, terms, compliance and dispatch status move with the deal instead of getting lost between tools.</p></div><div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">{workflow.map(([icon, title], index) => <div key={title} className="relative rounded-2xl border border-slate-200 bg-slate-50 px-3 py-4 text-center"><div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm"><Icon name={icon} className="h-4 w-4" /></div><p className="mt-2 text-sm font-semibold text-slate-950">{title}</p>{index < workflow.length - 1 && <span className="absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 text-teal-600 lg:block">→</span>}</div>)}</div></div></div></section>;
+  return <section className="bg-slate-50 px-4 py-10 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl rounded-hero border border-slate-200 bg-white p-5 shadow-[0_16px_48px_rgba(15,23,42,.06)]"><div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-center"><div><Eyebrow>Workflow</Eyebrow><h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-3xl">From first share to final dispatch.</h2><p className="mt-2 text-sm leading-6 text-slate-500">Every step stays connected — source context, ownership, terms, compliance and dispatch status move with the deal instead of getting lost between tools.</p></div><div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">{workflow.map(([icon, title], index) => <div key={title} className="relative rounded-2xl border border-slate-200 bg-slate-50 px-3 py-4 text-center"><div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm"><Icon name={icon} className="h-4 w-4" /></div><p className="mt-2 text-sm font-semibold text-slate-950">{title}</p>{index < workflow.length - 1 && <span className="absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 text-teal-600 lg:block">→</span>}</div>)}</div></div></div></section>;
 }
 
 function FeatureGrid({ items = nativeWins }: { items?: Feature[] }) {
-  return <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{items.map((item) => <article key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]"><IconBox icon={item.icon} /><h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{item.title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{item.body}</p></article>)}</div>;
+  return <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{items.map((item) => <article key={item.title} className="rounded-panel border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]"><IconBox icon={item.icon} /><h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{item.title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{item.body}</p></article>)}</div>;
 }
 
 function SplitFeature({ eyebrow, title, body, bullets, image, reverse = false, phone = false, dark = false }: { eyebrow: string; title: string; body: string; bullets: string[]; image: string; reverse?: boolean; phone?: boolean; dark?: boolean }) {
@@ -209,7 +209,7 @@ function PricingCards() {
     { name: 'Growth', price: '$499', users: 'Up to 10 users', body: 'Document manager, order dispatch and Setu Guru workflow assistance.', features: ['Everything in Starter', 'Document manager', 'Order dispatch', 'Integration readiness', 'Setu Guru assistance'], featured: true },
     { name: 'Enterprise', price: 'Custom', users: 'Custom users', body: 'All features, customization and rollout support.', features: ['Everything in Growth', 'Custom workflows', 'Advanced integrations', 'Role alignment', 'Executive rollout support'] },
   ];
-  return <section className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><SectionTitle eyebrow="Pricing" title="Plans built around workflow maturity." body="Every plan includes vCard, event capture and mobile access. Growth adds the operational layer for documents, dispatch and integrations." /><div className="mt-10 grid gap-6 lg:grid-cols-3">{plans.map((plan) => <article key={plan.name} className={`rounded-[1.75rem] border bg-white shadow-[0_18px_56px_rgba(15,23,42,.07)] ${plan.featured ? 'border-teal-500 lg:-translate-y-2' : 'border-slate-200'}`}><div className={`${plan.featured ? 'rounded-t-[1.75rem] bg-slate-950 text-white' : ''} p-7`}><p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${plan.featured ? 'text-teal-200' : 'text-teal-700'}`}>{plan.name}</p><div className="mt-4 flex items-end gap-2"><span className={`text-5xl font-semibold tracking-[-0.05em] ${plan.featured ? 'text-white' : 'text-slate-950'}`}>{plan.price}</span>{plan.price !== 'Custom' && <span className="pb-2 text-sm font-semibold text-slate-400">/ month</span>}</div><p className={`mt-2 text-sm font-bold ${plan.featured ? 'text-teal-200' : 'text-teal-700'}`}>{plan.users}</p><p className={`mt-4 text-sm leading-6 ${plan.featured ? 'text-white/65' : 'text-slate-500'}`}>{plan.body}</p></div><div className="p-7"><ul className="space-y-3">{plan.features.map((f) => <li key={f} className="flex gap-3 text-sm leading-6 text-slate-700"><Check />{f}</li>)}</ul><div className="mt-7"><Button href="/book-demo" variant={plan.featured ? 'primary' : 'secondary'}>Book walkthrough</Button></div></div></article>)}</div></div></section>;
+  return <section className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><SectionTitle eyebrow="Pricing" title="Plans built around workflow maturity." body="Every plan includes vCard, event capture and mobile access. Growth adds the operational layer for documents, dispatch and integrations." /><div className="mt-10 grid gap-6 lg:grid-cols-3">{plans.map((plan) => <article key={plan.name} className={`rounded-hero border bg-white shadow-[0_18px_56px_rgba(15,23,42,.07)] ${plan.featured ? 'border-teal-500 lg:-translate-y-2' : 'border-slate-200'}`}><div className={`${plan.featured ? 'rounded-t-hero bg-slate-950 text-white' : ''} p-7`}><p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${plan.featured ? 'text-teal-200' : 'text-teal-700'}`}>{plan.name}</p><div className="mt-4 flex items-end gap-2"><span className={`text-5xl font-semibold tracking-[-0.05em] ${plan.featured ? 'text-white' : 'text-slate-950'}`}>{plan.price}</span>{plan.price !== 'Custom' && <span className="pb-2 text-sm font-semibold text-slate-400">/ month</span>}</div><p className={`mt-2 text-sm font-bold ${plan.featured ? 'text-teal-200' : 'text-teal-700'}`}>{plan.users}</p><p className={`mt-4 text-sm leading-6 ${plan.featured ? 'text-white/65' : 'text-slate-500'}`}>{plan.body}</p></div><div className="p-7"><ul className="space-y-3">{plan.features.map((f) => <li key={f} className="flex gap-3 text-sm leading-6 text-slate-700"><Check />{f}</li>)}</ul><div className="mt-7"><Button href="/book-demo" variant={plan.featured ? 'primary' : 'secondary'}>Book walkthrough</Button></div></div></article>)}</div></div></section>;
 }
 
 const compareRows = [
@@ -224,7 +224,7 @@ const compareRows = [
 ];
 
 function ComparisonTable() {
-  return <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.04]"><div className="overflow-x-auto"><table className="min-w-[860px] w-full text-left text-sm"><thead><tr className="border-b border-white/10 text-[11px] font-bold uppercase tracking-[0.18em] text-white/35"><th className="px-5 py-4">Capability</th><th className="px-5 py-4">Excel + Email</th><th className="px-5 py-4">Generic CRM</th><th className="px-5 py-4 text-teal-200">Setu Flow</th></tr></thead><tbody>{compareRows.map((row) => <tr key={row[0]} className="border-b border-white/5"><td className="px-5 py-4 font-semibold text-white">{row[0]}</td><td className="px-5 py-4 text-white/45">{row[1]}</td><td className="px-5 py-4 text-white/45">{row[2]}</td><td className="px-5 py-4 font-semibold text-teal-50">{row[3]}</td></tr>)}</tbody></table></div></div>;
+  return <div className="overflow-hidden rounded-hero border border-white/10 bg-white/[0.04]"><div className="overflow-x-auto"><table className="min-w-[860px] w-full text-left text-sm"><thead><tr className="border-b border-white/10 text-[11px] font-bold uppercase tracking-[0.18em] text-white/35"><th className="px-5 py-4">Capability</th><th className="px-5 py-4">Excel + Email</th><th className="px-5 py-4">Generic CRM</th><th className="px-5 py-4 text-teal-200">Setu Flow</th></tr></thead><tbody>{compareRows.map((row) => <tr key={row[0]} className="border-b border-white/5"><td className="px-5 py-4 font-semibold text-white">{row[0]}</td><td className="px-5 py-4 text-white/45">{row[1]}</td><td className="px-5 py-4 text-white/45">{row[2]}</td><td className="px-5 py-4 font-semibold text-teal-50">{row[3]}</td></tr>)}</tbody></table></div></div>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -280,8 +280,8 @@ export function HomeMarketingPage() {
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
-            <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.06)]">
-              <div className="overflow-hidden rounded-t-[1.25rem]">
+            <div className="overflow-hidden rounded-panel border border-slate-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.06)]">
+              <div className="overflow-hidden rounded-t-card">
                 <Image src={img.events} alt="Trade event lead capture" width={800} height={500} className="w-full object-cover object-top h-44" />
               </div>
               <div className="p-5">
@@ -290,8 +290,8 @@ export function HomeMarketingPage() {
                 <p className="mt-2 text-sm leading-6 text-slate-500">Setu Flow keeps event source, ownership and follow-up in one place — not a CSV export you import a week later.</p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.06)]">
-              <div className="overflow-hidden rounded-t-[1.25rem]">
+            <div className="overflow-hidden rounded-panel border border-slate-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.06)]">
+              <div className="overflow-hidden rounded-t-card">
                 <Image src={img.quote} alt="Quote workflow" width={800} height={500} className="w-full object-cover object-top h-44" />
               </div>
               <div className="p-5">
@@ -300,8 +300,8 @@ export function HomeMarketingPage() {
                 <p className="mt-2 text-sm leading-6 text-slate-500">Setu Flow keeps pricing, incoterms and approval readiness in one controlled workflow — not scattered across email and spreadsheets.</p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.06)]">
-              <div className="overflow-hidden rounded-t-[1.25rem]">
+            <div className="overflow-hidden rounded-panel border border-slate-200 bg-white shadow-[0_14px_42px_rgba(15,23,42,.06)]">
+              <div className="overflow-hidden rounded-t-card">
                 <Image src={img.docs} alt="Document readiness" width={800} height={500} className="w-full object-cover object-top h-44" />
               </div>
               <div className="p-5">
@@ -542,7 +542,7 @@ export function SolutionsMarketingPage() {
               { icon: 'quote' as IconName, title: 'Commercial teams', pain: 'Quotes that stop drifting across spreadsheet versions and email chains, with approval posture visible before anything is sent.', bullets: ['Structured quote preparation', 'Approval readiness before sending', 'Buyer communication context on every quote'] },
               { icon: 'dispatch' as IconName, title: 'Operations teams', pain: 'Accepted quotes that actually arrive in operations — with document gaps flagged, not discovered after the order is moving.', bullets: ['Order handoff from commercial approval', 'Document and dispatch readiness tracking', 'Fewer surprises when the shipment moves'] },
             ].map((item) => (
-              <article key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
+              <article key={item.title} className="rounded-panel border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
                 <IconBox icon={item.icon} />
                 <h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{item.pain}</p>
@@ -620,7 +620,7 @@ export function SetuGuruMarketingPage() {
               </div>
             </div>
             {/* Live Guru UI preview card */}
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.05] p-6">
+            <div className="rounded-hero border border-white/10 bg-white/[0.05] p-6">
               <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
                 <GuruMark dark />
                 <span className="rounded-full bg-teal-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-teal-200">Operator-approved</span>
@@ -659,7 +659,7 @@ export function SetuGuruMarketingPage() {
               { icon: 'dispatch' as IconName, title: 'Dispatch blockers', body: 'For each order moving toward handoff, Guru surfaces what still needs to happen — across documents, approvals and shipment readiness.' },
               { icon: 'compare' as IconName, title: 'Prioritization', body: 'Guru identifies which accounts, quotes and leads need attention first — based on overdue follow-ups, expiring validity and commercial pressure.' },
             ].map((item) => (
-              <article key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
+              <article key={item.title} className="rounded-panel border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
                 <IconBox icon={item.icon} />
                 <h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{item.body}</p>
@@ -671,7 +671,7 @@ export function SetuGuruMarketingPage() {
 
       {/* Operator model */}
       <section className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[1.75rem] border border-slate-200 bg-white p-8">
+        <div className="mx-auto max-w-7xl rounded-hero border border-slate-200 bg-white p-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start">
             <div>
               <Eyebrow>How Guru works</Eyebrow>
@@ -729,8 +729,8 @@ export function MobileMarketingPage() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               {[[img.mobileDashboard, 'Command center'], [img.mobileLeads, 'Lead queue'], [img.mobileQuickLead, 'Quick capture']].map(([src, label]) => (
-                <div key={src} className="rounded-[1.75rem] bg-slate-950 p-2 shadow-[0_22px_70px_rgba(15,23,42,.18)]">
-                  <Image src={src} alt={label} width={425} height={907} className="rounded-[1.3rem]" />
+                <div key={src} className="rounded-hero bg-slate-950 p-2 shadow-[0_22px_70px_rgba(15,23,42,.18)]">
+                  <Image src={src} alt={label} width={425} height={907} className="rounded-card" />
                   <p className="py-3 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-teal-200/75">{label}</p>
                 </div>
               ))}
@@ -752,7 +752,7 @@ export function MobileMarketingPage() {
               { icon: 'calendar' as IconName, title: 'Task command center', body: 'Overdue tasks, due today and mine — a clear priority view so you know what needs to happen before the day is over.' },
               { icon: 'guru' as IconName, title: 'Setu Guru on mobile', body: 'Ask Guru to summarize a contact before a meeting or draft a follow-up while you are still at the event.' },
             ].map((item) => (
-              <article key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
+              <article key={item.title} className="rounded-panel border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
                 <IconBox icon={item.icon} />
                 <h3 className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{item.body}</p>
@@ -764,7 +764,7 @@ export function MobileMarketingPage() {
 
       {/* Real sync callout */}
       <section className="bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[1.75rem] border border-slate-200 bg-white p-7">
+        <div className="mx-auto max-w-7xl rounded-hero border border-slate-200 bg-white p-7">
           <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-center">
             <div>
               <Eyebrow>Real-time sync</Eyebrow>
@@ -821,7 +821,7 @@ export function PricingMarketingPage() {
       <section className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <SectionTitle eyebrow="What is included" title="Plan comparison." />
-          <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+          <div className="mt-8 overflow-hidden rounded-panel border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead>
@@ -940,7 +940,7 @@ export function CompareMarketingPage() {
               { icon: 'dispatch' as IconName, title: 'Order dispatch', body: 'Execution continues after quote approval.' },
               { icon: 'guru' as IconName, title: 'Setu Guru AI', body: 'Trade workflow intelligence, not a generic assistant.' },
             ].map((c) => (
-              <div key={c.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
+              <div key={c.title} className="rounded-panel border border-slate-200 bg-white p-6 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
                 <IconBox icon={c.icon} />
                 <p className="mt-5 text-lg font-semibold tracking-[-0.02em] text-slate-950">{c.title}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{c.body}</p>
@@ -952,7 +952,7 @@ export function CompareMarketingPage() {
 
       {/* Context strip */}
       <section className="bg-white px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6">
+        <div className="mx-auto max-w-7xl rounded-hero border border-slate-200 bg-slate-50 p-6">
           <div className="grid gap-5 md:grid-cols-3">
             <div>
               <p className="text-sm font-semibold text-slate-950">Sales CRMs are good at</p>
@@ -984,7 +984,7 @@ export function CompareMarketingPage() {
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-2">
             {alternatives.map((alt) => (
-              <article key={alt.name} className="rounded-[1.6rem] border border-slate-200 bg-white p-7 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
+              <article key={alt.name} className="rounded-panel border border-slate-200 bg-white p-7 shadow-[0_14px_42px_rgba(15,23,42,.05)]">
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Compared with</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{alt.name}</h3>
                 <p className="mt-1 text-sm font-semibold text-teal-700">{alt.position}</p>
@@ -1012,7 +1012,7 @@ export function CompareMarketingPage() {
 
       {/* Best-fit CTA */}
       <section className="px-4 py-14 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[2rem] bg-slate-950 px-7 py-8 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)]">
+        <div className="mx-auto max-w-7xl rounded-hero bg-slate-950 px-7 py-8 text-white shadow-[0_22px_70px_rgba(15,23,42,.18)]">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <Eyebrow light>Best-fit walkthrough</Eyebrow>
@@ -1035,5 +1035,5 @@ export function CompareMarketingPage() {
 }
 
 export function BookDemoMarketingPage() {
-  return <Page><section className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_22px_70px_rgba(15,23,42,.10)] lg:grid-cols-[0.78fr_1.22fr]"><aside className="bg-slate-950 p-8 text-white"><Eyebrow light>30 minute walkthrough</Eyebrow><h1 className="mt-4 text-3xl font-semibold tracking-[-0.03em]">Map Setu Flow to your trade workflow.</h1><p className="mt-4 text-sm leading-7 text-white/62">We will cover vCard, trade events, quote management, documents, dispatch, mobile, Setu Guru and pricing fit.</p><div className="mt-7 grid gap-3">{['Your current lead-to-dispatch workflow', 'Best plan fit: Starter, Growth or Enterprise', 'Product visuals tied to your use case', 'Setu Guru operator approval model'].map((item) => <div key={item} className="flex gap-3 text-sm text-white/75"><Check light />{item}</div>)}</div><div className="mt-8"><Phone /></div></aside><div className="p-6 sm:p-8"><BookDemoForm /></div></div></section></Page>;
+  return <Page><section className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-7xl overflow-hidden rounded-hero border border-slate-200 bg-white shadow-[0_22px_70px_rgba(15,23,42,.10)] lg:grid-cols-[0.78fr_1.22fr]"><aside className="bg-slate-950 p-8 text-white"><Eyebrow light>30 minute walkthrough</Eyebrow><h1 className="mt-4 text-3xl font-semibold tracking-[-0.03em]">Map Setu Flow to your trade workflow.</h1><p className="mt-4 text-sm leading-7 text-white/62">We will cover vCard, trade events, quote management, documents, dispatch, mobile, Setu Guru and pricing fit.</p><div className="mt-7 grid gap-3">{['Your current lead-to-dispatch workflow', 'Best plan fit: Starter, Growth or Enterprise', 'Product visuals tied to your use case', 'Setu Guru operator approval model'].map((item) => <div key={item} className="flex gap-3 text-sm text-white/75"><Check light />{item}</div>)}</div><div className="mt-8"><Phone /></div></aside><div className="p-6 sm:p-8"><BookDemoForm /></div></div></section></Page>;
 }

@@ -23,7 +23,7 @@ export interface LeadTableRowProps {
   stageHistoryMap: Map<string, string>;
   stageMetaMap: Map<string, { sortOrder: number | null; stageCount: number | null; isClosed: boolean | null | undefined }>;
   readinessMap: Map<string, LeadCommercialReadiness>;
-  getLeadCommandCenterHref: (leadId: string) => string;
+  getLeadCommandCenterHref: (leadId: string, initialStepId?: undefined, mode?: string) => string;
   openLeadCommandCenter: (router: ReturnType<typeof useRouter>, href: string) => void;
   shouldIgnoreLeadNavigationTarget: (target: EventTarget | null) => boolean;
   handleLeadCommandCenterKeyDown: (event: KeyboardEvent<HTMLElement>, router: ReturnType<typeof useRouter>, href: string) => void;
@@ -71,7 +71,7 @@ function ContactIconButton({ href, label, tone }: { href: string; label: string;
   const toneClass = tone === 'whatsapp'
     ? 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50'
     : tone === 'phone'
-      ? 'border-[#0b2e4a]/15 bg-white text-[#0b2e4a] hover:border-[#0b2e4a]/30 hover:bg-slate-50'
+      ? 'border-brand-800/15 bg-white text-content-primary hover:border-brand-800/30 hover:bg-slate-50'
       : 'border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50';
   const icon = tone === 'whatsapp' ? 'whatsapp' : tone === 'phone' ? 'phone' : 'envelope';
   return (
@@ -123,7 +123,7 @@ export function LeadTableRow({
   const readiness = readinessMap.get(lead.id);
   const blockerCount = readiness?.blockerCount ?? 0;
   const followUpState = getFollowUpState(lead.next_follow_up_at, hydratedNowIso);
-  const commandCenterHref = getLeadCommandCenterHref(lead.id);
+  const commandCenterHref = getLeadCommandCenterHref(lead.id, undefined, lead.lead_type === 'supplier' ? 'suppliers' : 'buyers');
   const health = computeLeadHealth({
     created_at: lead.created_at,
     updated_at: lead.updated_at,
@@ -162,11 +162,11 @@ export function LeadTableRow({
       onKeyDown={(event) => { if (shouldIgnoreLeadNavigationTarget(event.target)) return; handleLeadCommandCenterKeyDown(event, router, commandCenterHref); }}
     >
       <div className="flex justify-center">
-        <input type="checkbox" checked={selected} aria-label={`Select ${lead.company_name}`} onChange={() => toggleSelect(lead.id)} onClick={(event) => event.stopPropagation()} className="h-[18px] w-[18px] cursor-pointer rounded-[4px] border-slate-300" />
+        <input type="checkbox" checked={selected} aria-label={`Select ${lead.company_name}`} onChange={() => toggleSelect(lead.id)} onClick={(event) => event.stopPropagation()} className="h-[18px] w-[18px] cursor-pointer rounded border-slate-300" />
       </div>
 
       <div className="flex items-start gap-2.5 overflow-hidden">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-[11px] font-extrabold text-white" style={{ background: getAvatarGradient(lead.company_name) }}>{avatarLabel}</div>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-extrabold text-white" style={{ background: getAvatarGradient(lead.company_name) }}>{avatarLabel}</div>
         <div className="min-w-0">
           <div className="truncate text-[13px] font-bold text-slate-900">{lead.company_name}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
@@ -210,7 +210,7 @@ export function LeadTableRow({
       </div>
 
       <div className="relative flex items-center justify-end gap-1.5">
-        <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-[#0b2e4a] bg-[#0b2e4a] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
+        <button type="button" onClick={(event) => { event.stopPropagation(); openLeadCommandCenter(router, commandCenterHref); }} className="inline-flex items-center gap-1 rounded-full border border-brand-800 bg-brand-700 px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90">Open →</button>
         {onDeleteLead ? <button type="button" onClick={(event) => { event.stopPropagation(); onDeleteLead(lead.id, lead.company_name); }} className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50">Remove</button> : null}
         <button type="button" onClick={(event) => { event.stopPropagation(); setActionsOpen((current) => !current); }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:bg-slate-50">More</button>
         {actionsOpen ? (
@@ -242,7 +242,7 @@ export function LeadTableHeader({
   }
   return (
     <div className="grid items-center gap-x-4 border-b border-slate-200 bg-slate-50 px-4 py-2" style={{ gridTemplateColumns: '28px minmax(260px,1fr) 110px 130px 110px 88px 110px 100px 170px' }}>
-      <input type="checkbox" checked={allSelected} onChange={(event) => onSelectAll(event.target.checked)} aria-label="Select all visible leads" className="h-[18px] w-[18px] rounded-[4px] border-slate-300" />
+      <input type="checkbox" checked={allSelected} onChange={(event) => onSelectAll(event.target.checked)} aria-label="Select all visible leads" className="h-[18px] w-[18px] rounded border-slate-300" />
       <SortableHeader field="company_name" label="Lead" />
       <div className="hidden lg:block text-center text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Contact</div>
       <SortableHeader field="stage" label="Stage" />

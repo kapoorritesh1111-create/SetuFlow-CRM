@@ -123,7 +123,7 @@ export function ProductsTable({ rows, loading, viewMode, sortBy, sortOrder, onSo
   }, [rows]);
 
   return (
-    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-panel border border-slate-200 bg-white shadow-sm">
       <div className={`grid ${gridClass} gap-0 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400`}>
         <div />
         <div><SortButton label="Product / SKU" active={sortBy === 'product_name'} direction={sortOrder} onClick={() => onSortChange('product_name')} /></div>

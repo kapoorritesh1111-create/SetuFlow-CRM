@@ -67,7 +67,7 @@ export function TradeEventUpgradePreview() {
   }
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6">
+    <section className="rounded-hero border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Preview Full Platform</p>
@@ -85,7 +85,7 @@ export function TradeEventUpgradePreview() {
         {TRIAL_UPGRADE_MODULES.map((module) => {
           const requestStatus = statuses[intentStatusKey(module.key, 'upgrade_requested')];
           return (
-            <article key={module.key} className="flex min-h-full flex-col rounded-[1.45rem] border border-slate-200 bg-slate-50 p-4 shadow-[0_16px_38px_rgba(15,23,42,0.06)]">
+            <article key={module.key} className="flex min-h-full flex-col rounded-panel border border-slate-200 bg-slate-50 p-4 shadow-[0_16px_38px_rgba(15,23,42,0.06)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">{module.icon}</div>
                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Locked</span>
@@ -119,7 +119,7 @@ export function TradeEventUpgradePreview() {
 
       {activeModule ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`${activeModule.label} preview`}>
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white p-5 shadow-[0_34px_100px_rgba(15,23,42,0.34)] sm:p-6">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-hero bg-white p-5 shadow-[0_34px_100px_rgba(15,23,42,0.34)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Preview only</p>
@@ -131,7 +131,7 @@ export function TradeEventUpgradePreview() {
               </button>
             </div>
 
-            <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+            <div className="mt-5 rounded-panel border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-black text-slate-950">{activeModule.previewLabel}</p>

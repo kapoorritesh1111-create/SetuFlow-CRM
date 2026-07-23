@@ -288,7 +288,7 @@ function QuoteLineTable({
   approvalThresholdPct?: number | null;
 }) {
   return (
-    <div className="overflow-x-auto rounded-[1.5rem] border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-panel border border-slate-200 bg-white">
       <table className="min-w-[1120px] w-full text-sm">
         <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
           <tr>
@@ -1591,7 +1591,7 @@ function RemediationCheckpointPanel({
 
 function getFieldFocusClasses(isFocused: boolean) {
   return isFocused
-    ? "rounded-[1.25rem] border border-amber-200 bg-amber-50/60 p-3"
+    ? "rounded-card border border-amber-200 bg-amber-50/60 p-3"
     : "";
 }
 
@@ -1974,7 +1974,7 @@ function QuoteVersionCheckpointPanel({
         </div>
       ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="rounded-card border border-slate-200 bg-slate-50 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             Current version
           </p>
@@ -1989,7 +1989,7 @@ function QuoteVersionCheckpointPanel({
               : "No synced version is linked to this draft yet."}
           </p>
         </div>
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="rounded-card border border-slate-200 bg-slate-50 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             Latest sent
           </p>
@@ -2004,7 +2004,7 @@ function QuoteVersionCheckpointPanel({
               : "A synced send checkpoint will appear here once a version is sent."}
           </p>
         </div>
-        <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="rounded-card border border-slate-200 bg-slate-50 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             Approval checkpoint
           </p>
@@ -2029,7 +2029,7 @@ function QuoteVersionCheckpointPanel({
             scopedVersions.slice(0, 3).map((version) => (
               <div
                 key={version.id}
-                className="rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600"
+                className="rounded-card border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold text-slate-900">
@@ -2058,7 +2058,7 @@ function QuoteVersionCheckpointPanel({
               </div>
             ))
           ) : (
-            <div className="rounded-[1rem] border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
+            <div className="rounded-card border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
               No synced version history is available for this quote yet.
             </div>
           )}
@@ -2168,7 +2168,7 @@ function QuoteReviewPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+      <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${getQuoteStatusBadgeClasses(status as never)}`}
@@ -2186,7 +2186,7 @@ function QuoteReviewPanel({
           </span>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+          <div className="rounded-card bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Subtotal
             </p>
@@ -2194,7 +2194,7 @@ function QuoteReviewPanel({
               {totals.currency} {totals.subtotal.toFixed(2)}
             </p>
           </div>
-          <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+          <div className="rounded-card bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Line items
             </p>
@@ -2202,7 +2202,7 @@ function QuoteReviewPanel({
               {totals.lineItemCount}
             </p>
           </div>
-          <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+          <div className="rounded-card bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Currency
             </p>
@@ -2210,7 +2210,7 @@ function QuoteReviewPanel({
               {normalizeCurrency(currency) || "Unset"}
             </p>
           </div>
-          <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+          <div className="rounded-card bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
               Template
             </p>
@@ -2220,7 +2220,7 @@ function QuoteReviewPanel({
           </div>
         </div>
       </div>
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft text-sm text-slate-600">
+      <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft text-sm text-slate-600">
         <p className="font-medium text-slate-900">Commercial framing</p>
         <ul className="mt-3 space-y-2">
           <li>
@@ -2992,7 +2992,7 @@ export function QuoteCreateWizardForm({
                 mode="review"
               />
               <SectionCard className="p-4 sm:p-5">
-                <div className="rounded-[1rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <div className="rounded-card bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                     Validation
                   </p>
@@ -3254,7 +3254,7 @@ function QuoteSummaryCards({
     riskFlags.find((flag) => flag.tone !== "good") ?? riskFlags[0];
   return (
     <div className="grid gap-3 lg:grid-cols-6">
-      <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+      <div className="rounded-card bg-slate-50 px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           Subtotal
         </p>
@@ -3262,7 +3262,7 @@ function QuoteSummaryCards({
           {totals.currency} {totals.subtotal.toFixed(2)}
         </p>
       </div>
-      <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+      <div className="rounded-card bg-slate-50 px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           Line items
         </p>
@@ -3270,7 +3270,7 @@ function QuoteSummaryCards({
           {totals.lineItemCount}
         </p>
       </div>
-      <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+      <div className="rounded-card bg-slate-50 px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           Currency
         </p>
@@ -3278,7 +3278,7 @@ function QuoteSummaryCards({
           {normalizeCurrency(currency) || "Unset"}
         </p>
       </div>
-      <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+      <div className="rounded-card bg-slate-50 px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           Status
         </p>
@@ -3298,7 +3298,7 @@ function QuoteSummaryCards({
           </span>
         </div>
       </div>
-      <div className="rounded-[1rem] bg-slate-50 px-4 py-3">
+      <div className="rounded-card bg-slate-50 px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           Template
         </p>
@@ -3307,7 +3307,7 @@ function QuoteSummaryCards({
         </p>
       </div>
       <div
-        className={`rounded-[1rem] px-4 py-3 ${primaryRisk ? getRiskFlagClasses(primaryRisk.tone) : "bg-slate-50"}`}
+        className={`rounded-card px-4 py-3 ${primaryRisk ? getRiskFlagClasses(primaryRisk.tone) : "bg-slate-50"}`}
       >
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
           Risk cues
@@ -4149,7 +4149,7 @@ export function QuoteEditWizardForm({
               />
               <SectionCard className="p-4 sm:p-5">
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-[1rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <div className="rounded-card bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                       What this save does
                     </p>
@@ -4165,7 +4165,7 @@ export function QuoteEditWizardForm({
                       <li>• Refreshes the selected buyer quote after save.</li>
                     </ul>
                   </div>
-                  <div className="rounded-[1rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <div className="rounded-card bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Validation
                     </p>

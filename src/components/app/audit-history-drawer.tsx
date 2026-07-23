@@ -36,19 +36,19 @@ export function AuditHistoryDrawer({
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-2">
-          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Category</p>
             <p className="mt-2 text-sm font-medium text-slate-900">{getAuditEventCategory(event.event_type)}</p>
           </div>
-          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Timestamp</p>
             <p className="mt-2 text-sm font-medium text-slate-900">{formatDateTime(event.created_at)}</p>
           </div>
-          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Actor</p>
             <p className="mt-2 text-sm font-medium text-slate-900">{event.actor_name ?? event.actor_email ?? event.actor_user_id ?? 'System'}</p>
           </div>
-          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Entity</p>
             <p className="mt-2 text-sm font-medium text-slate-900">{event.entity_type}</p>
             <p className="mt-1 text-xs text-slate-500">{event.entity_id ?? 'No entity id recorded'}</p>
@@ -56,15 +56,15 @@ export function AuditHistoryDrawer({
         </div>
 
         <div className="mt-6 space-y-4">
-          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+          <section className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Previous value</p>
             <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-950 px-4 py-4 text-xs text-slate-100">{pretty(previousValue)}</pre>
           </section>
-          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+          <section className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">New value</p>
             <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-950 px-4 py-4 text-xs text-slate-100">{pretty(newValue)}</pre>
           </section>
-          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+          <section className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Metadata</p>
             <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-950 px-4 py-4 text-xs text-slate-100">{pretty(metadata)}</pre>
           </section>

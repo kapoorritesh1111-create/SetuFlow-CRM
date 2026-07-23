@@ -44,7 +44,17 @@ public/internal/        — Legacy HTML workspace tools (issue-tracker, docs, ro
 5. **Typecheck before review** — run `npx tsc --noEmit` before marking an issue ready for review.
 6. **Never auto-resolve** — after deployment proof is attached, set SMC issues to `In Review`. Ritesh manually verifies and resolves.
 
-## API Endpoints for Agents
+## Design System
+
+Full spec: `docs/DESIGN-SYSTEM.md`. Tokens: `src/app/design-tokens.css`. Enforced by `tests/design-tokens.test.mjs` (part of `npm test`).
+
+1. **Tokens or nothing** — no `[#hex]` arbitrary colors, no `rounded-[…]`, no `tracking-[…]`, no inline `style` colors in `src/app` or `src/features`. Use `brand-*` / `accent-*` / `surface-*` / `content-*` / `line` / `stage-*` / `success|warning|danger|info-{bg,fg,border,solid}` and `rounded-{ctl,card,panel,hero}`. If a token is missing, add it to `design-tokens.css` + `tailwind.config.ts` rather than reaching for an arbitrary value.
+2. **No `font-black` / `font-extrabold`** outside marketing routes (`src/components/marketing`, `src/app/{solutions,features,compare,resources,roi-calculator,trade-show-trial,investors,investor-overview,preseed,platform}`). Product UI uses 400–700 only.
+3. **Status-like UI goes through a mapper** — `getStatusTone` / `getQuoteTone` / `getComplianceTone` (`@/components/ui/status-badge`) or `getStageKey` + `StageChip` (`@/components/ui/stage-chip`). Never restyle a status/stage locally per page.
+4. **`globals.css` is resets + token import only** — no feature-specific `!important` patches, no DOM-shape or hex-substring attribute selectors. Style the component directly; if you need to override a third-party component's internals, do it via that component's own className/props first.
+5. **The internal SMC tool is a separate design language** — `src/app/(app)/workspace/**` and `src/app/smc/**` intentionally keep their own violet/sky/emerald dark theme and are out of scope for the SETU Flow CRM brand tokens above.
+
+
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|

@@ -159,7 +159,7 @@ export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelPr
   }
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6">
+    <section className="rounded-hero border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Trade Show Trial Capture</p>
@@ -254,7 +254,7 @@ export function TrialCapturePanel({ events, reusableTerms }: TrialCapturePanelPr
             <label className="block"><span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Notes</span><textarea name="captured_notes" value={fields.notes} onChange={(event) => updateField('notes', event.target.value)} rows={4} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium outline-none ring-blue-500/20 focus:ring-4" /></label>
           </div>
 
-          <aside className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-4 lg:self-start">
+          <aside className="rounded-hero border border-slate-200 bg-slate-50 p-4 lg:self-start">
             <p className="text-sm font-black text-slate-950">Before save</p>
             <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-600">
               <li>• Saves to <span className="font-black text-slate-900">trade_event_entries</span></li>

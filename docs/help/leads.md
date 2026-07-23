@@ -1,15 +1,15 @@
 # Follow-up (Leads) help
 
 Route: `/leads` and `/leads/[leadId]`
-Last updated: 2026-06-08 (S24-200 resolved — contact CTAs live)
+Last updated: 2026-06-08 — contact CTAs live on every lead row
 
 ## Purpose
 
-The Follow-up workspace is the command centre for buyers and suppliers. It shows the full lead queue with status, pipeline stage, follow-up timing, pipeline value, owner, and — as of Sprint 24 — one-tap contact actions directly on every lead row.
+The Follow-up workspace is the command centre for buyers and suppliers. It shows the full lead queue with status, pipeline stage, follow-up timing, pipeline value, owner, and one-tap contact actions directly on every lead row.
 
 ---
 
-## Lead list — what's new in Sprint 24 (S24-200)
+## Lead list — inline contact actions
 
 ### Contact CTAs on every lead row
 

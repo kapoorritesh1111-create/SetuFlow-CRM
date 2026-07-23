@@ -110,7 +110,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 function Flag({ src, label, size = 'sm' }: { src: string; label: string; size?: 'sm' | 'md' }) {
   const dims = size === 'md' ? 'h-5 w-7' : 'h-5 w-7';
   return (
-    <span className={`relative inline-flex ${dims} shrink-0 overflow-hidden rounded-[5px] border border-slate-200 bg-white shadow-sm`}>
+    <span className={`relative inline-flex ${dims} shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm`}>
       <Image src={src} alt={`${label} flag`} fill className="object-cover" sizes="32px" />
     </span>
   );

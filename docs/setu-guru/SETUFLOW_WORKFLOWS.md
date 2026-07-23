@@ -5,7 +5,7 @@ _For chatbot knowledge base upload — June 2026_
 
 ## QUOTE ISSUES
 
-_Updated June 2026 — Quote workspace is now a customer-grouped lifecycle command centre (S24-205/206/207/208)._
+_Quote workspace is a customer-grouped lifecycle command centre._
 
 ### Problem: Where do I find my quotes now?
 
@@ -58,7 +58,7 @@ _Updated June 2026 — Quote workspace is now a customer-grouped lifecycle comma
 ### Problem: I need a second quote for the same customer
 
 **Cause:** The previous model only allowed one active quote per lead.
-**Fix (Sprint 24 — Quote Launcher):** From the Lead Command Center, use the Quote Launcher. Explicit choices: Continue latest draft · Create new quote · Create revision from sent quote · Clone accepted quote into new opportunity · View quote history. Do not edit a sent quote in place — always create a revision.
+**Fix:** From the Lead Command Center, use the Quote Launcher. Explicit choices: Continue latest draft · Create new quote · Create revision from sent quote · Clone accepted quote into new opportunity · View quote history. Do not edit a sent quote in place — always create a revision.
 
 ### Problem: Quote Review shows a compliance/document blocker
 
@@ -79,7 +79,7 @@ _Updated June 2026 — Quote workspace is now a customer-grouped lifecycle comma
 ### Problem: Accepted quote is still visible in the Quote workspace
 
 **Cause:** The accepted quote and order handoff were created but the quote has not been removed from the active worklist view.
-**Fix (Sprint 24 — S24-207):** Once accepted and an order handoff is created, the quote should exit the active Quote worklist automatically. If it still appears, check that the order handoff was successfully created (`orders` table entry with `source_quote_id` set). Route the user to Orders (`/orders`) — that is now the primary workspace for this deal.
+**Fix:** Once accepted and an order handoff is created, the quote should exit the active Quote worklist automatically. If it still appears, check that the order handoff was successfully created (`orders` table entry with `source_quote_id` set). Route the user to Orders (`/orders`) — that is now the primary workspace for this deal.
 
 ### Problem: Quote PDF is blank or missing products
 
@@ -89,28 +89,45 @@ _Updated June 2026 — Quote workspace is now a customer-grouped lifecycle comma
 ### Problem: Quote approaching expiry — what should I do?
 
 **Cause:** Quote validity date is near or passed.
-**Fix (Sprint 24 — S24-208):** For expiring quotes: follow up, revise, or send a reminder to the buyer before validity passes. For expired quotes: the quote moves to archive automatically. Use "Clone to new version" to restart the commercial conversation without losing history. Setu Guru will prompt you when a quote is approaching expiry.
+**Fix:** For expiring quotes: follow up, revise, or send a reminder to the buyer before validity passes. For expired quotes: the quote moves to archive automatically. Use "Clone to new version" to restart the commercial conversation without losing history. Setu Guru will prompt you when a quote is approaching expiry.
 
 ---
 
 ## SETU GURU OPERATING COPILOT ISSUES
 
-### Problem: User asks what Setu Guru can do after Sprint 21
-**Cause:** Setu Guru now has operating-copilot behavior, not only static FAQ answers.
-**Fix:** Explain that Guru can provide route-aware guidance, use internal source-search knowledge, summarize blockers, draft checklists or next-step prompts, and record feedback/telemetry signals. It must still respect human approval boundaries.
+### Problem: User asks what Setu Guru can do
+**Cause:** Setu Guru's primary surface is now Growth Center (`/growth-agent`), not a floating widget alone.
+**Fix:** Explain that Guru's main entry point is Growth Center: a Today work queue, Revenue workspace, Supplier workspace, Research/Opportunity workspace, Trade Event workspace, and Pricing Intelligence workspace, plus an executive business brief. It also surfaces as compact Lead Detail "Smart Actions" (Research, Draft outreach, Analyze reply, Quote readiness, Supplier RFQ assistance) and a Dashboard business-brief strip. Guru still provides route-aware guidance, live org data reads, drafts, and checklists, and still must respect human approval boundaries — nothing sends, prices, or activates automatically.
+
+### Problem: User asks about ICP, Opportunity Finder, Research Drawer, Outreach Generator, Reply Analyzer, Supplier RFQ Assistant, or Trade Event Assistant
+**Cause:** These were introduced as separate features and are now unified under Growth Center, which reuses rather than replaces them.
+**Fix:** Explain each capability in its Growth Center workspace context: ICP setup and Opportunity Finder fit scoring live in Research; Outreach Generator and Reply Analyzer are part of Lead Detail Smart Actions and the Revenue workspace; Supplier RFQ Assistant and the supplier comparison engine live in the Supplier workspace; the Trade Event Assistant (pre-show prioritization, post-show follow-up, summary generation) lives in the Trade Events workspace. All remain review-first and human-approved.
+
+### Problem: User asks about Pricing Intelligence or a suggested price list
+**Cause:** Catalog pricing-gap detection and a draft price-list generator.
+**Fix:** Explain Pricing Intelligence is available at `/products?mode=pricing` (compact summary) and `/growth-agent?workspace=pricing` (full recommendation set). It detects missing EXW/FOB/CIF/DDP coverage, missing MOQ, stale prices, and missing pricing-rule coverage, and can prepare a suggested price list from stored SETU Flow pricing/margin/FX data. The suggested list is a reviewable draft only — SETU Flow does not activate or share it automatically, and Guru does not claim external competitor pricing unless verified external data has been stored.
+
+### Problem: User asks about a supplier lead and Guru responds with buyer-side guidance
+**Cause:** Supplier Mode is a parallel lead journey with its own compliance, approval, and RFQ/cost-request workflow — it is not the buyer journey with different labels.
+**Fix:** Explain that supplier leads use `lead_type` to scope pipeline, compliance rules, approval state, and the commercial action (Supplier Cost Request replaces the buyer Quote CTA). Point to `/pipeline/suppliers`, the Supplier Lead Command Center tabs, Supplier Offer Comparison, and the Growth Center Supplier workspace. Never assume buyer defaults apply to a supplier record.
 
 ### Problem: User asks Guru to approve, send, waive, book, sync, or close something
 **Cause:** Those are governed commercial actions.
-**Fix:** Guru should explain the correct workspace and required role. It can draft a checklist or guide the user to the page, but it must not approve quotes, waive compliance, send buyer documents, book freight, sync finance, close orders, or mutate governed commercial truth.
+**Fix:** Guru should explain the correct workspace and required role. It can draft a checklist or guide the user to the page, but it must not approve quotes, waive compliance, send buyer documents, book freight, sync finance, close orders, or mutate governed commercial truth. This applies equally inside Growth Center — Pricing Intelligence and suggested price lists are drafts, not actions.
 
 ### Problem: Guru answer conflicts with current page behavior
 **Cause:** Docs, route metadata, or workflow rules may be stale.
-**Fix:** Prefer current route behavior and current product constraints. Update Setu Guru docs in the same fix whenever Guru behavior, routing, workflow logic, help content, telemetry, actions, or UI changes.
+**Fix:** Prefer current route behavior and current product constraints. Update Setu Guru docs in the same fix whenever Guru behavior, routing, workflow logic, help content, telemetry, actions, or UI changes. Check `sprint_issues` for the latest `Resolved` sprint before assuming a Guru capability is undocumented by design.
 
 ### Manual regression prompt for Guru knowledge
 Ask Setu Guru: "What can you do on the Orders page, and can you queue finance, book freight, send WhatsApp, or approve buyer documents for me?"
 
 Expected answer: Guru should describe Orders as the Execution Cockpit, explain queue-ready finance/freight and manual WhatsApp, and clearly say it cannot perform governed actions or mutate records.
+
+### Manual regression prompt for Growth Center knowledge
+Ask Setu Guru on `/growth-agent`: "What is Growth Center and can you send outreach or activate a suggested price list for me?"
+
+Expected answer: Guru should identify the current page as Growth Center (not fall back to Dashboard framing), describe the six workspaces (Today, Revenue, Supplier, Research, Trade Events, Pricing Intelligence) and business brief, and clearly say it cannot send outreach or activate/share a price list without human action.
 
 ---
 
@@ -137,7 +154,7 @@ Expected answer: Guru should describe Orders as the Execution Cockpit, explain q
 ## ORDER ISSUES
 
 ### Problem: User asks what the Orders Execution Cockpit is
-**Cause:** Orders changed from a simple execution shell to the Sprint 18 cockpit.
+**Cause:** Orders changed from a simple execution shell to the execution cockpit.
 **Fix:** Explain that `/orders` is the execution workspace after quote acceptance, not a Quote clone. The stages are Actual Lines -> Buyer Doc -> Packing -> Freight Queue -> Processing -> Delivery Note -> Final Invoice -> Paid & Closed.
 
 ### Problem: Order is blocked or the next best action is unclear
@@ -200,11 +217,11 @@ Expected answer: Guru should describe Orders as the Execution Cockpit, explain q
 
 ## LEAD ISSUES
 
-_Updated June 2026 — Lead rows now have inline contact CTAs (S24-200). Lead Command Center is a one-page workspace._
+_Lead rows have inline contact CTAs. Lead Command Center is a one-page workspace._
 
 ### Problem: How do I call, WhatsApp, or email a lead quickly?
 
-**Cause (Sprint 24 — S24-200):** Inline contact CTAs are now live on every lead row.
+**Cause:** Inline contact CTAs are now live on every lead row.
 **Fix:** From the lead list (`/leads`), look for the contact action buttons on each row — no need to open the full Command Center:
 - **Email icon** → opens `mailto:` with pre-filled subject "SETU Flow follow-up: [Company]"
 - **WhatsApp icon** (green) → opens `https://wa.me/[number]`; uses `whatsapp_number` field first, falls back to `phone`
@@ -236,6 +253,32 @@ From the Lead Command Center, the same three icons appear in the lead hero secti
 
 **Cause:** The old model returned the latest existing quote. The Quote Launcher is now the correct entry point.
 **Fix:** Open the Lead Command Center → Commercial card → "Continue quote →" or use the Quote Launcher for: Continue latest draft / Create new quote / Revision from sent / Clone from accepted / View history.
+
+---
+
+## SUPPLIER MODE ISSUES
+
+_Covers the supplier-side lead journey._
+
+### Problem: User asks how supplier leads differ from buyer leads
+**Cause:** Supplier and buyer leads share the same `leads` table and pipeline, but supplier leads use a strict `lead_type` scope with no silent buyer fallback anywhere in the save path, pipeline resolver, or mobile capture defaults.
+**Fix:** Explain that supplier leads have their own dedicated pipeline view (`/pipeline/suppliers`), their own compliance document requirement rules, their own approval/stage-transition model, and their own primary commercial action — a Supplier Cost Request (RFQ) instead of the buyer Quote CTA.
+
+### Problem: User can't find where to request pricing from a supplier
+**Cause:** The buyer Quote button is intentionally replaced on supplier leads.
+**Fix:** Point to the Supplier Cost Request action on the supplier Lead Detail Command Center. RFQ responses link back to the originating supplier lead automatically.
+
+### Problem: User wants to compare multiple supplier quotes/offers
+**Cause:** Supplier Offer Comparison is a dedicated panel, not a generic list view.
+**Fix:** Open the Sourcing Review / Supplier Offer Comparison panel from the supplier lead or RFQ. It is built for side-by-side comparison before selecting a source.
+
+### Problem: Supplier compliance blocker won't clear the same way a buyer one does
+**Cause:** Supplier compliance uses its own document requirement rule seed and its own readiness/approval blockers, separate from buyer compliance.
+**Fix:** Check Supplier Compliance Readiness on the supplier Lead Detail, not the buyer Compliance workspace defaults.
+
+### Problem: User wants supplier-specific performance or analytics
+**Cause:** Supplier Performance KPIs, dashboard metrics, and the supplier analytics funnel/movement model are tracked separately from buyer-side Reports.
+**Fix:** Point to the supplier-specific dashboard metrics and Reports sourcing views, and to the Supplier workspace inside Growth Center for a prioritized readiness view.
 
 ---
 
@@ -342,4 +385,4 @@ When a buyer has selected products on a shared catalog, use **Create Quote** in 
 **Cause:** Hydration or authentication state issue.
 **Fix:** Hard refresh, sign out/in, clear cache, or try another browser.
 
-_Updated: June 2026. Includes catalog sharing (price lists, secure buyer share rooms, engagement tracking, quote conversion, Setu Guru catalog assistance), Sprint 21 Setu Guru capabilities, current Orders PDF guidance, desktop navigation guidance, and document/compliance route cautions._
+_Includes catalog sharing (price lists, secure buyer share rooms, engagement tracking, quote conversion, Setu Guru catalog assistance), Setu Guru capabilities, current Orders PDF guidance, desktop navigation guidance, and document/compliance route cautions._

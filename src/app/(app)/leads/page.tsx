@@ -136,7 +136,7 @@ export default async function LeadsPage({
           <TrialBlockedNotice message={`Guided trial lead limit reached (${trialCapability?.max_leads}). Remove a test lead or convert the workspace to add more.`} />
         ) : null}
         {guidedTrialCoach ? (
-          <div className="rounded-[1.35rem] border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900 shadow-sm">
+          <div className="rounded-panel border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900 shadow-sm">
             Trade Show Trial mode: this list shows captured booth leads. You can add follow-up tasks, but quotes and orders stay preview-only until upgrade.
           </div>
         ) : null}

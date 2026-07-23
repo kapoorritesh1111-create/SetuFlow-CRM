@@ -14,7 +14,7 @@ export function KpiCard({ label, value, trendLabel, trendDirection = 'neutral', 
   const trendArrow = trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : '•';
 
   const card = (
-    <article className="group rounded-[1.15rem] border border-slate-200/70 bg-white/95 px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02] transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50/80">
+    <article className="group rounded-card border border-slate-200/70 bg-white/95 px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.02] transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50/80">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
       <div className="mt-3 flex items-start justify-between gap-3">
         <div>
@@ -34,7 +34,7 @@ export function KpiCard({ label, value, trendLabel, trendDirection = 'neutral', 
   if (!href) return card;
 
   return (
-    <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 rounded-[1.15rem]">
+    <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 rounded-card">
       {card}
     </Link>
   );

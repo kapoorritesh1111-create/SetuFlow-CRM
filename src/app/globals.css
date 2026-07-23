@@ -1,4 +1,6 @@
 /* Plus Jakarta Sans is loaded via next/font/google in layout.tsx */
+@import './design-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,7 +28,7 @@ body.drawer-open {
 }
 
 body {
-  @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-[#0F172A] dark:text-neutral-50;
+  @apply bg-surface-app text-content-primary antialiased;
   min-height: 100vh;
   overflow-anchor: none;
   background-image:
@@ -77,6 +79,16 @@ body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:nth-last-
   overflow-y: scroll !important;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+
+/* Headerless drawers (e.g. Setu Guru): the body is the dialog's ONLY child,
+   so the header-oriented first-child rule above must not freeze its height.
+   Restore the flex height constraint so the widget's internal scroll region
+   (its own overflow-y-auto messages pane) can actually scroll. */
+body.drawer-open > div[role="presentation"] > div[role="dialog"] > div:only-child {
+  flex: 1 1 auto !important;
+  height: 0 !important;
+  min-height: 0 !important;
 }
 
 /* Product nav policy: Analytics and Reports are dashboard tabs, not primary left-nav modules. */

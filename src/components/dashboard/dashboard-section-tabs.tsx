@@ -42,7 +42,7 @@ export function DashboardSectionTabs({ active }: { active: DashboardSectionTab }
 
   return (
     <div className="mb-5">
-      <nav aria-label="Dashboard workspace tabs" className="rounded-[1.6rem] border border-slate-200 bg-white/90 p-2 shadow-[0_16px_42px_rgba(15,23,42,0.07)] backdrop-blur">
+      <nav aria-label="Dashboard workspace tabs" className="rounded-panel border border-slate-200 bg-white/90 p-2 shadow-[0_16px_42px_rgba(15,23,42,0.07)] backdrop-blur">
         <div className="grid gap-2 lg:grid-cols-3">
           {DASHBOARD_SECTION_TABS.map((tab) => {
             const isActive = tab.key === active;
@@ -52,8 +52,8 @@ export function DashboardSectionTabs({ active }: { active: DashboardSectionTab }
                 href={tabHref(tab.href)}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'rounded-[1.15rem] px-4 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c7fff] focus-visible:ring-offset-2',
-                  isActive ? 'bg-[#0b2e4a] text-white shadow-[0_12px_28px_rgba(11,46,74,0.2)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950',
+                  'rounded-card px-4 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2',
+                  isActive ? 'bg-brand-700 text-white shadow-[0_12px_28px_rgba(11,46,74,0.2)]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950',
                 )}
               >
                 <span className="block text-sm font-semibold">{tab.label}</span>

@@ -736,7 +736,7 @@ export function ProductsManager({
         {workspaceMode === 'catalog' && categoryPricingSummary.length ? (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {categoryPricingSummary.map((item) => (
-              <div key={item.name} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+              <div key={item.name} className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Category pricing</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">{item.name}</p>
                 <div className="mt-3 space-y-1 text-xs text-slate-600">
@@ -749,10 +749,10 @@ export function ProductsManager({
           </div>
         ) : null}
 
-        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-soft">
+        <div className="rounded-hero border border-slate-200 bg-white p-5 shadow-soft">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
           <div className="space-y-4">
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 {workspaceMode === 'catalog' ? 'Baseline authority' : 'Product master authority'}
               </p>
@@ -891,7 +891,7 @@ export function ProductsManager({
           <div className="space-y-4">
             {selectedProduct ? (
               <>
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft">
+                <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -944,7 +944,7 @@ export function ProductsManager({
                 </div>
 
 
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft">
+                <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Audit history</p>
@@ -983,7 +983,7 @@ export function ProductsManager({
                   </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft">
+                <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Category baseline matrix</p>
@@ -1042,7 +1042,7 @@ export function ProductsManager({
                   </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft">
+                <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-soft">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Catalog pricing rows</p>
@@ -1163,7 +1163,7 @@ export function ProductsManager({
           <input type="hidden" name="net_weight_kg" value={draft.net_weight_kg} />
           <input type="hidden" name="shipment_notes" value={draft.shipment_notes} />
           <input type="hidden" name="pricing_mode_default" value={draft.pricing_mode_default} />
-          <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-3 shadow-soft">
+          <div className="rounded-hero border border-slate-200 bg-slate-50 p-3 shadow-soft">
             <WizardShell
               steps={PRODUCT_WIZARD_STEPS}
               activeStepId={activeStep}
@@ -1174,7 +1174,7 @@ export function ProductsManager({
                   title="Product basics"
                   description="Set the product identity that downstream catalog pricing depends on."
                   aside={
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+                    <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Operating rule</p>
                       <p className="mt-2 text-sm text-slate-600">
                         Product setup owns the master record. Catalog pricing rows are edited only from the catalog mode.
@@ -1236,7 +1236,7 @@ export function ProductsManager({
                   title="Catalog details"
                   description="Keep SKU and supplier details clean and consistent."
                   aside={
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+                    <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">SKU sync</p>
                       <p className="mt-2 text-sm text-slate-600">
                         SKU code mirrors SKU automatically so lists and exports stay aligned.
@@ -1334,7 +1334,7 @@ export function ProductsManager({
                   title="Review and save"
                   description="Confirm the product details before saving. Pricing rows will remain managed from the catalog side."
                   aside={
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+                    <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Ready to save</p>
                       <p className="mt-2 text-sm text-slate-600">
                         {editingProduct && !isDirty ? 'No change detected yet.' : 'Save when the master record looks right.'}
@@ -1343,7 +1343,7 @@ export function ProductsManager({
                   }
                 >
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+                    <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Identity</p>
                       <p className="mt-3 text-lg font-semibold text-slate-900">{draft.name || 'Untitled product'}</p>
                       <p className="mt-1 text-sm text-slate-600">
@@ -1351,7 +1351,7 @@ export function ProductsManager({
                       </p>
                       <p className="mt-2 text-sm text-slate-600">{draft.is_active ? 'Active record' : 'Inactive record'}</p>
                     </div>
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-soft">
+                    <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-soft">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Catalog details</p>
                       <p className="mt-3 text-sm text-slate-700">SKU: {draft.sku || '—'}</p>
                       <p className="mt-1 text-sm text-slate-700">Brand: {draft.brand_name || '—'}</p>
@@ -1553,7 +1553,7 @@ export function ProductsManager({
           }}
         >
           <input type="hidden" name="product_ids" value={distributionProductIds.join(',')} />
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-soft">
+          <div className="rounded-hero border border-slate-200 bg-white p-5 shadow-soft">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Pricing distribution</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="space-y-2">

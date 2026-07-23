@@ -84,7 +84,7 @@ export function MobileVCardShareSheet({
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950/65 px-4 py-5 backdrop-blur-sm" onClick={onClose}>
       <div className="mx-auto flex min-h-full max-w-[430px] items-center justify-center">
-        <section className="w-full overflow-hidden rounded-[2rem] border border-sky-300/40 bg-white shadow-[0_24px_90px_rgba(15,23,42,.36)] dark:border-sky-800/60 dark:bg-slate-950" onClick={(event) => event.stopPropagation()}>
+        <section className="w-full overflow-hidden rounded-hero border border-sky-300/40 bg-white shadow-[0_24px_90px_rgba(15,23,42,.36)] dark:border-sky-800/60 dark:bg-slate-950" onClick={(event) => event.stopPropagation()}>
           <div className="bg-[linear-gradient(145deg,#071827_0%,#0b2e4a_58%,#1267b5_120%)] p-7 text-white">
             <div className="flex items-start justify-between gap-4">
               <UserAvatar name={signedIn?.name} email={signedIn?.email} avatarUrl={avatarUrl} initials={initials} size="lg" className="border border-white/35 shadow-xl shadow-sky-950/40" />
@@ -98,11 +98,11 @@ export function MobileVCardShareSheet({
 
           <div className="grid gap-4 p-6">
             <div className="text-center">
-              <img src={qrImageUrl} alt="QR code for digital vCard" className="mx-auto h-36 w-36 rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-sm" />
+              <img src={qrImageUrl} alt="QR code for digital vCard" className="mx-auto h-36 w-36 rounded-card border border-slate-200 bg-white p-2 shadow-sm" />
               <p className="mt-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Scan to open card</p>
             </div>
 
-            <a href={downloadUrl} download className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#0b2e4a] px-4 text-sm font-black text-white shadow-lg shadow-sky-950/20">⬇️ Save contact</a>
+            <a href={downloadUrl} download className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-4 text-sm font-black text-white shadow-lg shadow-sky-950/20">⬇️ Save contact</a>
             <button type="button" onClick={() => copy(publicCardUrl, 'Card link copied.')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800">🔗 Copy link</button>
             <a href={`mailto:?subject=${encodeURIComponent(`${signedIn?.name ?? 'SETU Flow'} digital business card`)}&body=${encodeURIComponent(intro)}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800">✉️ Send email</a>
             <button type="button" onClick={shareNow} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 text-sm font-black text-blue-800">{shareSupported ? '📲 Share card' : '📋 Copy link'}</button>

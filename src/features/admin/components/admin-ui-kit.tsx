@@ -56,7 +56,7 @@ export function KitSectionCard({
     <section
       id={id}
       className={cn(
-        'overflow-hidden rounded-[13px] border bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+        'overflow-hidden rounded-ctl border bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
         warnBorder ? 'border-amber-300' : 'border-slate-200',
       )}
     >
@@ -77,7 +77,7 @@ export function KitSectionCard({
 
 export function KitSectionAction({ href, onClickForm, children }: { href?: string; onClickForm?: string; children: ReactNode }) {
   const className =
-    'inline-flex shrink-0 cursor-pointer items-center rounded-[7px] border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 transition hover:bg-teal-100';
+    'inline-flex shrink-0 cursor-pointer items-center rounded-lg border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-700 transition hover:bg-teal-100';
   if (href) {
     return (
       <Link href={href} className={className}>
@@ -109,7 +109,7 @@ export function KitNextStep({
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-2.5 rounded-[11px] border px-3.5 py-2.5 transition',
+        'flex items-center gap-2.5 rounded-ctl border px-3.5 py-2.5 transition',
         warn ? 'border-amber-300 bg-amber-50 hover:bg-amber-100' : 'border-teal-200 bg-teal-50 hover:bg-teal-100',
       )}
     >
@@ -147,7 +147,7 @@ export function KitOverviewCard({
     <Link
       href={href}
       className={cn(
-        'block rounded-[12px] border bg-white px-3.5 py-3 transition hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(15,23,42,0.07)]',
+        'block rounded-ctl border bg-white px-3.5 py-3 transition hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(15,23,42,0.07)]',
         warnBorder ? 'border-amber-300' : 'border-slate-200',
       )}
     >
@@ -191,7 +191,7 @@ export function KitSetupProgress({
 }) {
   const complete = doneCount >= totalCount;
   return (
-    <section className="rounded-[12px] bg-gradient-to-br from-[#13305a] to-[#1F487C] px-4 py-3 text-white">
+    <section className="rounded-ctl bg-gradient-to-br from-brand-800 to-brand-700 px-4 py-3 text-white">
       <div className="flex flex-wrap items-center gap-1.5 text-[12.5px] font-bold">
         <span>
           {complete
@@ -208,7 +208,7 @@ export function KitSetupProgress({
               const pill = (
                 <span
                   className={cn(
-                    'rounded-[7px] border px-2 py-0.5 text-[10px] font-semibold',
+                    'rounded-lg border px-2 py-0.5 text-[10px] font-semibold',
                     step.done
                       ? 'border-emerald-400/30 bg-emerald-400/20 text-emerald-200'
                       : 'border-white/10 bg-white/5 text-white/35',
@@ -234,7 +234,7 @@ export function KitSetupProgress({
 
 export function KitClientBadge({ orgName, slug, country, currency, plan = 'Managed' }: { orgName: string; slug?: string | null; country?: string | null; currency?: string | null; plan?: string }) {
   return (
-    <section className="flex items-center gap-2.5 rounded-[12px] border border-violet-200 bg-violet-50 px-3.5 py-2.5">
+    <section className="flex items-center gap-2.5 rounded-ctl border border-violet-200 bg-violet-50 px-3.5 py-2.5">
       <span aria-hidden="true" className="text-[17px]">🌱</span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-bold text-violet-700">{orgName} · {plan} workspace</p>
@@ -260,8 +260,8 @@ export function KitInternalHeader({
   stats?: Array<{ value: string; label: string }>;
 }) {
   return (
-    <section className={cn('flex items-center gap-3 rounded-[12px] bg-gradient-to-br px-4 py-3.5 text-white', gradientClass)}>
-      <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-white/10 text-lg">{icon}</span>
+    <section className={cn('flex items-center gap-3 rounded-ctl bg-gradient-to-br px-4 py-3.5 text-white', gradientClass)}>
+      <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ctl bg-white/10 text-lg">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-[13.5px] font-bold">{title}</p>
         <p className="mt-0.5 text-[10.5px] leading-[1.45] text-white/60">{description}</p>
@@ -295,7 +295,7 @@ export function KitMetricCard({
   barClass?: string;
 }) {
   return (
-    <div className="rounded-[11px] border border-slate-200 bg-white px-3.5 py-3">
+    <div className="rounded-ctl border border-slate-200 bg-white px-3.5 py-3">
       <p className={cn('text-[22px] font-bold leading-none tracking-[-0.5px]', colorClass)}>{value}</p>
       <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">{label}</p>
       {trend ? <p className={cn('mt-1 text-[10px] font-semibold', trendUp ? 'text-emerald-600' : 'text-rose-600')}>{trend}</p> : null}
@@ -318,11 +318,11 @@ export const kitTextareaClass =
   'w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-800 outline-none placeholder:font-normal placeholder:italic placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 export const kitHelpClass = 'mt-1 block text-[9px] font-medium normal-case tracking-normal text-slate-400';
 export const kitPrimaryButtonClass =
-  'inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]';
+  'inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800';
 export const kitSecondaryButtonClass =
-  'inline-flex min-h-8 items-center justify-center rounded-[9px] border border-slate-200 bg-white px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 transition hover:bg-slate-50';
+  'inline-flex min-h-8 items-center justify-center rounded-ctl border border-slate-200 bg-white px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 transition hover:bg-slate-50';
 export const kitDangerButtonClass =
-  'inline-flex min-h-8 items-center justify-center rounded-[9px] border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100';
+  'inline-flex min-h-8 items-center justify-center rounded-ctl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100';
 
 export function KitField({ label, help, children, className }: { label: string; help?: string; children: ReactNode; className?: string }) {
   return (
@@ -360,7 +360,7 @@ const roleBadgePalette: Record<string, string> = {
 export function KitRoleBadge({ role }: { role: string }) {
   const palette = roleBadgePalette[role.trim().toLowerCase()] ?? 'bg-slate-100 text-slate-500';
   return (
-    <span className={cn('inline-flex items-center rounded-[7px] px-1.5 py-0.5 text-[9px] font-bold capitalize', palette)}>
+    <span className={cn('inline-flex items-center rounded-lg px-1.5 py-0.5 text-[9px] font-bold capitalize', palette)}>
       {role}
     </span>
   );
@@ -427,7 +427,7 @@ export function KitCompatSectionCard({
 }) {
   void description;
   return (
-    <section className={cn('overflow-visible rounded-[13px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]', className)}>
+    <section className={cn('overflow-visible rounded-ctl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]', className)}>
       {title || eyebrow || actions ? (
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
           <div className="min-w-0 flex-1">

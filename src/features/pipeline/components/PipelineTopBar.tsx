@@ -22,7 +22,7 @@ const VIEW_OPTIONS: Array<{ id: '' | LeadJourney; label: string }> = [
 
 export function PipelineTopBar({ leadTypeFilter, onLeadTypeChange, search, onSearchChange, filtersOpen, onToggleFilters, activeFilterCount }: PipelineTopBarProps) {
   return (
-    <section className="rounded-[2rem] border border-white/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,252,0.96))] px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.07)] ring-1 ring-slate-950/[0.03] sm:px-6">
+    <section className="rounded-hero border border-white/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,252,0.96))] px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.07)] ring-1 ring-slate-950/[0.03] sm:px-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div>
@@ -37,7 +37,7 @@ export function PipelineTopBar({ leadTypeFilter, onLeadTypeChange, search, onSea
                   type="button"
                   onClick={() => onLeadTypeChange(option.id)}
                   className={cn(
-                    'min-h-11 rounded-[1rem] px-4 text-sm font-semibold transition sm:px-6',
+                    'min-h-11 rounded-card px-4 text-sm font-semibold transition sm:px-6',
                     active
                       ? 'bg-slate-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)]'
                       : 'text-slate-700 hover:bg-white hover:text-slate-900',

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setu Flow — Packaging Workspace Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-900:#0F2338; --brand-700:#1F487C; --brand-500:#2E5C96; --brand-100:#E7EEF6; --brand-50:#F4F7FB;
+    --accent-600:#279491; --accent-500:#359F91; --accent-100:#E3F3F1; --accent-50:#F0FAF8;
+    --success-bg:#DCFCE7; --success-fg:#166534; --success-border:#BBF0CE;
+    --warning-bg:#FEF3C7; --warning-fg:#92400E; --warning-border:#FCE3A8;
+    --info-bg:#DBEAFE; --info-fg:#1D4ED8; --info-border:#BFDBFE;
+    --slate-900:#0F172A; --slate-700:#334155; --slate-500:#64748B; --slate-300:#CBD5E1; --slate-200:#E2E8F0; --slate-100:#F1F5F9; --slate-50:#F8FAFC;
+    --surface-app:#F6F8FC; --line:#E4EAF2; --white:#FFFFFF;
+    --r-ctl:12px; --r-card:16px; --r-panel:24px; --r-hero:28px;
+    --shadow-card:0 1px 2px rgba(15,35,56,.06),0 2px 8px rgba(15,35,56,.05);
+    --shadow-panel:0 4px 16px rgba(15,35,56,.06);
+    --shadow-hero:0 10px 32px rgba(15,35,56,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--surface-app); color:var(--slate-900); line-height:1.6; font-size:15.5px;
+  }
+  a{color:var(--brand-700); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  h1,h2,h3,h4{font-family:inherit; margin:0 0 8px; color:var(--brand-900); letter-spacing:-0.01em;}
+  h1{font-size:32px; font-weight:800;}
+  h2{font-size:23px; font-weight:750;}
+  h3{font-size:17px; font-weight:700;}
+  p{margin:0 0 10px;}
+  code{background:var(--slate-100); padding:1px 6px; border-radius:6px; font-size:.9em; color:var(--brand-700); font-family:ui-monospace,monospace;}
+  .eyebrow{text-transform:uppercase; letter-spacing:.14em; font-size:11px; font-weight:800; color:var(--accent-600); margin-bottom:8px;}
+
+  /* ===== Shell ===== */
+  .shell{display:grid; grid-template-columns:264px 1fr; min-height:100vh;}
+  .sidenav{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    background:var(--brand-900); color:#CBDAEC; padding:24px 16px 40px;
+  }
+  .brandmark{display:flex; align-items:center; gap:10px; margin-bottom:6px; padding:0 6px;}
+  .brandmark .mark{
+    width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--accent-500),var(--brand-500));
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 10px rgba(0,0,0,.25);
+  }
+  .brandmark .mark svg{width:19px; height:19px;}
+  .brandmark .word{color:#fff; font-weight:800; font-size:17px; letter-spacing:-0.01em;}
+  .brandmark .sub{font-size:10px; color:#7C93AF; text-transform:uppercase; letter-spacing:.14em; font-weight:700; padding-left:6px; margin:2px 0 22px;}
+
+  .sidenav nav a{
+    display:flex; align-items:center; gap:9px; color:#B7C6DA; font-size:13.5px; font-weight:650;
+    padding:9px 10px; border-radius:10px; margin-bottom:2px;
+  }
+  .sidenav nav a .ic{width:16px; text-align:center; opacity:.85;}
+  .sidenav nav a:hover{background:rgba(255,255,255,.07); color:#fff; text-decoration:none;}
+  .sidenav nav .section-label{
+    text-transform:uppercase; font-size:10px; letter-spacing:.14em; color:#5E7691; font-weight:800;
+    margin:20px 4px 6px;
+  }
+  .sidenav nav .section-label:first-of-type{margin-top:6px;}
+
+  .main{min-width:0;}
+  .content{padding:44px 48px 100px; max-width:1080px;}
+  section.block{margin-bottom:60px; scroll-margin-top:24px;}
+
+  /* ===== Hero ===== */
+  .hero{
+    background:linear-gradient(135deg,var(--brand-900) 0%,var(--brand-700) 60%,var(--accent-600) 150%);
+    border-radius:var(--r-hero); color:#fff; padding:44px 46px; box-shadow:var(--shadow-hero); position:relative; overflow:hidden;
+  }
+  .hero::after{content:''; position:absolute; right:-60px; top:-60px; width:260px; height:260px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.10),transparent 70%);}
+  .hero .eyebrow{color:#8FE0D6;}
+  .hero h1{color:#fff; font-size:36px; max-width:640px;}
+  .hero p{color:#CBDAEC; max-width:560px; font-size:15.5px;}
+  .hero .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px;}
+  .hero .chip{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#fff; font-size:12.5px; font-weight:650; padding:6px 13px; border-radius:99px;}
+
+  /* ===== Cards ===== */
+  .panel{background:var(--white); border:1px solid var(--line); border-radius:var(--r-panel); box-shadow:var(--shadow-panel); padding:26px;}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:var(--r-card); box-shadow:var(--shadow-card); padding:18px;}
+  .grid{display:grid; gap:14px;}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:820px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+  /* ===== Role header cards ===== */
+  .role-hero{
+    display:flex; align-items:center; gap:16px; padding:20px 24px; border-radius:var(--r-panel);
+    border:1px solid var(--line); margin-bottom:20px;
+  }
+  .role-hero .ic{
+    width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+    font-size:24px; flex-shrink:0; color:#fff;
+  }
+  .role-hero h2{margin:0;}
+  .role-hero p{margin:2px 0 0; color:var(--slate-500); font-size:14px;}
+
+  .role-sales .ic{background:linear-gradient(135deg,#279491,#1F487C);}
+  .role-design .ic{background:linear-gradient(135deg,#A855F7,#6D28D9);}
+  .role-ops .ic{background:linear-gradient(135deg,#F59E0B,#B45309);}
+  .role-ordering .ic{background:linear-gradient(135deg,#3B82F6,#1D4ED8);}
+  .role-admin .ic{background:linear-gradient(135deg,#0F2338,#1F487C);}
+
+  /* ===== Steps ===== */
+  .steps{counter-reset:stepnum; margin:0; padding:0; list-style:none;}
+  .steps > li{
+    counter-increment:stepnum; position:relative; padding:14px 18px 14px 54px; margin-bottom:10px;
+    background:var(--brand-50); border:1px solid var(--brand-100); border-radius:var(--r-card);
+  }
+  .steps > li::before{
+    content:counter(stepnum); position:absolute; left:16px; top:14px; width:26px; height:26px; border-radius:9px;
+    background:var(--brand-700); color:#fff; font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:center;
+  }
+  .steps > li b{color:var(--brand-900);}
+  .steps > li .meta{display:block; margin-top:4px; font-size:13px; color:var(--slate-500);}
+
+  /* ===== Field reference tables (for pages without a captured screenshot) ===== */
+  .field-mock{border:1px dashed var(--slate-300); border-radius:var(--r-card); padding:14px 16px; background:var(--slate-50);}
+  .field-mock .fm-title{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--slate-500); margin-bottom:8px;}
+  .field-mock table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  .field-mock td{padding:5px 0; vertical-align:top; border-bottom:1px solid var(--slate-200);}
+  .field-mock tr:last-child td{border-bottom:none;}
+  .field-mock td:first-child{font-weight:700; color:var(--brand-700); width:38%; white-space:nowrap;}
+
+  /* ===== Screenshots / lightbox ===== */
+  .shot{margin:14px 0; cursor:zoom-in; border-radius:var(--r-card); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-card);}
+  .shot img{display:block; width:100%; height:auto;}
+  .shot-cap{font-size:12px; color:var(--slate-500); margin-top:6px; font-style:italic;}
+  #lightbox{position:fixed; inset:0; background:rgba(10,17,30,.88); display:none; align-items:center; justify-content:center; z-index:999; padding:40px; cursor:zoom-out;}
+  #lightbox.open{display:flex;}
+  #lightbox img{max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.4);}
+
+  /* ===== Callouts ===== */
+  .callout{border-radius:var(--r-card); padding:14px 18px; margin:14px 0; border:1px solid; font-size:14px;}
+  .callout.tip{background:var(--accent-50); border-color:#BFE7E0; }
+  .callout.tip b{color:var(--accent-600);}
+  .callout.info{background:var(--info-bg); border-color:var(--info-border);}
+  .callout.info b{color:var(--info-fg);}
+  .callout.warn{background:var(--warning-bg); border-color:var(--warning-border);}
+  .callout.warn b{color:var(--warning-fg);}
+
+  /* ===== Checklist ===== */
+  ul.checklist{list-style:none; margin:0; padding:0;}
+  ul.checklist li{display:flex; gap:10px; padding:8px 0; border-bottom:1px dashed var(--slate-200); font-size:14.5px;}
+  ul.checklist li:last-child{border-bottom:none;}
+  ul.checklist input{margin-top:3px; width:16px; height:16px; flex-shrink:0; accent-color:var(--accent-600);}
+
+  /* ===== Diagram (catalog relationship) ===== */
+  .flow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:18px 0;}
+  .flow .node{background:var(--white); border:1.5px solid var(--brand-100); border-radius:var(--r-card); padding:14px 18px; min-width:150px; text-align:center; box-shadow:var(--shadow-card);}
+  .flow .node .t{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--accent-600); margin-bottom:2px;}
+  .flow .node .n{font-weight:750; color:var(--brand-900); font-size:14.5px;}
+  .flow .arrow{font-size:20px; color:var(--slate-300);}
+
+  /* ===== Table ===== */
+  table.ref{width:100%; border-collapse:collapse; font-size:14px; background:#fff; border-radius:var(--r-card); overflow:hidden; box-shadow:var(--shadow-card);}
+  table.ref th{background:var(--brand-900); color:#fff; text-align:left; padding:10px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.05em;}
+  table.ref td{padding:10px 14px; border-bottom:1px solid var(--slate-100);}
+  table.ref tr:last-child td{border-bottom:none;}
+  table.ref tr:hover{background:var(--slate-50);}
+
+  .pill{display:inline-block; font-size:11px; font-weight:800; padding:3px 10px; border-radius:99px; text-transform:uppercase; letter-spacing:.03em;}
+  .pill-role{background:var(--brand-100); color:var(--brand-700);}
+
+  footer{padding:34px 48px 60px; color:var(--slate-500); font-size:12.5px; border-top:1px solid var(--line); display:flex; align-items:center; gap:10px;}
+  footer .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--accent-500),var(--brand-500));display:flex;align-items:center;justify-content:center;}
+  footer .mark svg{width:12px;height:12px;}
+
+  @media print{
+    .sidenav{display:none;}
+    .shell{display:block;}
+    section.block{page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div id="lightbox" onclick="this.classList.remove('open')"><img id="lightbox-img" src="" alt=""></div>
+
+<div class="shell">
+  <aside class="sidenav">
+    <div class="brandmark">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 16c3-6 6-9 8-9s5 3 8 9M4 16h16" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <span class="word">Setu Flow</span>
+    </div>
+    <div class="sub">Packaging Workspace Guide</div>
+    <nav>
+      <div class="section-label">Getting Started</div>
+      <a href="#welcome"><span class="ic">◆</span> Welcome to Setu Flow</a>
+      <a href="#login"><span class="ic">▸</span> Logging in &amp; the basics</a>
+
+      <div class="section-label">Daily Workflow by Role</div>
+      <a href="#role-sales"><span class="ic">◆</span> Sales</a>
+      <a href="#role-design"><span class="ic">◆</span> Design</a>
+      <a href="#role-ops"><span class="ic">◆</span> Operations / Dispatch</a>
+      <a href="#role-ordering"><span class="ic">◆</span> Ordering</a>
+      <a href="#role-admin"><span class="ic">◆</span> Owner / Admin</a>
+
+      <div class="section-label">Catalog Management</div>
+      <a href="#catalog-overview"><span class="ic">▸</span> How catalog pricing works</a>
+      <a href="#catalog-families"><span class="ic">▸</span> Service families</a>
+      <a href="#catalog-templates"><span class="ic">▸</span> Pricing templates</a>
+      <a href="#catalog-reflib"><span class="ic">▸</span> Reference library</a>
+
+      <div class="section-label">Reference</div>
+      <a href="#faq"><span class="ic">?</span> FAQ &amp; known issues</a>
+      <a href="#glossary"><span class="ic">≡</span> Glossary</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="content">
+
+      <!-- ============ WELCOME ============ -->
+      <section class="block" id="welcome">
+        <div class="hero">
+          <div class="eyebrow">Setu Flow · Packaging Workspace</div>
+          <h1>Everything you need to run your day in Setu Flow.</h1>
+          <p>This guide walks through the packaging workspace exactly as your team will use it — captured, qualified, quoted, produced, and dispatched, all in one place. Find your role in the left-hand menu, or jump to Catalog Management if you set up pricing and materials.</p>
+          <div class="chips">
+            <span class="chip">Sales</span>
+            <span class="chip">Design</span>
+            <span class="chip">Operations / Dispatch</span>
+            <span class="chip">Ordering</span>
+            <span class="chip">Owner / Admin</span>
+          </div>
+          <div class="chips" style="margin-top:10px;">
+            <span class="chip" style="background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.34);">✦ New — Web width capture for flexo jobs</span>
+            <span class="chip" style="background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.34);">✦ New — Material &amp; finish swatches</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ LOGIN & BASICS ============ -->
+      <section class="block" id="login">
+        <div class="eyebrow">Getting Started</div>
+        <h2>Logging in &amp; the basics</h2>
+        <p style="color:var(--slate-700); max-width:680px;">Everyone shares the same workspace and the same global header, no matter their role. Get comfortable with these first — they show up on every page.</p>
+
+        <div class="grid grid-2" style="margin-top:16px;">
+          <div class="card">
+            <h3>The top bar</h3>
+            <p style="margin-bottom:6px;">Along the top of every page:</p>
+            <ul style="margin:0; padding-left:18px; font-size:14px; color:var(--slate-700);">
+              <li><b>Growth Center</b> — where Setu Guru surfaces opportunities worth a second look.</li>
+              <li><b>All / Buyer / Supplier</b> — filters the whole workspace to one side of your business.</li>
+              <li><b>Share vCard</b> — send your digital contact card to a buyer or supplier.</li>
+              <li><b>+ Quick Lead</b> — the fastest way to capture a new contact, from anywhere.</li>
+              <li>The bell icon is your notifications; your name/avatar opens account settings.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>The sidebar</h3>
+            <p style="margin-bottom:6px;">Your left-hand menu. Not every item may be visible to you — it adjusts to your role:</p>
+            <ul style="margin:0; padding-left:18px; font-size:14px; color:var(--slate-700);">
+              <li><b>Dash, Capture, Leads, Pipeline, Quotes</b> — the sales pipeline.</li>
+              <li><b>Send, Orders, Tasks, Events, Docs</b> — communication and execution.</li>
+              <li><b>Design, Dispatch</b> — production.</li>
+              <li><b>Catalog</b> — what you sell.</li>
+              <li><b>Admin</b> — workspace setup (owner/admin only).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout tip"><b>Tip —</b> The teal robot icon in the bottom-left corner is <b>Setu Guru</b>, your in-app assistant. It can explain a page, suggest a next step, or draft a follow-up message — it never takes an action on your behalf without you clicking to confirm.</div>
+      </section>
+
+      <!-- =====================================================
+           ROLE: SALES
+      ====================================================== -->
+      <section class="block" id="role-sales">
+        <div class="eyebrow">Daily Workflow by Role</div>
+        <div class="role-hero role-sales">
+          <div class="ic">◆</div>
+          <div><h2>Sales</h2><p>Capture the lead, qualify it, quote it, send it, follow it through to acceptance.</p></div>
+        </div>
+
+        <h3>Your day, start to finish</h3>
+        <ol class="steps">
+          <li><b>Start at Home.</b> Check <b>Follow-ups Due</b> and the <b>Needs Attention</b> panel — this is your priority list for the day, ranked by what's most urgent.<span class="meta">Sidebar → Dash</span></li>
+          <li><b>Capture every new inquiry immediately</b> with Quick Lead, right from the header — don't let a lead wait until you're "at your desk properly."<span class="meta">Header → + Quick Lead</span></li>
+          <li><b>Qualify the lead</b> — note the market, the categories they're interested in, and anything from the conversation worth remembering, on the lead's own page.<span class="meta">Open the lead → Qualification &amp; Mapping</span></li>
+          <li><b>Build the quote</b> using the Catalog — pick the packaging family, then configure size, material, finish, and quantity for this specific buyer.<span class="meta">Catalog → pick a family → Create Quote Line</span></li>
+          <li><b>Review and send</b> — check the totals, terms, and branding on the quote before it goes out, then send for approval or straight to the buyer depending on your workspace's rules.</li>
+          <li><b>Track it on Quote Lifecycle</b> — this is your follow-up queue for everything that's out with a buyer: sent, accepted, needs revision, or going cold.<span class="meta">Sidebar → Quotes</span></li>
+        </ol>
+
+        <h3 style="margin-top:26px;">Capturing a lead with Quick Lead</h3>
+        <p>Click <b>+ Quick Lead</b> from the header, anywhere in the workspace. You can scan a business card or document, or just type the details in.</p>
+        <div class="shot" onclick="openLightbox('evidence/00-reference-04-quick-add-lead.png')">
+          <img src="evidence/00-reference-04-quick-add-lead.png" alt="Quick Add Lead drawer">
+        </div>
+        <div class="shot-cap">The Quick Add Lead drawer — Smart Scan at the top, then Buyer/Supplier, contact details, source, and what they're interested in.</div>
+        <div class="field-mock">
+          <div class="fm-title">Only two fields are required</div>
+          <table>
+            <tr><td>Company name *</td><td>The buyer's company. Everything else can be filled in later.</td></tr>
+            <tr><td>Country *</td><td>Used for market reporting and routing.</td></tr>
+            <tr><td>Lead source / Event label</td><td>Where this came from — trade show, referral, website enquiry, etc. Worth filling in; it powers the source-performance reporting your admin sees.</td></tr>
+            <tr><td>Trade note</td><td>Anything from the conversation. This carries over automatically into the lead's Qualification Notes, so you don't have to type it twice.</td></tr>
+          </table>
+        </div>
+
+        <h3 style="margin-top:26px;">Working a lead</h3>
+        <div class="shot" onclick="openLightbox('evidence/00-reference-07-lead-detail.png')">
+          <img src="evidence/00-reference-07-lead-detail.png" alt="Lead Detail page">
+        </div>
+        <div class="shot-cap">A lead's own page — everything about this buyer in one place.</div>
+        <ul style="padding-left:18px; font-size:14.5px; color:var(--slate-700);">
+          <li><b>Lifecycle stepper</b> at the top shows where this buyer is: New Lead → Qualified → Contacted → Samples Sent → Negotiation → Won/Lost.</li>
+          <li><b>Readiness Score</b> is Setu Guru's read on how quote-ready this lead is.</li>
+          <li><b>Next Touchpoint</b> lets you schedule a follow-up and send it by WhatsApp or email right from the page.</li>
+          <li><b>Qualification &amp; Mapping</b> is where you record which packaging categories and markets this buyer cares about.</li>
+        </ul>
+        <div class="callout warn"><b>Known issue —</b> Category selection in Qualification &amp; Mapping isn't reliably saving right now, which can block creating a new quote from a brand-new lead. If "+ New Quote" doesn't open the builder, that's why — flag it to your admin rather than re-trying repeatedly. A fix is in progress.</div>
+
+        <h3 style="margin-top:26px;">Finding a lead again</h3>
+        <p>The <b>Leads</b> page (Follow-up view) is your daily worklist, grouped into Critical, Due Today, and Active/Upcoming, with search and filters across market, product, stage, and owner. For opening a specific lead, the most reliable path today is via <b>Pipeline</b> in the sidebar — it opens a board view; click any card to go straight to that lead's page.</p>
+
+        <h3 style="margin-top:26px;">Quoting from the Catalog</h3>
+        <p>Open <b>Catalog</b> from the sidebar. Nothing in the catalog is a fixed size or a fixed price — every family is a starting point you configure per order:</p>
+        <ol class="steps">
+          <li><b>Choose the family</b> — Digital Labels, Stand Up Pouches, Shrink Sleeves, and so on.</li>
+          <li><b>Enter the buyer's size and options</b> at quote time — dimensions, material, finish, print colors, quantity.</li>
+          <li><b>Let the system calculate the price</b> — every quote runs the same pricing rules, so the number your buyer sees always matches what Setu Flow actually charges.</li>
+        </ol>
+        <div class="callout tip"><b>Tip —</b> Not sure which family fits a buyer's request? Paste their inquiry into the box at the top of the Catalog page and let Setu Guru suggest a match.</div>
+        <div class="callout info"><b>Flexo jobs —</b> if the family prints flexo, you'll also be asked for <b>repeat length</b> and <b>web width</b> — both come from the press this job will run on, and both are checked against the template's configured range before the quote can price. If either is missing or out of range, the quote will tell you exactly what's wrong before you send it.</div>
+
+        <h3 style="margin-top:26px;">Following up on sent quotes</h3>
+        <div class="shot" onclick="openLightbox('evidence/00-reference-09-quote-lifecycle.png')">
+          <img src="evidence/00-reference-09-quote-lifecycle.png" alt="Quote Lifecycle page">
+        </div>
+        <div class="shot-cap">Quote Lifecycle — every quote grouped by what it needs next: Follow-up, Revisions, Order Handoff, Cleanup, Expiring, or Archive.</div>
+        <p>Click any customer in the list to see their full quote story — proposed, accepted, and order value, the recommended next action, and one-click buttons for Mark Accepted, Mark Rejected, Revision Requested, or Expire Quote. Once a buyer accepts, this is also where you hand the job to production.</p>
+      </section>
+
+      <!-- =====================================================
+           ROLE: DESIGN
+      ====================================================== -->
+      <section class="block" id="role-design">
+        <div class="eyebrow">Daily Workflow by Role</div>
+        <div class="role-hero role-design">
+          <div class="ic">◆</div>
+          <div><h2>Design</h2><p>Get every accepted job's artwork ready before it can move into production.</p></div>
+        </div>
+
+        <p>When you log in, you land on the <b>Design Queue</b> automatically — every packaging line, across every active quote in the workspace, that still needs artwork attention. It's not filtered to "my leads"; Design supports every account manager's jobs.</p>
+
+        <ol class="steps">
+          <li><b>Scan the queue</b> — jobs flagged <span class="pill" style="background:var(--warning-bg); color:var(--warning-fg);">Needs pre-press</span> are listed before jobs still <span class="pill" style="background:var(--info-bg); color:var(--info-fg);">awaiting artwork</span> from the buyer.</li>
+          <li><b>Open the quote</b> for full context on the spec — size, material, finish, print colors.</li>
+          <li><b>Upload or review artwork proofs</b> right from the queue row — no need to leave the page.</li>
+          <li><b>Once artwork is print-ready</b>, the job drops off your queue automatically and becomes visible to Operations on the Dispatch Board.</li>
+        </ol>
+
+        <div class="field-mock">
+          <div class="fm-title">What each job row shows</div>
+          <table>
+            <tr><td>Company &amp; spec</td><td>Who it's for and a one-line summary of the job.</td></tr>
+            <tr><td>Quantity &amp; unit price</td><td>So you know the scale of the job at a glance.</td></tr>
+            <tr><td>Artwork status</td><td>Needs pre-press, or not provided yet.</td></tr>
+            <tr><td>Open quote →</td><td>Jumps to the full quote for complete specs.</td></tr>
+          </table>
+        </div>
+
+        <div class="callout tip"><b>Tip —</b> Proof versions are numbered automatically every time you upload — buyers approving externally always see the latest one, and you can always see the full version history.</div>
+      </section>
+
+      <!-- =====================================================
+           ROLE: OPERATIONS / DISPATCH
+      ====================================================== -->
+      <section class="block" id="role-ops">
+        <div class="eyebrow">Daily Workflow by Role</div>
+        <div class="role-hero role-ops">
+          <div class="ic">◆</div>
+          <div><h2>Operations / Dispatch</h2><p>Move every accepted job through the shop floor, stage by stage, until it ships.</p></div>
+        </div>
+
+        <p>You land on the <b>Dispatch Board</b> automatically — every packaging job on an accepted quote, tracked through a fixed production flow:</p>
+
+        <div class="flow">
+          <div class="node"><div class="t">1</div><div class="n">Pre-Press</div></div><div class="arrow">→</div>
+          <div class="node"><div class="t">2</div><div class="n">Printing</div></div><div class="arrow">→</div>
+          <div class="node"><div class="t">3</div><div class="n">Lamination /<br>Converting</div></div><div class="arrow">→</div>
+          <div class="node"><div class="t">4</div><div class="n">Slitting /<br>Pouching</div></div><div class="arrow">→</div>
+          <div class="node"><div class="t">5</div><div class="n">QC</div></div><div class="arrow">→</div>
+          <div class="node"><div class="t">6</div><div class="n">Packed</div></div><div class="arrow">→</div>
+          <div class="node"><div class="t">7</div><div class="n">Dispatched</div></div>
+        </div>
+
+        <ol class="steps">
+          <li><b>Check the stage funnel</b> at the top of the board to see how many jobs are sitting at each stage right now — this is your bottleneck check for the day.</li>
+          <li><b>Move a job forward</b> by clicking <b>Advance to [next stage] →</b> on its row as work completes. A brand-new accepted job shows "Not started" until you click through the first time.</li>
+          <li><b>Correct a mistake</b> with <b>Set stage…</b>, which lets you jump directly to any stage — useful if a job needs to go back a step, or was updated out of order.</li>
+          <li><b>Pull the Job Ticket</b> for shop-floor use — production specs only, no pricing, ready to print.</li>
+        </ol>
+
+        <div class="callout info"><b>Who can move a stage forward —</b> Only Design, Operations, and workspace owners/admins can advance or correct a stage. Everyone else — Sales, Ordering, and other roles — sees the same board, live, but read-only.</div>
+
+        <h3 style="margin-top:26px;">Reading a job's status</h3>
+        <div class="field-mock">
+          <div class="fm-title">Stage badge, on every row</div>
+          <table>
+            <tr><td>Not started</td><td>Accepted, but hasn't entered production tracking yet.</td></tr>
+            <tr><td>Pre-Press / Printing</td><td>Early production — shown with a day count since it entered that stage.</td></tr>
+            <tr><td>QC / Packed</td><td>Finishing up.</td></tr>
+            <tr><td>Dispatched</td><td>Done — this job has shipped.</td></tr>
+          </table>
+        </div>
+        <div class="callout tip"><b>Tip —</b> The day count next to a stage badge (e.g. "Printing · 3d") tells you how long a job has been sitting there. If something's been in one stage far longer than usual, that's worth a walk over to the floor.</div>
+      </section>
+
+      <!-- =====================================================
+           ROLE: ORDERING
+      ====================================================== -->
+      <section class="block" id="role-ordering">
+        <div class="eyebrow">Daily Workflow by Role</div>
+        <div class="role-hero role-ordering">
+          <div class="ic">◆</div>
+          <div><h2>Ordering</h2><p>Take an accepted quote and turn it into a tracked order.</p></div>
+        </div>
+
+        <ol class="steps">
+          <li><b>Find accepted quotes</b> ready to move — on the Quote Lifecycle page, the "Order Handoff" group lists every accepted quote whose revenue is ready to become a real order.</li>
+          <li><b>Create or open the order handoff</b> — this carries the quote's customer details, packaging specs, and commercial terms across automatically, so nothing gets re-typed or recalculated by hand.</li>
+          <li><b>Work the order</b> in the Orders workspace — the quote itself locks once it's handed off, so Orders owns execution from that point.</li>
+          <li><b>Track status changes</b> through to completion, with full traceability back to the original quote at every step.</li>
+        </ol>
+
+        <div class="callout tip"><b>Tip —</b> Once a quote is accepted and locked, its numbers can't drift — the order always reflects exactly what the buyer agreed to. If something genuinely needs to change, that happens through a new quote revision, not by editing the order directly.</div>
+      </section>
+
+      <!-- =====================================================
+           ROLE: OWNER / ADMIN
+      ====================================================== -->
+      <section class="block" id="role-admin">
+        <div class="eyebrow">Daily Workflow by Role</div>
+        <div class="role-hero role-admin">
+          <div class="ic">◆</div>
+          <div><h2>Owner / Admin</h2><p>Keep pricing, catalog, and the team's access accurate — and check the numbers.</p></div>
+        </div>
+
+        <p>Everything Sales, Design, Operations, and Ordering rely on day-to-day is configured under <b>Admin</b> in the sidebar. Your daily/weekly rhythm:</p>
+        <ol class="steps">
+          <li><b>Check Packaging Analytics</b> for a read on production throughput and revenue mix — jobs in production, recent dispatches, average cycle time, and which families are driving revenue.</li>
+          <li><b>Review the Dispatch Board</b> stage funnel for any bottleneck building up.</li>
+          <li><b>Keep the catalog current</b> — new materials, finishes, or pricing changes go through Reference Library and Pricing Templates (see Catalog Management below).</li>
+          <li><b>Manage the team</b> under Members &amp; Roles — who's Sales, Design, Operations, or Ordering determines what they see and can act on.</li>
+        </ol>
+
+        <h3 style="margin-top:26px;">Packaging Analytics, at a glance</h3>
+        <div class="grid grid-4">
+          <div class="card"><p style="margin:0; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--slate-500);">Jobs in production</p><p style="margin:4px 0 0; font-size:13px; color:var(--slate-700);">Everything accepted, not yet dispatched.</p></div>
+          <div class="card"><p style="margin:0; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--slate-500);">Dispatched, 30 days</p><p style="margin:4px 0 0; font-size:13px; color:var(--slate-700);">Recent completed throughput.</p></div>
+          <div class="card"><p style="margin:0; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--slate-500);">Avg. cycle time</p><p style="margin:4px 0 0; font-size:13px; color:var(--slate-700);">Pre-press through dispatch.</p></div>
+          <div class="card"><p style="margin:0; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--slate-500);">Value in production</p><p style="margin:4px 0 0; font-size:13px; color:var(--slate-700);">What's currently on the floor.</p></div>
+        </div>
+        <p style="margin-top:12px;">Below the KPIs: a stage funnel chart, revenue by service family, the digital-vs-flexo split, and flexo cylinder reuse counts (how often a repeat job reused an existing cylinder vs. needed a fresh one).</p>
+        <p style="font-size:12px; color:var(--slate-500);">Sidebar → Admin → Packaging Analytics</p>
+      </section>
+
+      <!-- =====================================================
+           CATALOG MANAGEMENT
+      ====================================================== -->
+      <section class="block" id="catalog-overview">
+        <div class="eyebrow">Catalog Management</div>
+        <h2>How catalog pricing works</h2>
+        <p style="max-width:700px; color:var(--slate-700);">Three pieces work together, and understanding how they connect makes everything else in this section click into place.</p>
+
+        <div class="flow" style="margin-top:20px;">
+          <div class="node"><div class="t">Buyer-facing</div><div class="n">Service Family</div></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="t">Pricing rules</div><div class="n">Pricing Template</div></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="t">Controlled vocabulary</div><div class="n">Reference Library</div></div>
+        </div>
+
+        <div class="grid grid-3" style="margin-top:8px;">
+          <div class="card">
+            <h3 style="font-size:15px;">Service Family</h3>
+            <p style="font-size:13.5px; margin:0;">What a buyer sees and picks in the Catalog — "Stand Up Pouches," "Digital Labels," and so on. Purely descriptive; holds no pricing itself.</p>
+          </div>
+          <div class="card">
+            <h3 style="font-size:15px;">Pricing Template</h3>
+            <p style="font-size:13.5px; margin:0;">The actual rules — dimension ranges, material rates, print multipliers, finishes, MOQ tiers, setup charges, rush options — that calculate a real price the moment someone builds a quote.</p>
+          </div>
+          <div class="card">
+            <h3 style="font-size:15px;">Reference Library</h3>
+            <p style="font-size:13.5px; margin:0;">Your organization's own list of materials, finishes, and service items — so a template author picks from a consistent list instead of retyping "BOPP White" slightly differently every time.</p>
+          </div>
+        </div>
+
+        <div class="callout tip"><b>Rule of thumb —</b> A family with no template behind it will show up in the Catalog but can't actually be quoted — new families always need at least one active pricing template linked before Sales can use them.</div>
+      </section>
+
+      <section class="block" id="catalog-families">
+        <div class="eyebrow">Catalog Management</div>
+        <h2>Service families</h2>
+        <p>Sidebar → Admin → Packaging Service Families.</p>
+        <ol class="steps">
+          <li><b>Click "+ New family"</b> or select an existing one to edit.</li>
+          <li><b>Fill in the basics</b> — name, URL slug, description, pricing mode (Dimensional for size-driven products like labels and pouches, Service for jobs priced per job/design like prototypes or pre-press), default unit, and default lead time.</li>
+          <li><b>Pick an icon</b> so it's recognizable in the Catalog.</li>
+          <li><b>List the quote-time inputs</b> buyers will be asked for — this is informational for the catalog page, shown as "what we'll capture at quote time"; it doesn't change pricing logic itself.</li>
+          <li><b>Save</b>, then link at least one pricing template to it (see below) — the family page will warn you if none exists yet.</li>
+        </ol>
+      </section>
+
+      <section class="block" id="catalog-templates">
+        <div class="eyebrow">Catalog Management</div>
+        <h2>Pricing templates</h2>
+        <p>Sidebar → Admin → Packaging Pricing Templates. This is where the actual price your buyers see gets defined.</p>
+        <ol class="steps">
+          <li><b>Choose the service family</b> this template belongs to, and whether it's digital or flexographic print (flexo unlocks cylinder cost rules).</li>
+          <li><b>Set the allowed dimensions</b> — width/height ranges and the area formula (flat sheet, or pouch with gusset).</li>
+          <li><b>Add materials</b> (or service items, for service-mode families) with their rate — pick from your Reference Library where possible so the name stays consistent across templates.</li>
+          <li><b>Add finishes, print-color multipliers, MOQ tiers, setup charges, and rush options</b> as needed — none are required to save, but a template with no material rates can't actually price a quote.</li>
+          <li><b>Use the live preview</b> on the right — it runs the exact same calculation the Quote Builder uses, so what you see while building the template is what a buyer's quote will show.</li>
+          <li><b>Check the health check panel</b> — Setu Guru reviews the template for gaps (like a flexo template with no cylinder tiers) before you activate it. It only ever flags issues; it never changes a rule for you.</li>
+          <li><b>Toggle "Active"</b> only once you're confident — inactive templates aren't available in the Quote Builder, which is a safe way to stage a new template before it goes live.</li>
+        </ol>
+        <div class="callout tip"><b>Tip —</b> Duplicating an existing, similar template is often faster than starting from scratch — it copies as an inactive draft so you can safely adjust it before switching it on.</div>
+      </section>
+
+      <section class="block" id="catalog-reflib">
+        <div class="eyebrow">Catalog Management</div>
+        <h2>Reference library</h2>
+        <p>Sidebar → Admin → Reference Library. Your organization's own, reusable list of materials, finishes, and service items — separate from any other organization's, and yours to shape.</p>
+        <ol class="steps">
+          <li><b>First time here?</b> Click <b>Set up starter library</b> — it loads a common starting set of materials, finishes, and service items for packaging work, which you can edit or remove freely afterward.</li>
+          <li><b>Browse by tab</b> — Materials, Finishes, and Service items are kept separate since they're used differently across dimensional vs. service-mode templates.</li>
+          <li><b>Add anything specific to your shop</b> with <b>+ Add</b> — give it a name and, for materials, a thickness; for finishes/service items, a typical pricing basis.</li>
+          <li><b>Deactivate</b> an item you no longer use rather than deleting outright — it stops appearing as a suggestion but doesn't touch any template that already used it.</li>
+        </ol>
+        <p>Once your library has entries, they show up automatically as suggestions while typing a material or finish label inside a Pricing Template — with a small bookmark button to save any new label you type directly into the library for next time.</p>
+        <div class="callout info"><b>Swatches —</b> Materials and finishes can each have a small color swatch — set it from the color picker in the add/edit form. It shows as a colored dot next to the item here, and next to a matching label while building a pricing template, so it's faster to tell similar-sounding materials apart at a glance. It's a color swatch, not a photo — there's no image upload yet.</div>
+      </section>
+
+      <!-- ============ FAQ ============ -->
+      <section class="block" id="faq">
+        <div class="eyebrow">Reference</div>
+        <h2>FAQ &amp; known issues</h2>
+
+        <div class="panel">
+          <h3>A lead's "Open" button isn't responding on the Leads page</h3>
+          <p style="margin-bottom:0;">Use <b>Pipeline</b> in the sidebar instead for now — it opens a board view of leads by stage; clicking any card takes you straight to that lead's page. A fix for the direct list-view "Open" action is in progress.</p>
+        </div>
+        <div class="panel" style="margin-top:12px;">
+          <h3>I can't get a brand-new lead to create a quote</h3>
+          <p style="margin-bottom:0;">Category selection in Qualification &amp; Mapping isn't reliably saving right now, which can block quote creation on new leads specifically ("Lead needs at least one active product interest"). This doesn't affect existing leads that already have product interest recorded. Flag it to your admin — a fix is in progress, and there's no full workaround yet within the app.</p>
+        </div>
+        <div class="panel" style="margin-top:12px;">
+          <h3>Where do I report something that looks broken?</h3>
+          <p style="margin-bottom:0;">Tell your workspace admin directly, or use the <b>Discussion</b> button available on quote and lead pages where relevant. Please don't repeatedly retry a broken action — one clear report is more useful than several attempts.</p>
+        </div>
+      </section>
+
+      <!-- ============ GLOSSARY ============ -->
+      <section class="block" id="glossary">
+        <div class="eyebrow">Reference</div>
+        <h2>Glossary</h2>
+        <table class="ref">
+          <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><b>Lead</b></td><td>A prospective buyer or supplier before there's a confirmed order.</td></tr>
+            <tr><td><b>Quote Lifecycle</b></td><td>The tracked journey of a quote from sent through accepted, rejected, or expired.</td></tr>
+            <tr><td><b>Service Family</b></td><td>A category of packaging Sales can quote — e.g. Stand Up Pouches.</td></tr>
+            <tr><td><b>Pricing Template</b></td><td>The specific set of rules that turns a buyer's size/material/quantity choices into a real price.</td></tr>
+            <tr><td><b>Reference Library</b></td><td>Your organization's reusable list of material, finish, and service-item names.</td></tr>
+            <tr><td><b>Order Handoff</b></td><td>The moment an accepted quote's execution work moves from Sales to Orders/Operations.</td></tr>
+            <tr><td><b>Production stage</b></td><td>Where a job sits on the shop floor: Pre-Press → Printing → Lamination/Converting → Slitting/Pouching → QC → Packed → Dispatched.</td></tr>
+            <tr><td><b>Web width</b></td><td>The width of material the press actually runs, for a flexo job — captured at quote time alongside repeat length, and checked against the template's configured range.</td></tr>
+            <tr><td><b>Swatch</b></td><td>A small color marker on a material or finish in the Reference Library, for telling similar items apart at a glance.</td></tr>
+            <tr><td><b>Setu Guru</b></td><td>The in-app assistant — explains pages, flags gaps, and drafts messages; never acts without your confirmation.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+
+    <footer>
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 16c3-6 6-9 8-9s5 3 8 9M4 16h16" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      Setu Flow — Packaging Workspace Guide · For internal training use.
+    </footer>
+  </div>
+</div>
+
+<script>
+  function openLightbox(src){
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+</script>
+
+</body>
+</html>

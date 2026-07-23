@@ -98,7 +98,7 @@ const LeadsFiltersPanel: React.FC<LeadsFiltersPanelProps> = ({
   }
 
   return (
-    <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
+    <div className="mt-4 rounded-panel border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Advanced filters</p>

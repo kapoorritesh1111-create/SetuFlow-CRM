@@ -406,7 +406,7 @@ export type LeadsPageData = QueryIssuePayload & {
     approval_required?: boolean | null;
     approved_at?: string | null;
     approved_by?: string | null;
-    lineItems: Pick<
+    lineItems: (Pick<
       QuoteLineItemRow,
       | 'id'
       | 'quote_id'
@@ -423,7 +423,15 @@ export type LeadsPageData = QueryIssuePayload & {
       | 'overridden_by'
       | 'overridden_at'
       | 'notes'
-    >[];
+    > & {
+      // S24-SPEN packaging columns (generated types lag schema)
+      line_type?: string | null;
+      packaging_family_id?: string | null;
+      packaging_template_id?: string | null;
+      input_snapshot_json?: any;
+      pricing_breakdown_json?: any;
+      calculation_version?: number | null;
+    })[];
   }>;
   quoteVersions: Array<{
     id: string;
@@ -681,7 +689,7 @@ export type LeadProfileData = QueryIssuePayload & {
     approval_required?: boolean | null;
     approved_at?: string | null;
     approved_by?: string | null;
-    lineItems: Pick<
+    lineItems: (Pick<
       QuoteLineItemRow,
       | 'id'
       | 'quote_id'
@@ -698,7 +706,15 @@ export type LeadProfileData = QueryIssuePayload & {
       | 'overridden_by'
       | 'overridden_at'
       | 'notes'
-    >[];
+    > & {
+      // S24-SPEN packaging columns (generated types lag schema)
+      line_type?: string | null;
+      packaging_family_id?: string | null;
+      packaging_template_id?: string | null;
+      input_snapshot_json?: any;
+      pricing_breakdown_json?: any;
+      calculation_version?: number | null;
+    })[];
   }>;
   quoteVersions: Array<{
     id: string;
@@ -2710,7 +2726,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
       ? supabase.from('rfq_line_items').select('id, rfq_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes').in('rfq_id', rfqIds)
       : Promise.resolve({ data: [], error: null }),
     quoteIds.length
-      ? supabase.from('quote_line_items').select('id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes').in('quote_id', quoteIds)
+      ? supabase.from('quote_line_items').select('id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes, line_type, packaging_family_id, packaging_template_id, input_snapshot_json, pricing_breakdown_json, calculation_version').in('quote_id', quoteIds)
       : Promise.resolve({ data: [], error: null }),
     currentVersionIds.length
       ? supabase.from('quote_version_line_items').select('id, quote_version_id, product_id, product_variant_id, moq, final_unit_price, display_currency, is_overridden, override_reason, overridden_by, overridden_at, line_notes').in('quote_version_id', currentVersionIds)

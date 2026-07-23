@@ -141,7 +141,7 @@ export default async function AdminUsersPage({
 
   const invitesPanel = (
     <div className="px-4 py-3.5">
-      <div className="mb-3 flex items-center gap-2.5 rounded-[11px] border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+      <div className="mb-3 flex items-center gap-2.5 rounded-ctl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
         <span aria-hidden="true" className="shrink-0 text-sm">📧</span>
         <p className="min-w-0">
           Provider: <strong>{emailEnv.provider || 'Mailtrap'}</strong>. From: {emailEnv.from || 'noreply@setuflowcrm.com'}. Invitations send immediately on creation.
@@ -156,21 +156,21 @@ export default async function AdminUsersPage({
         </div>
       ) : null}
 
-      <form id="invite-form" action={inviteMember} className="mb-3 grid items-end gap-2.5 rounded-[11px] border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_1.2fr_0.8fr_0.8fr_auto]">
+      <form id="invite-form" action={inviteMember} className="mb-3 grid items-end gap-2.5 rounded-ctl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_1.2fr_0.8fr_0.8fr_auto]">
         <input type="hidden" name="return_path" value="/admin/users?tab=invites" />
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Full name<input name="full_name" placeholder="Full name" aria-label="Invitee full name" className={inviteInputClass} /></label>
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Email<input type="email" name="email" required placeholder="new-user@example.com" aria-label="Invitee email" className={inviteInputClass} /></label>
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Role<select name="role_id" aria-label="Invitee role" className={inviteInputClass}><option value="">No role yet</option>{(rolesResult.data ?? []).map((role: any) => <option key={role.id} value={role.id}>{role.name}{role.organization_id ? '' : ' (global)'}</option>)}</select></label>
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Expiry<select name="expires_in_days" defaultValue="7" aria-label="Invitation expiry" className={inviteInputClass}><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></label>
-        <button type="submit" className="inline-flex min-h-9 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">Create &amp; send</button>
+        <button type="submit" className="inline-flex min-h-9 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800">Create &amp; send</button>
       </form>
 
       {!invitations.length ? (
-        <div className="rounded-[11px] border border-dashed border-slate-300 bg-slate-50 py-6 text-center">
+        <div className="rounded-ctl border border-dashed border-slate-300 bg-slate-50 py-6 text-center">
           <p className="text-xs text-slate-500">No invitations yet. Create and send an invitation above.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[11px] border border-slate-200">
+        <div className="overflow-x-auto rounded-ctl border border-slate-200">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr>
@@ -217,7 +217,7 @@ export default async function AdminUsersPage({
           const permissions = ((role.role_permissions ?? []) as Array<{ permission: string }>).map((item) => item.permission);
           const assigned = ((role.user_roles ?? []) as Array<{ id: string }>).length;
           return (
-            <div key={role.id} className="rounded-[9px] border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <div key={role.id} className="rounded-ctl border border-slate-200 bg-slate-50 px-3 py-2.5">
               <div className="flex items-center gap-2">
                 <p className="text-xs font-bold capitalize text-slate-900">{role.name}</p>
                 <KitTag tone={role.organization_id ? 'info' : 'neutral'}>{role.organization_id ? 'Org role' : 'Global'}</KitTag>

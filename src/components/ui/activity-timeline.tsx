@@ -25,7 +25,7 @@ export function ActivityTimeline({ events, emptyLabel = 'No activity yet.' }: { 
       {events.map((event) => {
         const metadataLine = formatMetadata(event);
         return (
-          <article key={event.id} className="rounded-[1.5rem] border border-white/70 bg-white/95 p-4 text-sm text-slate-600 shadow-[0_14px_35px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.03] backdrop-blur">
+          <article key={event.id} className="rounded-panel border border-white/70 bg-white/95 p-4 text-sm text-slate-600 shadow-[0_14px_35px_rgba(15,23,42,0.06)] ring-1 ring-slate-950/[0.03] backdrop-blur">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-semibold text-slate-900">{event.title}</p>

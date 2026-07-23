@@ -85,7 +85,7 @@ function NewSprintModal({ nextNumber, onClose, onCreated }: {
         </div>
         <div className="flex justify-end gap-3 border-t border-slate-200/80 px-6 py-4 dark:border-slate-700/70">
           <button onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300">Cancel</button>
-          <button onClick={handleCreate} disabled={saving} className="rounded-xl bg-[#1F487C] px-5 py-2 text-sm font-black text-white hover:bg-[#193769] disabled:opacity-50">
+          <button onClick={handleCreate} disabled={saving} className="rounded-xl bg-brand-700 px-5 py-2 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-50">
             {saving ? 'Creating…' : `Create S${nextNumber}`}
           </button>
         </div>
@@ -167,12 +167,12 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints: initialSpr
           const open = issues.filter((i) => i.sprint_number === s.sprint_number && !isClosedIssue(i.status)).length;
           const active = activeSprint === s.sprint_number;
           return (
-            <button key={s.sprint_number} type="button" onClick={() => setActiveSprint(s.sprint_number)} className={cn('rounded-2xl border px-3 py-1.5 text-sm font-black transition', active ? 'border-[#0c7fff]/40 bg-[#0c7fff] text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-[#0c7fff]/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300')}>
+            <button key={s.sprint_number} type="button" onClick={() => setActiveSprint(s.sprint_number)} className={cn('rounded-2xl border px-3 py-1.5 text-sm font-black transition', active ? 'border-brand-500/40 bg-brand-500 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-brand-500/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300')}>
               S{s.sprint_number}{open ? ` (${open})` : ' ✓'}
             </button>
           );
         })}
-        <button type="button" onClick={() => setShowNewSprint(true)} className="ml-2 flex items-center gap-1.5 rounded-2xl border border-dashed border-[#1F487C]/40 bg-[#1F487C]/05 px-3 py-1.5 text-sm font-black text-[#1F487C] transition hover:bg-[#1F487C]/10 dark:border-sky-400/30 dark:text-sky-300 dark:hover:bg-sky-400/10">
+        <button type="button" onClick={() => setShowNewSprint(true)} className="ml-2 flex items-center gap-1.5 rounded-2xl border border-dashed border-brand-700/40 bg-brand-700/05 px-3 py-1.5 text-sm font-black text-brand-700 transition hover:bg-brand-700/10 dark:border-sky-400/30 dark:text-sky-300 dark:hover:bg-sky-400/10">
           + New Sprint S{nextSprintNumber}
         </button>
       </div>
@@ -185,8 +185,8 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints: initialSpr
           ['Demo-critical', demoCritical.length, 'critical/high open', 'risk'],
           ['Backlog', backlog.length, 'candidate pool', 'clock'],
         ] as const).map(([label, value, sub, icon]) => (
-          <div key={String(label)} className="rounded-[1.5rem] border border-slate-200/80 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
-            <div className="flex items-center justify-between gap-2"><p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p><span className="grid h-9 w-9 place-items-center rounded-2xl bg-slate-100 text-[#0c7fff] dark:bg-white/[0.06] dark:text-violet-300"><SmcIcon name={icon} /></span></div>
+          <div key={String(label)} className="rounded-panel border border-slate-200/80 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/55">
+            <div className="flex items-center justify-between gap-2"><p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p><span className="grid h-9 w-9 place-items-center rounded-2xl bg-slate-100 text-brand-500 dark:bg-white/[0.06] dark:text-violet-300"><SmcIcon name={icon} /></span></div>
             <p className="mt-3 text-3xl font-black text-slate-950 dark:text-white">{value}</p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{sub}</p>
           </div>
@@ -194,18 +194,18 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints: initialSpr
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr_1fr]">
-        <section className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-950/55">
+        <section className="rounded-hero border border-slate-200/80 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-950/55">
           <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Backlog candidates</h3>
           <p className="mt-1 text-xs text-slate-400">Ready to pull into S{activeSprint}</p>
           <div className="mt-4 max-h-[520px] space-y-3 overflow-y-auto pr-1">
-            {backlog.slice(0, 12).map((issue) => <MiniIssue key={issue.id} issue={issue} action={<button onClick={() => moveToSprint(issue.id, activeSprint)} className="w-full rounded-xl bg-[#0c7fff] px-3 py-2 text-xs font-black text-white">Move to S{activeSprint}</button>} />)}
+            {backlog.slice(0, 12).map((issue) => <MiniIssue key={issue.id} issue={issue} action={<button onClick={() => moveToSprint(issue.id, activeSprint)} className="w-full rounded-xl bg-brand-500 px-3 py-2 text-xs font-black text-white">Move to S{activeSprint}</button>} />)}
             {!backlog.length ? <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400 dark:border-white/10">Backlog clear</p> : null}
           </div>
         </section>
 
-        <section className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-950/55">
+        <section className="rounded-hero border border-slate-200/80 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-950/55">
           <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Committed sprint work</h3>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-[#0c7fff] to-emerald-400" style={{ width: `${pct}%` }} /></div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-400" style={{ width: `${pct}%` }} /></div>
           <div className="mt-4 max-h-[520px] space-y-3 overflow-y-auto pr-1">
             {sprintIssues.map((issue) => <MiniIssue key={issue.id} issue={issue} action={sprints.length > 1 ? <select value={issue.sprint_number} onChange={(e) => moveToSprint(issue.id, Number(e.target.value))} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200">{sprints.map((s) => <option key={s.sprint_number} value={s.sprint_number}>Move to S{s.sprint_number}</option>)}</select> : null} />)}
             {!sprintIssues.length ? <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400 dark:border-white/10">No issues in this sprint</p> : null}
@@ -213,15 +213,15 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints: initialSpr
         </section>
 
         <section className="space-y-5">
-          <div className="rounded-[1.75rem] border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-400/20 dark:bg-amber-500/10">
+          <div className="rounded-hero border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-400/20 dark:bg-amber-500/10">
             <h3 className="text-sm font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">Demo-critical</h3>
             <div className="mt-3 space-y-2">{demoCritical.length ? demoCritical.map((issue) => <MiniIssue key={issue.id} issue={issue} />) : <p className="text-sm text-amber-700/70 dark:text-amber-200/70">No critical/high blockers in this sprint.</p>}</div>
           </div>
-          <div className="rounded-[1.75rem] border border-violet-200/80 bg-violet-50/80 p-4 dark:border-violet-400/20 dark:bg-violet-500/10">
+          <div className="rounded-hero border border-violet-200/80 bg-violet-50/80 p-4 dark:border-violet-400/20 dark:bg-violet-500/10">
             <h3 className="text-sm font-black uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">Needs proof</h3>
             <div className="mt-3 space-y-2">{needsProof.length ? needsProof.map((issue) => <MiniIssue key={issue.id} issue={issue} />) : <p className="text-sm text-violet-700/70 dark:text-violet-200/70">No obvious docs / QA / demo proof gaps detected.</p>}</div>
           </div>
-          <div className="rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-4 dark:border-emerald-400/20 dark:bg-emerald-500/10">
+          <div className="rounded-hero border border-emerald-200/80 bg-emerald-50/80 p-4 dark:border-emerald-400/20 dark:bg-emerald-500/10">
             <h3 className="text-sm font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">AI-ready queue</h3>
             <div className="mt-3 space-y-2">{aiReady.length ? aiReady.map((issue) => <MiniIssue key={issue.id} issue={issue} />) : <p className="text-sm text-emerald-700/70 dark:text-emerald-200/70">No low/medium scoped issue ready for AI pickup.</p>}</div>
           </div>
@@ -229,10 +229,10 @@ export function SprintPlanningBoard({ issues: initialIssues, sprints: initialSpr
       </div>
 
       {areaBreakdown.length > 0 ? (
-        <section className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-950/55">
+        <section className="rounded-hero border border-slate-200/80 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-950/55">
           <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Open by area — Sprint {activeSprint}</h3>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {areaBreakdown.map(([area, count]) => <div key={area} className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-white/[0.04]"><p className="truncate text-xs font-bold text-slate-700 dark:text-slate-200">{area}</p><p className="mt-1 text-xl font-black text-[#0c7fff] dark:text-violet-300">{count}</p></div>)}
+            {areaBreakdown.map(([area, count]) => <div key={area} className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-white/[0.04]"><p className="truncate text-xs font-bold text-slate-700 dark:text-slate-200">{area}</p><p className="mt-1 text-xl font-black text-brand-500 dark:text-violet-300">{count}</p></div>)}
           </div>
         </section>
       ) : null}

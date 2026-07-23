@@ -46,7 +46,7 @@ export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
             const cfg = typeConfig[item.type] ?? { icon: '•', role: 'both' as const };
             const chip = roleChip[item.leadType ?? cfg.role];
             return (
-              <div key={item.id} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200/70 bg-white px-4 py-3">
+              <div key={item.id} className="flex items-start gap-3 rounded-card border border-slate-200/70 bg-white px-4 py-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base">
                   {cfg.icon}
                 </div>

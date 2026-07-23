@@ -70,7 +70,7 @@ export default async function IntegrationsPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {CONNECTORS.map((connector) => (
-          <a key={connector.name} href={connector.href} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_55px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_28px_70px_rgba(37,99,235,0.11)]">
+          <a key={connector.name} href={connector.href} className="rounded-hero border border-slate-200 bg-white p-5 shadow-[0_20px_55px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_28px_70px_rgba(37,99,235,0.11)]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">Connector</p>

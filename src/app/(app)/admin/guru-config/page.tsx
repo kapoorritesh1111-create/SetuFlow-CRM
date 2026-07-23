@@ -43,11 +43,11 @@ async function saveGuruConfig(formData: FormData): Promise<void> {
 }
 
 const inputClass = 'min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]';
+const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800';
 
 function ToggleRow({ name, label, description, defaultChecked }: { name: string; label: string; description: string; defaultChecked: boolean }) {
   return (
-    <label className="flex items-start gap-2.5 rounded-[9px] border border-slate-200 bg-white px-3 py-2 cursor-pointer hover:bg-slate-50 transition">
+    <label className="flex items-start gap-2.5 rounded-ctl border border-slate-200 bg-white px-3 py-2 cursor-pointer hover:bg-slate-50 transition">
       <input type="checkbox" name={name} defaultChecked={defaultChecked} className="mt-0.5 h-4 w-4 rounded accent-teal-600" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold text-slate-900">{label}</p>
@@ -98,7 +98,7 @@ export default async function GuruConfigPage() {
         stats={[{ value: String(monthlySearches ?? 0), label: 'Searches / mo' }, { value: String(settings.daily_search_budget), label: 'Daily budget' }, { value: `${usagePct}%`, label: 'Budget used' }]}
         gradientClass="from-[#0f2027] via-[#203a43] to-[#2c5364]"
       />
-      <div className="flex items-center gap-2.5 rounded-[11px] border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><GuruAvatar size="md" /><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
+      <div className="flex items-center gap-2.5 rounded-ctl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><GuruAvatar size="md" /><div><strong>SETU Flow:</strong> Full config — model selection, writeback, daily budget, live search toggle.</div></div>
 
       <AdminPageHero
         title="Setu Guru Configuration"
@@ -156,7 +156,7 @@ export default async function GuruConfigPage() {
                   <p className="text-xs font-bold text-slate-900">{t.label}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
                 </div>
-                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-[14px] w-[14px] rounded accent-[#1F487C] flex-shrink-0" />
+                <input type="checkbox" name={t.name} defaultChecked={t.checked} className="h-[14px] w-[14px] rounded accent-brand-700 flex-shrink-0" />
               </label>
             ))}
           </div>

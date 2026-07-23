@@ -215,7 +215,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
 
   return (
     <main className="space-y-6 p-4 sm:p-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-hero border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Approval → Send</p>
@@ -231,7 +231,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_22rem]">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-hero border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Quote summary</p>
@@ -268,7 +268,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
           </dl>
         </div>
 
-        <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <aside className="rounded-hero border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Send actions</p>
           <p className="mt-2 text-sm text-slate-500">WhatsApp is the primary send path for SME exporters. Email stays available as a secondary delivery action.</p>
           <div className="mt-6 space-y-3">

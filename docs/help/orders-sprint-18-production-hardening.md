@@ -1,4 +1,4 @@
-# Orders Sprint 18 production hardening notes
+# Orders production hardening notes
 
 Route: `/orders`
 Owner: Setu Guru knowledge base
@@ -6,7 +6,7 @@ Last updated: 2026-05-20
 
 ## Why this note exists
 
-During Sprint 18 production QA, the Orders Execution Cockpit had three important real-world failures:
+During production QA, the Orders Execution Cockpit had three important real-world failures:
 
 1. A removed added/manual line still appeared in the active Actual Lines table/editor.
 2. Add catalog product showed a false empty warning even though the current organization had active quoteable Catalog pricing rows.

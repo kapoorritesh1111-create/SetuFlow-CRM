@@ -4,11 +4,11 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-11
 
-## Sprint 8N purpose
+## Purpose
 
-Sprint 8N introduces the industry-neutral trade requirement search and attach foundation for Orders. This is not food-only compliance and not a hard-coded document checklist. It is a generic requirement layer for import, export, regional distribution, and delivery execution.
+The industry-neutral trade requirement search and attach foundation for Orders. This is not food-only compliance and not a hard-coded document checklist. It is a generic requirement layer for import, export, regional distribution, and delivery execution.
 
-## What Sprint 8N adds
+## What this adds
 
 1. Trade requirement actions can attach requirements to a specific execution order.
 2. Requirements are based on existing `trade_requirement_rules` when matching rules exist.
@@ -100,7 +100,7 @@ Guru must not:
 
 ## Smoke-check checklist
 
-- Does Sprint 8N use `trade_requirement_rules` when rules match?
+- Does trade requirement search use `trade_requirement_rules` when rules match?
 - Does it fall back to human-review search snapshots when no rule matches?
 - Are requirements attached to `trade_requirements` with `pending_review` status?
 - Are source snapshots stored in `trade_requirement_sources`?

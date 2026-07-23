@@ -25,21 +25,21 @@ export function CountryTableCard({ items }: { items: CountryCoverageDatum[] }) {
       {rows.length ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/90 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Markets shown</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{rows.length}</p>
             </div>
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/90 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Quotes in motion</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{totalQuotes}</p>
             </div>
-            <div className="rounded-[1.35rem] border border-sky-200 bg-sky-50/80 px-4 py-3">
+            <div className="rounded-panel border border-sky-200 bg-sky-50/80 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-700">Visible value</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-slate-950">{formatCompactCurrency(totalValue)}</p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+          <div className="overflow-hidden rounded-panel border border-slate-200 bg-white">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50/90">
                 <tr>
@@ -76,7 +76,7 @@ export function CountryTableCard({ items }: { items: CountryCoverageDatum[] }) {
           </div>
 
           {topCountry ? (
-            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/80 px-4 py-3">
+            <div className="rounded-panel border border-slate-200 bg-slate-50/80 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Market signal</p>
               <p className="mt-1 text-sm leading-5 text-slate-700">
                 <span className="font-semibold text-slate-950">{topCountry.countryName}</span> currently carries the strongest visible value in the active market mix.

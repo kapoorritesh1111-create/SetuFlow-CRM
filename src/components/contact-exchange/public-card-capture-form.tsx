@@ -122,7 +122,7 @@ export function PublicCardCaptureForm({ identity }: PublicCardCaptureFormProps) 
   }
 
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-soft">
+    <div className="rounded-hero border border-slate-200 bg-white/90 p-6 shadow-soft">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Shared contact follow-through</p>
@@ -167,7 +167,7 @@ export function PublicCardCaptureForm({ identity }: PublicCardCaptureFormProps) 
           <label className="block text-sm font-medium text-slate-700 md:col-span-2">Requirements / notes<textarea className={`${fieldClassName()} min-h-[140px]`} value={form.notes} onChange={(e) => setForm((c) => ({ ...c, notes: e.target.value }))} placeholder="Tell us what products, quantities, or partnership details you want to discuss." /></label>
         </div>
 
-        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">AI document / card intake</p>
@@ -190,7 +190,7 @@ export function PublicCardCaptureForm({ identity }: PublicCardCaptureFormProps) 
 
         {message ? <StateMessage title={submitState === 'done' ? 'Request captured' : prefillState === 'done' ? 'AI prefill ready' : 'Action needs attention'} description={message} tone={submitState === 'done' || prefillState === 'done' ? 'success' : 'warning'} /> : null}
 
-        <button type="submit" disabled={submitState === 'submitting'} className="inline-flex min-h-[56px] items-center justify-center rounded-[1.35rem] bg-slate-950 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" disabled={submitState === 'submitting'} className="inline-flex min-h-[56px] items-center justify-center rounded-panel bg-slate-950 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
           {submitState === 'submitting' ? 'Sending…' : form.desiredAction === 'request_quote' ? 'Send quote request' : 'Book appointment'}
         </button>
       </form>

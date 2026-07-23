@@ -26,7 +26,7 @@ export default async function MobileDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[2rem] bg-[linear-gradient(145deg,#0c172d,#122241)] p-5 text-white shadow-xl">
+      <section className="rounded-hero bg-[linear-gradient(145deg,#0c172d,#122241)] p-5 text-white shadow-xl">
         <p className="text-xs font-black uppercase tracking-[.18em] text-sky-200">Dashboard</p>
         <h1 className="mt-1 text-2xl font-black">Today's summary</h1>
         <p className="text-xs text-slate-400 mt-0.5">{workspace.organization.name}</p>

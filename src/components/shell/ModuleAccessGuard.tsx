@@ -105,8 +105,8 @@ function getTradeShowTrialPreviewCopy(pathname: string): TrialPreviewCopy | null
 
 function InlineTrialPreviewBanner({ copy }: { copy: TrialPreviewCopy }) {
   const classes = copy.active
-    ? 'sf-trial-preview-banner sf-trial-preview-banner-active rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm'
-    : 'sf-trial-preview-banner sf-trial-preview-banner-upgrade rounded-[1.35rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm';
+    ? 'sf-trial-preview-banner sf-trial-preview-banner-active rounded-panel border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 shadow-sm'
+    : 'sf-trial-preview-banner sf-trial-preview-banner-upgrade rounded-panel border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm';
 
   return (
     <div className={classes} data-trial-preview-state={copy.active ? 'active' : 'upgrade'}>
@@ -145,9 +145,9 @@ function getSupplierProcurementUpgradeCopy(pathname: string): TrialPreviewCopy |
 function SupplierUpgradeFallback({ preview }: { preview: TrialPreviewCopy }) {
   return (
     <div className="mx-auto flex min-h-[68vh] max-w-2xl items-center px-4 py-10">
-      <section className="w-full overflow-hidden rounded-[2rem] border border-teal-200 bg-white p-8 shadow-sm text-center">
+      <section className="w-full overflow-hidden rounded-hero border border-teal-200 bg-white p-8 shadow-sm text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50">
-          <svg className="h-6 w-6 text-[#279491]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-6 w-6 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </div>
@@ -159,7 +159,7 @@ function SupplierUpgradeFallback({ preview }: { preview: TrialPreviewCopy }) {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <a
             href="mailto:admin@setugroups.com?subject=Supplier Procurement Module"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#163561]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-800"
           >
             Request module access
           </a>
@@ -175,7 +175,7 @@ function SupplierUpgradeFallback({ preview }: { preview: TrialPreviewCopy }) {
 function FullPreviewFallback({ preview }: { preview: TrialPreviewCopy }) {
   return (
     <div className="mx-auto flex min-h-[68vh] max-w-5xl items-center px-4 py-10">
-      <section className="relative w-full overflow-hidden rounded-[2rem] border border-blue-200 bg-white p-6 shadow-[0_30px_90px_rgba(15,23,42,0.10)] sm:p-8">
+      <section className="relative w-full overflow-hidden rounded-hero border border-blue-200 bg-white p-6 shadow-[0_30px_90px_rgba(15,23,42,0.10)] sm:p-8">
         <div className="relative grid gap-8 lg:grid-cols-[1fr_320px] lg:items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
@@ -192,7 +192,7 @@ function FullPreviewFallback({ preview }: { preview: TrialPreviewCopy }) {
               </Link>
             </div>
           </div>
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Trial includes</p>
             <div className="mt-4 space-y-3 text-sm font-bold text-slate-700">
               <div className="rounded-2xl bg-white p-3">Quick Lead booth capture</div>

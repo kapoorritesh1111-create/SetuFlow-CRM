@@ -151,6 +151,20 @@ async function seedTrialTemplateData(admin: SupabaseAdmin, organizationId: strin
   }
 
   await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: null, entity_type: 'guided_trial', entity_id: organizationId, action: 'guided_trial_template_seeded', payload: { template_key: templateKey, template_label: template.label, pricing_scenario: template.pricingScenario, stark_packmate_ready: templateKey === 'packaging_converter' } });
+
+  // S24-SPEN-210: packaging trials get the packaging vertical plus default
+  // service families and sample pricing templates (idempotent upserts).
+  if (templateKey === 'packaging_converter') {
+    const { seedPackagingDefaults } = await import('@/lib/packaging/seed');
+    await admin
+      .from('client_entitlement_profiles')
+      .update({ vertical_key: 'packaging' })
+      .eq('organization_id', organizationId)
+      .is('vertical_key', null);
+    const packagingSeeded = await seedPackagingDefaults(admin, organizationId);
+    await admin.from('audit_logs').insert({ organization_id: organizationId, actor_user_id: null, entity_type: 'packaging_vertical', entity_id: organizationId, action: 'packaging_vertical_seeded', payload: { vertical_key: 'packaging', ...packagingSeeded } });
+  }
+
   return { templateKey, productsSeeded: template.sampleProducts.length };
 }
 

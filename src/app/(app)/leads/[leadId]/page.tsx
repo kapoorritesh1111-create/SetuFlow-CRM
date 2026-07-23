@@ -4,6 +4,12 @@ import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import LeadCommandCenterPremium from '@/features/leads/canonical/LeadCommandCenterPremium';
 import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
+import { ResearchDrawerLauncher } from '@/features/setu-guru/research-drawer';
+import { OutreachGeneratorLauncher } from '@/features/setu-guru/outreach-generator-panel';
+import { ReplyAnalyzerLauncher } from '@/features/setu-guru/reply-analyzer-modal';
+import { QuoteAssistantLauncher } from '@/features/setu-guru/quote-assistant-panel';
+import { SupplierRfqAssistantLauncher } from '@/features/setu-guru/supplier-rfq-assistant-panel';
+import { LeadGuruTools } from '@/features/setu-guru/lead-guru-tools';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -62,6 +68,21 @@ export default async function Page({
     <>
       {toastMessage ? <WorkflowToast kind="success" message={toastMessage} /> : null}
       {hasStageError ? <WorkflowToast kind="warning" message="Lead action needs attention. Please refresh and try again." /> : null}
+      <LeadGuruTools>
+        <ResearchDrawerLauncher leadId={data.lead.id} leadType={data.lead.lead_type} />
+        <OutreachGeneratorLauncher
+          leadId={data.lead.id}
+          email={data.lead.email}
+          phone={data.lead.phone}
+          whatsappNumber={data.lead.whatsapp_number}
+        />
+        <ReplyAnalyzerLauncher leadId={data.lead.id} />
+        {String(data.lead.lead_type ?? '').toLowerCase() === 'supplier' ? (
+          <SupplierRfqAssistantLauncher leadId={data.lead.id} />
+        ) : (
+          <QuoteAssistantLauncher leadId={data.lead.id} />
+        )}
+      </LeadGuruTools>
       <LeadCommandCenterPremium
         data={data}
         canReassignOwner={workspace.canAccessAdmin}

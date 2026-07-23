@@ -57,7 +57,7 @@ export default async function SupplierCostRequestPage({
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-6">
       {/* Header */}
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#279491]">Supplier Sourcing</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">Supplier Sourcing</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">
           {isRequestSample ? 'Request Sample' : 'Create Cost Request'}
         </h1>
@@ -119,7 +119,7 @@ export default async function SupplierCostRequestPage({
             defaultValue={isRequestSample
               ? `Sample Request — ${lead.company_name}`
               : `Cost Request — ${lead.company_name}`}
-            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#279491] focus:outline-none focus:ring-1 focus:ring-[#279491]"
+            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-accent-600 focus:outline-none focus:ring-1 focus:ring-accent-600"
           />
         </div>
 
@@ -135,7 +135,7 @@ export default async function SupplierCostRequestPage({
             placeholder={isRequestSample
               ? 'Describe the sample required — quantity, spec, packaging, inspection notes...'
               : 'Describe sourcing requirements — product category, MOQ, target price, delivery terms, lead time expected...'}
-            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#279491] focus:outline-none focus:ring-1 focus:ring-[#279491]"
+            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-accent-600 focus:outline-none focus:ring-1 focus:ring-accent-600"
           />
         </div>
 
@@ -148,7 +148,7 @@ export default async function SupplierCostRequestPage({
               id="cr-currency"
               name="currency"
               defaultValue="USD"
-              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-[#279491] focus:outline-none focus:ring-1 focus:ring-[#279491]"
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-accent-600 focus:outline-none focus:ring-1 focus:ring-accent-600"
             >
               {['USD', 'EUR', 'GBP', 'AUD', 'CAD', 'INR', 'AED', 'SGD'].map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -163,7 +163,7 @@ export default async function SupplierCostRequestPage({
               id="cr-needed-by"
               name="needed_by"
               type="date"
-              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-[#279491] focus:outline-none focus:ring-1 focus:ring-[#279491]"
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-accent-600 focus:outline-none focus:ring-1 focus:ring-accent-600"
             />
           </div>
         </div>
@@ -176,7 +176,7 @@ export default async function SupplierCostRequestPage({
             id="cr-validity"
             name="validity_date"
             type="date"
-            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-[#279491] focus:outline-none focus:ring-1 focus:ring-[#279491]"
+            className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-accent-600 focus:outline-none focus:ring-1 focus:ring-accent-600"
           />
         </div>
 
@@ -185,7 +185,7 @@ export default async function SupplierCostRequestPage({
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
-            className="flex-1 rounded-xl bg-[#1F487C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#163561] transition-colors"
+            className="flex-1 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800 transition-colors"
           >
             {isRequestSample ? 'Send Sample Request' : 'Create Cost Request'}
           </button>

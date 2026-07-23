@@ -112,7 +112,7 @@ function SupplierCapabilitySection({
   const labelTextClassName = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700';
 
   return (
-    <div data-s41-supplier-capability-section="true" className="rounded-[1.5rem] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-4 shadow-sm">
+    <div data-s41-supplier-capability-section="true" className="rounded-panel border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Supplier capability</p>
@@ -247,7 +247,7 @@ export default function ProductMarketsSection({
           </p>
         </div>
 
-        <div className="mt-4 rounded-[24px] border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
+        <div className="mt-4 rounded-panel border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
           <LeadCoverageManager leadId={leadId} companyName={companyName || null} />
         </div>
 

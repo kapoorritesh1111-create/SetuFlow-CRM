@@ -4,7 +4,7 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-12
 
-## Sprint 8V decision
+## Reconciliation decision
 
 When historical quote-version rows are incomplete or do not match the buyer-approved PDF/source, Orders must not silently use the broken rows for buyer-facing execution documents.
 

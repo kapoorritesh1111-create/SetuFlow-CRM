@@ -4,11 +4,11 @@ Route: `/orders`
 Owner: Setu Guru knowledge base
 Last updated: 2026-05-11
 
-## Sprint 8S purpose
+## Purpose
 
-Sprint 8S removes remaining demo/walkthrough behavior from the approved Orders redesign and makes the page operational for production users.
+Removes remaining demo/walkthrough behavior from the approved Orders redesign and makes the page operational for production users.
 
-## What Sprint 8S changes
+## What this changes
 
 1. Removes manual Regional / Export workflow toggle from the open order workspace.
 2. Uses automatic order classification:

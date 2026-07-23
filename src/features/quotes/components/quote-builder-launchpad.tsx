@@ -78,15 +78,15 @@ export function QuoteBuilderLaunchpad({
         <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {steps.map((step, index) => (
-              <div key={step.title} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#359F91]">Step {index + 1}</p>
+              <div key={step.title} className="rounded-panel border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-500">Step {index + 1}</p>
                 <p className="mt-2 text-base font-semibold text-slate-950">{step.title}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{step.body}</p>
               </div>
             ))}
           </div>
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#359F91]">Launch rule</p>
+          <div className="rounded-panel border border-slate-200 bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-500">Launch rule</p>
             <p className="mt-3 text-sm leading-7 text-slate-600">
               Real quote creation should still begin from a qualified lead where buyer context, product mapping, RFQ linkage, and send blockers already exist.
             </p>
@@ -110,7 +110,7 @@ export function QuoteBuilderLaunchpad({
       >
         <div className="grid gap-4 lg:grid-cols-3">
           {checkpoints.map((item) => (
-            <div key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+            <div key={item.title} className="rounded-panel border border-slate-200 bg-slate-50 p-4">
               <StatusBadge label={item.title} tone={item.tone} />
               <p className="mt-3 text-sm leading-6 text-slate-600">{item.note}</p>
             </div>

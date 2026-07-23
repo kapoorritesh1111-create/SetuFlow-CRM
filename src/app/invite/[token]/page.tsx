@@ -38,7 +38,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
   if (!admin) {
     return (
       <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-8 sm:px-6">
-        <div className="w-full rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
+        <div className="w-full rounded-hero border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
           <h1 className="text-2xl font-semibold text-slate-900">Invitation links are not configured</h1>
           <p className="mt-2 text-sm text-slate-600">A service role key is required to validate invitation links securely.</p>
         </div>
@@ -92,7 +92,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-        <section className="relative overflow-hidden rounded-[2rem] border border-cyan-400/30 bg-slate-950 p-6 text-white shadow-soft sm:p-8">
+        <section className="relative overflow-hidden rounded-hero border border-cyan-400/30 bg-slate-950 p-6 text-white shadow-soft sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(20,184,166,0.34),transparent_34%),radial-gradient(circle_at_85%_15%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#061421_0%,#082236_48%,#053f46_100%)]" />
           <div className="absolute inset-0 bg-slate-950/35" />
           <div className="relative z-10">
@@ -111,7 +111,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
               <span className="rounded-full border border-white/35 bg-white px-3 py-1.5 text-slate-950 shadow-sm">{packLabel}</span>
             </div>
 
-            <div className="mt-6 space-y-4 rounded-[1.75rem] border border-white/20 bg-slate-900/80 p-5 shadow-xl backdrop-blur">
+            <div className="mt-6 space-y-4 rounded-hero border border-white/20 bg-slate-900/80 p-5 shadow-xl backdrop-blur">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">Invited email</p>
                 <p className="mt-1 text-lg font-bold text-white">{invite.email}</p>
@@ -132,7 +132,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
+        <section className="rounded-hero border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">{organizationName} access setup</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-900">Create password and accept invitation</h2>
           <p className="mt-2 text-sm text-slate-600">This link is tied to {invite.email}. Complete the missing account details below, then enter the {organizationName} workspace as {roleName || 'owner'}.</p>
@@ -152,7 +152,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
           {!user ? (
             <div className="mt-6 space-y-5">
               {!inviteBlocked ? (
-                <form action={registerAndAcceptInvitation} className="space-y-4 rounded-[1.75rem] border border-brand-100 bg-brand-50/40 p-5">
+                <form action={registerAndAcceptInvitation} className="space-y-4 rounded-hero border border-brand-100 bg-brand-50/40 p-5">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900">First admin account setup</h3>
                     <p className="mt-1 text-sm text-slate-600">Email is locked to the invite. Review the name and username, create a password, and accept owner access.</p>
@@ -170,7 +170,7 @@ export default async function InviteTokenPage({ params }: { params: { token: str
                 </form>
               ) : null}
 
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              <div className="rounded-panel border border-slate-200 bg-white p-4 text-sm text-slate-600">
                 Already created this account?{' '}
                 <Link href={`/client-login?next=${encodeURIComponent(`/invite/${token}`)}&email=${encodeURIComponent(inviteEmail)}&workspace=${encodeURIComponent(organizationSlug)}`} className="font-semibold text-brand-700 hover:text-brand-800">
                   Sign in to accept the {organizationName} invitation.

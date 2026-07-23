@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 import { scheduleLeadFollowUp } from '@/features/leads/server/actions';
+import { parseLeadWorkflow, serializeLeadWorkflow } from '@/lib/lead-workflow';
 
 function clean(value: FormDataEntryValue | null) { return String(value ?? '').trim(); }
 function nullable(value: FormDataEntryValue | null) { const next = clean(value); return next ? next : null; }
@@ -110,7 +111,27 @@ export async function saveCanonicalQualificationMapping(formData: FormData) {
   if (productIds.length) await supabase.from('lead_product_interests').insert(productIds.map((productId) => ({ organization_id: workspace.organization!.id, lead_id: leadId, product_id: productId, interest_type: categoryProductIds.includes(productId) && !explicitProductIds.includes(productId) ? 'category_mapped' : 'mapped', source_context: { source: 'canonical_lead_detail', categoryIds } })));
   await supabase.from('lead_markets').delete().eq('organization_id', workspace.organization!.id).eq('lead_id', leadId);
   if (marketIds.length) await supabase.from('lead_markets').insert(marketIds.map((marketId) => ({ organization_id: workspace.organization!.id, lead_id: leadId, market_id: marketId })));
-  await supabase.from('leads').update({ notes: qualificationNotes ?? undefined, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
+
+  // S27-STARK-DISCOVERY-FIX: this previously overwrote `leads.notes` with just
+  // the plain qualification text, silently destroying the embedded workflow
+  // marker (qualificationStatus, mappedProductIds, supplierCapability, etc.)
+  // every single save. Read the existing marker first and re-serialize it
+  // with only the fields this form actually changes, so a save updates
+  // qualification notes/status without wiping everything else.
+  const { data: existingLead } = await supabase.from('leads').select('notes').eq('organization_id', workspace.organization!.id).eq('id', leadId).maybeSingle();
+  const existingWorkflow = parseLeadWorkflow(existingLead?.notes ?? null).workflow;
+  const nextNotes = serializeLeadWorkflow(qualificationNotes, {
+    ...existingWorkflow,
+    qualificationNotes,
+    qualificationStatus: productIds.length || marketIds.length ? 'qualified' : existingWorkflow.qualificationStatus,
+    qualificationUpdatedAt: now,
+    qualificationUpdatedBy: workspace.user!.id,
+    mappedProductIds: productIds,
+    mappedMarketIds: marketIds,
+    productMappingUpdatedAt: now,
+  });
+  await supabase.from('leads').update({ notes: nextNotes, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
+
   await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'lead_qualified', message: `Qualification and mapping saved from canonical Lead Detail (${productIds.length} products, ${marketIds.length} markets).`, occurred_at: now });
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`); revalidatePath(`/leads/${leadId}/quote`);
   goLead(leadId, { saved: 'qualification' }, 'qualification');

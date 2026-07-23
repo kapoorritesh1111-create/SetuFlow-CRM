@@ -8,7 +8,7 @@ export function QueryIssuesAlert({
   if (!issues.length) return null;
 
   return (
-    <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50/95 px-5 py-4 text-sm text-amber-900 shadow-[0_14px_35px_rgba(217,119,6,0.08)] ring-1 ring-amber-900/5" role="status" aria-live="polite">
+    <div className="rounded-hero border border-amber-200 bg-amber-50/95 px-5 py-4 text-sm text-amber-900 shadow-[0_14px_35px_rgba(217,119,6,0.08)] ring-1 ring-amber-900/5" role="status" aria-live="polite">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-semibold">{title}</p>

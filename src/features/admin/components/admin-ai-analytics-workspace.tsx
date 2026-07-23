@@ -36,7 +36,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
       />
       <QueryIssuesAlert issues={data.queryIssues} title="Some AI analytics sources could not be loaded" />
 
-      <section className="rounded-[11px] border border-slate-200 bg-white p-5 shadow-soft">
+      <section className="rounded-ctl border border-slate-200 bg-white p-5 shadow-soft">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Time window</p>
@@ -82,7 +82,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-3">
-          <article className="rounded-[1.75rem] border border-amber-200 bg-white p-5">
+          <article className="rounded-hero border border-amber-200 bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">High dismissal workflows</p>
             <h3 className="mt-2 text-lg font-semibold text-slate-900">Where AI is being rejected most often</h3>
             <p className="mt-2 text-sm text-slate-600">Flags workflows at or above the current dismissal threshold in the analytics payload.</p>
@@ -106,7 +106,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
             )}
           </article>
 
-          <article className="rounded-[1.75rem] border border-amber-200 bg-white p-5">
+          <article className="rounded-hero border border-amber-200 bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Low apply after approval</p>
             <h3 className="mt-2 text-lg font-semibold text-slate-900">Approved drafts that stall before use</h3>
             <p className="mt-2 text-sm text-slate-600">Flags approved workflows that fall below the conversion threshold already derived in analytics.</p>
@@ -131,7 +131,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
             )}
           </article>
 
-          <article className="rounded-[1.75rem] border border-amber-200 bg-white p-5">
+          <article className="rounded-hero border border-amber-200 bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Aging approved-not-applied</p>
             <h3 className="mt-2 text-lg font-semibold text-slate-900">Approved work that still has not been applied</h3>
             <p className="mt-2 text-sm text-slate-600">Uses the derived aging buckets already returned in the analytics payload.</p>
@@ -166,7 +166,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
         </div>
       </section>
 
-      <section className="rounded-[11px] border border-slate-200 bg-white p-6 shadow-soft">
+      <section className="rounded-ctl border border-slate-200 bg-white p-6 shadow-soft">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Workflow-family summaries</p>
@@ -177,7 +177,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {data.workflowFamilies.map((family) => (
-            <article key={family.family} className="rounded-[1.75rem] border border-slate-200 p-5">
+            <article key={family.family} className="rounded-hero border border-slate-200 p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getSuggestionBadgeClasses(family.family === 'quote' ? 'quote_cover_note' : family.family === 'compliance' ? 'compliance_next_step' : 'follow_up_assistant')}`}>{family.label}</p>
@@ -196,7 +196,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
         </div>
       </section>
 
-      <section className="rounded-[11px] border border-slate-200 bg-white p-6 shadow-soft">
+      <section className="rounded-ctl border border-slate-200 bg-white p-6 shadow-soft">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Per-workflow insights</p>
@@ -204,7 +204,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
             <p className="mt-2 text-sm text-slate-600">Includes review rate, approval-to-apply conversion, and average lag so admins can see whether a workflow is trusted but slow, or fast but rarely approved.</p>
           </div>
         </div>
-        <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200">
+        <div className="mt-5 overflow-x-auto rounded-hero border border-slate-200">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
               <tr>
@@ -246,11 +246,11 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[11px] border border-slate-200 bg-white p-6 shadow-soft">
+        <div className="rounded-ctl border border-slate-200 bg-white p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Lead-level hotspots</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">Where AI is concentrated</h2>
           <p className="mt-2 text-sm text-slate-600">Use this to spot compliance-heavy leads, high-touch negotiations, or leads where operator overrides are piling up.</p>
-          <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200">
+          <div className="mt-5 overflow-x-auto rounded-hero border border-slate-200">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
                 <tr>
@@ -283,11 +283,11 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
           </div>
         </div>
 
-        <div className="rounded-[11px] border border-slate-200 bg-white p-6 shadow-soft">
+        <div className="rounded-ctl border border-slate-200 bg-white p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Per-operator insights</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">Review and override behavior</h2>
           <p className="mt-2 text-sm text-slate-600">Operator notes and dismissal behavior remain observational only. This surface does not change workflow behavior.</p>
-          <div className="mt-5 overflow-x-auto rounded-[1.75rem] border border-slate-200">
+          <div className="mt-5 overflow-x-auto rounded-hero border border-slate-200">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
                 <tr>
@@ -319,7 +319,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
       {/* Trend and feedback sections for phase 5 analytics */}
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         {/* Trend table */}
-        <div className="rounded-[11px] border border-slate-200 bg-white p-6 shadow-soft overflow-x-auto">
+        <div className="rounded-ctl border border-slate-200 bg-white p-6 shadow-soft overflow-x-auto">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Trend over time</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">Daily AI suggestion activity</h2>
           <p className="mt-2 text-sm text-slate-600">Generated vs reviewed, approved, applied and dismissed suggestions across the selected window. Use this to spot surges or lulls in AI usage.</p>
@@ -352,7 +352,7 @@ export function AdminAiAnalyticsWorkspace({ data }: { data: AiAnalyticsData }) {
         </div>
 
         {/* Feedback summary */}
-        <div className="rounded-[11px] border border-slate-200 bg-white p-6 shadow-soft">
+        <div className="rounded-ctl border border-slate-200 bg-white p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Operator feedback</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">Notes on AI suggestions</h2>
           <p className="mt-2 text-sm text-slate-600">Summarises how often operators leave notes on AI drafts and surfaces the latest examples. Notes help uncover friction or training opportunities.</p>

@@ -27,14 +27,14 @@ export function LeadCard({
 }: LeadCardProps) {
   return (
     <article className={cn(
-      'rounded-[1.5rem] border p-4 transition',
-      selected ? 'border-[#1F487C]/20 bg-white shadow-[0_14px_36px_rgba(31,72,124,0.12)]' : 'border-slate-200 bg-slate-50/90 hover:border-[#1F487C]/15 hover:bg-white',
+      'rounded-panel border p-4 transition',
+      selected ? 'border-brand-700/20 bg-white shadow-[0_14px_36px_rgba(31,72,124,0.12)]' : 'border-slate-200 bg-slate-50/90 hover:border-brand-700/15 hover:bg-white',
     )}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-base font-semibold text-slate-950">{company}</p>
-            <span className="rounded-full bg-[#1F487C]/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#1F487C]">{market}</span>
+            <span className="rounded-full bg-brand-700/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">{market}</span>
           </div>
           <p className="mt-2 text-sm text-slate-600">{contact}{owner ? ` · Owner: ${owner}` : ''}</p>
           {requirement ? <p className="mt-1 text-sm text-slate-500">{requirement}</p> : null}

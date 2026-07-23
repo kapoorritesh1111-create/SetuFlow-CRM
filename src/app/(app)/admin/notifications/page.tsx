@@ -17,7 +17,7 @@ function noticeCopy(notice?: string) {
 
 function PreferenceMatrix({ rows }: { rows: NotificationPreferenceRow[] }) {
   return (
-    <div className="overflow-hidden rounded-[11px] border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-ctl border border-slate-200 bg-white">
       <div className="grid min-w-[700px] grid-cols-[minmax(200px,1.5fr)_repeat(6,minmax(80px,0.6fr))] border-b border-slate-200 bg-slate-50 px-3 py-2 text-[7.5px] font-bold uppercase tracking-[0.13em] text-slate-400">
         <span>Alert type</span>
         {notificationChannels.map((channel) => <span key={channel.key} className="text-center">{channel.label}</span>)}
@@ -34,12 +34,12 @@ function PreferenceMatrix({ rows }: { rows: NotificationPreferenceRow[] }) {
               </div>
               {notificationChannels.map((channel) => (
                 <label key={channel.key} className="flex justify-center">
-                  <input name={`${row.notif_type}:${channel.key}`} type="checkbox" defaultChecked={Boolean(row[channel.key])} className="h-[17px] w-[17px] rounded-[5px] border-slate-300 text-teal-600 accent-teal-600 focus:ring-teal-500" />
+                  <input name={`${row.notif_type}:${channel.key}`} type="checkbox" defaultChecked={Boolean(row[channel.key])} className="h-[17px] w-[17px] rounded-md border-slate-300 text-teal-600 accent-teal-600 focus:ring-teal-500" />
                   <span className="sr-only">{meta.label} {channel.label}</span>
                 </label>
               ))}
               <label className="flex justify-center">
-                <input name={`${row.notif_type}:is_locked`} type="checkbox" defaultChecked={Boolean(row.is_locked)} className="h-[17px] w-[17px] rounded-[5px] border-slate-300 text-teal-600 accent-teal-600 focus:ring-teal-500" />
+                <input name={`${row.notif_type}:is_locked`} type="checkbox" defaultChecked={Boolean(row.is_locked)} className="h-[17px] w-[17px] rounded-md border-slate-300 text-teal-600 accent-teal-600 focus:ring-teal-500" />
                 <span className="sr-only">Lock {meta.label}</span>
               </label>
             </div>
@@ -79,7 +79,7 @@ export default async function AdminNotificationsPage({ searchParams }: { searchP
         title="Notification defaults"
         description="Set organization-level default channels for every CRM alert type. Members can override unlocked preferences on their own settings page."
         badge={workspace.organization.name}
-        cta={<Link href="/settings/notifications" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-[#13305a]">Open my overrides</Link>}
+        cta={<Link href="/settings/notifications" className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-800">Open my overrides</Link>}
         stats={[{ label: 'Alert types', value: rows.length, tone: 'info' }, { label: 'Push defaults', value: pushCount, tone: 'success' }, { label: 'Email defaults', value: emailCount, tone: 'info' }, { label: 'Locked', value: lockedCount, tone: lockedCount > 0 ? 'warning' : 'default' }]}
       />
 
@@ -112,7 +112,7 @@ export default async function AdminNotificationsPage({ searchParams }: { searchP
           <PreferenceMatrix rows={rows} />
           <div className="flex flex-col gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
             <p><strong>Locked</strong> rows prevent member overrides from taking effect in the resolver.</p>
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 py-2 text-sm font-bold text-white hover:bg-[#13305a]">Save workspace defaults</button>
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 py-2 text-sm font-bold text-white hover:bg-brand-800">Save workspace defaults</button>
           </div>
         </form>
       </SectionCard>

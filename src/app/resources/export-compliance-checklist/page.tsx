@@ -6,7 +6,7 @@ export const metadata = {
 export default function SeoLandingPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-16">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-hero border border-slate-200 bg-white p-8 shadow-sm">
         <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-blue-700">Export Compliance Resource</p>
         <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 md:text-6xl">Export Compliance Checklist for Trade Teams</h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">Use this export compliance checklist to organize buyer details, product requirements, trade documents, approvals, and shipment readiness before orders move forward.</p>

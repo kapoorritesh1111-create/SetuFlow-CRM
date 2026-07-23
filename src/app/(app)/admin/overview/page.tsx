@@ -126,7 +126,7 @@ export default async function AdminOverviewPage() {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">{myRoleLabel} · {currency}</span>
         {country ? <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-600">{country}</span> : null}
-        <Link href="/pipeline" className="ml-auto inline-flex min-h-8 items-center rounded-[9px] bg-[#1F487C] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#13305a]">
+        <Link href="/pipeline" className="ml-auto inline-flex min-h-8 items-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800">
           Go to Pipeline →
         </Link>
       </div>
@@ -142,7 +142,7 @@ export default async function AdminOverviewPage() {
           meta={`${organization.name} · ${slug}${country ? ` · ${country}` : ''} · ${currency}`}
           cta="Edit"
           href="/admin/organization"
-          stripClass="from-teal-500 to-[#1F487C]"
+          stripClass="from-teal-500 to-brand-700"
           dot={identityDone ? 'ok' : 'warn'}
         />
         <KitOverviewCard

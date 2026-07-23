@@ -27,7 +27,7 @@ export function WorkspaceHeader({
   className?: string;
 }) {
   return (
-    <section className={cn('overflow-hidden rounded-[2rem] p-5 ring-1 ring-slate-950/[0.03] backdrop-blur dark:ring-white/[0.04] sm:p-6', workspaceGlassClass, className)}>
+    <section className={cn('overflow-hidden rounded-hero p-5 ring-1 ring-slate-950/[0.03] backdrop-blur dark:ring-white/[0.04] sm:p-6', workspaceGlassClass, className)}>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 max-w-4xl">
           {eyebrow ? (
@@ -67,7 +67,7 @@ export function WorkspaceToolbar({
   className?: string;
 }) {
   return (
-    <section className={cn('rounded-[1.75rem] p-4 ring-1 ring-slate-950/[0.03] backdrop-blur dark:ring-white/[0.04]', workspaceGlassClass, className)}>
+    <section className={cn('rounded-hero p-4 ring-1 ring-slate-950/[0.03] backdrop-blur dark:ring-white/[0.04]', workspaceGlassClass, className)}>
       <div className="space-y-4">
         {(searchSlot || filterSlot || actionSlot) ? (
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
@@ -188,7 +188,7 @@ export function ToolbarStat({
 
   if (value) {
     return (
-      <div className={cn('flex min-h-[5rem] flex-col justify-center rounded-[1.35rem] border px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] dark:shadow-[0_12px_24px_rgba(2,6,23,0.22)]', toneClass)}>
+      <div className={cn('flex min-h-[5rem] flex-col justify-center rounded-panel border px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] dark:shadow-[0_12px_24px_rgba(2,6,23,0.22)]', toneClass)}>
         <span className="text-2xl font-semibold tracking-[-0.03em]">{value}</span>
         <span className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em]">{label}</span>
       </div>
@@ -212,7 +212,7 @@ export function SavedViewsBar({
   if (!items.length && !trailing) return null;
 
   return (
-    <div className={cn('flex flex-col gap-3 rounded-[1.5rem] border p-3 sm:p-4', workspaceInsetClass)}>
+    <div className={cn('flex flex-col gap-3 rounded-panel border p-3 sm:p-4', workspaceInsetClass)}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">Saved views</p>

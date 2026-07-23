@@ -88,13 +88,16 @@ async function replaceQuoteLines(input: { supabase: any; quote: any; lines: Draf
   const productMap = await productMetaMap(supabase, lines.map((line) => line.productId).filter(Boolean) as string[]);
   let approvalRequired = false;
   const quoteLineRows = lines.map((line) => { const product = line.productId ? productMap.get(line.productId) : null; const state = pricingState(line, product); approvalRequired ||= state.requiresApproval; return { quote_id: quote.id, product_id: line.productId, product_variant_id: null, catalog_price_id: null, catalog_price_amount: state.basePrice ?? state.finalPrice, catalog_price_currency: line.currency || quoteCurrency, quantity: line.quantity, unit_price: state.finalPrice, currency: line.currency || quoteCurrency, is_price_overridden: state.requiresApproval, override_reason: state.requiresApproval ? `Discount ${state.discountPercent}% exceeds ${APPROVAL_THRESHOLD_PERCENT}% threshold or price is missing.` : state.withinThreshold ? `Discount ${state.discountPercent}% within allowed threshold.` : null, overridden_by: state.requiresApproval ? userId : null, overridden_at: state.requiresApproval ? now : null, notes: line.notes }; });
-  await supabase.from('quote_line_items').delete().eq('quote_id', quote.id);
+  // S24-SPEN: replace only product lines. Packaging lines (line_type='packaging')
+  // are managed by the packaging configurator and must survive product saves.
+  await supabase.from('quote_line_items').delete().eq('quote_id', quote.id).neq('line_type', 'packaging');
   if (quoteLineRows.length) { const { error } = await supabase.from('quote_line_items').insert(quoteLineRows); if (error) throw new Error(error.message); }
   if (quote.current_version_id) {
-    await supabase.from('quote_version_line_items').delete().eq('quote_version_id', quote.current_version_id);
+    await supabase.from('quote_version_line_items').delete().eq('quote_version_id', quote.current_version_id).neq('line_type', 'packaging');
     const versionRows = lines.map((line, index) => { const product = line.productId ? productMap.get(line.productId) : null; const state = pricingState(line, product); return { quote_version_id: quote.current_version_id, product_id: line.productId, product_variant_id: null, sku_code: product?.sku_code || product?.sku || `QUOTE-LINE-${index + 1}`, hsn_code: product?.hsn_code || null, product_name: product?.name || `Product ${index + 1}`, category_type: product?.category_type || '', pack_label: line.packLabel || product?.pack_label || product?.pack_size || null, basis_applied: line.basis || 'fob', pricing_mode: 'case', moq: line.quantity, source_ex_factory_usd: product?.source_ex_factory_usd ?? null, source_fob_usd: state.basePrice ?? state.finalPrice, final_unit_price: state.finalPrice, final_case_price: state.finalPrice * line.quantity, display_currency: line.currency || quoteCurrency, is_overridden: state.requiresApproval, override_status: state.requiresApproval ? 'approval_required' : state.withinThreshold ? 'within_threshold' : null, override_reason: state.requiresApproval ? `Discount ${state.discountPercent}% exceeds ${APPROVAL_THRESHOLD_PERCENT}% threshold or price is missing.` : state.withinThreshold ? `Discount ${state.discountPercent}% within allowed threshold.` : null, overridden_by: state.requiresApproval ? userId : null, overridden_at: state.requiresApproval ? now : null, line_notes: line.notes, sort_order: index, calculation_meta: { source: 'canonical_quote_builder', price_source: line.priceSource || 'Price List', freight: line.freight, base_price: state.basePrice, final_price: state.finalPrice, discount_type: line.discountType, discount_value: line.discountValue, discount_amount: state.discountAmount, discount_percent: state.discountPercent, approval_threshold_percent: APPROVAL_THRESHOLD_PERCENT, approval_required: state.requiresApproval }, catalog_price_snapshot: { product_id: line.productId, base_price: state.basePrice, final_price: state.finalPrice } }; });
     if (versionRows.length) { const { error } = await supabase.from('quote_version_line_items').insert(versionRows); if (error) throw new Error(error.message); }
-    const { error: versionError } = await supabase.from('quote_versions').update({ total_line_count: versionRows.length, display_currency: quoteCurrency, updated_at: now }).eq('id', quote.current_version_id).eq('quote_id', quote.id);
+    const { count: totalLineCount } = await supabase.from('quote_version_line_items').select('id', { count: 'exact', head: true }).eq('quote_version_id', quote.current_version_id);
+    const { error: versionError } = await supabase.from('quote_versions').update({ total_line_count: Number(totalLineCount ?? versionRows.length), display_currency: quoteCurrency, updated_at: now }).eq('id', quote.current_version_id).eq('quote_id', quote.id);
     if (versionError) throw new Error(versionError.message);
   }
   return { approvalRequired };
@@ -108,6 +111,49 @@ function fail(leadId: string, quoteId: string, step: number, error: unknown) { r
 
 export async function saveCanonicalQuoteProducts(formData: FormData) { const leadId = text(formData.get('lead_id')); const quoteId = text(formData.get('quote_id')); try { const { workspace, supabase, quote } = await getQuoteContext(formData); const quoteCurrency = safeCurrency(text(formData.get('quote_currency')), quote.display_currency || quote.currency || 'USD'); await replaceQuoteLines({ supabase, quote, lines: parseLines(formData), quoteCurrency, userId: workspace.user!.id }); await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote products saved from the stabilized canonical builder.'); finish(leadId, quoteId, 2, 'products'); } catch (error) { if (isNextRedirect(error)) throw error; fail(leadId, quoteId, 1, error); } }
 export async function saveCanonicalQuotePricing(formData: FormData) { const leadId = text(formData.get('lead_id')); const quoteId = text(formData.get('quote_id')); try { const { workspace, supabase, quote } = await getQuoteContext(formData); const quoteCurrency = safeCurrency(text(formData.get('quote_currency')), quote.display_currency || quote.currency || 'USD'); const { approvalRequired } = await replaceQuoteLines({ supabase, quote, lines: parseLines(formData), quoteCurrency, userId: workspace.user!.id }); await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, approvalRequired ? 'Quote pricing saved. Approval is required because discount threshold was exceeded.' : 'Quote pricing saved within approval threshold.'); finish(leadId, quoteId, 4, approvalRequired ? 'pricing-approval-required' : 'pricing'); } catch (error) { if (isNextRedirect(error)) throw error; fail(leadId, quoteId, 3, error); } }
-export async function saveCanonicalQuoteTerms(formData: FormData) { const leadId = text(formData.get('lead_id')); const quoteId = text(formData.get('quote_id')); try { const { workspace, supabase, quote } = await getQuoteContext(formData); const quoteCurrency = safeCurrency(text(formData.get('currency')), quote.display_currency || quote.currency || 'USD'); const pricingBasis = text(formData.get('incoterm')) || 'FOB'; const validityDays = num(formData.get('validity_days')) ?? 30; const validUntil = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); const customerMessage = [`Incoterm: ${pricingBasis}`, `Port of loading: ${text(formData.get('port_loading')) || 'Not specified'}`, `Port of discharge: ${text(formData.get('port_discharge')) || 'Not specified'}`, `Payment terms: ${text(formData.get('payment_terms')) || 'Not specified'}`, `Lead time: ${text(formData.get('lead_time')) || 'Not specified'}`, `Packaging: ${text(formData.get('packaging')) || 'Not specified'}`, text(formData.get('shipment_notes')), text(formData.get('special_notes'))].filter(Boolean).join('\n'); if (quote.current_version_id) { const { error } = await supabase.from('quote_versions').update({ display_currency: quoteCurrency, pricing_basis: pricingBasis.toLowerCase(), valid_until: validUntil, customer_message: customerMessage, internal_notes: nullable(formData.get('internal_notes')), updated_at: new Date().toISOString() }).eq('quote_id', quoteId).eq('id', quote.current_version_id); if (error) throw new Error(error.message); } await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote terms saved from the stabilized canonical builder.'); finish(leadId, quoteId, 3, 'terms'); } catch (error) { if (isNextRedirect(error)) throw error; fail(leadId, quoteId, 2, error); } }
+export async function saveCanonicalQuoteTerms(formData: FormData) {
+  const leadId = text(formData.get('lead_id'));
+  const quoteId = text(formData.get('quote_id'));
+  try {
+    const { workspace, supabase, quote } = await getQuoteContext(formData);
+    // S27-STARK: domestic packaging orgs no longer default to export/FOB terms.
+    const deliveryType = text(formData.get('delivery_type'));
+    const isDomestic = deliveryType === 'domestic';
+    const quoteCurrency = safeCurrency(text(formData.get('currency')), isDomestic ? 'INR' : (quote.display_currency || quote.currency || 'USD'));
+    const validityDays = num(formData.get('validity_days')) ?? 30;
+    const validUntil = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const customerMessage = isDomestic
+      ? [
+          `Delivery: Domestic (India)${text(formData.get('delivery_city')) ? ' — ' + text(formData.get('delivery_city')) : ''}`,
+          `Dispatch: ${(text(formData.get('dispatch_mode')) || 'road_transport').replace(/_/g, ' ')}`,
+          `Payment terms: ${text(formData.get('payment_terms')) || 'Not specified'}`,
+          `Lead time: ${text(formData.get('lead_time')) || 'Not specified'}`,
+          text(formData.get('gst_note')),
+          text(formData.get('shipment_notes')),
+          text(formData.get('special_notes')),
+        ].filter(Boolean).join('\n')
+      : [
+          `Incoterm: ${text(formData.get('incoterm')) || 'FOB'}`,
+          `Port of loading: ${text(formData.get('port_loading')) || 'Not specified'}`,
+          `Port of discharge: ${text(formData.get('port_discharge')) || 'Not specified'}`,
+          `Payment terms: ${text(formData.get('payment_terms')) || 'Not specified'}`,
+          `Lead time: ${text(formData.get('lead_time')) || 'Not specified'}`,
+          `Packaging: ${text(formData.get('packaging')) || 'Not specified'}`,
+          text(formData.get('shipment_notes')),
+          text(formData.get('special_notes')),
+        ].filter(Boolean).join('\n');
+    const rawBasis = isDomestic ? 'ex_factory' : (text(formData.get('incoterm')) || 'FOB').toLowerCase();
+    const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(rawBasis) ? rawBasis : 'ex_factory';
+    if (quote.current_version_id) {
+      const { error } = await supabase.from('quote_versions').update({ display_currency: quoteCurrency, pricing_basis: pricingBasis, valid_until: validUntil, customer_message: customerMessage, internal_notes: nullable(formData.get('internal_notes')), updated_at: new Date().toISOString() }).eq('quote_id', quoteId).eq('id', quote.current_version_id);
+      if (error) throw new Error(error.message);
+    }
+    await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote terms saved from the stabilized canonical builder.');
+    finish(leadId, quoteId, 3, 'terms');
+  } catch (error) {
+    if (isNextRedirect(error)) throw error;
+    fail(leadId, quoteId, 2, error);
+  }
+}
 export async function submitCanonicalQuoteApproval(formData: FormData) { const leadId = text(formData.get('lead_id')); const quoteId = text(formData.get('quote_id')); try { const { workspace, supabase, quote } = await getQuoteContext(formData, true); if (!quote.current_version_id) throw new Error('Current quote version is required.'); const { error } = await supabase.rpc('app_submit_quote_approval_tx', { p_organization_id: workspace.organization!.id, p_quote_id: quoteId, p_quote_version_id: quote.current_version_id, p_actor_user_id: workspace.user!.id, p_rule: 'canonical_send_gate', p_reason: text(formData.get('reason')) || 'Pricing threshold requires approval before sending.' }); if (error) throw new Error(error.message); await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote submitted for approval from the stabilized send gate.', 'quote_approval_requested'); finish(leadId, quoteId, 5, 'approval'); } catch (error) { if (isNextRedirect(error)) throw error; fail(leadId, quoteId, 5, error); } }
 export async function sendCanonicalQuote(formData: FormData) { const leadId = text(formData.get('lead_id')); const quoteId = text(formData.get('quote_id')); try { const { workspace, supabase, quote } = await getQuoteContext(formData, true); if (!quote.current_version_id) throw new Error('Current quote version is required.'); const approvalRequired = text(formData.get('approval_required')) === 'true' || Boolean(quote.approval_required); const { error } = await supabase.rpc('app_send_quote_version_with_fanout_tx', { p_quote_version_id: quote.current_version_id, p_actor_user_id: workspace.user!.id, p_actor_name: workspace.user!.email || 'Setu Flow user', p_plain_notes: text(formData.get('plain_notes')) || 'Quote sent from canonical send gate.', p_approval_required: approvalRequired, p_approval_state: approvalRequired ? 'pending' : 'none', p_action_source: 'canonical_quote_builder' }); if (error) throw new Error(error.message); await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote sent from the stabilized canonical send gate.', 'quote_sent'); finishSent(leadId, quoteId); } catch (error) { if (isNextRedirect(error)) throw error; fail(leadId, quoteId, 5, error); } }

@@ -2,11 +2,15 @@ import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
+import { S47FinalUiPolish } from '@/components/shell/s47-final-ui-polish';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
+import { GlobalGrowthCenterEntry } from '@/features/setu-guru/global-growth-center-entry';
+import { ProductPricingDeepLinkDrawer } from '@/features/products/components/product-pricing-deep-link-drawer';
 import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
 import { TrialTourProvider } from '@/features/trial/tour-provider';
 import { getTrialCapability } from '@/lib/trial/capability';
+import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -69,6 +73,8 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
 
   const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
   const guidedTourEnabled = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
+  // S27-STARK-A3: nav shows Design Queue / Dispatch Board only for packaging-enabled orgs.
+  const verticals = await getOrganizationVerticals(workspace.organization.id, supabase);
   const safeOrganization = {
     ...workspace.organization,
     logo_url: workspace.organization.logo_url ? '/api/workspace/logo' : null,
@@ -82,6 +88,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const inner = (
     <>
       <DocumentsUiPolish />
+      <S47FinalUiPolish />
+      <GlobalGrowthCenterEntry />
+      <ProductPricingDeepLinkDrawer />
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
@@ -99,6 +108,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       cardShareSlug={myCardSettingsRow?.share_slug ?? null}
       organizationId={workspace.organization.id}
       userId={workspace.user.id}
+      packagingEnabled={verticals.packagingEnabled}
     >
       {inner}
     </AppShell>

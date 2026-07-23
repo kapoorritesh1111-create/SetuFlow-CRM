@@ -23,7 +23,7 @@ export function WorkspaceState({
   return (
     <div className={`flex min-h-[320px] items-center justify-center p-8 text-center ${workspaceHeroClass}`}>
       <div className="max-w-2xl text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-brand-50 via-white to-slate-100 text-brand-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] dark:from-sky-500/20 dark:via-slate-900 dark:to-slate-800 dark:text-sky-300">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-card bg-gradient-to-br from-brand-50 via-white to-slate-100 text-brand-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] dark:from-sky-500/20 dark:via-slate-900 dark:to-slate-800 dark:text-sky-300">
           <span className="text-lg">✦</span>
         </div>
         <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-sky-300">{eyebrow}</p>

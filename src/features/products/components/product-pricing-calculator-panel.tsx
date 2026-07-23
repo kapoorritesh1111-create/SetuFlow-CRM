@@ -313,13 +313,13 @@ export function ProductPricingCalculatorPanel({
 
   const fieldsDisabled = !canManageCatalog || !isOverrideEditing;
   const fieldClass = "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 disabled:bg-slate-50 disabled:text-slate-400";
-  const wrapperClass = compact ? "space-y-4" : "rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-soft";
+  const wrapperClass = compact ? "space-y-4" : "rounded-panel border border-slate-200 bg-white p-5 shadow-soft";
   const sourceLabel = isOverrideEditing ? "Product override" : "Category default";
   const healthTone = result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800";
 
   return (
     <section className={wrapperClass}>
-      <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
+      <div className="rounded-panel border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -354,7 +354,7 @@ export function ProductPricingCalculatorPanel({
       {showHelp ? (
         <div className="fixed inset-0 z-[95] grid place-items-center bg-slate-950/35 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
           <button type="button" className="absolute inset-0" aria-label="Close pricing help" onClick={() => setShowHelp(false)} />
-          <section className="relative max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-blue-100 bg-white shadow-2xl">
+          <section className="relative max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-hero border border-blue-100 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-700">How pricing is calculated</p>
@@ -423,7 +423,7 @@ export function ProductPricingCalculatorPanel({
         </div>
 
         <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
-          <div className="rounded-[1.25rem] border border-slate-200 bg-slate-950 p-4 text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)]">
+          <div className="rounded-card border border-slate-200 bg-slate-950 p-4 text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)]">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300">Live result</p>
             <div className="mt-3 grid gap-2">
               {Object.entries(result.prices).map(([level, value]) => (

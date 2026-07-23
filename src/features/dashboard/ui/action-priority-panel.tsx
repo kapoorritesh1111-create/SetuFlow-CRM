@@ -18,7 +18,7 @@ export function ActionPriorityPanel({ buckets }: { buckets: DashboardPriorityBuc
     >
       <div className="grid gap-3 lg:grid-cols-[1.25fr_repeat(3,minmax(0,1fr))]">
         {buckets.map((bucket, index) => (
-          <article key={bucket.id} className={`rounded-[1.25rem] border p-4 ${toneStyles[bucket.tone]} ${index === 0 ? 'lg:col-span-2 xl:col-span-1' : ''}`}>
+          <article key={bucket.id} className={`rounded-card border p-4 ${toneStyles[bucket.tone]} ${index === 0 ? 'lg:col-span-2 xl:col-span-1' : ''}`}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{bucket.label}</p>
             <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{bucket.count}</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">{bucket.description}</p>
@@ -27,7 +27,7 @@ export function ActionPriorityPanel({ buckets }: { buckets: DashboardPriorityBuc
                 <p className="text-xs font-semibold text-slate-900">{bucket.topItem.title}</p>
                 <p className="mt-1 text-xs leading-5 text-slate-600">{bucket.topItem.reason}</p>
                 {bucket.topItem.ctaHref ? (
-                  <Link href={bucket.topItem.ctaHref} className="mt-2 inline-flex text-xs font-semibold text-[#1F487C] hover:text-[#193769]">
+                  <Link href={bucket.topItem.ctaHref} className="mt-2 inline-flex text-xs font-semibold text-brand-700 hover:text-brand-800">
                     {bucket.topItem.ctaLabel} →
                   </Link>
                 ) : null}

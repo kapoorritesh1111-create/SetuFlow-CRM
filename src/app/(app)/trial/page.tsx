@@ -55,7 +55,7 @@ export default async function TrialWorkspacePage() {
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-6">
-      <section data-tour-journey className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+      <section data-tour-journey className="rounded-hero border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">Your trial journey</p>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-extrabold text-slate-700">{journeyDone} of {journey.length} complete</span>
@@ -74,7 +74,7 @@ export default async function TrialWorkspacePage() {
           ))}
         </ol>
       </section>
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <section className="rounded-hero border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
         <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">Guided Trial</p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -93,7 +93,7 @@ export default async function TrialWorkspacePage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+        <div className="rounded-hero border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-blue-700">Workflow</p>
           <ol className="mt-4 space-y-3">
             {template.workflowSteps.map((step, index) => (
@@ -105,7 +105,7 @@ export default async function TrialWorkspacePage() {
           </ol>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+        <div className="rounded-hero border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-emerald-700">Pricing scenario</p>
           <h2 className="mt-2 text-xl font-black text-slate-950">{template.pricingScenario.title}</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">{template.pricingScenario.description}</p>
@@ -120,7 +120,7 @@ export default async function TrialWorkspacePage() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+      <section className="rounded-hero border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
         <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-violet-700">Seeded catalog</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {template.sampleProducts.map((product) => (

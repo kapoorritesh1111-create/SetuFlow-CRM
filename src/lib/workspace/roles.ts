@@ -3,7 +3,9 @@ export const WORKSPACE_ROLE_NAMES = [
   'admin',
   'manager',
   'sales',
+  'design',
   'operations',
+  'ordering',
   'sourcing',
   'procurement',
   'contributor',
@@ -14,6 +16,8 @@ export type WorkspaceRole = (typeof WORKSPACE_ROLE_NAMES)[number];
 
 export const WORKSPACE_ROLE_ALIASES: Record<string, WorkspaceRole> = {
   ops: 'operations',
+  dispatch: 'operations',
+  prepress: 'design',
 };
 
 export const WORKSPACE_ROLE_HIERARCHY: readonly WorkspaceRole[] = [
@@ -21,7 +25,9 @@ export const WORKSPACE_ROLE_HIERARCHY: readonly WorkspaceRole[] = [
   'admin',
   'manager',
   'sales',
+  'design',
   'operations',
+  'ordering',
   'sourcing',
   'procurement',
   'contributor',

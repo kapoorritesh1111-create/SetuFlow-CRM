@@ -35,7 +35,7 @@ export function TodayBar({
   compact?: boolean;
 }) {
   return (
-    <section className={`rounded-[1.5rem] p-3 ring-1 ring-slate-950/[0.03] dark:ring-white/[0.04] sm:p-4 ${workspaceGlassClass}`}>
+    <section className={`rounded-panel p-3 ring-1 ring-slate-950/[0.03] dark:ring-white/[0.04] sm:p-4 ${workspaceGlassClass}`}>
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
           <div className="flex items-center gap-3">

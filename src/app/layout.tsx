@@ -1,5 +1,7 @@
 import './globals.css';
 import './marketing-hero-tuning.css';
+import './s47-lead-guru-tuning.css';
+import './action-contrast-safety.css';
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { Plus_Jakarta_Sans } from 'next/font/google';
@@ -7,6 +9,7 @@ import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegis
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
 import { ProductsUiPolish } from '@/components/shell/ProductsUiPolish';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -92,7 +95,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_GB',
-    alternateLocale: ['en_US', 'en_IN', 'en_DE'],
+    alternateLocale: ['en_US', 'en_IN', 'de_DE'],
     url: 'https://www.setuflowcrm.com',
     siteName: 'Setu Flow',
     title: 'Setu Flow — Trade Execution CRM for Import-Export Teams',
@@ -135,6 +138,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="SETU Flow" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
         <script
           nonce={nonce}
           type="application/ld+json"

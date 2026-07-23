@@ -455,7 +455,7 @@ export function DashboardLayoutEngine({
   return (
     <>
       <div className="space-y-4">
-        <div className="overflow-hidden rounded-[1.8rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.94))] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.07)] sm:p-5">
+        <div className="overflow-hidden rounded-hero border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.94))] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.07)] sm:p-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700">
@@ -528,7 +528,7 @@ export function DashboardLayoutEngine({
           <div className="space-y-8">
             {visibleWidgetSections.map(({ sectionId, meta, widgets: sectionWidgets }) => (
               <section key={sectionId} className="space-y-4">
-                <div className="rounded-[1.7rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.86))] px-5 py-4 shadow-[0_18px_42px_rgba(15,23,42,0.06)] backdrop-blur">
+                <div className="rounded-hero border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.86))] px-5 py-4 shadow-[0_18px_42px_rgba(15,23,42,0.06)] backdrop-blur">
                   {meta.eyebrow ? (
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700">{meta.eyebrow}</p>
                   ) : null}
@@ -579,7 +579,7 @@ export function DashboardLayoutEngine({
                         onDragEnd={clearDragState}
                       >
                         <div className={cn(
-                          'mb-3 flex flex-col gap-3 rounded-[1.6rem] border px-4 py-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:flex-row sm:items-center sm:justify-between',
+                          'mb-3 flex flex-col gap-3 rounded-panel border px-4 py-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:flex-row sm:items-center sm:justify-between',
                           isDropTarget
                             ? 'border-brand-300 bg-brand-50/80 ring-2 ring-brand-200/70'
                             : 'border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(243,246,251,0.96))]'
@@ -680,7 +680,7 @@ export function DashboardLayoutEngine({
                   <article
                     key={widget.id}
                     className={cn(
-                      'rounded-[1.6rem] border p-4 shadow-[0_16px_45px_rgba(0,0,0,0.12)] backdrop-blur',
+                      'rounded-panel border p-4 shadow-[0_16px_45px_rgba(0,0,0,0.12)] backdrop-blur',
                       isVisible ? 'border-emerald-400/15 bg-emerald-500/10' : 'border-white/10 bg-white/6',
                     )}
                   >

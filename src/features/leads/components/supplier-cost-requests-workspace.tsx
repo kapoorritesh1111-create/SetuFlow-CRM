@@ -48,7 +48,7 @@ function ReadinessBadge({ level }: { level: string }) {
 
 function StageDot({ stage }: { stage: string }) {
   const s = stage.toLowerCase();
-  const color = s.includes('approved') ? 'bg-emerald-500' : s.includes('cost') || s.includes('sample') ? 'bg-[#279491]' : s.includes('document') ? 'bg-amber-400' : s.includes('profile') || s.includes('review') ? 'bg-blue-400' : 'bg-slate-300';
+  const color = s.includes('approved') ? 'bg-emerald-500' : s.includes('cost') || s.includes('sample') ? 'bg-accent-600' : s.includes('document') ? 'bg-amber-400' : s.includes('profile') || s.includes('review') ? 'bg-blue-400' : 'bg-slate-300';
   return <span className={`inline-block h-2 w-2 rounded-full ${color}`} />;
 }
 
@@ -68,19 +68,24 @@ export function SupplierCostRequestsWorkspace(props: Props) {
           <p className="mt-1 text-sm text-slate-500">RFQs, samples, supplier responses, comparison, and approval readiness.</p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">
-          <Link href="/leads?mode=suppliers" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-[#279491] hover:text-[#279491] transition-colors">
+          <Link href="/leads?mode=suppliers" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-accent-600 hover:text-accent-600 transition-colors">
             + New Cost Request
           </Link>
           <Link href="/leads?mode=suppliers" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-300 transition-colors">
             Compare Responses
           </Link>
-          <Link href="/leads?mode=suppliers&filter=approval" className="rounded-xl bg-[#1F487C] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#163561] transition-colors">
+          <Link href="/leads?mode=suppliers&filter=approval" className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 transition-colors">
             Approval Queue
           </Link>
         </div>
       </div>
 
-      {/* KPI row */}
+      {/* Mobile-only mode switcher — without this there was no way back to Buyer/All from here */}
+      <div className="flex gap-0.5 rounded-ctl bg-surface-2 p-[3px] md:hidden">
+        <Link href="/quotes?mode=all" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">All</Link>
+        <Link href="/quotes?mode=buyers" className="flex-1 rounded-[9px] py-2 text-center text-[12.5px] font-semibold text-content-secondary">Buyer</Link>
+        <Link href="/quotes?mode=suppliers" className="flex-1 rounded-[9px] bg-brand-700 py-2 text-center text-[12.5px] font-semibold text-white">Supplier</Link>
+      </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         {[
           { label: 'Suppliers in queue', value: suppliers.length, sub: 'Active suppliers' },
@@ -93,12 +98,12 @@ export function SupplierCostRequestsWorkspace(props: Props) {
           <article key={kpi.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <span className="h-8 w-8 rounded-xl bg-teal-50 flex items-center justify-center">
-                <span className="h-3 w-3 rounded-full bg-[#279491]" />
+                <span className="h-3 w-3 rounded-full bg-accent-600" />
               </span>
               <p className="text-xs font-medium text-slate-500">{kpi.label}</p>
             </div>
             <p className="mt-2 text-2xl font-bold text-slate-950">{String(kpi.value)}</p>
-            <p className="mt-0.5 text-xs font-semibold text-[#279491]">{kpi.sub}</p>
+            <p className="mt-0.5 text-xs font-semibold text-accent-600">{kpi.sub}</p>
           </article>
         ))}
       </div>
@@ -106,7 +111,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
       {/* Main split: queue + detail */}
       <div className="grid gap-5 xl:grid-cols-[480px_minmax(0,1fr)]">
         {/* Queue */}
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-panel border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
@@ -131,7 +136,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
               <Link
                 key={s.id}
                 href={`/leads/${s.id}?mode=suppliers`}
-                className={`grid grid-cols-[1fr_80px_80px_80px] items-center gap-2 px-5 py-3 text-xs hover:bg-slate-50 transition-colors ${s.id === selected?.id ? 'bg-teal-50 border-l-2 border-l-[#279491]' : ''}`}
+                className={`grid grid-cols-[1fr_80px_80px_80px] items-center gap-2 px-5 py-3 text-xs hover:bg-slate-50 transition-colors ${s.id === selected?.id ? 'bg-teal-50 border-l-2 border-l-accent-600' : ''}`}
               >
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-slate-900">{s.company_name}</p>
@@ -153,7 +158,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
             <span>Showing 1 to {suppliers.length} of {suppliers.length} suppliers</span>
             <div className="flex items-center gap-2">
               <button className="rounded border border-slate-200 px-2 py-0.5 text-slate-500">←</button>
-              <span className="rounded bg-[#1F487C] px-2 py-0.5 font-bold text-white">1</span>
+              <span className="rounded bg-brand-700 px-2 py-0.5 font-bold text-white">1</span>
               <button className="rounded border border-slate-200 px-2 py-0.5 text-slate-500">→</button>
               <span className="ml-2">25 / page ▾</span>
             </div>
@@ -164,7 +169,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
         {selected ? (
           <div className="space-y-4">
             {/* Supplier header */}
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-600 text-lg font-black text-white shrink-0">
@@ -185,7 +190,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link href={`/leads/${selected.id}?mode=suppliers`} className="rounded-xl bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163561] transition-colors">
+                  <Link href={`/leads/${selected.id}?mode=suppliers`} className="rounded-xl bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 transition-colors">
                     Open supplier
                   </Link>
                   <button className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300 transition-colors">Send Revision</button>
@@ -214,10 +219,10 @@ export function SupplierCostRequestsWorkspace(props: Props) {
             </div>
 
             {/* Tabs + content */}
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-panel border border-slate-200 bg-white shadow-sm">
               <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-5 pt-4 pb-0">
                 {['Cost Requests', 'Samples', 'Responses', 'Comparison', 'Notes', 'Activity'].map((t) => (
-                  <button key={t} type="button" className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-semibold transition-colors ${t === 'Cost Requests' ? 'border-b-2 border-[#1F487C] text-[#1F487C]' : 'text-slate-500 hover:text-slate-800'}`}>
+                  <button key={t} type="button" className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-semibold transition-colors ${t === 'Cost Requests' ? 'border-b-2 border-brand-700 text-brand-700' : 'text-slate-500 hover:text-slate-800'}`}>
                     {t}
                   </button>
                 ))}
@@ -263,7 +268,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
                   <div className="rounded-2xl border border-dashed border-teal-200 bg-teal-50/30 px-6 py-10 text-center">
                     <p className="font-semibold text-slate-800">No cost requests yet</p>
                     <p className="mt-2 text-sm text-slate-500">Create a cost request to initiate sourcing without touching buyer quotes.</p>
-                    <Link href={`/leads/${selected.id}/cost-request/new?mode=suppliers`} className="mt-3 inline-block rounded-xl bg-[#1F487C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#163561]">Create First Cost Request</Link>
+                    <Link href={`/leads/${selected.id}/cost-request/new?mode=suppliers`} className="mt-3 inline-block rounded-xl bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">Create First Cost Request</Link>
                   </div>
                 )}
 
@@ -304,7 +309,7 @@ export function SupplierCostRequestsWorkspace(props: Props) {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+          <div className="flex items-center justify-center rounded-panel border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
             <div>
               <p className="font-semibold text-slate-700">Select a supplier</p>
               <p className="mt-1 text-sm text-slate-400">Click a supplier in the queue to see cost requests and responses.</p>
@@ -316,10 +321,10 @@ export function SupplierCostRequestsWorkspace(props: Props) {
       {/* Sourcing risk + buyer demand linkage */}
       {selected && (
         <div className="grid gap-4 xl:grid-cols-2">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-bold text-slate-900">Sourcing Risk</p>
-              <Link href={`/leads/${selected.id}?mode=suppliers#compliance`} className="text-xs font-semibold text-[#279491] hover:underline">View risk details →</Link>
+              <Link href={`/leads/${selected.id}?mode=suppliers#compliance`} className="text-xs font-semibold text-accent-600 hover:underline">View risk details →</Link>
             </div>
             <div className="space-y-2">
               {[
@@ -335,17 +340,17 @@ export function SupplierCostRequestsWorkspace(props: Props) {
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-bold text-slate-900">Buyer Demand Linkage</p>
-              <Link href={`/leads/${selected.id}?mode=suppliers#linked_demand`} className="text-xs font-semibold text-[#279491] hover:underline">View all linked demand</Link>
+              <Link href={`/leads/${selected.id}?mode=suppliers#linked_demand`} className="text-xs font-semibold text-accent-600 hover:underline">View all linked demand</Link>
             </div>
             <p className="mb-3 text-xs text-slate-400">{selectedSupplierDemand} connected demand records</p>
             {selectedSupplierDemand > 0 ? (
               <div className="space-y-2">
                 {['BD-' + new Date().getFullYear() + '-00123', 'BD-' + new Date().getFullYear() + '-00124', 'BD-' + new Date().getFullYear() + '-00125'].slice(0, selectedSupplierDemand).map((id, i) => (
                   <div key={id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
-                    <Link href="#" className="font-semibold text-[#279491] hover:underline">{id}</Link>
+                    <Link href="#" className="font-semibold text-accent-600 hover:underline">{id}</Link>
                     <span className="font-bold text-slate-800">USD {(7200 - i * 600).toLocaleString()}</span>
                   </div>
                 ))}

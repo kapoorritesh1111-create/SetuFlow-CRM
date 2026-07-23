@@ -50,8 +50,8 @@ function CrmFeatureOverlay({ phase, reducedMotion }: { phase: CrmPhase; reducedM
       <style>{`
         @keyframes guruGlow { 0%,100% { box-shadow: 0 22px 70px rgba(13,39,30,0.22); } 50% { box-shadow: 0 30px 90px rgba(53,159,145,0.26); } }
       `}</style>
-      <div className={`absolute bottom-[5.6rem] right-5 hidden w-[540px] rounded-[2rem] border border-white/50 bg-gradient-to-br from-[#102619]/82 via-[#17341f]/72 to-[#1F487C]/52 p-1 shadow-[0_22px_70px_rgba(13,39,30,0.24)] backdrop-blur-xl lg:block xl:right-10 ${pulse}`}>
-        <div className="rounded-[1.72rem] border border-white/14 bg-white/[0.08] px-5 py-4">
+      <div className={`absolute bottom-[5.6rem] right-5 hidden w-[540px] rounded-hero border border-white/50 bg-gradient-to-br from-[#102619]/82 via-[#17341f]/72 to-brand-700/52 p-1 shadow-[0_22px_70px_rgba(13,39,30,0.24)] backdrop-blur-xl lg:block xl:right-10 ${pulse}`}>
+        <div className="rounded-hero border border-white/14 bg-white/[0.08] px-5 py-4">
           <div className="flex items-center gap-4">
             <SetuGuruMark />
             <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ function CrmFeatureOverlay({ phase, reducedMotion }: { phase: CrmPhase; reducedM
                     Assists every trade move, operator stays in control.
                   </div>
                 </div>
-                <span className="shrink-0 rounded-full border border-white/45 bg-white/90 px-3 py-1 text-[9px] font-black uppercase tracking-wide text-[#1F487C]">
+                <span className="shrink-0 rounded-full border border-white/45 bg-white/90 px-3 py-1 text-[9px] font-black uppercase tracking-wide text-brand-700">
                   Live CRM
                 </span>
               </div>

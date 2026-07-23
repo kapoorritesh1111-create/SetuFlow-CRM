@@ -102,7 +102,7 @@ function TabBtn({ id, label, active, badge, onClick }: { id: string; label: stri
       onClick={onClick}
       className={`relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all ${
         active
-          ? 'bg-[#1F487C] text-white shadow-sm'
+          ? 'bg-brand-700 text-white shadow-sm'
           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
       }`}
     >
@@ -121,7 +121,7 @@ function SectionHead({ title, action, actionHref }: { title: string; action?: st
     <div className="mb-3 flex items-center justify-between">
       <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">{title}</p>
       {action && actionHref && (
-        <Link href={actionHref} className="text-xs font-semibold text-[#279491] hover:underline">{action}</Link>
+        <Link href={actionHref} className="text-xs font-semibold text-accent-600 hover:underline">{action}</Link>
       )}
     </div>
   );
@@ -144,7 +144,7 @@ function RiskBadge({ level }: { level: string }) {
 }
 
 function ReadinessBar({ pct, tone }: { pct: number; tone: 'teal' | 'amber' | 'rose' }) {
-  const bg = { teal: 'bg-[#279491]', amber: 'bg-amber-400', rose: 'bg-rose-400' }[tone];
+  const bg = { teal: 'bg-accent-600', amber: 'bg-amber-400', rose: 'bg-rose-400' }[tone];
   return (
     <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
       <div className={`h-full rounded-full ${bg} transition-all`} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -208,10 +208,10 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
   return (
     <div data-s41-supplier-command-center="true" className="mx-auto max-w-[1560px] space-y-5 p-4 pb-24 md:p-6">
       {/* ─── Header ─── */}
-      <div className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+      <div className="rounded-hero border border-slate-200 bg-white shadow-sm">
         {/* Top bar */}
         <div className="border-b border-slate-100 px-6 py-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#279491]">Supplier Workspace</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">Supplier Workspace</p>
           <p className="mt-0.5 text-sm text-slate-500">Qualification, compliance, cost requests, response tracking, and approval in one place.</p>
         </div>
 
@@ -248,7 +248,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
           <div className="flex shrink-0 flex-col gap-2 xl:min-w-[200px]">
             <Link
               href={`/leads/${lead?.id}/cost-request/new?mode=suppliers`}
-              className="flex items-center justify-center gap-2 rounded-xl bg-[#1F487C] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#163561] transition-colors"
+              className="flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-800 transition-colors"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               Create Cost Request
@@ -263,7 +263,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
             </Link>
             <form action={markSupplierUnderReview}>
               <input type="hidden" name="lead_id" value={lead?.id ?? ''} />
-              <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#279491]/30 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-[#279491] hover:bg-teal-100 transition-colors">
+              <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-accent-600/30 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-accent-600 hover:bg-teal-100 transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                 Start Approval Review
               </button>
@@ -281,23 +281,23 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                 <li key={phase.key} className="flex flex-1 items-center">
                   <div className="flex flex-col items-center">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                      status === 'done'   ? 'bg-[#279491] text-white' :
-                      status === 'active' ? 'border-2 border-[#1F487C] bg-[#1F487C] text-white shadow-md' :
+                      status === 'done'   ? 'bg-accent-600 text-white' :
+                      status === 'active' ? 'border-2 border-brand-700 bg-brand-700 text-white shadow-md' :
                       'border-2 border-slate-200 bg-white text-slate-400'
                     }`}>
                       {status === 'done' ? (
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                       ) : phase.n}
                     </div>
-                    <span className={`mt-1.5 text-[11px] font-semibold ${status === 'active' ? 'text-[#1F487C]' : status === 'done' ? 'text-[#279491]' : 'text-slate-400'}`}>
+                    <span className={`mt-1.5 text-[11px] font-semibold ${status === 'active' ? 'text-brand-700' : status === 'done' ? 'text-accent-600' : 'text-slate-400'}`}>
                       {phase.label}
                     </span>
-                    <span className={`text-[10px] ${status === 'active' ? 'text-[#1F487C]/80 font-medium' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] ${status === 'active' ? 'text-brand-700/80 font-medium' : 'text-slate-400'}`}>
                       {status === 'done' ? 'Completed' : status === 'active' ? 'In Progress' : 'Pending'}
                     </span>
                   </div>
                   {!isLast && (
-                    <div className={`mx-2 h-0.5 flex-1 ${i < currentPhase - 1 ? 'bg-[#279491]' : 'bg-slate-200'}`} />
+                    <div className={`mx-2 h-0.5 flex-1 ${i < currentPhase - 1 ? 'bg-accent-600' : 'bg-slate-200'}`} />
                   )}
                 </li>
               );
@@ -349,7 +349,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
       {/* ─── Main content: tabs left + sidebar right ─── */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         {/* Tab panel */}
-        <div className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-hero border border-slate-200 bg-white shadow-sm">
           {/* Tab bar */}
           <div className="overflow-x-auto border-b border-slate-100 px-5 pt-4 pb-0">
             <div className="flex gap-2 pb-4">
@@ -375,7 +375,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Supplier Profile Snapshot</p>
-                      <Link href={`/leads/${lead?.id}?mode=suppliers`} className="text-xs font-semibold text-[#279491] hover:underline">✏ Edit Profile</Link>
+                      <Link href={`/leads/${lead?.id}?mode=suppliers`} className="text-xs font-semibold text-accent-600 hover:underline">✏ Edit Profile</Link>
                     </div>
                     <FieldGrid rows={[
                       { label: 'Contact',  value: lead?.contact_name },
@@ -390,14 +390,14 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                   {/* Capability & Compliance + Linked Demand summary */}
                   <div className="space-y-4">
                     <div>
-                      <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Capability & Compliance Summary</p><button type="button" onClick={() => setActiveTab('capability')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button></div>
+                      <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Capability & Compliance Summary</p><button type="button" onClick={() => setActiveTab('capability')} className="text-xs font-semibold text-accent-600 hover:underline">View All</button></div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                           <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Top Capabilities</p>
                           <ul className="mt-2 space-y-1.5">
                             {productInterests.slice(0, 3).map((p: any) => (
                               <li key={p.id} className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#279491]" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-accent-600" />
                                 {p.name || p.label || 'Product'}
                               </li>
                             ))}
@@ -426,13 +426,13 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                     </div>
 
                     <div>
-                      <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Linked Demand Overview</p><button type="button" onClick={() => setActiveTab('linked_demand')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button></div>
+                      <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Linked Demand Overview</p><button type="button" onClick={() => setActiveTab('linked_demand')} className="text-xs font-semibold text-accent-600 hover:underline">View All</button></div>
                       {demandMatches.length ? (
                         <div className="space-y-1.5">
                           {demandMatches.slice(0, 3).map((m) => (
                             <div key={m.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
                               <span className="font-medium text-slate-800">{m.title}</span>
-                              <span className="flex items-center gap-1 text-[#279491]">
+                              <span className="flex items-center gap-1 text-accent-600">
                                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
                                 {m.confidence === 'High confidence' ? '2 Linked Demands' : '1 Linked Demand'}
                               </span>
@@ -524,7 +524,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-slate-700">Procurement Requests ({rfqs.length})</p>
-                  <Link href={`/leads/${lead?.id}/cost-request/new?mode=suppliers`} className="rounded-xl bg-[#1F487C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#163561]">+ New Cost Request</Link>
+                  <Link href={`/leads/${lead?.id}/cost-request/new?mode=suppliers`} className="rounded-xl bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">+ New Cost Request</Link>
                 </div>
                 {rfqs.length > 0 ? (
                   <div className="overflow-x-auto rounded-2xl border border-slate-200">
@@ -638,7 +638,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                     <div key={m.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <p className="font-semibold text-slate-900">{m.title}</p>
                       <p className="mt-1 text-sm text-slate-600">{m.reason}</p>
-                      <p className="mt-1 text-xs font-medium text-[#279491]">{m.confidence}</p>
+                      <p className="mt-1 text-xs font-medium text-accent-600">{m.confidence}</p>
                     </div>
                   ))}
                 </div>
@@ -691,10 +691,10 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
         {/* ─── Right sidebar ─── */}
         <div className="space-y-4">
           {/* Next Best Actions */}
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Next Best Actions</p>
-              <button type="button" onClick={() => setActiveTab('compliance')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button>
+              <button type="button" onClick={() => setActiveTab('compliance')} className="text-xs font-semibold text-accent-600 hover:underline">View All</button>
             </div>
             <div className="space-y-2">
               {[
@@ -721,10 +721,10 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
 
           {/* Outstanding Gaps */}
           {gaps.length > 0 && (
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Outstanding Gaps</p>
-                <button type="button" onClick={() => setActiveTab('compliance')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button>
+                <button type="button" onClick={() => setActiveTab('compliance')} className="text-xs font-semibold text-accent-600 hover:underline">View All</button>
               </div>
               <div className="space-y-2">
                 {gaps.map((g) => (
@@ -738,10 +738,10 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
           )}
 
           {/* Procurement Timeline */}
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-panel border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Procurement Timeline</p>
-              <button type="button" onClick={() => setActiveTab('activity')} className="text-xs font-semibold text-[#279491] hover:underline">View All</button>
+              <button type="button" onClick={() => setActiveTab('activity')} className="text-xs font-semibold text-accent-600 hover:underline">View All</button>
             </div>
             <div className="space-y-4">
               {[
@@ -750,7 +750,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
                 { label: 'Cost request creation', sub: 'Next recommended step', date: rfqs.length ? fmtDate(rfqs[0]?.updated_at) : 'Upcoming', done: rfqs.length > 0 },
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${step.done ? 'bg-[#279491]' : i === 1 ? 'border-2 border-[#1F487C] bg-white' : 'border-2 border-slate-200 bg-white'}`}>
+                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${step.done ? 'bg-accent-600' : i === 1 ? 'border-2 border-brand-700 bg-white' : 'border-2 border-slate-200 bg-white'}`}>
                     {step.done && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                   </div>
                   <div className="flex-1 min-w-0">
