@@ -34,6 +34,12 @@ type ResultRow = {
   membership_id?: string;
 };
 
+type Notice = {
+  tone: 'info' | 'success' | 'error';
+  title: string;
+  detail: string;
+};
+
 const MAX_BATCH = 25;
 
 function newRow(index: number): UserRow {
@@ -139,6 +145,12 @@ const cardStyle = {
   boxShadow: '0 16px 44px rgba(15, 23, 42, 0.05)',
 } as const;
 
+function noticeStyle(tone: Notice['tone']) {
+  if (tone === 'error') return { border: '#fecaca', background: '#fef2f2', color: '#991b1b', icon: '!' };
+  if (tone === 'success') return { border: '#bbf7d0', background: '#ecfdf5', color: '#047857', icon: '✓' };
+  return { border: '#bfdbfe', background: '#eff6ff', color: '#1d4ed8', icon: 'i' };
+}
+
 export function ClientUserProvisioner({
   organizations,
   roles,
@@ -160,8 +172,9 @@ export function ClientUserProvisioner({
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<ResultRow[]>([]);
-  const [message, setMessage] = useState('');
+  const [notice, setNotice] = useState<Notice | null>(null);
   const uploadRef = useRef<HTMLInputElement | null>(null);
+  const noticeRef = useRef<HTMLDivElement | null>(null);
 
   const selectedOrganization = organizations.find((org) => org.id === organizationId) ?? null;
   const roleOptions = useMemo(() => canonicalRoleOptions(roles, organizationId), [roles, organizationId]);
@@ -172,6 +185,11 @@ export function ClientUserProvisioner({
   const remainingSeats = selectedOrganization?.maxUsers
     ? Math.max(0, selectedOrganization.maxUsers - selectedOrganization.activeUsers)
     : null;
+
+  function showNotice(tone: Notice['tone'], title: string, detail: string) {
+    setNotice({ tone, title, detail });
+    window.setTimeout(() => noticeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+  }
 
   function updateRow(id: string, patch: Partial<UserRow>) {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
@@ -190,7 +208,7 @@ export function ClientUserProvisioner({
     setRows([newRow(0)]);
     setPassword('');
     setResults([]);
-    setMessage('');
+    setNotice(null);
     if (uploadRef.current) uploadRef.current.value = '';
   }
 
@@ -208,6 +226,7 @@ export function ClientUserProvisioner({
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+    showNotice('info', 'Template downloaded', 'Complete the CSV, save it, then upload it back into this screen.');
   }
 
   async function uploadTemplate(event: ChangeEvent<HTMLInputElement>) {
@@ -215,10 +234,10 @@ export function ClientUserProvisioner({
     if (!file) return;
 
     setResults([]);
-    setMessage('');
+    setNotice(null);
 
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      setMessage('Upload the CSV template downloaded from this page.');
+      showNotice('error', 'Upload failed', 'Upload the CSV template downloaded from this page.');
       event.target.value = '';
       return;
     }
@@ -226,7 +245,7 @@ export function ClientUserProvisioner({
     try {
       const parsed = parseCsv(await file.text());
       if (parsed.length < 2) {
-        setMessage('The CSV does not contain any user rows.');
+        showNotice('error', 'No users found', 'The CSV does not contain any user rows.');
         return;
       }
 
@@ -238,7 +257,7 @@ export function ClientUserProvisioner({
       const roleColumn = findColumn('role', 'role_name');
 
       if ([fullNameColumn, usernameColumn, emailColumn, roleColumn].some((index) => index < 0)) {
-        setMessage('CSV headers must include full_name, username, email, and role.');
+        showNotice('error', 'Invalid CSV headers', 'The CSV must include full_name, username, email, and role.');
         return;
       }
 
@@ -257,11 +276,11 @@ export function ClientUserProvisioner({
         .filter((row) => row.fullName || row.username || row.email || row.roleName);
 
       if (!imported.length) {
-        setMessage('The CSV does not contain any completed user rows.');
+        showNotice('error', 'No users found', 'The CSV does not contain any completed user rows.');
         return;
       }
       if (imported.length > MAX_BATCH) {
-        setMessage(`The CSV contains ${imported.length} users. A maximum of ${MAX_BATCH} can be created at one time.`);
+        showNotice('error', 'Batch too large', `The CSV contains ${imported.length} users. A maximum of ${MAX_BATCH} can be created at one time.`);
         return;
       }
 
@@ -272,20 +291,21 @@ export function ClientUserProvisioner({
       ));
 
       setRows(imported);
-      setMessage(
+      showNotice(
+        invalidRoles.length ? 'error' : 'success',
+        invalidRoles.length ? 'CSV imported with role errors' : 'CSV imported successfully',
         invalidRoles.length
-          ? `Imported ${imported.length} users. Correct these role values before creating users: ${invalidRoles.join(', ')}.`
-          : `Imported ${imported.length} users. Review the rows, enter the temporary password, then create the accounts.`,
+          ? `Correct these role values before creating users: ${invalidRoles.join(', ')}.`
+          : `${imported.length} users loaded. Review the rows, enter the temporary password, then create the accounts.`,
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to read the CSV file.');
+      showNotice('error', 'Unable to read CSV', error instanceof Error ? error.message : 'The uploaded file could not be processed.');
     } finally {
       event.target.value = '';
     }
   }
 
   async function provision() {
-    setMessage('');
     setResults([]);
 
     const activeRows = rows
@@ -297,35 +317,73 @@ export function ClientUserProvisioner({
       }))
       .filter((row) => row.full_name || row.username || row.email || row.role_name);
 
-    if (!organizationId) return setMessage('Choose a client organization.');
-    if (!password || password.length < 12) return setMessage('Temporary password must be at least 12 characters.');
-    if (!activeRows.length) return setMessage('Add or upload at least one user.');
+    if (!organizationId) return showNotice('error', 'Organization required', 'Choose a client organization.');
+    if (!password || password.length < 12) return showNotice('error', 'Password required', 'Temporary password must be at least 12 characters.');
+    if (!activeRows.length) return showNotice('error', 'No users to create', 'Add or upload at least one user.');
     if (activeRows.some((row) => !row.full_name || !row.username || !row.email || !row.role_name)) {
-      return setMessage('Every row needs full name, username, email, and role.');
+      return showNotice('error', 'Incomplete user rows', 'Every row needs full name, username, email, and role.');
     }
+
     const invalidRole = activeRows.find((row) => !roleLookup.has(row.role_name.toLowerCase()));
-    if (invalidRole) return setMessage(`Role is not available for this organization: ${invalidRole.role_name}`);
+    if (invalidRole) return showNotice('error', 'Invalid role', `Role is not available for this organization: ${invalidRole.role_name}`);
+
+    if (remainingSeats !== null && activeRows.length > remainingSeats) {
+      return showNotice(
+        'error',
+        'Not enough available seats',
+        `${selectedOrganization?.name ?? 'This organization'} has ${remainingSeats} available seats, but ${activeRows.length} users were requested. Increase the seat limit before creating these accounts.`,
+      );
+    }
 
     setSubmitting(true);
+    showNotice('info', 'Creating users', `Submitting ${activeRows.length} user${activeRows.length === 1 ? '' : 's'} for ${selectedOrganization?.name ?? 'the selected organization'}...`);
+
     try {
       const response = await fetch('/api/smc/client-users/provision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ organization_id: organizationId, password, users: activeRows }),
       });
-      const json = await response.json().catch(() => ({}));
+
+      const raw = await response.text();
+      let json: { error?: string; summary?: string; results?: ResultRow[] } = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {
+        json = {};
+      }
+
       if (!response.ok) {
-        setMessage(json.error ?? 'Unable to create users.');
+        const detail = json.error
+          ? `${json.error} (HTTP ${response.status})`
+          : `The server returned HTTP ${response.status}${raw ? `: ${raw.slice(0, 300)}` : ''}.`;
+        showNotice('error', 'User creation failed', detail);
         return;
       }
-      setResults(json.results ?? []);
-      setMessage(json.summary ?? 'Provisioning completed.');
+
+      const nextResults = json.results ?? [];
+      setResults(nextResults);
+      const createdCount = nextResults.filter((row) => row.status === 'created').length;
+      const failedCount = nextResults.filter((row) => row.status === 'failed').length;
+
+      if (!nextResults.length) {
+        showNotice('error', 'No result returned', json.summary ?? 'The request completed, but the server returned no user results. No success should be assumed.');
+        return;
+      }
+
+      showNotice(
+        failedCount ? 'error' : 'success',
+        failedCount ? 'Provisioning completed with errors' : 'Users created successfully',
+        json.summary ?? `${createdCount} created; ${failedCount} failed or skipped.`,
+      );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to create users.');
+      showNotice('error', 'Network or server error', error instanceof Error ? error.message : 'Unable to create users.');
     } finally {
       setSubmitting(false);
     }
   }
+
+  const noticeColors = notice ? noticeStyle(notice.tone) : null;
 
   return (
     <div style={{ padding: 24, display: 'grid', gap: 18 }}>
@@ -334,7 +392,7 @@ export function ClientUserProvisioner({
           <div style={{ fontSize: 11, fontWeight: 800, color: '#279491', textTransform: 'uppercase', letterSpacing: '.12em' }}>SMC internal only</div>
           <h1 style={{ margin: '6px 0 0', fontSize: 25, color: '#0f172a' }}>Client User Setup</h1>
           <p style={{ margin: '7px 0 0', color: '#64748b', fontSize: 13, maxWidth: 760 }}>
-            Download the CSV, add the client users, upload it here, review the roles, then enter a temporary password in SMC to create the accounts.
+            Download the CSV, add client users, upload it, review the roles, then enter a temporary password to create the accounts.
           </p>
         </div>
         <div style={{ ...cardStyle, padding: '11px 14px', minWidth: 230 }}>
@@ -346,7 +404,7 @@ export function ClientUserProvisioner({
       <div style={{ ...cardStyle, padding: 18, display: 'grid', gridTemplateColumns: 'minmax(260px, 1.3fr) minmax(230px, .7fr)', gap: 16 }}>
         <label style={{ fontSize: 11, color: '#475569' }}>
           Client organization
-          <select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); setResults([]); setMessage(''); }} style={{ ...fieldStyle, marginTop: 6 }}>
+          <select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); setResults([]); setNotice(null); }} style={{ ...fieldStyle, marginTop: 6 }}>
             {organizations.map((org) => (
               <option key={org.id} value={org.id}>{org.name}{org.slug ? ` — ${org.slug}` : ''}</option>
             ))}
@@ -357,22 +415,28 @@ export function ClientUserProvisioner({
             <span style={{ fontSize: 10, color: '#64748b' }}>Active users</span>
             <strong style={{ display: 'block', marginTop: 5, fontSize: 20 }}>{selectedOrganization?.activeUsers ?? 0}</strong>
           </div>
-          <div style={{ border: '1px solid #eef2f7', borderRadius: 14, padding: 12, background: '#f8fafc' }}>
-            <span style={{ fontSize: 10, color: '#64748b' }}>Available seats</span>
-            <strong style={{ display: 'block', marginTop: 5, fontSize: 20 }}>{remainingSeats === null ? 'No cap' : remainingSeats}</strong>
+          <div style={{ border: `1px solid ${remainingSeats === 0 ? '#fecaca' : '#eef2f7'}`, borderRadius: 14, padding: 12, background: remainingSeats === 0 ? '#fef2f2' : '#f8fafc' }}>
+            <span style={{ fontSize: 10, color: remainingSeats === 0 ? '#b91c1c' : '#64748b' }}>Available seats</span>
+            <strong style={{ display: 'block', marginTop: 5, fontSize: 20, color: remainingSeats === 0 ? '#b91c1c' : '#0f172a' }}>{remainingSeats === null ? 'No cap' : remainingSeats}</strong>
           </div>
         </div>
       </div>
 
+      {notice && noticeColors ? (
+        <div ref={noticeRef} role="alert" aria-live="assertive" tabIndex={-1} style={{ border: `2px solid ${noticeColors.border}`, background: noticeColors.background, color: noticeColors.color, borderRadius: 16, padding: 16, display: 'grid', gridTemplateColumns: '36px 1fr', gap: 12, alignItems: 'start', boxShadow: '0 12px 28px rgba(15,23,42,.08)' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 999, display: 'grid', placeItems: 'center', border: `1px solid ${noticeColors.border}`, background: '#fff', fontWeight: 900, fontSize: 16 }}>{noticeColors.icon}</div>
+          <div>
+            <strong style={{ display: 'block', fontSize: 14 }}>{notice.title}</strong>
+            <span style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.5 }}>{notice.detail}</span>
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ ...cardStyle, padding: 18, display: 'grid', gridTemplateColumns: '1fr auto', gap: 18, alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 15 }}>1. Download and complete the user template</h2>
-          <p style={{ margin: '5px 0 0', color: '#64748b', fontSize: 11 }}>
-            CSV columns: full_name, username, email, role. Passwords are intentionally excluded from the file.
-          </p>
-          <p style={{ margin: '5px 0 0', color: '#64748b', fontSize: 10 }}>
-            Available roles for {selectedOrganization?.name ?? 'this organization'}: {roleOptions.map((role) => role.name).join(', ') || 'No roles configured'}.
-          </p>
+          <p style={{ margin: '5px 0 0', color: '#64748b', fontSize: 11 }}>CSV columns: full_name, username, email, role. Passwords are intentionally excluded.</p>
+          <p style={{ margin: '5px 0 0', color: '#64748b', fontSize: 10 }}>Available roles: {roleOptions.map((role) => role.name).join(', ') || 'No roles configured'}.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button type="button" className="smc-btn" onClick={downloadTemplate}>Download CSV template</button>
@@ -385,7 +449,7 @@ export function ClientUserProvisioner({
         <div style={{ padding: 16, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 15 }}>2. Review users and roles</h2>
-            <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 11 }}>Maximum {MAX_BATCH} users per batch. Existing Auth users are skipped for safety.</p>
+            <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 11 }}>Maximum {MAX_BATCH} users per batch. Existing Auth users are skipped.</p>
           </div>
           <button type="button" onClick={addRow} disabled={rows.length >= MAX_BATCH} className="smc-btn primary">+ Add user</button>
         </div>
@@ -435,8 +499,6 @@ export function ClientUserProvisioner({
           <button type="button" className="smc-btn primary" onClick={provision} disabled={submitting}>{submitting ? 'Creating users...' : `Create ${rows.length} user${rows.length === 1 ? '' : 's'}`}</button>
         </div>
       </div>
-
-      {message ? <div style={{ border: `1px solid ${results.some((item) => item.status === 'failed') ? '#fecaca' : '#dbe4ef'}`, background: results.some((item) => item.status === 'failed') ? '#fef2f2' : '#f8fafc', color: results.some((item) => item.status === 'failed') ? '#b91c1c' : '#334155', borderRadius: 14, padding: 13, fontSize: 12 }}>{message}</div> : null}
 
       {results.length ? (
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
