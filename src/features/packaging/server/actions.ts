@@ -810,7 +810,7 @@ export async function advancePackagingProductionStage(
     if (error) return { ok: false, error: error.message };
 
     revalidatePath('/dispatch-board');
-    revalidatePath('/admin/packaging-analytics');
+    revalidatePath('/dashboard/analytics');
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Could not update the production stage.' };

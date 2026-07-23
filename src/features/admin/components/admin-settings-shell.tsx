@@ -88,13 +88,12 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
       { key: 'packaging-families', href: '/admin/packaging-families', icon: 'tag', label: 'Packaging Service Families', sublabel: 'Catalog categories', statusDot: 'ok', packagingOnly: true },
       { key: 'packaging-templates', href: '/admin/packaging-templates', icon: 'box', label: 'Packaging Pricing Templates', sublabel: 'Rules & rates', statusDot: 'ok', packagingOnly: true },
       { key: 'packaging-reference-library', href: '/admin/packaging-reference-library', icon: 'layers', label: 'Reference Library', sublabel: 'Materials, finishes, service items', statusDot: 'ok', packagingOnly: true },
-      { key: 'packaging-analytics', href: '/admin/packaging-analytics', icon: 'analytics', label: 'Packaging Analytics', sublabel: 'Production & revenue insights', statusDot: 'ok', packagingOnly: true },
     ],
   },
   {
     label: 'Commerce Rules',
     items: [
-      { key: 'pricing-engine', href: '/admin/pricing', icon: 'dollar', label: 'Pricing Engine', statusDot: 'ok' },
+      { key: 'pricing-engine', href: '/admin/pricing-engine', icon: 'dollar', label: 'Commercial Defaults', sublabel: 'Approval threshold, currency, FX — not packaging rates', statusDot: 'ok' },
       { key: 'document-templates', href: '/admin/documents', icon: 'file', label: 'Document Templates', statusDot: 'ok' },
       { key: 'notifications', href: '/admin/notifications', icon: 'bell', label: 'Notifications', statusDot: 'ok' },
     ],

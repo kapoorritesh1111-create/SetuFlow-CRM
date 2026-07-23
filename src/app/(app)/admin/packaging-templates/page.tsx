@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamilies, getPackagingReferenceItems, getPackagingTemplates } from '@/lib/packaging/queries';
 import PricingTemplateBuilder from '@/features/packaging/components/pricing-template-builder';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,5 +34,9 @@ export default async function PackagingTemplatesAdminPage() {
     getPackagingReferenceItems(organization.id, supabase),
   ]);
 
-  return <PricingTemplateBuilder families={families} templates={templates} referenceItems={referenceItems} />;
+  return (
+    <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Packaging Pricing Templates" tbarChips={[{ label: `${templates.length} template${templates.length === 1 ? '' : 's'}`, tone: 'info' }]}>
+      <PricingTemplateBuilder families={families} templates={templates} referenceItems={referenceItems} />
+    </AdminSettingsShell>
+  );
 }

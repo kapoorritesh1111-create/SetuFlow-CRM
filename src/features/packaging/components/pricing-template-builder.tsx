@@ -17,7 +17,6 @@ import type {
 import { calculatePackagingPrice } from '@/lib/packaging/pricing-engine';
 import { checkPackagingTemplateHealth } from '@/lib/setu-guru/packaging-guidance';
 import { savePackagingTemplate, duplicatePackagingTemplate, savePackagingReferenceItem } from '@/features/packaging/server/actions';
-import { PageHeader } from '@/components/ui/page-header';
 import { workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
 
 /**
@@ -149,12 +148,26 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
 
   return (
     <div className="space-y-4 pb-16">
-      <PageHeader
-        eyebrow="Packaging Setup"
-        title="Pricing Templates"
-        description="Rules that drive live quote pricing. Preview uses the same calculation engine as the Quote Builder."
-        meta={[`${templates.length} template${templates.length === 1 ? '' : 's'}`, `${templates.filter((template) => template.is_active).length} active`]}
-      />
+      <div className="rounded-card border border-line bg-surface-1 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-content-secondary">Rules that drive live quote pricing — dimensions, materials, MOQ, and rush options. The live preview on the right uses the exact same calculation engine as the Quote Builder, so what you see here is what a buyer's quote will show.</p>
+            <p className="mt-1 text-xs font-semibold text-content-muted">{templates.length} template{templates.length === 1 ? '' : 's'} · {templates.filter((template) => template.is_active).length} active</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Link href="/admin/packaging-families" className="rounded-ctl border border-line bg-surface-app px-3 py-2 text-xs font-semibold text-content-secondary hover:bg-surface-2">← Service Families</Link>
+            <Link href="/admin/packaging-reference-library" className="rounded-ctl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100">Next: Reference Library →</Link>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-content-muted">
+          <span className="rounded-full bg-surface-2 px-2 py-1 font-semibold">1. Service Family</span>
+          <span>picks what buyers see →</span>
+          <span className="rounded-full border border-brand-300 bg-brand-50 px-2 py-1 font-semibold text-brand-700">2. Pricing Template (here)</span>
+          <span>sets the actual price rules →</span>
+          <span className="rounded-full bg-surface-2 px-2 py-1 font-semibold">3. Reference Library</span>
+          <span>keeps material/finish names consistent across templates</span>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {draft.id ? <button onClick={handleDuplicate} disabled={saving} className={`rounded-ctl px-4 py-2 text-sm font-semibold disabled:opacity-50 ${workspaceSecondaryButtonClass}`}>Duplicate</button> : null}

@@ -12,8 +12,9 @@ import { StateMessage } from '@/components/ui/state-message';
 // page, so the only visible sign of anything happening was the notice param
 // silently sitting unused in the URL. This maps every notice code the
 // actions below actually emit to a real banner.
-function quoteNoticeMessage(notice?: string | string[]) {
+function quoteNoticeMessage(notice?: string | string[], reason?: string | string[]) {
   const value = Array.isArray(notice) ? notice[0] : notice;
+  const reasonValue = Array.isArray(reason) ? reason[0] : reason;
   const success = (title: string, description?: string) => ({ title, description, tone: 'success' as const });
   const error = (title: string, description?: string) => ({ title, description, tone: 'danger' as const });
   switch (value) {
@@ -24,7 +25,10 @@ function quoteNoticeMessage(notice?: string | string[]) {
     case 'quote-follow-up-scheduled': return success('No response logged', 'Follow-up scheduled in three days.');
     case 'quote-follow-up-logged': return success('Follow-up logged');
     case 'quote-expired-archived': return success('Quote expired', 'Moved to archive. Clone a new version if the customer re-engages.');
-    case 'quote-outcome-error': return error('Could not record that outcome', 'Please try again, or contact support if this keeps happening.');
+    // S27-STARK-RETEST-01 fix: show the specific reason (e.g. "Only sent
+    // quotes can be marked accepted. Current status is draft.") when one was
+    // captured, instead of always falling back to a generic "try again."
+    case 'quote-outcome-error': return error('Could not record that outcome', reasonValue ? decodeURIComponent(reasonValue) : 'Please try again, or contact support if this keeps happening.');
     case 'quote-approval-error': return error('Could not approve this quote', 'Please try again.');
     case 'quote-rejection-error': return error('Could not reject this quote', 'Please try again.');
     case 'quote-order-error': return error('Could not move this quote to Orders', 'Please try again.');
@@ -457,7 +461,7 @@ async function SupplierCostRequestsData({ db, organizationId, selectedId }: { db
   />;
 }
 
-export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[]; group?: string|string[]; notice?: string|string[] } }) {
+export default async function QuotesPage({ searchParams }: { searchParams?: { quoteId?: string|string[]; q?: string|string[]; status?: string|string[]; company?: string|string[]; from?: string|string[]; to?: string|string[]; mode?: string|string[]; group?: string|string[]; notice?: string|string[]; reason?: string|string[] } }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>>|null = null;
   try { workspace = await getWorkspaceAccess(); } catch { return <EmptyState title="Workspace unavailable" description="Could not load workspace." />; }
   if (!hasSupabaseEnv || workspace?.missingEnv) return <EmptyState title="Configuration required" description="SETU Flow needs Supabase environment values." />;
@@ -631,7 +635,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
     if (outcome === 'accepted' || outcome === 'rejected') {
       formData.set('status', outcome);
       const result = await recordQuoteOutcomeWorkflow(undefined, formData);
-      if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-outcome-error`);
+      if (result?.error) redirect(`/quotes?quoteId=${quoteId}&notice=quote-outcome-error&reason=${encodeURIComponent(result.error)}`);
       if (outcome === 'accepted') redirect(`/orders?notice=quote-accepted&quoteId=${encodeURIComponent(quoteId)}&sourceQuoteId=${encodeURIComponent(quoteId)}`);
       redirect(`/quotes?status=archive&quoteId=${quoteId}&notice=quote-rejected`);
     }
@@ -744,7 +748,7 @@ export default async function QuotesPage({ searchParams }: { searchParams?: { qu
   const selectedProducts = selected?.lineItems.slice(0, 4) ?? [];
   const customerSections = buildCustomerSections(customerGroups, filters.group);
 
-  const quoteNotice = quoteNoticeMessage(searchParams?.notice);
+  const quoteNotice = quoteNoticeMessage(searchParams?.notice, searchParams?.reason);
 
   return (
     <>

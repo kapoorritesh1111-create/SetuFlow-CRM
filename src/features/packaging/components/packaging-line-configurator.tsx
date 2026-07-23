@@ -137,6 +137,16 @@ export default function PackagingLineConfigurator({
     [runCalculation, template?.id],
   );
 
+  // S27-STARK-RETEST-06 fix: when the current template's MOQ doesn't fit the
+  // requested quantity, surface any other active template on this same
+  // family whose MOQ would actually accommodate it — previously nothing
+  // pointed the user toward the alternative that already existed.
+  const belowMoq = Boolean(template?.moq_tiers_json?.moq && input.quantity && input.quantity < template.moq_tiers_json.moq);
+  const moqAlternatives = useMemo(
+    () => (!belowMoq || !input.quantity ? [] : familyTemplates.filter((candidate) => candidate.id !== template?.id && candidate.moq_tiers_json?.moq && candidate.moq_tiers_json.moq <= input.quantity!)),
+    [belowMoq, familyTemplates, template?.id, input.quantity],
+  );
+
   useEffect(() => {
     if (open && template?.id) runCalculation(input, template.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -421,6 +431,25 @@ export default function PackagingLineConfigurator({
                 <ul className="mt-2 space-y-1">
                   {result.validation_errors.map((error) => <li key={error} className="rounded-ctl bg-warning-bg px-3 py-2 text-sm font-medium text-warning-fg">{error}</li>)}
                 </ul>
+              ) : null}
+              {moqAlternatives.length ? (
+                <div className="mt-2 rounded-ctl border border-info-border bg-info-bg px-3 py-2 text-sm text-info-fg">
+                  <p className="font-medium">
+                    {moqAlternatives.length === 1 ? 'A lower-MOQ template for this family would fit this quantity:' : 'Lower-MOQ templates for this family would fit this quantity:'}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {moqAlternatives.map((alt) => (
+                      <button
+                        key={alt.id}
+                        type="button"
+                        onClick={() => setTemplateId(alt.id)}
+                        className="rounded-ctl border border-info-border bg-white px-2.5 py-1 text-xs font-semibold text-info-fg hover:bg-info-bg"
+                      >
+                        Switch to {alt.name} (MOQ {alt.moq_tiers_json?.moq?.toLocaleString()})
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ) : null}
               {result?.ok ? (
                 <div className="mt-2">

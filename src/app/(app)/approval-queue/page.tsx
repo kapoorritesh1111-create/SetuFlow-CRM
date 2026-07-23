@@ -50,19 +50,38 @@ async function syncQuoteVersionAfterDecision(input: {
 }) {
   const now = new Date().toISOString();
   const approved = input.decision === 'approved';
-  const nextStatus = approved ? 'approved' : 'draft';
-  const { error: versionError } = await input.supabase
-    .from('quote_versions')
-    .update({
-      status: nextStatus,
-      approved_at: approved ? now : null,
-      approved_by: approved ? input.actorUserId : null,
-      updated_at: now,
-    })
-    .eq('quote_id', input.quoteId)
-    .eq('id', input.quoteVersionId);
 
-  if (versionError) throw versionError;
+  // S27-STARK-RETEST-01 fix: this previously set quote_versions.status to
+  // 'approved' on approval. That directly contradicts
+  // app_submit_quote_approval_tx / app_decide_quote_approval_tx's documented
+  // design (see 20260625150000_s37_enh_008_quote_approval_flow.sql): "The
+  // version is NEVER promoted to the immutable 'approved' status here,
+  // because the locked version guard forbids approved -> sent." Once
+  // promoted, app_quote_version_is_immutable() treats the version as locked,
+  // and the DB-level integrity triggers then reject any further edit,
+  // resubmit-for-approval, or accept action against it -- with no UI path
+  // back out, since the client-side TERMINAL set (used to show a "quote is
+  // locked, start a new one" banner) doesn't include 'approved' either, so
+  // the builder kept rendering as if it were still editable. The approval
+  // decision itself is fully recorded in approval_requests (source of
+  // truth, read via app_quote_version_approval_state) and quotes.approval_required
+  // below -- the version's own status should only change on rejection,
+  // back to 'draft' so the buyer's team can revise it.
+  if (!approved) {
+    const { error: versionError } = await input.supabase
+      .from('quote_versions')
+      .update({ status: 'draft', updated_at: now })
+      .eq('quote_id', input.quoteId)
+      .eq('id', input.quoteVersionId);
+    if (versionError) throw versionError;
+  } else {
+    const { error: versionError } = await input.supabase
+      .from('quote_versions')
+      .update({ approved_at: now, approved_by: input.actorUserId, updated_at: now })
+      .eq('quote_id', input.quoteId)
+      .eq('id', input.quoteVersionId);
+    if (versionError) throw versionError;
+  }
 
   await input.supabase
     .from('quotes')

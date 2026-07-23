@@ -43,5 +43,32 @@ export async function POST(request: NextRequest) {
     .eq('approval_token', token);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // S27-STARK-RETEST-05 fix: the Design Queue reads a static
+  // input_snapshot_json.input.artwork_status field, not the proof's own
+  // approval state — the two were never kept in sync, so an approved proof
+  // never removed its job from the queue. Only do this on approval, and
+  // only advance forward (never regress a status the team already set to
+  // something further along, e.g. if they'd manually marked it beyond
+  // print_ready already for an unrelated reason).
+  if (decision === 'approved') {
+    const { data: line } = await admin
+      .from('quote_line_items')
+      .select('id, input_snapshot_json')
+      .eq('id', proof.quote_line_item_id)
+      .eq('organization_id', proof.organization_id)
+      .maybeSingle();
+    if (line) {
+      const snapshot = line.input_snapshot_json ?? {};
+      const input = snapshot.input ?? {};
+      if (input.artwork_status !== 'print_ready') {
+        await admin
+          .from('quote_line_items')
+          .update({ input_snapshot_json: { ...snapshot, input: { ...input, artwork_status: 'print_ready' } } })
+          .eq('id', proof.quote_line_item_id)
+          .eq('organization_id', proof.organization_id);
+      }
+    }
+  }
+
   return NextResponse.json({ ok: true, status: decision });
 }

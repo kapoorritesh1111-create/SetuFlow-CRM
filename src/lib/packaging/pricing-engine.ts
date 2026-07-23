@@ -141,7 +141,15 @@ export function calculatePackagingPrice(
   if (input.rush_key && !rush) validationErrors.push('Selected rush option is not configured on this template.');
 
   // ---- Warnings (never block save; Growth Agent surfaces these) ----------
-  if (!input.artwork_status || input.artwork_status === 'not_provided') warnings.push('Artwork status is missing.');
+  // S27-STARK-RETEST-04 fix: this previously fired the same "Artwork status
+  // is missing" message whether the field was genuinely left unset or the
+  // user had explicitly selected "Not provided yet" (the normal, expected
+  // choice for a lead that needs a design done) — the retest read this as a
+  // stale-validation bug, but it was correct data with a misleading label:
+  // "missing" implies nothing was chosen, which isn't true for the
+  // not_provided case.
+  if (!input.artwork_status) warnings.push('Artwork status is missing.');
+  else if (input.artwork_status === 'not_provided') warnings.push('Artwork not provided yet — this job will need Design before it can move to production.');
   if (input.artwork_status === 'needs_prepress') warnings.push('Artwork needs pre-press — add the pre-press charge if applicable.');
   if (quantity && moq.tiers?.length) {
     const current = tierMultiplier(moq, quantity);

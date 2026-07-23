@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamiliesForAdmin, getPackagingTemplates } from '@/lib/packaging/queries';
 import PackagingFamilyManager from '@/features/packaging/components/packaging-family-manager';
+import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,5 +33,9 @@ export default async function PackagingFamiliesAdminPage() {
     getPackagingTemplates(organization.id, supabase),
   ]);
 
-  return <PackagingFamilyManager families={families} templates={templates} />;
+  return (
+    <AdminSettingsShell active="packaging-families" organizationName={organization.name} sectionTitle="Packaging Service Families" tbarChips={[{ label: `${families.length} families`, tone: 'info' }]}>
+      <PackagingFamilyManager families={families} templates={templates} />
+    </AdminSettingsShell>
+  );
 }

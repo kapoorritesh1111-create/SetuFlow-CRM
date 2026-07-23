@@ -19,7 +19,20 @@ function quoteCurrency(data: LeadProfileData, quote: any | null) { return quote?
 function finalPrice(item: any) { return Number(item.unit_price ?? item.final_unit_price ?? item.catalog_price_amount ?? 0); }
 function defaultMoq(item: any) { return Number(item.moq ?? item.quantity ?? 1) || 1; }
 function packagingLineItems(quote: any | null) { return (quote?.lineItems ?? []).filter((item: any) => item.line_type === 'packaging'); }
-function lineItems(quote: any | null, data: LeadProfileData) { const productLines = (quote?.lineItems ?? []).filter((item: any) => (item.line_type ?? 'product') !== 'packaging'); return productLines.length ? productLines : data.linkedProducts.slice(0, 4).map((product: any) => ({ id: `seed-${product.id}`, product_id: product.id, quantity: 1, unit_price: null, currency: quoteCurrency(data, quote), notes: '', pack_label: 'Case' })); }
+function lineItems(quote: any | null, data: LeadProfileData) {
+  const allLines = quote?.lineItems ?? [];
+  const productLines = allLines.filter((item: any) => (item.line_type ?? 'product') !== 'packaging');
+  if (productLines.length) return productLines;
+  // S27-STARK-RETEST-02 fix: only synthesize a preview product line from the
+  // lead's mapped-interest products when the quote is genuinely empty. Once
+  // it already has real packaging line content, injecting a synthetic
+  // $0.00 "product" line here corrupted the total (mixed currencies summed
+  // together and mislabeled) and permanently tripped the approval gate
+  // (lineApprovalRequired flags any price <= 0 line as needing approval).
+  const hasPackagingLines = allLines.some((item: any) => (item.line_type ?? 'product') === 'packaging');
+  if (hasPackagingLines) return [];
+  return data.linkedProducts.slice(0, 4).map((product: any) => ({ id: `seed-${product.id}`, product_id: product.id, quantity: 1, unit_price: null, currency: quoteCurrency(data, quote), notes: '', pack_label: 'Case' }));
+}
 function quoteTotal(quote: any | null, data: LeadProfileData) { return lineItems(quote, data).reduce((sum: number, item: any) => sum + defaultMoq(item) * finalPrice(item), 0) + packagingLineItems(quote).reduce((sum: number, item: any) => sum + defaultMoq(item) * finalPrice(item), 0); }
 function lineApprovalRequired(item: any) { const price = finalPrice(item); const meta = item.calculation_meta || {}; return price <= 0 || item.override_status === 'approval_required' || meta.approval_required === true || Boolean(item.is_price_overridden || item.is_overridden); }
 function quoteNeedsApproval(quote: any | null, data: LeadProfileData) { return Boolean(quote?.approval_required) || lineItems(quote, data).some((item: any) => lineApprovalRequired(item)); }

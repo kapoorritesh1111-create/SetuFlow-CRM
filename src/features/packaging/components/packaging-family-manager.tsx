@@ -6,7 +6,6 @@ import type { PackagingPricingTemplate, PackagingQuoteTimeInput, PackagingServic
 import { FAMILY_ICON_OPTIONS, getFamilyVisual } from '@/lib/packaging/family-visuals';
 import { SetuIcon } from '@/components/ui/setu-icon';
 import { savePackagingFamily } from '@/features/packaging/server/actions';
-import { PageHeader } from '@/components/ui/page-header';
 import { workspacePrimaryButtonClass } from '@/components/ui/workspace-surfaces';
 
 /**
@@ -75,12 +74,13 @@ export default function PackagingFamilyManager({ families, templates }: { famili
 
   return (
     <div className="space-y-4 pb-16">
-      <PageHeader
-        eyebrow="Packaging Setup"
-        title="Service Families"
-        description="What buyers browse in the catalog. Each family holds one or more pricing templates — set those up in Pricing Templates once the family exists."
-        meta={[`${families.length} famil${families.length === 1 ? 'y' : 'ies'}`, `${families.filter((family) => family.is_active).length} active`]}
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-card border border-line bg-surface-1 p-4">
+        <div>
+          <p className="text-sm text-content-secondary">What buyers browse in the catalog. Each family holds one or more pricing templates — set those up next, once the family exists.</p>
+          <p className="mt-1 text-xs font-semibold text-content-muted">{families.length} famil{families.length === 1 ? 'y' : 'ies'} · {families.filter((family) => family.is_active).length} active</p>
+        </div>
+        <Link href="/admin/packaging-templates" className="shrink-0 rounded-ctl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100">Next: Pricing Templates →</Link>
+      </div>
 
       <div className="flex justify-end">
         <button onClick={handleSave} disabled={saving} className={`rounded-ctl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${workspacePrimaryButtonClass}`}>{saving ? 'Saving…' : 'Save family'}</button>
