@@ -6,7 +6,11 @@ import { ClientUserProvisioner, type ClientOrgOption, type RoleOption } from './
 
 export const dynamic = 'force-dynamic';
 
-export default async function SmcClientUsersPage() {
+export default async function SmcClientUsersPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const operator = await getRiteshClientUserOperator();
   if (!operator) redirect('/smc');
 
@@ -48,11 +52,17 @@ export default async function SmcClientUsersPage() {
     organizationId: role.organization_id ?? null,
   }));
 
+  const requestedOrg = typeof searchParams?.org === 'string' ? searchParams.org : null;
+  const initialOrganizationId = requestedOrg
+    ? organizations.find((org) => org.id === requestedOrg || org.slug === requestedOrg)?.id ?? null
+    : null;
+
   return (
     <ClientUserProvisioner
       organizations={organizations}
       roles={roles}
       operatorName={operator.user.email ?? 'Ritesh'}
+      initialOrganizationId={initialOrganizationId}
     />
   );
 }
