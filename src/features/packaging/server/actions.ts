@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { hasWorkspaceRole } from '@/lib/workspace/auth';
 import { calculatePackagingPrice, buildPackagingSpecSummary } from '@/lib/packaging/pricing-engine';
 import { getPackagingTemplateById, getQuoteOptionalCharges } from '@/lib/packaging/queries';
 import { getPackagingQuoteReadiness, explainPackagingPrice, suggestOptionalCharges, draftPackagingFollowUp } from '@/lib/setu-guru/packaging-guidance';
@@ -10,8 +11,10 @@ import type {
   PackagingCalculationInput,
   PackagingCalculationResult,
   PackagingPricingTemplate,
+  ProductionStage,
   QuoteOptionalChargeType,
 } from '@/lib/packaging/types';
+import { PRODUCTION_STAGES } from '@/lib/packaging/types';
 import type { PackagingGuidance } from '@/lib/setu-guru/packaging-guidance';
 
 /**
@@ -31,13 +34,14 @@ type ActionContext = {
   supabase: any;
   organizationId: string;
   userId: string;
+  currentRoles: string[];
 };
 
 async function getContext(): Promise<ActionContext> {
   const workspace = await requireWorkspace();
   if (!workspace?.organization || !workspace?.user) throw new Error('Not authenticated.');
   const supabase: any = await createClient();
-  return { workspace, supabase, organizationId: workspace.organization.id, userId: workspace.user.id };
+  return { workspace, supabase, organizationId: workspace.organization.id, userId: workspace.user.id, currentRoles: workspace.currentRoles ?? [] };
 }
 
 export type PackagingCalculationResponse = {
@@ -672,6 +676,7 @@ export type ReferenceItemDraft = {
   description?: string | null;
   default_thickness?: string | null;
   default_unit_hint?: string | null;
+  swatch_color?: string | null;
   sort_order?: number;
 };
 
@@ -683,6 +688,8 @@ export async function savePackagingReferenceItem(
     const name = draft.name.trim();
     if (!name) return { ok: false, error: 'Name is required.' };
     const key = draft.key?.trim() ? slugifyReferenceKey(draft.key) : slugifyReferenceKey(name);
+    const swatchColor = draft.swatch_color?.trim();
+    const normalizedSwatch = swatchColor && /^#[0-9a-fA-F]{6}$/.test(swatchColor) ? swatchColor : null;
 
     const row = {
       organization_id: organizationId,
@@ -692,6 +699,7 @@ export async function savePackagingReferenceItem(
       description: draft.description?.trim() || null,
       default_thickness: draft.default_thickness?.trim() || null,
       default_unit_hint: draft.default_unit_hint?.trim() || null,
+      swatch_color: normalizedSwatch,
       source: 'custom' as const,
       sort_order: draft.sort_order ?? 500,
       updated_at: new Date().toISOString(),
@@ -703,7 +711,7 @@ export async function savePackagingReferenceItem(
         .update(row)
         .eq('id', draft.id)
         .eq('organization_id', organizationId)
-        .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order')
+        .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, swatch_color, is_active, source, sort_order')
         .maybeSingle();
       if (error) return { ok: false, error: error.message };
       revalidatePath('/admin/packaging-reference-library');
@@ -714,7 +722,7 @@ export async function savePackagingReferenceItem(
     const { data, error } = await supabase
       .from('packaging_reference_items')
       .insert(row)
-      .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order')
+      .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, swatch_color, is_active, source, sort_order')
       .maybeSingle();
     if (error) {
       // Unique (organization_id, category, key) collision — most likely the buyer
@@ -745,5 +753,66 @@ export async function setPackagingReferenceItemActive(id: string, isActive: bool
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Could not update this item.' };
+  }
+}
+
+/**
+ * S27-STARK-E1 — Production-stage tracking (Phase E).
+ * Write access restricted to owner/admin/design/operations, per Ritesh
+ * ("Design + Operations roles only" — owner/admin included as the standing
+ * super-role convention used everywhere else in this codebase).
+ */
+const PRODUCTION_STAGE_WRITE_ROLES = ['owner', 'admin', 'design', 'operations'] as const;
+
+async function assertCanEditProductionStage(currentRoles: string[]) {
+  if (!hasWorkspaceRole(currentRoles, PRODUCTION_STAGE_WRITE_ROLES)) {
+    throw new Error('Only Design and Operations team members can update production stage.');
+  }
+}
+
+/** Defensive check: the line item must actually belong to a quote in this org before we log a stage event against it. */
+async function assertLineBelongsToOrg(supabase: any, organizationId: string, quoteLineItemId: string) {
+  const { data: line, error: lineError } = await supabase
+    .from('quote_line_items')
+    .select('id, quote_id')
+    .eq('id', quoteLineItemId)
+    .maybeSingle();
+  if (lineError) throw new Error(lineError.message);
+  if (!line) throw new Error('Packaging line not found.');
+  const { data: quote, error: quoteError } = await supabase
+    .from('quotes')
+    .select('id')
+    .eq('id', line.quote_id)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  if (quoteError) throw new Error(quoteError.message);
+  if (!quote) throw new Error('This packaging line does not belong to your organization.');
+}
+
+export async function advancePackagingProductionStage(
+  quoteLineItemId: string,
+  toStage: ProductionStage,
+  notes?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { supabase, organizationId, userId, currentRoles } = await getContext();
+    await assertCanEditProductionStage(currentRoles);
+    if (!PRODUCTION_STAGES.some((stage) => stage.key === toStage)) return { ok: false, error: 'Unknown production stage.' };
+    await assertLineBelongsToOrg(supabase, organizationId, quoteLineItemId);
+
+    const { error } = await supabase.from('packaging_production_stage_events').insert({
+      organization_id: organizationId,
+      quote_line_item_id: quoteLineItemId,
+      stage: toStage,
+      actor_user_id: userId,
+      notes: notes?.trim() || null,
+    });
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath('/dispatch-board');
+    revalidatePath('/admin/packaging-analytics');
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Could not update the production stage.' };
   }
 }

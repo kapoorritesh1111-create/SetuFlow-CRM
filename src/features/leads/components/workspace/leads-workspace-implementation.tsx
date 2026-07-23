@@ -931,6 +931,17 @@ export function LeadsWorkspace({
       setSpotlightLeadId(lead.id);
     }
 
+    // S27-STARK-DISCOVERY-FIX: Quick Add Lead's own in-drawer success message
+    // ("Lead saved…") was only ever visible while the drawer stayed open —
+    // for a brand-new lead the drawer typically closes or hands off to a
+    // coverage/quote step right away, so the confirmation was never actually
+    // seen. Fire the workspace-level toast (same one used for inline actions
+    // below) so the confirmation survives the drawer closing.
+    const wasNewLead = drawerState.mode === 'quick' && !drawerState.leadId;
+    if (wasNewLead && lead) {
+      setInlineActionState({ success: `${lead.company_name || 'Lead'} saved.` });
+    }
+
     const needsCoverageAfterQuickLead = drawerState.mode === 'quick' && lead && (!selectedProductIds || selectedProductIds.length === 0);
     if (needsCoverageAfterQuickLead) {
       setActiveLeadId(lead.id);

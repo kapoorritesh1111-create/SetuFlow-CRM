@@ -6,6 +6,7 @@ import type {
   PackagingReferenceItemDefault,
   PackagingSavedSpec,
   PackagingServiceFamily,
+  ProductionStage,
   QuoteOptionalCharge,
 } from './types';
 
@@ -389,7 +390,7 @@ export async function getPackagingReferenceItems(
   const supabase = ((client ?? (await createClient())) as any);
   const { data, error } = await supabase
     .from('packaging_reference_items')
-    .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order, created_at, updated_at')
+    .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, swatch_color, is_active, source, sort_order, created_at, updated_at')
     .eq('organization_id', organizationId)
     .eq('is_active', true)
     .order('category', { ascending: true })
@@ -407,7 +408,7 @@ export async function getPackagingReferenceItemsForAdmin(
   const supabase = ((client ?? (await createClient())) as any);
   const { data, error } = await supabase
     .from('packaging_reference_items')
-    .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, is_active, source, sort_order, created_at, updated_at')
+    .select('id, organization_id, category, key, name, description, default_thickness, default_unit_hint, swatch_color, is_active, source, sort_order, created_at, updated_at')
     .eq('organization_id', organizationId)
     .order('category', { ascending: true })
     .order('sort_order', { ascending: true })
@@ -421,9 +422,197 @@ export async function getPackagingReferenceItemDefaults(client?: QueryClient): P
   const supabase = ((client ?? (await createClient())) as any);
   const { data, error } = await supabase
     .from('packaging_reference_item_defaults')
-    .select('id, category, key, name, description, default_thickness, default_unit_hint, sort_order')
+    .select('id, category, key, name, description, default_thickness, default_unit_hint, swatch_color, sort_order')
     .order('category', { ascending: true })
     .order('sort_order', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as PackagingReferenceItemDefault[];
+}
+
+/**
+ * S27-STARK-E1 — Production-stage tracking (Phase E).
+ * Event-sourced: packaging_production_stage_events is append-only, current
+ * stage per line = most recent event. No mutable "current state" column to
+ * drift out of sync.
+ */
+
+export type ProductionStageState = { stage: ProductionStage; enteredAt: string };
+
+/** Current stage for each of the given quote line items (only lines that have at least one event appear in the map). */
+export async function getPackagingProductionStages(
+  organizationId: string,
+  lineItemIds: string[],
+  client?: QueryClient,
+): Promise<Map<string, ProductionStageState>> {
+  const map = new Map<string, ProductionStageState>();
+  if (!lineItemIds.length) return map;
+  const supabase = ((client ?? (await createClient())) as any);
+  const { data, error } = await supabase
+    .from('packaging_production_stage_events')
+    .select('quote_line_item_id, stage, entered_at')
+    .eq('organization_id', organizationId)
+    .in('quote_line_item_id', lineItemIds)
+    .order('entered_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  for (const row of (data ?? []) as any[]) {
+    // Ordered newest-first, so the first row seen per line is the current stage.
+    if (!map.has(row.quote_line_item_id)) {
+      map.set(row.quote_line_item_id, { stage: row.stage, enteredAt: row.entered_at });
+    }
+  }
+  return map;
+}
+
+/** Full stage history for one line, oldest first — for an audit/detail view. */
+export async function getPackagingProductionStageHistory(
+  organizationId: string,
+  quoteLineItemId: string,
+  client?: QueryClient,
+): Promise<{ stage: ProductionStage; enteredAt: string; notes: string | null }[]> {
+  const supabase = ((client ?? (await createClient())) as any);
+  const { data, error } = await supabase
+    .from('packaging_production_stage_events')
+    .select('stage, entered_at, notes')
+    .eq('organization_id', organizationId)
+    .eq('quote_line_item_id', quoteLineItemId)
+    .order('entered_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as any[]).map((row) => ({ stage: row.stage, enteredAt: row.entered_at, notes: row.notes ?? null }));
+}
+
+export type PackagingFamilyMixRow = { familyName: string; jobCount: number; revenue: number };
+
+export type PackagingProductionAnalytics = {
+  stageCounts: Record<ProductionStage, number>;
+  jobsInProduction: number;
+  dispatchedLast30Days: number;
+  avgCycleDays: number | null;
+  revenueInProduction: number;
+  familyMix: PackagingFamilyMixRow[];
+  digitalVsFlexo: { digital: { count: number; revenue: number }; flexo: { count: number; revenue: number } };
+  cylinderStats: { reused: number; fresh: number; cylinderChargesCollected: number };
+};
+
+const EMPTY_STAGE_COUNTS: Record<ProductionStage, number> = {
+  pre_press: 0, printing: 0, lamination_converting: 0, slitting_pouching: 0, qc: 0, packed: 0, dispatched: 0,
+};
+
+/**
+ * S27-STARK-E1 — Packaging analytics dashboard aggregates. Revenue figures
+ * are summed assuming INR (Stark is a domestic-only org; every packaging
+ * quote line in this org is priced in INR) — this is a deliberate
+ * simplification, not currency conversion, and would need revisiting for a
+ * multi-currency packaging org.
+ */
+export async function getPackagingProductionAnalytics(
+  organizationId: string,
+  client?: QueryClient,
+): Promise<PackagingProductionAnalytics> {
+  const supabase = ((client ?? (await createClient())) as any);
+
+  const [{ data: events, error: eventsError }, { data: acceptedQuotes, error: quotesError }, families, templates] = await Promise.all([
+    supabase
+      .from('packaging_production_stage_events')
+      .select('quote_line_item_id, stage, entered_at')
+      .eq('organization_id', organizationId)
+      .order('entered_at', { ascending: true }),
+    supabase.from('quotes').select('id').eq('organization_id', organizationId).eq('status', 'accepted'),
+    getPackagingFamilies(organizationId, supabase),
+    getPackagingTemplates(organizationId, supabase),
+  ]);
+  if (eventsError) throw new Error(eventsError.message);
+  if (quotesError) throw new Error(quotesError.message);
+
+  const familyById = new Map(families.map((family) => [family.id, family]));
+  const templateById = new Map(templates.map((template) => [template.id, template]));
+
+  const acceptedQuoteIds = (acceptedQuotes ?? []).map((quote: any) => quote.id);
+  let lines: any[] = [];
+  if (acceptedQuoteIds.length) {
+    const { data, error } = await supabase
+      .from('quote_line_items')
+      .select('id, quote_id, quantity, unit_price, currency, packaging_family_id, packaging_template_id, input_snapshot_json, pricing_breakdown_json')
+      .eq('line_type', 'packaging')
+      .in('quote_id', acceptedQuoteIds);
+    if (error) throw new Error(error.message);
+    lines = data ?? [];
+  }
+
+  // --- Group stage events per line, oldest first ---
+  const eventsByLine = new Map<string, { stage: ProductionStage; entered_at: string }[]>();
+  for (const row of (events ?? []) as any[]) {
+    const arr = eventsByLine.get(row.quote_line_item_id) ?? [];
+    arr.push({ stage: row.stage, entered_at: row.entered_at });
+    eventsByLine.set(row.quote_line_item_id, arr);
+  }
+
+  const stageCounts: Record<ProductionStage, number> = { ...EMPTY_STAGE_COUNTS };
+  const lineCurrentStage = new Map<string, ProductionStage>();
+  let jobsInProduction = 0;
+  let dispatchedLast30Days = 0;
+  const cycleDays: number[] = [];
+  const thirtyDaysAgoMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  for (const [lineId, arr] of eventsByLine) {
+    const latest = arr[arr.length - 1]; // already oldest-first from the ordered query
+    stageCounts[latest.stage] = (stageCounts[latest.stage] ?? 0) + 1;
+    lineCurrentStage.set(lineId, latest.stage);
+    if (latest.stage !== 'dispatched') jobsInProduction += 1;
+
+    const prePress = arr.find((event) => event.stage === 'pre_press');
+    const dispatched = arr.find((event) => event.stage === 'dispatched');
+    if (dispatched && new Date(dispatched.entered_at).getTime() >= thirtyDaysAgoMs) dispatchedLast30Days += 1;
+    if (prePress && dispatched) {
+      const days = (new Date(dispatched.entered_at).getTime() - new Date(prePress.entered_at).getTime()) / (1000 * 60 * 60 * 24);
+      if (days >= 0) cycleDays.push(days);
+    }
+  }
+  const avgCycleDays = cycleDays.length ? Math.round((cycleDays.reduce((sum, days) => sum + days, 0) / cycleDays.length) * 10) / 10 : null;
+
+  // --- Revenue / family mix / digital-vs-flexo / cylinder, from accepted lines ---
+  let revenueInProduction = 0;
+  const familyMixMap = new Map<string, { jobCount: number; revenue: number }>();
+  let digitalCount = 0, digitalRevenue = 0, flexoCount = 0, flexoRevenue = 0;
+  let cylinderReused = 0, cylinderFresh = 0, cylinderChargesCollected = 0;
+
+  for (const line of lines) {
+    const lineTotal = Number(line.unit_price ?? 0) * Number(line.quantity ?? 0);
+    const currentStage = lineCurrentStage.get(line.id);
+    if (currentStage !== 'dispatched') revenueInProduction += lineTotal;
+
+    const familyName = familyById.get(line.packaging_family_id)?.name ?? 'Unassigned';
+    const bucket = familyMixMap.get(familyName) ?? { jobCount: 0, revenue: 0 };
+    bucket.jobCount += 1;
+    bucket.revenue += lineTotal;
+    familyMixMap.set(familyName, bucket);
+
+    const template = templateById.get(line.packaging_template_id);
+    if (template?.print_process === 'flexo') {
+      flexoCount += 1;
+      flexoRevenue += lineTotal;
+      const input = line.input_snapshot_json?.input ?? {};
+      const cylinderCost = Number(line.pricing_breakdown_json?.meta?.cylinder_cost ?? 0);
+      if (input.reuse_existing_cylinder) cylinderReused += 1;
+      else if (cylinderCost > 0) cylinderFresh += 1;
+      cylinderChargesCollected += cylinderCost;
+    } else {
+      digitalCount += 1;
+      digitalRevenue += lineTotal;
+    }
+  }
+
+  const familyMix: PackagingFamilyMixRow[] = [...familyMixMap.entries()]
+    .map(([familyName, value]) => ({ familyName, jobCount: value.jobCount, revenue: value.revenue }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  return {
+    stageCounts,
+    jobsInProduction,
+    dispatchedLast30Days,
+    avgCycleDays,
+    revenueInProduction,
+    familyMix,
+    digitalVsFlexo: { digital: { count: digitalCount, revenue: digitalRevenue }, flexo: { count: flexoCount, revenue: flexoRevenue } },
+    cylinderStats: { reused: cylinderReused, fresh: cylinderFresh, cylinderChargesCollected },
+  };
 }

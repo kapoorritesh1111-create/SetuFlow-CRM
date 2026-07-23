@@ -109,11 +109,14 @@ export function calculatePackagingPrice(
     if (isFlexo) {
       const flexo = template.flexo_rules_json;
       const repeatLength = Number(input.repeat_length_mm ?? 0);
+      const webWidth = Number(input.web_width_mm ?? 0);
       if (!flexo) {
         validationErrors.push('This flexo template has no cylinder rules configured.');
       } else {
         if (!repeatLength || repeatLength <= 0) validationErrors.push('Repeat length is required.');
         else if (!inRange(repeatLength, flexo.repeat_length_mm)) validationErrors.push(`Repeat length must be between ${flexo.repeat_length_mm?.min} and ${flexo.repeat_length_mm?.max} mm for this cylinder set.`);
+        if (!webWidth || webWidth <= 0) validationErrors.push('Web width is required.');
+        else if (!inRange(webWidth, flexo.web_width_mm)) validationErrors.push(`Web width must be between ${flexo.web_width_mm?.min} and ${flexo.web_width_mm?.max} mm for this press.`);
         if (!flexo.cylinder_rate_tiers?.length) validationErrors.push('This flexo template has no cylinder rate tiers configured.');
       }
     }

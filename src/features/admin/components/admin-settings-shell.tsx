@@ -25,6 +25,7 @@ export type AdminNavKey =
   | 'packaging-families'
   | 'packaging-templates'
   | 'packaging-reference-library'
+  | 'packaging-analytics'
   | 'classic-catalog'
   | 'pricing-engine'
   | 'document-templates'
@@ -87,6 +88,7 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
       { key: 'packaging-families', href: '/admin/packaging-families', icon: 'tag', label: 'Packaging Service Families', sublabel: 'Catalog categories', statusDot: 'ok', packagingOnly: true },
       { key: 'packaging-templates', href: '/admin/packaging-templates', icon: 'box', label: 'Packaging Pricing Templates', sublabel: 'Rules & rates', statusDot: 'ok', packagingOnly: true },
       { key: 'packaging-reference-library', href: '/admin/packaging-reference-library', icon: 'layers', label: 'Reference Library', sublabel: 'Materials, finishes, service items', statusDot: 'ok', packagingOnly: true },
+      { key: 'packaging-analytics', href: '/admin/packaging-analytics', icon: 'analytics', label: 'Packaging Analytics', sublabel: 'Production & revenue insights', statusDot: 'ok', packagingOnly: true },
     ],
   },
   {

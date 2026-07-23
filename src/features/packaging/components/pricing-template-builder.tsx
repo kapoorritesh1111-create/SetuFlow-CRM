@@ -312,7 +312,17 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
                 return (
                   <div key={index} className="grid gap-2 rounded-ctl border border-line bg-surface-app p-2 sm:grid-cols-[1fr_1fr_1fr_120px_auto_auto]">
                     <input placeholder="key" value={material.key} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
-                    <input list="reflib-material" placeholder="Label" value={material.label} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
+                    {(() => {
+                      const matched = libraryItems.find((item) => item.category === category && item.name.toLowerCase() === material.label.trim().toLowerCase());
+                      return (
+                        <div className="relative">
+                          {matched?.swatch_color ? (
+                            <span className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border border-black/10" style={{ backgroundColor: matched.swatch_color }} />
+                          ) : null}
+                          <input list="reflib-material" placeholder="Label" value={material.label} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className={`w-full rounded-ctl border border-line bg-surface-1 py-1.5 text-sm ${matched?.swatch_color ? 'pl-7 pr-2' : 'px-2'}`} />
+                        </div>
+                      );
+                    })()}
                     {isDimensional ? (
                       <input placeholder="Thickness" value={material.thickness ?? ''} onChange={(event) => patch({ material_rates_json: draft.material_rates_json.map((row, i) => i === index ? { ...row, thickness: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-sm" />
                     ) : (
@@ -390,7 +400,17 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
                     return (
                       <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1fr_130px_120px_auto_auto]">
                         <input placeholder="key" value={finish.key} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, key: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
-                        <input list="reflib-finish" placeholder="Label" value={finish.label} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm" />
+                        {(() => {
+                          const matched = libraryItems.find((item) => item.category === 'finish' && item.name.toLowerCase() === finish.label.trim().toLowerCase());
+                          return (
+                            <div className="relative">
+                              {matched?.swatch_color ? (
+                                <span className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border border-black/10" style={{ backgroundColor: matched.swatch_color }} />
+                              ) : null}
+                              <input list="reflib-finish" placeholder="Label" value={finish.label} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, label: event.target.value } : row) })} className={`w-full rounded-ctl border border-line bg-surface-app py-1.5 text-sm ${matched?.swatch_color ? 'pl-7 pr-2' : 'px-2'}`} />
+                            </div>
+                          );
+                        })()}
                         <select value={finish.basis} onChange={(event) => patch({ finish_addon_rates_json: draft.finish_addon_rates_json.map((row, i) => i === index ? { ...row, basis: event.target.value as FinishAddonRate['basis'] } : row) })} className="rounded-ctl border border-line bg-surface-app px-2 py-1.5 text-sm">
                           <option value="per_sqm">per m²</option><option value="per_unit">per piece</option>
                         </select>
@@ -515,7 +535,10 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
                   ) : null}
                   <label className={labelCls}>Colors<input type="number" value={previewInput.print_colors ?? 1} onChange={(event) => setPreviewInput((previous) => ({ ...previous, print_colors: Number(event.target.value) || 1 }))} className={inputCls} /></label>
                   {draft.print_process === 'flexo' ? (
-                    <label className={labelCls}>Repeat length<input type="number" value={previewInput.repeat_length_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>
+                    <>
+                      <label className={labelCls}>Repeat length<input type="number" value={previewInput.repeat_length_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>
+                      <label className={labelCls}>Web width<input type="number" value={previewInput.web_width_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, web_width_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>
+                    </>
                   ) : null}
                 </>
               ) : null}

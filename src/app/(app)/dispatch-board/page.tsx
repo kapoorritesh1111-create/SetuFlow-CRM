@@ -1,23 +1,25 @@
-import Link from 'next/link';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
-import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { getWorkspaceAccess, hasWorkspaceRole } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
-import { getPackagingDispatchQueue } from '@/lib/packaging/queries';
+import { getPackagingDispatchQueue, getPackagingProductionStages } from '@/lib/packaging/queries';
+import { PRODUCTION_STAGES } from '@/lib/packaging/types';
+import { PageHeader } from '@/components/ui/page-header';
+import PackagingProductionBoard, { type ProductionBoardItem } from '@/features/packaging/components/packaging-production-board';
 
 /**
- * S27-STARK-A3 — Dispatch/Operations role landing page.
- * v1: read-only list of packaging lines on accepted (won) quotes, ready to
- * move into production. Per-line production-stage tracking (Artwork ->
- * Prepress -> Cylinder/Plate -> Printing -> Finishing -> Dispatch) is
- * S27-STARK-E1, a separate follow-up build.
+ * S27-STARK-E1 — Dispatch Board, evolved from the v1 read-only list into a
+ * real per-line production-stage tracker: Pre-Press -> Printing ->
+ * Lamination/Converting -> Slitting/Pouching -> QC -> Packed -> Dispatched.
+ * Stage is event-sourced (packaging_production_stage_events); write access
+ * is Design/Operations/owner/admin, everyone else sees it read-only.
  */
 
 export const dynamic = 'force-dynamic';
 
-function money(value: number, currency: string) {
-  return `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function money(value: number) {
+  return `INR ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default async function DispatchBoardPage() {
@@ -33,16 +35,43 @@ export default async function DispatchBoardPage() {
   }
 
   const queue = await getPackagingDispatchQueue(workspace.organization.id, supabase);
+  const stageByLine = await getPackagingProductionStages(workspace.organization.id, queue.map((item) => item.lineId), supabase);
+  const canEdit = hasWorkspaceRole(workspace.currentRoles, ['owner', 'admin', 'design', 'operations']);
+
+  const items: ProductionBoardItem[] = queue.map((item) => ({
+    lineId: item.lineId,
+    quoteId: item.quoteId,
+    leadId: item.leadId,
+    companyName: item.companyName,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    currency: item.currency,
+    specSummary: item.specSummary,
+    leadTime: item.leadTime,
+    stage: stageByLine.get(item.lineId)?.stage ?? null,
+    stageEnteredAt: stageByLine.get(item.lineId)?.enteredAt ?? null,
+  }));
+
   const totalUnits = queue.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const totalValue = queue.reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 0), 0);
+  const notStarted = items.filter((item) => !item.stage).length;
+  const dispatchedCount = items.filter((item) => item.stage === 'dispatched').length;
+
+  const funnelCounts = PRODUCTION_STAGES.map((stage) => ({
+    ...stage,
+    count: items.filter((item) => item.stage === stage.key).length,
+  }));
 
   return (
     <div className="space-y-4 pb-16">
-      <section>
-        <h1 className="text-2xl font-bold tracking-tight text-content-primary">Dispatch Board</h1>
-        <p className="mt-1 text-sm text-content-secondary">Packaging jobs on accepted quotes, ready for production and dispatch.</p>
-      </section>
+      <PageHeader
+        eyebrow="Production"
+        title="Dispatch Board"
+        description="Packaging jobs on accepted quotes, tracked stage by stage from pre-press through dispatch."
+        meta={[`${queue.length} jobs`, `${dispatchedCount} dispatched`, canEdit ? 'You can update stages' : 'Read-only for your role']}
+      />
 
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className="grid gap-3 sm:grid-cols-4">
         <div className="rounded-card border border-line bg-surface-1 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Jobs in queue</p>
           <p className="mt-1 text-2xl font-bold text-content-primary">{queue.length}</p>
@@ -51,38 +80,39 @@ export default async function DispatchBoardPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Total units</p>
           <p className="mt-1 text-2xl font-bold text-content-primary">{totalUnits.toLocaleString()}</p>
         </div>
+        <div className="rounded-card border border-line bg-surface-1 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Value in queue</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{money(totalValue)}</p>
+        </div>
+        <div className="rounded-card border border-line bg-surface-1 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Not started</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{notStarted}</p>
+        </div>
+      </section>
+
+      <section className="rounded-panel border border-line bg-surface-1 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Stage funnel</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+          {funnelCounts.map((stage) => (
+            <div key={stage.key} className="rounded-ctl border border-line bg-surface-2 px-3 py-2 text-center">
+              <p className="text-lg font-bold text-content-primary">{stage.count}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-content-muted">{stage.label}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {queue.length ? (
         <section className="rounded-panel border border-line bg-surface-1 p-4">
-          <ul className="divide-y divide-line">
-            {queue.map((item) => (
-              <li key={item.lineId} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="font-semibold text-content-primary">{item.companyName ?? 'Unknown company'}</p>
-                  <p className="truncate text-sm text-content-secondary">{item.specSummary ?? 'Packaging line'}</p>
-                  <p className="text-xs text-content-muted">{Number(item.quantity).toLocaleString()} pcs · {money(item.unitPrice, item.currency)} / pc{item.leadTime ? ` · ${item.leadTime}` : ''}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success-fg">Accepted</span>
-                  <Link href={`/quotes/${item.quoteId}/job-ticket`} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-sm font-semibold text-content-primary hover:border-brand-200">
-                    Job ticket →
-                  </Link>
-                  {item.leadId ? (
-                    <Link href={`/leads/${item.leadId}/quote?quoteId=${item.quoteId}`} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-sm font-semibold text-content-primary hover:border-brand-200">
-                      Open quote →
-                    </Link>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <PackagingProductionBoard items={items} canEdit={canEdit} />
         </section>
       ) : (
         <p className="rounded-ctl bg-surface-2 px-3 py-2 text-sm text-content-secondary">No accepted packaging jobs waiting on production right now.</p>
       )}
 
-      <p className="rounded-ctl bg-info-bg px-3 py-2 text-sm font-medium text-info-fg">Per-stage production tracking (artwork → prepress → cylinder → printing → finishing → dispatch) is planned next for this board.</p>
+      {!canEdit ? (
+        <p className="rounded-ctl bg-info-bg px-3 py-2 text-sm font-medium text-info-fg">Stage updates are limited to Design, Operations, and admin roles. You're seeing a live read-only view.</p>
+      ) : null}
     </div>
   );
 }

@@ -40,9 +40,9 @@ const CATEGORY_HINT: Record<PackagingReferenceCategory, string> = {
   service_item: 'Line items priced per job, per design, or per piece on service-mode templates — e.g. Artwork Check, Digital Proof.',
 };
 
-type Draft = { id: string | null; category: PackagingReferenceCategory; name: string; description: string; default_thickness: string; default_unit_hint: string };
+type Draft = { id: string | null; category: PackagingReferenceCategory; name: string; description: string; default_thickness: string; default_unit_hint: string; swatch_color: string };
 
-const EMPTY_DRAFT = (category: PackagingReferenceCategory): Draft => ({ id: null, category, name: '', description: '', default_thickness: '', default_unit_hint: '' });
+const EMPTY_DRAFT = (category: PackagingReferenceCategory): Draft => ({ id: null, category, name: '', description: '', default_thickness: '', default_unit_hint: '', swatch_color: '' });
 
 export default function PackagingReferenceLibraryManager({ items }: { items: PackagingReferenceItem[] }) {
   const [activeCategory, setActiveCategory] = useState<PackagingReferenceCategory>('material');
@@ -80,6 +80,7 @@ export default function PackagingReferenceLibraryManager({ items }: { items: Pac
         description: draft.description || null,
         default_thickness: draft.default_thickness || null,
         default_unit_hint: draft.default_unit_hint || null,
+        swatch_color: draft.swatch_color || null,
       });
       if (!response.ok) { setFeedback({ tone: 'error', text: response.error ?? 'Could not save this item.' }); return; }
       setFeedback({ tone: 'success', text: draft.id ? 'Item updated.' : 'Item added to the library.' });
@@ -207,6 +208,22 @@ export default function PackagingReferenceLibraryManager({ items }: { items: Pac
                     className={`mt-1 w-full rounded-ctl border px-3 py-2 text-sm ${workspaceFieldSurfaceClass}`}
                   />
                 </label>
+                {activeCategory !== 'service_item' ? (
+                  <label className="flex items-center gap-3 text-xs font-semibold text-content-primary">
+                    Swatch color (optional)
+                    <input
+                      type="color"
+                      value={draft.swatch_color || '#E2E8F0'}
+                      onChange={(event) => setDraft({ ...draft, swatch_color: event.target.value })}
+                      className="h-8 w-12 cursor-pointer rounded-ctl border border-line bg-transparent p-0.5"
+                    />
+                    {draft.swatch_color ? (
+                      <button type="button" onClick={() => setDraft({ ...draft, swatch_color: '' })} className="text-xs font-semibold text-content-muted underline">Clear</button>
+                    ) : (
+                      <span className="text-content-muted">Shown as a small dot next to this item — helpful for quickly telling similar materials/finishes apart.</span>
+                    )}
+                  </label>
+                ) : null}
                 <div className="flex gap-2">
                   <button onClick={handleSave} disabled={saving || !draft.name.trim()} className={`rounded-ctl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${workspacePrimaryButtonClass}`}>
                     {saving ? 'Saving…' : 'Save item'}
@@ -222,6 +239,13 @@ export default function PackagingReferenceLibraryManager({ items }: { items: Pac
                   <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
+                        {item.swatch_color ? (
+                          <span
+                            title={item.swatch_color}
+                            className="h-4 w-4 shrink-0 rounded-full border border-black/10"
+                            style={{ backgroundColor: item.swatch_color }}
+                          />
+                        ) : null}
                         <p className="font-semibold text-content-primary">{item.name}</p>
                         {!item.is_active ? <span className="rounded-full border border-line bg-surface-2 px-2 py-0.5 text-caption uppercase text-content-muted">Inactive</span> : null}
                         {item.source === 'default_seed' ? <span className="rounded-full border border-info-border bg-info-bg px-2 py-0.5 text-caption uppercase text-info-fg">Starter</span> : null}
@@ -232,7 +256,7 @@ export default function PackagingReferenceLibraryManager({ items }: { items: Pac
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <button onClick={() => setDraft({ id: item.id, category: item.category, name: item.name, description: item.description ?? '', default_thickness: item.default_thickness ?? '', default_unit_hint: item.default_unit_hint ?? '' })} className={`rounded-ctl px-2.5 py-1.5 text-xs font-semibold ${workspaceSecondaryButtonClass}`}>
+                      <button onClick={() => setDraft({ id: item.id, category: item.category, name: item.name, description: item.description ?? '', default_thickness: item.default_thickness ?? '', default_unit_hint: item.default_unit_hint ?? '', swatch_color: item.swatch_color ?? '' })} className={`rounded-ctl px-2.5 py-1.5 text-xs font-semibold ${workspaceSecondaryButtonClass}`}>
                         Edit
                       </button>
                       <button onClick={() => toggleActive(item)} disabled={saving} className={`rounded-ctl px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50 ${workspaceSecondaryButtonClass}`}>

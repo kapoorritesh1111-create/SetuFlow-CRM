@@ -89,9 +89,9 @@ export default async function QuotePage({
         data={data}
         quoteId={quoteId}
         step={readParam(searchParams?.step).trim() || null}
-        quoteDraftError={null}
-        quoteActionError={null}
-        saved={null}
+        quoteDraftError={readParam(searchParams?.quoteDraftError).trim() ? decodeURIComponent(readParam(searchParams?.quoteDraftError).trim()) : null}
+        quoteActionError={readParam(searchParams?.quoteActionError).trim() ? decodeURIComponent(readParam(searchParams?.quoteActionError).trim()) : null}
+        saved={readParam(searchParams?.saved).trim() || null}
         packaging={packaging}
       />
     </>

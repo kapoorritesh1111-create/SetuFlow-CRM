@@ -136,6 +136,10 @@ export type PackagingCalculationInput = {
   include_optional_setups?: string[];
   /** S27-STARK-B1: flexo cylinder repeat length. Ignored for digital templates. */
   repeat_length_mm?: number | null;
+  /** S27-STARK-F2: flexo web width (press width the job actually runs at).
+   * Was defined on FlexoRules since Phase B but never captured from the
+   * buyer/quote side or validated by the pricing engine until now. */
+  web_width_mm?: number | null;
   /** S27-STARK-B3: buyer/job already has a cylinder on file — skip the cylinder charge. */
   reuse_existing_cylinder?: boolean;
 };
@@ -274,6 +278,8 @@ export type PackagingReferenceItem = {
   description: string | null;
   default_thickness: string | null;
   default_unit_hint: string | null;
+  /** S27-STARK-F1: optional hex swatch color, e.g. '#F7F5F0'. Not a photo — no upload pipeline built yet. */
+  swatch_color: string | null;
   is_active: boolean;
   source: 'default_seed' | 'migrated' | 'custom';
   sort_order: number;
@@ -289,6 +295,7 @@ export type PackagingReferenceItemDefault = {
   description: string | null;
   default_thickness: string | null;
   default_unit_hint: string | null;
+  swatch_color: string | null;
   sort_order: number;
 };
 
@@ -296,4 +303,51 @@ export const REFERENCE_CATEGORY_LABELS: Record<PackagingReferenceCategory, strin
   material: 'Materials',
   finish: 'Finishes',
   service_item: 'Service items',
+};
+
+/**
+ * S27-STARK-E1 — Production-stage tracking (Phase E). Fixed 7-stage flow
+ * covering both digital and flexo jobs, approved by Ritesh. Stored as an
+ * append-only event log (packaging_production_stage_events); current stage
+ * for a line is the most recent event.
+ */
+export type ProductionStage =
+  | 'pre_press'
+  | 'printing'
+  | 'lamination_converting'
+  | 'slitting_pouching'
+  | 'qc'
+  | 'packed'
+  | 'dispatched';
+
+export const PRODUCTION_STAGES: Array<{ key: ProductionStage; label: string }> = [
+  { key: 'pre_press', label: 'Pre-Press' },
+  { key: 'printing', label: 'Printing' },
+  { key: 'lamination_converting', label: 'Lamination / Converting' },
+  { key: 'slitting_pouching', label: 'Slitting / Pouching' },
+  { key: 'qc', label: 'QC' },
+  { key: 'packed', label: 'Packed' },
+  { key: 'dispatched', label: 'Dispatched' },
+];
+
+export function productionStageLabel(stage: ProductionStage | null): string {
+  if (!stage) return 'Not started';
+  return PRODUCTION_STAGES.find((item) => item.key === stage)?.label ?? stage;
+}
+
+export function nextProductionStage(stage: ProductionStage | null): ProductionStage | null {
+  if (!stage) return PRODUCTION_STAGES[0].key;
+  const index = PRODUCTION_STAGES.findIndex((item) => item.key === stage);
+  if (index === -1 || index === PRODUCTION_STAGES.length - 1) return null;
+  return PRODUCTION_STAGES[index + 1].key;
+}
+
+export type ProductionStageEvent = {
+  id: string;
+  organization_id: string;
+  quote_line_item_id: string;
+  stage: ProductionStage;
+  entered_at: string;
+  actor_user_id: string | null;
+  notes: string | null;
 };

@@ -258,6 +258,7 @@ describe('S27-STARK-B2: flexo cylinder pricing', () => {
   const FLEXO_INPUT: PackagingCalculationInput = {
     ...POUCH_INPUT,
     repeat_length_mm: 260,
+    web_width_mm: 600,
   };
 
   test('adds cylinder cost as its own breakdown line, tier-matched by repeat length', () => {
@@ -290,6 +291,20 @@ describe('S27-STARK-B2: flexo cylinder pricing', () => {
     const outOfRange = calculatePackagingPrice(template, { ...FLEXO_INPUT, repeat_length_mm: 900 });
     assert.equal(outOfRange.ok, false);
     assert.ok(outOfRange.validation_errors.some((error) => error.includes('Repeat length must be between 150 and 800')));
+  });
+
+  test('S27-STARK-F2: requires web width within the configured range', () => {
+    const template = flexoTemplate();
+    const missing = calculatePackagingPrice(template, { ...FLEXO_INPUT, web_width_mm: null });
+    assert.equal(missing.ok, false);
+    assert.ok(missing.validation_errors.includes('Web width is required.'));
+
+    const outOfRange = calculatePackagingPrice(template, { ...FLEXO_INPUT, web_width_mm: 1300 });
+    assert.equal(outOfRange.ok, false);
+    assert.ok(outOfRange.validation_errors.some((error) => error.includes('Web width must be between 200 and 1200')));
+
+    const inRange = calculatePackagingPrice(template, { ...FLEXO_INPUT, web_width_mm: 700 });
+    assert.equal(inRange.ok, true, inRange.validation_errors.join('; '));
   });
 
   test('a template missing flexo_rules_json fails cleanly, not silently', () => {

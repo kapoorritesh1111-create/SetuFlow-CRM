@@ -56,6 +56,7 @@ const EMPTY_INPUT: PackagingCalculationInput = {
   rush_key: null,
   include_optional_setups: [],
   repeat_length_mm: null,
+  web_width_mm: null,
   reuse_existing_cylinder: false,
 };
 
@@ -266,11 +267,18 @@ export default function PackagingLineConfigurator({
                 </div>
                 {template.print_process === 'flexo' ? (
                   <div className="mt-3 border-t border-line pt-3">
-                    <label className="text-sm font-semibold text-content-primary">
-                      Repeat length (cylinder)
-                      <input type="number" inputMode="decimal" value={input.repeat_length_mm ?? ''} onChange={(event) => update({ repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) })} className="mt-1 w-full max-w-[200px] rounded-ctl border border-line bg-surface-app px-3 py-2 text-sm" />
-                      {template.flexo_rules_json?.repeat_length_mm ? <span className="ml-2 text-xs font-normal text-content-muted">{template.flexo_rules_json.repeat_length_mm.min}–{template.flexo_rules_json.repeat_length_mm.max} mm</span> : null}
-                    </label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="text-sm font-semibold text-content-primary">
+                        Repeat length (cylinder)
+                        <input type="number" inputMode="decimal" value={input.repeat_length_mm ?? ''} onChange={(event) => update({ repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) })} className="mt-1 w-full max-w-[200px] rounded-ctl border border-line bg-surface-app px-3 py-2 text-sm" />
+                        {template.flexo_rules_json?.repeat_length_mm ? <span className="ml-2 text-xs font-normal text-content-muted">{template.flexo_rules_json.repeat_length_mm.min}–{template.flexo_rules_json.repeat_length_mm.max} mm</span> : null}
+                      </label>
+                      <label className="text-sm font-semibold text-content-primary">
+                        Web width (press)
+                        <input type="number" inputMode="decimal" value={input.web_width_mm ?? ''} onChange={(event) => update({ web_width_mm: event.target.value === '' ? null : Number(event.target.value) })} className="mt-1 w-full max-w-[200px] rounded-ctl border border-line bg-surface-app px-3 py-2 text-sm" />
+                        {template.flexo_rules_json?.web_width_mm ? <span className="ml-2 text-xs font-normal text-content-muted">{template.flexo_rules_json.web_width_mm.min}–{template.flexo_rules_json.web_width_mm.max} mm</span> : null}
+                      </label>
+                    </div>
                     <label className="mt-2 flex items-center gap-2 text-sm font-semibold text-content-primary">
                       <input type="checkbox" checked={Boolean(input.reuse_existing_cylinder)} onChange={(event) => update({ reuse_existing_cylinder: event.target.checked })} className="h-4 w-4" />
                       Cylinder already on file for this client/spec — skip cylinder charge
