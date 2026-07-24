@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
 
     const productId = request.nextUrl.searchParams.get('productId')?.trim() ?? '';
     const variantId = request.nextUrl.searchParams.get('variantId')?.trim() ?? '';
-    const currency = (request.nextUrl.searchParams.get('currency') || workspace.organization.default_currency || 'USD')
+    const organizationCurrency = (workspace.organization as { default_currency?: string | null }).default_currency;
+    const currency = (request.nextUrl.searchParams.get('currency') || organizationCurrency || 'USD')
       .trim()
       .toUpperCase()
       .slice(0, 3);
