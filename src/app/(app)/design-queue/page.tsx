@@ -4,22 +4,21 @@ import { StateMessage } from '@/components/ui/state-message';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
-import { getPackagingDesignQueue } from '@/lib/packaging/queries';
+import { getPackagingDesignWork } from '@/lib/packaging/design-queue';
 import { ARTWORK_STATUS_OPTIONS } from '@/lib/packaging/types';
 import PackagingProofPanel from '@/features/packaging/components/packaging-proof-panel';
 
 /**
  * S27-STARK-A3 — Design/Prepress role landing page.
- * Shows every packaging quote line on an active quote that still needs
- * artwork attention (needs pre-press or artwork not provided yet), across
- * the whole org — not scoped to "my leads", since design supports every
- * account manager's jobs.
+ * Shows every active quote line that needs artwork attention, including both
+ * configured packaging lines and catalog design services such as pre-press,
+ * mockups, and 3D packshots.
  */
 
 export const dynamic = 'force-dynamic';
 
 function artworkLabel(status: string | null) {
-  if (!status) return 'Not specified';
+  if (!status) return 'Awaiting artwork';
   return ARTWORK_STATUS_OPTIONS.find((option) => option.key === status)?.label ?? status;
 }
 
@@ -39,15 +38,15 @@ export default async function DesignQueuePage() {
     return <StateMessage title="Packaging vertical is not enabled" description="The Design Queue is available for packaging-vertical workspaces." tone="info" />;
   }
 
-  const queue = await getPackagingDesignQueue(workspace.organization.id, supabase);
+  const queue = await getPackagingDesignWork(workspace.organization.id, supabase);
   const needsPrepress = queue.filter((item) => item.artworkStatus === 'needs_prepress');
-  const notProvided = queue.filter((item) => item.artworkStatus !== 'needs_prepress');
+  const awaitingArtwork = queue.filter((item) => item.artworkStatus !== 'needs_prepress');
 
   return (
     <div className="space-y-4 pb-16">
       <section>
         <h1 className="text-2xl font-bold tracking-tight text-content-primary">Design Queue</h1>
-        <p className="mt-1 text-sm text-content-secondary">Every packaging job across active quotes that still needs artwork attention. Sorted so pre-press-flagged jobs come first.</p>
+        <p className="mt-1 text-sm text-content-secondary">Packaging jobs and quoted design services that need artwork, proof creation, or client approval. Pre-press work is shown first.</p>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">
@@ -56,21 +55,25 @@ export default async function DesignQueuePage() {
           <p className="mt-1 text-2xl font-bold text-content-primary">{needsPrepress.length}</p>
         </div>
         <div className="rounded-card border border-line bg-surface-1 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Awaiting artwork</p>
-          <p className="mt-1 text-2xl font-bold text-content-primary">{notProvided.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Awaiting design / artwork</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{awaitingArtwork.length}</p>
         </div>
       </section>
 
       {queue.length ? (
         <section className="rounded-panel border border-line bg-surface-1 p-4">
           <ul className="divide-y divide-line">
-            {[...needsPrepress, ...notProvided].map((item) => (
+            {queue.map((item) => (
               <li key={item.lineId} className="flex flex-col gap-2 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-content-primary">{item.companyName ?? 'Unknown company'}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-content-primary">{item.companyName ?? 'Unknown company'}</p>
+                      {item.quoteNumber ? <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-content-muted">{item.quoteNumber}</span> : null}
+                      {item.sourceType === 'design_service' ? <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">Design service</span> : null}
+                    </div>
                     <p className="truncate text-sm text-content-secondary">{item.specSummary ?? 'Packaging line'}</p>
-                    <p className="text-xs text-content-muted">{Number(item.quantity).toLocaleString()} pcs · {money(item.unitPrice, item.currency)} / pc{item.leadTime ? ` · ${item.leadTime}` : ''}</p>
+                    <p className="text-xs text-content-muted">{Number(item.quantity).toLocaleString()} {item.sourceType === 'design_service' ? 'job(s)' : 'pcs'} · {money(item.unitPrice, item.currency)} / {item.sourceType === 'design_service' ? 'job' : 'pc'}{item.leadTime ? ` · ${item.leadTime}` : ''}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.artworkStatus === 'needs_prepress' ? 'bg-warning-bg text-warning-fg' : 'bg-info-bg text-info-fg'}`}>
@@ -83,8 +86,6 @@ export default async function DesignQueuePage() {
                     ) : null}
                   </div>
                 </div>
-                {/* S27-STARK: act directly from the queue — upload or review artwork
-                    proofs here instead of only linking away to the quote. */}
                 {item.leadId ? <PackagingProofPanel quoteLineItemId={item.lineId} leadId={item.leadId} /> : null}
               </li>
             ))}
