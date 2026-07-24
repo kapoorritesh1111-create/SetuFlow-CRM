@@ -14,17 +14,21 @@ async function context() {
   if (!workspace.user || !workspace.organization || !workspace.membership) return null;
   const admin = createAdminSupabaseClient();
   if (!admin) return null;
-  return { workspace, admin };
+  return {
+    admin,
+    organization: workspace.organization,
+    user: workspace.user,
+    profile: workspace.profile,
+  };
 }
 
 export async function GET() {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
-  const { workspace, admin } = ctx;
-  const { data: runs, error } = await (admin as any)
+  const { data: runs, error } = await (ctx.admin as any)
     .from('packaging_test_runs')
     .select('*, packaging_test_results(*)')
-    .eq('organization_id', workspace.organization.id)
+    .eq('organization_id', ctx.organization.id)
     .order('started_at', { ascending: false })
     .limit(20);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -34,7 +38,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
-  const { workspace, admin } = ctx;
+  const { admin, organization, user, profile } = ctx;
   const form = await request.formData();
   const action = clean(form.get('action'), 40);
 
@@ -45,9 +49,9 @@ export async function POST(request: Request) {
     let runId = clean(form.get('runId'), 80);
     if (!runId) {
       const { data: run, error } = await (admin as any).from('packaging_test_runs').insert({
-        organization_id: workspace.organization.id,
-        tester_user_id: workspace.user.id,
-        tester_name: clean(form.get('testerName'), 200) || workspace.profile?.full_name || workspace.user.email,
+        organization_id: organization.id,
+        tester_user_id: user.id,
+        tester_name: clean(form.get('testerName'), 200) || profile?.full_name || user.email,
         tested_role: clean(form.get('testedRole'), 80) || 'sales',
         device: clean(form.get('device'), 300),
         browser: request.headers.get('user-agent')?.slice(0, 500) ?? null,
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
       if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: 'Evidence must be under 10 MB.' }, { status: 400 });
       const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
       evidenceFilename = file.name.slice(0, 240);
-      evidencePath = `${workspace.organization.id}/${runId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      evidencePath = `${organization.id}/${runId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await (admin as any).storage.from(BUCKET).upload(evidencePath, file, {
         contentType: file.type,
         upsert: false,
@@ -82,7 +86,7 @@ export async function POST(request: Request) {
 
     const payload = {
       run_id: runId,
-      organization_id: workspace.organization.id,
+      organization_id: organization.id,
       step_id: clean(form.get('stepId'), 120),
       workflow: clean(form.get('workflow'), 160),
       step_title: clean(form.get('stepTitle'), 300),
@@ -92,7 +96,7 @@ export async function POST(request: Request) {
       notes: clean(form.get('notes'), 8000),
       evidence_storage_path: evidencePath,
       evidence_filename: evidenceFilename,
-      tested_by: workspace.user.id,
+      tested_by: user.id,
       tested_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -111,7 +115,7 @@ export async function POST(request: Request) {
       .from('packaging_test_results')
       .select('*')
       .eq('id', resultId)
-      .eq('organization_id', workspace.organization.id)
+      .eq('organization_id', organization.id)
       .single();
     if (readError || !test) return NextResponse.json({ error: 'Test result not found.' }, { status: 404 });
     if (!['Fail', 'Blocked'].includes(test.result)) return NextResponse.json({ error: 'Only failed or blocked tests can create issues.' }, { status: 400 });
@@ -134,8 +138,8 @@ export async function POST(request: Request) {
     ].filter(Boolean).join('\n\n');
 
     const { data: issue, error } = await (admin as any).from('sprint_issues').insert({
-      organization_id: workspace.organization.id,
-      client_org_id: workspace.organization.id,
+      organization_id: organization.id,
+      client_org_id: organization.id,
       sprint_number: 49,
       sprint_name: 'Sprint 49 - Packaging Academy QA',
       sprint_target: 'Sprint 49',
@@ -159,8 +163,8 @@ export async function POST(request: Request) {
       actual_behavior: test.actual_result,
       qa_notes: test.notes,
       browser_device: clean(form.get('device'), 500),
-      reporter_name: workspace.profile?.full_name || workspace.user.email,
-      reporter_user_id: workspace.user.id,
+      reporter_name: profile?.full_name || user.email,
+      reporter_user_id: user.id,
       submitted_via: 'Packaging Academy',
       attachments: test.evidence_storage_path ? [{ bucket: BUCKET, path: test.evidence_storage_path, filename: test.evidence_filename }] : [],
       labels: ['packaging', 'academy', 'client-testing'],
