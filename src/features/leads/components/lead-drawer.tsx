@@ -53,10 +53,9 @@ export function LeadDrawer(props: LeadDrawerProps) {
       {...props}
       lead={props.lead ?? modeSeedLead}
       onSaved={(payload: LeadDrawerSavePayload) => {
-        if (quickNewLead && payload.resetForNextLead) {
-          props.onSaved?.({ ...payload, lead: modeSeedLead });
-          return;
-        }
+        // Keep the real saved row in the callback. Replacing it with the empty
+        // mode seed prevented the Leads workspace from adding a new Quick Lead
+        // to its live list until a full page reload.
         props.onSaved?.(payload);
       }}
     />
