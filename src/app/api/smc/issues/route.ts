@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
 import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 import { notifySmc, getSmcRecipientIds } from '@/lib/notifications/smc-notify';
@@ -20,6 +21,7 @@ type SprintIssueRow = Record<string, SprintIssueValue> & {
   organization_id: string | null;
   issue_ref: string | null;
   issue_number: number | null;
+  attachments?: Json | null;
 };
 type SprintIssueInsert = Record<string, SprintIssueValue>;
 type SprintIssueUpdate = Partial<SprintIssueInsert>;
@@ -33,6 +35,7 @@ type SmcDatabase = Omit<Database, "public"> & {
 type SmcSupabase = SupabaseClient<SmcDatabase>;
 
 type RefRow = { issue_ref: string | null; issue_number: number | null };
+type EvidenceAttachment = { bucket?: string; path?: string; filename?: string; name?: string; url?: string; type?: string; size?: number };
 
 function smcClient(supabase: Awaited<ReturnType<typeof createClient>>): SmcSupabase {
   return supabase as unknown as SmcSupabase;
@@ -80,6 +83,26 @@ function jsonSafe(value: unknown): Json | null {
   } catch {
     return null;
   }
+}
+
+async function withSignedEvidence(rows: SprintIssueRow[]): Promise<SprintIssueRow[]> {
+  const admin = createAdminSupabaseClient();
+  if (!admin) return rows;
+
+  return Promise.all(rows.map(async (row) => {
+    if (!Array.isArray(row.attachments)) return row;
+    const attachments = await Promise.all((row.attachments as EvidenceAttachment[]).map(async (attachment) => {
+      if (attachment.url || !attachment.bucket || !attachment.path) return attachment;
+      const { data, error } = await admin.storage.from(attachment.bucket).createSignedUrl(attachment.path, 60 * 60);
+      if (error || !data?.signedUrl) return attachment;
+      return {
+        ...attachment,
+        url: data.signedUrl,
+        name: attachment.name || attachment.filename || attachment.path.split('/').pop() || 'Evidence',
+      };
+    }));
+    return { ...row, attachments: attachments as unknown as Json };
+  }));
 }
 
 async function assertSetuMember() {
@@ -135,7 +158,7 @@ async function nextIssueRef(supabase: SmcSupabase, sprintNumber: number, issueTy
 
 function buildIssuePayload(body: IssuePayload, issueRef: string, issueNumber: number): SprintIssueInsert {
   const issueType = pick(body.issue_type, TYPES, "Bug");
-  const sprintNumber = numberValue(body.sprint_number) ?? 27;
+  const sprintNumber = numberValue(body.sprint_number) ?? 49;
   const area = text(body.area);
 
   return {
@@ -153,6 +176,7 @@ function buildIssuePayload(body: IssuePayload, issueRef: string, issueNumber: nu
     sprint_number: sprintNumber,
     sprint_name: text(body.sprint_name) ?? `Sprint ${sprintNumber}`,
     sprint_label: text(body.sprint_label) ?? `S${sprintNumber}`,
+    sprint_target: text(body.sprint_target) ?? `Sprint ${sprintNumber}`,
     story_points: numberValue(body.story_points),
     assigned_to: text(body.assigned_to),
     reporter_name: text(body.reporter_name) ?? "Ritesh Kapoor",
@@ -190,7 +214,9 @@ export async function GET(request: NextRequest) {
       .limit(Number.isFinite(limit) ? limit : 1000);
 
     if (error) throw error;
-    return NextResponse.json({ issues: data ?? [] });
+    const issues = await withSignedEvidence((data as SprintIssueRow[]) ?? []);
+    const sprintNumbers = Array.from(new Set(issues.map((issue) => numberValue(issue.sprint_number)).filter((value): value is number => value !== null))).sort((a, b) => b - a);
+    return NextResponse.json({ issues, sprintNumbers });
   } catch (err) {
     console.error("SMC issues error:", err);
     return NextResponse.json({ error: "Failed to fetch issues" }, { status: 500 });
@@ -207,7 +233,7 @@ export async function POST(request: NextRequest) {
     const title = text(body.title);
     if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
-    const sprintNumber = numberValue(body.sprint_number) ?? 27;
+    const sprintNumber = numberValue(body.sprint_number) ?? 49;
     const issueType = pick(body.issue_type, TYPES, "Bug");
     const explicitRef = text(body.issue_ref);
     const generated = explicitRef
