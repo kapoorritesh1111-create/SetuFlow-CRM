@@ -35,21 +35,6 @@ export function buildLeadsPageViewModel({
     complianceItems: data.complianceItems as Parameters<typeof buildTodayLayerState>[0]['complianceItems'],
   });
 
-  // The standard Leads workspace is a complete operational list. Urgency
-  // counters remain available, but the initial state must not silently hide
-  // newly captured leads behind Overdue, Due Today, Waiting, or Blocked.
-  const initialTodayState = {
-    ...todayState,
-    activeFilter: 'all-open' as const,
-    counts: {
-      ...todayState.counts,
-      overdue: 0,
-      dueToday: 0,
-      waiting: 0,
-      blocked: 0,
-    },
-  };
-
   return {
     currentUserId: workspace.user?.id ?? '',
     canManageLeads,
@@ -58,6 +43,6 @@ export function buildLeadsPageViewModel({
     normalizedQuotes,
     workspaceMode,
     initialLeadType: workspaceModeToLeadJourney(workspaceMode),
-    todayState: initialTodayState,
+    todayState,
   };
 }
