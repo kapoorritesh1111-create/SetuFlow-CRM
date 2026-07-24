@@ -88,8 +88,8 @@ export async function getPackagingDesignWork(
   const companyByLeadId = new Map<string, string | null>((leads ?? []).map((lead: any) => [lead.id, lead.company_name]));
   const productById = new Map<string, any>(products.map((product: any) => [product.id, product]));
 
-  return (lines ?? [])
-    .flatMap((line: any): PackagingDesignQueueItem[] => {
+  const queueItems: PackagingDesignQueueItem[] = (lines ?? []).flatMap(
+    (line: any): PackagingDesignQueueItem[] => {
       const quote = quoteById.get(line.quote_id);
       if (!quote) return [];
 
@@ -125,11 +125,13 @@ export async function getPackagingDesignWork(
         updatedAt: line.updated_at ?? quote.updated_at ?? null,
         sourceType: isPackagingLine ? 'packaging_line' : 'design_service',
       }];
-    })
-    .sort((a, b) => {
-      const aPriority = a.artworkStatus === 'needs_prepress' ? 0 : 1;
-      const bPriority = b.artworkStatus === 'needs_prepress' ? 0 : 1;
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''));
-    });
+    },
+  );
+
+  return queueItems.sort((a: PackagingDesignQueueItem, b: PackagingDesignQueueItem) => {
+    const aPriority = a.artworkStatus === 'needs_prepress' ? 0 : 1;
+    const bPriority = b.artworkStatus === 'needs_prepress' ? 0 : 1;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''));
+  });
 }
