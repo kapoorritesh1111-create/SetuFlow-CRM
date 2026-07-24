@@ -146,7 +146,7 @@ export default function QuoteProductRowsClient({
     );
   };
 
-  const applyOption = (index: number, option: Option) => {
+  const applyOption = async (index: number, option: Option) => {
     set(index, {
       productId: option.productId,
       variantId: String(option.variantId ?? ''),
@@ -161,12 +161,33 @@ export default function QuoteProductRowsClient({
       source: 'Price List',
       blank: false,
     });
+
+    try {
+      const params = new URLSearchParams({
+        productId: option.productId,
+        currency: quoteCurrency,
+      });
+      if (option.variantId) params.set('variantId', option.variantId);
+      const response = await fetch(`/api/quotes/product-price?${params.toString()}`, { cache: 'no-store' });
+      if (!response.ok) return;
+      const price = await response.json();
+      set(index, {
+        casePrice: num(price.casePrice) !== null ? String(price.casePrice) : '',
+        unitPrice: num(price.unitPrice) !== null ? String(price.unitPrice) : '',
+        qty: String(price.moq || option.moq || 1),
+        pack: String(price.pack || option.pack || 'Case'),
+        basis: String(price.basis || option.basis || 'FOB').toUpperCase(),
+        currency: quoteCurrency,
+      });
+    } catch {
+      // Keep the catalog option values if the live price lookup is unavailable.
+    }
   };
 
   const typeValue = (index: number, value: string) => {
     const exact = optionMap.get(value.trim().toLowerCase());
     if (exact) {
-      applyOption(index, exact);
+      void applyOption(index, exact);
       return;
     }
     set(index, {
@@ -181,7 +202,7 @@ export default function QuoteProductRowsClient({
 
   const choose = (index: number, value: string) => {
     const option = resolveOption(options, value);
-    if (option) applyOption(index, option);
+    if (option) void applyOption(index, option);
   };
 
   const clear = (index: number) => {
