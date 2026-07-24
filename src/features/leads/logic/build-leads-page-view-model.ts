@@ -28,11 +28,27 @@ export function buildLeadsPageViewModel({
   const isWorkspaceEmpty = (data.leads as Array<unknown>).length === 0;
   const todayState = buildTodayLayerState({
     mode: workspaceMode,
+    activeFilter: 'all-open',
     nowIso: new Date().toISOString(),
-    leads: data.leads as Parameters<typeof buildTodayLayerState>[0]["leads"],
-    activities: data.activities as Parameters<typeof buildTodayLayerState>[0]["activities"],
-    complianceItems: data.complianceItems as Parameters<typeof buildTodayLayerState>[0]["complianceItems"],
+    leads: data.leads as Parameters<typeof buildTodayLayerState>[0]['leads'],
+    activities: data.activities as Parameters<typeof buildTodayLayerState>[0]['activities'],
+    complianceItems: data.complianceItems as Parameters<typeof buildTodayLayerState>[0]['complianceItems'],
   });
+
+  // The standard Leads workspace is a complete operational list. Urgency
+  // counters remain available, but the initial state must not silently hide
+  // newly captured leads behind Overdue, Due Today, Waiting, or Blocked.
+  const initialTodayState = {
+    ...todayState,
+    activeFilter: 'all-open' as const,
+    counts: {
+      ...todayState.counts,
+      overdue: 0,
+      dueToday: 0,
+      waiting: 0,
+      blocked: 0,
+    },
+  };
 
   return {
     currentUserId: workspace.user?.id ?? '',
@@ -42,6 +58,6 @@ export function buildLeadsPageViewModel({
     normalizedQuotes,
     workspaceMode,
     initialLeadType: workspaceModeToLeadJourney(workspaceMode),
-    todayState,
+    todayState: initialTodayState,
   };
 }
