@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getIcpProfile } from '@/lib/setu-guru/icp';
-import { scoreFitAgainstIcp } from '@/lib/setu-guru/entity-research';
+import { scoreFitAgainstIcp } from '@/lib/setu-guru/fit-scoring';
 
 export type TradeEventLeadCard = {
   leadId: string;

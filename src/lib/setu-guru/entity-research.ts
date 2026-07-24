@@ -1,13 +1,13 @@
+"use server";
 import { createClient } from '@/lib/supabase/server';
 import { getIcpProfile, type IcpProfile } from '@/lib/setu-guru/icp';
+import { retrieveGuru } from '@/lib/rag/retrieve';
+import { scoreFitAgainstIcp, type FitScoreResult } from '@/lib/setu-guru/fit-scoring';
 
-export type FitScoreResult = {
-  score: number; // 0-100
-  matchedCountry: boolean;
-  matchedProduct: boolean;
-  matchedBuyerType: boolean;
-  reasons: string[];
-};
+import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+
+export type { FitScoreResult };
 
 export type EntityResearchResult = {
   entityId: string;
@@ -25,89 +25,239 @@ export type EntityResearchResult = {
   rfqReadiness?: 'ready' | 'needs_input' | 'unknown';
 };
 
+type LeadRow = {
+  id: string;
+  company_name?: string | null;
+  contact_name?: string | null;
+  country?: string | null;
+  lead_type?: string | null;
+  products_or_needs?: string | null;
+  main_product_category?: string | null;
+  last_contacted_at?: string | null;
+  intro_sent?: boolean | null;
+  trade_event_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ageDays = (value?: string | null) => (value ? Math.floor((Date.now() - Date.parse(value)) / DAY_MS) : null);
+const AI_TIMEOUT_MS = 8000;
+// Configurable via env, matching the SETU_GURU_MODEL / OPENAI_CONTACT_SCAN_MODEL pattern.
+// Falls back to a current Haiku model if not set in .env.
+const RAG_SYNTHESIS_MODEL = process.env.SETU_GURU_RAG_MODEL || 'claude-haiku-4-5-20251001';
 
-function normalize(value?: string | null) {
-  return (value ?? '').trim().toLowerCase();
+// --- Singleton API clients (do not recreate per-request) ---
+let openaiClient: OpenAI | null = null;
+let anthropicClient: Anthropic | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiClient) openaiClient = new OpenAI({ timeout: AI_TIMEOUT_MS });
+  return openaiClient;
 }
 
-function overlaps(a: string[], b: string[]) {
-  const setB = new Set(b.map(normalize));
-  return a.some((item) => setB.has(normalize(item)));
+function getAnthropic(): Anthropic {
+  if (!anthropicClient) anthropicClient = new Anthropic({ timeout: AI_TIMEOUT_MS });
+  return anthropicClient;
 }
 
-export function scoreFitAgainstIcp(
-  lead: { country?: string | null; products_or_needs?: string | null; lead_type?: string | null; main_product_category?: string | null },
-  icp: IcpProfile | null,
-): FitScoreResult | null {
-  if (!icp) return null;
+const ageDays = (value?: string | null) =>
+  value ? Math.floor((Date.now() - Date.parse(value)) / DAY_MS) : null;
 
-  const reasons: string[] = [];
-  let score = 40; // baseline: CRM record exists, no ICP contradiction yet
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const matchedCountry = Boolean(icp.target_countries.length) && overlaps([lead.country ?? ''], icp.target_countries);
-  if (matchedCountry) {
-    score += 25;
-    reasons.push(`Located in a target market (${lead.country}).`);
+/**
+ * Defense-in-depth guard.
+ *
+ * The primary tenant-isolation guarantee for this app comes from Postgres
+ * RLS (organization-scoped policies using is_org_member, per the RLS
+ * hardening work already done on `leads`/`quotes`/etc). AS LONG AS
+ * `createClient()` returns a session-scoped client (anon key + user's
+ * auth cookie, not the service-role key), RLS alone already prevents a
+ * malicious orgId from returning another tenant's rows.
+ *
+ * This guard adds a second, independent layer on top of that:
+ *   1. Rejects requests with no authenticated session at all (fail
+ *      closed instead of letting a malformed/anonymous call reach the
+ *      database and rely solely on RLS).
+ *   2. Rejects malformed orgId/leadId before any query runs, instead of
+ *      trusting whatever string a caller passes in.
+ *
+ * NOTE: if `createClient()` in `@/lib/supabase/server` ever uses the
+ * SUPABASE_SERVICE_ROLE_KEY (which bypasses RLS entirely) instead of the
+ * session-scoped anon client, this guard becomes the ONLY thing standing
+ * between a caller and cross-tenant data — confirm that before shipping.
+ */
+async function assertRequestIsValid(
+  client: any,
+  orgId: string,
+  leadId: string,
+): Promise<boolean> {
+  if (!UUID_RE.test(orgId) || !UUID_RE.test(leadId)) {
+    console.warn('[Guru:Agentic-AI] Rejected malformed orgId/leadId', { orgId, leadId });
+    return false;
   }
 
-  const leadProductTerms = [lead.products_or_needs ?? '', lead.main_product_category ?? '']
-    .join(' ')
-    .split(/[,/;]+/)
-    .map((term) => term.trim())
-    .filter(Boolean);
-  const matchedProduct = Boolean(icp.products.length) && leadProductTerms.some((term) =>
-    icp.products.some((product) => normalize(term).includes(normalize(product)) || normalize(product).includes(normalize(term))),
-  );
-  if (matchedProduct) {
-    score += 20;
-    reasons.push('Product interest overlaps with your ICP product list.');
+  const {
+    data: { user },
+    error: authError,
+  } = await client.auth.getUser();
+
+  if (authError || !user) {
+    console.warn('[Guru:Agentic-AI] Rejected request with no authenticated session', { orgId, leadId });
+    return false;
   }
 
-  const matchedBuyerType = Boolean(icp.buyer_types.length) && overlaps([lead.lead_type ?? ''], icp.buyer_types);
-  if (matchedBuyerType) {
-    score += 15;
-    reasons.push('Buyer type matches a target buyer type in your ICP.');
+  return true;
+}
+
+/**
+ * Safely parse a JSON object out of an LLM text response.
+ * Handles markdown code fences and stray leading/trailing text.
+ */
+function safeParseJson<T = Record<string, unknown>>(raw: string): T | null {
+  const cleaned = raw.replace(/```json|```/g, '').trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  const candidate = match ? match[0] : cleaned;
+  try {
+    return JSON.parse(candidate) as T;
+  } catch {
+    return null;
+  }
+}
+
+function computeMissingInfo(lead: LeadRow, entityType: 'buyer' | 'supplier'): string[] {
+  const missing: string[] = [];
+  if (!lead.country) missing.push('Country');
+  if (!lead.products_or_needs) missing.push(entityType === 'supplier' ? 'Capability or product category' : 'Product interest or needs');
+  if (entityType === 'buyer' && !lead.contact_name) missing.push('Contact name');
+  return missing;
+}
+
+/**
+ * Shared fetch: loads the lead row + ICP profile for a given org/lead,
+ * optionally scoped with extra equality filters (e.g. lead_type = 'supplier').
+ */
+async function fetchLeadAndIcp(
+  client: any,
+  orgId: string,
+  leadId: string,
+  columns: string,
+  extraFilters: Record<string, string> = {},
+): Promise<{ lead: LeadRow | null; icp: IcpProfile | null }> {
+  let query = client.from('leads').select(columns).eq('organization_id', orgId).eq('id', leadId);
+  for (const [key, value] of Object.entries(extraFilters)) {
+    query = query.eq(key, value);
   }
 
-  if (!matchedCountry && icp.target_countries.length) {
-    reasons.push('Outside your configured target countries.');
-  }
-  if (!matchedProduct && icp.products.length) {
-    reasons.push('No clear overlap with your configured product list yet.');
-  }
+  const [{ data: lead, error: leadError }, icp] = await Promise.all([query.maybeSingle(), getIcpProfile(orgId)]);
 
-  return {
-    score: Math.max(0, Math.min(100, score)),
-    matchedCountry,
-    matchedProduct,
-    matchedBuyerType,
-    reasons,
-  };
+  if (leadError) {
+    // Log full detail server-side only; never let raw DB error objects
+    // (which can include table/column names) reach the client.
+    console.error('[Guru:Agentic-AI] fetchLeadAndIcp DB error:', { orgId, leadId, error: leadError });
+    throw new Error('Unable to load lead data.');
+  }
+  return { lead: lead ?? null, icp };
+}
+
+/**
+ * Attempts to enrich a fit summary / outreach angle using RAG + an LLM.
+ * Falls back silently to the rule-based defaults on any failure (network,
+ * embedding, retrieval, or JSON parsing errors), logging the failure for
+ * observability without breaking the caller.
+ */
+async function enrichWithRag(params: {
+  orgId: string;
+  label: string;
+  products: string | null | undefined;
+  country: string | null | undefined;
+  fallbackAngle: string | null;
+  fallbackSummary: string;
+}): Promise<{ angle: string | null; summary: string }> {
+  const { orgId, label, products, country, fallbackAngle, fallbackSummary } = params;
+
+  try {
+    const ragQuestion = `Find the best outreach angle and historical data for a buyer interested in ${
+      products || 'our products'
+    } from ${country || 'unknown region'}.`;
+
+    const embeddingResponse = await getOpenAI().embeddings.create({
+      model: 'text-embedding-3-small',
+      input: ragQuestion,
+    });
+    const queryEmbedding = embeddingResponse.data[0].embedding;
+
+    const ragResult = await retrieveGuru({
+      organizationId: orgId,
+      question: ragQuestion,
+      queryEmbedding,
+      matchCount: 3,
+    });
+
+    if (!ragResult.found) {
+      return { angle: fallbackAngle, summary: fallbackSummary };
+    }
+
+    const aiResponse = await getAnthropic().messages.create({
+      model: RAG_SYNTHESIS_MODEL,
+      max_tokens: 300,
+      system: ragResult.groundingPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: `Based on the RAG data, write a 1-sentence personalized outreach angle for ${label}. Then write a 1-sentence fit summary. Respond with ONLY valid JSON, no markdown fences, in exactly this shape: {"angle": "...", "summary": "..."}`,
+        },
+      ],
+    });
+
+    const block = aiResponse.content.find((item) => item.type === 'text');
+    const responseText = block && 'text' in block ? block.text : '';
+    const parsed = safeParseJson<{ angle?: string; summary?: string }>(responseText);
+
+    if (!parsed) {
+      console.warn('[Guru:Agentic-AI] Could not parse LLM JSON response, using fallback', { orgId, label });
+      return { angle: fallbackAngle, summary: fallbackSummary };
+    }
+
+    return {
+      angle: parsed.angle || fallbackAngle,
+      summary: parsed.summary || fallbackSummary,
+    };
+  } catch (error) {
+    console.error('[Guru:Agentic-AI] Failed to orchestrate RAG enrichment:', { orgId, label, error });
+    return { angle: fallbackAngle, summary: fallbackSummary };
+  }
 }
 
 export async function generateBuyerResearch(orgId: string, leadId: string): Promise<EntityResearchResult | null> {
   const supabase = await createClient();
   const client = supabase as any;
 
-  const [{ data: lead, error: leadError }, icp] = await Promise.all([
-    client
-      .from('leads')
-      .select('id,company_name,contact_name,country,lead_type,products_or_needs,main_product_category,last_contacted_at,intro_sent,trade_event_id,created_at')
-      .eq('organization_id', orgId)
-      .eq('id', leadId)
-      .maybeSingle(),
-    getIcpProfile(orgId),
-  ]);
+  if (!(await assertRequestIsValid(client, orgId, leadId))) return null;
 
-  if (leadError) throw leadError;
+  const { lead, icp } = await fetchLeadAndIcp(
+    client,
+    orgId,
+    leadId,
+    'id,company_name,contact_name,country,lead_type,products_or_needs,main_product_category,last_contacted_at,intro_sent,trade_event_id,created_at',
+  );
   if (!lead) return null;
 
   const [{ data: quotes }, { data: shares }, { data: communications }] = await Promise.all([
-    client.from('quotes').select('id,status,sent_at,last_customer_response_at').eq('organization_id', orgId).eq('lead_id', leadId).limit(20),
+    client
+      .from('quotes')
+      .select('id,status,sent_at,last_customer_response_at')
+      .eq('organization_id', orgId)
+      .eq('lead_id', leadId)
+      .limit(20),
     client.from('catalog_shares').select('id,last_opened_at').eq('organization_id', orgId).eq('lead_id', leadId).limit(20),
-    client.from('communications').select('id,direction,sent_at,created_at').eq('organization_id', orgId).eq('lead_id', leadId).order('created_at', { ascending: false }).limit(10),
+    client
+      .from('communications')
+      .select('id,direction,sent_at,created_at')
+      .eq('organization_id', orgId)
+      .eq('lead_id', leadId)
+      .order('created_at', { ascending: false })
+      .limit(10),
   ]);
 
   const label = lead.company_name || lead.contact_name || 'This buyer';
@@ -116,10 +266,7 @@ export async function generateBuyerResearch(orgId: string, leadId: string): Prom
   const hasCatalogOpen = (shares ?? []).some((share: any) => Boolean(share.last_opened_at));
   const lastInbound = (communications ?? []).find((item: any) => item.direction === 'inbound');
 
-  const missingInformation: string[] = [];
-  if (!lead.country) missingInformation.push('Country');
-  if (!lead.products_or_needs) missingInformation.push('Product interest or needs');
-  if (!lead.contact_name) missingInformation.push('Contact name');
+  const missingInformation = computeMissingInfo(lead, 'buyer');
 
   const summaryParts: string[] = [];
   if (fitScore) {
@@ -153,20 +300,30 @@ export async function generateBuyerResearch(orgId: string, leadId: string): Prom
     suggestedFollowUpTiming = 'Within 3 days of the quote being sent';
   }
 
-  const suggestedAngle = icp?.outreach_style
+  const fallbackAngle = icp?.outreach_style
     ? icp.outreach_style
     : recommendedProducts.length
       ? `Lead with ${recommendedProducts[0]} and reference why it matches their market.`
       : null;
+  const fallbackSummary = summaryParts.join(' ');
+
+  const { angle: finalSuggestedAngle, summary: finalFitSummary } = await enrichWithRag({
+    orgId,
+    label,
+    products: lead.products_or_needs,
+    country: lead.country,
+    fallbackAngle,
+    fallbackSummary,
+  });
 
   return {
     entityId: lead.id,
     entityType: 'buyer',
     label,
-    fitSummary: summaryParts.join(' '),
+    fitSummary: finalFitSummary,
     fitScore,
     recommendedProducts,
-    suggestedAngle,
+    suggestedAngle: finalSuggestedAngle,
     missingInformation,
     recommendedNextAction,
     suggestedFollowUpTiming,
@@ -177,23 +334,32 @@ export async function generateSupplierResearch(orgId: string, leadId: string): P
   const supabase = await createClient();
   const client = supabase as any;
 
-  const [{ data: lead, error: leadError }, icp] = await Promise.all([
-    client
-      .from('leads')
-      .select('id,company_name,contact_name,country,lead_type,products_or_needs,main_product_category,created_at,updated_at')
-      .eq('organization_id', orgId)
-      .eq('id', leadId)
-      .eq('lead_type', 'supplier')
-      .maybeSingle(),
-    getIcpProfile(orgId),
-  ]);
+  if (!(await assertRequestIsValid(client, orgId, leadId))) return null;
 
-  if (leadError) throw leadError;
+  const { lead, icp } = await fetchLeadAndIcp(
+    client,
+    orgId,
+    leadId,
+    'id,company_name,contact_name,country,lead_type,products_or_needs,main_product_category,created_at,updated_at',
+    { lead_type: 'supplier' },
+  );
   if (!lead) return null;
 
   const [{ data: documents }, { data: rfqs }] = await Promise.all([
-    client.from('documents').select('id,status,expires_at').eq('organization_id', orgId).eq('related_entity', 'lead').eq('related_id', leadId).limit(50),
-    client.from('rfqs').select('id,status,validity_date,updated_at').eq('organization_id', orgId).eq('lead_id', leadId).order('updated_at', { ascending: false }).limit(20),
+    client
+      .from('documents')
+      .select('id,status,expires_at')
+      .eq('organization_id', orgId)
+      .eq('related_entity', 'lead')
+      .eq('related_id', leadId)
+      .limit(50),
+    client
+      .from('rfqs')
+      .select('id,status,validity_date,updated_at')
+      .eq('organization_id', orgId)
+      .eq('lead_id', leadId)
+      .order('updated_at', { ascending: false })
+      .limit(20),
   ]);
 
   const label = lead.company_name || lead.contact_name || 'This supplier';
@@ -203,23 +369,20 @@ export async function generateSupplierResearch(orgId: string, leadId: string): P
   const existingDocs = documents ?? [];
   const now = Date.now();
   const expiredDocs = existingDocs.filter((doc: any) => doc.expires_at && Date.parse(doc.expires_at) < now);
-  const missingDocuments = requiredDocs.length && existingDocs.length === 0 ? requiredDocs : expiredDocs.map(() => 'Expired document on file');
-  const complianceStatus: EntityResearchResult['complianceStatus'] = requiredDocs.length === 0
-    ? 'unknown'
-    : missingDocuments.length
-      ? 'gaps_found'
-      : 'ok';
+
+  const missingDocuments =
+    requiredDocs.length && existingDocs.length === 0
+      ? requiredDocs
+      : expiredDocs.map((doc: any) => `${doc.status ?? 'Document'} expired`);
+
+  const complianceStatus: EntityResearchResult['complianceStatus'] =
+    requiredDocs.length === 0 ? 'unknown' : missingDocuments.length ? 'gaps_found' : 'ok';
 
   const openRfq = (rfqs ?? []).find((rfq: any) => !['completed', 'closed', 'approved'].includes(String(rfq.status ?? '').toLowerCase()));
-  const rfqReadiness: EntityResearchResult['rfqReadiness'] = complianceStatus === 'gaps_found'
-    ? 'needs_input'
-    : (rfqs ?? []).length
-      ? 'ready'
-      : 'unknown';
+  const rfqReadiness: EntityResearchResult['rfqReadiness'] =
+    complianceStatus === 'gaps_found' ? 'needs_input' : (rfqs ?? []).length ? 'ready' : 'unknown';
 
-  const missingInformation: string[] = [];
-  if (!lead.country) missingInformation.push('Country');
-  if (!lead.products_or_needs) missingInformation.push('Capability or product category');
+  const missingInformation = computeMissingInfo(lead, 'supplier');
 
   const summaryParts: string[] = [];
   if (fitScore) {
@@ -239,11 +402,12 @@ export async function generateSupplierResearch(orgId: string, leadId: string): P
   }
   if (openRfq) summaryParts.push('An RFQ with this supplier is still open.');
 
-  const recommendedNextAction = complianceStatus === 'gaps_found'
-    ? 'Request the missing or expired compliance documents before moving forward.'
-    : openRfq
-      ? 'Review the open RFQ response and confirm next steps.'
-      : 'Confirm supplier capability details and consider creating an RFQ.';
+  const recommendedNextAction =
+    complianceStatus === 'gaps_found'
+      ? 'Request the missing or expired compliance documents before moving forward.'
+      : openRfq
+        ? 'Review the open RFQ response and confirm next steps.'
+        : 'Confirm supplier capability details and consider creating an RFQ.';
 
   return {
     entityId: lead.id,
