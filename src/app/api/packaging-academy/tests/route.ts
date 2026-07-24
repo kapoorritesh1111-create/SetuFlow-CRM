@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const BUCKET = 'packaging-test-evidence';
+const ACADEMY_REPORTER_NAME = 'Test User';
+const ACADEMY_REPORTER_EMAIL = 'test@test.com';
+const ACADEMY_REPORTER_USER_ID = '7e9e2b7a-faf2-49c2-91d1-88699d23c737';
 const allowedResults = new Set(['Pass', 'Fail', 'Blocked', 'N/A']);
 const clean = (value: FormDataEntryValue | null, max = 4000) => String(value ?? '').trim().slice(0, max);
 
@@ -26,7 +30,7 @@ async function context() {
 }
 
 async function createSprint49Issue(ctx: NonNullable<Awaited<ReturnType<typeof context>>>, resultId: string, device = '') {
-  const { admin, organization, user, profile } = ctx;
+  const { admin, organization, user, profile, currentRoles } = ctx;
   const { data: test, error: readError } = await (admin as any)
     .from('packaging_test_results')
     .select('*')
@@ -41,35 +45,51 @@ async function createSprint49Issue(ctx: NonNullable<Awaited<ReturnType<typeof co
   const { data: latest } = await (admin as any)
     .from('sprint_issues')
     .select('issue_number')
+    .eq('organization_id', INTERNAL_ORG_ID)
     .eq('sprint_number', 49)
+    .like('issue_ref', 'S49-PKG-%')
     .order('issue_number', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   const issueNumber = Number(latest?.issue_number ?? 0) + 1;
   const issueRef = `S49-PKG-${String(issueNumber).padStart(3, '0')}`;
-  const severity = test.result === 'Blocked' ? 'P1' : 'P2';
+  const priority = test.result === 'Blocked' ? 'P1' : 'P2';
+  const severity = test.result === 'Blocked' ? 'High' : 'Medium';
+  const actualTesterName = profile?.full_name || user.email || 'Unknown tester';
+  const actualTesterEmail = user.email || 'Unknown email';
+  const testedRole = Array.isArray(currentRoles) && currentRoles.length ? currentRoles.join(', ') : 'Unknown role';
+  const testerDetails = [
+    `SMC reporter: ${ACADEMY_REPORTER_NAME} <${ACADEMY_REPORTER_EMAIL}>`,
+    `Actual Academy tester: ${actualTesterName} <${actualTesterEmail}>`,
+    `Tester role: ${testedRole}`,
+    `Test run ID: ${test.run_id}`,
+    `Test result ID: ${test.id}`,
+    `Tested at: ${test.tested_at || new Date().toISOString()}`,
+  ];
   const description = [
     `Packaging Academy test failed during ${test.workflow}: ${test.step_title}.`,
     test.actual_result ? `Actual: ${test.actual_result}` : '',
     test.notes ? `Notes: ${test.notes}` : '',
+    testerDetails.join('\n'),
   ].filter(Boolean).join('\n\n');
+  const qaNotes = [test.notes, ...testerDetails].filter(Boolean).join('\n');
 
   const { data: issue, error } = await (admin as any).from('sprint_issues').insert({
-    organization_id: organization.id,
+    organization_id: INTERNAL_ORG_ID,
     client_org_id: organization.id,
     sprint_number: 49,
-    sprint_name: 'Sprint 49 - Packaging Academy QA',
+    sprint_name: 'Sprint 49',
     sprint_target: 'Sprint 49',
-    sprint_label: 'Sprint 49',
+    sprint_label: 'S49',
     issue_number: issueNumber,
     issue_ref: issueRef,
     title: `[Packaging Academy] ${test.step_title}`,
-    category: 'QA / Training',
+    category: 'bug',
     issue_category: 'Bug',
     issue_type: 'Bug',
     severity,
-    priority: severity,
+    priority,
     status: 'Open',
     workflow_area: test.workflow,
     affected_module: 'Packaging Academy',
@@ -79,13 +99,13 @@ async function createSprint49Issue(ctx: NonNullable<Awaited<ReturnType<typeof co
     steps_to_reproduce: `Open Packaging Academy Test Mode and execute step ${test.step_id}: ${test.step_title}.`,
     expected_behavior: test.expected_result,
     actual_behavior: test.actual_result,
-    qa_notes: test.notes,
+    qa_notes: qaNotes,
     browser_device: device,
-    reporter_name: profile?.full_name || user.email,
-    reporter_user_id: user.id,
+    reporter_name: ACADEMY_REPORTER_NAME,
+    reporter_user_id: ACADEMY_REPORTER_USER_ID,
     submitted_via: 'Packaging Academy',
     attachments: test.evidence_storage_path ? [{ bucket: BUCKET, path: test.evidence_storage_path, filename: test.evidence_filename }] : [],
-    labels: ['packaging', 'academy', 'client-testing'],
+    labels: ['packaging', 'academy', 'client-testing', `reporter:${ACADEMY_REPORTER_EMAIL}`, `tester:${actualTesterEmail}`],
     customer_impact: test.result === 'Blocked' ? 'Testing workflow blocked' : 'Client-facing workflow defect',
     reported_at: new Date().toISOString(),
   }).select('id,issue_ref').single();
