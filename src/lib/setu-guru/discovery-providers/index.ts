@@ -39,7 +39,7 @@ export type ExternalDiscoveryProvider = {
 
 const manualProvider: ExternalDiscoveryProvider = {
   key: 'manual', label: 'Manual research', capabilities: ['manual_intake'], configured: true,
-  async search() { return { candidates: [], providerCostAmount: 0, providerCostCurrency: 'USD', disabled: true, message: 'No licensed external discovery provider is configured. No companies were generated. Configure EXA_API_KEY or continue with human-reviewed manual research.' }; },
+  async search() { return { candidates: [], providerCostAmount: 0, providerCostCurrency: 'USD', disabled: true, message: 'No production external discovery provider is configured. No companies were generated. Configure EXA_API_KEY or continue with human-reviewed manual research.' }; },
 };
 
 function profileList(profile: Record<string, unknown> | undefined, key: string) { const value = profile?.[key]; return Array.isArray(value) ? value.map(String).filter(Boolean) : []; }
@@ -74,8 +74,6 @@ const registry = new Map<string, ExternalDiscoveryProvider>([[manualProvider.key
 export function registerDiscoveryProvider(provider: ExternalDiscoveryProvider) { registry.set(provider.key, provider); }
 export function getDefaultDiscoveryProvider(): ExternalDiscoveryProvider { return Array.from(registry.values()).find((provider) => provider.key !== 'manual' && provider.configured) ?? manualProvider; }
 export function getDiscoveryProvider(key: string): ExternalDiscoveryProvider {
-  // Existing clients historically submit "manual". Prefer the licensed provider when configured,
-  // while preserving the truthful manual/disabled result when no credential exists.
   if ((key === 'manual' || key === 'auto') && getDefaultDiscoveryProvider().key !== 'manual') return getDefaultDiscoveryProvider();
   return registry.get(key) ?? manualProvider;
 }
