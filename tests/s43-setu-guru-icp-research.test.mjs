@@ -44,10 +44,9 @@ test('ICP API exposes profile scope and selection while retaining the existing G
   assert.match(icpRoute, /saveIcpProfile/);
 });
 
-test('ICP Setup Wizard covers products, markets, buyer types, supplier needs, MOQ, documents, and outreach preferences', () => {
-  for (const step of ['products', 'markets', 'buyers', 'suppliers', 'moq', 'documents', 'outreach']) {
-    assert.match(icpWizard, new RegExp(`key: '${step}'`));
-  }
+test('ICP Setup Wizard covers generic and Packaging vertical discovery fields', () => {
+  for (const step of ['products', 'buyers', 'commercial', 'documents', 'outreach']) assert.match(icpWizard, new RegExp(`key: '${step}'`));
+  for (const field of ['target_countries', 'supplier_types', 'moq_note', 'packaging_families', 'end_use_sectors', 'materials', 'print_methods', 'quantity_bands', 'artwork_states', 'sustainability_needs', 'regulated_uses']) assert.match(icpWizard, new RegExp(field));
   assert.match(icpWizard, /fetch\('\/api\/setu-guru\/icp'/);
   assert.match(icpPage, /requireWorkspace\(\)/);
 });
