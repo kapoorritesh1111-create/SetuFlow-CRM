@@ -7,6 +7,8 @@
   const routeByWorkflow = {
     Capture: '/contact-exchange/scan',
     Qualification: '/leads',
+    'Setu Guru for Packaging': '/setu-guru-ai',
+    'Growth Center — Packaging Operations': '/growth-agent',
     'Quote Builder': '/quotes',
     'Approvals & Sending': '/approval-send',
     'Quote Management & Outcomes': '/quotes',
@@ -19,17 +21,8 @@
     'Admin & Settings': '/admin/organization',
   };
 
-  const statusLabel = {
-    untested: 'Not tested',
-    'needs-retest': 'Retest required',
-    'passed-before-retest': 'Passed before · retest',
-  };
-
-  const statusClass = {
-    untested: 'academy-status-untested',
-    'needs-retest': 'academy-status-retest',
-    'passed-before-retest': 'academy-status-prior',
-  };
+  const statusLabel = { untested: 'Not tested', 'needs-retest': 'Retest required', 'passed-before-retest': 'Passed before · retest' };
+  const statusClass = { untested: 'academy-status-untested', 'needs-retest': 'academy-status-retest', 'passed-before-retest': 'academy-status-prior' };
 
   function installStyles() {
     if (document.getElementById('packaging-academy-v6-styles')) return;
@@ -51,9 +44,7 @@
     document.head.appendChild(style);
   }
 
-  function countStatus(status) {
-    return data.steps.filter((step) => step.status === status).length;
-  }
+  function countStatus(status) { return data.steps.filter((step) => step.status === status).length; }
 
   function renderCoverage() {
     const dashboard = document.getElementById('dashboardView');
@@ -62,7 +53,7 @@
     section.id = 'academyCoverage';
     section.className = 'card panel';
     section.innerHTML = `
-      <div class="section-head"><div><h2>Production testing coverage</h2><p>The Academy now covers quote sending, quote management, Orders, Design, Dispatch, Catalog, Tasks, Trade Events and Admin.</p></div><strong>${data.steps.length} steps</strong></div>
+      <div class="section-head"><div><h2>Production testing coverage</h2><p>The Academy covers Setu Guru, Growth Center, quote sending, quote management, Orders, Design, Dispatch, Catalog, Tasks, Trade Events and Admin.</p></div><strong>${data.steps.length} steps</strong></div>
       <div class="academy-coverage">
         <article><span>Not tested yet</span><strong>${countStatus('untested')}</strong></article>
         <article><span>Production retest required</span><strong>${countStatus('needs-retest')}</strong></article>
@@ -83,9 +74,7 @@
 
     const heading = document.querySelector('.lesson-head h1, .test-form h2');
     if (!heading || heading.parentElement?.querySelector('.academy-route-note')) return;
-    const state = (() => {
-      try { return JSON.parse(localStorage.getItem('setuPackagingAcademyV5') || localStorage.getItem('setuPackagingAcademyV4') || '{}'); } catch { return {}; }
-    })();
+    const state = (() => { try { return JSON.parse(localStorage.getItem('setuPackagingAcademyV5') || localStorage.getItem('setuPackagingAcademyV4') || '{}'); } catch { return {}; } })();
     const step = data.steps.find((item) => item.id === state.step);
     if (!step) return;
     const note = document.createElement('p');
@@ -94,7 +83,6 @@
     heading.parentElement?.appendChild(note);
   }
 
-  // Enrich every future saved result without changing the legacy form engine.
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
     const body = init?.body;
@@ -103,18 +91,14 @@
       const step = data.steps.find((item) => item.id === stepId);
       if (step) {
         body.set('testedRoute', step.route || routeByWorkflow[step.flowName] || '/academy');
-        body.set('academyVersion', data.version || '2026.07.25-v6');
+        body.set('academyVersion', data.version || '2026.07.25-v7');
       }
     }
     return nativeFetch(input, init);
   };
 
   installStyles();
-  const observer = new MutationObserver(() => {
-    renderCoverage();
-    decorateCurrentStep();
-  });
-
+  const observer = new MutationObserver(() => { renderCoverage(); decorateCurrentStep(); });
   window.addEventListener('DOMContentLoaded', () => {
     const app = document.querySelector('.app');
     if (app) observer.observe(app, { childList: true, subtree: true });
