@@ -19,10 +19,9 @@ const compliance = read('docs/setu-guru/PACKAGING_COMPLIANCE_RESEARCH_LIBRARY.md
 const sales = read('docs/setu-guru/PACKAGING_SALES_DISCOVERY_ASSISTANT.md');
 const academy = read('public/marketing/guides/packaging-academy-data.js');
 const academyRoutes = read('public/marketing/guides/packaging-academy-v6.js');
-const academyApi = read('src/app/api/packaging-academy/tests/route.ts');
 const migration = read('supabase/migrations/20260725050500_s50_finish_packaging_academy_currency_and_live_recommendations.sql');
 
- test('S50-PKI-003: Packaging ICP wizard is vertical-aware and persists structured dimensions', () => {
+test('S50-PKI-003: Packaging ICP wizard is vertical-aware and persists structured dimensions', () => {
   for (const marker of ['packagingEnabled', 'packaging_families', 'end_use_sectors', 'materials', 'print_methods', 'quantity_bands', 'artwork_states', 'sustainability_needs', 'regulated_uses', 'lead_time_priorities']) assert.match(`${icpApi}\n${wizard}`, new RegExp(marker));
   assert.match(icpApi, /isPackagingOrganization/);
   assert.match(wizard, /Packaging ICP Setup/);
@@ -89,8 +88,11 @@ test('Packaging Academy v7 includes Setu Guru and Growth Center workflows with r
   assert.match(academy, /\/growth-agent/);
   assert.match(academyRoutes, /Setu Guru for Packaging/);
   assert.match(academyRoutes, /Growth Center — Packaging Operations/);
-  assert.match(academyApi, /tested_route/);
-  assert.match(academyApi, /academy_version/);
+  assert.match(academyRoutes, /testedRoute/);
+  assert.match(academyRoutes, /academyVersion/);
+  assert.match(migration, /Setu Guru for Packaging/);
+  assert.match(migration, /Growth Center — Packaging Operations/);
+  assert.match(migration, /2026\.07\.25-v7/);
 });
 
 test('S50 production migration enables Packaging recommendation types and repairs only governed editable currency data', () => {
