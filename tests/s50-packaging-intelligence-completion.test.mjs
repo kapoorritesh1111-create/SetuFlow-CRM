@@ -18,16 +18,15 @@ const compliance = read('docs/setu-guru/PACKAGING_COMPLIANCE_RESEARCH_LIBRARY.md
 const sales = read('docs/setu-guru/PACKAGING_SALES_DISCOVERY_ASSISTANT.md');
 
 test('S50-PKI-003: Packaging ICP wizard is vertical-aware and persists structured dimensions', () => {
-  for (const marker of ['packagingEnabled', 'packaging_families', 'end_use_sectors', 'materials', 'print_methods', 'quantity_bands', 'artwork_states', 'sustainability_needs', 'regulated_uses', 'lead_time_priorities']) {
-    assert.match(`${icpApi}\n${wizard}`, new RegExp(marker));
-  }
+  for (const marker of ['packagingEnabled', 'packaging_families', 'end_use_sectors', 'materials', 'print_methods', 'quantity_bands', 'artwork_states', 'sustainability_needs', 'regulated_uses', 'lead_time_priorities']) assert.match(`${icpApi}\n${wizard}`, new RegExp(marker));
   assert.match(icpApi, /isPackagingOrganization/);
   assert.match(wizard, /Packaging ICP Setup/);
 });
 
 test('S50-PKI-004: CRM matching uses Packaging evidence rather than lead_type as buyer type', () => {
   assert.match(opportunities, /scorePackagingFit/);
-  assert.match(opportunities, /matchedPackagingCategories/);
+  assert.match(opportunities, /matchedCategories/);
+  assert.match(opportunities, /decisionMakerRoles/);
   assert.doesNotMatch(opportunities, /buyer_types.*lead_type|lead_type.*buyer_types/);
 });
 
@@ -40,9 +39,7 @@ test('S50-PKI-005/006/022: External Discovery is licensed, evidence-backed, and 
 });
 
 test('S50-PKI-020: all direct Packaging live-search modes execute through an org-scoped API', () => {
-  for (const mode of ['packaging_family_search','packaging_template_search','packaging_specification_review','packaging_quote_readiness','packaging_artwork_status','packaging_proof_status','packaging_design_queue','packaging_dispatch_status','packaging_production_readiness','packaging_material_guidance','packaging_moq_alternatives','packaging_cost_driver_explanation','packaging_sales_discovery','packaging_compliance_research','packaging_learning_metrics']) {
-    assert.match(packagingSearch, new RegExp(mode));
-  }
+  for (const mode of ['packaging_family_search','packaging_template_search','packaging_specification_review','packaging_quote_readiness','packaging_artwork_status','packaging_proof_status','packaging_design_queue','packaging_dispatch_status','packaging_production_readiness','packaging_material_guidance','packaging_moq_alternatives','packaging_cost_driver_explanation','packaging_sales_discovery','packaging_compliance_research','packaging_learning_metrics']) assert.match(packagingSearch, new RegExp(mode));
   assert.match(packagingSearch, /isPackagingOrganization/);
   assert.match(packagingSearch, /\.eq\('organization_id', orgId\)/);
   assert.match(packagingSearch, /approvalRequired: true/);
