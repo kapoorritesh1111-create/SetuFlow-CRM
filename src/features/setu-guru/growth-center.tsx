@@ -10,12 +10,13 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CalendarDays, Compass, History, LayoutDashboard, Search, Tags } from 'lucide-react';
+import { CalendarDays, Compass, History, LayoutDashboard, PackageCheck, Search, Tags } from 'lucide-react';
 import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
 import { CrmMatchesWorkspace } from '@/features/setu-guru/crm-matches-workspace';
 import { ExternalDiscoveryWorkspace, type DiscoveryCampaign, type ExternalOpportunity } from '@/features/setu-guru/external-discovery-workspace';
 import { GrowthCenter as GrowthCenterRedesign } from '@/features/setu-guru/growth-center-redesign';
 import { TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-guru/growth-center-workspaces';
+import { PackagingOperationsWorkspace } from '@/features/setu-guru/packaging-operations-workspace';
 import { ProductPricingIntelligencePanel } from '@/features/products/components/product-pricing-intelligence-panel';
 import { workspacePanelClass } from '@/components/ui/workspace-surfaces';
 import type { OpportunityCard } from '@/lib/setu-guru/opportunity-finder';
@@ -38,12 +39,13 @@ type Props = {
   currentUserId?: string | null;
   icpProfiles?: IcpProfile[];
   crmMatchCampaigns?: CrmMatchCampaign[];
+  packagingEnabled?: boolean;
 };
 
 type GrowthWorkspace = 'operations' | 'pricing';
-type OperationsView = 'work-queue' | 'crm-matches' | 'external-discovery' | 'trade-events';
+type OperationsView = 'work-queue' | 'packaging' | 'crm-matches' | 'external-discovery' | 'trade-events';
 
-const operationViews: Array<{ key: OperationsView; label: string; icon: typeof LayoutDashboard }> = [
+const baseOperationViews: Array<{ key: OperationsView; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'work-queue', label: 'Work Queue', icon: LayoutDashboard },
   { key: 'crm-matches', label: 'CRM Matches', icon: Search },
   { key: 'external-discovery', label: 'External Discovery', icon: Compass },
@@ -53,12 +55,16 @@ const operationViews: Array<{ key: OperationsView; label: string; icon: typeof L
 export function GrowthCenter(props: Props) {
   const searchParams = useSearchParams();
   const requestedWorkspace = searchParams.get('workspace') === 'pricing' ? 'pricing' : 'operations';
+  const requestedView = searchParams.get('view') === 'packaging' && props.packagingEnabled ? 'packaging' : 'work-queue';
   const [workspace, setWorkspace] = useState<GrowthWorkspace>(requestedWorkspace);
-  const [operationsView, setOperationsView] = useState<OperationsView>('work-queue');
+  const [operationsView, setOperationsView] = useState<OperationsView>(requestedView);
   const [showHistory, setShowHistory] = useState(false);
   const opportunities = props.opportunities ?? [];
   const tradeEvents = props.tradeEvents ?? [];
   const auditItems = props.auditItems ?? [];
+  const operationViews = props.packagingEnabled
+    ? [baseOperationViews[0], { key: 'packaging' as const, label: 'Packaging Operations', icon: PackageCheck }, ...baseOperationViews.slice(1)]
+    : baseOperationViews;
 
   useEffect(() => { setWorkspace(requestedWorkspace); }, [requestedWorkspace]);
 
@@ -73,6 +79,7 @@ export function GrowthCenter(props: Props) {
 
       {workspace === 'pricing' ? <ProductPricingIntelligencePanel /> : null}
       {workspace === 'operations' && operationsView === 'work-queue' ? <GrowthCenterRedesign {...props} externalOpportunities={props.externalOpportunities ?? []} /> : null}
+      {workspace === 'operations' && operationsView === 'packaging' && props.packagingEnabled ? <PackagingOperationsWorkspace recommendations={props.recommendations} /> : null}
       {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} currentUserId={props.currentUserId} profiles={props.icpProfiles ?? []} campaigns={props.crmMatchCampaigns ?? []} /> : null}
       {workspace === 'operations' && operationsView === 'trade-events' ? <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} /> : null}
       {workspace === 'operations' && operationsView === 'external-discovery' ? <ExternalDiscoveryWorkspace campaigns={props.discoveryCampaigns ?? []} opportunities={props.externalOpportunities ?? []} /> : null}
