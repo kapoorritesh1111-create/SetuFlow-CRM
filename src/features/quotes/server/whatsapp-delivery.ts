@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -68,7 +69,7 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
   const db: any = supabase;
   const [{ data: lead }, { data: quote }, { data: organization }] = await Promise.all([
     db.from('leads').select('id, company_name, contact_name, whatsapp_number, phone').eq('organization_id', input.organizationId).eq('id', input.leadId).maybeSingle(),
-    db.from('quotes').select('id, quote_number, currency, display_currency, current_version_id, accepted_version_id').eq('organization_id', input.organizationId).eq('id', input.quoteId).maybeSingle(),
+    db.from('quotes').select('id, quote_number, status, currency, display_currency, current_version_id, accepted_version_id').eq('organization_id', input.organizationId).eq('id', input.quoteId).maybeSingle(),
     db.from('organizations').select('name, legal_name, logo_url, website').eq('id', input.organizationId).maybeSingle(),
   ]);
 
@@ -76,21 +77,35 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
   const number = cleanWhatsAppNumber(lead.whatsapp_number);
   if (!number) throw new Error('Lead WhatsApp number is missing.');
 
-  const versionId = quote.accepted_version_id ?? quote.current_version_id;
-  const { data: version } = versionId
-    ? await db.from('quote_versions').select('id, version_no, display_currency, valid_until, total_line_count').eq('id', versionId).maybeSingle()
-    : { data: null };
-  const { data: lines } = versionId
-    ? await db.from('quote_version_line_items').select('product_name, final_case_price, final_kg_price, final_unit_price, display_currency').eq('quote_version_id', versionId).order('sort_order', { ascending: true }).limit(8)
-    : { data: [] };
+  const versionId = quote.current_version_id;
+  if (!versionId) throw new Error('Quote has no current version to send.');
 
-  const currency = version?.display_currency ?? quote.display_currency ?? quote.currency ?? 'USD';
+  const { data: version, error: versionError } = await db
+    .from('quote_versions')
+    .select('id, version_no, status, display_currency, valid_until, total_line_count')
+    .eq('quote_id', quote.id)
+    .eq('id', versionId)
+    .maybeSingle();
+  if (versionError) throw new Error(versionError.message);
+  if (!version || String(version.status ?? '').toLowerCase() !== 'approved') {
+    throw new Error('Approve the current quote version before opening WhatsApp.');
+  }
+
+  const { data: lines, error: lineError } = await db
+    .from('quote_version_line_items')
+    .select('product_name, final_case_price, final_kg_price, final_unit_price, display_currency')
+    .eq('quote_version_id', versionId)
+    .order('sort_order', { ascending: true })
+    .limit(8);
+  if (lineError) throw new Error(lineError.message);
+
+  const currency = version.display_currency ?? quote.display_currency ?? quote.currency ?? 'USD';
   const lineItems = Array.isArray(lines) ? lines : [];
   const totalAmount = lineItems.reduce((sum: number, line: any) => sum + Number(line.final_case_price ?? line.final_kg_price ?? line.final_unit_price ?? 0), 0);
   const total = money(totalAmount, currency);
-  const productSummary = lineItems.map((line: any) => line.product_name ?? line.description).filter(Boolean).slice(0, 4).join(', ') || `${version?.total_line_count ?? (lineItems.length || 0)} line items`;
+  const productSummary = lineItems.map((line: any) => line.product_name ?? line.description).filter(Boolean).slice(0, 4).join(', ') || `${version.total_line_count ?? lineItems.length} line items`;
   const quoteNumber = quote.quote_number ?? quote.id.slice(0, 8);
-  const validity = formatDate(version?.valid_until);
+  const validity = formatDate(version.valid_until);
   const buyerName = lead.contact_name || lead.company_name || 'there';
   const orgName = organization?.legal_name || organization?.name || workspace.organization?.name || 'SETU Groups LLC';
   const orgLogoUrl = safeLogoUrl(organization?.logo_url);
@@ -111,7 +126,8 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
 
   const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
   const now = new Date().toISOString();
-  await db.from('communications').insert({
+
+  const { error: communicationError } = await db.from('communications').insert({
     organization_id: input.organizationId,
     lead_id: input.leadId,
     quote_id: input.quoteId,
@@ -120,15 +136,36 @@ export async function sendQuoteViaWhatsApp(input: { quoteId: string; leadId: str
     communication_type: 'quote_message',
     direction: 'outbound',
     channel: 'whatsapp',
-    status: 'sent',
+    status: 'approved',
     draft_source: 'system',
     subject: `WhatsApp quote ${quoteNumber}`,
     body: message,
-    summary: 'Quote shared through professional production-domain WhatsApp prefill link.',
-    sent_at: now,
-    provider_payload: { provider: 'wa.me', url },
-    metadata: { upgrade_path: 'Twilio WhatsApp Business API when volume justifies it.', share_url: shareUrl, org_logo_url: orgLogoUrl },
+    summary: 'Manual WhatsApp prefill link created. External delivery is not confirmed.',
+    approved_at: now,
+    created_by: workspace.user?.id ?? null,
+    whatsapp_link: url,
+    whatsapp_link_type: 'wa_me',
+    provider_payload: { provider: 'wa.me', url, external_delivery_confirmed: false },
+    metadata: { manual_send_required: true, share_url: shareUrl, org_logo_url: orgLogoUrl },
   });
+  if (communicationError) throw new Error(communicationError.message);
 
-  return { url };
+  const { error: quoteUpdateError } = await db
+    .from('quotes')
+    .update({ status: 'sent', sent_at: now, updated_at: now })
+    .eq('organization_id', input.organizationId)
+    .eq('id', input.quoteId);
+  if (quoteUpdateError) throw new Error(quoteUpdateError.message);
+
+  const { error: versionUpdateError } = await db
+    .from('quote_versions')
+    .update({ status: 'sent', sent_at: now })
+    .eq('quote_id', input.quoteId)
+    .eq('id', versionId)
+    .eq('status', 'approved');
+  if (versionUpdateError) throw new Error(versionUpdateError.message);
+
+  revalidatePath('/approval-send');
+  revalidatePath('/quotes');
+  return { url, shareUrl, deliveryConfirmed: false };
 }
