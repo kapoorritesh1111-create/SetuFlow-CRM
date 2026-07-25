@@ -9,6 +9,7 @@ const icpApi = read('src/app/api/setu-guru/icp/route.ts');
 const wizard = read('src/features/setu-guru/icp-setup-wizard.tsx');
 const opportunities = read('src/lib/setu-guru/opportunity-finder.ts');
 const provider = read('src/lib/setu-guru/discovery-providers/index.ts');
+const aiProvider = read('src/lib/ai/provider.ts');
 const packagingSearch = read('src/app/api/setu-guru/packaging-search/route.ts');
 const recommendations = read('src/lib/setu-guru/packaging-recommendations.ts');
 const learningApi = read('src/app/api/setu-guru/packaging-learning/route.ts');
@@ -16,8 +17,12 @@ const operations = read('src/features/setu-guru/packaging-operations-workspace.t
 const manifest = read('public/setu-guru/knowledge-manifest.json');
 const compliance = read('docs/setu-guru/PACKAGING_COMPLIANCE_RESEARCH_LIBRARY.md');
 const sales = read('docs/setu-guru/PACKAGING_SALES_DISCOVERY_ASSISTANT.md');
+const academy = read('public/marketing/guides/packaging-academy-data.js');
+const academyRoutes = read('public/marketing/guides/packaging-academy-v6.js');
+const academyApi = read('src/app/api/packaging-academy/tests/route.ts');
+const migration = read('supabase/migrations/20260725050500_s50_finish_packaging_academy_currency_and_live_recommendations.sql');
 
-test('S50-PKI-003: Packaging ICP wizard is vertical-aware and persists structured dimensions', () => {
+ test('S50-PKI-003: Packaging ICP wizard is vertical-aware and persists structured dimensions', () => {
   for (const marker of ['packagingEnabled', 'packaging_families', 'end_use_sectors', 'materials', 'print_methods', 'quantity_bands', 'artwork_states', 'sustainability_needs', 'regulated_uses', 'lead_time_priorities']) assert.match(`${icpApi}\n${wizard}`, new RegExp(marker));
   assert.match(icpApi, /isPackagingOrganization/);
   assert.match(wizard, /Packaging ICP Setup/);
@@ -30,12 +35,20 @@ test('S50-PKI-004: CRM matching uses Packaging evidence rather than lead_type as
   assert.doesNotMatch(opportunities, /buyer_types.*lead_type|lead_type.*buyer_types/);
 });
 
-test('S50-PKI-005/006/022: External Discovery is licensed, evidence-backed, and truthfully disabled without credentials', () => {
-  assert.match(provider, /EXA_API_KEY/);
-  assert.match(provider, /https:\/\/api\.exa\.ai\/search/);
-  assert.match(provider, /source-backed/);
-  assert.match(provider, /No companies were generated/);
-  assert.match(provider, /getDefaultDiscoveryProvider/);
+test('S50-PKI-005/006/022: External Discovery uses configured source-backed providers and truthful fallback', () => {
+  for (const marker of ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'EXA_API_KEY', 'https://api.openai.com/v1/responses', 'https://api.anthropic.com/v1/messages', 'https://api.exa.ai/search', 'web_search', 'source-backed', 'No companies were generated', 'getDefaultDiscoveryProvider']) assert.match(provider, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(provider, /Results remain separate from CRM until human review and approval/);
+  assert.match(provider, /matched_packaging_categories/);
+  assert.match(provider, /buyer_need_signals/);
+});
+
+test('S50 AI provider boundary supports Anthropic and OpenAI with guarded fallback', () => {
+  assert.match(aiProvider, /https:\/\/api\.anthropic\.com\/v1\/messages/);
+  assert.match(aiProvider, /https:\/\/api\.openai\.com\/v1\/responses/);
+  assert.match(aiProvider, /configuredProviders/);
+  assert.match(aiProvider, /providerOrder/);
+  assert.match(aiProvider, /All recommendations and drafts require operator review/);
+  assert.match(aiProvider, /No configured AI provider is available/);
 });
 
 test('S50-PKI-020: all direct Packaging live-search modes execute through an org-scoped API', () => {
@@ -68,6 +81,28 @@ test('S50-PKI-024: learning loop captures feedback and displays performance with
   assert.match(operations, /Not relevant/);
 });
 
+test('Packaging Academy v7 includes Setu Guru and Growth Center workflows with route-aware results', () => {
+  assert.match(academy, /2026\.07\.25-v7/);
+  assert.match(academy, /Setu Guru for Packaging/);
+  assert.match(academy, /Growth Center — Packaging Operations/);
+  assert.match(academy, /\/setu-guru-ai/);
+  assert.match(academy, /\/growth-agent/);
+  assert.match(academyRoutes, /Setu Guru for Packaging/);
+  assert.match(academyRoutes, /Growth Center — Packaging Operations/);
+  assert.match(academyApi, /tested_route/);
+  assert.match(academyApi, /academy_version/);
+});
+
+test('S50 production migration enables Packaging recommendation types and repairs only governed editable currency data', () => {
+  assert.match(migration, /recommendation_type like 'packaging_%'/);
+  assert.match(migration, /q\.status in \('draft','in_review'\)/);
+  assert.match(migration, /not exists[\s\S]*is_price_overridden/);
+  assert.match(migration, /slug = 'packaging'/);
+  assert.match(migration, /packaging_pricing_template_unhealthy/);
+  assert.match(migration, /packaging_job_not_started/);
+  assert.doesNotMatch(migration, /3f8ef935-16bf-49de-bc04-85b51a3e0cb8/);
+});
+
 test('S50-PKI-009/016/019: manifest contains complete Packaging knowledge and canonical workflow', () => {
   for (const file of ['PACKAGING_COMPLIANCE_RESEARCH_LIBRARY.md','PACKAGING_SALES_DISCOVERY_ASSISTANT.md','packaging-intelligence-core.ts','packaging-recommendations.ts','packaging-academy-data.js']) assert.match(manifest, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(manifest, /Repeat Order and Account Growth/);
@@ -75,7 +110,7 @@ test('S50-PKI-009/016/019: manifest contains complete Packaging knowledge and ca
 });
 
 test('S50 release guardrails: no autonomous approval, send, pricing, production, or dispatch', () => {
-  const joined = `${core}\n${packagingSearch}\n${recommendations}\n${learningApi}`;
+  const joined = `${core}\n${packagingSearch}\n${recommendations}\n${learningApi}\n${aiProvider}\n${provider}`;
   assert.match(joined, /approvalRequired|approval required|human review|operator review/i);
   assert.doesNotMatch(joined, /autoApprove|autoSend|autoDispatch|advanceProductionAutomatically/);
 });
