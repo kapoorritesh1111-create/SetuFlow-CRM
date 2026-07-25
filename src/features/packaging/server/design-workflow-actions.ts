@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { hasWorkspaceRole, requireWorkspace } from '@/lib/workspace/auth';
+import { isPackagingOrganization } from '@/lib/verticals/capability';
 import {
   derivePackagingDesignReadiness,
   productionStageRequiresReadyDesign,
@@ -20,10 +21,14 @@ async function context() {
   const workspace = await requireWorkspace();
   if (!workspace?.organization || !workspace?.user) throw new Error('Not authenticated.');
   const supabase = (await createClient()) as any;
+  const organizationId = workspace.organization.id;
+  if (!(await isPackagingOrganization(organizationId, supabase))) {
+    throw new Error('Packaging design and dispatch workflows are only available for Packaging vertical organizations.');
+  }
   return {
     workspace,
     supabase,
-    organizationId: workspace.organization.id,
+    organizationId,
     userId: workspace.user.id,
     currentRoles: workspace.currentRoles ?? [],
   };
