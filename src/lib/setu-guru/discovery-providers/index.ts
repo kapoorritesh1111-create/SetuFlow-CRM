@@ -1,19 +1,13 @@
-// S48-GROWTH-013: provider-agnostic external research orchestration.
-//
-// This registry keeps provider-specific logic out of UI components and API routes.
-// Every provider implements the same narrow contract so Setu Flow can add or replace
-// external research sources without rewriting the campaign/job workflow.
-//
-// IMPORTANT: no production trade-data, registry, or enrichment provider is configured
-// in this environment (no provider secret exists in .env.production.example). Rather
-// than fabricate results, the registry exposes a single honest "manual" provider that
-// returns zero candidates and a clear disabled message. This satisfies the requirement
-// that Setu Flow never claim external research happened when it did not.
+// S48/S50 provider-agnostic external research orchestration.
+// Provider output is evidence-only: no company, contact, country, or need is inferred unless
+// the provider returns a source URL and supporting text. CRM conversion remains a separate
+// explicit human action.
 
 export type DiscoverySearchInput = {
   countries: string[];
   products: string[];
   buyerTypes: string[];
+  verticalProfile?: Record<string, unknown>;
 };
 
 export type ProviderCandidate = {
@@ -43,37 +37,104 @@ export type ExternalDiscoveryProvider = {
   search(input: DiscoverySearchInput): Promise<ProviderSearchResult>;
 };
 
-/**
- * Safe disabled-state provider. Returns no candidates and never fabricates a company,
- * evidence, or contact. Used whenever no licensed/production provider is configured.
- */
 const manualProvider: ExternalDiscoveryProvider = {
   key: 'manual',
-  label: 'Manual research (no provider configured)',
+  label: 'Manual research',
   capabilities: ['manual_intake'],
   configured: true,
   async search() {
     return {
-      candidates: [],
-      providerCostAmount: 0,
-      providerCostCurrency: 'USD',
-      disabled: true,
-      message:
-        'No production external discovery provider is configured for this organization. Run this campaign manually — add companies through Save to CRM after your own research — or connect a licensed provider before running an automated job.',
+      candidates: [], providerCostAmount: 0, providerCostCurrency: 'USD', disabled: true,
+      message: 'No licensed external discovery provider was selected or configured. No companies were generated. Connect Exa with EXA_API_KEY or continue with human-reviewed manual research.',
     };
   },
 };
 
-const registry = new Map<string, ExternalDiscoveryProvider>([[manualProvider.key, manualProvider]]);
-
-export function registerDiscoveryProvider(provider: ExternalDiscoveryProvider) {
-  registry.set(provider.key, provider);
+function profileList(profile: Record<string, unknown> | undefined, key: string) {
+  const value = profile?.[key];
+  return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
 }
 
-export function getDiscoveryProvider(key: string): ExternalDiscoveryProvider {
-  return registry.get(key) ?? manualProvider;
+function buildPackagingSearchQuery(input: DiscoverySearchInput) {
+  const profile = input.verticalProfile ?? {};
+  const families = profileList(profile, 'packaging_families');
+  const sectors = profileList(profile, 'end_use_sectors');
+  const services = profileList(profile, 'services');
+  const markets = input.countries.length ? `in ${input.countries.slice(0, 6).join(', ')}` : '';
+  const targets = input.buyerTypes.length ? input.buyerTypes.slice(0, 8).join(', ') : 'brand owners and manufacturers';
+  const needs = [...input.products, ...families, ...services].filter(Boolean).slice(0, 12).join(', ');
+  const sectorText = sectors.length ? ` serving ${sectors.slice(0, 8).join(', ')}` : '';
+  return `Find real companies ${markets} that are ${targets}${sectorText} and have evidence of buying, launching, sourcing, or using ${needs || 'printed packaging, labels, pouches, roll stock, or packaging design services'}. Prefer official company pages, product launch pages, exhibitor directories, procurement notices, and trade associations. Return only source-backed organizations.`;
 }
 
-export function listDiscoveryProviders(): ExternalDiscoveryProvider[] {
-  return Array.from(registry.values());
+function pageTitleToCompany(title: unknown, url: unknown) {
+  const clean = String(title ?? '').split(/[|–—-]/)[0]?.trim();
+  if (clean && clean.length >= 2 && clean.length <= 160) return clean;
+  try { return new URL(String(url)).hostname.replace(/^www\./, '').split('.')[0]?.replace(/[-_]/g, ' ') || ''; } catch { return ''; }
 }
+
+const exaProvider: ExternalDiscoveryProvider = {
+  key: 'exa',
+  label: 'Exa licensed web discovery',
+  capabilities: ['web_search', 'source_evidence', 'packaging_market_signals', 'official_pages'],
+  configured: Boolean(process.env.EXA_API_KEY),
+  async search(input) {
+    const apiKey = process.env.EXA_API_KEY;
+    if (!apiKey) {
+      return { candidates: [], providerCostAmount: 0, providerCostCurrency: 'USD', disabled: true, message: 'Exa is available but EXA_API_KEY is not configured. No research was run.' };
+    }
+
+    const query = buildPackagingSearchQuery(input);
+    const response = await fetch('https://api.exa.ai/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ query, type: 'auto', numResults: 25, contents: { text: { maxCharacters: 1800 }, highlights: { numSentences: 4 } } }),
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error(`Licensed discovery provider returned HTTP ${response.status}.`);
+    const payload = await response.json() as { results?: Array<Record<string, unknown>>; costDollars?: { total?: number } };
+    const candidates: ProviderCandidate[] = [];
+    const seenDomains = new Set<string>();
+
+    for (const result of payload.results ?? []) {
+      const sourceUrl = String(result.url ?? '').trim();
+      if (!sourceUrl) continue;
+      let domain = '';
+      try { domain = new URL(sourceUrl).hostname.replace(/^www\./, '').toLowerCase(); } catch { continue; }
+      if (!domain || seenDomains.has(domain)) continue;
+      seenDomains.add(domain);
+      const companyName = pageTitleToCompany(result.title, sourceUrl);
+      if (!companyName) continue;
+      const text = String(result.text ?? '').slice(0, 1800);
+      const highlights = Array.isArray(result.highlights) ? result.highlights.map(String).slice(0, 6) : [];
+      candidates.push({
+        companyName,
+        country: null,
+        companyType: null,
+        websiteUrl: `https://${domain}`,
+        sourceLabel: 'Exa licensed web discovery',
+        sourceUrl,
+        evidence: [{ type: 'provider_search_result', title: result.title ?? companyName, url: sourceUrl, text, highlights, query, provider: 'exa', fetched_at: new Date().toISOString() }],
+        contacts: [],
+      });
+    }
+
+    return {
+      candidates,
+      providerCostAmount: Number(payload.costDollars?.total ?? 0),
+      providerCostCurrency: 'USD',
+      disabled: false,
+      message: `Exa returned ${candidates.length} source-backed candidate${candidates.length === 1 ? '' : 's'}. Every result still requires human verification before CRM conversion or outreach.`,
+    };
+  },
+};
+
+const registry = new Map<string, ExternalDiscoveryProvider>([
+  [manualProvider.key, manualProvider],
+  [exaProvider.key, exaProvider],
+]);
+
+export function registerDiscoveryProvider(provider: ExternalDiscoveryProvider) { registry.set(provider.key, provider); }
+export function getDiscoveryProvider(key: string): ExternalDiscoveryProvider { return registry.get(key) ?? manualProvider; }
+export function listDiscoveryProviders(): ExternalDiscoveryProvider[] { return Array.from(registry.values()); }
+export function getDefaultDiscoveryProvider(): ExternalDiscoveryProvider { return Array.from(registry.values()).find((provider) => provider.key !== 'manual' && provider.configured) ?? manualProvider; }
