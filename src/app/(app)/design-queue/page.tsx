@@ -5,25 +5,33 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingDesignWork } from '@/lib/packaging/design-queue';
-import { ARTWORK_STATUS_OPTIONS } from '@/lib/packaging/types';
+import {
+  packagingDesignSourceLabel,
+  packagingDesignStatusLabel,
+  type PackagingDesignStatus,
+} from '@/lib/packaging/design-proof';
 import PackagingProofPanel from '@/features/packaging/components/packaging-proof-panel';
 
 /**
- * S27-STARK-A3 — Design/Prepress role landing page.
- * Shows every active quote line that needs artwork attention, including both
- * configured packaging lines and catalog design services such as pre-press,
- * mockups, and 3D packshots.
+ * Packaging design / artwork queue.
+ *
+ * Once a quote is accepted, every production-relevant quoted line stays here
+ * until the latest design is either recorded as customer-provided or approved
+ * from the Design Team. Before acceptance, the queue keeps the existing
+ * artwork-needed rules.
  */
 
 export const dynamic = 'force-dynamic';
 
-function artworkLabel(status: string | null) {
-  if (!status) return 'Awaiting artwork';
-  return ARTWORK_STATUS_OPTIONS.find((option) => option.key === status)?.label ?? status;
-}
-
 function money(value: number, currency: string) {
   return `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function designBadgeClass(status: PackagingDesignStatus): string {
+  if (status === 'ready') return 'bg-success-bg text-success-fg';
+  if (status === 'revision_required') return 'bg-danger-bg text-danger-fg';
+  if (status === 'in_review') return 'bg-warning-bg text-warning-fg';
+  return 'bg-info-bg text-info-fg';
 }
 
 export default async function DesignQueuePage() {
@@ -39,24 +47,34 @@ export default async function DesignQueuePage() {
   }
 
   const queue = await getPackagingDesignWork(workspace.organization.id, supabase);
-  const needsPrepress = queue.filter((item) => item.artworkStatus === 'needs_prepress');
-  const awaitingArtwork = queue.filter((item) => item.artworkStatus !== 'needs_prepress');
+  const required = queue.filter((item) => item.designStatus === 'required').length;
+  const inReview = queue.filter((item) => item.designStatus === 'in_review').length;
+  const revisionRequired = queue.filter((item) => item.designStatus === 'revision_required').length;
+  const acceptedQuoteCount = new Set(queue.filter((item) => item.quoteStatus === 'accepted').map((item) => item.quoteId)).size;
 
   return (
     <div className="space-y-4 pb-16">
       <section>
         <h1 className="text-2xl font-bold tracking-tight text-content-primary">Design Queue</h1>
-        <p className="mt-1 text-sm text-content-secondary">Packaging jobs and quoted design services that need artwork, proof creation, or client approval. Pre-press work is shown first.</p>
+        <p className="mt-1 text-sm text-content-secondary">Every accepted packaging quote requires final design evidence: customer-provided artwork or a Design Team proof approved by the buyer.</p>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-card border border-line bg-surface-1 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Needs pre-press</p>
-          <p className="mt-1 text-2xl font-bold text-content-primary">{needsPrepress.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Accepted quotes waiting</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{acceptedQuoteCount}</p>
         </div>
         <div className="rounded-card border border-line bg-surface-1 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Awaiting design / artwork</p>
-          <p className="mt-1 text-2xl font-bold text-content-primary">{awaitingArtwork.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Design required</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{required}</p>
+        </div>
+        <div className="rounded-card border border-line bg-surface-1 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Awaiting approval</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{inReview}</p>
+        </div>
+        <div className="rounded-card border border-line bg-surface-1 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Revision required</p>
+          <p className="mt-1 text-2xl font-bold text-content-primary">{revisionRequired}</p>
         </div>
       </section>
 
@@ -70,14 +88,19 @@ export default async function DesignQueuePage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-content-primary">{item.companyName ?? 'Unknown company'}</p>
                       {item.quoteNumber ? <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-content-muted">{item.quoteNumber}</span> : null}
+                      {item.quoteStatus === 'accepted' ? <span className="rounded-full bg-success-bg px-2 py-0.5 text-[11px] font-semibold text-success-fg">Accepted quote</span> : null}
                       {item.sourceType === 'design_service' ? <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">Design service</span> : null}
                     </div>
                     <p className="truncate text-sm text-content-secondary">{item.specSummary ?? 'Packaging line'}</p>
-                    <p className="text-xs text-content-muted">{Number(item.quantity).toLocaleString()} {item.sourceType === 'design_service' ? 'job(s)' : 'pcs'} · {money(item.unitPrice, item.currency)} / {item.sourceType === 'design_service' ? 'job' : 'pc'}{item.leadTime ? ` · ${item.leadTime}` : ''}</p>
+                    <p className="text-xs text-content-muted">
+                      {Number(item.quantity).toLocaleString()} {item.sourceType === 'packaging_line' ? 'pcs' : 'unit(s)'} · {money(item.unitPrice, item.currency)} / unit
+                      {item.leadTime ? ` · ${item.leadTime}` : ''}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.artworkStatus === 'needs_prepress' ? 'bg-warning-bg text-warning-fg' : 'bg-info-bg text-info-fg'}`}>
-                      {artworkLabel(item.artworkStatus)}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${designBadgeClass(item.designStatus)}`}>
+                      {packagingDesignStatusLabel(item.designStatus)}
+                      {item.designSource ? ` · ${packagingDesignSourceLabel(item.designSource)}` : ''}
                     </span>
                     {item.leadId ? (
                       <Link href={`/leads/${item.leadId}/quote?quoteId=${item.quoteId}`} className="rounded-ctl border border-line bg-surface-app px-3 py-1.5 text-sm font-semibold text-content-primary hover:border-brand-200">
@@ -92,7 +115,7 @@ export default async function DesignQueuePage() {
           </ul>
         </section>
       ) : (
-        <p className="rounded-ctl bg-success-bg px-3 py-2 text-sm font-medium text-success-fg">Nothing waiting on artwork right now — queue is clear.</p>
+        <p className="rounded-ctl bg-success-bg px-3 py-2 text-sm font-medium text-success-fg">All current packaging design requirements are complete.</p>
       )}
     </div>
   );
