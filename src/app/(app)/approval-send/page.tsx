@@ -76,7 +76,7 @@ async function confirmAndSendQuote(formData: FormData): Promise<void> {
   const typedSupabase = supabase as unknown as SupabaseClient<GeneratedDatabase>;
   const { data: quote, error: quoteError } = await typedSupabase
     .from('quotes')
-    .select('id, lead_id, organization_id, status, currency, display_currency, pricing_basis')
+    .select('id, lead_id, organization_id, status, currency, display_currency, pricing_basis, current_version_id')
     .eq('organization_id', workspace.organization.id)
     .eq('id', quoteId)
     .maybeSingle();
@@ -86,28 +86,48 @@ async function confirmAndSendQuote(formData: FormData): Promise<void> {
     redirect(`/quotes?error=${msg}&status=pending_approval`);
   }
 
+  if (!quote.current_version_id) {
+    redirect(`/quotes?error=${encodeURIComponent('Quote has no current version to send.')}&status=pending_approval`);
+  }
+
+  const { data: approvedVersion, error: versionError } = await typedSupabase
+    .from('quote_versions')
+    .select('id, status')
+    .eq('quote_id', quote.id)
+    .eq('id', quote.current_version_id)
+    .maybeSingle();
+
+  if (versionError || !approvedVersion || String(approvedVersion.status ?? '').toLowerCase() !== 'approved') {
+    const message = versionError?.message ?? 'Approve the current quote version before sending it.';
+    redirect(`/quotes?error=${encodeURIComponent(message)}&status=pending_approval`);
+  }
+
   const sentAt = new Date().toISOString();
-  await typedSupabase
+  const { error: quoteUpdateError } = await typedSupabase
     .from('quotes')
-    .update({ sent_at: sentAt, updated_at: sentAt })
+    .update({ status: 'sent', sent_at: sentAt, updated_at: sentAt })
     .eq('organization_id', workspace.organization.id)
     .eq('id', quoteId);
 
-  await typedSupabase
+  if (quoteUpdateError) {
+    redirect(`/quotes?error=${encodeURIComponent(quoteUpdateError.message)}&status=pending_approval`);
+  }
+
+  const { error: versionUpdateError } = await typedSupabase
     .from('quote_versions')
     .update({ status: 'sent', sent_at: sentAt })
     .eq('quote_id', quoteId)
+    .eq('id', approvedVersion.id)
     .eq('status', 'approved');
 
-  await typedSupabase.rpc('app_ensure_contract_for_accepted_quote_tx', {
-    p_organization_id: workspace.organization.id,
-    p_quote_id: quote.id,
-    p_lead_id: quote.lead_id,
-    p_notes: 'Created from sent quote in approval-send flow.',
-  });
+  if (versionUpdateError) {
+    redirect(`/quotes?error=${encodeURIComponent(versionUpdateError.message)}&status=pending_approval`);
+  }
 
+  // Sending and order handoff are separate human-confirmed transitions.
+  // The canonical order is created only after the buyer outcome is recorded as Accepted.
+  revalidatePath('/approval-send');
   revalidatePath('/quotes');
-  revalidatePath('/orders');
   redirect(`/approval-send?quoteId=${quoteId}&sent=1`);
 }
 
@@ -221,7 +241,7 @@ export default async function ApprovalSendPage({ searchParams }: ApprovalSendPag
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Approval → Send</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950">Confirm quote send</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-500">
-              Review the approved quote summary, then send it into the execution workspace. Sending also ensures the matching order contract exists.
+              Review the approved quote summary, then send the tracked customer quote. Orders handoff begins only after the buyer outcome is recorded as Accepted.
             </p>
           </div>
           <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
