@@ -53,15 +53,18 @@ function packagingScoreAsFit(lead: any, icp: any): { fitScore: FitScoreResult; m
     mainProductCategory: lead.main_product_category,
     industryMetadata: lead.industry_metadata,
   }, icp);
+  // Keep the explicit result name as a stable contract for Growth Center evaluation,
+  // analytics, and future card-level evidence display.
+  const matchedPackagingCategories = result.matchedCategories;
   const fitScore: FitScoreResult = {
     score: result.score,
     matchedCountry: result.reasons.some((reason) => reason.toLowerCase().includes('target market')),
-    matchedProduct: result.matchedCategories.length > 0,
+    matchedProduct: matchedPackagingCategories.length > 0,
     matchedBuyerType: result.reasons.some((reason) => reason.toLowerCase().includes('company type')),
     reasons: [...result.reasons, ...result.penalties],
   };
   const matchedCriteria = [
-    result.matchedCategories.length ? `Packaging family: ${result.matchedCategories.join(', ')}` : null,
+    matchedPackagingCategories.length ? `Packaging family: ${matchedPackagingCategories.join(', ')}` : null,
     result.matchedUseCases.length ? `End use: ${result.matchedUseCases.join(', ')}` : null,
     result.decisionMakerRoles.length ? 'Relevant decision-maker' : null,
     result.buyerNeedSignals.length ? `Buying signal: ${result.buyerNeedSignals.join(', ')}` : null,
