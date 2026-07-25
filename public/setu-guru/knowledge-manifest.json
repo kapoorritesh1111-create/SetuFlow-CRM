@@ -1,7 +1,7 @@
 {
   "name": "Setu Guru",
   "updated": "2026-07-25",
-  "purpose": "Embedded CRM help chatbot knowledge manifest for Setu Flow CRM, including Packaging Intelligence.",
+  "purpose": "Embedded CRM help chatbot knowledge manifest for Setu Flow CRM, including complete Packaging Intelligence.",
   "primaryFlow": [
     "Capture",
     "Follow-up",
@@ -29,6 +29,8 @@
     "docs/setu-guru/SETUFLOW_WORKFLOWS.md",
     "docs/setu-guru/SETUFLOW_TROUBLESHOOTING.md",
     "docs/setu-guru/SETU_GURU_PACKAGING_INTELLIGENCE.md",
+    "docs/setu-guru/PACKAGING_COMPLIANCE_RESEARCH_LIBRARY.md",
+    "docs/setu-guru/PACKAGING_SALES_DISCOVERY_ASSISTANT.md",
     "docs/packaging/SPRINT_50_PACKAGING_INTELLIGENCE.md",
     "docs/packaging-user-journey-discovery/gap-register.md",
     "docs/packaging-user-journey-discovery/test-records.md",
@@ -37,6 +39,7 @@
     "docs/help/orders-live-catalog-lines.md",
     "docs/help/sprint-18-integration-ready.md",
     "src/lib/setu-guru/packaging-guidance.ts",
+    "src/lib/setu-guru/packaging-intelligence-core.ts",
     "src/lib/setu-guru/packaging-recommendations.ts",
     "src/lib/packaging/pricing-engine.ts",
     "src/lib/packaging/design-proof.ts",
@@ -58,13 +61,15 @@
   ],
   "packagingWorkflow": [
     "Apply Packaging Intelligence only when vertical_key='packaging' or trial_template_key='packaging_converter'.",
-    "Qualify packed product, format, dimensions, material, barrier, print, finish, artwork, designs, quantity, annual volume, destination, launch date, compliance, and sustainability needs.",
+    "Qualify packed product, format, dimensions, material, barrier, print, finish, artwork, designs, quantity, annual volume, destination, launch date, compliance, sustainability, incumbent supplier, price, and switching reason.",
     "Use packaging_service_families and packaging_pricing_templates as the source of family, quote-input, MOQ, material, print, setup, rush, waste, and lead-time rules.",
+    "Recommend digital for lower runs/many designs/variable data, flexo for medium-to-high repeat runs, and rotogravure only for evidence-backed very-high stable volume; every recommendation remains reviewable.",
     "Every accepted Packaging production line requires customer-provided final artwork or an approved Design Team proof.",
     "Pre-Press may resolve artwork; Printing and later production stages require final design evidence.",
     "Production stages are pre_press, printing, converting, finishing, qc, packed, and dispatched.",
-    "Growth Center may prioritize specification, pricing, proof, production, dispatch, template-health, repeat-order, and cross-sell work but may not execute it automatically.",
-    "External packaging opportunities remain separate from CRM leads until human review and approved conversion."
+    "Growth Center may prioritize specification, pricing, proof, production, dispatch, template-health, repeat-order, cross-sell, and process/value work but may not execute it automatically.",
+    "External Packaging opportunities remain separate from CRM leads until human review and approved conversion.",
+    "Learning-loop metrics measure helpful, false-positive, completed, dismissed, and expired outcomes without automatically changing rules or models."
   ],
   "catalogAdminWorkflow": [
     "Use /admin/product-management as Catalog Admin for setup, imports, defaults, governance, import history, cleanup, and audit.",
@@ -91,19 +96,9 @@
     "The 8 stages are Actual Lines, Buyer Doc, Packing, Freight Queue, Processing, Delivery Note, Final Invoice, and Paid & Closed.",
     "Packaging orders also coordinate Design Queue and Dispatch Board, while accepted quote history remains immutable.",
     "KPI filters are All orders, Ready now, Blocked, Finance queue-ready, Freight queue-ready, and WhatsApp-ready docs.",
-    "In Actual Lines, Add catalog product uses live active Catalog pricing rows for the current organization from active_product_pricing_rules_v.",
-    "The Orders page server loader and add-line server action both verify Catalog pricing rows by the current workspace organization before using catalog_pricing_rule_id.",
-    "If the authenticated query path cannot read active_product_pricing_rules_v after workspace membership is verified, the code may use a service-role/admin fallback strictly scoped by organization_id and selected rule id.",
-    "The product picker is searchable by product name, SKU/code, HSN/HS code, variant or pack label, pricing type, and visible price basis.",
-    "Catalog-linked order lines submit catalog_pricing_rule_id so the server preserves catalog/pricing lineage, product and variant IDs, SKU, HSN, price basis, currency, pricing snapshot, and product snapshot.",
-    "Manual lines, if allowed, are separate from catalog-linked lines and require reason/context.",
-    "Removed added/manual lines should disappear from active Actual Lines UI and remain only in audit/activity history.",
-    "Before the first buyer document, actual order lines, discount reasons/context, and actual-lines approval are required.",
     "Accepted quote versions and accepted quote line items are never mutated by actual order line changes.",
-    "Queue invoice sync writes finance_integration_events with adapter_name='pending' and event_type='invoice_sync_requested'; no live accounting sync is active.",
-    "Queue freight request writes pending freight request/event payloads with adapter_name='pending' and event_type='freight_quote_requested'; no live carrier booking is active.",
-    "WhatsApp opens a manual tracked link; the operator manually sends.",
-    "PDF uses free/open-source rendering where available and browser print fallback from tracked preview pages."
+    "Queue invoice sync and freight requests use pending adapters unless a live integration is explicitly confirmed.",
+    "WhatsApp opens a manual tracked link; the operator manually sends."
   ],
   "closedSprints": [
     "Sprint 1 — Implementation control and anti-drift",
@@ -123,13 +118,13 @@
     "Do not send messages autonomously.",
     "Do not advance order or Packaging production states autonomously.",
     "Do not approve actual order lines, order documents, artwork, proofs, QC, packing, trade requirements, dispatch, finance/payment closeout, or order closeout autonomously.",
-    "Do not claim live Xero, QuickBooks, Tally, Flexport, Freightos, DHL, carrier booking, bank feed, payment processor, WhatsApp Business API, or external discovery provider integration unless confirmed live.",
+    "Do not claim live accounting, freight, WhatsApp Business API, or external discovery integration unless confirmed live and configured.",
     "Do not sync finance or book freight; only explain pending-adapter queue behavior.",
     "Do not claim WhatsApp or email provider delivery unless a provider confirmation exists.",
     "Do not make compliance decisions autonomously.",
-    "Do not fake Catalog products, Packaging opportunities, companies, contacts, or use another organization's rows.",
-    "Use live research for industry benchmarks, HS/HSN/commodity codes, tariffs, duties, packaging regulations, and compliance questions.",
+    "Do not fake Catalog products, Packaging opportunities, companies, contacts, market signals, or use another organization's rows.",
+    "Use live research for industry benchmarks, HS/HSN/commodity codes, tariffs, duties, Packaging regulations, and compliance questions.",
     "Do not overwrite product master data without authorized approval and audit notes.",
-    "Always cite official or high-quality sources for live market, customs, tariff, packaging-regulation, and compliance answers."
+    "Always cite official or high-quality sources for live market, customs, tariff, Packaging-regulation, and compliance answers."
   ]
 }
