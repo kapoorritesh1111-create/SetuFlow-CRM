@@ -1,34 +1,143 @@
 (() => {
   'use strict';
 
+  const VERSION = '2026.07.25-v6';
   const roles = {
-    sales: { name: 'Sales', description: 'Capture, qualify, quote, send and follow up.', flows: ['capture', 'qualify', 'quote', 'approval', 'followup'] },
-    design: { name: 'Design', description: 'Manage artwork, proofs and pre-press readiness.', flows: ['design', 'dispatch'] },
-    operations: { name: 'Operations', description: 'Move jobs through production and dispatch.', flows: ['dispatch'] },
-    ordering: { name: 'Ordering', description: 'Turn accepted quotes into tracked execution.', flows: ['approval', 'dispatch'] },
-    admin: { name: 'Owner / Admin', description: 'Manage catalog, pricing, access and reporting.', flows: ['capture', 'qualify', 'quote', 'approval', 'followup', 'design', 'dispatch', 'admin'] },
-    viewer: { name: 'Viewer', description: 'Track information without changing records.', flows: ['capture', 'qualify', 'quote', 'approval', 'followup', 'design', 'dispatch'] },
+    sales: { name: 'Sales', description: 'Capture, qualify, quote, send, manage outcomes and hand accepted work to Orders.', flows: ['capture', 'qualify', 'quote', 'approval', 'quote-management', 'orders', 'tasks', 'trade-events'] },
+    design: { name: 'Design', description: 'Receive accepted packaging work, manage artwork versions and release approved files.', flows: ['design', 'dispatch', 'tasks'] },
+    operations: { name: 'Operations', description: 'Run accepted work through Orders, production readiness and dispatch.', flows: ['orders', 'dispatch', 'tasks'] },
+    ordering: { name: 'Ordering', description: 'Validate accepted quote handoff and complete the execution cockpit.', flows: ['approval', 'quote-management', 'orders', 'design', 'dispatch'] },
+    admin: { name: 'Owner / Admin', description: 'Validate the full client journey plus catalog, pricing, users, settings and audit.', flows: ['capture', 'qualify', 'quote', 'approval', 'quote-management', 'orders', 'design', 'dispatch', 'catalog', 'tasks', 'trade-events', 'admin'] },
+    viewer: { name: 'Viewer', description: 'Confirm read-only visibility without changing customer or operational records.', flows: ['capture', 'qualify', 'quote-management', 'orders', 'design', 'dispatch', 'catalog', 'tasks', 'trade-events'] },
   };
 
+  const S = (title, summary, route, status = 'retest') => ({ title, summary, route, status });
+
   const definitions = [
-    ['capture', 'Capture', '/leads', ['Capture overview', 'Open Quick Lead', 'Choose buyer or supplier', 'Enter required details', 'Record source and trade note', 'Save the lead', 'Find the new lead']],
-    ['qualify', 'Qualification', '/leads', ['Open Lead Detail', 'Review lifecycle and readiness', 'Add contact and company context', 'Map packaging interest', 'Capture requirements', 'Schedule next touchpoint', 'Confirm quote readiness']],
-    ['quote', 'Quote Builder', '/quotes', ['Start a quote', 'Choose service family', 'Choose pricing template', 'Enter dimensions', 'Enter repeat and web width', 'Select material', 'Select finish and colors', 'Enter quantity', 'Review calculated pricing', 'Add another line', 'Save draft', 'Review customer-facing quote']],
-    ['approval', 'Approvals & Sending', '/quotes', ['Review approval requirements', 'Submit for approval', 'Approve or return', 'Resolve approval changes', 'Generate approval link', 'Send to buyer', 'Record buyer response', 'Create order handoff']],
-    ['followup', 'Follow-up', '/quote-lifecycle', ['Open Quote Lifecycle', 'Review recommended action', 'Send follow-up', 'Handle revision request', 'Manage expiring quotes', 'Close or hand off']],
-    ['design', 'Design & Proofs', '/design-queue', ['Open Design Queue', 'Review production specification', 'Upload proof version', 'Share and record approval', 'Release to pre-press']],
-    ['dispatch', 'Production & Dispatch', '/dispatch-board', ['Open Dispatch Board', 'Advance production stage', 'Correct stage and print ticket', 'Mark dispatched']],
-    ['admin', 'Catalog & Admin', '/catalog', ['Manage service families', 'Manage pricing templates', 'Maintain reference library']],
+    {
+      id: 'capture', name: 'Capture', route: '/leads',
+      steps: [
+        S('Open Quick Lead', 'Click the global + Quick Lead button. Confirm one drawer opens and the background page remains stable.', '/leads?quickLead=1', 'passed-before-retest'),
+        S('Choose buyer or supplier', 'Click Buyer or Supplier once. Confirm the selected type is visibly active and only one form is mounted.', '/leads?quickLead=1', 'passed-before-retest'),
+        S('Enter required contact details', 'Enter company, country, contact name and at least one reachable channel. Add source and trade note before saving.', '/leads?quickLead=1', 'passed-before-retest'),
+        S('Save and find the lead', 'Click Save lead once, wait for the success message, close the drawer and search the Lead Queue. Confirm no duplicate was created.', '/leads', 'passed-before-retest'),
+      ],
+    },
+    {
+      id: 'qualify', name: 'Qualification', route: '/leads',
+      steps: [
+        S('Open Lead Detail', 'From Follow-up, click the visible company name or Open action. Confirm the correct lead detail page opens.', '/leads', 'passed-before-retest'),
+        S('Complete company and packaging context', 'Use Quick edit and Qualification & Mapping to add contact, website, packaging categories, requirements and notes.', '/leads', 'passed-before-retest'),
+        S('Save qualification and next action', 'Click Save qualification & mapping, schedule the next touchpoint, refresh and confirm categories, notes and date persist.', '/leads', 'passed-before-retest'),
+        S('Open Quote Builder', 'Click the visible Create Quote or Open Builder action. Confirm any blocker is shown on the page, not only in the URL.', '/leads', 'passed-before-retest'),
+      ],
+    },
+    {
+      id: 'quote', name: 'Quote Builder', route: '/quotes',
+      steps: [
+        S('Start a clean quote', 'From the qualified lead, click Create New Quote once. Confirm a single draft/version is created and the organization currency is selected.', '/quotes', 'needs-retest'),
+        S('Add packaging product or service', 'Click Add packaging line or Add product, select the intended family/SKU and verify no unrelated generic line is added.', '/quotes', 'needs-retest'),
+        S('Configure specification', 'Choose pricing template, dimensions, material, finish, colors, quantity and artwork status. Resolve MOQ warnings or choose the suggested alternative template.', '/quotes', 'needs-retest'),
+        S('Review pricing and currency', 'Open Pricing/Review. Confirm line name, quantity, unit price, totals and currency all describe the same saved line and match the organization default.', '/quotes', 'needs-retest'),
+        S('Save and reopen draft', 'Click Save & Continue, leave the page, reopen the same quote and confirm specifications, prices and optional charges persist without duplicate lines.', '/quotes', 'needs-retest'),
+        S('Preview customer quote', 'Click Customer PDF or Preview. Confirm it opens in a new tab, uses the customer logo, correct currency and only the intended commercial lines.', '/quotes', 'needs-retest'),
+      ],
+    },
+    {
+      id: 'approval', name: 'Approvals & Sending', route: '/approval-send',
+      steps: [
+        S('Submit for internal approval', 'From the quote send gate, click Submit for approval once. Confirm the quote/version moves to pending approval and cannot be edited silently.', '/quotes?status=pending_approval', 'needs-retest'),
+        S('Approve or return the quote', 'Open Approval Queue, select the exact quote, add a decision note and click Approve or Return. Confirm a visible success result.', '/approval-queue', 'needs-retest'),
+        S('Open Approvals & Sending', 'From the approved quote, click Send quote. Confirm /approval-send opens with the same customer, version, lines, total and currency.', '/approval-send', 'needs-retest'),
+        S('Send and verify tracked link', 'Choose WhatsApp or Email, click the send action once, then open/copy the tracked customer link. Do not claim delivery without provider confirmation.', '/approval-send', 'needs-retest'),
+        S('Confirm sent state', 'Return to Quotes and confirm the quote is Sent, locked from direct editing and available for an explicit buyer outcome.', '/quotes?status=sent', 'needs-retest'),
+      ],
+    },
+    {
+      id: 'quote-management', name: 'Quote Management & Outcomes', route: '/quotes',
+      steps: [
+        S('Open the customer quote story', 'Open Quotes, select the customer and verify proposed, accepted, order and cleanup values are not double-counted.', '/quotes', 'needs-retest'),
+        S('Record buyer outcome', 'On a Sent quote, choose Accepted, Rejected, Revision requested, No response or Expire. Confirm only the selected outcome is applied.', '/quotes?status=sent', 'needs-retest'),
+        S('Create a governed revision', 'For Revision requested, click Create revised quote. Confirm a new editable version is created and the original sent version remains locked.', '/quotes?status=revision_requested', 'needs-retest'),
+        S('Confirm accepted quote handoff', 'For Accepted, confirm the quote leaves active quote work, remains in history and the Open order action opens the matching order.', '/quotes?status=accepted', 'needs-retest'),
+      ],
+    },
+    {
+      id: 'orders', name: 'Orders / Execution', route: '/orders',
+      steps: [
+        S('Open the matching order', 'Click Open order from the accepted quote or open Orders and search the customer. Confirm source quote/version, customer, currency and lines match.', '/orders', 'untested'),
+        S('Review blockers and next best action', 'Select the order and read the Action Stack. Confirm blockers are explicit and the primary CTA matches the current stage.', '/orders', 'untested'),
+        S('Confirm actual order lines', 'Open Actual Lines, compare quoted versus ordered quantities/prices, record any reasoned change and approve the actual-lines gate.', '/orders', 'untested'),
+        S('Prepare buyer document', 'Open Buyer Doc, click Prepare, Preview and Approve in sequence. Confirm preview opens in a new tab and accepted quote history remains unchanged.', '/orders', 'untested'),
+        S('Save packing and freight readiness', 'Open Packing, enter cartons, pallets, weights, CBM, pickup, delivery, shipment mode and Incoterm; save and approve before queueing freight.', '/orders', 'untested'),
+        S('Complete processing and dispatch documents', 'Open Processing, complete required checks, then prepare Delivery Note and Final Invoice with preview and approval.', '/orders', 'untested'),
+        S('Record payment and close', 'After dispatch/delivery evidence, record payment reference, reconcile, confirm no blockers and click Close order. Confirm the order moves to Paid & Closed.', '/orders', 'untested'),
+      ],
+    },
+    {
+      id: 'design', name: 'Design & Proofs', route: '/design-queue',
+      steps: [
+        S('Find accepted work needing design', 'Open Design Queue and confirm every accepted packaging production line without final artwork appears with customer and quote reference.', '/design-queue', 'needs-retest'),
+        S('Record customer-provided artwork', 'Open Design files, choose Customer provided, upload the final file and confirm it becomes production-ready without a buyer approval link.', '/design-queue', 'needs-retest'),
+        S('Upload Design Team proof', 'Choose Design Team, upload a new version, copy the approval link and confirm visible copied/uploaded feedback.', '/design-queue', 'needs-retest'),
+        S('Approve or revise proof', 'Open the external approval link, approve or reject with a comment, then refresh Design Queue and confirm the status updates or the job leaves the queue when ready.', '/design-queue', 'needs-retest'),
+      ],
+    },
+    {
+      id: 'dispatch', name: 'Production & Dispatch', route: '/dispatch-board',
+      steps: [
+        S('Open accepted work in Dispatch', 'Open Dispatch Board and confirm accepted packaging quotes, canonical orders and customers are visible even when quote lines are product lines.', '/dispatch-board', 'needs-retest'),
+        S('Start pre-press', 'Select a job and advance to Pre-Press. Confirm missing artwork can be resolved here and the event is recorded once.', '/dispatch-board', 'needs-retest'),
+        S('Verify design gate', 'Attempt Printing without final design and confirm the app blocks it. Add customer artwork or approve the Design Team proof, then retry successfully.', '/dispatch-board', 'needs-retest'),
+        S('Advance through dispatch', 'Advance Printing, converting, finishing, QC, Packed and Dispatched in order. Confirm notes/history persist and the order/dispatch state stays aligned.', '/dispatch-board', 'needs-retest'),
+      ],
+    },
+    {
+      id: 'catalog', name: 'Catalog & Packaging Pricing', route: '/products',
+      steps: [
+        S('Review packaging catalog', 'Click Catalog, search packaging products/services and confirm SKU, family, active status, currency, price basis and quoteability are clear.', '/products', 'untested'),
+        S('Open product management', 'As Admin, open Catalog admin, edit one safe test field and save. Confirm the change appears in Catalog without altering unrelated products.', '/admin/product-management', 'untested'),
+        S('Review packaging families and templates', 'Open Packaging Families and Pricing Templates, verify active templates, MOQ, dimensions, materials, finishes and lead time.', '/admin/packaging-families', 'untested'),
+        S('Validate quote from catalog', 'Start a quote from Catalog, select the updated item and confirm the correct price, currency and specification reach Quote Builder.', '/products', 'untested'),
+      ],
+    },
+    {
+      id: 'tasks', name: 'Tasks', route: '/tasks',
+      steps: [
+        S('Create a lead-linked task', 'Click Tasks, New task, enter title, due date, owner and linked lead, then save. Confirm it appears in the correct date group.', '/tasks', 'untested'),
+        S('Edit and complete a task', 'Open the task, change priority/date or owner, save, then mark complete. Confirm it moves to Completed with no duplicate.', '/tasks', 'untested'),
+        S('Verify calendar and filters', 'Switch List/Calendar, use My tasks, SLA risk and lead-linked filters, then reopen the linked lead from the task.', '/tasks', 'untested'),
+      ],
+    },
+    {
+      id: 'trade-events', name: 'Trade Events', route: '/trade-events',
+      steps: [
+        S('Open event command center', 'Click Trade events, select a live/upcoming event and verify dates, location, booth and quick actions use real organization data.', '/trade-events', 'untested'),
+        S('Capture an event lead', 'Click Add Booth Lead or Scan Badge, save a buyer with the event source, then confirm the lead appears in event and lead views.', '/trade-events', 'untested'),
+        S('Follow up and review conversion', 'Open Review Leads, create a next action or quote, then return to the event and confirm capture/follow-up counts update truthfully.', '/trade-events', 'untested'),
+      ],
+    },
+    {
+      id: 'admin', name: 'Admin & Settings', route: '/admin/organization',
+      steps: [
+        S('Review organization settings', 'Open Admin & Settings, verify organization identity, country, default currency and packaging vertical. Change only an approved safe field and save.', '/admin/organization', 'untested'),
+        S('Review people and access', 'Open People & access, confirm roles and invitations. Invite or adjust a test user and verify permissions match the selected role.', '/admin/users', 'untested'),
+        S('Review integrations and documents', 'Open Integrations and Documents/Templates. Confirm unavailable providers are labeled honestly and preview-only features do not claim delivery.', '/admin/integrations', 'untested'),
+        S('Review audit trail', 'Open Audit trail and confirm the recent catalog/settings/user change records actor, action, entity and timestamp for this organization only.', '/admin/audit', 'untested'),
+      ],
+    },
   ];
 
-  const flows = definitions.map(([id, name, route, titles]) => ({
-    id,
-    name,
-    route,
-    steps: titles.map((title, index) => ({
-      id: `${id}-${index + 1}`,
-      title,
-      summary: `Complete ${title.toLowerCase()} using normal clicks, then confirm the saved state before continuing.`,
+  const flows = definitions.map((definition) => ({
+    id: definition.id,
+    name: definition.name,
+    route: definition.route,
+    steps: definition.steps.map((item, index) => ({
+      id: `${definition.id}-${index + 1}`,
+      title: item.title,
+      summary: `${item.summary} Testing status: ${item.status === 'untested' ? 'Not tested yet' : item.status === 'needs-retest' ? 'Requires production retest' : 'Passed previously; retest after recent changes'}.`,
+      route: item.route || definition.route,
+      status: item.status,
     })),
   }));
 
@@ -36,41 +145,52 @@
     ...step,
     flow: flow.id,
     flowName: flow.name,
-    route: flow.route,
     index,
   })));
 
   const instructions = {
-    capture: ['Open + Quick Lead from the Setu Flow header.', 'Choose Buyer or Supplier and enter company and country.', 'Add source, trade note and contact information, then save.'],
-    qualify: ['Open the lead from Leads.', 'Complete company context, packaging interests and requirements.', 'Save changes and schedule the next touchpoint.'],
-    quote: ['Start from a qualified lead.', 'Configure family, template, dimensions, material, finish and quantity.', 'Review pricing, save the draft and preview the customer document.'],
-    approval: ['Review whether internal approval is required.', 'Record the decision or requested changes.', 'Generate the buyer link, send it and capture the response.'],
-    followup: ['Open Quote Lifecycle and read the recommended action.', 'Send a contextual follow-up or create a controlled revision.', 'Close, expire or hand off the quote cleanly.'],
-    design: ['Open Design Queue and verify the production specification.', 'Upload the correct proof version and share approval.', 'Release only approved artwork to pre-press.'],
-    dispatch: ['Open Dispatch Board and review the stage funnel.', 'Advance or correct the job stage with notes.', 'Print the job ticket and record dispatch details.'],
-    admin: ['Open the appropriate Packaging Admin page.', 'Review active status, linked data and validation warnings.', 'Save and confirm the change appears in the client workflow.'],
+    capture: ['Use the visible Quick Lead controls only.', 'Save once and wait for confirmation.', 'Verify the saved lead from Follow-up.'],
+    qualify: ['Open the exact lead from Follow-up.', 'Save company, packaging and next-action context.', 'Refresh before declaring the step passed.'],
+    quote: ['Build from one intended customer and one clean draft.', 'Check line identity, currency and totals at every stage.', 'Preview the customer document in a new tab.'],
+    approval: ['Submit the exact version for approval.', 'Approve/return with a visible decision.', 'Send only the approved version and verify the tracked link.'],
+    'quote-management': ['Manage Sent quotes from the customer story.', 'Record one explicit buyer outcome.', 'Use governed revisions and Orders handoff.'],
+    orders: ['Open the order created from the accepted quote.', 'Follow the Action Stack and approval gates.', 'Do not skip documents, packing, dispatch or closeout evidence.'],
+    design: ['Use one quote line at a time.', 'Identify customer-provided versus Design Team artwork.', 'Verify final approval before Printing.'],
+    dispatch: ['Confirm the job, order and customer match.', 'Advance one stage at a time.', 'Verify the design gate and event history.'],
+    catalog: ['Use Catalog as the pricing source.', 'Change only safe test data.', 'Confirm changes reach Quote Builder.'],
+    tasks: ['Create one traceable task.', 'Verify edits and completion.', 'Test list, calendar and filters.'],
+    'trade-events': ['Use a real event record.', 'Capture with event source attached.', 'Verify lead and event counts reconcile.'],
+    admin: ['Use an Owner/Admin test account.', 'Change only approved safe fields.', 'Verify permissions and audit history.'],
   };
 
   const expected = {
-    capture: 'The lead saves once with the correct type and owner and appears in Leads without duplicates.',
-    qualify: 'Packaging interests and requirements persist and Quote Builder becomes available when required data is complete.',
-    quote: 'The selected template, line names, currency and calculations remain consistent after save.',
-    approval: 'Approval status and buyer links are accurate and accepted quotes can move to order handoff.',
-    followup: 'The lifecycle queue reflects the latest state and every action appears in activity history.',
-    design: 'Proof version, buyer decision and artwork status stay synchronized between Quote and Design Queue.',
-    dispatch: 'Stage changes are event-tracked, permissions are respected and dispatch completes the job.',
-    admin: 'Catalog configuration is active, internally consistent and usable by the intended role.',
+    capture: 'One correctly typed lead is saved with visible confirmation and no duplicate.',
+    qualify: 'Qualification data persists after refresh and the correct quote action is available.',
+    quote: 'The quote contains only intended lines with matching specifications, totals and organization currency.',
+    approval: 'The approved version can be sent once, tracked honestly and displayed as Sent.',
+    'quote-management': 'Buyer outcomes persist, revisions create new versions and accepted quotes open the matching order.',
+    orders: 'The accepted quote becomes one executable order with truthful blockers, approvals, documents, packing, dispatch and closeout.',
+    design: 'Every required packaging design is sourced, versioned and approved before production release.',
+    dispatch: 'Accepted packaging work is visible and cannot pass Printing without final design evidence.',
+    catalog: 'Catalog and pricing configuration is active, consistent and usable in Quote Builder.',
+    tasks: 'Tasks save, filter, link, edit and complete without duplicate records.',
+    'trade-events': 'Event capture, lead attribution and follow-up metrics use real workspace data.',
+    admin: 'Organization settings, access, integrations and audit remain correctly scoped and truthful.',
   };
 
   const mistakes = {
-    capture: ['Creating a duplicate', 'Skipping source or notes'],
-    qualify: ['Not saving category mapping', 'No next action'],
-    quote: ['Mixing specs on one line', 'Ignoring MOQ or currency warnings'],
-    approval: ['Sending before approval', 'Editing a locked accepted version'],
-    followup: ['Following up without context', 'Overwriting instead of revising'],
-    design: ['Uploading to the wrong line', 'Releasing unapproved artwork'],
-    dispatch: ['Skipping stages without notes', 'Editing as a read-only role'],
-    admin: ['Activating incomplete templates', 'Deleting references already in use'],
+    capture: ['Clicking hidden duplicate controls', 'Saving twice before confirmation'],
+    qualify: ['Not refreshing to verify persistence', 'No next action'],
+    quote: ['Allowing ghost lines', 'Ignoring mixed currency or MOQ warnings'],
+    approval: ['Sending before approval', 'Assuming a link means provider delivery'],
+    'quote-management': ['Editing a sent version', 'Double-counting proposed and accepted value'],
+    orders: ['Treating accepted as dispatch-ready', 'Skipping approval or document gates'],
+    design: ['Uploading to the wrong quote line', 'Treating pending Design Team work as final'],
+    dispatch: ['Skipping stages', 'Advancing past Printing without approved design'],
+    catalog: ['Editing live pricing without a test plan', 'Activating incomplete templates'],
+    tasks: ['Creating an unlinked duplicate', 'Completing the wrong task'],
+    'trade-events': ['Capturing without event source', 'Using trial cards in a live org'],
+    admin: ['Changing production identity values casually', 'Granting broader roles than required'],
   };
 
   const files = {
@@ -85,60 +205,20 @@
   };
 
   const marker = (x, y, label, route) => ({ x, y, label, route });
-
   function evidenceForStep(step) {
-    const id = step.id;
-    if (id === 'capture-1') return { src: files.dashboard, title: 'Packaging workspace dashboard', markers: [marker(85.5, 2.5, 'Quick Lead', '/leads'), marker(4.2, 15, 'Capture navigation', '/contact-exchange/scan')] };
-    if (id === 'capture-2') return { src: files.quickCapture, title: 'Open Quick Add Lead', markers: [marker(86.4, 2.8, 'Quick Lead button', '/leads')] };
-    if (id === 'capture-3') return { src: files.quickCapture, title: 'Choose buyer or supplier', markers: [marker(84.8, 28.6, 'Buyer', '/leads'), marker(94.1, 28.6, 'Supplier', '/leads')] };
-    if (id === 'capture-4') return { src: files.quickCapture, title: 'Enter company and contact details', markers: [marker(84.5, 39.4, 'Company and country', '/leads'), marker(84.6, 48.5, 'Contact details', '/leads')] };
-    if (id === 'capture-5') return { src: files.quickCapture, title: 'Record source and trade note', markers: [marker(84.5, 61.5, 'Lead source', '/leads'), marker(86.5, 83.8, 'Trade note', '/leads')] };
-    if (id === 'capture-6') return { src: files.quickCapture, title: 'Save the lead', markers: [marker(96.8, 96.4, 'Save lead', '/leads')] };
-    if (id === 'capture-7') return { src: files.leads, title: 'Find the saved lead', markers: [marker(83.5, 19.6, 'Open lead', '/leads'), marker(18, 8.3, 'Search and filters', '/leads')] };
-
-    const qualificationMarkers = {
-      'qualify-1': [marker(14, 9, 'Lead header', '/leads')],
-      'qualify-2': [marker(60, 9.8, 'Lifecycle stage', '/leads'), marker(23, 16, 'Readiness score', '/leads')],
-      'qualify-3': [marker(67, 57, 'Quick edit', '/leads')],
-      'qualify-4': [marker(30, 58, 'Category mapping', '/leads')],
-      'qualify-5': [marker(29, 83.5, 'Qualification notes', '/leads')],
-      'qualify-6': [marker(33, 27, 'Next touchpoint', '/leads')],
-      'qualify-7': [marker(14.5, 48.2, 'Open Builder', '/quotes')],
-    };
-    if (qualificationMarkers[id]) return { src: files.leadDetail, title: step.title, markers: qualificationMarkers[id] };
-
-    if (id === 'quote-1') return { src: files.quoteBuilder, title: 'Start a packaging quote', markers: [marker(84.7, 23.5, 'Add packaging line', '/quotes')] };
-    if (id === 'quote-2') return { src: files.catalog, title: 'Choose service family', markers: [marker(20, 34.5, 'Service family', '/catalog'), marker(91.8, 61.8, 'Create quote line', '/quotes')] };
-    if (id === 'quote-3') return { src: files.catalog, title: 'Choose pricing template', markers: [marker(91.5, 46.2, 'Active pricing template', '/catalog')] };
-    if (['quote-4', 'quote-5', 'quote-6', 'quote-7'].includes(id)) return { src: files.quoteBuilder, title: 'Configured packaging line', markers: [marker(31, 27.2, 'Saved specification', '/quotes'), marker(76.5, 27.2, 'Calculated line price', '/quotes')] };
-    if (id === 'quote-8') return { src: files.quoteBuilder, title: 'Enter quantity', markers: [marker(42.5, 46, 'MOQ / quantity', '/quotes')] };
-    if (id === 'quote-9') return { src: files.quoteBuilder, title: 'Review calculated pricing', markers: [marker(76.5, 27.2, 'Line price', '/quotes'), marker(92.5, 25, 'Quote summary', '/quotes')] };
-    if (id === 'quote-10') return { src: files.quoteBuilder, title: 'Add another packaging line', markers: [marker(84.8, 23.5, 'Add packaging line', '/quotes')] };
-    if (id === 'quote-11') return { src: files.quoteBuilder, title: 'Save quote draft', markers: [marker(84.5, 56.1, 'Save and continue', '/quotes')] };
-    if (id === 'quote-12') return { src: files.quotes, title: 'Review customer-facing quote', markers: [marker(86.3, 34.6, 'Customer PDF', '/quotes')] };
-
-    if (id.startsWith('approval-')) {
-      const approvalMarkers = {
-        'approval-1': [marker(50, 9.8, 'Quote filters', '/quotes')],
-        'approval-2': [marker(86.2, 36.8, 'Edit / revise quote', '/quotes')],
-        'approval-3': [marker(24, 42.5, 'Approval outcome', '/quotes')],
-        'approval-4': [marker(86.2, 36.8, 'Revise quote', '/quotes')],
-        'approval-5': [marker(86.2, 34.6, 'Customer PDF / share', '/quotes')],
-        'approval-6': [marker(86.2, 34.6, 'Send customer document', '/quotes')],
-        'approval-7': [marker(24, 42.5, 'Record buyer response', '/quotes')],
-        'approval-8': [marker(86.2, 29.4, 'Create / open order handoff', '/orders')],
-      };
-      return { src: files.quotes, title: step.title, markers: approvalMarkers[id] || [] };
-    }
-
-    if (id.startsWith('followup-')) return { src: files.quotes, title: step.title, markers: [marker(22, 20, 'Customer quote story', '/quote-lifecycle'), marker(86.2, 40.2, 'Discussion and follow-up', '/quote-lifecycle')] };
-    if (id === 'admin-1') return { src: files.catalog, title: 'Packaging catalog', markers: [marker(20, 34.5, 'Service families', '/catalog')] };
-    if (id === 'admin-2') return { src: files.catalog, title: 'Pricing templates', markers: [marker(91.5, 46.2, 'Active pricing templates', '/catalog')] };
-    if (id === 'admin-3') return { src: files.analytics, title: 'Analytics and reference performance', markers: [marker(95, 10.2, 'Export', '/analytics'), marker(27, 26, 'Conversion funnel', '/analytics')] };
+    if (step.id === 'capture-1') return { src: files.quickCapture, title: 'Open Quick Lead', markers: [marker(86.4, 2.8, 'Quick Lead', step.route)] };
+    if (step.id === 'capture-2') return { src: files.quickCapture, title: 'Choose buyer or supplier', markers: [marker(84.8, 28.6, 'Buyer', step.route), marker(94.1, 28.6, 'Supplier', step.route)] };
+    if (step.id === 'capture-3') return { src: files.quickCapture, title: 'Enter lead details', markers: [marker(84.5, 39.4, 'Company and country', step.route), marker(84.6, 61.5, 'Source and note', step.route)] };
+    if (step.id === 'capture-4') return { src: files.leads, title: 'Find saved lead', markers: [marker(18, 8.3, 'Search', '/leads'), marker(83.5, 19.6, 'Open lead', '/leads')] };
+    if (step.flow === 'qualify') return { src: files.leadDetail, title: step.title, markers: [marker(29, 58, 'Qualification & Mapping', '/leads'), marker(14.5, 48.2, 'Quote action', '/leads')] };
+    if (step.flow === 'quote') return { src: files.quoteBuilder, title: step.title, markers: [marker(31, 27.2, 'Commercial line', '/quotes'), marker(76.5, 27.2, 'Price', '/quotes'), marker(84.5, 56.1, 'Save', '/quotes')] };
+    if (step.flow === 'approval' || step.flow === 'quote-management') return { src: files.quotes, title: step.title, markers: [marker(24, 42.5, 'Lifecycle action', step.route), marker(86.2, 34.6, 'Open / send', step.route)] };
+    if (step.flow === 'catalog') return { src: files.catalog, title: step.title, markers: [marker(20, 34.5, 'Catalog family', step.route), marker(91.5, 46.2, 'Pricing configuration', step.route)] };
     return null;
   }
 
   window.PackagingAcademyData = {
+    version: VERSION,
     origin: 'https://packaging.setuflowcrm.com',
     api: '/api/packaging-academy/tests',
     roles,
