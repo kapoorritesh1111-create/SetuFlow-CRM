@@ -14,11 +14,14 @@ const packagingSearch = read('src/app/api/setu-guru/packaging-search/route.ts');
 const recommendations = read('src/lib/setu-guru/packaging-recommendations.ts');
 const learningApi = read('src/app/api/setu-guru/packaging-learning/route.ts');
 const operations = read('src/features/setu-guru/packaging-operations-workspace.tsx');
+const growthCenter = read('src/features/setu-guru/growth-center.tsx');
 const manifest = read('public/setu-guru/knowledge-manifest.json');
 const compliance = read('docs/setu-guru/PACKAGING_COMPLIANCE_RESEARCH_LIBRARY.md');
 const sales = read('docs/setu-guru/PACKAGING_SALES_DISCOVERY_ASSISTANT.md');
 const academy = read('public/marketing/guides/packaging-academy-data.js');
 const academyRoutes = read('public/marketing/guides/packaging-academy-v6.js');
+const academyLearning = read('public/marketing/guides/packaging-academy-learning-v9.js');
+const academyHtml = read('public/marketing/guides/setu_flow_packaging_workspace_guide.html');
 const migration = read('supabase/migrations/20260725050500_s50_finish_packaging_academy_currency_and_live_recommendations.sql');
 
 test('S50-PKI-003: Packaging ICP wizard is vertical-aware and persists structured dimensions', () => {
@@ -74,10 +77,33 @@ test('S50-PKI-018: repeat-order, quantity-tier, print-process, and cross-sell re
 test('S50-PKI-024: learning loop captures feedback and displays performance without autonomous model changes', () => {
   assert.match(learningApi, /packaging_intelligence_learning_metrics_v/);
   assert.match(learningApi, /false_positive/);
-  assert.match(operations, /Recommendation performance/);
-  assert.match(operations, /never changes operational rules or models automatically/);
+  assert.match(operations, /Recommendation quality/);
+  assert.match(operations, /never changes operational rules automatically/);
   assert.match(operations, /Helpful/);
   assert.match(operations, /Not relevant/);
+});
+
+test('Packaging Operations explains the workflow and supports Academy deep links', () => {
+  assert.match(operations, /Refresh Packaging Operations/);
+  assert.match(operations, /This is different from Pricing Intelligence/);
+  assert.match(operations, /Open the source record/);
+  assert.match(operations, /Fix, verify and refresh/);
+  assert.match(operations, /Quote readiness/);
+  assert.match(operations, /Template health/);
+  assert.match(growthCenter, /workspaceParam === 'packaging'/);
+  assert.match(growthCenter, /resolvePackagingCategory/);
+  assert.match(growthCenter, /initialCategory=\{requestedPackagingCategory\}/);
+});
+
+test('Packaging Academy Learn and Test modes share canonical step guidance', () => {
+  assert.match(academyHtml, /packaging-academy-learning-v9\.js/);
+  assert.match(academyLearning, /Same steps in Learn and Test/);
+  assert.match(academyLearning, /Do this/);
+  assert.match(academyLearning, /Pass when/);
+  assert.match(academyLearning, /Why this matters/);
+  assert.match(academyLearning, /Refresh Packaging Operations/);
+  assert.match(academyLearning, /Pricing Intelligence is a separate workspace/);
+  assert.match(academyLearning, /academy-screenshot-only/);
 });
 
 test('Packaging Academy v7 includes Setu Guru and Growth Center workflows with route-aware results', () => {
