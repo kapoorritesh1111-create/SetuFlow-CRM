@@ -4,6 +4,8 @@
   const data = window.PackagingAcademyData;
   if (!data?.steps?.length) return;
 
+  const stripStatus = (value) => String(value || '').replace(/\s*Testing status:.*$/i, '').trim();
+
   const growthRefresh = data.steps.find((step) => step.id === 'growth-center-2');
   if (growthRefresh) {
     growthRefresh.title = 'Refresh Packaging Operations';
@@ -20,34 +22,15 @@
   const growthOverrides = {
     'growth-center-1': {
       goal: 'Open the operational review queue for the Packaging vertical.',
-      actions: [
-        'Open Growth Center from the top navigation.',
-        'Keep Growth Work Queue selected. Pricing Intelligence is a separate workspace for price analysis.',
-        'Choose Packaging Operations from the second navigation row.',
-        'Read the three-step guide before opening any recommendation.'
-      ],
-      verify: [
-        'Packaging Operations is visibly selected.',
-        'The page shows operational categories such as quote readiness, artwork, production and dispatch.',
-        'The page states that nothing is approved, priced, sent, advanced or dispatched automatically.'
-      ],
+      actions: ['Open Growth Center from the top navigation.', 'Keep Growth Work Queue selected. Pricing Intelligence is a separate workspace for price analysis.', 'Choose Packaging Operations from the second navigation row.', 'Read the three-step guide before opening any recommendation.'],
+      verify: ['Packaging Operations is visibly selected.', 'The page shows operational categories such as quote readiness, artwork, production and dispatch.', 'The page states that nothing is approved, priced, sent, advanced or dispatched automatically.'],
       why: 'This workspace turns live Packaging records into a human review queue. It does not replace Pricing Intelligence and it does not execute work for the user.',
       avoid: ['Opening Pricing Intelligence instead of Packaging Operations', 'Assuming a recommendation means the underlying work is already completed']
     },
     'growth-center-2': {
       goal: 'Recalculate Packaging operational recommendations from the latest live records.',
-      actions: [
-        'Confirm Growth Work Queue and Packaging Operations are selected.',
-        'Click Refresh Packaging Operations once.',
-        'Wait for the page to return and reload the recommendation queue.',
-        'Compare the open actions with the related quote, artwork, production, dispatch and template records.'
-      ],
-      verify: [
-        'The action is labeled Refresh Packaging Operations, not Pricing Intelligence.',
-        'Duplicate recommendations are not created for the same record and reason.',
-        'Each recommendation explains what needs attention, why it appeared and where to fix it.',
-        'No quote, price, proof, production stage, dispatch state or customer communication changes automatically.'
-      ],
+      actions: ['Confirm Growth Work Queue and Packaging Operations are selected.', 'Click Refresh Packaging Operations once.', 'Wait for the page to return and reload the recommendation queue.', 'Compare the open actions with the related quote, artwork, production, dispatch and template records.'],
+      verify: ['The action is labeled Refresh Packaging Operations, not Pricing Intelligence.', 'Duplicate recommendations are not created for the same record and reason.', 'Each recommendation explains what needs attention, why it appeared and where to fix it.', 'No quote, price, proof, production stage, dispatch state or customer communication changes automatically.'],
       why: 'Refresh is a review action. It scans the current Packaging workflow and rebuilds the operator queue; it is not a pricing calculation and it does not perform the recommended work.',
       avoid: ['Using the separate Pricing Intelligence tab for this test', 'Clicking refresh repeatedly before the first refresh finishes']
     },
@@ -73,10 +56,10 @@
       avoid: ['Activating an incomplete template', 'Treating a repeat-order suggestion as customer intent']
     },
     'growth-center-6': {
-      goal: 'Teach the recommendation system whether an action was useful without changing workflow rules.',
+      goal: 'Record whether a recommendation was useful without changing workflow rules.',
       actions: ['Choose one recommendation that you have verified.', 'Click Helpful when the reason and route are correct, or Not relevant when they are not.', 'Wait for the saved state.', 'Review the learning totals.'],
       verify: ['Feedback is saved once.', 'Learning totals update.', 'The feedback does not change prices, stages, approvals or automation rules.'],
-      why: 'Feedback measures recommendation quality. It is not an approval and does not train or modify operational rules automatically.',
+      why: 'Feedback measures recommendation quality. It is not an approval and does not modify operational rules automatically.',
       avoid: ['Giving feedback before checking the linked record', 'Using Not relevant as a substitute for fixing a real blocker']
     },
     'growth-center-7': {
@@ -91,11 +74,12 @@
   function canonical(step) {
     const override = growthOverrides[step.id];
     if (override) return override;
+    const goal = stripStatus(step.summary);
     const flowInstructions = data.instructions?.[step.flow] || [];
     const commonMistakes = data.mistakes?.[step.flow] || [];
     return {
-      goal: step.summary,
-      actions: flowInstructions.length ? flowInstructions : ['Open the linked workspace.', 'Complete the named action once.', 'Refresh or reopen the record to confirm the saved state.'],
+      goal,
+      actions: [goal, ...flowInstructions].filter((item, index, all) => item && all.indexOf(item) === index),
       verify: [data.expected?.[step.flow] || 'The intended saved state is visible and matches the current record.'],
       why: `This step proves the ${step.flowName} workflow works from the user interface and persists the expected business result.`,
       avoid: commonMistakes
@@ -135,7 +119,11 @@
     const body = lesson.querySelector('.lesson-body');
     if (!body) return;
     const oldInstructions = body.querySelector('.instructions');
-    if (oldInstructions) oldInstructions.closest('.lesson-grid')?.remove();
+    if (oldInstructions) {
+      oldInstructions.remove();
+      const grid = body.querySelector('.lesson-grid');
+      if (grid) grid.classList.add('academy-screenshot-only');
+    }
     body.insertAdjacentHTML('afterbegin', guidanceMarkup(step));
   }
 
@@ -172,6 +160,7 @@
       .academy-guidance-grid ol,.academy-guidance-grid ul,.academy-avoid ul{margin:10px 0 0;padding-left:20px}.academy-guidance-grid li,.academy-avoid li{margin:7px 0;color:#334155;line-height:1.5}
       .academy-why,.academy-avoid{margin-top:14px;border-radius:12px;padding:14px 16px}.academy-why{background:#eef6ff;color:#173b65}.academy-avoid{background:#fff7ed;color:#7c2d12}.academy-avoid strong,.academy-why strong{font-size:13px}
       .academy-avoid ul{margin-top:6px}.academy-avoid li{color:#7c2d12}
+      .lesson-grid.academy-screenshot-only{display:block}.lesson-grid.academy-screenshot-only>div{width:100%}
       @media(max-width:820px){.academy-guidance-grid{grid-template-columns:1fr}.academy-canonical-guidance{padding:15px}}
     `;
     document.head.appendChild(style);
