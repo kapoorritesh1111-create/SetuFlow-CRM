@@ -8,20 +8,30 @@ const route = read('src/app/page.tsx');
 
 test('homepage leads with import-export growth and execution positioning', () => {
   assert.match(page, /AI-powered Import\/Export Growth and Execution CRM/);
-  assert.match(page, /Find global opportunities\. Convert buyers\. Execute every order\./);
+  assert.match(page, /Find global opportunities\./);
+  assert.match(page, /Convert buyers\./);
+  assert.match(page, /Execute every order\./);
   assert.match(page, /Setu Flow Growth Center/);
   assert.match(page, /AI support from market discovery to final dispatch/);
 });
 
-test('homepage hero uses the main dashboard and restores client proof', () => {
+test('homepage hero uses the main dashboard and verified client proof', () => {
   assert.match(page, /\/marketing\/dashboard-command-center\.png/);
   assert.match(page, /Trade Command Center — pipeline value, market activity, execution readiness and Setu Guru actions/);
   assert.match(page, /Trusted by businesses growing across borders/);
   assert.match(page, /\/clients\/blue-orbit-international\.jpg/);
   assert.match(page, /\/clients\/avanti-foods\.png/);
   assert.match(page, /\/clients\/wholesome-food\.png/);
-  assert.match(page, /\/clients\/avanti-technologies\.png/);
   assert.match(page, /\/clients\/ash-and-noir\.png/);
+  assert.doesNotMatch(page, /\/clients\/avanti-technologies\.png/);
+});
+
+test('homepage keeps the value-loss section readable and isolated from the video hero', () => {
+  assert.match(page, /Where international growth and execution break down\./);
+  assert.match(page, /<section className="bg-white px-4 py-16/);
+  assert.match(page, /bg-slate-50\/70/);
+  assert.match(page, /text-slate-950/);
+  assert.match(page, /text-slate-600/);
 });
 
 test('homepage keeps industry specialization and comparison visible', () => {
