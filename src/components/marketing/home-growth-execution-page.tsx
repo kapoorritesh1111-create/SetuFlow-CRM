@@ -37,6 +37,14 @@ const industries = [
   { title: 'Exporters', body: 'Manage international buyers, quotations, documents, orders and dispatch without losing visibility.', icon: Truck },
 ];
 
+const clientLogos = [
+  { src: '/clients/blue-orbit-international.jpg', alt: 'Blue Orbit International', width: 160, height: 36 },
+  { src: '/clients/avanti-foods.png', alt: 'Avanti Foods', width: 76, height: 52 },
+  { src: '/clients/wholesome-food.png', alt: 'Wholesome Food', width: 140, height: 48 },
+  { src: '/clients/avanti-technologies.png', alt: 'Avanti Technologies', width: 70, height: 44, dark: true },
+  { src: '/clients/ash-and-noir.png', alt: 'Ash and Noir', width: 118, height: 42, dark: true },
+];
+
 const compareRows = [
   ['Market discovery', 'Manual web research and disconnected lists', 'Usually needs prospecting integrations', 'Growth Center connects ICPs, research, opportunities and CRM intake'],
   ['Buyer and supplier context', 'Separate spreadsheets and notes', 'Standard contact records', 'Trade-fit context across products, markets and commercial profiles'],
@@ -75,6 +83,37 @@ function SectionHeading({ eyebrow, title, body }: { eyebrow: string; title: stri
   );
 }
 
+function ClientLogoStrip() {
+  return (
+    <section className="border-y border-slate-100 bg-slate-50 px-4 py-9 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl text-center">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Trusted by businesses growing across borders</p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-7 sm:gap-10 lg:gap-12">
+          {clientLogos.map((logo) => (
+            logo.dark ? (
+              <div key={logo.alt} className="flex h-12 items-center rounded-xl bg-slate-900 px-4 opacity-75 transition hover:opacity-100">
+                <Image src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} className="max-h-8 w-auto object-contain" />
+              </div>
+            ) : (
+              <Image
+                key={logo.alt}
+                src={logo.src}
+                alt={logo.alt}
+                width={logo.width}
+                height={logo.height}
+                className="max-h-11 w-auto object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0"
+              />
+            )
+          ))}
+        </div>
+        <div className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-semibold text-teal-700">
+          {['Exporters', 'Importers', 'Apparel', 'Packaging', 'Manufacturing', 'Distribution'].map((item) => <span key={item}>{item}</span>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function HomeGrowthExecutionPage() {
   return (
     <SiteShell>
@@ -104,28 +143,21 @@ export function HomeGrowthExecutionPage() {
             </div>
             <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-2 shadow-[0_28px_90px_rgba(15,23,42,.14)]">
               <Image
-                src="/marketing/growth-center.png"
-                alt="Setu Flow Trade Growth Command Center"
+                src="/marketing/dashboard-command-center.png"
+                alt="Setu Flow Trade Command Center dashboard"
                 width={1800}
-                height={900}
+                height={1050}
                 priority
                 className="h-auto w-full rounded-[22px] object-cover object-top"
               />
               <p className="px-5 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                Trade Growth Command Center — opportunities, active pipeline, execution risk and Setu Guru actions
+                Trade Command Center — pipeline value, market activity, execution readiness and Setu Guru actions
               </p>
             </div>
           </div>
         </section>
 
-        <section className="border-y border-slate-100 bg-slate-50 px-4 py-9 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl text-center">
-            <p className="text-sm font-semibold text-slate-800">Built for businesses growing across borders</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-semibold text-teal-700">
-              {['Exporters', 'Importers', 'Apparel', 'Packaging', 'Manufacturing', 'Distribution'].map((item) => <span key={item}>{item}</span>)}
-            </div>
-          </div>
-        </section>
+        <ClientLogoStrip />
 
         <section className="px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
