@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const page = read('src/components/marketing/home-growth-execution-page.tsx');
 const route = read('src/app/page.tsx');
+const heroCss = read('src/app/marketing-hero-tuning.css');
 
 test('homepage leads with import-export growth and execution positioning', () => {
   assert.match(page, /AI-powered Import\/Export Growth and Execution CRM/);
@@ -32,6 +33,11 @@ test('homepage keeps the value-loss section readable and isolated from the video
   assert.match(page, /bg-slate-50\/70/);
   assert.match(page, /text-slate-950/);
   assert.match(page, /text-slate-600/);
+});
+
+test('homepage uses the official Setu Guru avatar asset', () => {
+  assert.match(heroCss, /\/setu-guru\/guru-avatar-128\.png/);
+  assert.match(heroCss, /Homepage Setu Guru preview must use the real brand avatar/);
 });
 
 test('homepage keeps industry specialization and comparison visible', () => {
