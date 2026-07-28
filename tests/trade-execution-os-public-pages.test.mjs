@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const home = read('src/components/marketing/home-growth-execution-page.tsx');
 const pages = read('src/components/marketing/trade-execution-os-pages.tsx');
+const platformTour = read('src/components/marketing/trade-execution-platform-tour-page.tsx');
 const platformRoute = read('src/app/platform/page.tsx');
 const solutionsRoute = read('src/app/solutions/page.tsx');
 const compareRoute = read('src/app/compare/page.tsx');
@@ -21,16 +22,37 @@ test('homepage presents the five layers as one connected Trade Execution OS', ()
 });
 
 test('supporting routes use dedicated Trade Execution OS pages', () => {
-  assert.match(platformRoute, /TradeExecutionPlatformPage/);
+  assert.match(platformRoute, /TradeExecutionPlatformTourPage/);
   assert.match(solutionsRoute, /TradeExecutionSolutionsPage/);
   assert.match(compareRoute, /TradeExecutionComparePage/);
   assert.match(guruRoute, /TradeExecutionGuruPage/);
 });
 
-test('platform page explains the connected architecture and commercial spine', () => {
-  assert.match(pages, /One operating system for/);
-  assert.match(pages, /One record\. Nothing re-entered between stages\./);
-  assert.match(pages, /The system keeps moving after the quote is accepted\./);
+test('platform page is a screenshot-led product tour rather than a second homepage', () => {
+  assert.match(platformTour, /Product tour/);
+  assert.match(platformTour, /See how Setu Flow moves work from opportunity to dispatch\./);
+  assert.match(platformTour, /Platform tour navigation/);
+  assert.match(platformTour, /Start the Tour/);
+  assert.match(platformTour, /Build the pipeline before you manage it\./);
+  assert.match(platformTour, /Turn every buyer and supplier into a working relationship\./);
+  assert.match(platformTour, /Control pricing, terms and approvals/);
+  assert.match(platformTour, /The workflow continues after the quote is accepted\./);
+  assert.match(platformTour, /Know what is happening, why it matters and what should happen next\./);
+  for (const asset of [
+    '/marketing/growth-center.png',
+    '/marketing/follow-up-queue.png',
+    '/marketing/quote-workflow.png',
+    '/marketing/ss-documents.jpg',
+    '/marketing/ss-orders.jpg',
+  ]) assert.match(platformTour, new RegExp(asset.replaceAll('/', '\\/').replace('.', '\\.')));
+  assert.doesNotMatch(platformTour, /Built for every trade business/);
+});
+
+test('home remains the category and industry story', () => {
+  assert.match(home, /The Trade/);
+  assert.match(home, /Built for every trade business/);
+  assert.match(home, /A CRM tracks the deal/);
+  assert.doesNotMatch(home, /Platform tour navigation/);
 });
 
 test('solutions page keeps international trade primary and adds industry execution depth', () => {
