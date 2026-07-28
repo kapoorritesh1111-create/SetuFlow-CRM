@@ -1,5 +1,5 @@
-import { HomeMarketingPage } from '@/components/marketing/public-pages';
+import { HomeGrowthExecutionPage } from '@/components/marketing/home-growth-execution-page';
 
 export default function HomePage() {
-  return <HomeMarketingPage />;
+  return <HomeGrowthExecutionPage />;
 }
