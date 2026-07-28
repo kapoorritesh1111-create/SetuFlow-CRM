@@ -1,5 +1,5 @@
-import { TradeExecutionPlatformPage } from '@/components/marketing/trade-execution-os-pages';
+import { TradeExecutionPlatformTourPage } from '@/components/marketing/trade-execution-platform-tour-page';
 
 export default function PlatformPage() {
-  return <TradeExecutionPlatformPage />;
+  return <TradeExecutionPlatformTourPage />;
 }
