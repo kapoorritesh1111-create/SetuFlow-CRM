@@ -5,20 +5,27 @@ import fs from 'node:fs';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const page = read('src/components/marketing/home-growth-execution-page.tsx');
 const route = read('src/app/page.tsx');
-const heroCss = read('src/app/marketing-hero-tuning.css');
 
-test('homepage leads with import-export growth and execution positioning', () => {
-  assert.match(page, /AI-powered Import\/Export Growth and Execution CRM/);
-  assert.match(page, /Find global opportunities\./);
-  assert.match(page, /Convert buyers\./);
-  assert.match(page, /Execute every order\./);
-  assert.match(page, /Setu Flow Growth Center/);
-  assert.match(page, /AI support from market discovery to final dispatch/);
+const industryAssets = [
+  'exporters.svg',
+  'importers-sourcing.svg',
+  'apparel.svg',
+  'packaging.svg',
+  'manufacturing.svg',
+  'distribution.svg',
+];
+
+test('homepage leads with Trade Execution OS positioning', () => {
+  assert.match(page, /AI-powered Trade Execution OS/);
+  assert.match(page, /The Trade/);
+  assert.match(page, /Execution/);
+  assert.match(page, /Find opportunities\. Win buyers\. Execute every order\./);
+  assert.match(page, /market discovery, buyer and supplier relationships, quotations, approvals, documents, orders and dispatch/);
 });
 
-test('homepage hero uses the main dashboard and verified client proof', () => {
+test('homepage hero uses the Trade Execution Command Center and verified client proof', () => {
   assert.match(page, /\/marketing\/dashboard-command-center\.png/);
-  assert.match(page, /Trade Command Center — pipeline value, market activity, execution readiness and Setu Guru actions/);
+  assert.match(page, /Setu Flow Trade Execution Command Center/);
   assert.match(page, /Trusted by businesses growing across borders/);
   assert.match(page, /\/clients\/blue-orbit-international\.jpg/);
   assert.match(page, /\/clients\/avanti-foods\.png/);
@@ -27,28 +34,29 @@ test('homepage hero uses the main dashboard and verified client proof', () => {
   assert.doesNotMatch(page, /\/clients\/avanti-technologies\.png/);
 });
 
-test('homepage keeps the value-loss section readable and isolated from the video hero', () => {
-  assert.match(page, /Where international growth and execution break down\./);
-  assert.match(page, /<section className="bg-white px-4 py-16/);
-  assert.match(page, /bg-slate-50\/70/);
-  assert.match(page, /text-slate-950/);
-  assert.match(page, /text-slate-600/);
+test('homepage presents the full trade execution journey and operating layers', () => {
+  for (const label of ['Discover', 'Capture', 'Convert', 'Quote', 'Approve', 'Execute', 'Dispatch', 'Grow']) assert.match(page, new RegExp(label));
+  for (const layer of ['Growth Intelligence', 'Trade CRM', 'Commercial Operations', 'Trade Execution', 'Intelligence & Control']) assert.match(page, new RegExp(layer));
+  assert.match(page, /Your CRM ends at the deal/);
+  assert.match(page, /Setu Flow runs the trade/);
 });
 
-test('homepage uses the official Setu Guru avatar asset', () => {
-  assert.match(heroCss, /\/setu-guru\/guru-avatar-128\.png/);
-  assert.match(heroCss, /Homepage Setu Guru preview must use the real brand avatar/);
+test('homepage ships one local branded visual for every industry', () => {
+  for (const asset of industryAssets) {
+    assert.match(page, new RegExp(`/marketing/industries/${asset.replace('.', '\\.')}`));
+    assert.equal(fs.existsSync(`public/marketing/industries/${asset}`), true, `${asset} must exist`);
+  }
+  for (const industry of ['Exporters', 'Importers & Sourcing', 'Apparel', 'Packaging', 'Manufacturing', 'Distribution']) assert.match(page, new RegExp(industry.replace('&', '&')));
 });
 
-test('homepage keeps industry specialization and comparison visible', () => {
-  assert.match(page, /Built for international trade\. Configured for your industry\./);
-  assert.match(page, /Apparel/);
-  assert.match(page, /Packaging/);
-  assert.match(page, /Distribution/);
-  assert.match(page, /Where generic CRMs stop, Setu Flow keeps global trade moving/);
-  assert.match(page, /View Full Comparison/);
+test('homepage uses official Setu Guru branding and preserves the CRM comparison', () => {
+  assert.match(page, /\/setu-guru\/guru-avatar-256\.png/);
+  assert.match(page, /AI intelligence across every stage of trade/);
+  assert.match(page, /A CRM tracks the deal/);
+  assert.match(page, /Setu Flow executes the trade/);
+  assert.match(page, /Setu Flow — Trade Execution OS/);
 });
 
-test('root route renders the new marketing homepage', () => {
+test('root route renders the marketing homepage', () => {
   assert.match(route, /HomeGrowthExecutionPage/);
 });
