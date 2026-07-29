@@ -22,8 +22,10 @@ test('Core Academy uses isolated public route, API, progress storage, and screen
   assert.match(page, /isAuthenticated/);
   assert.match(aliasPage, /redirect\('\/academy'\)/);
   assert.match(client, /Sign in to sync/);
-  assert.match(client, /step\.startRoute \|\| step\.route/);
+  assert.match(client, /item\.startRoute \|\| item\.route/);
   assert.match(client, /CoreAcademyScreenshot/);
+  assert.match(client, /Test Center/);
+  assert.match(client, /Pass|pass/);
   assert.doesNotMatch(client, /replace\('\[buyerLeadId\]'/);
   assert.match(screenshot, /CORE_ACADEMY_SCREENSHOT_BASE_PATH = '\/academy\/core\/screenshots'/);
   assert.match(screenshot, /onError=\{\(\) => setIsMissing\(true\)\}/);
@@ -31,8 +33,12 @@ test('Core Academy uses isolated public route, API, progress storage, and screen
   assert.match(screenshotReadme, /ACADEMY-001-global-navigation\.png/);
   assert.match(api, /core_academy_progress/);
   assert.match(content, /ACADEMY-001-global-navigation\.png/);
-  assert.match(content, /ACADEMY-044-setu-guru-supplier-event-tools\.png/);
-  assert.match(content, /startRoute: '\/leads\?mode=buyers'/);
+  assert.match(content, /ACADEMY-049-my-card-share\.png/);
+  assert.match(content, /instructions: string\[\]/);
+  assert.match(content, /'\/growth-agent'/);
+  assert.match(content, /'\/contact-exchange\/vcard'/);
+  assert.match(content, /'\/price-lists'/);
+  assert.match(content, /'\/documents'/);
   assert.match(migration, /create table if not exists public\.core_academy_progress/);
   assert.doesNotMatch(migration, /alter table public\.packaging_/);
   assert.doesNotMatch(nextConfig, /source: '\/academy'[\s\S]*destination: '\/marketing\/guides\/setu_flow_packaging_workspace_guide\.html'/);
@@ -41,13 +47,14 @@ test('Core Academy uses isolated public route, API, progress storage, and screen
   assert.match(middleware, /'\/academy'/);
 });
 
-test('Academy clickable routes contain no unresolved record placeholders', async () => {
-  const content = await read('src/features/academy/core-academy-content.ts');
-  const dynamicRoutes = [...content.matchAll(/route: '([^']*\[[^']+)'(?:, startRoute: '([^']+)')?/g)];
-  assert.ok(dynamicRoutes.length > 0);
-  for (const [, route, startRoute] of dynamicRoutes) {
-    assert.ok(startRoute, `Dynamic teaching route ${route} must define a safe startRoute`);
-    assert.doesNotMatch(startRoute, /\[[^\]]+\]/);
-    assert.doesNotMatch(startRoute, /\/\//);
-  }
+test('Academy routes use real entry points and preserve safe starts for dynamic records', async () => {
+  const [content, growthCompatibility] = await Promise.all([
+    read('src/features/academy/core-academy-content.ts'),
+    read('src/app/(app)/growth-center/page.tsx'),
+  ]);
+
+  assert.doesNotMatch(content, /step\([^\n]+title[^\n]+, '\/growth-center'/);
+  assert.match(content, /startRoute: '\/leads\?mode=buyers'/);
+  assert.match(content, /startRoute: '\/leads\?mode=suppliers'/);
+  assert.match(growthCompatibility, /redirect\('\/growth-agent'\)/);
 });
