@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, CircleAlert, Compass, Database, ExternalLink, PencilLine, Plus, RefreshCcw, ShieldCheck, Sparkles } from 'lucide-react';
 
 import { ExternalDiscoveryCampaignBuilder } from '@/features/setu-guru/external-discovery-campaign-builder';
@@ -74,6 +75,47 @@ const TONE_CLASS: Record<string, string> = {
   warning: 'bg-warning-bg text-warning-fg',
   danger: 'bg-danger-bg text-danger-fg',
 };
+
+function CampaignModal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-slate-950/70 p-2 backdrop-blur-sm sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      data-campaign-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="max-h-[calc(100vh-1rem)] min-h-[70vh] w-full max-w-[1500px] overflow-y-auto rounded-2xl bg-surface-1 shadow-2xl sm:max-h-[calc(100vh-2rem)] [&>section]:mt-0 [&>section>header]:sticky [&>section>header]:top-0 [&>section>header]:z-20"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 function Metric({ label, value, detail }: { label: string; value: string | number; detail: string }) {
   return <div className={cn(workspaceMetricClass, 'p-3')}><p className="text-caption uppercase text-content-muted">{label}</p><p className="mt-2 text-2xl font-medium text-content-primary">{value}</p><p className="mt-1 text-[11px] text-content-muted">{detail}</p></div>;
@@ -203,10 +245,14 @@ export function ExternalDiscoveryWorkspace({ campaigns, opportunities, profiles,
     setEditingCampaignId(null);
   }
 
+  function openNewCampaign() {
+    setEditingCampaignId(null);
+    setShowBuilder(true);
+  }
+
   function openEditor(campaignId: string) {
     setShowBuilder(false);
     setEditingCampaignId(campaignId);
-    window.requestAnimationFrame(() => document.querySelector('[aria-label^="Edit "]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
   function openResults() {
@@ -214,10 +260,12 @@ export function ExternalDiscoveryWorkspace({ campaigns, opportunities, profiles,
   }
 
   return <section className="space-y-4" aria-label="Guided External Discovery workspace">
-    <div className={cn(workspacePanelClass, 'overflow-hidden shadow-sm')}><div className="flex flex-col gap-4 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 p-5 text-white lg:flex-row lg:items-start lg:justify-between"><div><div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-white/65"><Sparkles className="h-4 w-4" />AI-powered external growth</div><h1 className="mt-2 text-2xl font-medium">Find new companies outside your CRM with a confirmed scope</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">See exactly what market, product, direction, company type, source strategy, and evidence requirements will be researched before you explicitly start a provider run.</p></div><button type="button" onClick={() => { setEditingCampaignId(null); setShowBuilder((value) => !value); }} className={cn('inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-ctl px-4 text-sm font-medium', workspacePrimaryButtonClass)}><Plus className="h-4 w-4" />{showBuilder ? 'Hide campaign setup' : 'New Growth campaign'}</button></div><div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Campaigns" value={campaignRows.length} detail="Saved research scopes" /><Metric label="Ready to research" value={metrics.ready} detail="Confirmed by a user" /><Metric label="External prospects" value={opportunityRows.length} detail="Outside CRM until approved" /><Metric label="In review" value={metrics.reviewing} detail="Human review underway" /><Metric label="Converted" value={metrics.converted} detail="Explicit CRM conversions" /></div><div className="border-t border-line px-4 py-3"><div className="grid gap-3 md:grid-cols-2"><div className="flex items-start gap-3 rounded-card border border-line bg-surface-2 p-3 text-sm"><Database className="h-5 w-5 text-brand-700" /><div><p className="font-medium text-content-primary">Internal CRM matches</p><p className="mt-1 text-xs text-content-muted">Existing Setu Flow records. Opened and counted separately.</p></div></div><div className="flex items-start gap-3 rounded-card border border-line bg-surface-2 p-3 text-sm"><Compass className="h-5 w-5 text-brand-700" /><div><p className="font-medium text-content-primary">External prospects</p><p className="mt-1 text-xs text-content-muted">New source-backed companies outside CRM until approved.</p></div></div></div><div className="mt-3 flex items-start gap-3 rounded-card border border-line bg-surface-2 p-3 text-sm"><ShieldCheck className="h-5 w-5 text-success-fg" /><div><p className="font-medium text-content-primary">Human approval remains required</p><p className="mt-1 text-xs text-content-muted">Research never creates a lead or sends outreach. Conversion, draft approval, sending, and follow-up remain separate explicit actions.</p></div></div></div></div>
-    {showBuilder ? <ExternalDiscoveryCampaignBuilder profiles={profiles} crmOpportunities={crmOpportunities} onCreated={created} onCancel={() => setShowBuilder(false)} /> : null}
-    {editingCampaign ? <ExternalDiscoveryCampaignEditor campaign={editingCampaign} profiles={profiles} onSaved={saved} onCancel={() => setEditingCampaignId(null)} /> : null}
-    {!campaignRows.length && !showBuilder ? <div className={cn(workspacePanelClass, 'grid min-h-52 place-items-center p-8 text-center')}><div><Compass className="mx-auto h-9 w-9 text-content-muted" /><p className="mt-3 text-sm font-medium text-content-primary">No campaign created</p><p className="mt-1 text-xs text-content-muted">Start a guided campaign and confirm the market, product, direction, and target companies.</p><button type="button" onClick={() => setShowBuilder(true)} className={cn('mt-4 inline-flex min-h-9 items-center gap-2 rounded-ctl px-3 text-xs font-medium', workspacePrimaryButtonClass)}><Plus className="h-3.5 w-3.5" />Start a guided campaign</button></div></div> : null}
+    <div className={cn(workspacePanelClass, 'overflow-hidden shadow-sm')}><div className="flex flex-col gap-4 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 p-5 text-white lg:flex-row lg:items-start lg:justify-between"><div><div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-white/65"><Sparkles className="h-4 w-4" />AI-powered external growth</div><h1 className="mt-2 text-2xl font-medium">Find new companies outside your CRM with a confirmed scope</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">See exactly what market, product, direction, company type, source strategy, and evidence requirements will be researched before you explicitly start a provider run.</p></div><button type="button" onClick={openNewCampaign} className={cn('inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-ctl px-4 text-sm font-medium', workspacePrimaryButtonClass)}><Plus className="h-4 w-4" />New Growth campaign</button></div><div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Campaigns" value={campaignRows.length} detail="Saved research scopes" /><Metric label="Ready to research" value={metrics.ready} detail="Confirmed by a user" /><Metric label="External prospects" value={opportunityRows.length} detail="Outside CRM until approved" /><Metric label="In review" value={metrics.reviewing} detail="Human review underway" /><Metric label="Converted" value={metrics.converted} detail="Explicit CRM conversions" /></div><div className="border-t border-line px-4 py-3"><div className="grid gap-3 md:grid-cols-2"><div className="flex items-start gap-3 rounded-card border border-line bg-surface-2 p-3 text-sm"><Database className="h-5 w-5 text-brand-700" /><div><p className="font-medium text-content-primary">Internal CRM matches</p><p className="mt-1 text-xs text-content-muted">Existing Setu Flow records. Opened and counted separately.</p></div></div><div className="flex items-start gap-3 rounded-card border border-line bg-surface-2 p-3 text-sm"><Compass className="h-5 w-5 text-brand-700" /><div><p className="font-medium text-content-primary">External prospects</p><p className="mt-1 text-xs text-content-muted">New source-backed companies outside CRM until approved.</p></div></div></div><div className="mt-3 flex items-start gap-3 rounded-card border border-line bg-surface-2 p-3 text-sm"><ShieldCheck className="h-5 w-5 text-success-fg" /><div><p className="font-medium text-content-primary">Human approval remains required</p><p className="mt-1 text-xs text-content-muted">Research never creates a lead or sends outreach. Conversion, draft approval, sending, and follow-up remain separate explicit actions.</p></div></div></div></div>
+
+    {showBuilder ? <CampaignModal title="Create External Discovery campaign" onClose={() => setShowBuilder(false)}><ExternalDiscoveryCampaignBuilder profiles={profiles} crmOpportunities={crmOpportunities} onCreated={created} onCancel={() => setShowBuilder(false)} /></CampaignModal> : null}
+    {editingCampaign ? <CampaignModal title={`Edit ${editingCampaign.name}`} onClose={() => setEditingCampaignId(null)}><ExternalDiscoveryCampaignEditor campaign={editingCampaign} profiles={profiles} onSaved={saved} onCancel={() => setEditingCampaignId(null)} /></CampaignModal> : null}
+
+    {!campaignRows.length ? <div className={cn(workspacePanelClass, 'grid min-h-52 place-items-center p-8 text-center')}><div><Compass className="mx-auto h-9 w-9 text-content-muted" /><p className="mt-3 text-sm font-medium text-content-primary">No campaign created</p><p className="mt-1 text-xs text-content-muted">Start a guided campaign and confirm the market, product, direction, and target companies.</p><button type="button" onClick={openNewCampaign} className={cn('mt-4 inline-flex min-h-9 items-center gap-2 rounded-ctl px-3 text-xs font-medium', workspacePrimaryButtonClass)}><Plus className="h-3.5 w-3.5" />Start a guided campaign</button></div></div> : null}
     <div className="space-y-4">{campaignRows.map((campaign) => <CampaignCard key={campaign.id} campaign={campaign} profile={profiles.find((profile) => profile.id === campaign.icp_profile_id)} onRefresh={refreshDiscovery} onSelectResults={openResults} onEdit={() => openEditor(campaign.id)} />)}</div>
     <div ref={setResultsAnchor}><PremiumExternalDiscoveryResults opportunities={opportunityRows} campaigns={campaignRows} /></div>
     {!opportunityRows.length && campaignRows.length ? <div className={cn(workspacePanelClass, 'p-6 text-center')}><ExternalLink className="mx-auto h-7 w-7 text-content-muted" /><p className="mt-2 text-sm font-medium text-content-primary">No external prospect rows yet</p><p className="mt-1 text-xs text-content-muted">Use the campaign status and diagnostics above to see whether research is ready, running, completed with no qualified matches, or blocked by provider configuration.</p></div> : null}
