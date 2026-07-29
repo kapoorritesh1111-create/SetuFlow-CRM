@@ -78,7 +78,7 @@
 
 .setu-shared-hero-shell--home > main > section:first-child > div > p,
 .setu-shared-hero-shell--home > main > section:first-child > div > div:first-child p {
-  color: rgba(255,255,255,0.76) !important;
+  color: rgba(255,255,255,0.82) !important;
 }
 
 .setu-shared-hero-shell--home > main > section:first-child > div > p:first-child,
@@ -89,24 +89,6 @@
 .setu-shared-hero-shell--home > main > section:first-child > div > div:first-child a:first-of-type,
 .setu-shared-hero-shell--home > main > section:first-child > div > a:first-of-type {
   box-shadow: 0 18px 46px rgba(13,148,136,0.30);
-}
-
-/* Homepage Setu Guru preview must use the real brand avatar, not a generic sparkle icon. */
-.setu-shared-hero-shell--home > main > section:nth-of-type(7) > div > div:nth-child(2) > div:first-child > span {
-  width: 48px !important;
-  height: 48px !important;
-  flex: 0 0 48px;
-  border-radius: 16px !important;
-  background-color: transparent !important;
-  background-image: url('/setu-guru/guru-avatar-128.png') !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-size: contain !important;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
-}
-
-.setu-shared-hero-shell--home > main > section:nth-of-type(7) > div > div:nth-child(2) > div:first-child > span > svg {
-  display: none !important;
 }
 
 .setu-shared-hero-shell--trial > main > section:first-child > video {
@@ -132,13 +114,13 @@
 
   .setu-shared-hero-background__overlay {
     background:
-      linear-gradient(180deg, rgba(4,16,31,0.86) 0%, rgba(4,16,31,0.72) 52%, rgba(4,16,31,0.58) 100%),
+      linear-gradient(180deg, rgba(4,16,31,0.88) 0%, rgba(4,16,31,0.76) 52%, rgba(4,16,31,0.64) 100%),
       radial-gradient(circle at 60% 16%, rgba(52,179,168,0.22), transparent 40%) !important;
   }
 
   .setu-shared-hero-background__overlay--strong {
     background:
-      linear-gradient(180deg, rgba(6,30,52,0.88) 0%, rgba(6,30,52,0.76) 52%, rgba(6,30,52,0.64) 100%),
+      linear-gradient(180deg, rgba(6,30,52,0.90) 0%, rgba(6,30,52,0.80) 52%, rgba(6,30,52,0.68) 100%),
       radial-gradient(circle at 60% 16%, rgba(52,179,168,0.22), transparent 40%) !important;
   }
 }
