@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
-import { runDiscoveryJob } from '@/lib/setu-guru/external-discovery';
+import { DiscoveryExecutionError, runConfirmedDiscoveryJob } from '@/lib/setu-guru/external-discovery-runner';
 import { getDefaultDiscoveryProvider, listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const CreateJobSchema = z.object({
   campaignId: z.string().uuid(),
   providerKey: z.string().trim().min(2).max(80).optional(),
-});
+}).strict();
 
 async function organizationId() {
   const workspace = await requireWorkspace();
@@ -58,10 +58,17 @@ export async function POST(request: NextRequest) {
     const requested = parsed.data.providerKey;
     const configured = listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured);
     const provider = configured ?? getDefaultDiscoveryProvider();
-    const result = await runDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
+    const result = await runConfirmedDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
     return NextResponse.json({ result: { ...result, providerKey: provider.key, providerLabel: provider.label } }, { status: 201 });
   } catch (error) {
-    console.error('[external-discovery-jobs] run failed', { orgId, campaignId: parsed.data.campaignId, providerKey: parsed.data.providerKey, error: error instanceof Error ? error.message : String(error) });
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'External Discovery job could not be run.' }, { status: 500 });
+    const status = error instanceof DiscoveryExecutionError ? error.status : 500;
+    const outcome = error instanceof DiscoveryExecutionError ? error.outcome : 'failed';
+    const details = error instanceof DiscoveryExecutionError ? error.details : undefined;
+    console.error('[external-discovery-jobs] run failed', { orgId, campaignId: parsed.data.campaignId, providerKey: parsed.data.providerKey, status, outcome, error: error instanceof Error ? error.message : String(error) });
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'External Discovery job could not be run.',
+      outcome,
+      details,
+    }, { status });
   }
 }
