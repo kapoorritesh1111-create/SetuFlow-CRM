@@ -34,10 +34,18 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    // Academy hostname routing is intentionally handled in middleware.ts so
-    // /academy can resolve to Core everywhere except the exact Packaging host.
     return {
       beforeFiles: [
+        {
+          source: '/academy',
+          has: [
+            {
+              type: 'host',
+              value: 'packaging\\.setuflowcrm\\.com',
+            },
+          ],
+          destination: '/guides/setu_flow_packaging_workspace_guide.html',
+        },
         {
           source: '/api/setu-guru/org-search',
           destination: '/api/setu-guru/org-search-v2',

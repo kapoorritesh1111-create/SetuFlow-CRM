@@ -1,0 +1,118 @@
+.page {
+  width: 100%;
+  min-width: 0;
+}
+
+.page > div {
+  width: 100%;
+  min-width: 0;
+}
+
+.page > div > header > div,
+.page > div > header + div,
+.page > div > footer > div {
+  width: min(100%, 2400px);
+  max-width: 2400px !important;
+  margin-inline: auto;
+}
+
+.page > div > header + div {
+  grid-template-columns: minmax(228px, 270px) minmax(0, 1fr) !important;
+}
+
+.page main {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+/* Keep workflow instructions and screenshots content-sized instead of
+   stretching the screenshot panel into a large empty column. */
+.page details article > div {
+  align-items: start;
+}
+
+.page details article > div > div:last-child {
+  width: 100%;
+  align-self: start;
+}
+
+.page details article > div > div:last-child > figure,
+.page details article > div > div:last-child > div {
+  width: 100%;
+}
+
+/* The connected roadmap should reflow rather than compress five cards into
+   narrow columns at ordinary desktop widths. */
+.page [class*="xl:grid-cols-5"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.page [class*="xl:grid-cols-5"] > div > div[aria-hidden="true"] {
+  display: none !important;
+}
+
+@media (min-width: 1500px) {
+  .page details article > div {
+    grid-template-columns: minmax(0, 1.35fr) minmax(380px, 0.65fr) !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .page [class*="xl:grid-cols-5"] {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+
+  .page [class*="xl:grid-cols-5"] > div > div[aria-hidden="true"] {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 1900px) {
+  .page > div > header > div,
+  .page > div > header + div,
+  .page > div > footer > div {
+    padding-inline: clamp(2rem, 2vw, 3.5rem);
+  }
+
+  .page > div > header + div {
+    grid-template-columns: minmax(250px, 290px) minmax(0, 1fr) !important;
+  }
+
+  .page details article > div {
+    grid-template-columns: minmax(0, 1.55fr) minmax(440px, 0.7fr) !important;
+  }
+}
+
+@media (max-width: 1499px) {
+  .page details article > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .page details article > div > div:last-child {
+    border-left-width: 0 !important;
+    border-top-width: 1px !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .page [class*="xl:grid-cols-5"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1099px) {
+  .page > div > header + div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .page aside {
+    position: static !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .page [class*="xl:grid-cols-5"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
