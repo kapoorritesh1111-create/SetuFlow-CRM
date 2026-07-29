@@ -13,7 +13,7 @@ import { useSearchParams } from 'next/navigation';
 import { CalendarDays, Compass, History, LayoutDashboard, PackageCheck, Search, Tags } from 'lucide-react';
 import { AuditHistoryPanel } from '@/features/setu-guru/audit-history-panel';
 import { CrmMatchesWorkspace } from '@/features/setu-guru/crm-matches-workspace';
-import { ExternalDiscoveryWorkspace, type DiscoveryCampaign, type ExternalOpportunity } from '@/features/setu-guru/external-discovery-workspace';
+import { ExternalDiscoveryWorkspace, type DiscoveryCampaign, type ExternalOpportunity } from '@/features/setu-guru/external-discovery-workspace-guided';
 import { GrowthCenter as GrowthCenterRedesign } from '@/features/setu-guru/growth-center-redesign';
 import { TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-guru/growth-center-workspaces';
 import { PackagingOperationsWorkspace, type PackagingOperationsCategory } from '@/features/setu-guru/packaging-operations-workspace';
@@ -106,7 +106,7 @@ export function GrowthCenter(props: Props) {
       {workspace === 'operations' && operationsView === 'packaging' && props.packagingEnabled ? <PackagingOperationsWorkspace recommendations={props.recommendations} initialCategory={requestedPackagingCategory} /> : null}
       {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} currentUserId={props.currentUserId} profiles={props.icpProfiles ?? []} campaigns={props.crmMatchCampaigns ?? []} /> : null}
       {workspace === 'operations' && operationsView === 'trade-events' ? <TradeEventWorkspace tradeEvents={tradeEvents} recommendations={props.recommendations} /> : null}
-      {workspace === 'operations' && operationsView === 'external-discovery' ? <ExternalDiscoveryWorkspace campaigns={props.discoveryCampaigns ?? []} opportunities={props.externalOpportunities ?? []} /> : null}
+      {workspace === 'operations' && operationsView === 'external-discovery' ? <ExternalDiscoveryWorkspace campaigns={props.discoveryCampaigns ?? []} opportunities={props.externalOpportunities ?? []} profiles={props.icpProfiles ?? []} crmOpportunities={opportunities} /> : null}
 
       {workspace === 'operations' ? <section className="mt-5 space-y-3" aria-label="Growth history"><button type="button" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory} className={cn(workspacePanelClass, 'flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500')}><span className="flex min-w-0 items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-card bg-surface-2 text-brand-700"><History className="h-4 w-4" /></span><span className="min-w-0"><span className="block text-sm font-medium text-content-primary">History and audit</span><span className="mt-0.5 block text-xs text-content-muted">{auditItems.length} recorded Setu Guru actions and approvals</span></span></span><span className="text-xs font-medium text-brand-700">{showHistory ? 'Hide' : 'View'}</span></button>{showHistory ? <div className={cn(workspacePanelClass, 'p-4 motion-safe:animate-in motion-safe:fade-in')}><AuditHistoryPanel items={auditItems} /></div> : null}</section> : null}
     </>
