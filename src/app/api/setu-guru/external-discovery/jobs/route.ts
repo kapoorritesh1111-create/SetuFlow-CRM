@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { DiscoveryExecutionError, runConfirmedDiscoveryJob as runDiscoveryJob } from '@/lib/setu-guru/external-discovery-runner';
 import { getDefaultDiscoveryProvider, listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
+import { openAiReliableProvider } from '@/lib/setu-guru/discovery-providers/openai-reliable';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,12 @@ const CreateJobSchema = z.object({
 async function organizationId() {
   const workspace = await requireWorkspace();
   return workspace.organization?.id ?? null;
+}
+
+function automaticProvider() {
+  // OpenAI is the primary research provider. It performs a bounded structured-output retry
+  // and does not fall through to an unavailable Anthropic model after malformed output.
+  return openAiReliableProvider.configured ? openAiReliableProvider : getDefaultDiscoveryProvider();
 }
 
 export async function GET(request: NextRequest) {
@@ -39,7 +46,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     if (error) throw error;
     const providers = listDiscoveryProviders().map((provider) => ({ key: provider.key, label: provider.label, configured: provider.configured, capabilities: provider.capabilities }));
-    const defaultProvider = getDefaultDiscoveryProvider();
+    const defaultProvider = automaticProvider();
     return NextResponse.json({ jobs: data ?? [], providers, defaultProviderKey: defaultProvider.key, licensedProviderReady: defaultProvider.key !== 'manual' && defaultProvider.configured });
   } catch (error) {
     console.error('[external-discovery-jobs] list failed', { orgId, campaignId, error: error instanceof Error ? error.message : String(error) });
@@ -59,9 +66,9 @@ export async function POST(request: NextRequest) {
     const explicitlyRequested = requested && !['manual', 'auto'].includes(requested)
       ? listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured)
       : undefined;
-    // Legacy UI controls submit "manual". Treat that as automatic provider selection so a configured
-    // OpenAI web-search provider remains preferred, with Anthropic and Exa behind the provider boundary.
-    const provider = explicitlyRequested ?? getDefaultDiscoveryProvider();
+    // Automatic selection prefers the reliable OpenAI Responses API web-search provider.
+    // Campaign research remains an explicit user action and never creates a lead or sends outreach.
+    const provider = explicitlyRequested ?? automaticProvider();
     const result = await runDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
     return NextResponse.json({ result: { ...result, providerKey: provider.key, providerLabel: provider.label } }, { status: 201 });
   } catch (error) {
