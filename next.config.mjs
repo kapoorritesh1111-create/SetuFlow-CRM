@@ -12,11 +12,6 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/marketing/guides/setu_flow_packaging_workspace_guide.html',
-        destination: 'https://packaging.setuflowcrm.com/academy',
-        permanent: true,
-      },
-      {
         source: '/guides/setu_flow_packaging_workspace_guide.html',
         destination: 'https://packaging.setuflowcrm.com/academy',
         permanent: true,
@@ -44,7 +39,7 @@ const nextConfig = {
               value: 'packaging\\.setuflowcrm\\.com',
             },
           ],
-          destination: '/guides/setu_flow_packaging_workspace_guide.html',
+          destination: '/marketing/guides/setu_flow_packaging_workspace_guide.html',
         },
         {
           source: '/api/setu-guru/org-search',
