@@ -41,10 +41,30 @@ test('Core Academy uses isolated public route, API, progress storage, and screen
   assert.match(content, /'\/documents'/);
   assert.match(migration, /create table if not exists public\.core_academy_progress/);
   assert.doesNotMatch(migration, /alter table public\.packaging_/);
-  assert.doesNotMatch(nextConfig, /source: '\/academy'[\s\S]*destination: '\/marketing\/guides\/setu_flow_packaging_workspace_guide\.html'/);
-  assert.match(middleware, /host === 'packaging\.setuflowcrm\.com'/);
+  assert.match(nextConfig, /type: 'host'/);
+  assert.match(nextConfig, /packaging\\\\\.setuflowcrm\\\\\.com/);
+  assert.match(nextConfig, /destination: '\/guides\/setu_flow_packaging_workspace_guide\.html'/);
+  assert.match(middleware, /PACKAGING_ACADEMY_HOST = 'packaging\.setuflowcrm\.com'/);
+  assert.match(middleware, /requestHostCandidates/);
+  assert.match(middleware, /isPackagingAcademyHost/);
+  assert.match(middleware, /X-Setu-Academy', 'packaging'/);
+  assert.match(middleware, /X-Setu-Academy', 'core'/);
   assert.match(middleware, /pathname === '\/packaging-academy'/);
-  assert.match(middleware, /'\/academy'/);
+});
+
+test('Packaging and Core Academy remain separate by hostname', async () => {
+  const [nextConfig, middleware] = await Promise.all([
+    read('next.config.mjs'),
+    read('middleware.ts'),
+  ]);
+
+  assert.match(nextConfig, /source: '\/academy'[\s\S]*type: 'host'[\s\S]*packaging\\\\\.setuflowcrm\\\\\.com[\s\S]*destination: '\/guides\/setu_flow_packaging_workspace_guide\.html'/);
+  assert.match(middleware, /if \(pathname === '\/academy' && packagingHost\)/);
+  assert.match(middleware, /NextResponse\.rewrite\(new URL\(PACKAGING_ACADEMY_PATH, request\.url\)/);
+  assert.match(middleware, /if \(pathname === '\/academy' \|\| pathname === '\/core-academy'\)/);
+  assert.match(middleware, /NextResponse\.next\(\{ request: \{ headers: requestHeaders \} \}\)/);
+  assert.match(middleware, /https:\/\/packaging\.setuflowcrm\.com\/academy/);
+  assert.match(middleware, /https:\/\/www\.setuflowcrm\.com\/academy/);
 });
 
 test('Academy routes use real entry points and preserve safe starts for dynamic records', async () => {
