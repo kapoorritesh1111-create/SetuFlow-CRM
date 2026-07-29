@@ -1,5 +1,5 @@
-import { SolutionsMarketingPage } from '@/components/marketing/public-pages';
+import { TradeExecutionSolutionsPage } from '@/components/marketing/trade-execution-os-pages';
 
 export default function SolutionsPage() {
-  return <SolutionsMarketingPage />;
+  return <TradeExecutionSolutionsPage />;
 }
