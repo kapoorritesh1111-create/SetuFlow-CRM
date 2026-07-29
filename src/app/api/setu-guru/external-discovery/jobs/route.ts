@@ -20,7 +20,7 @@ async function organizationId() {
 }
 
 function automaticProvider() {
-  // OpenAI is the primary research provider. It performs a bounded structured-output retry
+  // OpenAI web-search provider remains preferred. It performs a bounded structured-output retry
   // and does not fall through to an unavailable Anthropic model after malformed output.
   return openAiReliableProvider.configured ? openAiReliableProvider : getDefaultDiscoveryProvider();
 }
