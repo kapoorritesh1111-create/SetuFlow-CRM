@@ -2,6 +2,7 @@ export type AcademyStep = {
   id: string;
   title: string;
   route: string;
+  startRoute?: string;
   screenshot: string;
   shows: string[];
 };
@@ -13,7 +14,7 @@ export type AcademyModule = {
   steps: AcademyStep[];
 };
 
-export const CORE_ACADEMY_VERSION = '2026.07.29-v1';
+export const CORE_ACADEMY_VERSION = '2026.07.29-v2';
 
 export const coreAcademyModules: AcademyModule[] = [
   {
@@ -47,9 +48,9 @@ export const coreAcademyModules: AcademyModule[] = [
       { id: 'capture-02', title: 'Card and document capture', route: '/contact-exchange/scan', screenshot: 'ACADEMY-010-contact-capture-upload.png', shows: ['Upload area', 'Assist text', 'Source preview', 'Run review extraction'] },
       { id: 'capture-03', title: 'Human review before import', route: '/contact-exchange/scan', screenshot: 'ACADEMY-011-contact-capture-review.png', shows: ['Source beside extracted fields', 'Buyer / Supplier choice', 'Confirm review', 'Create lead'] },
       { id: 'leads-01', title: 'Lead Queue', route: '/leads', screenshot: 'ACADEMY-012-lead-queue.png', shows: ['Saved views', 'Search and filters', 'Critical / Due Today / Active groups', 'Bulk actions'] },
-      { id: 'leads-02', title: 'Buyer Lead Command Center', route: '/leads/[buyerLeadId]', screenshot: 'ACADEMY-013-buyer-command-center.png', shows: ['Buyer profile', 'Real pipeline stages', 'Readiness', 'Next touchpoint', 'Commercial card'] },
-      { id: 'leads-03', title: 'Qualification and mapping', route: '/leads/[buyerLeadId]#qualification', screenshot: 'ACADEMY-014-lead-qualification-mapping.png', shows: ['Categories', 'Products', 'Markets', 'Qualification notes'] },
-      { id: 'leads-04', title: 'Supplier Command Center', route: '/leads/[supplierLeadId]?mode=suppliers', screenshot: 'ACADEMY-015-supplier-command-center.png', shows: ['Supplier journey phases', 'Capability', 'Compliance', 'Cost requests', 'Approval and linked demand'] },
+      { id: 'leads-02', title: 'Buyer Lead Command Center', route: '/leads/[buyerLeadId]', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-013-buyer-command-center.png', shows: ['Buyer profile', 'Real pipeline stages', 'Readiness', 'Next touchpoint', 'Commercial card'] },
+      { id: 'leads-03', title: 'Qualification and mapping', route: '/leads/[buyerLeadId]#qualification', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-014-lead-qualification-mapping.png', shows: ['Categories', 'Products', 'Markets', 'Qualification notes'] },
+      { id: 'leads-04', title: 'Supplier Command Center', route: '/leads/[supplierLeadId]?mode=suppliers', startRoute: '/leads?mode=suppliers', screenshot: 'ACADEMY-015-supplier-command-center.png', shows: ['Supplier journey phases', 'Capability', 'Compliance', 'Cost requests', 'Approval and linked demand'] },
     ],
   },
   {
@@ -57,14 +58,14 @@ export const coreAcademyModules: AcademyModule[] = [
     title: 'Quote Builder, Approval & Sending',
     summary: 'Build a governed quote from the lead, clear send gates, obtain approval where required, and send a tracked customer quote.',
     steps: [
-      { id: 'quote-01', title: 'Quote Builder — Product', route: '/leads/[buyerLeadId]/quote?step=1', screenshot: 'ACADEMY-016-quote-builder-product.png', shows: ['Five-step builder', 'Product / variant selection', 'MOQ', 'Case and unit price'] },
-      { id: 'quote-02', title: 'Quote Builder — Terms', route: '/leads/[buyerLeadId]/quote?step=2', screenshot: 'ACADEMY-017-quote-builder-terms.png', shows: ['Currency', 'FX', 'Pricing type', 'Incoterm and delivery terms'] },
-      { id: 'quote-03', title: 'Quote Builder — Pricing', route: '/leads/[buyerLeadId]/quote?step=3', screenshot: 'ACADEMY-018-quote-builder-pricing.png', shows: ['Locked product context', 'Discount', 'Freight', 'Pricing source and subtotal'] },
-      { id: 'quote-04', title: 'Quote Builder — Review', route: '/leads/[buyerLeadId]/quote?step=4', screenshot: 'ACADEMY-019-quote-builder-review.png', shows: ['Customer preview', 'Line totals', 'Quote total', 'Approval warning'] },
-      { id: 'quote-05', title: 'Quote Builder — Send Gate', route: '/leads/[buyerLeadId]/quote?step=5', screenshot: 'ACADEMY-020-quote-builder-send-gate.png', shows: ['Final checks', 'Blockers', 'Submit for approval', 'Preview PDF and Send Quote'] },
-      { id: 'approval-01', title: 'Approval Queue', route: '/approval-queue', screenshot: 'ACADEMY-021-approval-queue.png', shows: ['Pending request', 'Reason', 'Version', 'Approve and Reject controls'] },
-      { id: 'approval-02', title: 'Approval pending lock', route: '/leads/[buyerLeadId]/quote?step=5', screenshot: 'ACADEMY-022-approval-pending-lock.png', shows: ['Editing locked', 'Approval state', 'Open Approval Queue', 'Disabled Send Quote'] },
-      { id: 'send-01', title: 'Approval to Send confirmation', route: '/approval-send?quoteId=[quoteId]', screenshot: 'ACADEMY-023-approval-send-confirmation.png', shows: ['Approved quote summary', 'Buyer', 'Version', 'Tracked send confirmation'] },
+      { id: 'quote-01', title: 'Quote Builder — Product', route: '/leads/[buyerLeadId]/quote?step=1', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-016-quote-builder-product.png', shows: ['Five-step builder', 'Product / variant selection', 'MOQ', 'Case and unit price'] },
+      { id: 'quote-02', title: 'Quote Builder — Terms', route: '/leads/[buyerLeadId]/quote?step=2', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-017-quote-builder-terms.png', shows: ['Currency', 'FX', 'Pricing type', 'Incoterm and delivery terms'] },
+      { id: 'quote-03', title: 'Quote Builder — Pricing', route: '/leads/[buyerLeadId]/quote?step=3', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-018-quote-builder-pricing.png', shows: ['Locked product context', 'Discount', 'Freight', 'Pricing source and subtotal'] },
+      { id: 'quote-04', title: 'Quote Builder — Review', route: '/leads/[buyerLeadId]/quote?step=4', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-019-quote-builder-review.png', shows: ['Customer preview', 'Line totals', 'Quote total', 'Approval warning'] },
+      { id: 'quote-05', title: 'Quote Builder — Send Gate', route: '/leads/[buyerLeadId]/quote?step=5', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-020-quote-builder-send-gate.png', shows: ['Final checks', 'Blockers', 'Submit for approval', 'Preview PDF and Send Quote'] },
+      { id: 'approval-01', title: 'Approval Queue', route: '/approval-queue', startRoute: '/approval-send', screenshot: 'ACADEMY-021-approval-queue.png', shows: ['Pending request', 'Reason', 'Version', 'Approve and Reject controls'] },
+      { id: 'approval-02', title: 'Approval pending lock', route: '/leads/[buyerLeadId]/quote?step=5', startRoute: '/approval-send', screenshot: 'ACADEMY-022-approval-pending-lock.png', shows: ['Editing locked', 'Approval state', 'Open Approval Queue', 'Disabled Send Quote'] },
+      { id: 'send-01', title: 'Approval to Send confirmation', route: '/approval-send?quoteId=[quoteId]', startRoute: '/approval-send', screenshot: 'ACADEMY-023-approval-send-confirmation.png', shows: ['Approved quote summary', 'Buyer', 'Version', 'Tracked send confirmation'] },
       { id: 'quotes-01', title: 'Quotes lifecycle workspace', route: '/quotes', screenshot: 'ACADEMY-024-quotes-lifecycle-workspace.png', shows: ['Lifecycle filters', 'Customer grouping', 'Recommended action', 'Outcome controls'] },
     ],
   },
@@ -104,9 +105,9 @@ export const coreAcademyModules: AcademyModule[] = [
       { id: 'admin-03', title: 'Markets, pipelines and catalog setup', route: '/admin/markets', screenshot: 'ACADEMY-039-admin-trade-setup.png', shows: ['Markets', 'Pipelines and stages', 'Catalog', 'Trade events'] },
       { id: 'admin-04', title: 'Commercial defaults and governance', route: '/admin/pricing-engine', screenshot: 'ACADEMY-040-admin-commercial-governance.png', shows: ['Approval threshold', 'Currency and FX', 'Security and roles', 'Audit log'] },
       { id: 'chat-01', title: 'Record discussion drawer', route: '/quotes', screenshot: 'ACADEMY-041-record-discussion-drawer.png', shows: ['Record-bound conversation', 'Participants', 'Mentions', 'Replies, reactions and attachments'] },
-      { id: 'guru-01', title: 'Setu Guru global assistant', route: '/setu-guru', screenshot: 'ACADEMY-042-setu-guru-global-assistant.png', shows: ['Current page context', 'Prompt composer', 'Recommended actions', 'Business-safe response'] },
-      { id: 'guru-02', title: 'Setu Guru lead tools', route: '/leads/[buyerLeadId]', screenshot: 'ACADEMY-043-setu-guru-lead-tools.png', shows: ['Research', 'Outreach generator', 'Reply analyzer', 'Quote assistant'] },
-      { id: 'guru-03', title: 'Setu Guru supplier and trade-event tools', route: '/leads/[supplierLeadId]?mode=suppliers', screenshot: 'ACADEMY-044-setu-guru-supplier-event-tools.png', shows: ['Supplier RFQ assistant', 'Compliance guidance', 'Trade-event recommendations', 'Human approval boundary'] },
+      { id: 'guru-01', title: 'Setu Guru global assistant', route: '/setu-guru', startRoute: '/dashboard', screenshot: 'ACADEMY-042-setu-guru-global-assistant.png', shows: ['Current page context', 'Prompt composer', 'Recommended actions', 'Business-safe response'] },
+      { id: 'guru-02', title: 'Setu Guru lead tools', route: '/leads/[buyerLeadId]', startRoute: '/leads?mode=buyers', screenshot: 'ACADEMY-043-setu-guru-lead-tools.png', shows: ['Research', 'Outreach generator', 'Reply analyzer', 'Quote assistant'] },
+      { id: 'guru-03', title: 'Setu Guru supplier and trade-event tools', route: '/leads/[supplierLeadId]?mode=suppliers', startRoute: '/leads?mode=suppliers', screenshot: 'ACADEMY-044-setu-guru-supplier-event-tools.png', shows: ['Supplier RFQ assistant', 'Compliance guidance', 'Trade-event recommendations', 'Human approval boundary'] },
     ],
   },
 ];
