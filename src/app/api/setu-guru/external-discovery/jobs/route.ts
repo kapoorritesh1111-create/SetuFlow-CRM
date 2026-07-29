@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
-import { DiscoveryExecutionError, runConfirmedDiscoveryJob } from '@/lib/setu-guru/external-discovery-runner';
+import { DiscoveryExecutionError, runConfirmedDiscoveryJob as runDiscoveryJob } from '@/lib/setu-guru/external-discovery-runner';
 import { getDefaultDiscoveryProvider, listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
 
 export const dynamic = 'force-dynamic';
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const requested = parsed.data.providerKey;
     const configured = listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured);
     const provider = configured ?? getDefaultDiscoveryProvider();
-    const result = await runConfirmedDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
+    const result = await runDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
     return NextResponse.json({ result: { ...result, providerKey: provider.key, providerLabel: provider.label } }, { status: 201 });
   } catch (error) {
     const status = error instanceof DiscoveryExecutionError ? error.status : 500;
