@@ -60,7 +60,8 @@ test('PR65 CRM-and-external campaigns keep internal matches separate from extern
 });
 
 test('PR65 Food and Beverage playbook has food evidence and no Packaging-specific prompt instructions', () => {
-  const food = section(providers, "if (playbook === 'food_beverage')", "if (playbook === 'packaging')");
+  const evidenceBuilder = section(providers, 'function playbookEvidence', 'function responseJsonSchema');
+  const food = section(evidenceBuilder, "if (playbook === 'food_beverage')", "if (playbook === 'packaging')");
   assert.match(food, /product_categories/);
   assert.match(food, /import_distribution_retail_evidence/);
   assert.match(food, /brands_or_categories_carried/);
@@ -68,7 +69,8 @@ test('PR65 Food and Beverage playbook has food evidence and no Packaging-specifi
 });
 
 test('PR65 Packaging playbook is the only playbook requesting Packaging-specific evidence', () => {
-  const packaging = section(providers, "if (playbook === 'packaging')", "if (playbook === 'apparel')");
+  const evidenceBuilder = section(providers, 'function playbookEvidence', 'function responseJsonSchema');
+  const packaging = section(evidenceBuilder, "if (playbook === 'packaging')", "if (playbook === 'apparel')");
   for (const marker of ['matched_packaging_categories', 'packaging_use_cases', 'buyer_need_signals', 'current_packaging_format', 'print_process', 'sustainability_requirements']) {
     assert.match(packaging, new RegExp(marker));
   }
@@ -160,7 +162,8 @@ test('PR65 idempotency includes campaign, provider, mode, direction, and confirm
 
 test('PR65 external fit scoring uses confirmed campaign country, company type, product, industry, source, and duplicate state', () => {
   for (const marker of ['input.countries', 'input.companyTypes', 'input.products', 'input.targetIndustries', 'candidate.sourceUrl', 'duplicate.state']) {
-    assert.match(runner, new RegExp(marker.replace('.', '\\.')));
+    const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(runner, new RegExp(escaped));
   }
   assert.match(runner, /SCORE_VERSION = 'pr65-confirmed-scope-v1'/);
 });
