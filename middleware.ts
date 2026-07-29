@@ -16,6 +16,7 @@ type RateLimitBucket = { count: number; resetAt: number };
 const SETU_GURU_RESEARCH_PATH = '/api/setu-guru/research';
 const PASSWORD_RESET_PENDING_COOKIE = 'setuflow-password-reset-pending';
 const PACKAGING_ACADEMY_PATH = '/marketing/guides/setu_flow_packaging_workspace_guide.html';
+const PACKAGING_ACADEMY_HOST = 'packaging.setuflowcrm.com';
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_RESEARCH_LIMIT = 10;
 const researchBuckets = new Map<string, RateLimitBucket>();
@@ -145,12 +146,31 @@ function resetPasswordRedirect(request: NextRequest) {
   return redirectUrl;
 }
 
-function normalizedHost(request: NextRequest) {
-  return (request.headers.get('x-forwarded-host') || request.headers.get('host') || '')
+function normalizeHostname(value: string | null | undefined) {
+  return String(value || '')
     .split(',')[0]
     .trim()
     .toLowerCase()
     .split(':')[0];
+}
+
+function requestHostCandidates(request: NextRequest) {
+  return new Set([
+    normalizeHostname(request.nextUrl.hostname),
+    normalizeHostname(request.headers.get('host')),
+    normalizeHostname(request.headers.get('x-forwarded-host')),
+    normalizeHostname(request.headers.get('x-vercel-forwarded-host')),
+  ].filter(Boolean));
+}
+
+function isPackagingAcademyHost(request: NextRequest) {
+  return requestHostCandidates(request).has(PACKAGING_ACADEMY_HOST);
+}
+
+function primaryHost(request: NextRequest) {
+  return normalizeHostname(request.nextUrl.hostname)
+    || normalizeHostname(request.headers.get('host'))
+    || normalizeHostname(request.headers.get('x-forwarded-host'));
 }
 
 function createNonce() {
@@ -174,9 +194,31 @@ function applySecurityHeaders(response: NextResponse, nonce: string) {
   return response;
 }
 
+function applyPackagingAcademyHeaders(response: NextResponse) {
+  response.headers.set('Content-Security-Policy', [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline'",
+    "connect-src 'self' https: wss:",
+    "object-src 'none'",
+  ].join('; '));
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  return response;
+}
+
 function applyAcademyCanonical(response: NextResponse, host: string, pathname: string) {
   if (pathname !== '/academy' && pathname !== '/packaging-academy' && pathname !== '/core-academy') return response;
-  const canonical = host === 'packaging.setuflowcrm.com'
+  const canonical = host === PACKAGING_ACADEMY_HOST
     ? 'https://packaging.setuflowcrm.com/academy'
     : 'https://www.setuflowcrm.com/academy';
   response.headers.set('Link', `<${canonical}>; rel="canonical"`);
@@ -199,18 +241,27 @@ function createMiddlewareClient(request: NextRequest, response: NextResponse) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = normalizedHost(request);
+  const packagingHost = isPackagingAcademyHost(request);
+  const host = packagingHost ? PACKAGING_ACADEMY_HOST : primaryHost(request);
   const nonce = createNonce();
   const requestHeaders = createRequestHeaders(request, nonce);
 
-  if (pathname === '/academy' && host === 'packaging.setuflowcrm.com') {
+  if (pathname === '/academy' && packagingHost) {
     const response = NextResponse.rewrite(new URL(PACKAGING_ACADEMY_PATH, request.url), { request: { headers: requestHeaders } });
-    return applySecurityHeaders(applyAcademyCanonical(response, host, pathname), nonce);
+    response.headers.set('X-Setu-Academy', 'packaging');
+    return applyPackagingAcademyHeaders(applyAcademyCanonical(response, PACKAGING_ACADEMY_HOST, pathname));
   }
 
   if (pathname === '/packaging-academy') {
     const response = NextResponse.rewrite(new URL(PACKAGING_ACADEMY_PATH, request.url), { request: { headers: requestHeaders } });
-    return applySecurityHeaders(applyAcademyCanonical(response, 'packaging.setuflowcrm.com', pathname), nonce);
+    response.headers.set('X-Setu-Academy', 'packaging');
+    return applyPackagingAcademyHeaders(applyAcademyCanonical(response, PACKAGING_ACADEMY_HOST, pathname));
+  }
+
+  if (pathname === '/academy' || pathname === '/core-academy') {
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set('X-Setu-Academy', 'core');
+    return applySecurityHeaders(applyAcademyCanonical(response, host, pathname), nonce);
   }
 
   if (pathname === '/development' || pathname.startsWith('/development/')) {
