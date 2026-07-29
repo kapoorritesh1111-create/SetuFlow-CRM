@@ -76,7 +76,10 @@ test('PR65 introduces no autonomous lead creation or outreach', () => {
 test('PR65 campaign API is organization scoped and rejects client-supplied scope fields', () => {
   assert.match(route, /requireWorkspace\(\)/);
   assert.match(route, /\.strict\(\)/);
-  assert.doesNotMatch(route, /organizationId|organization_id|org_id/);
+  const schemaStart = route.indexOf('const CreateCampaignSchema');
+  const schemaEnd = route.indexOf('async function organizationId');
+  const requestSchema = route.slice(schemaStart, schemaEnd);
+  assert.doesNotMatch(requestSchema, /organizationId|organization_id|org_id/);
   assert.match(campaignsLib, /\.eq\('organization_id', orgId\)/);
   assert.match(campaignsLib, /org_id: orgId/);
 });
