@@ -158,18 +158,52 @@ export async function listGuidedExternalDiscovery(orgId: string) {
   const base = await listExternalDiscovery(orgId);
   const supabase = await createClient();
   const client = supabase as any;
-  const { data, error } = await client
-    .from('external_discovery_campaigns')
-    .select('id,campaign_mode,research_direction,scope_status,search_config,icp_snapshot')
-    .eq('org_id', orgId)
-    .limit(50);
+  const [{ data: details, error: detailsError }, { data: jobs, error: jobsError }] = await Promise.all([
+    client
+      .from('external_discovery_campaigns')
+      .select('id,campaign_mode,research_direction,scope_status,search_config,icp_snapshot')
+      .eq('org_id', orgId)
+      .limit(50),
+    client
+      .from('external_discovery_jobs')
+      .select('id,campaign_id,status,provider_key,provider_request,provider_response,last_error,started_at,completed_at,created_at,updated_at')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(250),
+  ]);
 
   // Backward-compatible during deployment: the existing workspace still loads before the additive
-  // migration is applied, and automatically enriches once the columns are available.
-  if (error) return base;
-  const details = new Map((data ?? []).map((item: any) => [item.id, item]));
+  // campaign columns are available, and automatically enriches once the columns are available.
+  if (detailsError) return base;
+
+  const detailsByCampaign = new Map((details ?? []).map((item: any) => [item.id, item]));
+  const latestJobByCampaign = new Map<string, any>();
+  if (!jobsError) {
+    for (const job of jobs ?? []) {
+      if (!latestJobByCampaign.has(job.campaign_id)) latestJobByCampaign.set(job.campaign_id, job);
+    }
+  }
+
+  const resultCountByCampaign = new Map<string, number>();
+  for (const opportunity of base.opportunities as any[]) {
+    if (!opportunity.campaign_id) continue;
+    resultCountByCampaign.set(opportunity.campaign_id, (resultCountByCampaign.get(opportunity.campaign_id) ?? 0) + 1);
+  }
+
+  const campaigns = base.campaigns.map((campaign: any) => ({
+    ...campaign,
+    ...(detailsByCampaign.get(campaign.id) ?? {}),
+    latest_job: latestJobByCampaign.get(campaign.id) ?? null,
+    result_count: resultCountByCampaign.get(campaign.id) ?? 0,
+  }));
+  const campaignNames = new Map(campaigns.map((campaign: any) => [campaign.id, campaign.name]));
+
   return {
     ...base,
-    campaigns: base.campaigns.map((campaign: any) => ({ ...campaign, ...(details.get(campaign.id) ?? {}) })),
+    campaigns,
+    opportunities: base.opportunities.map((opportunity: any) => ({
+      ...opportunity,
+      campaign_name: opportunity.campaign_id ? campaignNames.get(opportunity.campaign_id) ?? null : null,
+    })),
   };
 }
