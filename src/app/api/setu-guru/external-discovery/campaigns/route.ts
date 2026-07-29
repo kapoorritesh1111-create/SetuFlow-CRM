@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { createGuidedDiscoveryCampaign, listGuidedExternalDiscovery } from '@/lib/setu-guru/external-discovery-campaigns';
+import { updateGuidedDiscoveryCampaign } from '@/lib/setu-guru/external-discovery-campaign-update';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ const SearchConfigSchema = z.object({
   lookalike_lead_id: z.string().uuid().nullable(),
 }).strict();
 
-const CreateCampaignSchema = z.object({
+const CampaignPayloadSchema = z.object({
   name: z.string().trim().min(3).max(120),
   campaignMode: CampaignModeSchema,
   researchDirection: ResearchDirectionSchema,
@@ -55,6 +56,32 @@ const CreateCampaignSchema = z.object({
   }
 });
 
+const UpdateCampaignSchema = z.object({
+  campaignId: z.string().uuid(),
+  name: z.string().trim().min(3).max(120),
+  campaignMode: CampaignModeSchema,
+  researchDirection: ResearchDirectionSchema,
+  sourceStrategy: SourceStrategySchema,
+  goal: z.string().trim().min(10).max(1000),
+  icpProfileId: z.string().uuid().nullable(),
+  lookalikeLeadId: z.string().uuid().nullable(),
+  searchConfig: SearchConfigSchema,
+}).strict().superRefine((value, context) => {
+  const payload = CampaignPayloadSchema.safeParse({
+    name: value.name,
+    campaignMode: value.campaignMode,
+    researchDirection: value.researchDirection,
+    sourceStrategy: value.sourceStrategy,
+    goal: value.goal,
+    icpProfileId: value.icpProfileId,
+    lookalikeLeadId: value.lookalikeLeadId,
+    searchConfig: value.searchConfig,
+  });
+  if (!payload.success) {
+    for (const issue of payload.error.issues) context.addIssue(issue);
+  }
+});
+
 async function organizationId() {
   const workspace = await requireWorkspace();
   return workspace.organization?.id ?? null;
@@ -77,7 +104,7 @@ export async function POST(request: NextRequest) {
   const orgId = await organizationId();
   if (!orgId) return NextResponse.json({ error: 'No active organization workspace.' }, { status: 403 });
 
-  const parsed = CreateCampaignSchema.safeParse(await request.json().catch(() => null));
+  const parsed = CampaignPayloadSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({
       error: parsed.error.issues[0]?.message ?? 'Complete the required campaign scope before continuing.',
@@ -86,12 +113,34 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Campaign creation saves a reviewed scope only. It never starts a provider job,
-    // creates a lead, or sends outreach; those remain separate explicit actions.
     const campaign = await createGuidedDiscoveryCampaign(orgId, parsed.data);
     return NextResponse.json({ campaign, researchStarted: false }, { status: 201 });
   } catch (error) {
     console.error('[external-discovery-campaigns] create failed', { orgId, error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: error instanceof Error ? error.message : 'External Discovery campaign could not be created.' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const orgId = await organizationId();
+  if (!orgId) return NextResponse.json({ error: 'No active organization workspace.' }, { status: 403 });
+
+  const parsed = UpdateCampaignSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({
+      error: parsed.error.issues[0]?.message ?? 'Complete the required campaign scope before saving.',
+      details: parsed.error.flatten(),
+    }, { status: 422 });
+  }
+
+  const { campaignId, ...input } = parsed.data;
+  try {
+    const campaign = await updateGuidedDiscoveryCampaign(orgId, campaignId, input);
+    return NextResponse.json({ campaign, researchStarted: false });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'External Discovery campaign could not be updated.';
+    const status = message.includes('not found') ? 404 : message.includes('current research run') ? 409 : 500;
+    console.error('[external-discovery-campaigns] update failed', { orgId, campaignId, error: message });
+    return NextResponse.json({ error: message }, { status });
   }
 }
