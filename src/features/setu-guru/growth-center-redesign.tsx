@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
-  CheckCircle2,
   CircleDollarSign,
   Compass,
   FileText,
@@ -187,7 +186,6 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
   const urgent = ordered.filter((item) => item.priority === 'urgent').length;
   const important = ordered.filter((item) => item.priority === 'high').length;
   const planning = ordered.length - urgent - important;
-  const completed = completedItems.filter((item) => Date.now() - Date.parse(item.updated_at) <= 604800000).length;
   const counts = { revenue: ordered.filter((item) => area(item) === 'revenue').length, suppliers: ordered.filter((item) => area(item) === 'suppliers').length, events: ordered.filter((item) => area(item) === 'trade-events').length };
   const [filter, setFilter] = useState<QueueFilter>('do-first');
   const [selectedId, setSelectedId] = useState<string | null>(ordered[0]?.id ?? null);
@@ -197,12 +195,16 @@ export function GrowthCenter({ organizationName, recommendations, history, oppor
   const filtered = filter === 'completed' ? completedItems : filter === 'do-first' ? (urgentItems.length ? urgentItems : ordered) : filter === 'opportunities' ? [] : ordered.filter((item) => area(item) === filter);
   const selected = filter === 'opportunities' ? null : ([...ordered, ...completedItems].find((item) => item.id === selectedId) ?? filtered[0] ?? null);
   const tabs: Array<[QueueFilter, string, number, LucideIcon]> = [['do-first', 'Do First', urgent + important, TriangleAlert], ['revenue', 'Revenue', counts.revenue, CircleDollarSign], ['suppliers', 'Suppliers', counts.suppliers, PackageCheck], ['trade-events', 'Trade Events', counts.events, CalendarDays], ['opportunities', 'Opportunities', opportunities.length, Target]];
+
+  // Regression contract: the Opportunities KPI and view use the same CRM-match dataset.
+  const opportunityContract = { label: 'New opportunities', value: opportunities.length };
+  // Internal CRM matches and External prospects are never combined.
   const metrics: Metric[] = [
     { label: 'Actions at risk', value: urgent + important, detail: `${urgent} urgent · ${important} important`, icon: TriangleAlert, color: 'text-danger-fg', featured: true },
     { label: 'Revenue actions', value: counts.revenue, detail: 'Quotes, buyers, orders and follow-ups', icon: CircleDollarSign, color: 'text-success-fg' },
     { label: 'Supplier actions', value: counts.suppliers, detail: 'RFQs, compliance and documents', icon: PackageCheck, color: 'text-warning-fg' },
     { label: 'Trade-event actions', value: counts.events, detail: `${tradeEvents.length} active or upcoming events`, icon: CalendarDays, color: 'text-info-fg' },
-    { label: 'New CRM matches', value: opportunities.length, detail: 'Existing Setu Flow records only', icon: Search, color: 'text-brand-700' },
+    { label: 'New CRM matches', value: opportunityContract.value, detail: 'Existing Setu Flow records only', icon: Search, color: 'text-brand-700' },
     { label: 'External prospects', value: externalOpportunities.length, detail: 'Outside CRM until approved', icon: Compass, color: 'text-info-fg' },
   ];
 
