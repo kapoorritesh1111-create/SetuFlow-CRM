@@ -4,11 +4,13 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Core Academy uses isolated public route, API, and progress storage', async () => {
-  const [page, aliasPage, client, api, content, migration, nextConfig, middleware] = await Promise.all([
+test('Core Academy uses isolated public route, API, progress storage, and screenshot folder', async () => {
+  const [page, aliasPage, client, screenshot, screenshotReadme, api, content, migration, nextConfig, middleware] = await Promise.all([
     read('src/app/academy/page.tsx'),
     read('src/app/core-academy/page.tsx'),
     read('src/features/academy/core-academy-client.tsx'),
+    read('src/features/academy/core-academy-screenshot.tsx'),
+    read('public/academy/core/screenshots/README.md'),
     read('src/app/api/core-academy/progress/route.ts'),
     read('src/features/academy/core-academy-content.ts'),
     read('supabase/migrations/20260729053000_core_academy_progress_isolation.sql'),
@@ -21,7 +23,12 @@ test('Core Academy uses isolated public route, API, and progress storage', async
   assert.match(aliasPage, /redirect\('\/academy'\)/);
   assert.match(client, /Sign in to sync/);
   assert.match(client, /step\.startRoute \|\| step\.route/);
+  assert.match(client, /CoreAcademyScreenshot/);
   assert.doesNotMatch(client, /replace\('\[buyerLeadId\]'/);
+  assert.match(screenshot, /CORE_ACADEMY_SCREENSHOT_BASE_PATH = '\/academy\/core\/screenshots'/);
+  assert.match(screenshot, /onError=\{\(\) => setIsMissing\(true\)\}/);
+  assert.match(screenshot, /public\/academy\/core\/screenshots\//);
+  assert.match(screenshotReadme, /ACADEMY-001-global-navigation\.png/);
   assert.match(api, /core_academy_progress/);
   assert.match(content, /ACADEMY-001-global-navigation\.png/);
   assert.match(content, /ACADEMY-044-setu-guru-supplier-event-tools\.png/);
