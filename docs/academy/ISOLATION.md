@@ -1,0 +1,1 @@
+Core Academy is isolated from Packaging Academy.

@@ -1,0 +1,1 @@
+Core Academy foundation ready for review.
