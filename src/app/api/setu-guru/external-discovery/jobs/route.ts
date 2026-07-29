@@ -56,8 +56,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const requested = parsed.data.providerKey;
-    const configured = listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured);
-    const provider = configured ?? getDefaultDiscoveryProvider();
+    const explicitlyRequested = requested && !['manual', 'auto'].includes(requested)
+      ? listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured)
+      : undefined;
+    // Legacy UI controls submit "manual". Treat that as automatic provider selection so a configured
+    // OpenAI web-search provider remains preferred, with Anthropic and Exa behind the provider boundary.
+    const provider = explicitlyRequested ?? getDefaultDiscoveryProvider();
     const result = await runDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
     return NextResponse.json({ result: { ...result, providerKey: provider.key, providerLabel: provider.label } }, { status: 201 });
   } catch (error) {
