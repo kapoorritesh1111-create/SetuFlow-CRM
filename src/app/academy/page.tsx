@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CoreAcademyClient } from '@/features/academy/core-academy-client';
+import { CoreAcademyIssueLogger } from '@/features/academy/core-academy-issue-logger';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import responsive from '@/features/academy/core-academy-responsive.module.css';
@@ -37,6 +38,7 @@ export default async function AcademyPage() {
         isAuthenticated={isAuthenticated}
         viewerName={workspace.profile?.full_name || workspace.user?.email || 'Academy learner'}
       />
+      <CoreAcademyIssueLogger isAuthenticated={isAuthenticated} />
     </div>
   );
 }
