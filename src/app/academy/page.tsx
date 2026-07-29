@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { CoreAcademyClient } from '@/features/academy/core-academy-client';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import responsive from '@/features/academy/core-academy-responsive.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +31,12 @@ export default async function AcademyPage() {
   }
 
   return (
-    <CoreAcademyClient
-      initialProgress={progress}
-      isAuthenticated={isAuthenticated}
-      viewerName={workspace.profile?.full_name || workspace.user?.email || 'Academy learner'}
-    />
+    <div className={responsive.page}>
+      <CoreAcademyClient
+        initialProgress={progress}
+        isAuthenticated={isAuthenticated}
+        viewerName={workspace.profile?.full_name || workspace.user?.email || 'Academy learner'}
+      />
+    </div>
   );
 }
