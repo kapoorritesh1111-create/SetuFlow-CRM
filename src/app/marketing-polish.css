@@ -1,0 +1,149 @@
+:root {
+  --sf-marketing-navy-950: #061e34;
+  --sf-marketing-navy-900: #0b2e4a;
+  --sf-marketing-teal-700: #0f766e;
+  --sf-marketing-teal-600: #0d9488;
+  --sf-marketing-teal-500: #14b8a6;
+  --sf-marketing-ink: #0f172a;
+  --sf-marketing-body: #334155;
+  --sf-marketing-muted: #475569;
+  --sf-marketing-caption: #64748b;
+  --sf-marketing-line: #d7e2ea;
+  --sf-marketing-soft: #f5f9fc;
+}
+
+.setu-marketing-shell {
+  background: #ffffff;
+  color: var(--sf-marketing-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.setu-marketing-shell main {
+  background: #ffffff;
+  color: var(--sf-marketing-ink);
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+/* The motion background belongs to the homepage hero only. Every later section
+   must restore its own surface instead of inheriting the dark shell. */
+.setu-shared-hero-shell--home > main {
+  background: transparent !important;
+}
+
+.setu-shared-hero-shell--home > main > section:not(:first-child):not([class*="bg-"]) {
+  position: relative;
+  background: #ffffff;
+}
+
+.setu-marketing-shell :where(h1, h2, h3, h4) {
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+
+.setu-marketing-shell :where(p, li, td) {
+  text-wrap: pretty;
+}
+
+.setu-marketing-shell :where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(20, 184, 166, 0.42);
+  outline-offset: 3px;
+}
+
+/* Tailwind's slate-400 is decorative contrast, not readable body contrast.
+   Inside public marketing pages, promote it to WCAG-safe caption text. */
+.setu-marketing-shell .text-slate-400 {
+  color: var(--sf-marketing-caption) !important;
+}
+
+.setu-marketing-shell .text-slate-500 {
+  color: var(--sf-marketing-muted) !important;
+}
+
+.setu-marketing-shell .text-slate-600 {
+  color: var(--sf-marketing-body) !important;
+}
+
+/* Normal-sized copy on navy must remain readable over gradients and video. */
+.setu-marketing-shell .text-white\/35,
+.setu-marketing-shell .text-white\/40,
+.setu-marketing-shell .text-white\/45,
+.setu-marketing-shell .text-white\/50,
+.setu-marketing-shell .text-white\/55,
+.setu-marketing-shell .text-white\/60 {
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+
+.setu-marketing-shell .text-white\/62,
+.setu-marketing-shell .text-white\/65,
+.setu-marketing-shell .text-white\/70 {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.setu-marketing-shell .text-\[10px\] {
+  font-size: 0.6875rem !important;
+  line-height: 1rem !important;
+}
+
+.setu-marketing-shell .text-\[11px\] {
+  font-size: 0.75rem !important;
+  line-height: 1.05rem !important;
+}
+
+.setu-marketing-shell table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.setu-marketing-shell table th {
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.setu-marketing-shell table td {
+  line-height: 1.55;
+  vertical-align: top;
+}
+
+.setu-marketing-shell img {
+  image-rendering: auto;
+}
+
+/* Retire the old nth-of-type Guru avatar injection. Guru branding is rendered
+   explicitly in React now; this prevents the rule from landing on another tab. */
+.setu-shared-hero-shell--home > main > section:nth-of-type(7) > div > div:nth-child(2) > div:first-child > span {
+  width: auto !important;
+  height: auto !important;
+  flex: initial !important;
+  border-radius: inherit !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.setu-shared-hero-shell--home > main > section:nth-of-type(7) > div > div:nth-child(2) > div:first-child > span > svg {
+  display: initial !important;
+}
+
+@media (max-width: 767px) {
+  .setu-marketing-shell :where(h1, h2) {
+    overflow-wrap: anywhere;
+  }
+
+  .setu-marketing-shell table th,
+  .setu-marketing-shell table td {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setu-marketing-shell *,
+  .setu-marketing-shell *::before,
+  .setu-marketing-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
