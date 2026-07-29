@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { DiscoveryExecutionError, runConfirmedDiscoveryJob as runDiscoveryJob } from '@/lib/setu-guru/external-discovery-runner';
 import { getDefaultDiscoveryProvider, listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
-import { openAiReliableProvider } from '@/lib/setu-guru/discovery-providers/openai-reliable';
+import { openAiVisibleReviewProvider } from '@/lib/setu-guru/discovery-providers/openai-visible-review';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +20,9 @@ async function organizationId() {
 }
 
 function automaticProvider() {
-  // OpenAI web-search provider remains preferred. It performs a bounded structured-output retry
-  // and does not fall through to an unavailable Anthropic model after malformed output.
-  return openAiReliableProvider.configured ? openAiReliableProvider : getDefaultDiscoveryProvider();
+  // OpenAI web-search provider remains preferred. Structurally valid companies are retained
+  // in External Discovery for explicit human review even when source reconciliation is incomplete.
+  return openAiVisibleReviewProvider.configured ? openAiVisibleReviewProvider : getDefaultDiscoveryProvider();
 }
 
 export async function GET(request: NextRequest) {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       ? listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured)
       : undefined;
     // Automatic selection prefers the reliable OpenAI Responses API web-search provider.
-    // Campaign research remains an explicit user action and never creates a lead or sends outreach.
+    // Research leads remain outside CRM and require explicit verification, approval, and conversion.
     const provider = explicitlyRequested ?? automaticProvider();
     const result = await runDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
     return NextResponse.json({ result: { ...result, providerKey: provider.key, providerLabel: provider.label } }, { status: 201 });
