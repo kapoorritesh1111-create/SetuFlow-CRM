@@ -3,20 +3,19 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const workspaceRedirects: Record<string, string> = {
-  // Legacy workspace URL aliases — these old paths redirect to the current CRM routes
   '/workspace/dashboard': '/dashboard',
   '/workspace/leads': '/leads',
   '/workspace/capture': '/contact-exchange/scan',
   '/workspace/quotes': '/quotes',
   '/workspace/orders': '/orders',
   '/workspace/my-card': '/contact-exchange/vcard',
-  // NOTE: /workspace itself is now the internal engineering workspace (not a redirect)
 };
 
 type RateLimitBucket = { count: number; resetAt: number };
 
 const SETU_GURU_RESEARCH_PATH = '/api/setu-guru/research';
 const PASSWORD_RESET_PENDING_COOKIE = 'setuflow-password-reset-pending';
+const PACKAGING_ACADEMY_PATH = '/marketing/guides/setu_flow_packaging_workspace_guide.html';
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_RESEARCH_LIMIT = 10;
 const researchBuckets = new Map<string, RateLimitBucket>();
@@ -45,9 +44,7 @@ function checkResearchRateLimit(request: NextRequest) {
     return { allowed: true, limit, remaining: limit - 1, resetAt };
   }
 
-  if (existing.count >= limit) {
-    return { allowed: false, limit, remaining: 0, resetAt: existing.resetAt };
-  }
+  if (existing.count >= limit) return { allowed: false, limit, remaining: 0, resetAt: existing.resetAt };
 
   existing.count += 1;
   return { allowed: true, limit, remaining: Math.max(limit - existing.count, 0), resetAt: existing.resetAt };
@@ -85,6 +82,9 @@ function createContentSecurityPolicy(nonce: string) {
 
 const PUBLIC_EXACT_PATHS = new Set([
   '/',
+  '/academy',
+  '/core-academy',
+  '/packaging-academy',
   '/client-login',
   '/forgot-password',
   '/reset-password',
@@ -102,16 +102,11 @@ const PUBLIC_PREFIXES = [
   '/order-documents/preview/',
   '/v/',
   '/public/',
-  // External, token-gated surfaces. Each route validates its own DB token
-  // server-side (revoked / expired) before doing anything; no broad data access.
   '/docs/',
   '/qa/run/',
   '/guest/',
   '/qa/report/',
   '/catalog/share/',
-  // NOTE: /internal/ is intentionally NOT listed here — all /internal/* pages
-  // require an authenticated Supabase session AND SETU Flow org membership.
-  // The HTML files themselves enforce a second client-side auth gate.
 ];
 
 function hasSupabaseMiddlewareEnv() {
@@ -131,21 +126,14 @@ function isRouterPrefetch(request: NextRequest) {
   const secPurpose = request.headers.get('sec-purpose')?.toLowerCase();
   const nextRouterPrefetch = request.headers.get('next-router-prefetch');
   const nextUrl = request.headers.get('next-url');
-
-  return (
-    nextRouterPrefetch === '1' ||
-    purpose === 'prefetch' ||
-    secPurpose === 'prefetch' ||
-    Boolean(nextUrl && request.method === 'GET')
-  );
+  return nextRouterPrefetch === '1' || purpose === 'prefetch' || secPurpose === 'prefetch' || Boolean(nextUrl && request.method === 'GET');
 }
 
 function loginRedirect(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = '/client-login';
   redirectUrl.search = '';
-  const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-  redirectUrl.searchParams.set('next', nextPath);
+  redirectUrl.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`);
   return redirectUrl;
 }
 
@@ -155,6 +143,14 @@ function resetPasswordRedirect(request: NextRequest) {
   redirectUrl.search = '';
   redirectUrl.searchParams.set('next', '/login');
   return redirectUrl;
+}
+
+function normalizedHost(request: NextRequest) {
+  return (request.headers.get('x-forwarded-host') || request.headers.get('host') || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase()
+    .split(':')[0];
 }
 
 function createNonce() {
@@ -178,21 +174,24 @@ function applySecurityHeaders(response: NextResponse, nonce: string) {
   return response;
 }
 
+function applyAcademyCanonical(response: NextResponse, host: string, pathname: string) {
+  if (pathname !== '/academy' && pathname !== '/packaging-academy' && pathname !== '/core-academy') return response;
+  const canonical = host === 'packaging.setuflowcrm.com'
+    ? 'https://packaging.setuflowcrm.com/academy'
+    : 'https://www.setuflowcrm.com/academy';
+  response.headers.set('Link', `<${canonical}>; rel="canonical"`);
+  return response;
+}
+
 function createMiddlewareClient(request: NextRequest, response: NextResponse) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({ name, value: '', ...options });
-        },
+        get(name: string) { return request.cookies.get(name)?.value; },
+        set(name: string, value: string, options: CookieOptions) { response.cookies.set({ name, value, ...options }); },
+        remove(name: string, options: CookieOptions) { response.cookies.set({ name, value: '', ...options }); },
       },
     },
   );
@@ -200,33 +199,36 @@ function createMiddlewareClient(request: NextRequest, response: NextResponse) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = normalizedHost(request);
   const nonce = createNonce();
   const requestHeaders = createRequestHeaders(request, nonce);
+
+  if (pathname === '/academy' && host === 'packaging.setuflowcrm.com') {
+    const response = NextResponse.rewrite(new URL(PACKAGING_ACADEMY_PATH, request.url), { request: { headers: requestHeaders } });
+    return applySecurityHeaders(applyAcademyCanonical(response, host, pathname), nonce);
+  }
+
+  if (pathname === '/packaging-academy') {
+    const response = NextResponse.rewrite(new URL(PACKAGING_ACADEMY_PATH, request.url), { request: { headers: requestHeaders } });
+    return applySecurityHeaders(applyAcademyCanonical(response, 'packaging.setuflowcrm.com', pathname), nonce);
+  }
 
   if (pathname === '/development' || pathname.startsWith('/development/')) {
     return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)), nonce);
   }
 
-  if (pathname === '/trail') {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/trial', request.url)), nonce);
-  }
+  if (pathname === '/trail') return applySecurityHeaders(NextResponse.redirect(new URL('/trial', request.url)), nonce);
 
   const workspaceDestination = workspaceRedirects[pathname];
-  if (workspaceDestination) {
-    return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)), nonce);
-  }
+  if (workspaceDestination) return applySecurityHeaders(NextResponse.redirect(new URL(workspaceDestination, request.url)), nonce);
 
-  // Critical auth hardening: Next/link prefetches can fan out many protected page
-  // requests at the same time. If each request validates/refreshes the same
-  // Supabase refresh token, Supabase can report refresh_token_already_used and
-  // leave the real foreground navigation with a broken session. Never refresh
-  // auth tokens for speculative protected-route prefetches.
   if (!isPublicPath(pathname) && !isProtectedApiPath(pathname) && isRouterPrefetch(request)) {
     return applySecurityHeaders(new NextResponse(null, { status: 204 }), nonce);
   }
 
   if (!hasSupabaseMiddlewareEnv()) {
-    return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }), nonce);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    return applySecurityHeaders(applyAcademyCanonical(response, host, pathname), nonce);
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
@@ -239,7 +241,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isPublicPath(pathname)) {
-    return applySecurityHeaders(response, nonce);
+    return applySecurityHeaders(applyAcademyCanonical(response, host, pathname), nonce);
   }
 
   if (error || !data.user) {
@@ -253,14 +255,7 @@ export async function middleware(request: NextRequest) {
     const quota = checkResearchRateLimit(request);
     if (!quota.allowed) {
       return applySecurityHeaders(
-        NextResponse.json(
-          {
-            ok: false,
-            error: 'Setu Guru live research rate limit exceeded.',
-            message: 'Please wait for the rate-limit window to reset before asking another live research question.',
-          },
-          { status: 429, headers: rateLimitHeaders(quota.limit, quota.remaining, quota.resetAt) },
-        ),
+        NextResponse.json({ ok: false, error: 'Setu Guru live research rate limit exceeded.', message: 'Please wait for the rate-limit window to reset before asking another live research question.' }, { status: 429, headers: rateLimitHeaders(quota.limit, quota.remaining, quota.resetAt) }),
         nonce,
       );
     }
@@ -271,7 +266,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|og-image.png|logos/|marketing/).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|og-image.png|logos/|marketing/).*)'],
 };
