@@ -15,7 +15,7 @@ type RateLimitBucket = { count: number; resetAt: number };
 
 const SETU_GURU_RESEARCH_PATH = '/api/setu-guru/research';
 const PASSWORD_RESET_PENDING_COOKIE = 'setuflow-password-reset-pending';
-const PACKAGING_ACADEMY_PATH = '/guides/setu_flow_packaging_workspace_guide.html';
+const PACKAGING_ACADEMY_PATH = '/marketing/guides/setu_flow_packaging_workspace_guide.html';
 const PACKAGING_ACADEMY_HOST = 'packaging.setuflowcrm.com';
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_RESEARCH_LIMIT = 10;
@@ -194,6 +194,28 @@ function applySecurityHeaders(response: NextResponse, nonce: string) {
   return response;
 }
 
+function applyPackagingAcademyHeaders(response: NextResponse) {
+  response.headers.set('Content-Security-Policy', [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline'",
+    "connect-src 'self' https: wss:",
+    "object-src 'none'",
+  ].join('; '));
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  return response;
+}
+
 function applyAcademyCanonical(response: NextResponse, host: string, pathname: string) {
   if (pathname !== '/academy' && pathname !== '/packaging-academy' && pathname !== '/core-academy') return response;
   const canonical = host === PACKAGING_ACADEMY_HOST
@@ -227,13 +249,13 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/academy' && packagingHost) {
     const response = NextResponse.rewrite(new URL(PACKAGING_ACADEMY_PATH, request.url), { request: { headers: requestHeaders } });
     response.headers.set('X-Setu-Academy', 'packaging');
-    return applySecurityHeaders(applyAcademyCanonical(response, PACKAGING_ACADEMY_HOST, pathname), nonce);
+    return applyPackagingAcademyHeaders(applyAcademyCanonical(response, PACKAGING_ACADEMY_HOST, pathname));
   }
 
   if (pathname === '/packaging-academy') {
     const response = NextResponse.rewrite(new URL(PACKAGING_ACADEMY_PATH, request.url), { request: { headers: requestHeaders } });
     response.headers.set('X-Setu-Academy', 'packaging');
-    return applySecurityHeaders(applyAcademyCanonical(response, PACKAGING_ACADEMY_HOST, pathname), nonce);
+    return applyPackagingAcademyHeaders(applyAcademyCanonical(response, PACKAGING_ACADEMY_HOST, pathname));
   }
 
   if (pathname === '/academy' || pathname === '/core-academy') {
