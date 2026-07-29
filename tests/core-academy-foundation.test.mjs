@@ -58,3 +58,28 @@ test('Academy routes use real entry points and preserve safe starts for dynamic 
   assert.match(content, /startRoute: '\/leads\?mode=suppliers'/);
   assert.match(growthCompatibility, /redirect\('\/growth-agent'\)/);
 });
+
+test('Fail and Blocked tests use the shared issue log workflow', async () => {
+  const [page, logger, api, migration] = await Promise.all([
+    read('src/app/academy/page.tsx'),
+    read('src/features/academy/core-academy-issue-logger.tsx'),
+    read('src/app/api/core-academy/tests/route.ts'),
+    read('supabase/migrations/20260729172000_core_academy_test_results_and_issue_logging.sql'),
+  ]);
+
+  assert.match(page, /CoreAcademyIssueLogger/);
+  assert.match(logger, /label !== 'Fail' && label !== 'Blocked'/);
+  assert.match(logger, /Screenshot evidence/);
+  assert.match(logger, /api\/core-academy\/tests/);
+  assert.match(api, /ACADEMY_REPORTER_NAME = 'Test User'/);
+  assert.match(api, /ACADEMY_REPORTER_EMAIL = 'test@test\.com'/);
+  assert.match(api, /ISSUE_PREFIX = 'S51-ACA-'/);
+  assert.match(api, /Screenshot evidence is required/);
+  assert.match(api, /from\('sprint_issues'\)\.insert/);
+  assert.match(api, /submitted_via: 'Core Academy'/);
+  assert.match(api, /linked_issue_ref/);
+  assert.match(migration, /create table if not exists public\.core_academy_test_runs/);
+  assert.match(migration, /create table if not exists public\.core_academy_test_results/);
+  assert.match(migration, /core-academy-test-evidence/);
+  assert.doesNotMatch(migration, /alter table public\.packaging_/);
+});
