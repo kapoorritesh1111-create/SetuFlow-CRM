@@ -42,7 +42,7 @@ test('Core Academy uses isolated public route, API, progress storage, and screen
   assert.match(migration, /create table if not exists public\.core_academy_progress/);
   assert.doesNotMatch(migration, /alter table public\.packaging_/);
   assert.match(nextConfig, /type: 'host'/);
-  assert.match(nextConfig, /packaging\\\\\.setuflowcrm\\\\\.com/);
+  assert.match(nextConfig, /packaging\\\.setuflowcrm\\\.com/);
   assert.match(nextConfig, /destination: '\/guides\/setu_flow_packaging_workspace_guide\.html'/);
   assert.match(middleware, /PACKAGING_ACADEMY_HOST = 'packaging\.setuflowcrm\.com'/);
   assert.match(middleware, /requestHostCandidates/);
@@ -58,7 +58,7 @@ test('Packaging and Core Academy remain separate by hostname', async () => {
     read('middleware.ts'),
   ]);
 
-  assert.match(nextConfig, /source: '\/academy'[\s\S]*type: 'host'[\s\S]*packaging\\\\\.setuflowcrm\\\\\.com[\s\S]*destination: '\/guides\/setu_flow_packaging_workspace_guide\.html'/);
+  assert.match(nextConfig, /source: '\/academy'[\s\S]*type: 'host'[\s\S]*packaging\\\.setuflowcrm\\\.com[\s\S]*destination: '\/guides\/setu_flow_packaging_workspace_guide\.html'/);
   assert.match(middleware, /if \(pathname === '\/academy' && packagingHost\)/);
   assert.match(middleware, /NextResponse\.rewrite\(new URL\(PACKAGING_ACADEMY_PATH, request\.url\)/);
   assert.match(middleware, /if \(pathname === '\/academy' \|\| pathname === '\/core-academy'\)/);
@@ -102,4 +102,36 @@ test('Fail and Blocked tests use the shared issue log workflow', async () => {
   assert.match(migration, /create table if not exists public\.core_academy_test_results/);
   assert.match(migration, /core-academy-test-evidence/);
   assert.doesNotMatch(migration, /alter table public\.packaging_/);
+});
+
+test('Pass completes the journey, screenshots zoom, and owners receive an organization report', async () => {
+  const [page, passLogger, screenshot, testsApi, reportApi, reportPanel] = await Promise.all([
+    read('src/app/academy/page.tsx'),
+    read('src/features/academy/core-academy-pass-logger.tsx'),
+    read('src/features/academy/core-academy-screenshot.tsx'),
+    read('src/app/api/core-academy/tests/route.ts'),
+    read('src/app/api/core-academy/report/route.ts'),
+    read('src/features/academy/core-academy-admin-report.tsx'),
+  ]);
+
+  assert.match(page, /CoreAcademyPassLogger/);
+  assert.match(page, /CoreAcademyAdminReport/);
+  assert.match(page, /workspace\.canAccessAdmin/);
+  assert.match(passLogger, /textContent\?\.trim\(\) !== 'Pass'/);
+  assert.match(passLogger, /completionButton\.click\(\)/);
+  assert.match(passLogger, /step is complete in both My Journey and Test Center/);
+  assert.match(testsApi, /ALLOWED_RESULTS = new Set\(\['Pass', 'Fail', 'Blocked', 'N\/A'\]\)/);
+  assert.match(testsApi, /if \(result === 'Pass'\)/);
+  assert.match(testsApi, /from\('core_academy_progress'\)\.upsert/);
+  assert.match(screenshot, /Zoom screenshot/);
+  assert.match(screenshot, /setZoom/);
+  assert.match(screenshot, /role="dialog"/);
+  assert.match(reportApi, /workspace\.canAccessAdmin/);
+  assert.match(reportApi, /submitted_via', 'Core Academy'/);
+  assert.match(reportApi, /activeLearners/);
+  assert.match(reportApi, /inProgress/);
+  assert.match(reportApi, /resolved/);
+  assert.match(reportPanel, /Academy Report/);
+  assert.match(reportPanel, /Owners & admins/);
+  assert.match(reportPanel, /Who has learned and tested/);
 });
