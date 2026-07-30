@@ -14,8 +14,11 @@ export const workspacePanelClass =
 export const workspaceInsetClass =
   'rounded-card border border-line bg-surface-2';
 
+// The final variant forces a deliberately featured KPI background to win over
+// the shared surface background. Without it, Tailwind generation order can
+// leave white featured text on the pale surface, making the card look blank.
 export const workspaceMetricClass =
-  'rounded-card border border-line bg-surface-2 p-5 shadow-card';
+  'rounded-card border border-line bg-surface-2 p-5 shadow-card [&.bg-brand-900]:!bg-brand-900';
 
 export const workspaceActionClass =
   'rounded-card border border-line bg-surface-1 shadow-card';

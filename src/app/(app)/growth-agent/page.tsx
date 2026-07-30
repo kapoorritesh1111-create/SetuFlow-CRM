@@ -3,7 +3,7 @@ import { getSetuGuruAuditHistory } from '@/lib/setu-guru/audit-history';
 import { getGrowthCenterRecommendations } from '@/lib/setu-guru/recommendations';
 import { generateRecommendationsForOrganization } from '@/lib/setu-guru/recommendation-generator';
 import { listTopFitOpportunities } from '@/lib/setu-guru/opportunity-finder';
-import { listExternalDiscovery } from '@/lib/setu-guru/external-discovery';
+import { listGuidedExternalDiscovery } from '@/lib/setu-guru/external-discovery-campaigns';
 import { listCrmMatchCampaigns } from '@/lib/setu-guru/crm-match-campaigns';
 import { listIcpProfiles } from '@/lib/setu-guru/icp';
 import { isPackagingOrganization } from '@/lib/verticals/capability';
@@ -36,7 +36,7 @@ export default async function GrowthAgentPage({ searchParams }: { searchParams?:
     listTopFitOpportunities(organizationId, 1000, searchParams?.profile_id ?? null),
     client.from('trade_events').select('id,name,starts_on,ends_on').eq('organization_id', organizationId).order('starts_on', { ascending: false }).limit(5),
     getSetuGuruAuditHistory(organizationId),
-    listExternalDiscovery(organizationId).catch(() => ({ campaigns: [], opportunities: [] })),
+    listGuidedExternalDiscovery(organizationId).catch(() => ({ campaigns: [], opportunities: [] })),
     listIcpProfiles(organizationId).catch(() => []),
     listCrmMatchCampaigns(organizationId).catch(() => []),
   ]);
