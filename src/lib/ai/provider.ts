@@ -104,9 +104,14 @@ class NoopProvider implements AiProvider {
  * throwing. The payload is expected to contain at least a `prompt`
  * string that will be sent as the user message.
  *
- * Model: claude-sonnet-4-20250514 — capable enough for all current
+ * Model: claude-sonnet-5 — capable enough for all current
  * draft types (follow-up, intro, cover note, compliance, summary)
  * while remaining cost-efficient for high-frequency generation.
+ *
+ * NOTE (30-Jul-2026): previously pinned to 'claude-sonnet-4-20250514',
+ * which started returning 404 not_found_error — that model id is no
+ * longer valid. Updated to 'claude-sonnet-5'. If this ever 404s again,
+ * check the current valid model ids before re-pinning.
  */
 class AnthropicProvider implements AiProvider {
   name = 'anthropic';
@@ -141,7 +146,7 @@ class AnthropicProvider implements AiProvider {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-5',
           max_tokens: 1024,
           system: systemPrompt,
           messages: [{ role: 'user', content: userMessage }],
