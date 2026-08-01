@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, FileWarning, Loader2, Sparkles, Target, X } from 'lucide-react';
+import { AlertTriangle, FileWarning, Loader2, Sparkles, Target, X, Link2 } from 'lucide-react';
 
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { workspaceInsetClass, workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
 import { cn } from '@/lib/utils';
+
+type ResearchCitation = {
+  marker: string;
+  sourceType: string;
+  sourceId: string;
+};
 
 type ResearchResult = {
   entityId: string;
@@ -23,6 +29,7 @@ type ResearchResult = {
   complianceStatus?: 'ok' | 'gaps_found' | 'unknown';
   missingDocuments?: string[];
   rfqReadiness?: 'ready' | 'needs_input' | 'unknown';
+  citations?: ResearchCitation[];
 };
 
 export function ResearchDrawerLauncher({ leadId, leadType }: { leadId: string; leadType?: string | null }) {
@@ -175,6 +182,21 @@ export function ResearchDrawerLauncher({ leadId, leadType }: { leadId: string; l
                       <p className="mt-1 text-xs text-content-muted">Suggested timing: {result.suggestedFollowUpTiming}</p>
                     ) : null}
                   </div>
+
+                  {result.citations && result.citations.length ? (
+                    <div className={cn(workspaceInsetClass, 'p-4')}>
+                      <p className="text-caption uppercase text-content-muted">Sources</p>
+                      <ul className="mt-2 space-y-1.5">
+                        {result.citations.map((citation) => (
+                          <li key={citation.marker + citation.sourceId} className="flex items-center gap-2 text-xs text-content-secondary">
+                            <Link2 className="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true" />
+                            <span className="font-mono font-semibold text-content-primary">{citation.marker}</span>
+                            <span className="text-content-muted">{citation.sourceType}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
 
                   <p className="text-xs text-content-muted">
                     Setu Guru only uses information already stored in this CRM record. Nothing here is sent or changed automatically —

@@ -2,12 +2,18 @@
 import { createClient } from '@/lib/supabase/server';
 import { getIcpProfile, type IcpProfile } from '@/lib/setu-guru/icp';
 import { retrieveGuru } from '@/lib/rag/retrieve';
+import { embedChunks } from '@/lib/rag/embedding-provider';
 import { scoreFitAgainstIcp, type FitScoreResult } from '@/lib/setu-guru/fit-scoring';
 
 import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
 
 export type { FitScoreResult };
+
+export type ResearchCitation = {
+  marker: string; // e.g. "[R1]"
+  sourceType: string;
+  sourceId: string;
+};
 
 export type EntityResearchResult = {
   entityId: string;
@@ -23,6 +29,10 @@ export type EntityResearchResult = {
   complianceStatus?: 'ok' | 'gaps_found' | 'unknown';
   missingDocuments?: string[];
   rfqReadiness?: 'ready' | 'needs_input' | 'unknown';
+  /** Sources actually cited in fitSummary/suggestedAngle, per SOW Module D
+   *  "Citation UI Mapping" — only present when enrichWithRag() ran and the
+   *  model referenced retrieved document chunks (e.g. "[R1]"). */
+  citations?: ResearchCitation[];
 };
 
 type LeadRow = {
@@ -47,13 +57,7 @@ const AI_TIMEOUT_MS = 8000;
 const RAG_SYNTHESIS_MODEL = process.env.SETU_GURU_RAG_MODEL || 'claude-haiku-4-5-20251001';
 
 // --- Singleton API clients (do not recreate per-request) ---
-let openaiClient: OpenAI | null = null;
 let anthropicClient: Anthropic | null = null;
-
-function getOpenAI(): OpenAI {
-  if (!openaiClient) openaiClient = new OpenAI({ timeout: AI_TIMEOUT_MS });
-  return openaiClient;
-}
 
 function getAnthropic(): Anthropic {
   if (!anthropicClient) anthropicClient = new Anthropic({ timeout: AI_TIMEOUT_MS });
@@ -85,7 +89,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * NOTE: if `createClient()` in `@/lib/supabase/server` ever uses the
  * SUPABASE_SERVICE_ROLE_KEY (which bypasses RLS entirely) instead of the
  * session-scoped anon client, this guard becomes the ONLY thing standing
- * between a caller and cross-tenant data — confirm that before shipping.
+ * between a caller and cross-tenant data â€” confirm that before shipping.
  */
 async function assertRequestIsValid(
   client: any,
@@ -165,6 +169,16 @@ async function fetchLeadAndIcp(
  * Falls back silently to the rule-based defaults on any failure (network,
  * embedding, retrieval, or JSON parsing errors), logging the failure for
  * observability without breaking the caller.
+ *
+ * FIX (this pass): the query embedding used to come from OpenAI's
+ * text-embedding-3-small (1536-dim). guru_embeddings / match_guru_embeddings
+ * are hardcoded to vector(1024) (BGE-M3's output size — see
+ * supabase/migrations/20260713000000_guru_rag_embeddings_hardening.sql).
+ * A 1536-dim query embedding against a 1024-dim RPC would fail every call;
+ * the failure was invisible because this function's catch-all silently
+ * falls back to the rule-based summary. Switched to embedChunks() (BGE-M3,
+ * same provider ingest.ts writes with) so query-side and storage-side
+ * embeddings are dimensionally consistent.
  */
 async function enrichWithRag(params: {
   orgId: string;
@@ -173,19 +187,25 @@ async function enrichWithRag(params: {
   country: string | null | undefined;
   fallbackAngle: string | null;
   fallbackSummary: string;
-}): Promise<{ angle: string | null; summary: string }> {
+}): Promise<{ angle: string | null; summary: string; citations: ResearchCitation[] }> {
   const { orgId, label, products, country, fallbackAngle, fallbackSummary } = params;
+  const fallback = { angle: fallbackAngle, summary: fallbackSummary, citations: [] as ResearchCitation[] };
 
   try {
     const ragQuestion = `Find the best outreach angle and historical data for a buyer interested in ${
       products || 'our products'
     } from ${country || 'unknown region'}.`;
 
-    const embeddingResponse = await getOpenAI().embeddings.create({
-      model: 'text-embedding-3-small',
-      input: ragQuestion,
-    });
-    const queryEmbedding = embeddingResponse.data[0].embedding;
+    const embeddingResult = await embedChunks([ragQuestion]);
+    if (!embeddingResult.ok || !embeddingResult.embeddings) {
+      console.warn('[Guru:Agentic-AI] Query embedding failed, using fallback', {
+        orgId,
+        label,
+        error: embeddingResult.error,
+      });
+      return fallback;
+    }
+    const queryEmbedding = embeddingResult.embeddings[0];
 
     const ragResult = await retrieveGuru({
       organizationId: orgId,
@@ -195,7 +215,7 @@ async function enrichWithRag(params: {
     });
 
     if (!ragResult.found) {
-      return { angle: fallbackAngle, summary: fallbackSummary };
+      return fallback;
     }
 
     const aiResponse = await getAnthropic().messages.create({
@@ -205,27 +225,41 @@ async function enrichWithRag(params: {
       messages: [
         {
           role: 'user',
-          content: `Based on the RAG data, write a 1-sentence personalized outreach angle for ${label}. Then write a 1-sentence fit summary. Respond with ONLY valid JSON, no markdown fences, in exactly this shape: {"angle": "...", "summary": "..."}`,
+          content: `Based on the RAG data, write a 1-sentence personalized outreach angle for ${label}. Then write a 1-sentence fit summary. Cite retrieved sources inline using their [R#] markers wherever a claim is drawn from them. Respond with ONLY valid JSON, no markdown fences, in exactly this shape: {"angle": "...", "summary": "...", "sourcesUsed": ["R1", "R2"]}`,
         },
       ],
     });
 
     const block = aiResponse.content.find((item) => item.type === 'text');
     const responseText = block && 'text' in block ? block.text : '';
-    const parsed = safeParseJson<{ angle?: string; summary?: string }>(responseText);
+    const parsed = safeParseJson<{ angle?: string; summary?: string; sourcesUsed?: string[] }>(responseText);
 
     if (!parsed) {
       console.warn('[Guru:Agentic-AI] Could not parse LLM JSON response, using fallback', { orgId, label });
-      return { angle: fallbackAngle, summary: fallbackSummary };
+      return fallback;
     }
+
+    // Map the model's self-reported "R1"/"R2" markers back to full source
+    // info from the actual retrieved chunks, so the UI can render a
+    // verifiable source list rather than trusting the model's citation
+    // claims at face value.
+    const citedMarkers = new Set((parsed.sourcesUsed ?? []).map((m) => m.replace(/[^\dR]/gi, '').toUpperCase()));
+    const citations: ResearchCitation[] = ragResult.chunks
+      .filter((chunk) => citedMarkers.has(chunk.citation.replace(/[^\dR]/gi, '').toUpperCase()))
+      .map((chunk) => ({
+        marker: chunk.citation,
+        sourceType: chunk.source_type,
+        sourceId: chunk.source_id,
+      }));
 
     return {
       angle: parsed.angle || fallbackAngle,
       summary: parsed.summary || fallbackSummary,
+      citations,
     };
   } catch (error) {
     console.error('[Guru:Agentic-AI] Failed to orchestrate RAG enrichment:', { orgId, label, error });
-    return { angle: fallbackAngle, summary: fallbackSummary };
+    return fallback;
   }
 }
 
@@ -307,7 +341,7 @@ export async function generateBuyerResearch(orgId: string, leadId: string): Prom
       : null;
   const fallbackSummary = summaryParts.join(' ');
 
-  const { angle: finalSuggestedAngle, summary: finalFitSummary } = await enrichWithRag({
+  const { angle: finalSuggestedAngle, summary: finalFitSummary, citations } = await enrichWithRag({
     orgId,
     label,
     products: lead.products_or_needs,
@@ -327,9 +361,20 @@ export async function generateBuyerResearch(orgId: string, leadId: string): Prom
     missingInformation,
     recommendedNextAction,
     suggestedFollowUpTiming,
+    citations: citations.length ? citations : undefined,
   };
 }
 
+/**
+ * NOTE (flagged, not changed): unlike generateBuyerResearch, this function
+ * does not call enrichWithRag() — it's rule-based only (fitScore + document
+ * expiry + RFQ status from CRM tables directly). This may be intentional
+ * (supplier compliance status arguably shouldn't depend on an LLM's
+ * synthesis), but nothing in the code documents that as a deliberate
+ * decision, and it's inconsistent with the buyer path. Worth confirming
+ * with whoever owns this feature whether supplier research should also get
+ * RAG-grounded synthesis, or whether rule-based-only is correct as-is.
+ */
 export async function generateSupplierResearch(orgId: string, leadId: string): Promise<EntityResearchResult | null> {
   const supabase = await createClient();
   const client = supabase as any;
@@ -416,7 +461,7 @@ export async function generateSupplierResearch(orgId: string, leadId: string): P
     fitSummary: summaryParts.join(' '),
     fitScore,
     recommendedProducts: [],
-    suggestedAngle: null,
+    suggestedAngle: null, // supplier path is rule-based only, doesn't generate an outreach angle
     missingInformation,
     recommendedNextAction,
     suggestedFollowUpTiming: openRfq ? 'As soon as possible' : null,
