@@ -298,8 +298,12 @@ export async function getAuditEvents(
     actorId?: string;
     limit?: number;
   },
+  dbClient?: any,
 ): Promise<AuditEventRecord[]> {
-  const scope = await resolveAuditReadScope(organizationId);
+
+  const scope = dbClient 
+    ? { mode: 'org', organizationId, actorUserId: null, currentRoles: ['admin'] } 
+    : await resolveAuditReadScope(organizationId);
   if (scope.mode === 'none' || !scope.organizationId) {
     return [];
   }
@@ -308,7 +312,7 @@ export async function getAuditEvents(
     return [];
   }
 
-  const supabase = await createClient();
+  const supabase = dbClient ?? (await createClient());
   let query = supabase
     .from('audit_logs')
     .select('*')

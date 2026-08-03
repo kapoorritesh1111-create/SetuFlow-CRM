@@ -27,12 +27,22 @@ import {
  *     authenticated workspace (see `callAgenticTool`), so a
  *     prompt-injected or hallucinated tool call can never read another
  *     organization's data — this composes with the RLS/org-membership
- *     guarantees already enforced at the database layer (Module C).
+ *     guarante guarantees already enforced at the database layer (Module C).
  *   - This intentionally does NOT add any new real-time integration
  *     (e.g. live shipment/carrier tracking). SoW Section 3 keeps that
  *     out of scope. It only exposes data that already lives in this
  *     CRM's own database, through existing, already-audited query
  *     functions — not a new data source.
+ *
+ * dbClient (added 02-Aug-2026): optional injected Supabase client, for
+ * standalone scripts/tests running outside a Next.js request scope (see
+ * dedup.ts/ingest.ts/retrieve.ts for the same pattern). Currently only
+ * threaded through to get_leads and get_pipeline_overview, since those
+ * are the two query-core.ts functions (+ their getOrganizationStages /
+ * getOrganizationMemberUserIds helpers) that have been updated to accept
+ * it. The other 5 tools still call query-core.ts functions that make
+ * their own internal createClient() call and will fail the same way
+ * outside a request scope until they get the same treatment.
  */
 
 export type AgenticToolName =
@@ -154,6 +164,7 @@ export interface AgenticToolResult {
 export async function callAgenticTool(
   call: AgenticToolCall,
   organizationId: string,
+  dbClient?: any,
 ): Promise<AgenticToolResult> {
   const startedAt = Date.now();
 
@@ -174,7 +185,7 @@ export async function callAgenticTool(
   }
 
   try {
-    const result = await dispatchAgenticTool(call, organizationId);
+    const result = await dispatchAgenticTool(call, organizationId, dbClient);
     logOutcome(result.ok ? 'ok' : 'error', result.error);
     return result;
   } catch (error) {
@@ -189,38 +200,61 @@ export async function callAgenticTool(
 async function dispatchAgenticTool(
   call: AgenticToolCall,
   organizationId: string,
+  dbClient?: any,
 ): Promise<AgenticToolResult> {
   switch (call.name) {
       case 'get_leads': {
-        const data = await getLeadsPageData(organizationId);
-        return { ok: true, toolName: call.name, data };
+        const data = await getLeadsPageData(organizationId, dbClient);
+        if (!data) return { ok: true, toolName: call.name, data: { totalLeads: 0, leads: [] } };
+        // getLeadsPageData returns a full page-render payload (quotes, rfqs,
+        // line items, documents, pricing rules, etc.) sized for rendering a
+        // UI page, not for an LLM context window. For this org alone that
+        // payload was measured at 209k+ tokens — over Claude's 200k limit.
+        // Return a lightweight summary instead (confirmed via
+        // golden-eval-runner.ts, 02-Aug-2026).
+        const leadSummaries = data.leads.map((lead: any) => ({
+          id: lead.id,
+          company_name: lead.company_name,
+          lead_type: lead.lead_type,
+          stage_id: lead.stage_id,
+          owner_user_id: lead.owner_user_id,
+          next_follow_up_at: lead.next_follow_up_at,
+          deal_value: lead.deal_value,
+          deal_currency: lead.deal_currency,
+          country: lead.country,
+        }));
+        return {
+          ok: true,
+          toolName: call.name,
+          data: { totalLeads: leadSummaries.length, leads: leadSummaries, stages: data.stages },
+        };
       }
       case 'get_lead_profile': {
         const leadId = call.input?.leadId;
         if (typeof leadId !== 'string' || !leadId) {
           return { ok: false, toolName: call.name, error: 'leadId is required.' };
         }
-        const data = await getLeadProfileData(organizationId, leadId);
+        const data = await getLeadProfileData(organizationId, leadId, dbClient);
         return { ok: true, toolName: call.name, data };
       }
       case 'get_compliance_status': {
-        const data = await getComplianceWorkspaceData(organizationId);
+        const data = await getComplianceWorkspaceData(organizationId, dbClient);
         return { ok: true, toolName: call.name, data };
       }
       case 'get_pipeline_overview': {
-        const data = await getPipelineData(organizationId);
+        const data = await getPipelineData(organizationId, dbClient);
         return { ok: true, toolName: call.name, data };
       }
       case 'get_contracts': {
-        const data = await getContractsWorkspaceData(organizationId);
+        const data = await getContractsWorkspaceData(organizationId, dbClient);
         return { ok: true, toolName: call.name, data };
       }
       case 'get_tasks': {
-        const data = await getTasksWorkspaceData(organizationId);
+        const data = await getTasksWorkspaceData(organizationId, dbClient);
         return { ok: true, toolName: call.name, data };
       }
       case 'get_reports': {
-        const data = await getReportsData(organizationId);
+        const data = await getReportsData(organizationId, dbClient);
         return { ok: true, toolName: call.name, data };
       }
       default: {

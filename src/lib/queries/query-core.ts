@@ -1143,9 +1143,8 @@ function formatDateTime(value: string | null | undefined) {
     minute: '2-digit',
   }).format(parsed);
 }
-
-async function getOrganizationMemberUserIds(organizationId: string, issues: string[]) {
-  const supabase = await createClient();
+async function getOrganizationMemberUserIds(organizationId: string, issues: string[], dbClient?: any) {
+  const supabase = dbClient ?? (await createClient());
   const { data, error } = await supabase
     .from('organization_members')
     .select('user_id')
@@ -1188,8 +1187,8 @@ async function getOrganizationProfiles(userIds: string[], issues: string[]) {
   return rows(data) as LeadsPageData['profiles'];
 }
 
-async function getOrganizationStages(organizationId: string, issues: string[]) {
-  const supabase = await createClient();
+async function getOrganizationStages(organizationId: string, issues: string[], dbClient?: any) {
+  const supabase = dbClient ?? (await createClient());
   const { data: pipelines, error: pipelinesError } = await supabase
     .from('pipelines')
     .select('id, name, lead_type, is_default')
@@ -2203,15 +2202,14 @@ export async function getDashboardData(
     },
   };
 }
-
-export async function getLeadsPageData(organizationId: string): Promise<LeadsPageData | null> {
+export async function getLeadsPageData(organizationId: string, dbClient?: any): Promise<LeadsPageData | null> {
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
+  const supabase = dbClient ?? (await createClient());
   const [{ stages, pipelines }, memberUserIds] = await Promise.all([
-    getOrganizationStages(organizationId, issues),
-    getOrganizationMemberUserIds(organizationId, issues),
+    getOrganizationStages(organizationId, issues, dbClient),
+    getOrganizationMemberUserIds(organizationId, issues, dbClient),
   ]);
 
   const [leadsResult, nextStepsResult, tradeEventsResult, productCategoriesResult, productsResult, marketsResult, countriesResult] =
@@ -2584,14 +2582,15 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
   };
 }
 
-export async function getLeadProfileData(organizationId: string, leadId: string): Promise<LeadProfileData | null> {
+export async function getLeadProfileData(organizationId: string, leadId: string, dbClient?: any): Promise<LeadProfileData | null> {
+ 
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
+  const supabase = dbClient ?? (await createClient());
   const [{ stages, pipelines }, memberUserIds] = await Promise.all([
-    getOrganizationStages(organizationId, issues),
-    getOrganizationMemberUserIds(organizationId, issues),
+    getOrganizationStages(organizationId, issues, dbClient),
+    getOrganizationMemberUserIds(organizationId, issues, dbClient),
   ]);
 
   const [
@@ -2911,20 +2910,22 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
   };
 }
 
-export async function getComplianceWorkspaceData(organizationId: string): Promise<ComplianceWorkspaceData | null> {
+export async function getComplianceWorkspaceData(organizationId: string, dbClient?: any): Promise<ComplianceWorkspaceData | null> {
+ 
+ 
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
+  const supabase = dbClient ?? (await createClient());
   const [{ stages }, leadsResult, memberUserIdsPromise, documentsResult, complianceItemsResult, complianceDefinitionsResult, requirementRulesResult, rfqsResult, quotesResult, auditEvents] =
     await Promise.all([
-      getOrganizationStages(organizationId, issues),
+     getOrganizationStages(organizationId, issues, dbClient),
       supabase
         .from('leads')
         .select('id, company_name, lead_type, stage_id, next_follow_up_at, owner_user_id, updated_at')
         .eq('organization_id', organizationId)
         .order('updated_at', { ascending: false }),
-      getOrganizationMemberUserIds(organizationId, issues),
+      getOrganizationMemberUserIds(organizationId, issues, dbClient),
       supabase
         .from('documents')
         .select(
@@ -2952,8 +2953,7 @@ export async function getComplianceWorkspaceData(organizationId: string): Promis
         .eq('is_active', true)
         .order('progression_scope', { ascending: true }),
       supabase.from('rfqs').select('id, lead_id, status, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(120),
-      supabase.from('quotes').select('id, lead_id, status, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(120),
-      getAuditEvents(organizationId, {
+      supabase.from('quotes').select('id, lead_id, status, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(120),getAuditEvents(organizationId, {
         limit: 40,
         eventTypes: [
           'document_status_changed',
@@ -2964,7 +2964,7 @@ export async function getComplianceWorkspaceData(organizationId: string): Promis
           'compliance_status_changed',
           'compliance_item_updated',
         ],
-      }),
+      }, dbClient),
     ]);
 
   addIssue(issues, 'compliance leads', leadsResult.error);
@@ -3011,12 +3011,12 @@ export async function getComplianceWorkspaceData(organizationId: string): Promis
   };
 }
 
-export async function getPipelineData(organizationId: string): Promise<PipelineData | null> {
+export async function getPipelineData(organizationId: string, dbClient?: any): Promise<PipelineData | null> {
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
-  const { pipelines, stages } = await getOrganizationStages(organizationId, issues);
+  const supabase = dbClient ?? (await createClient());
+  const { pipelines, stages } = await getOrganizationStages(organizationId, issues, dbClient);
 
   const [leads, nextSteps] = await Promise.all([
     supabase
@@ -3089,7 +3089,7 @@ export async function getProductsData(organizationId: string): Promise<ProductsD
     Promise.resolve({ data: [], error: null }),
     supabase.from('markets').select('id, name, is_active').eq('organization_id', organizationId).order('sort_order').limit(PRODUCT_MARKETS_QUERY_LIMIT),
     (supabase as any).from('product_pricing_rules').select('id, product_id, product_variant_id, effective_from, effective_to, ex_factory_usd, fob_usd, ex_factory_inr, fob_inr, ex_factory_usd_per_case, ex_factory_usd_per_unit, fob_usd_per_case, fob_usd_per_unit, bulk_usd_per_kg, pricing_type, product_name, sku_code').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true),
-    getAuditEvents(organizationId, {
+   getAuditEvents(organizationId, {
       limit: 50,
       eventTypes: ['product_created', 'product_updated', 'product_deleted', 'pricing_shared', 'pricing_sent', 'pricing_exported'],
     }),
@@ -3128,12 +3128,14 @@ export async function getProductsData(organizationId: string): Promise<ProductsD
   };
 }
 
-export async function getTasksWorkspaceData(organizationId: string): Promise<TasksWorkspaceData | null> {
+export async function getTasksWorkspaceData(organizationId: string, dbClient?: any): Promise<TasksWorkspaceData | null> {
+ 
+  
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
-  const memberUserIds = await getOrganizationMemberUserIds(organizationId, issues);
+  const supabase = dbClient ?? (await createClient());
+  const memberUserIds = await getOrganizationMemberUserIds(organizationId, issues, dbClient);
 
   const [tasks, leads, profiles, tradeEvents] = await Promise.all([
     supabase
@@ -3424,11 +3426,12 @@ export async function getAISuggestionsData(organizationId: string): Promise<AISu
   };
 }
 
-export async function getContractsWorkspaceData(organizationId: string): Promise<ContractsWorkspaceData | null> {
+export async function getContractsWorkspaceData(organizationId: string, dbClient?: any): Promise<ContractsWorkspaceData | null> {
+  
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
+  const supabase = dbClient ?? (await createClient());
 
   const [contracts, leads, quotes, contractLineItems, documents, complianceItems, communications, negotiationEvents, auditEvents] = await Promise.all([
     supabase.from('contracts').select('id, lead_id, quote_id, status, signed_at, starts_on, ends_on, created_at, updated_at, notes, commercial_lock_state, quote_currency, pricing_basis, approval_required, approval_state, approved_at, sent_at, accepted_at, locked_at, accepted_quote_version_id, commercial_snapshot_mode, commercial_handoff_at, commercial_snapshot').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(120),
@@ -3439,7 +3442,7 @@ export async function getContractsWorkspaceData(organizationId: string): Promise
     supabase.from('lead_compliance_items').select('id, lead_id, status, severity, due_at, leads!inner(organization_id)').eq('leads.organization_id', organizationId).order('created_at', { ascending: false }).limit(240),
     (supabase as any).from('communications').select('id, lead_id, quote_id, related_entity, related_id, communication_type, subject, summary, status, created_at, sent_at').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(240),
     (supabase as any).from('quote_negotiation_events').select('id, quote_id, quote_version_id, event_type, message, created_at, actor_name, actor_type').order('created_at', { ascending: false }).limit(240),
-    getAuditEvents(organizationId, { limit: 60, eventTypes: ['contract_progressed', 'contract_updated', 'document_status_changed', 'compliance_status_changed'] }),
+    getAuditEvents(organizationId, { limit: 60, eventTypes: ['contract_progressed', 'contract_updated', 'document_status_changed', 'compliance_status_changed'] }, dbClient),
   ]);
 
   addIssue(issues, 'contracts', contracts.error);
@@ -3465,11 +3468,12 @@ export async function getContractsWorkspaceData(organizationId: string): Promise
   };
 }
 
-export async function getReportsData(organizationId: string): Promise<ReportsData | null> {
+export async function getReportsData(organizationId: string, dbClient?: any): Promise<ReportsData | null> {
+ 
   if (!hasSupabaseEnv) return null;
 
   const issues: string[] = [];
-  const supabase = await createClient();
+ const supabase = dbClient ?? (await createClient());
   const [{ stages }, leads, followUps, quotes, rfqs, complianceItems, tasks, products, markets, variants, pricingRules] = await Promise.all([
     getOrganizationStages(organizationId, issues),
     supabase.from('leads').select('id, stage_id, created_at, updated_at, deal_value').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(240),
@@ -3521,7 +3525,7 @@ export async function getReportsData(organizationId: string): Promise<ReportsDat
 
   let auditEvents: AuditEventRecord[] = [];
   try {
-    auditEvents = await getAuditEvents(organizationId, { limit: 24 });
+    auditEvents = await getAuditEvents(organizationId, { limit: 24 }, dbClient);
   } catch (error) {
     addIssue(issues, 'reports audit events', error as { message?: string } | null | undefined);
   }

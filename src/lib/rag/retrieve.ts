@@ -11,6 +11,12 @@ export interface RetrieveInput {
   queryEmbedding: number[];
   sourceTypes?: string[];
   matchCount?: number;
+  /** Optional injected client — see dedup.ts/ingest.ts for the same
+   *  pattern. Standalone scripts/tests running outside a Next.js request
+   *  scope (where `cookies()` has nothing to read) pass their own
+   *  authenticated client here. Production call sites (API routes,
+   *  server actions) omit this and get the normal request-scoped client. */
+  dbClient?: any;
 }
 
 /** A single retrieved document chunk, ready to be cited in a grounded answer. */
@@ -132,25 +138,7 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
   const safeQuestion = sanitizeQuestion(input.question);
   if (!safeQuestion) return NOT_FOUND;
 
-  const supabase = await createClient();
-
-  // Run vector similarity search and full-text keyword search in parallel;
-  // results are combined below via RRF rather than relying on either alone.
-  //
-  // NOTE ON THE TYPE CAST BELOW:
-  // `src/types/database.ts` does not yet declare `match_guru_embeddings` or
-  // `search_guru_embeddings_fts` in its `Functions` map (it was generated
-  // before this migration was added), so the typed `supabase` client has no
-  // valid signature for these RPCs and rejects the call arguments at compile
-  // time. `supabaseUntyped` opts this call site out of that check; the RPC
-  // names, arguments, and runtime behavior are unchanged, and the response
-  // shape is asserted explicitly via the tuple type on the left-hand side.
-  //
-  // TODO(tech-debt): regenerate src/types/database.ts
-  // (`npx supabase gen types typescript --project-id <id> --schema public`)
-  // to include `match_guru_embeddings` and `search_guru_embeddings_fts`,
-  // then remove `supabaseUntyped` and call `.rpc()` on `supabase` directly.
-  const supabaseUntyped = supabase as any;
+  const supabaseUntyped: any = input.dbClient ?? (await createClient());
 
   const [vectorResponse, keywordResponse]: [
     { data: any[] | null; error: any },
@@ -181,8 +169,6 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
 
   if (vectorMatches.length === 0 && keywordMatches.length === 0) return NOT_FOUND;
 
-  // Keep a lookup of full row data by id so we can re-hydrate the winning
-  // chunks after RRF has scored and sorted by id alone.
   const allChunksMap = new Map();
   [...vectorMatches, ...keywordMatches].forEach((c) => allChunksMap.set(c.id, c));
 

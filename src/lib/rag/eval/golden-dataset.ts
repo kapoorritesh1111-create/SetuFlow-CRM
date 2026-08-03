@@ -16,11 +16,25 @@
  *                         the expected tool was invoked and the answer
  *                         reflects that tool's live data.
  *
- * This file ships with placeholder `rag-*` entries because Module A/B
- * (ingestion + embeddings) have not run yet, so there are no real
- * documents to ground answers in. The `agentic-*` entries can be graded
- * as soon as Module F's tools are wired into the Guru response pipeline,
- * since they only depend on data already in this CRM's own tables.
+ * STATUS (updated 02-Aug-2026):
+ *   - Wiring: AGENTIC_TOOLS + callAgenticTool() are now actually callable
+ *     by Claude via src/lib/rag/guru-agentic-orchestrator.ts — previously
+ *     they were defined but never passed to any Anthropic API call.
+ *   - Grading script: scripts/golden-eval-runner.ts now exists and can
+ *     execute this dataset (see that file for how each case type is
+ *     scored).
+ *   - `rag-001` / `rag-002` remain PLACEHOLDER: no real UAE spice-export
+ *     compliance document or HS-code reference document has been
+ *     ingested yet (only the SOW PDF itself has been used as a test
+ *     document for Module A/B validation). The grading script skips
+ *     these with a visible "SKIPPED (placeholder)" note rather than
+ *     silently passing or failing them — replace with real expected
+ *     answers once real documents are ingested.
+ *   - `agentic-002`'s query is a template (`{{LEAD_NAME}}`) rather than a
+ *     hardcoded name: the grading script resolves it against a real lead
+ *     fetched live via get_leads at run time, so this case is genuinely
+ *     gradable now without fabricating a name that may not exist in your
+ *     seeded data.
  */
 
 export type GoldenCaseType = 'rag' | 'agentic';
@@ -28,7 +42,9 @@ export type GoldenCaseType = 'rag' | 'agentic';
 export interface GoldenCase {
   id: string;
   type: GoldenCaseType;
-  /** The question exactly as a user might realistically type it. */
+  /** The question exactly as a user might realistically type it. May
+   *  contain `{{LEAD_NAME}}`, resolved by the grading script at run time
+   *  against a real lead from this org's data. */
   query: string;
   /**
    * For `rag` cases: the expected answer content. Grading should use
@@ -42,6 +58,10 @@ export interface GoldenCase {
   expectedTools?: AgenticToolNameForEval[];
   /** True if "Data Not Found" is the correct answer for this case (negative test). */
   expectNotFound?: boolean;
+  /** True if this case has no real expected answer to grade against yet
+   *  (e.g. no document has been ingested for it) — the grading script
+   *  skips it visibly instead of scoring it. */
+  isPlaceholder?: boolean;
   /** Free-text category for reporting, e.g. 'compliance', 'pipeline', 'hs-code'. */
   category: string;
 }
@@ -68,6 +88,7 @@ export const GOLDEN_DATASET: GoldenCase[] = [
     query: 'What compliance documents are required for exporting spices to UAE?',
     expectedAnswer:
       'PLACEHOLDER — replace once a real UAE spice-export compliance document has been ingested. The answer must cite the specific source via [R1]/[R2].',
+    isPlaceholder: true,
     category: 'compliance',
   },
   {
@@ -75,6 +96,7 @@ export const GOLDEN_DATASET: GoldenCase[] = [
     type: 'rag',
     query: 'What is the HSN code for turmeric powder?',
     expectedAnswer: 'PLACEHOLDER — replace once an HS code reference document has been ingested.',
+    isPlaceholder: true,
     category: 'hs-code',
   },
   {
@@ -87,7 +109,7 @@ export const GOLDEN_DATASET: GoldenCase[] = [
     category: 'negative-test',
   },
 
-  // --- Agentic cases: gradable as soon as Module F tools are wired ---
+  // --- Agentic cases: gradable now that guru-agentic-orchestrator.ts wires the tools in ---
   {
     id: 'agentic-001',
     type: 'agentic',
@@ -99,7 +121,7 @@ export const GOLDEN_DATASET: GoldenCase[] = [
   {
     id: 'agentic-002',
     type: 'agentic',
-    query: 'What is the status of our contract with [seeded test lead name]?',
+    query: 'What is the status of our contract with {{LEAD_NAME}}?',
     expectedAnswer:
       "Answer should reflect the live execution_state from get_contracts for that lead's contract, not a retrieved document.",
     expectedTools: ['get_contracts'],
@@ -122,20 +144,3 @@ export const GOLDEN_DATASET: GoldenCase[] = [
     category: 'tasks',
   },
 ];
-
-/**
- * TODO (Module F follow-up, tracked as tech debt — not blocking Module F
- * itself, which only needs the dataset and tools defined):
- *
- *   1. Once Module A/B ingestion has run against real compliance/HS-code
- *      documents, replace the `rag-*` placeholders with real expected
- *      answers and verify citations against the actual ingested source.
- *   2. Seed a known test lead + contract in TEST_ORG_A (see
- *      tests/security/guru-rag-tenant-isolation.test.ts for that org's
- *      id/credentials) and replace `[seeded test lead name]` in
- *      agentic-002 with the real, stable name/id.
- *   3. Build a grading script that runs each case through the full Guru
- *      pipeline (retrieve.ts for `rag` cases, agentic-tools.ts for
- *      `agentic` cases) and scores the result. That script is a separate
- *      deliverable from this dataset file.
- */

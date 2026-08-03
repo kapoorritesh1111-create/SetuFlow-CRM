@@ -29,6 +29,12 @@ const DeletionEventSchema = z.object({
   idempotencyKey: z.string().min(8).max(120),
   /** Who (or what system) initiated the deletion, for the audit trail. Null for system/CDC-originated events. */
   actorUserId: z.string().uuid().nullable().optional(),
+  /** Optional injected Supabase client — see dedup.ts / ingest.ts for the
+   *  same pattern. Standalone scripts/tests running outside a Next.js
+   *  request pass their own client here (e.g. service-role, for local
+   *  testing); production call sites (the API route) omit this and get
+   *  the normal request-scoped client. */
+  dbClient: z.any().optional(),
 });
 
 export type DeletionEvent = z.infer<typeof DeletionEventSchema>;
@@ -72,21 +78,7 @@ export async function handleSourceDeletion(rawEvent: unknown): Promise<DeletionR
   }
 
   const event = parsed.data;
-  const supabase = await createClient();
-
-  // NOTE ON THE CAST BELOW:
-  // In this codebase's generated `src/types/database.ts`, `.insert()` /
-  // `.select()` on `audit_logs` resolves to a `never`-typed argument even
-  // though the table itself is declared, so the typed client rejects a
-  // perfectly valid row shape at compile time. Using the untyped client for
-  // these calls unblocks the build without changing runtime behavior — the
-  // table name and columns are unchanged and still enforced by the
-  // database's own schema and RLS policies.
-  //
-  // TODO(tech-debt): once src/types/database.ts is regenerated
-  // (see the note on the RPC call below for the command), re-check whether
-  // `audit_logs` resolves correctly and drop this cast if so.
-  const supabaseUntyped = supabase as any;
+  const supabaseUntyped: any = event.dbClient ?? (await createClient());
 
   // --- Idempotency guard --------------------------------------------------
   const { data: existingAudit, error: auditLookupError } = await supabaseUntyped
@@ -100,9 +92,6 @@ export async function handleSourceDeletion(rawEvent: unknown): Promise<DeletionR
     .maybeSingle();
 
   if (auditLookupError) {
-    // Fail closed on an unreadable audit trail: we would rather risk a
-    // harmless duplicate delete than silently skip a genuine deletion
-    // because the idempotency check itself errored.
     console.error('[RAG:deletion] Idempotency lookup failed, proceeding without it:', auditLookupError);
   }
 
@@ -118,17 +107,6 @@ export async function handleSourceDeletion(rawEvent: unknown): Promise<DeletionR
   }
 
   // --- Tombstone propagation -----------------------------------------------
-  // NOTE ON THE CAST BELOW:
-  // `src/types/database.ts` does not yet declare `delete_guru_embeddings_for_source`
-  // in its `Functions` map (same root cause documented in src/lib/rag/retrieve.ts),
-  // so the typed `supabase` client rejects this call at compile time. Casting to
-  // `any` at this single call site unblocks the build without weakening runtime
-  // behavior — the RPC name and arguments are unchanged and still enforced by the
-  // database's own org-membership guard (SECURITY INVOKER, fail-closed).
-  //
-  // TODO(tech-debt): regenerate src/types/database.ts to include this RPC
-  // (and match_guru_embeddings / search_guru_embeddings_fts, see retrieve.ts),
-  // then remove this cast.
   const { data, error } = await supabaseUntyped.rpc('delete_guru_embeddings_for_source', {
     p_organization_id: event.organizationId,
     p_source_type: event.sourceType,
@@ -146,13 +124,9 @@ export async function handleSourceDeletion(rawEvent: unknown): Promise<DeletionR
       error: error.message ?? 'Unknown database error during deletion.',
     };
   }
-
   const deletedCount = Number(data ?? 0);
 
   // --- Audit trail ----------------------------------------------------------
-  // Recorded even when deletedCount is 0 (e.g. embeddings were already gone),
-  // so the idempotency check above always has something to match against
-  // for this idempotencyKey on any future replay.
   const { error: auditWriteError } = await supabaseUntyped.from('audit_logs').insert({
     organization_id: event.organizationId,
     actor_user_id: event.actorUserId ?? null,
@@ -167,9 +141,6 @@ export async function handleSourceDeletion(rawEvent: unknown): Promise<DeletionR
   });
 
   if (auditWriteError) {
-    // The deletion itself already succeeded; a failed audit write should not
-    // be reported as a failed deletion. Log loudly so it can be investigated,
-    // but do not flip `ok` to false.
     console.error('[RAG:deletion] Deletion succeeded but audit write failed:', auditWriteError);
   }
 
