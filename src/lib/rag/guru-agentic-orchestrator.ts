@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { retrieveGuru } from '@/lib/rag/retrieve';
+import { retrieveGuru, filterOutput } from '@/lib/rag/retrieve';
 import { embedChunks } from '@/lib/rag/embedding-provider';
 import { AGENTIC_TOOLS, callAgenticTool, type AgenticToolName } from '@/lib/rag/agentic-tools';
 
@@ -109,8 +109,22 @@ export async function runGuruAgenticQuery(
     if (toolUseBlocks.length === 0) {
       // No more tool calls — extract final text answer.
       const textBlock = response.content.find((block) => block.type === 'text');
-      const answer = textBlock && 'text' in textBlock ? textBlock.text.trim() : 'Data Not Found';
-      return { answer, toolsUsed, ragUsed, citations: toolsUsed.length ? [] : citations };
+      let answer = textBlock && 'text' in textBlock ? textBlock.text.trim() : 'Data Not Found';
+      
+      // [Module D5 Fix] Post-generation grounding check.
+      const filterResult = filterOutput(answer);
+      answer = filterResult.safe ? filterResult.filtered : 'Data Not Found';
+
+      // Clean up metadata if filterOutput fell back to strict deterministic denial.
+      if (answer === 'Data Not Found') {
+        citations = [];
+        ragUsed = false;
+      } else if (toolsUsed.length > 0 && !ragUsed) {
+        // If only tools were used (no RAG), ensure citations remain empty.
+        citations = [];
+      }
+
+      return { answer, toolsUsed, ragUsed, citations };
     }
 
     // Execute every requested tool call, feed results back, loop again.
@@ -135,6 +149,7 @@ export async function runGuruAgenticQuery(
     messages.push({ role: 'user', content: toolResults });
   }
 
+  // Fallback if max tool loops are exceeded
   return {
     answer: 'Data Not Found',
     toolsUsed,

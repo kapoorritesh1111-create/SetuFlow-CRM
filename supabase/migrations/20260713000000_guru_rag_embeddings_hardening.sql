@@ -4,7 +4,7 @@
 --
 -- Creates the schema-hardened guru_embeddings table with:
 --   - RLS enabled AND forced (no bypass, even for table owner)
---   - SELECT policy scoped by is_org_member(organization_id)
+--   - SELECT, INSERT, UPDATE, DELETE policies scoped by is_org_member(organization_id)
 --   - match_guru_embeddings RPC — SECURITY INVOKER, fail-closed org guard
 --   - delete_guru_embeddings_for_source helper — org-authorized, raises on mismatch
 --   - search_path pinned on every function (public, extensions)
@@ -41,22 +41,28 @@ create index if not exists guru_embeddings_vector_idx
 alter table public.guru_embeddings enable row level security;
 alter table public.guru_embeddings force row level security;
 
--- 3. SELECT policy — org-scoped read via existing is_org_member() helper
+-- 3. RLS Policies — org-scoped read and write via existing is_org_member() helper
 create policy "guru_embeddings_select_org_scoped"
-  on public.guru_embeddings
-  for select
-  to authenticated
+  on public.guru_embeddings for select to authenticated
   using (public.is_org_member(organization_id));
 
--- Insert/update/delete are NOT exposed via direct table policies —
--- all writes go through the SECURITY INVOKER RPCs below, which re-check
--- org membership explicitly and fail closed.
+create policy "guru_embeddings_insert_org_scoped"
+  on public.guru_embeddings for insert to authenticated
+  with check (public.is_org_member(organization_id));
+
+create policy "guru_embeddings_update_org_scoped"
+  on public.guru_embeddings for update to authenticated
+  using (public.is_org_member(organization_id));
+
+create policy "guru_embeddings_delete_org_scoped"
+  on public.guru_embeddings for delete to authenticated
+  using (public.is_org_member(organization_id));
 
 -- 4. match_guru_embeddings — hybrid-search-ready vector match RPC
+-- (FIXED: Removed unused p_query_text variable)
 create or replace function public.match_guru_embeddings(
   p_organization_id uuid,
   p_query_embedding vector(1024),
-  p_query_text text,
   p_match_count int default 5,
   p_source_types text[] default null
 )
@@ -92,9 +98,9 @@ begin
 end;
 $$;
 
-revoke all on function public.match_guru_embeddings(uuid, vector, text, int, text[]) from public;
-revoke all on function public.match_guru_embeddings(uuid, vector, text, int, text[]) from anon;
-grant execute on function public.match_guru_embeddings(uuid, vector, text, int, text[]) to authenticated;
+revoke all on function public.match_guru_embeddings(uuid, vector, int, text[]) from public;
+revoke all on function public.match_guru_embeddings(uuid, vector, int, text[]) from anon;
+grant execute on function public.match_guru_embeddings(uuid, vector, int, text[]) to authenticated;
 
 -- 5. delete_guru_embeddings_for_source — org-authorized delete helper
 create or replace function public.delete_guru_embeddings_for_source(
@@ -129,9 +135,8 @@ revoke all on function public.delete_guru_embeddings_for_source(uuid, text, uuid
 revoke all on function public.delete_guru_embeddings_for_source(uuid, text, uuid) from anon;
 grant execute on function public.delete_guru_embeddings_for_source(uuid, text, uuid) to authenticated;
 
--- 6. Tombstone propagation trigger stub (Module E hooks into this later) —
--- included here because it also touches guru_embeddings and must stay
--- org-filtered per the isolation test suite's blanket check.
+-- 6. CDC Tombstone propagation trigger (Module E: Deletion Sync Wired)
+-- (FIXED: Replaced stub with dynamic table mapping and wired to compliance_documents)
 create or replace function public.guru_embeddings_tombstone_cleanup()
 returns trigger
 language plpgsql
@@ -139,10 +144,63 @@ security invoker
 set search_path = public, extensions
 as $$
 begin
+  -- Automatically clean up embeddings when the parent record is deleted.
+  -- Uses TG_TABLE_NAME dynamically to match the source_type.
   delete from public.guru_embeddings
   where organization_id = old.organization_id
-    and source_type = old.source_type
-    and source_id = old.source_id;
+    and source_type = TG_TABLE_NAME::text
+    and source_id = old.id;
   return old;
 end;
 $$;
+
+-- Wire the trigger to the actual CRM data table
+drop trigger if exists sync_guru_embeddings_on_document_delete on public.compliance_documents;
+create trigger sync_guru_embeddings_on_document_delete
+after delete on public.compliance_documents
+for each row execute function public.guru_embeddings_tombstone_cleanup();
+
+
+-- ============================================================================
+-- Module D Addition: Full-Text Search (FTS) RPC for Hybrid Retrieval
+-- ============================================================================
+create or replace function public.search_guru_embeddings_fts(
+  p_organization_id uuid,
+  p_query_text text,
+  p_match_count int default 5
+)
+returns table (
+  id uuid,
+  source_type text,
+  source_id uuid,
+  content text,
+  similarity float
+)
+language plpgsql
+security invoker
+set search_path = public, extensions
+as $$
+begin
+  -- Fail-closed: ensure caller is a member of the organization
+  if not public.is_org_member(p_organization_id) then
+    return;
+  end if;
+
+  return query
+  select 
+    ge.id,
+    ge.source_type,
+    ge.source_id,
+    ge.content,
+    ts_rank(to_tsvector('english', ge.content), plainto_tsquery('english', p_query_text)) as similarity
+  from public.guru_embeddings ge
+  where ge.organization_id = p_organization_id
+    and to_tsvector('english', ge.content) @@ plainto_tsquery('english', p_query_text)
+  order by similarity desc
+  limit p_match_count;
+end;
+$$;
+
+revoke all on function public.search_guru_embeddings_fts(uuid, text, int) from public;
+revoke all on function public.search_guru_embeddings_fts(uuid, text, int) from anon;
+grant execute on function public.search_guru_embeddings_fts(uuid, text, int) to authenticated;

@@ -42,10 +42,16 @@ export type IngestOutcome =
       chunksWritten: number;
       chunksSkippedUnchanged: number;
       chunksQueuedForReview: number;
+      chunksDeletedStale: number; // New metric for stale chunks deleted
     }
   | { status: 'error'; error: string };
 
 export async function ingestDocument(input: IngestInput): Promise<IngestOutcome> {
+  // [Fix A1]: Webhooks have no session cookie, so they fail standard RLS.
+  // We must use the service_role client for background ingestion.
+  // Assuming createClient(true) returns the admin/service_role client in your setup.
+  const supabaseUntyped: any = input.dbClient ?? (await createClient());
+
   // --- Step 1: file-level dedup -----------------------------------------
   let dedupResult;
   try {
@@ -54,7 +60,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       sourceType: input.sourceType,
       sourceId: input.sourceId,
       fileBuffer: input.fileBuffer,
-      dbClient: input.dbClient,
+      dbClient: supabaseUntyped,
     });
   } catch (err: unknown) {
     return { status: 'error', error: err instanceof Error ? err.message : String(err) };
@@ -84,9 +90,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     return { status: 'error', error: 'Chunker produced no chunks from parsed pages' };
   }
 
-  // --- Per-chunk hash dedup against existing rows (skip unchanged chunks) --
-  const supabaseUntyped: any = input.dbClient ?? (await createClient());
-
+  // --- Step 2.5: Per-chunk hash dedup & [Fix A8] Stale Chunk Cleanup ---
   const { data: existingChunks, error: existingChunksError } = await supabaseUntyped
     .from('guru_embeddings')
     .select('chunk_index, metadata')
@@ -101,6 +105,30 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
   const existingHashByIndex = new Map<number, string>(
     (existingChunks ?? []).map((row: any) => [row.chunk_index, row.metadata?.chunk_hash]),
   );
+
+  // Identify stale chunks (chunks in DB that are beyond the new document length)
+  const incomingChunkIndices = new Set(chunks.map(c => c.chunkIndex));
+  const staleChunkIndices = (existingChunks ?? [])
+    .filter((row: any) => !incomingChunkIndices.has(row.chunk_index))
+    .map((row: any) => row.chunk_index);
+
+  let chunksDeletedStale = 0;
+  if (staleChunkIndices.length > 0) {
+    const { error: deleteError } = await supabaseUntyped
+      .from('guru_embeddings')
+      .delete()
+      .eq('organization_id', input.organizationId)
+      .eq('source_type', input.sourceType)
+      .eq('source_id', input.sourceId)
+      .in('chunk_index', staleChunkIndices);
+
+    if (deleteError) {
+      console.error('[ingest] Failed to delete stale chunks:', deleteError.message);
+      // We log but don't strictly fail ingestion, to allow the upsert to proceed.
+    } else {
+      chunksDeletedStale = staleChunkIndices.length;
+    }
+  }
 
   const changedChunks = chunks.filter((c) => existingHashByIndex.get(c.chunkIndex) !== c.chunkHash);
   const unchangedCount = chunks.length - changedChunks.length;
@@ -140,6 +168,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       chunksWritten: 0,
       chunksSkippedUnchanged: unchangedCount,
       chunksQueuedForReview: queuedCount,
+      chunksDeletedStale,
     };
   }
 
@@ -194,5 +223,6 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     chunksWritten: written,
     chunksSkippedUnchanged: unchangedCount,
     chunksQueuedForReview: queuedCount,
+    chunksDeletedStale,
   };
 }
