@@ -7,7 +7,7 @@ import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
 import { collectSetuGuruPageContext } from '@/lib/setu-guru/page-context';
 import { useTrialTour } from '@/features/trial/tour-provider';
-import { getBestSetuGuruHelpTopic, getRouteHelpSummary, getSetuGuruActionHref, getSetuGuruRouteTopics, type SetuGuruHelpTopic } from '@/lib/setu-guru/help-registry';
+import { getBestSetuGuruHelpTopic, getRouteHelpSummary, getSetuGuruActionHref, getSetuGuruRouteTopics, isSetuGuruQuestionInScope, type SetuGuruHelpTopic } from '@/lib/setu-guru/help-registry';
 import { isSetuGuruComplianceQuestion, isSetuGuruOrgSearchQuestion, isSetuGuruPricingDefaultQuestion } from '@/lib/setu-guru/guru-response-policy';
 import { SetuGuruFab } from '@/features/setu-guru/setu-guru-fab';
 
@@ -296,6 +296,13 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
     if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
     if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
+   if (!isSetuGuruQuestionInScope(question)) {
+      appendAssistant(
+        'Data Not Found - this question does not match any Setu Guru product, workflow, or page topic in the current knowledge base.\n\nSetu Guru can help with leads, quotes, compliance, pricing defaults, HS codes, and CRM workflow questions.\n\nRecommended next step: ask a question related to a lead, quote, or CRM workflow, or open the relevant record for context.',
+      );
+      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+      return;
+    }
     setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeTitle)]);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }

@@ -59,6 +59,57 @@ export const SETU_GURU_HELP_TOPICS: SetuGuruHelpTopic[] = [
 ];
 
 function normalize(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+/**
+ * Common English function words. Left in the token set, these inflate
+ * every topic's word-overlap score regardless of relevance ("what",
+ * "the", "is", ...) and, combined with the current-route bonus in
+ * getBestSetuGuruHelpTopic, can make a completely off-topic question
+ * look like a genuine match for whatever topic the user's current page
+ * belongs to.
+ */
+const SETU_GURU_STOPWORDS = new Set([
+  'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can',
+  'has', 'have', 'had', 'was', 'were', 'what', 'when', 'where',
+  'which', 'who', 'why', 'how', 'this', 'that', 'these', 'those',
+  'with', 'from', 'into', 'onto', 'use', 'used', 'using', 'get',
+  'set', 'its', 'their', 'they', 'them', 'about', 'before', 'after',
+  'than', 'then', 'will', 'would', 'should', 'could', 'does', 'did',
+  'doing', 'each', 'any', 'may', 'must', 'shall', 'per', 'via',
+]);
+
+function setuGuruTokens(value: string): string[] {
+  return normalize(value)
+    .split(' ')
+    .filter((token) => token.length > 2 && !SETU_GURU_STOPWORDS.has(token));
+}
+
+/** Minimum distinct question tokens that must genuinely appear in the
+ * topic registry before a question is treated as in-scope, independent
+ * of which route the user happens to be on. Below this, the current-
+ * route bonus alone must not be enough to select a topic. */
+const SETU_GURU_MIN_DISTINCT_TOKEN_MATCHES = 3;
+
+/**
+ * True if the question shares enough real vocabulary with the help
+ * registry (across ALL topics, not just the current route) to be
+ * considered in-scope at all. This is deliberately independent of
+ * getBestSetuGuruHelpTopic's route-match bonus, so an off-topic
+ * question asked on a page whose topic happens to "win by default"
+ * (e.g. Leads) is still correctly flagged as out of scope.
+ */
+export function isSetuGuruQuestionInScope(question: string): boolean {
+  const questionTokens = setuGuruTokens(question);
+  if (questionTokens.length === 0) return false;
+  const combinedHaystack = normalize(
+    SETU_GURU_HELP_TOPICS.map((topic) =>
+      [topic.title, topic.summary, ...topic.tags, ...topic.answer, ...topic.commonBlockers, ...topic.dataSources, ...topic.allowedActions].join(' '),
+    ).join(' '),
+  );
+  const matched = new Set(questionTokens.filter((token) => combinedHaystack.includes(token)));
+  return matched.size >= SETU_GURU_MIN_DISTINCT_TOKEN_MATCHES;
+}
+
 export function getHelpTopicById(id: string) { return SETU_GURU_HELP_TOPICS.find((topic) => topic.id === id || topic.slug === id) ?? null; }
 export function getSetuGuruRouteTopics(pathname: string) { const pageContext = getSetuGuruPageContext(pathname); const matches = SETU_GURU_HELP_TOPICS.filter((topic) => topic.routeKeys.includes(pageContext.routeKey) || topic.routes.some((route) => routeMatchesSetuGuruPath(pathname, route))); return matches.length ? matches : SETU_GURU_HELP_TOPICS; }
 export const getHelpTopicsForPath = getSetuGuruRouteTopics;

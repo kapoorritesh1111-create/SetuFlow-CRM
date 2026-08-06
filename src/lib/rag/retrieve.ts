@@ -11,7 +11,7 @@ export interface RetrieveInput {
   queryEmbedding: number[];
   sourceTypes?: string[];
   matchCount?: number;
-  /** Optional injected client — see dedup.ts/ingest.ts for the same
+  /** Optional injected client â€” see dedup.ts/ingest.ts for the same
    *  pattern. Standalone scripts/tests running outside a Next.js request
    *  scope (where `cookies()` has nothing to read) pass their own
    *  authenticated client here. Production call sites (API routes,
@@ -178,7 +178,16 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
 
   const rrfScores = applyRRF(aboveThreshold, keywordMatches);
 
-  const topChunks = rrfScores.slice(0, MAX_CITATIONS).map((scoreObj) => allChunksMap.get(scoreObj.id));
+  // Gate: keyword/FTS signal alone can never qualify a chunk — it only
+  // re-ranks chunks that already passed the vector similarity threshold.
+  // Without this gate, an unrelated keyword overlap (e.g. shared spice
+  // terms across an off-topic query) can pull irrelevant document content
+  // into the grounding context and cause the model to hallucinate an
+  // answer instead of returning "Data Not Found".
+  const aboveThresholdIds = new Set(aboveThreshold.map((c: any) => c.id));
+  const gatedScores = rrfScores.filter((scoreObj) => aboveThresholdIds.has(scoreObj.id));
+
+  const topChunks = gatedScores.slice(0, MAX_CITATIONS).map((scoreObj) => allChunksMap.get(scoreObj.id));
 
   if (topChunks.length === 0) return NOT_FOUND;
 
