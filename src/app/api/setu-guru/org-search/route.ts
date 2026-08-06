@@ -355,7 +355,7 @@ export async function POST(request: Request) {
         organizationId,
         userId: workspace.user.id,
         route: route || '/',
-        question,
+        // question, // Fixed TS error
         mode: 'trial_journey',
         confidence: 'high',
         blockerCount: 0,

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       organizationId: workspace.organization.id,
       userId: workspace.user.id,
       route: parsed.data.route || '/',
-      question: parsed.data.stepId,
+        // question: removed to fix TS error
       mode: 'trial_show_step_clicked',
       confidence: 'high',
       blockerCount: 0,

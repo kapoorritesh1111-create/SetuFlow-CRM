@@ -1,18 +1,18 @@
 export type WorkflowStatusRow = Record<string, unknown>;
 
-function text(value: unknown) {
+function text(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-function label(value: unknown) {
+function label(value: unknown): string {
   return text(value).replaceAll('_', ' ') || 'not set';
 }
 
 function humanStatus(raw: unknown): string {
   const s = text(raw).toLowerCase();
   const map: Record<string, string> = {
-    not_requested: 'not requested',
-    not_started: 'not started',
+    not_requested: 'not requested yet',
+    not_started: 'not started yet',
     not_ready: 'not ready',
     pending: 'pending',
     draft: 'draft',
@@ -34,33 +34,33 @@ function humanStatus(raw: unknown): string {
   return map[s] ?? label(raw);
 }
 
-function incomplete(value: unknown) {
+function incomplete(value: unknown): boolean {
   const status = text(value).toLowerCase();
   return !status || ['not_requested', 'not_started', 'not_ready', 'pending', 'draft', 'blocked', 'failed', 'rejected', 'missing', 'open'].includes(status);
 }
 
-function openStatus(value: unknown) {
+function openStatus(value: unknown): boolean {
   return !['approved', 'waived', 'complete', 'completed', 'ready'].includes(text(value).toLowerCase());
 }
 
-function blockedStatus(value: unknown) {
+function blockedStatus(value: unknown): boolean {
   return ['blocked', 'rejected', 'failed', 'missing', 'pending', 'open', 'draft'].includes(text(value).toLowerCase());
 }
 
 function actionFor(blocker: string, detail: string): string {
   switch (blocker) {
-    case 'payment': return `Confirm payment terms or issue proforma. Payment is ${detail}.`;
+    case 'payment': return `Confirm payment terms or issue a proforma invoice. Payment is ${detail}.`;
     case 'fulfillment': return `Add packing or processing evidence. Fulfillment is ${detail}.`;
     case 'dispatch': return `Complete fulfillment and documents before dispatch. Dispatch is ${detail}.`;
     case 'documents': return 'Create required order document.';
     case 'packing': return 'Add or approve packing plan.';
-    case 'freight': return 'Raise freight request.';
+    case 'freight': return 'Start the freight queue.';
     case 'finance': return 'Queue invoice handoff.';
     default: return detail;
   }
 }
 
-function shortStage(input: { order: WorkflowStatusRow; quote: WorkflowStatusRow | null }) {
+function shortStage(input: { order: WorkflowStatusRow; quote: WorkflowStatusRow | null }): string {
   const stage = humanStatus(input.order.current_stage);
   const approval = humanStatus(input.order.approval_state);
   const quote = input.quote ? `${text(input.quote.quote_number) || 'quote'} ${humanStatus(input.quote.status)}` : 'no linked quote';
@@ -103,14 +103,20 @@ export function buildConversationalWorkflowStatusAnswer(input: {
 
   const customer = text(input.customerName) || 'this customer';
   const orderNumber = text(input.order.order_number) || 'this order';
-  const nextAction = steps[0] || 'No blocker found. Review order workspace.';
-  const remaining = Math.max(steps.length - 1, 0);
   const blockers = [...explicitBlockers, ...steps];
-  const pendingText = remaining ? ` +${remaining} more` : '';
+
+  let stepNum = 1;
+  const numberedSteps = steps.length 
+    ? steps.slice(0, 3).map((s) => `${stepNum++}. ${s}`).join('\n') 
+    : `1. No blocker found. Review order workspace.`;
+
+  // Note: Setu Guru is read-only here
+  const readOnlyNotice = "Setu Guru is read-only here";
 
   const answer = [
     `Quick view: ${customer} — ${orderNumber} | ${shortStage(input)}`,
-    `Next: ${nextAction}${pendingText}.`,
+    `What needs to happen next:\n${numberedSteps}`,
+    readOnlyNotice,
   ].join('\n\n');
 
   return { answer, blockers };

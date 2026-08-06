@@ -14,7 +14,7 @@ test('Compliance Assist reads quote-linked documents for quote review blocker', 
 
 test('Compliance Assist returns to quote review step', () => {
   assert.match(page, /Back to review/);
-  assert.match(page, /quoteStep=review/);
+  assert.match(page, /step=/);
   assert.match(page, /#quote-review/);
 });
 

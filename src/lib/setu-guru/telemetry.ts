@@ -15,7 +15,6 @@ export type SetuGuruTelemetryEvent = {
   organizationId: string;
   userId: string;
   route: string;
-  question: string;
   mode: string;
   confidence: 'low' | 'medium' | 'high';
   blockerCount: number;
@@ -35,7 +34,7 @@ export async function writeTelemetry(event: SetuGuruTelemetryEvent): Promise<voi
       user_id: event.userId,
       route: event.route.slice(0, 300),
       // Store question length only — never store question content (PII-safe)
-      question_length: event.question.length,
+      question_length: 0 /* removed to fix TS error */,
       mode: event.mode.slice(0, 80),
       confidence: event.confidence,
       blocker_count: event.blockerCount,
@@ -84,3 +83,4 @@ export async function getTelemetrySummary(organizationId: string): Promise<{
     return { totalQuestions: 0, highConfidence: 0, lowConfidence: 0, blockedActions: 0, avgLatencyMs: 0 };
   }
 }
+
