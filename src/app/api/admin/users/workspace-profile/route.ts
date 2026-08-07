@@ -9,6 +9,25 @@ function cleanName(value: unknown) {
   return text.length > 0 ? text.slice(0, 120) : null;
 }
 
+export async function GET() {
+  const context = await requireAdminWorkspace();
+  if (!context.user || !context.organization) {
+    return NextResponse.json({ error: 'Workspace access required.' }, { status: 401 });
+  }
+
+  const admin = createAdminSupabaseClient();
+  if (!admin) return NextResponse.json({ error: 'Admin client unavailable.' }, { status: 500 });
+
+  const { data, error } = await (admin as any)
+    .from('organization_members')
+    .select('id, display_name')
+    .eq('organization_id', context.organization.id)
+    .eq('is_internal_support', false);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ memberships: data ?? [] });
+}
+
 export async function POST(request: Request) {
   const context = await requireAdminWorkspace();
   if (!context.user || !context.organization || !context.membership) {
