@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { getMailtrapFromAddress, sendMailtrapEmail } from '@/lib/email/mailtrap';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,36 +12,6 @@ function clean(value: FormDataEntryValue | null) {
 
 function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
-}
-
-function getFromAddress() {
-  return process.env.SETU_NOTIFICATION_FROM_EMAIL ?? process.env.MAILTRAP_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? HELP_EMAIL;
-}
-
-async function sendWithResend(payload: { from: string; subject: string; text: string; html: string }) {
-  if (!process.env.RESEND_API_KEY) return { ok: false, error: 'RESEND_API_KEY is not configured.' };
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: payload.from, to: [ADMIN_EMAIL], reply_to: HELP_EMAIL, subject: payload.subject, text: payload.text, html: payload.html }),
-  });
-  if (!response.ok) return { ok: false, error: (await response.text()).slice(0, 500) };
-  return { ok: true, error: null };
-}
-
-async function sendWithMailtrap(payload: { from: string; subject: string; text: string; html: string }) {
-  if (!process.env.MAILTRAP_API_KEY) return { ok: false, error: 'MAILTRAP_API_KEY is not configured.' };
-  const useSandbox = String(process.env.MAILTRAP_USE_SANDBOX ?? '').toLowerCase() === 'true';
-  const endpoint = useSandbox
-    ? `https://sandbox.api.mailtrap.io/api/send/${encodeURIComponent(process.env.MAILTRAP_SANDBOX_ID ?? '')}`
-    : 'https://send.api.mailtrap.io/api/send';
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.MAILTRAP_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: { email: payload.from }, to: [{ email: ADMIN_EMAIL }], subject: payload.subject, text: payload.text, html: payload.html }),
-  });
-  if (!response.ok) return { ok: false, error: (await response.text()).slice(0, 500) };
-  return { ok: true, error: null };
 }
 
 export async function POST(request: NextRequest) {
@@ -70,12 +41,20 @@ export async function POST(request: NextRequest) {
     `Reply from: ${HELP_EMAIL}`,
   ].join('\n');
   const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a"><h2>New Setu Flow demo request</h2><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Company:</strong> ${escapeHtml(company)}</p><p><strong>Phone/WhatsApp:</strong> ${escapeHtml(phone || 'Not provided')}</p><p><strong>Team size:</strong> ${escapeHtml(teamSize)}</p><p><strong>Primary interest:</strong> ${escapeHtml(interest)}</p><p><strong>Notes:</strong><br>${escapeHtml(notes || 'Not provided')}</p><p style="color:#64748b">Reply from ${HELP_EMAIL}.</p></div>`;
-  const payload = { from: getFromAddress(), subject, text, html };
-  const provider = (process.env.SETU_EMAIL_PROVIDER ?? (process.env.MAILTRAP_API_KEY ? 'mailtrap' : 'resend')).toLowerCase();
-  const result = provider === 'mailtrap' ? await sendWithMailtrap(payload) : await sendWithResend(payload);
+
+  const result = await sendMailtrapEmail({
+    from: getMailtrapFromAddress(),
+    fromName: 'SETU Flow',
+    to: ADMIN_EMAIL,
+    replyTo: email || HELP_EMAIL,
+    subject,
+    text,
+    html,
+    category: 'demo_request',
+  });
 
   if (!result.ok) {
-    return NextResponse.json({ error: `Request saved in the browser but email delivery is not configured yet: ${result.error}` }, { status: 503 });
+    return NextResponse.json({ error: `Request saved in the browser but Mailtrap delivery is unavailable: ${result.error}` }, { status: 503 });
   }
 
   return NextResponse.json({ message: 'Demo request sent to admin@setugroups.com. We will follow up from help@setugroups.com.' });
