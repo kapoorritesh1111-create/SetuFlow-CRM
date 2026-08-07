@@ -23,6 +23,17 @@ async function findAuthUserByEmail(admin: any, email: string) {
   return null;
 }
 
+async function activeClientMembershipCount(admin: any, userId: string) {
+  const { count, error } = await admin
+    .from('organization_members')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .eq('is_internal_support', false);
+  if (error) throw error;
+  return Number(count ?? 0);
+}
+
 export async function POST(request: Request) {
   const context = await requireAdminWorkspace();
   if (!context.user || !context.organization || !context.membership) {
@@ -81,8 +92,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Member not found in this organization.' }, { status: 404 });
     }
 
-    const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
     targetUserId = String(member.user_id);
+    const membershipCount = await activeClientMembershipCount(admin, targetUserId);
+    if (membershipCount > 1) {
+      return NextResponse.json({
+        error: 'This login is shared across multiple organizations. A temporary password would change access everywhere, so use the email password-reset flow instead.',
+      }, { status: 409 });
+    }
+
+    const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
     targetEmail = normalizeEmail(profile?.email);
     targetName = cleanText(member.display_name ?? profile?.full_name ?? profile?.username ?? targetEmail, 120);
   } else {
@@ -96,38 +114,43 @@ export async function POST(request: Request) {
     if (error || !data || !['draft', 'pending', 'sent'].includes(String(data.status ?? ''))) {
       return NextResponse.json({ error: 'Open invitation not found in this organization.' }, { status: 404 });
     }
+
     invitation = data;
     targetEmail = normalizeEmail(data.email);
     const invitee = data.metadata?.invitee && typeof data.metadata.invitee === 'object' ? data.metadata.invitee : {};
     targetName = cleanText(invitee.full_name ?? targetEmail, 120);
 
-    let authUser = await findAuthUserByEmail(admin, targetEmail);
-    if (!authUser) {
-      const { data: created, error: createError } = await admin.auth.admin.createUser({
-        email: targetEmail,
-        password: temporaryPassword,
-        email_confirm: true,
-        app_metadata: {
-          force_password_change: true,
-          force_password_change_org_id: context.organization.id,
-          provisioned_by_owner: true,
-        },
-        user_metadata: { full_name: targetName },
-      });
-      if (createError || !created.user) {
-        return NextResponse.json({ error: createError?.message ?? 'Could not create Auth user.' }, { status: 500 });
-      }
-      authUser = created.user;
+    const existingAuthUser = await findAuthUserByEmail(admin, targetEmail);
+    if (existingAuthUser) {
+      return NextResponse.json({
+        error: 'An account with this email already exists. Activating it with a temporary password could change another workspace login. Use the invitation or account recovery flow instead.',
+      }, { status: 409 });
     }
 
-    targetUserId = String(authUser.id);
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email: targetEmail,
+      password: temporaryPassword,
+      email_confirm: true,
+      app_metadata: {
+        force_password_change: true,
+        force_password_change_org_id: context.organization.id,
+        provisioned_by_owner: true,
+      },
+      user_metadata: { full_name: targetName },
+    });
+    if (createError || !created.user) {
+      return NextResponse.json({ error: createError?.message ?? 'Could not create Auth user.' }, { status: 500 });
+    }
 
-    await admin.from('profiles').upsert({
+    targetUserId = String(created.user.id);
+
+    const { error: profileError } = await admin.from('profiles').upsert({
       id: targetUserId,
       email: targetEmail,
-      full_name: cleanText(authUser.user_metadata?.full_name ?? targetName, 120) || targetName,
+      full_name: targetName,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
+    if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
 
     const { data: member, error: memberError } = await admin
       .from('organization_members')
@@ -143,6 +166,7 @@ export async function POST(request: Request) {
       .single();
 
     if (memberError || !member?.id) {
+      await admin.auth.admin.deleteUser(targetUserId);
       return NextResponse.json({ error: memberError?.message ?? 'Could not create organization membership.' }, { status: 500 });
     }
     targetMembershipId = String(member.id);
