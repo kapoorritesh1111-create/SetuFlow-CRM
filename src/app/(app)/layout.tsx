@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
@@ -14,7 +14,6 @@ import { getTrialCapability } from '@/lib/trial/capability';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
-import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { EMPTY_CARD_SETTINGS, toCardSettingsInput } from '@/lib/contact-exchange/my-card-settings-shared';
@@ -49,6 +48,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     );
   }
 
+  if (workspace.user?.app_metadata?.force_password_change === true) {
+    redirect('/reset-password?next=/login');
+  }
+
   if (!workspace.membership || !workspace.organization || !workspace.user) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
@@ -64,30 +67,17 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   }
 
   const supabase = await createClient();
-  const admin = createAdminSupabaseClient();
-  const [{ data: brandSettings }, supportResult] = await Promise.all([
-    (supabase as any)
-      .from('organization_brand_settings')
-      .select('primary_color, secondary_color, accent_color, sidebar_theme')
-      .eq('organization_id', workspace.organization.id)
-      .maybeSingle(),
-    admin
-      ? (admin as any)
-          .from('platform_support_users')
-          .select('user_id, is_active')
-          .eq('user_id', workspace.user.id)
-          .eq('is_active', true)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-  const isPlatformSupport = Boolean((supportResult as any)?.data?.user_id);
+  const { data: brandSettings } = await (supabase as any)
+    .from('organization_brand_settings')
+    .select('primary_color, secondary_color, accent_color, sidebar_theme')
+    .eq('organization_id', workspace.organization.id)
+    .maybeSingle();
 
   const myCardSettingsRow = await getMyCardSettingsForUser(workspace.user.id);
   const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
 
   const { capability: trialCapability } = await getTrialCapability(workspace.organization.id);
   const guidedTourEnabled = Boolean(trialCapability?.is_trial && trialCapability.guided_mode_enabled);
-  // S27-STARK-A3: nav shows Design Queue / Dispatch Board only for packaging-enabled orgs.
   const verticals = await getOrganizationVerticals(workspace.organization.id, supabase);
   const safeOrganization = {
     ...workspace.organization,
@@ -106,15 +96,6 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <GlobalGrowthCenterEntry />
       <ProductPricingDeepLinkDrawer />
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
-      {isPlatformSupport ? (
-        <div className="fixed bottom-4 right-4 z-[90] flex items-center gap-3 rounded-2xl border border-teal-300/40 bg-slate-950 px-4 py-3 text-white shadow-2xl">
-          <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-300">SETU Support Mode</p>
-            <p className="max-w-48 truncate text-xs font-bold text-white">{workspace.organization.name}</p>
-          </div>
-          <Link href="/support" className="rounded-xl bg-teal-400 px-3 py-2 text-xs font-black text-slate-950 hover:bg-teal-300">Switch org</Link>
-        </div>
-      ) : null}
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
