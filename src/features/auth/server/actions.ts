@@ -9,6 +9,7 @@ import { safeAppUrl } from '@/lib/security/url';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { persistActiveOrganization } from '@/lib/workspace/auth';
+import { resolvePlatformSupportLoginTarget } from '@/features/support/server/login-target';
 
 type ProfileLoginCandidate = {
   email: string | null;
@@ -190,7 +191,8 @@ export async function loginWithUsername(
   const { error } = await supabase.auth.signInWithPassword({ email: matchedEmail, password });
   if (error) return { error: error.message };
 
-  const targetNext = await resolveTrialLoginTarget(matchedEmail, next);
+  const supportNext = await resolvePlatformSupportLoginTarget(matchedEmail, next);
+  const targetNext = await resolveTrialLoginTarget(matchedEmail, supportNext);
   const mfaState = await createMfaChallenge(targetNext);
   if (mfaState) return mfaState;
 
