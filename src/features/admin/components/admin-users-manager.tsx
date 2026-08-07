@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import RightDrawer, { DrawerSection } from '@/components/RightDrawer';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -33,11 +33,14 @@ function tone(status: AdminUserRow['status']) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="space-y-1.5 text-sm font-semibold text-slate-700">
-      <span className="block text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</span>
+      <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</span>
       {children}
     </label>
   );
 }
+
+const drawerSectionClass = '!rounded-2xl !border-slate-200 !bg-white !p-4 !shadow-none !ring-0 sm:!p-5';
+const drawerInputClass = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100';
 
 export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: AdminUserRow[]; roles: RoleOption[]; canManageOwners: boolean }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -71,6 +74,13 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
 
   const selected = rows.find((row) => row.id === selectedId) ?? null;
   const selectedName = selected ? (displayNames[selected.membershipId ?? ''] || selected.name) : '';
+
+  const closeDrawer = useCallback(() => {
+    setSelectedId(null);
+    setTemporaryPassword('');
+    setMessage(null);
+    setError(null);
+  }, []);
 
   function open(row: AdminUserRow) {
     setSelectedId(row.id);
@@ -166,51 +176,143 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
 
       <RightDrawer
         open={Boolean(selected)}
-        onClose={() => setSelectedId(null)}
+        onClose={closeDrawer}
         title={selectedName || 'User'}
         description={selected?.email ?? 'Pending invitation'}
         widthClassName="sm:max-w-lg lg:max-w-xl"
+        bodyClassName="bg-slate-50/70 !px-4 !py-4 sm:!px-5 sm:!py-5"
+        headerActions={selected ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={selected.status} tone={tone(selected.status)} />
+            {selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}
+          </div>
+        ) : null}
+        footer={selected ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-medium text-slate-500">Workspace changes stay scoped to this organization.</p>
+            <button type="button" onClick={closeDrawer} className="shrink-0 rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-800">Done</button>
+          </div>
+        ) : null}
       >
         {selected ? (
           <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-              <div className="flex items-center gap-3">
-                <UserAvatar name={selectedName} email={selected.email} avatarUrl={selected.avatarUrl} size="lg" />
-                <div className="min-w-0"><p className="truncate font-black text-slate-900">{selectedName}</p><p className="truncate text-sm text-slate-500">{selected.email ?? 'Invitation pending'}</p><div className="mt-2 flex gap-2"><StatusBadge label={selected.status} tone={tone(selected.status)} />{selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}</div></div>
-              </div>
+            <div className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+              {selected.tabs.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setTab(item)}
+                  className={tab === item
+                    ? 'min-w-max flex-1 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-black text-white shadow-sm'
+                    : 'min-w-max flex-1 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-800'}
+                >
+                  {TAB_LABELS[item]}
+                </button>
+              ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {selected.tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={tab === item ? 'rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white' : 'rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600'}>{TAB_LABELS[item]}</button>)}
-            </div>
-
-            {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{message}</div> : null}
-            {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{error}</div> : null}
+            {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{message}</div> : null}
+            {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{error}</div> : null}
 
             {tab === 'profile' ? (
-              <DrawerSection title="Workspace identity" description="This name belongs only to the current organization. Login email and username remain account-level so edits here do not leak into other organizations.">
-                {selected.membershipId ? <div className="space-y-4"><Field label="Display name in this organization"><input value={draftDisplayName} onChange={(event) => setDraftDisplayName(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3" /></Field><div className="grid gap-3 sm:grid-cols-2"><Field label="Login email"><input value={selected.email ?? ''} readOnly className="h-11 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 text-slate-500" /></Field><Field label="Account username"><input value={selected.username ?? ''} readOnly className="h-11 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 text-slate-500" /></Field></div><button type="button" disabled={busy} onClick={saveWorkspaceName} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">Save workspace name</button></div> : <p className="text-sm text-slate-600">This invitation becomes editable after the account is activated.</p>}
+              <DrawerSection className={drawerSectionClass} title="Workspace identity" description="Only the display name below belongs to this organization. Login credentials stay account-level and are read-only here.">
+                {selected.membershipId ? (
+                  <div className="space-y-4">
+                    <Field label="Display name in this organization">
+                      <input value={draftDisplayName} onChange={(event) => setDraftDisplayName(event.target.value)} className={drawerInputClass} />
+                    </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Login email">
+                        <input value={selected.email ?? ''} readOnly className="h-11 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm text-slate-500" />
+                      </Field>
+                      <Field label="Account username">
+                        <input value={selected.username ?? ''} readOnly className="h-11 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm text-slate-500" />
+                      </Field>
+                    </div>
+                    <div className="flex justify-end border-t border-slate-100 pt-4">
+                      <button type="button" disabled={busy} onClick={saveWorkspaceName} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">Save workspace name</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-sm font-bold text-amber-900">Invitation pending</p>
+                    <p className="mt-1 text-sm leading-6 text-amber-800">Workspace profile fields become editable after this user account is activated.</p>
+                  </div>
+                )}
               </DrawerSection>
             ) : null}
 
             {tab === 'role' ? (
-              <DrawerSection title="Workspace role" description="Role changes apply only to this organization.">
-                {selected.membershipId && selected.canChangeRole ? <form action={updateMemberRole} className="space-y-3"><input type="hidden" name="membership_id" value={selected.membershipId} /><input type="hidden" name="return_path" value="/admin/users" /><select name="role_id" defaultValue={selected.roleId ?? ''} className="h-11 w-full rounded-xl border border-slate-200 px-3">{roles.map((role) => <option key={role.id} value={role.id}>{role.name}{role.organizationId ? '' : ' (global)'}</option>)}</select><button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Save role</button></form> : selected.invitationId ? <form action={updateInvitationRole} className="space-y-3"><input type="hidden" name="invitation_id" value={selected.invitationId} /><input type="hidden" name="return_path" value="/admin/users" /><select name="role_id" defaultValue={selected.roleId ?? ''} className="h-11 w-full rounded-xl border border-slate-200 px-3">{roles.map((role) => <option key={role.id} value={role.id}>{role.name}{role.organizationId ? '' : ' (global)'}</option>)}</select><button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Save invite role</button></form> : null}
+              <DrawerSection className={drawerSectionClass} title="Workspace role" description="Role changes apply only to this organization.">
+                {selected.membershipId && selected.canChangeRole ? (
+                  <form action={updateMemberRole} className="space-y-4">
+                    <input type="hidden" name="membership_id" value={selected.membershipId} />
+                    <input type="hidden" name="return_path" value="/admin/users" />
+                    <Field label="Role">
+                      <select name="role_id" defaultValue={selected.roleId ?? ''} className={drawerInputClass}>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}{role.organizationId ? '' : ' (global)'}</option>)}</select>
+                    </Field>
+                    <div className="flex justify-end border-t border-slate-100 pt-4"><button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Save role</button></div>
+                  </form>
+                ) : selected.invitationId ? (
+                  <form action={updateInvitationRole} className="space-y-4">
+                    <input type="hidden" name="invitation_id" value={selected.invitationId} />
+                    <input type="hidden" name="return_path" value="/admin/users" />
+                    <Field label="Invited role">
+                      <select name="role_id" defaultValue={selected.roleId ?? ''} className={drawerInputClass}>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}{role.organizationId ? '' : ' (global)'}</option>)}</select>
+                    </Field>
+                    <div className="flex justify-end border-t border-slate-100 pt-4"><button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Save invite role</button></div>
+                  </form>
+                ) : null}
               </DrawerSection>
             ) : null}
 
             {tab === 'security' ? (
               <div className="space-y-4">
-                {canManageOwners ? <DrawerSection title="Temporary password" description="Set a one-time temporary password. The user can sign in immediately but SETU Flow blocks workspace access until they choose a new password. The temporary password is never stored in CRM data or audit logs."><div className="space-y-3"><Field label="Temporary password"><input type="password" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} minLength={12} autoComplete="new-password" placeholder="Minimum 12 characters" className="h-11 w-full rounded-xl border border-slate-200 px-3" /></Field><button type="button" disabled={busy || temporaryPassword.length < 12} onClick={setTempPassword} className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40">{selected.status === 'invited' ? 'Activate with temporary password' : 'Set temporary password'}</button></div></DrawerSection> : null}
+                {canManageOwners ? (
+                  <DrawerSection className={drawerSectionClass} title="Temporary password" description="Set a one-time password. SETU Flow blocks workspace access until the user replaces it on first login.">
+                    <div className="space-y-4">
+                      <Field label="Temporary password">
+                        <input type="password" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} minLength={12} autoComplete="new-password" placeholder="Minimum 12 characters" className={drawerInputClass} />
+                      </Field>
+                      <p className="text-xs leading-5 text-slate-500">The temporary password is never stored in CRM data or audit logs.</p>
+                      <div className="flex justify-end border-t border-slate-100 pt-4">
+                        <button type="button" disabled={busy || temporaryPassword.length < 12} onClick={setTempPassword} className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40">{selected.status === 'invited' ? 'Activate with temporary password' : 'Set temporary password'}</button>
+                      </div>
+                    </div>
+                  </DrawerSection>
+                ) : null}
 
-                {selected.membershipId && selected.status === 'active' ? <DrawerSection title="Recovery & access"><div className="flex flex-wrap gap-2"><form action={sendMemberPasswordReset}><input type="hidden" name="membership_id" value={selected.membershipId} /><button className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold">Email password reset</button></form><form action={removeMember}><input type="hidden" name="membership_id" value={selected.membershipId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">Deactivate</button></form></div></DrawerSection> : null}
+                {selected.membershipId && selected.status === 'active' ? (
+                  <DrawerSection className={drawerSectionClass} title="Recovery & access">
+                    <div className="flex flex-wrap gap-2">
+                      <form action={sendMemberPasswordReset}><input type="hidden" name="membership_id" value={selected.membershipId} /><button className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold">Email password reset</button></form>
+                      <form action={removeMember}><input type="hidden" name="membership_id" value={selected.membershipId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">Deactivate</button></form>
+                    </div>
+                  </DrawerSection>
+                ) : null}
                 {selected.membershipId && selected.status === 'disabled' ? <form action={reactivateMember}><input type="hidden" name="membership_id" value={selected.membershipId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">Reactivate user</button></form> : null}
-                {selected.invitationId && selected.status === 'invited' ? <DrawerSection title="Invitation"><div className="flex flex-wrap gap-2"><form action={resendInvitation}><input type="hidden" name="invitation_id" value={selected.invitationId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold">Resend invite</button></form><form action={revokeInvitation}><input type="hidden" name="invitation_id" value={selected.invitationId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl border border-rose-200 px-3 py-2 text-sm font-bold text-rose-700">Revoke invite</button></form></div></DrawerSection> : null}
+                {selected.invitationId && selected.status === 'invited' ? (
+                  <DrawerSection className={drawerSectionClass} title="Invitation">
+                    <div className="flex flex-wrap gap-2">
+                      <form action={resendInvitation}><input type="hidden" name="invitation_id" value={selected.invitationId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold">Resend invite</button></form>
+                      <form action={revokeInvitation}><input type="hidden" name="invitation_id" value={selected.invitationId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="rounded-xl border border-rose-200 px-3 py-2 text-sm font-bold text-rose-700">Revoke invite</button></form>
+                    </div>
+                  </DrawerSection>
+                ) : null}
                 {selected.membershipId && selected.canDelete ? <form action={deleteMember}><input type="hidden" name="membership_id" value={selected.membershipId} /><input type="hidden" name="return_path" value="/admin/users" /><button className="text-xs font-bold text-rose-600 hover:underline">Delete membership from this workspace</button></form> : null}
               </div>
             ) : null}
 
-            {tab === 'activity' ? <DrawerSection title="Access details"><dl className="grid gap-3 text-sm sm:grid-cols-2"><div><dt className="font-bold text-slate-900">Status</dt><dd className="mt-1 capitalize text-slate-600">{selected.status}</dd></div><div><dt className="font-bold text-slate-900">Last activity</dt><dd className="mt-1 text-slate-600">{selected.lastActiveAt ? formatDateTime(selected.lastActiveAt) : '—'}</dd></div><div><dt className="font-bold text-slate-900">User ID</dt><dd className="mt-1 break-all text-xs text-slate-500">{selected.userId ?? 'Invitation pending'}</dd></div><div><dt className="font-bold text-slate-900">Membership ID</dt><dd className="mt-1 break-all text-xs text-slate-500">{selected.membershipId ?? '—'}</dd></div></dl></DrawerSection> : null}
+            {tab === 'activity' ? (
+              <DrawerSection className={drawerSectionClass} title="Access details">
+                <dl className="grid gap-4 text-sm sm:grid-cols-2">
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Status</dt><dd className="mt-1 font-semibold capitalize text-slate-700">{selected.status}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Last activity</dt><dd className="mt-1 font-semibold text-slate-700">{selected.lastActiveAt ? formatDateTime(selected.lastActiveAt) : '—'}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">User ID</dt><dd className="mt-1 break-all text-xs text-slate-500">{selected.userId ?? 'Invitation pending'}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Membership ID</dt><dd className="mt-1 break-all text-xs text-slate-500">{selected.membershipId ?? '—'}</dd></div>
+                </dl>
+              </DrawerSection>
+            ) : null}
           </div>
         ) : null}
       </RightDrawer>
