@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
+import { getMailtrapFromAddress, sendMailtrapEmail } from '@/lib/email/mailtrap';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,48 +67,24 @@ function payback(value: number) {
   return value > 0 && value < 1 ? 'Less than 1 month' : `${number(value)} months`;
 }
 
-function fromEmail() {
-  return process.env.SETU_NOTIFICATION_FROM_EMAIL ?? process.env.MAILTRAP_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? HELP_EMAIL;
-}
-
 function recommendedSalesAngle(painPoint: string) {
   const pain = painPoint || 'missed follow-ups';
   return `Lead with ${pain}. Use the ROI range as the discovery opener, then map the prospect's lead capture, follow-up ownership, quote workflow, document readiness, and order handoff into SETU Flow.`;
 }
 
-async function sendViaResend(payload: { to: string[]; bcc?: string[]; replyTo?: string; subject: string; text: string; html: string }) {
-  if (!process.env.RESEND_API_KEY) return { ok: false, error: 'Email provider is not configured.' };
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: fromEmail(), to: payload.to, bcc: payload.bcc, reply_to: payload.replyTo ?? HELP_EMAIL, subject: payload.subject, text: payload.text, html: payload.html }),
-  });
-  return response.ok ? { ok: true, error: null } : { ok: false, error: 'Email could not be sent.' };
-}
-
-async function sendViaMailtrap(payload: { to: string[]; bcc?: string[]; replyTo?: string; subject: string; text: string; html: string }) {
-  if (!process.env.MAILTRAP_API_KEY) return { ok: false, error: 'Email provider is not configured.' };
-  const sandbox = String(process.env.MAILTRAP_USE_SANDBOX ?? '').toLowerCase() === 'true';
-  const endpoint = sandbox ? `https://sandbox.api.mailtrap.io/api/send/${encodeURIComponent(process.env.MAILTRAP_SANDBOX_ID ?? '')}` : 'https://send.api.mailtrap.io/api/send';
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.MAILTRAP_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: { email: fromEmail(), name: 'SETU Flow CRM' },
-      to: payload.to.map((email) => ({ email })),
-      bcc: payload.bcc?.map((email) => ({ email })),
-      reply_to: { email: payload.replyTo ?? HELP_EMAIL },
-      subject: payload.subject,
-      text: payload.text,
-      html: payload.html,
-    }),
-  });
-  return response.ok ? { ok: true, error: null } : { ok: false, error: 'Email could not be sent.' };
-}
-
 async function sendEmail(payload: { to: string[]; bcc?: string[]; replyTo?: string; subject: string; text: string; html: string }) {
-  const provider = (process.env.SETU_EMAIL_PROVIDER ?? (process.env.MAILTRAP_API_KEY ? 'mailtrap' : 'resend')).toLowerCase();
-  return provider === 'mailtrap' ? sendViaMailtrap(payload) : sendViaResend(payload);
+  const result = await sendMailtrapEmail({
+    from: getMailtrapFromAddress(),
+    fromName: 'SETU Flow CRM',
+    to: payload.to,
+    bcc: payload.bcc,
+    replyTo: payload.replyTo ?? HELP_EMAIL,
+    subject: payload.subject,
+    text: payload.text,
+    html: payload.html,
+    category: 'roi_report',
+  });
+  return result.ok ? { ok: true, error: null } : { ok: false, error: result.error };
 }
 
 type Scenario = {
