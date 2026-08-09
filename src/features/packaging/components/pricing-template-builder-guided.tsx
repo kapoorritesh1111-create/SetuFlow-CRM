@@ -14,6 +14,11 @@ type Props = {
 };
 
 export default function PricingTemplateBuilderGuided(props: Props) {
+  const displayCurrency = (props.templates[0]?.currency || 'INR').toUpperCase();
+  const currencySvg = encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="24"><text x="3" y="16" font-family="Arial,sans-serif" font-size="10" font-weight="700" fill="#475569">${displayCurrency}</text></svg>`,
+  );
+
   return (
     <div className="pricing-template-clarity space-y-4">
       <section className="rounded-card border border-info-border bg-info-bg p-4">
@@ -21,11 +26,21 @@ export default function PricingTemplateBuilderGuided(props: Props) {
           <div className="max-w-3xl">
             <p className="text-sm font-bold text-info-fg">Entering packaging rates</p>
             <p className="mt-1 text-sm text-info-fg">
-              Choose the material or finish name used by your team, then enter the rate in the template currency. For dimensional packaging, material rates are entered <strong>per square metre (m²)</strong>. The live preview uses the same pricing engine as Quote Builder.
+              Pick the material or finish name your team uses, then enter the monetary rate in the template currency. For dimensional packaging, the material rate is <strong>{displayCurrency} per square metre (m²)</strong>. SETU Flow converts that into the material cost for one pouch and then multiplies it by the quote quantity.
             </p>
           </div>
           <div className="rounded-ctl border border-info-border bg-surface-1 px-3 py-2 text-xs font-semibold text-content-primary">
-            Area per pouch × material rate × quantity = material total
+            Area per pouch × {displayCurrency}/m² × Quantity = Material total
+          </div>
+        </div>
+        <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+          <div className="rounded-ctl bg-surface-1 px-3 py-2 text-content-secondary">
+            <strong className="block text-content-primary">Currency entry</strong>
+            Rate and charge boxes show <strong>{displayCurrency}</strong> inside the field so they read as money, not generic quantities.
+          </div>
+          <div className="rounded-ctl bg-surface-1 px-3 py-2 text-content-secondary">
+            <strong className="block text-content-primary">What “unit price” means</strong>
+            The live preview is the price for <strong>one quoted unit</strong>. For pouch families using PCS, that means <strong>price per pouch / piece</strong>.
           </div>
         </div>
       </section>
@@ -33,7 +48,7 @@ export default function PricingTemplateBuilderGuided(props: Props) {
       <PricingTemplateBuilder {...props} />
 
       <style jsx global>{`
-        /* Stability hotfix: presentation only. No DOM observers or imperative mutations. */
+        /* Presentation-only UX layer. No observers and no runtime DOM mutation. */
         .pricing-template-clarity input[type='number'] {
           appearance: textfield;
           -moz-appearance: textfield;
@@ -44,31 +59,82 @@ export default function PricingTemplateBuilderGuided(props: Props) {
           margin: 0;
         }
 
-        /* Internal keys are implementation details and are not client-facing. */
+        /* Internal keys are system implementation details, never client data. */
         .pricing-template-clarity input[placeholder='key'] {
           display: none !important;
         }
 
-        /* Keep repeated rows aligned after the hidden internal key. */
-        .pricing-template-clarity section:has(> div input[placeholder='Thickness']) div.grid:has(input[placeholder='Thickness']) {
-          grid-template-columns: minmax(220px, 1.4fr) minmax(160px, 1fr) 150px auto auto !important;
+        /* Materials: keep the header and controls on the exact same five-column grid. */
+        .pricing-template-clarity section:has(input[placeholder='Thickness']) .space-y-2 {
+          display: grid;
+          gap: .5rem;
         }
-
-        /* Lightweight column guidance without modifying the rendered DOM. */
         .pricing-template-clarity section:has(input[placeholder='Thickness']) .space-y-2::before {
-          content: 'Material / Structure        Thickness / Basis        Rate (template currency / m²)        Library';
+          content: 'Material / Structure     Thickness / Basis     Rate (${displayCurrency} / m²)     Library';
           display: block;
-          margin: 0 0 .35rem .25rem;
-          white-space: pre-wrap;
+          padding: 0 .5rem .15rem;
+          white-space: pre;
           color: rgb(71 85 105);
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           font-size: .68rem;
           line-height: 1.2;
           font-weight: 700;
         }
+        .pricing-template-clarity section:has(input[placeholder='Thickness']) div.grid:has(input[placeholder='Thickness']) {
+          grid-template-columns: minmax(260px, 1.7fr) minmax(190px, 1.15fr) minmax(170px, .8fr) 76px 86px !important;
+          align-items: center;
+        }
 
-        @media (max-width: 900px) {
+        /* Currency-style monetary inputs: still numeric in the model/engine, visually money to the admin. */
+        .pricing-template-clarity input[placeholder='Thickness'] + input[type='number'],
+        .pricing-template-clarity section:has(> div p:first-child) select + input[type='number'] {
+          background-image: url("data:image/svg+xml,${currencySvg}");
+          background-repeat: no-repeat;
+          background-position: .45rem center;
+          padding-left: 2.8rem !important;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+          font-weight: 650;
+        }
+
+        /* Finish/add-on monetary rate specifically. */
+        .pricing-template-clarity section:has(datalist#reflib-finish) select + input[type='number'] {
+          background-image: url("data:image/svg+xml,${currencySvg}");
+          background-repeat: no-repeat;
+          background-position: .45rem center;
+          padding-left: 2.8rem !important;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+          font-weight: 650;
+        }
+
+        /* Setup / pre-press monetary amount. */
+        .pricing-template-clarity section:has(p:first-child) input[placeholder='Label'] + input[type='number'] {
+          background-image: url("data:image/svg+xml,${currencySvg}");
+          background-repeat: no-repeat;
+          background-position: .45rem center;
+          padding-left: 2.8rem !important;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+          font-weight: 650;
+        }
+
+        /* Make the preview's unit basis explicit without changing calculation math. */
+        .pricing-template-clarity aside section:last-child .rounded-ctl.bg-surface-2::before {
+          content: 'Price per quoted unit · PCS families = per pouch / piece';
+          display: block;
+          margin-bottom: .35rem;
+          color: rgb(71 85 105);
+          font-size: .72rem;
+          font-weight: 700;
+        }
+
+        @media (max-width: 1050px) {
           .pricing-template-clarity section:has(input[placeholder='Thickness']) .space-y-2::before {
-            display: none;
+            white-space: normal;
+          }
+          .pricing-template-clarity section:has(input[placeholder='Thickness']) div.grid:has(input[placeholder='Thickness']) {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>
