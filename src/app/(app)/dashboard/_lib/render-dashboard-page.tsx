@@ -9,6 +9,7 @@ import { getDashboardData } from '@/lib/queries/dashboard';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getReadOnlyWorkspaceMessage, hasWorkspaceCapability } from '@/lib/workspace/permissions';
+import { getOrganizationVerticals } from '@/lib/verticals/capability';
 
 const BUYER_DEFAULT_ROLE_NAMES = ['sales'] as const;
 const SUPPLIER_DEFAULT_ROLE_NAMES = ['sourcing', 'procurement'] as const;
@@ -91,9 +92,6 @@ function resolveRoleAwareDashboardScope(
   explicitAll = false,
 ): DashboardScope {
   if (requestedScope !== 'all') return requestedScope;
-  // A user who explicitly picked "All" (mode=all in the URL) always gets literal
-  // all-scope data. The role-based default below only applies when scope was
-  // never specified at all (first touch), not when it was actively chosen.
   if (explicitAll) return 'all';
 
   const normalizedRoles = new Set(currentRoles.map((role) => role.trim().toLowerCase()).filter(Boolean));
@@ -119,7 +117,8 @@ export async function renderDashboardPage(mode: WorkspaceMode, explicitAll = fal
       <EmptyState
         title="Workspace membership needed"
         description="Your account is signed in, but no active organization membership could be loaded. Confirm the organization_members row is active for this user."
-      />    );
+      />
+    );
   }
 
   const resolvedScope = resolveRoleAwareDashboardScope(scope, workspace.currentRoles, explicitAll);
@@ -132,20 +131,38 @@ export async function renderDashboardPage(mode: WorkspaceMode, explicitAll = fal
 
   const supabaseForCounts = await createClient();
   const db = supabaseForCounts as any;
-  const [leadsCountResult, productsCountResult, quotesCountResult] = await Promise.all([
+  const verticals = await getOrganizationVerticals(workspace.organization.id, supabaseForCounts);
+  const isPackaging = verticals.packagingEnabled;
+
+  const [leadsCountResult, productsCountResult, quotesCountResult, packagingFamiliesResult, packagingTemplatesResult] = await Promise.all([
     db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).limit(1),
     db.from('products').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).limit(1),
     db.from('quotes').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).limit(1),
+    isPackaging
+      ? db.from('packaging_service_families').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('is_active', true).limit(1)
+      : Promise.resolve({ count: 0 }),
+    isPackaging
+      ? db.from('packaging_pricing_templates').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('is_active', true).limit(1)
+      : Promise.resolve({ count: 0 }),
   ]);
+
   const hasLeads = (leadsCountResult.count ?? 0) > 0;
   const hasProducts = (productsCountResult.count ?? 0) > 0;
   const hasQuotes = (quotesCountResult.count ?? 0) > 0;
-  const showFirstLoginGuide = !hasLeads || !hasProducts || !hasQuotes;
+  const hasPackagingFamilies = (packagingFamiliesResult.count ?? 0) > 0;
+  const hasPackagingTemplates = (packagingTemplatesResult.count ?? 0) > 0;
+  const showFirstLoginGuide = isPackaging
+    ? !hasPackagingFamilies || !hasPackagingTemplates || !hasLeads || !hasQuotes
+    : !hasLeads || !hasProducts || !hasQuotes;
+
   const firstLoginGuide = showFirstLoginGuide ? (
     <FirstLoginGuide
       hasLeads={hasLeads}
       hasProducts={hasProducts}
       hasQuotes={hasQuotes}
+      hasPackagingFamilies={hasPackagingFamilies}
+      hasPackagingTemplates={hasPackagingTemplates}
+      isPackaging={isPackaging}
       orgName={workspace.organization.name ?? 'your workspace'}
     />
   ) : null;
@@ -158,8 +175,9 @@ export async function renderDashboardPage(mode: WorkspaceMode, explicitAll = fal
           ? 'Supplier dashboard will appear after setup'
           : 'Your dashboard will appear after setup';
 
-    const emptyStateDescription =
-      resolvedScope === 'buyer'
+    const emptyStateDescription = isPackaging
+      ? 'Start with the Packaging setup checklist, then create the first lead before building a Packaging quote.'
+      : resolvedScope === 'buyer'
         ? 'Start by adding your catalog and first buyer lead. Once records exist, your buyer dashboard metrics will populate here.'
         : resolvedScope === 'supplier'
           ? 'Start by adding your catalog and first supplier lead. Once records exist, your supplier dashboard metrics will populate here.'
