@@ -1,14 +1,9 @@
 /**
  * FirstLoginGuide
  *
- * Shown when a user logs into an organization that has no data yet.
- * Provides a clear, step-by-step onboarding path so new organizations
- * are never dropped into a blank workspace without guidance.
- *
- * Proof criteria:
- * - Detected by: zero leads, zero quotes, zero products
- * - Shown on: Dashboard, above the main content, only when all counts are 0
- * - Hides automatically once data exists
+ * Shown when a user logs into a new organization that still needs its first
+ * commercial setup. Packaging-enabled organizations follow their governed
+ * packaging workflow instead of the classic product-catalog onboarding path.
  */
 
 import Link from 'next/link';
@@ -27,42 +22,82 @@ export function FirstLoginGuide({
   hasLeads,
   hasProducts,
   hasQuotes,
+  hasPackagingFamilies = false,
+  hasPackagingTemplates = false,
+  isPackaging = false,
   orgName,
 }: {
   hasLeads: boolean;
   hasProducts: boolean;
   hasQuotes: boolean;
+  hasPackagingFamilies?: boolean;
+  hasPackagingTemplates?: boolean;
+  isPackaging?: boolean;
   orgName: string;
 }) {
-  // If the org has any meaningful data, don't show the guide
-  if (hasLeads && hasProducts) return null;
+  const steps: Step[] = isPackaging
+    ? [
+        {
+          num: 1,
+          title: 'Create your Packaging Service Family',
+          description: 'Add the packaging format your team will quote, such as Stand-Up Pouches, Flat Bottom Pouches, or Center Seal Pouches.',
+          href: '/admin/packaging-families',
+          cta: 'Create Service Family',
+          done: hasPackagingFamilies,
+        },
+        {
+          num: 2,
+          title: 'Set up your Packaging pricing',
+          description: 'Add the real material, print, MOQ, add-on, setup, waste, and lead-time rules that will power live quote pricing.',
+          href: '/admin/packaging-templates',
+          cta: 'Set up Pricing',
+          done: hasPackagingTemplates,
+        },
+        {
+          num: 3,
+          title: 'Create your first lead',
+          description: 'Add the buyer or prospect first. Every Packaging quote must belong to a lead so the commercial history stays connected.',
+          href: PRODUCT_ROUTES.app.leads,
+          cta: 'Create a Lead',
+          done: hasLeads,
+        },
+        {
+          num: 4,
+          title: 'Build your first Packaging quote',
+          description: 'Open the qualified lead, select the Packaging Service Family and Pricing Template, enter the buyer specifications, and confirm the live price.',
+          href: PRODUCT_ROUTES.app.quotes,
+          cta: 'Go to Quotes',
+          done: hasQuotes,
+        },
+      ]
+    : [
+        {
+          num: 1,
+          title: 'Add your product catalog',
+          description: 'Upload your products and set Ex-Factory, FOB, and bulk pricing. The catalog is the commercial baseline — quotes start here.',
+          href: PRODUCT_ROUTES.app.products,
+          cta: 'Go to Catalog',
+          done: hasProducts,
+        },
+        {
+          num: 2,
+          title: 'Create your first lead',
+          description: 'Add a buyer or supplier lead and link it to your product catalog. Leads are the entry point for every quote and order.',
+          href: PRODUCT_ROUTES.app.leads,
+          cta: 'Create a Lead',
+          done: hasLeads,
+        },
+        {
+          num: 3,
+          title: 'Build and send your first quote',
+          description: 'Once a lead is qualified and linked to products, create a quote with pricing, freight, and approval governance built in.',
+          href: PRODUCT_ROUTES.app.quotes,
+          cta: 'Go to Quotes',
+          done: hasQuotes,
+        },
+      ];
 
-  const steps: Step[] = [
-    {
-      num: 1,
-      title: 'Add your product catalog',
-      description: 'Upload your products and set Ex-Factory, FOB, and bulk pricing. The catalog is the commercial baseline — quotes start here.',
-      href: PRODUCT_ROUTES.app.products,
-      cta: 'Go to Catalog',
-      done: hasProducts,
-    },
-    {
-      num: 2,
-      title: 'Create your first lead',
-      description: 'Add a buyer or supplier lead and link it to your product catalog. Leads are the entry point for every quote and order.',
-      href: PRODUCT_ROUTES.app.leads,
-      cta: 'Create a Lead',
-      done: hasLeads,
-    },
-    {
-      num: 3,
-      title: 'Build and send your first quote',
-      description: 'Once a lead is qualified and linked to products, create a quote with pricing, freight, and approval governance built in.',
-      href: PRODUCT_ROUTES.app.quotes,
-      cta: 'Go to Quotes',
-      done: hasQuotes,
-    },
-  ];
+  if (steps.every((step) => step.done)) return null;
 
   const completedCount = steps.filter((step) => step.done).length;
   const progressPct = Math.round((completedCount / steps.length) * 100);
@@ -77,7 +112,6 @@ export function FirstLoginGuide({
         color: '#fff',
       }}
     >
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
           <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: '4px' }}>
@@ -87,7 +121,9 @@ export function FirstLoginGuide({
             Welcome to {orgName}
           </div>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,.75)', marginTop: '4px' }}>
-            Complete these steps to set up your governed commercial workspace.
+            {isPackaging
+              ? 'Complete these steps in order to make your Packaging workspace ready for live customer quotes.'
+              : 'Complete these steps to set up your governed commercial workspace.'}
           </div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -96,7 +132,6 @@ export function FirstLoginGuide({
         </div>
       </div>
 
-      {/* Progress bar */}
       <div style={{ height: '4px', background: 'rgba(255,255,255,.15)', borderRadius: '2px', marginBottom: '20px', overflow: 'hidden' }}>
         <div
           style={{
@@ -109,8 +144,7 @@ export function FirstLoginGuide({
         />
       </div>
 
-      {/* Steps */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${steps.length},minmax(0,1fr))`, gap: '12px' }}>
         {steps.map((step) => (
           <div
             key={step.num}
@@ -145,7 +179,7 @@ export function FirstLoginGuide({
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.65)', lineHeight: '1.5', marginBottom: '12px' }}>
               {step.description}
             </div>
-            {!step.done && (
+            {!step.done ? (
               <Link
                 href={step.href}
                 style={{
@@ -162,17 +196,17 @@ export function FirstLoginGuide({
               >
                 {step.cta} →
               </Link>
-            )}
-            {step.done && (
+            ) : (
               <span style={{ fontSize: '11px', color: '#27ae60', fontWeight: 700 }}>✓ Complete</span>
             )}
           </div>
         ))}
       </div>
 
-      {/* Footer note */}
       <div style={{ marginTop: '14px', fontSize: '11px', color: 'rgba(255,255,255,.5)', textAlign: 'center' }}>
-        This guide disappears automatically once your catalog and first lead are ready.
+        {isPackaging
+          ? 'This guide disappears automatically once your Packaging setup, first lead, and first quote are ready.'
+          : 'This guide disappears automatically once your catalog, first lead, and first quote are ready.'}
       </div>
     </div>
   );
