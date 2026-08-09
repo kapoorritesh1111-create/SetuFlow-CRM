@@ -27,6 +27,21 @@ export default function PricingTemplateBuilderGuided(props: Props) {
           -webkit-appearance: none;
           margin: 0;
         }
+
+        /* Keep Test your price visible while the admin works down a long template. */
+        @media (min-width: 1280px) {
+          .pricing-template-clarity aside {
+            align-self: stretch;
+          }
+          .pricing-template-clarity aside > section:last-child {
+            position: sticky;
+            top: 1rem;
+            z-index: 10;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+          }
+        }
       `}</style>
     </div>
   );
