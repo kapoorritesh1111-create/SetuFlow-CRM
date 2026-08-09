@@ -135,6 +135,10 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
 
   const patch = (partial: Partial<Draft>) => setDraft((previous) => ({ ...previous, ...partial }));
 
+  const openSetuGuru = () => {
+    window.dispatchEvent(new CustomEvent('setu-guru:open'));
+  };
+
   const handleSave = () => {
     setFeedback(null);
     startSaving(async () => {
@@ -163,20 +167,19 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
     });
   };
 
+  const previewQuantity = Math.max(1, Number(previewInput.quantity ?? 1));
+
   return (
     <div className="space-y-4 pb-16">
-      <div className="rounded-card border border-line bg-surface-1 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-content-primary">Set the rules your team already uses to price this packaging family.</p>
-            <p className="mt-1 text-sm text-content-secondary">Add the materials, print rules, add-ons, quantity breaks and charges. Use the preview to test one familiar quote before you activate the template.</p>
-            <p className="mt-1 text-xs font-semibold text-content-muted">{templates.length} template{templates.length === 1 ? '' : 's'} · {templates.filter((template) => template.is_active).length} active</p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Link href="/setu-guru" className="rounded-ctl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100">Ask Setu Guru</Link>
-            <Link href="/admin/packaging-families" className="rounded-ctl border border-line bg-surface-app px-3 py-2 text-xs font-semibold text-content-secondary hover:bg-surface-2">Service Families</Link>
-            <Link href="/admin/packaging-reference-library" className="rounded-ctl border border-line bg-surface-app px-3 py-2 text-xs font-semibold text-content-secondary hover:bg-surface-2">Reference Library</Link>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface-1 px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-content-primary">Pricing rules</p>
+          <p className="text-xs text-content-muted">{templates.length} template{templates.length === 1 ? '' : 's'} · {templates.filter((template) => template.is_active).length} active</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button type="button" onClick={openSetuGuru} className="rounded-ctl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-100">Ask Setu Guru</button>
+          <Link href="/admin/packaging-families" className="rounded-ctl border border-line bg-surface-app px-3 py-2 text-xs font-semibold text-content-secondary hover:bg-surface-2">Service Families</Link>
+          <Link href="/admin/packaging-reference-library" className="rounded-ctl border border-line bg-surface-app px-3 py-2 text-xs font-semibold text-content-secondary hover:bg-surface-2">Reference Library</Link>
         </div>
       </div>
 
@@ -313,17 +316,30 @@ export default function PricingTemplateBuilder({ families, templates, referenceI
         </div>
 
         <aside className="space-y-4">
-          <section className={`rounded-panel border p-4 ${health.tone === 'ready' ? 'border-success-border bg-success-bg' : 'border-warning-border bg-warning-bg'}`}><div className="flex items-center gap-2"><span className="rounded-ctl bg-accent-600 px-2 py-1 text-xs font-bold text-white">G</span><p className={`font-semibold ${health.tone === 'ready' ? 'text-success-fg' : 'text-warning-fg'}`}>Template check</p></div><p className={`mt-2 text-sm font-medium ${health.tone === 'ready' ? 'text-success-fg' : 'text-warning-fg'}`}>{health.headline}</p>{health.items.length ? <ul className={`mt-2 list-disc space-y-1 pl-5 text-sm ${health.tone === 'ready' ? 'text-success-fg' : 'text-warning-fg'}`}>{health.items.map((item) => <li key={item}>{item}</li>)}</ul> : null}<Link href="/setu-guru" className="mt-3 inline-flex rounded-ctl border border-current/20 bg-white/50 px-2.5 py-1.5 text-xs font-semibold">Ask Setu Guru how to complete this template →</Link></section>
+          <section className={`rounded-panel border p-4 ${health.tone === 'ready' ? 'border-success-border bg-success-bg' : 'border-warning-border bg-warning-bg'}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2"><span className="rounded-ctl bg-accent-600 px-2 py-1 text-xs font-bold text-white">G</span><p className={`font-semibold ${health.tone === 'ready' ? 'text-success-fg' : 'text-warning-fg'}`}>Template check</p></div>
+              <button type="button" onClick={openSetuGuru} className="rounded-ctl border border-current/20 bg-white/60 px-2.5 py-1.5 text-xs font-semibold">Ask Setu Guru</button>
+            </div>
+            <p className={`mt-2 text-sm font-medium ${health.tone === 'ready' ? 'text-success-fg' : 'text-warning-fg'}`}>{health.headline}</p>
+            {health.items.length ? <ul className={`mt-2 list-disc space-y-1 pl-5 text-sm ${health.tone === 'ready' ? 'text-success-fg' : 'text-warning-fg'}`}>{health.items.map((item) => <li key={item}>{item}</li>)}</ul> : null}
+          </section>
 
           <section className="rounded-panel border border-line bg-surface-1 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Test your price</p><p className="mt-1 text-sm text-content-secondary">Enter one familiar quote. Change an option to confirm the price moves as expected.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Test your price</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {isDimensional ? <><label className={labelCls}>Width<input type="number" value={previewInput.width_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, width_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label><label className={labelCls}>Height<input type="number" value={previewInput.height_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, height_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>{draft.allowed_dimension_ranges_json.area_formula === 'pouch_gusset' ? <label className={labelCls}>Gusset<input type="number" value={previewInput.gusset_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, gusset_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label> : null}<label className={labelCls}>Material<select value={previewInput.material_key ?? draft.material_rates_json[0]?.key ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, material_key: event.target.value || null }))} className={inputCls}><option value="">Choose material</option>{draft.material_rates_json.map((material) => <option key={material.key} value={material.key}>{material.label || 'Unnamed material'}</option>)}</select></label>{(draft.adhesive_options_json ?? []).length ? <label className={labelCls}>Build option<select value={previewInput.adhesive_key ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, adhesive_key: event.target.value || null }))} className={inputCls}><option value="">None</option>{(draft.adhesive_options_json ?? []).map((option) => <option key={option.key} value={option.key}>{option.label || 'Unnamed option'}</option>)}</select></label> : null}<label className={labelCls}>Colors<input type="number" value={previewInput.print_colors ?? 1} onChange={(event) => setPreviewInput((previous) => ({ ...previous, print_colors: Number(event.target.value) || 1 }))} className={inputCls} /></label>{draft.print_process === 'flexo' ? <><label className={labelCls}>Repeat length<input type="number" value={previewInput.repeat_length_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, repeat_length_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label><label className={labelCls}>Web width<input type="number" value={previewInput.web_width_mm ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, web_width_mm: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label></> : null}</> : null}
               <label className={labelCls}>Quantity<input type="number" value={previewInput.quantity ?? ''} onChange={(event) => setPreviewInput((previous) => ({ ...previous, quantity: event.target.value === '' ? null : Number(event.target.value) }))} className={inputCls} /></label>
             </div>
-            {isDimensional && draft.finish_addon_rates_json.length ? <div className="mt-3 rounded-ctl border border-line bg-surface-app p-3"><p className="text-xs font-semibold text-content-primary">Finishes / add-ons to test</p><p className="mt-0.5 text-xs text-content-muted">Tick an option to include its configured charge in this preview.</p><div className="mt-2 space-y-2">{draft.finish_addon_rates_json.map((finish) => <label key={finish.key} className="flex items-center justify-between gap-3 text-sm"><span className="flex items-center gap-2"><input type="checkbox" checked={(previewInput.finish_keys ?? []).includes(finish.key)} onChange={() => togglePreviewFinish(finish.key)} className="h-4 w-4" /><span>{finish.label || 'Unnamed add-on'}</span></span><span className="text-xs font-semibold text-content-muted">{money(finish.rate, draft.currency)} {finish.basis === 'per_sqm' ? '/ m²' : `/ ${unitDisplay}`}</span></label>)}</div></div> : null}
+            {isDimensional && draft.finish_addon_rates_json.length ? <div className="mt-3 rounded-ctl border border-line bg-surface-app p-3"><p className="text-xs font-semibold text-content-primary">Finishes / add-ons</p><div className="mt-2 space-y-2">{draft.finish_addon_rates_json.map((finish) => <label key={finish.key} className="flex items-center justify-between gap-3 text-sm"><span className="flex items-center gap-2"><input type="checkbox" checked={(previewInput.finish_keys ?? []).includes(finish.key)} onChange={() => togglePreviewFinish(finish.key)} className="h-4 w-4" /><span>{finish.label || 'Unnamed add-on'}</span></span><span className="text-xs font-semibold text-content-muted">{money(finish.rate, draft.currency)} {finish.basis === 'per_sqm' ? '/ m²' : `/ ${unitDisplay}`}</span></label>)}</div></div> : null}
 
-            {preview.ok ? <div className="mt-3"><ul className="divide-y divide-line text-sm">{preview.breakdown.map((line) => <li key={line.key} className="flex items-center justify-between py-1.5"><span className="text-content-secondary">{line.label}</span><span className={`font-semibold ${line.amount < 0 ? 'text-success-fg' : 'text-content-primary'}`}>{line.amount < 0 ? '−' : ''}{money(Math.abs(line.amount), preview.currency)}</span></li>)}</ul><div className="mt-2 rounded-ctl bg-surface-2 px-3 py-2"><p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Price per {unitDisplay}</p><p className="text-base font-bold text-content-primary">{money(preview.unit_price, preview.currency)}</p><p className="mt-1 text-lg font-bold text-content-primary">Total: {money(preview.total_price, preview.currency)}</p>{preview.lead_time ? <p className="text-xs text-content-muted">Lead time: {preview.lead_time}</p> : null}</div></div> : <ul className="mt-3 space-y-1">{preview.validation_errors.map((error) => <li key={error} className="rounded-ctl bg-warning-bg px-3 py-2 text-sm font-medium text-warning-fg">{error}</li>)}</ul>}
+            {preview.ok ? <div className="mt-3">
+              <ul className="divide-y divide-line text-sm">{preview.breakdown.map((line) => {
+                const perUnit = line.amount / previewQuantity;
+                return <li key={line.key} className="flex items-start justify-between gap-3 py-2"><span className="text-content-secondary">{line.label}</span><span className="text-right"><span className={`block font-semibold ${line.amount < 0 ? 'text-success-fg' : 'text-content-primary'}`}>{line.amount < 0 ? '−' : ''}{money(Math.abs(line.amount), preview.currency)}</span><span className="block text-[11px] font-medium text-content-muted">{money(Math.abs(perUnit), preview.currency)} / {unitDisplay}</span></span></li>;
+              })}</ul>
+              <div className="mt-2 rounded-ctl bg-surface-2 px-3 py-2"><p className="text-xs font-semibold uppercase tracking-wide text-content-muted">Price per {unitDisplay}</p><p className="text-base font-bold text-content-primary">{money(preview.unit_price, preview.currency)}</p><p className="mt-1 text-lg font-bold text-content-primary">Total: {money(preview.total_price, preview.currency)}</p>{preview.lead_time ? <p className="text-xs text-content-muted">Lead time: {preview.lead_time}</p> : null}</div>
+            </div> : <ul className="mt-3 space-y-1">{preview.validation_errors.map((error) => <li key={error} className="rounded-ctl bg-warning-bg px-3 py-2 text-sm font-medium text-warning-fg">{error}</li>)}</ul>}
           </section>
         </aside>
       </div>
