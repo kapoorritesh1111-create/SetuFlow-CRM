@@ -43,6 +43,53 @@ function isPageHelpQuestion(question: string) {
   return ['help', 'what can you do', 'what should i do', 'guide me', 'how do i use this page', 'what is this page'].some((phrase) => q.includes(phrase));
 }
 
+function isPackagingPricingRoute(pathname: string) {
+  return pathname === '/admin/packaging-templates' || pathname.startsWith('/admin/packaging-templates/');
+}
+
+function isPackagingPricingQuestion(question: string) {
+  const q = question.toLowerCase();
+  return [
+    'price', 'pricing', 'calculate', 'calculation', 'material', 'm2', 'm²', 'sqm', 'square metre', 'square meter',
+    'pouch', 'gusset', 'finish', 'add-on', 'addon', 'zipper', 'moq', 'quantity tier', 'multiplier', 'setup', 'pre-press',
+    'prepress', 'rush', 'waste', 'lead time', 'flexo', 'cylinder', 'why', 'how does this work', 'help',
+  ].some((phrase) => q.includes(phrase));
+}
+
+function packagingPricingMessage(question: string): ChatMessage {
+  const q = question.toLowerCase();
+  const focusedOnAddons = ['finish', 'add-on', 'addon', 'zipper'].some((word) => q.includes(word));
+  const focusedOnMaterial = ['material', 'm2', 'm²', 'sqm', 'square metre', 'square meter', 'gusset', 'area'].some((word) => q.includes(word));
+  const focusedOnMoq = ['moq', 'quantity', 'tier', 'multiplier'].some((word) => q.includes(word));
+  const focusedOnFlexo = ['flexo', 'cylinder', 'repeat length', 'web width'].some((word) => q.includes(word));
+
+  const intro = 'This Packaging Pricing Template uses the same calculation engine as Quote Builder, so the preview is the safest place to test one known quote before activation.';
+  const area = 'For “Pouch with front + back + gusset”, area per pouch = Width × (Height + Gusset) × 2 ÷ 1,000,000. Waste then increases that to billable area: Area × (1 + Waste %).';
+  const material = 'Material cost per pouch = Billable area × Material rate per m². The preview line shows the material total for the full quantity; the final unit price divides the complete job total back to one pouch / piece.';
+  const print = 'Printing uses the configured color multiplier. Print cost is the extra amount above the 1.00× material basis, so a 1.00× tier adds no print charge; a higher multiplier adds the difference.';
+  const addons = 'A finish/add-on set to “per pouch / piece” adds that rate to every pouch. A finish set to “per m²” uses Billable area × Finish rate. Tick the option under “Finishes / add-ons to test” in Live Preview to include it.';
+  const moq = 'MOQ blocks quantities below the minimum. Quantity-tier multipliers adjust the variable per-unit subtotal for the matching quantity range.';
+  const setup = 'Setup / pre-press charges are job-level charges. They are added to the job total and then amortized across the quantity when SETU Flow shows price per pouch.';
+  const flexo = 'For Flexo, cylinder cost is a one-time job charge based on the configured repeat-length tier rate × number of colors. If an existing cylinder is explicitly marked for reuse, that cylinder charge is waived.';
+  const rush = 'Rush uplift applies to the variable priced subtotal after the quantity tier. It does not multiply fixed setup or cylinder charges.';
+  const total = 'Final job total = variable subtotal after quantity tier + applicable finish/add-on pricing + rush uplift + job-level setup/service charges. Price per pouch / piece = Final job total ÷ Quantity.';
+
+  const parts = [intro];
+  if (focusedOnMaterial) parts.push(area, material);
+  if (focusedOnAddons) parts.push(addons);
+  if (focusedOnMoq) parts.push(moq);
+  if (focusedOnFlexo) parts.push(flexo);
+  if (!focusedOnMaterial && !focusedOnAddons && !focusedOnMoq && !focusedOnFlexo) parts.push(area, material, print, addons, moq, setup, rush, total);
+  else parts.push(setup, rush, total);
+
+  return {
+    id: `packaging-pricing-${Date.now()}`,
+    role: 'assistant',
+    content: parts.join('\n\n'),
+    actions: ['Check the live preview', 'Review template blockers'],
+  };
+}
+
 function topicMessage(topic: SetuGuruHelpTopic, routeTitle: string): ChatMessage {
   const approval = topic.approvalRules.length ? [`Human approval boundary: ${topic.approvalRules.join(' ')}`] : [];
   return {
@@ -158,7 +205,6 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
 export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLabel }: { pathname: string; routeTitle: string; organizationName?: string | null; roleLabel: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
-  // S24-TRIAL-205: null for non-trial orgs (no provider mounted) — hides "Show me".
   const trialTour = useTrialTour();
 
   const handleShowStep = useCallback((action: TrialShowStepAction) => {
@@ -182,19 +228,24 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const routeHelp = useMemo(() => getRouteHelpSummary(pathname), [pathname]);
-  const quickPrompts = useMemo(() => getSetuGuruRouteTopics(pathname).slice(0, 4), [pathname]);
+  const quickPrompts = useMemo(() => {
+    const topics = getSetuGuruRouteTopics(pathname);
+    if (isPackagingPricingRoute(pathname)) return topics.filter((topic) => topic.id === 'packaging-templates').slice(0, 1);
+    return topics.slice(0, 4);
+  }, [pathname]);
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
-  // Mobile consolidation: the header's Guru icon (BrandedMobileTopBar) dispatches this
-  // event instead of duplicating drawer-open logic — keeps a single source of truth
-  // for the chat state while giving mobile a docked, predictable entry point alongside
-  // the free-floating SetuGuruFab.
   useEffect(() => {
     function handleDockOpen() { setDrawerOpen(true); }
     window.addEventListener('setu-guru:open', handleDockOpen);
     return () => window.removeEventListener('setu-guru:open', handleDockOpen);
   }, []);
-  useEffect(() => { setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
+  useEffect(() => {
+    const content = isPackagingPricingRoute(pathname)
+      ? 'Hi, I’m Setu Guru. I can explain how this Packaging Pricing Template calculates material, print, add-ons, MOQ tiers, setup, rush, Flexo cylinder charges, and the final price per pouch / piece.'
+      : `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.`;
+    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content }]);
+  }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
   useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
 
   function appendAssistant(content: string, tone: ChatMessage['tone'] = 'normal', extra?: Partial<ChatMessage>) {
@@ -224,10 +275,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
         actionHrefs: data.actionHrefs && typeof data.actionHrefs === 'object' ? data.actionHrefs as Record<string, string | null> : undefined,
         rows: Array.isArray(data.rows) ? data.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === 'object' && !Array.isArray(row))) : [],
         hsnCatalogReview: data.hsnCatalogReview && typeof data.hsnCatalogReview === 'object' ? data.hsnCatalogReview as HsnCatalogReview : null,
-        trialAction:
-          data.trialAction && typeof data.trialAction === 'object' && (data.trialAction as Record<string, unknown>).type === 'show_step' && typeof (data.trialAction as Record<string, unknown>).stepId === 'string'
-            ? (data.trialAction as TrialShowStepAction)
-            : null,
+        trialAction: data.trialAction && typeof data.trialAction === 'object' && (data.trialAction as Record<string, unknown>).type === 'show_step' && typeof (data.trialAction as Record<string, unknown>).stepId === 'string' ? (data.trialAction as TrialShowStepAction) : null,
         sourceQuestion: question,
         tone: response.ok ? 'normal' : 'error',
       }));
@@ -284,7 +332,8 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   }
 
   function askTopic(topic: SetuGuruHelpTopic) {
-    setMessages((current) => [...current, { id: `user-${topic.id}-${Date.now()}`, role: 'user', content: topic.title }, topicMessage(topic, routeTitle)]);
+    const answer = isPackagingPricingRoute(pathname) && topic.id === 'packaging-templates' ? packagingPricingMessage(topic.title) : topicMessage(topic, routeHelp.routeTitle || routeTitle);
+    setMessages((current) => [...current, { id: `user-${topic.id}-${Date.now()}`, role: 'user', content: topic.title }, answer]);
   }
 
   function handleAsk(event: FormEvent<HTMLFormElement>) {
@@ -293,15 +342,22 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (!question || isThinking) return;
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
+    if (isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(question)) {
+      setMessages((current) => [...current, packagingPricingMessage(question)]);
+      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+      return;
+    }
     if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
     if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
     if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
-    setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeTitle)]);
+    setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeHelp.routeTitle || routeTitle)]);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
   function handleAction(message: ChatMessage, action: string) {
     const key = actionKey(action);
+    if (key.includes('check the live preview')) { appendAssistant('Use “Test your price” on the right. Enter the same dimensions, material, colors and quantity as a known manual quote, then tick each priced finish/add-on. The preview uses the same engine as Quote Builder.'); return; }
+    if (key.includes('review template blockers')) { appendAssistant('Use Template check above the preview. Fix the listed items before activation: material rates, quantity tiers, setup/pre-press handling, rush pricing and standard lead time as applicable.'); return; }
     if (key.includes('approve catalog hsn update')) { void applyHsnUpdate(message); return; }
     if (key.includes('ask ai') || key.includes('evidence checklist')) { setInputValue('what evidence or documents are needed to fix this compliance blocker?'); appendAssistant('I queued an evidence-checklist question. Send it when ready; I will draft guidance only and will not clear or waive compliance.', 'success'); requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true })); return; }
     if (key.includes('dispatch evidence checklist')) { setInputValue('Draft a dispatch evidence checklist for this order. Separate commercial, document, compliance, and dispatch blockers. Do not advance order state.'); appendAssistant('I queued a dispatch evidence checklist. This is guidance only; humans approve release, dispatch sends, waivers, and order state changes.', 'success'); requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true })); return; }
@@ -328,12 +384,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   const launcher = (
     <div className="hidden md:block">
-      <SetuGuruFab
-        label="Toggle Setu Guru"
-        online={guruOnline}
-        onClick={() => setDrawerOpen((current) => !current)}
-        className="fixed bottom-6 right-6 z-[610]"
-      />
+      <SetuGuruFab label="Toggle Setu Guru" online={guruOnline} onClick={() => setDrawerOpen((current) => !current)} className="fixed bottom-6 right-6 z-[610]" />
     </div>
   );
 
@@ -351,7 +402,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2"><h2 className="truncate text-[17px] font-semibold text-slate-950">Setu Guru</h2>{guruOnline ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Online</span> : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Ready</span>}</div>
-                  <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500"><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{routeTitle}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{roleLabel}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{organizationName ?? 'Setu Flow'}</span></div>
+                  <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500"><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{routeHelp.routeTitle || routeTitle}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{roleLabel}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{organizationName ?? 'Setu Flow'}</span></div>
                 </div>
               </div>
               <button type="button" onClick={closeDrawer} className="rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50">Hide</button>
@@ -381,7 +432,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
           </div>
           <footer className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3">
             <div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div>
-            <form onSubmit={handleAsk} className="flex items-end gap-2 rounded-panel border border-slate-200 bg-brand-50 p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100"><textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder="Ask about this page, products, pricing defaults, buyers, HSN codes…" className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" /><button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button></form>
+            <form onSubmit={handleAsk} className="flex items-end gap-2 rounded-panel border border-slate-200 bg-brand-50 p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100"><textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder={isPackagingPricingRoute(pathname) ? 'Ask how material, add-ons, MOQ or the pouch price is calculated…' : 'Ask about this page, products, pricing defaults, buyers, HSN codes…'} className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" /><button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button></form>
             <p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru checks page context, the help registry, and live organization data. Humans approve prices, compliance, sends, and write-backs.</p>
           </footer>
         </div>

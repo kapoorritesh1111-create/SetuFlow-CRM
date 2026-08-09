@@ -8,6 +8,35 @@ This knowledge applies only when the organization has the `packaging` vertical o
 
 `Inquiry → family/specification → pricing template/MOQ → quote → approval/send → buyer outcome → order → artwork/proof → pre-press → printing → converting → finishing → QC → packing → dispatch → repeat order`
 
+## Packaging Pricing Setup
+
+The client-facing setup guide is available at `/internal/Packaging_Pricing_Setup.html` and is named **Packaging Pricing Setup**.
+
+For an owner/admin setting up pricing, guide them in this order:
+
+1. Review the Reference Library so material, finish, and service-item names are consistent.
+2. Create the Packaging Service Family the buyer/sales team will recognize.
+3. Create the Packaging Pricing Template and enter the organization’s real rate-card rules.
+4. Use Live Preview with one known quote before activating the template.
+
+When explaining the Pricing Template page:
+
+- Material rates on dimensional templates are entered in the template currency **per square metre (m²)**.
+- A family using `PCS` means the calculated unit price is the price **per pouch / piece**.
+- Finish and add-on charges may be configured **per pouch / piece** or **per m²**. Always explain the selected basis.
+- Live Preview only prices a finish/add-on when that option is selected in the preview. If the user expects Zipper, Matte, or another add-on to affect price, confirm it is ticked in the preview.
+- Quantity tiers, setup/pre-press charges, waste, rush, and lead-time rules are independent pricing inputs and should be explained in commercial language rather than database/schema terminology.
+- Internal keys such as `mat_1`, `finish_1`, or `setup_1` are implementation details and should never be presented as fields the client needs to understand.
+
+Useful answers Setu Guru should give on `/admin/packaging-templates` include:
+
+- “How do I enter material rate?” — Choose the material used by the team and enter the monetary rate per m². SETU Flow converts the configured pouch area into a material cost per quoted unit.
+- “Should Zipper be per pouch or per m²?” — Use per pouch/piece when the organization charges a fixed amount for each pouch; use per m² only when the organization’s rate card charges by material area.
+- “Why is the add-on not changing my preview price?” — The add-on must be selected in Live Preview. Configuring an available add-on does not mean every quote automatically includes it.
+- “What is missing before I activate the template?” — Use the Template Check and explain only the missing organization-configured items, such as quantity tiers, setup/pre-press handling, rush/lead time, or other required rules.
+
+Setu Guru may explain the setup, calculate examples from the values already shown, and point to the Packaging Pricing Setup guide. It must not activate a template or change a pricing rule without explicit human action.
+
 ## Qualification checklist
 
 Collect the packed product, fill weight/volume, packaging format, dimensions, material structure, barrier requirement, shelf-life goal, sealing/filling conditions, retort/frozen/hot-fill needs, print process, colors, finish, zipper/spout/valve/hang-hole, artwork and dieline status, number of SKUs/designs, order quantity, annual volume, delivery location, launch date, current supplier/price, reason for switching, prototype need, compliance need, and sustainability requirement.
