@@ -1,9 +1,10 @@
 import Link from 'next/link';
 
 import { WorkspaceState } from '@/components/ui/workspace-state';
+import { InboundViewControls } from '@/features/integrations/interakt/components/inbound-view-controls';
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
+import { SalesMessageComposer } from '@/features/integrations/interakt/components/sales-message-composer';
 import { logStarkInteraktCall } from '@/features/integrations/interakt/review-actions';
-import { sendStarkInteraktSalesFollowUp, sendStarkInteraktSalesText } from '@/features/integrations/interakt/sales-message-actions';
 import {
   acceptStarkInteraktCompanySuggestion,
   readStarkInteraktConversation,
@@ -21,6 +22,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const DEFAULT_LIST_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'source', 'guru', 'score', 'last_activity'];
 
 type SearchParams = {
   review?: string;
@@ -31,6 +33,8 @@ type SearchParams = {
   source?: string;
   owner?: string;
   sort?: string;
+  view?: string;
+  columns?: string;
 };
 
 type ConversationMessage = {
@@ -158,6 +162,11 @@ function summaryValue(value: unknown, required = false) {
     : { text: 'Collect later', className: 'text-slate-400' };
 }
 
+function selectedColumns(raw: string | undefined) {
+  const columns = String(raw ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+  return new Set(columns.length ? columns : DEFAULT_LIST_COLUMNS);
+}
+
 export default async function InboundLeadsPage({ searchParams = {} }: { searchParams?: SearchParams }) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) return <WorkspaceState eyebrow="Leads · Inbound" title="Workspace membership needed" description="Sign in to your organization to review inbound inquiries." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
@@ -165,9 +174,20 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   if (!isStark) return <WorkspaceState eyebrow="Leads · Inbound" title="Inbound connector not enabled" description="The Interakt qualification workspace is currently enabled for Stark Packmate." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
 
   const canWorkInbound = workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)));
+  const view = searchParams.view === 'list' ? 'list' : 'review';
   const page = Math.max(1, Number(searchParams.page ?? '1') || 1);
-  const workspaceData = await readInboundWorkspaceV2({ page, pageSize: 15, q: searchParams.q, status: searchParams.status, guru: searchParams.guru, source: searchParams.source, owner: searchParams.owner, sort: searchParams.sort });
+  const workspaceData = await readInboundWorkspaceV2({ page, pageSize: view === 'list' ? 30 : 15, q: searchParams.q, status: searchParams.status, guru: searchParams.guru, source: searchParams.source, owner: searchParams.owner, sort: searchParams.sort });
   const rows = workspaceData.rows as any[];
+
+  if (view === 'list') {
+    return <div className="space-y-3 pb-8">
+      <Header canWorkInbound={canWorkInbound} />
+      <Kpis kpis={workspaceData.kpis} searchParams={searchParams} />
+      <FilterBar searchParams={searchParams} />
+      <ListView rows={rows} workspaceData={workspaceData} searchParams={searchParams} canWorkInbound={canWorkInbound} />
+    </div>;
+  }
+
   const requestedId = String(searchParams.review ?? '').trim();
   const selected = rows.find((row) => row.id === requestedId) ?? rows[0] ?? null;
   const conversation = selected ? await readStarkInteraktConversation(selected.id) : { messages: [], answers: [], error: null };
@@ -176,14 +196,12 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const latestEvidence = selected?.company_evidence?.latest as CompanyEvidenceEntry | undefined;
   const currentGuru = selected ? guruLabel(selected.guru_evaluation_status) : guruLabel(null);
 
-  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or sync Interakt contacts." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
+  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or sync Interakt contacts." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
 
   const leadBlockers = (selected.lead_blockers ?? selected.missing_fields ?? []) as string[];
   const laterEnrichment = (selected.later_enrichment ?? []) as string[];
   const whatsappReplyWindowOpen = withinWhatsAppReplyWindow(selected.last_inbound_at);
   const customerName = selected.person_name || selected.contact_name || 'Customer';
-  const followUpContext = [selected.pouch_type || selected.packaging_type, selected.quantity_text].filter(Boolean).join(' · ') || (leadBlockers.length ? leadBlockers.map(missingLabel).join(', ') : 'Packaging follow-up');
-  const suggestedWhatsappMessage = `Hi ${customerName}, thank you for sharing your packaging requirement. I have the details for ${followUpContext}. How can I help you with the next step?`;
   const summaryRows: Array<[string, unknown, boolean]> = [
     ['Company', selected.company_name, true],
     ['Brand', selected.brand_name, false],
@@ -198,7 +216,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
 
   return <div className="space-y-3 pb-8">
     <Header canWorkInbound={canWorkInbound} />
-    <Kpis kpis={workspaceData.kpis} />
+    <Kpis kpis={workspaceData.kpis} searchParams={searchParams} />
     <FilterBar searchParams={searchParams} />
 
     <div className="grid items-start gap-3 xl:grid-cols-[300px_minmax(0,1fr)_310px]">
@@ -262,23 +280,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           <section id="message-customer" className="grid gap-3 lg:grid-cols-2">
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-xs font-black text-slate-800">💬 Message customer</summary>
-              <div className="mt-4 space-y-3">
-                <div className={`rounded-xl border px-3 py-2 ${whatsappReplyWindowOpen ? 'border-emerald-200 bg-emerald-50' : 'border-blue-200 bg-blue-50'}`}>
-                  <div className="flex items-center justify-between gap-2"><p className={`text-[10px] font-black ${whatsappReplyWindowOpen ? 'text-emerald-800' : 'text-blue-800'}`}>WhatsApp</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${whatsappReplyWindowOpen ? 'bg-white text-emerald-700' : 'bg-white text-blue-700'}`}>{whatsappReplyWindowOpen ? 'Free reply window open' : 'Template required'}</span></div>
-                  <p className={`mt-1 text-[10px] leading-4 ${whatsappReplyWindowOpen ? 'text-emerald-700' : 'text-blue-700'}`}>{whatsappReplyWindowOpen ? 'The customer replied within the last 24 hours. Type or edit your reply below and send it from Setu Flow.' : 'The 24-hour reply window has closed. Use an approved WhatsApp follow-up template to reopen the conversation.'}</p>
-                </div>
-                {whatsappReplyWindowOpen ? <form action={sendStarkInteraktSalesText} className="space-y-2">
-                  <input type="hidden" name="rowId" value={selected.id} />
-                  <label className="block text-[9px] font-black uppercase tracking-wide text-slate-500">Your message<textarea name="message" required maxLength={4096} rows={5} defaultValue={suggestedWhatsappMessage} className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium leading-5 text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
-                  <div className="flex items-center justify-between gap-2"><p className="text-[9px] text-slate-400">Editable before sending · sent from Stark Packmate’s WhatsApp</p><span className="text-[9px] font-bold text-emerald-700">24h reply</span></div>
-                  <PendingSubmitButton disabled={!canWorkInbound} idleLabel="Send WhatsApp" pendingLabel="Sending WhatsApp…" pendingDetail="Waiting for Interakt to accept your message" className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-black text-white" />
-                </form> : null}
-                <details className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" open={!whatsappReplyWindowOpen}>
-                  <summary className="cursor-pointer text-[10px] font-bold text-slate-600">Use approved follow-up instead</summary>
-                  <div className="mt-2"><div className="grid gap-2 text-xs sm:grid-cols-2"><div><p className="text-[9px] text-slate-400">Customer</p><p className="font-bold text-slate-800">{customerName}</p></div><div><p className="text-[9px] text-slate-400">Requirement / follow-up</p><p className="font-bold text-slate-800">{followUpContext}</p></div></div>
-                  <form action={sendStarkInteraktSalesFollowUp} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="messagePreset" value="qualification_follow_up" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Send approved follow-up" pendingLabel="Sending template…" pendingDetail="Waiting for Interakt to accept the approved message" className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-700" /></form></div>
-                </details>
-              </div>
+              <div className="mt-4"><SalesMessageComposer rowId={selected.id} customerName={customerName} companyName={selected.company_name} packagingType={selected.packaging_type} pouchType={selected.pouch_type} quantityText={selected.quantity_text} replyWindowOpen={whatsappReplyWindowOpen} canSend={canWorkInbound} /></div>
             </details>
             <details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Log call" pendingLabel="Saving call…" className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white" /></form></details>
           </section>
@@ -319,17 +321,95 @@ function Header({ canWorkInbound }: { canWorkInbound: boolean }) {
   return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review, communicate and move real buyer inquiries into the permanent Lead pipeline. Browsing-only contacts stay out until they engage.</p></div><div className="flex items-center gap-2"><Link href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync contacts" pendingLabel="Syncing contacts…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
 }
 
-function Kpis({ kpis }: { kpis: any }) {
-  const items = [['Active', kpis.active, `${kpis.browsingHidden ?? 0} browsing hidden`], ['Inquiries', kpis.inquiries, 'Conversation-backed'], ['Needs reply', kpis.needsReply, 'Customer waiting'], ['Needs info', kpis.needsInfo, 'Sales handoff gaps'], ['Ready', kpis.ready, 'Marked ready'], ['Guru coverage', `${kpis.evaluated}/${kpis.active}`, `${kpis.newEvidence} new evidence · ${kpis.pending} history/pending`]];
-  return <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">{items.map(([label,value,detail]) => <div key={String(label)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-1 text-xl font-black text-slate-950">{String(value)}</p><p className="mt-1 truncate text-[9px] text-slate-400">{detail}</p></div>)}</div>;
+function Kpis({ kpis, searchParams }: { kpis: any; searchParams: SearchParams }) {
+  const items = [
+    { label: 'Active', value: kpis.active, detail: `${kpis.browsingHidden ?? 0} browsing hidden`, icon: '◉', tone: 'blue', patch: { status: undefined, guru: undefined } },
+    { label: 'Inquiries', value: kpis.inquiries, detail: 'Conversation-backed', icon: '💬', tone: 'violet', patch: { status: undefined } },
+    { label: 'Needs reply', value: kpis.needsReply, detail: 'Customer waiting', icon: '↩', tone: 'rose', patch: { status: 'needs_reply' } },
+    { label: 'Needs info', value: kpis.needsInfo, detail: 'Sales handoff gaps', icon: '◇', tone: 'amber', patch: { status: 'needs_info' } },
+    { label: 'Ready', value: kpis.ready, detail: 'Marked ready', icon: '✓', tone: 'emerald', patch: { status: 'ready' } },
+    { label: 'Guru coverage', value: `${kpis.evaluated}/${kpis.active}`, detail: `${kpis.newEvidence} new evidence · ${kpis.pending} pending`, icon: '✨', tone: 'indigo', patch: { guru: 'evaluated' } },
+  ];
+  const tones: Record<string, string> = {
+    blue: 'border-blue-100 bg-gradient-to-br from-white to-blue-50/70 hover:border-blue-300',
+    violet: 'border-violet-100 bg-gradient-to-br from-white to-violet-50/70 hover:border-violet-300',
+    rose: 'border-rose-100 bg-gradient-to-br from-white to-rose-50/70 hover:border-rose-300',
+    amber: 'border-amber-100 bg-gradient-to-br from-white to-amber-50/70 hover:border-amber-300',
+    emerald: 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50/70 hover:border-emerald-300',
+    indigo: 'border-indigo-100 bg-gradient-to-br from-white to-indigo-50/70 hover:border-indigo-300',
+  };
+  return <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">{items.map((item) => <Link key={item.label} href={paramsHref(searchParams, { ...item.patch, page: '1', review: undefined })} className={`group rounded-2xl border px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${tones[item.tone]}`}><div className="flex items-center justify-between gap-2"><p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">{item.label}</p><span className="text-sm opacity-70 transition group-hover:scale-110">{item.icon}</span></div><p className="mt-1 text-xl font-black text-slate-950">{String(item.value)}</p><p className="mt-1 truncate text-[9px] text-slate-400">{item.detail}</p></Link>)}</div>;
 }
 
 function FilterBar({ searchParams }: { searchParams: SearchParams }) {
-  return <form method="get" className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><label className="min-w-[220px] flex-1 text-[9px] font-bold uppercase text-slate-500">Search<input name="q" defaultValue={searchParams.q || ''} placeholder="Name, company or phone" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label><Select name="status" label="Status" value={searchParams.status || 'all'} options={[['all','All'],['new','New'],['needs_reply','Needs reply'],['needs_info','Needs info'],['ready','Ready'],['history_pending','History pending']]} /><Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[['all','All'],['evaluated','Evaluated'],['new_evidence','New evidence'],['partial_history','History pending'],['pending','Pending']]} /><Select name="source" label="Source" value={searchParams.source || 'all'} options={[['all','All'],['ctwa','CTWA'],['instagram','Instagram'],['whatsapp','WhatsApp']]} /><Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[['recent','Most recent'],['oldest','Oldest'],['score','Highest score'],['name','Name A-Z']]} /><button className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Apply</button><Link href="/leads/inbound" className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Clear</Link></form>;
+  return <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <form method="get" className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+      <input type="hidden" name="view" value={searchParams.view || 'review'} />
+      {searchParams.columns ? <input type="hidden" name="columns" value={searchParams.columns} /> : null}
+      <label className="min-w-[240px] flex-1 text-[9px] font-bold uppercase text-slate-500">Search<input name="q" defaultValue={searchParams.q || ''} placeholder="Search by name, company or phone" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label>
+      <Select name="status" label="Segment" value={searchParams.status || 'all'} options={[['all','All'],['new','New'],['needs_reply','Needs reply'],['needs_info','Needs info'],['ready','Ready'],['history_pending','History pending']]} />
+      <Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[['all','All'],['evaluated','Evaluated'],['new_evidence','New evidence'],['partial_history','History pending'],['pending','Pending']]} />
+      <Select name="source" label="Source" value={searchParams.source || 'all'} options={[['all','All'],['ctwa','CTWA'],['instagram','Instagram'],['whatsapp','WhatsApp']]} />
+      <label className="text-[9px] font-bold uppercase text-slate-500">Owner<input name="owner" defaultValue={searchParams.owner || ''} placeholder="Any owner" className="mt-1 block w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label>
+      <Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[['recent','Most recent'],['oldest','Oldest'],['score','Highest score'],['name','Name A-Z']]} />
+      <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Apply</button>
+      <Link href={`/leads/inbound?view=${searchParams.view === 'list' ? 'list' : 'review'}`} className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Clear</Link>
+    </form>
+    <InboundViewControls view={searchParams.view || 'review'} columns={searchParams.columns} />
+  </div>;
 }
 
 function Select({ name, label, value, options }: { name: string; label: string; value: string; options: string[][] }) {
   return <label className="text-[9px] font-bold uppercase text-slate-500">{label}<select name={name} defaultValue={value} className="mt-1 block rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case">{options.map(([optionValue, text]) => <option key={optionValue} value={optionValue}>{text}</option>)}</select></label>;
+}
+
+function ListView({ rows, workspaceData, searchParams, canWorkInbound }: { rows: any[]; workspaceData: any; searchParams: SearchParams; canWorkInbound: boolean }) {
+  const columns = selectedColumns(searchParams.columns);
+  const show = (id: string) => columns.has(id);
+  return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+      <div><h2 className="text-sm font-black text-slate-950">Inbound contacts</h2><p className="mt-0.5 text-[10px] text-slate-500">{workspaceData.count.toLocaleString()} matching records · 30 per page</p></div>
+      {canWorkInbound && rows.length ? <form action={evaluateStarkInteraktPage}><input type="hidden" name="rowIds" value={rows.map((row) => row.id).join(',')} /><PendingSubmitButton idleLabel="✨ Evaluate page" pendingLabel="Evaluating…" pendingDetail={`Reviewing ${rows.length} visible contacts`} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[10px] font-black text-violet-700" /></form> : null}
+    </div>
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse text-left">
+        <thead className="bg-slate-50/80"><tr>
+          {show('contact') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Contact</th> : null}
+          {show('phone') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Phone</th> : null}
+          {show('company') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Company</th> : null}
+          {show('requirement') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Requirement</th> : null}
+          {show('quantity') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Quantity</th> : null}
+          {show('source') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Source</th> : null}
+          {show('owner') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Owner</th> : null}
+          {show('guru') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Setu Guru</th> : null}
+          {show('score') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Score</th> : null}
+          {show('last_activity') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Last activity</th> : null}
+          {show('needs_reply') ? <th className="whitespace-nowrap px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Reply</th> : null}
+          <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-wide text-slate-500">Action</th>
+        </tr></thead>
+        <tbody className="divide-y divide-slate-100">
+          {rows.map((row) => {
+            const guru = guruLabel(row.guru_evaluation_status);
+            return <tr key={row.id} className="group hover:bg-blue-50/30">
+              {show('contact') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-black text-slate-900">{row.person_name || row.contact_name || 'Unnamed contact'}</p>{row.email ? <p className="mt-0.5 text-[9px] text-slate-400">{row.email}</p> : null}</td> : null}
+              {show('phone') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.full_phone_number || '—'}</td> : null}
+              {show('company') ? <td className="max-w-[220px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{row.company_name || row.brand_name || 'Not confirmed'}</p></td> : null}
+              {show('requirement') ? <td className="max-w-[250px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{row.pouch_type || row.packaging_type || 'Not captured'}</p>{row.industry ? <p className="mt-0.5 truncate text-[9px] text-slate-400">{row.industry}</p> : null}</td> : null}
+              {show('quantity') ? <td className="whitespace-nowrap px-4 py-3 text-xs font-semibold text-slate-700">{row.quantity_text || '—'}</td> : null}
+              {show('source') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-semibold text-slate-700">{row.computed_source}</p>{row.acquisition_type === 'ctwa' ? <span className="mt-1 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[9px] font-bold text-violet-700">CTWA</span> : null}</td> : null}
+              {show('owner') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.interakt_assignee_name || 'Unassigned'}</td> : null}
+              {show('guru') ? <td className="px-4 py-3"><span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span></td> : null}
+              {show('score') ? <td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span></td> : null}
+              {show('last_activity') ? <td className="whitespace-nowrap px-4 py-3"><p className="text-xs font-semibold text-slate-700">{timeAgo(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p><p className="mt-0.5 text-[9px] text-slate-400">{formatDateTime(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p></td> : null}
+              {show('needs_reply') ? <td className="px-4 py-3">{row.needs_reply ? <span className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-black text-rose-700">Needs reply</span> : <span className="text-[9px] font-bold text-slate-400">Up to date</span>}</td> : null}
+              <td className="px-4 py-3 text-right"><Link href={paramsHref(searchParams, { view: 'review', review: row.id })} className="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[10px] font-black text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">Review</Link></td>
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </div>
+    <Pagination page={workspaceData.page} totalPages={workspaceData.totalPages} count={workspaceData.count} pageSize={workspaceData.pageSize} searchParams={searchParams} />
+  </section>;
 }
 
 function Pagination({ page, totalPages, count, pageSize, searchParams }: { page: number; totalPages: number; count: number; pageSize: number; searchParams: SearchParams }) {
