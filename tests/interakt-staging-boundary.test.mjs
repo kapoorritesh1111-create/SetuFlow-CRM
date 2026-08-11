@@ -14,13 +14,14 @@ const combinedRuntime = `${client}\n${server}\n${webhook}\n${route}\n${inboundPa
 
 test('Interakt contacts retrieval uses the documented endpoint and Basic auth', () => {
   assert.match(client, /https:\/\/api\.interakt\.ai\/v1\/public\/apis\/users\//);
-  assert.match(client, /Authorization: `Basic \$\{getApiKey\(\)\}`/);
+  assert.match(client, /Authorization: `Basic \$\{getInteraktApiKey\(\)\}`/);
   assert.match(client, /filters: buildFilters/);
 });
 
 test('Interakt WhatsApp send is explicit and uses the public template endpoint', () => {
   assert.match(client, /https:\/\/api\.interakt\.ai\/v1\/public\/message\//);
   assert.match(client, /type: 'Template'/);
+  assert.match(client, /countryCode = countryDigits \? `\+\$\{countryDigits\}`/);
   assert.match(server, /export async function sendStarkInteraktTemplate/);
   assert.match(inboundPage, /Send WhatsApp template/);
   assert.doesNotMatch(webhook, /sendInteraktTemplate/);
