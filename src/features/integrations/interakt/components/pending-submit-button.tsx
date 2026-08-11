@@ -32,11 +32,7 @@ export function PendingSubmitButton({
           {pending ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" /> : null}
           {pending ? pendingLabel : idleLabel}
         </span>
-        {pending ? (
-          <span className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-current/15" aria-hidden="true">
-            <span className="block h-full w-2/5 animate-[sf-inbound-progress_1.1s_ease-in-out_infinite] bg-current/60" />
-          </span>
-        ) : null}
+        {pending ? <span className="absolute inset-x-0 bottom-0 h-0.5 animate-pulse bg-current/60" aria-hidden="true" /> : null}
       </button>
       {pending && pendingDetail ? <p className="mt-1 text-[9px] font-medium text-slate-500">{pendingDetail}</p> : null}
     </div>
