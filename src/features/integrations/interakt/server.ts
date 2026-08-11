@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { fetchInteraktContacts, sendInteraktTemplate } from '@/features/integrations/interakt/client';
+import { assessInteraktContact } from '@/features/integrations/interakt/qualification';
+import type { InteraktInquiryEvidence, NormalizedInteraktContact } from '@/features/integrations/interakt/types';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
@@ -135,6 +137,30 @@ export async function updateStarkInteraktIntakeStatus(formData: FormData): Promi
   revalidatePath(INBOUND_PATH);
 }
 
+function contactFromRow(row: any): NormalizedInteraktContact {
+  const raw = row.raw_payload && typeof row.raw_payload === 'object' ? row.raw_payload : {};
+  const traits = row.traits && typeof row.traits === 'object' ? row.traits : {};
+  return {
+    externalContactId: String(row.external_contact_id), externalUserId: row.external_user_id ?? null,
+    phoneNumber: row.phone_number ?? null, countryCode: row.country_code ?? null,
+    fullPhoneNumber: row.full_phone_number ?? null, contactName: row.contact_name ?? null,
+    email: row.email ?? null, whatsappOptedIn: row.whatsapp_opted_in ?? null,
+    sourceCreatedAt: row.source_created_at ?? null, sourceModifiedAt: row.source_modified_at ?? null,
+    sourceCreatedVia: row.source_created_via ?? null, tags: [], traits, rawPayload: raw,
+  };
+}
+
+function evidenceFromRow(row: any): InteraktInquiryEvidence {
+  return {
+    personName: row.person_name, companyName: row.company_name, packagingType: row.packaging_type,
+    pouchType: row.pouch_type, quantityText: row.quantity_text, dimensionsPrint: row.dimensions_print,
+    deliveryLocation: row.delivery_location, buyingTimeline: row.buying_timeline, industry: row.industry,
+    firstInquiryAt: row.first_inquiry_at, lastInboundAt: row.last_inbound_at, channelSource: row.channel_source,
+    acquisitionType: row.acquisition_type, adNetwork: row.ad_network, adPlatform: row.ad_platform, adUrl: row.ad_url,
+    workflowAnswerCount: [row.packaging_type, row.pouch_type, row.quantity_text, row.industry].filter(Boolean).length,
+  };
+}
+
 export async function saveStarkInteraktQualification(formData: FormData): Promise<void> {
   const workspace = await requireStarkPackmateAccess(true);
   const db = createAdminSupabaseClient() as any;
@@ -155,7 +181,12 @@ export async function saveStarkInteraktQualification(formData: FormData): Promis
     intake_status: clean(formData.get('status')) === 'ready_to_qualify' ? 'ready_to_qualify' : 'reviewed',
     updated_at: nowIso(),
   };
-  const { error } = await db.from('lead_intake_staging').update(patch)
+  const { data: current, error: loadError } = await db.from('lead_intake_staging').select('*')
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+  if (loadError || !current?.id) throw new Error('Inbound inquiry not found.');
+  const merged = { ...current, ...patch };
+  const score = assessInteraktContact(contactFromRow(merged), new Date(), evidenceFromRow(merged)).score;
+  const { error } = await db.from('lead_intake_staging').update({ ...patch, qualification_score: score })
     .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER);
   if (error) throw new Error(`Unable to save qualification: ${String(error.message ?? 'unknown database error')}`);
   revalidatePath(INBOUND_PATH);
@@ -181,30 +212,16 @@ export async function sendStarkInteraktTemplate(formData: FormData): Promise<voi
 
   const callbackData = JSON.stringify({ source: 'setu_flow_inbound', intake_id: row.id, actor_user_id: workspace.user!.id });
   const result = await sendInteraktTemplate({
-    countryCode: String(row.country_code),
-    phoneNumber: String(row.phone_number),
-    templateName,
-    languageCode,
-    bodyValues: parseTemplateValues(formData.get('bodyValues')),
-    callbackData,
+    countryCode: String(row.country_code), phoneNumber: String(row.phone_number), templateName, languageCode,
+    bodyValues: parseTemplateValues(formData.get('bodyValues')), callbackData,
   });
   const now = nowIso();
   const { error: messageError } = await db.from('lead_intake_messages').upsert({
-    organization_id: workspace.organization!.id,
-    intake_id: row.id,
-    provider: SOURCE_PROVIDER,
-    external_message_id: result.id,
-    event_type: 'message_api_send_requested',
-    direction: 'outbound',
-    actor_type: 'agent',
-    actor_name: workspace.profile?.full_name ?? workspace.user?.email ?? 'Setu Flow user',
-    message_type: 'Template',
-    message_text: `Template: ${templateName}`,
-    message_payload: { templateName, languageCode, bodyValues: parseTemplateValues(formData.get('bodyValues')) },
-    sent_at: now,
-    status: 'sent',
-    callback_data: callbackData,
-    updated_at: now,
+    organization_id: workspace.organization!.id, intake_id: row.id, provider: SOURCE_PROVIDER,
+    external_message_id: result.id, event_type: 'message_api_send_requested', direction: 'outbound', actor_type: 'agent',
+    actor_name: workspace.profile?.full_name ?? workspace.user?.email ?? 'Setu Flow user', message_type: 'Template',
+    message_text: `Template: ${templateName}`, message_payload: { templateName, languageCode, bodyValues: parseTemplateValues(formData.get('bodyValues')) },
+    sent_at: now, status: 'sent', callback_data: callbackData, updated_at: now,
   }, { onConflict: 'organization_id,provider,external_message_id' });
   if (messageError) throw new Error(`WhatsApp sent but conversation log failed: ${String(messageError.message ?? 'unknown database error')}`);
   revalidatePath(INBOUND_PATH);
@@ -217,11 +234,7 @@ export async function readStarkInteraktConversation(intakeId: string) {
     db.from('lead_intake_messages').select('*').eq('organization_id', workspace.organization!.id).eq('intake_id', intakeId).order('created_at', { ascending: true }).limit(500),
     db.from('lead_intake_workflow_answers').select('*').eq('organization_id', workspace.organization!.id).eq('intake_id', intakeId).order('answered_at', { ascending: true }).limit(500),
   ]);
-  return {
-    messages: messagesResult.data ?? [],
-    answers: answersResult.data ?? [],
-    error: messagesResult.error?.message ?? answersResult.error?.message ?? null,
-  };
+  return { messages: messagesResult.data ?? [], answers: answersResult.data ?? [], error: messagesResult.error?.message ?? answersResult.error?.message ?? null };
 }
 
 async function findDuplicateLead(db: any, organizationId: string, email: string | null, phone: string | null) {
@@ -265,49 +278,21 @@ export async function qualifyStarkInteraktAsLead(formData: FormData): Promise<vo
   const sourceLabel = [row.ad_network === 'meta' ? 'Meta' : null, row.acquisition_type === 'ctwa' ? 'CTWA' : null, row.ad_platform ? String(row.ad_platform) : null].filter(Boolean).join(' · ') || 'Interakt';
   const needs = [row.packaging_type, row.pouch_type, row.quantity_text, row.dimensions_print].filter(Boolean).join(' · ');
   const companyName = row.company_name || row.contact_name || row.person_name || 'Inbound WhatsApp inquiry';
-  const notes = [
-    row.qualification_notes,
-    `Inbound source: ${sourceLabel}`,
-    row.ad_url ? `Ad URL: ${row.ad_url}` : null,
-    row.delivery_location ? `Delivery: ${row.delivery_location}` : null,
-    row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null,
-    row.industry ? `Industry: ${row.industry}` : null,
-    `Interakt intake: ${row.id}`,
-  ].filter(Boolean).join('\n');
+  const notes = [row.qualification_notes, `Inbound source: ${sourceLabel}`, row.ad_url ? `Ad URL: ${row.ad_url}` : null, row.delivery_location ? `Delivery: ${row.delivery_location}` : null, row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null, row.industry ? `Industry: ${row.industry}` : null, `Interakt intake: ${row.id}`].filter(Boolean).join('\n');
   const now = nowIso();
 
   const { data: lead, error: leadError } = await db.from('leads').insert({
-    organization_id: workspace.organization!.id,
-    lead_type: 'buyer',
-    owner_user_id: workspace.user!.id,
-    created_by: workspace.user!.id,
-    updated_by: workspace.user!.id,
-    company_name: companyName,
-    contact_name: row.person_name || row.contact_name,
-    email: row.email,
-    phone: row.full_phone_number,
-    whatsapp_number: row.full_phone_number,
-    product_type: row.pouch_type || row.packaging_type,
-    products_or_needs: needs || null,
-    pipeline_id: pipeline?.id ?? null,
-    stage_id: firstStage?.id ?? null,
-    source_type: 'interakt',
-    source_label: sourceLabel,
-    notes,
-    last_contacted_at: row.last_inbound_at,
+    organization_id: workspace.organization!.id, lead_type: 'buyer', owner_user_id: workspace.user!.id,
+    created_by: workspace.user!.id, updated_by: workspace.user!.id, company_name: companyName,
+    contact_name: row.person_name || row.contact_name, email: row.email, phone: row.full_phone_number,
+    whatsapp_number: row.full_phone_number, product_type: row.pouch_type || row.packaging_type,
+    products_or_needs: needs || null, pipeline_id: pipeline?.id ?? null, stage_id: firstStage?.id ?? null,
+    source_type: 'interakt', source_label: sourceLabel, notes, last_contacted_at: row.last_inbound_at,
     industry_metadata: {
-      inbound_provider: 'interakt',
-      intake_id: row.id,
-      acquisition_type: row.acquisition_type,
-      ad_network: row.ad_network,
-      ad_platform: row.ad_platform,
-      ad_url: row.ad_url,
-      meta_campaign_id: row.meta_campaign_id,
-      meta_adset_id: row.meta_adset_id,
-      meta_ad_id: row.meta_ad_id,
-      packaging_type: row.packaging_type,
-      pouch_type: row.pouch_type,
-      quantity_text: row.quantity_text,
+      inbound_provider: 'interakt', intake_id: row.id, acquisition_type: row.acquisition_type, ad_network: row.ad_network,
+      ad_platform: row.ad_platform, ad_url: row.ad_url, meta_campaign_id: row.meta_campaign_id,
+      meta_adset_id: row.meta_adset_id, meta_ad_id: row.meta_ad_id, packaging_type: row.packaging_type,
+      pouch_type: row.pouch_type, quantity_text: row.quantity_text, qualification_score: row.qualification_score,
     },
   }).select('id').single();
   if (leadError || !lead?.id) throw new Error(`Unable to create Lead: ${String(leadError?.message ?? 'unknown database error')}`);
@@ -324,8 +309,8 @@ export async function readStagedStarkInteraktContacts(limit = 200, activeOnly = 
   const db: any = await createClient();
   const { data, error } = await db.from('lead_intake_staging').select('*')
     .eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER)
-    .order('last_inbound_at', { ascending: false, nullsFirst: false })
-    .order('source_created_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 500));
+    .order('last_inbound_at', { ascending: false, nullsFirst: false }).order('source_created_at', { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 500));
   if (error) {
     if (String(error.code ?? '') === '42P01') return { rows: [], tableReady: false, error: null };
     return { rows: [], tableReady: true, error: String(error.message ?? 'Unable to read Interakt staging data.') };
