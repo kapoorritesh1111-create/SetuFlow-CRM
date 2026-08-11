@@ -110,6 +110,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
 
   if (q) query = query.or(`contact_name.ilike.%${q}%,person_name.ilike.%${q}%,company_name.ilike.%${q}%,brand_name.ilike.%${q}%,full_phone_number.ilike.%${q}%`);
   if (status === 'new') query = query.eq('intake_status', 'new');
+  else if (status === 'inquiries') query = query.not('last_inbound_at', 'is', null);
   else if (status === 'needs_info') query = query.eq('intake_status', 'needs_info');
   else if (status === 'ready') query = query.eq('intake_status', 'ready_to_qualify');
   else if (status === 'needs_reply') query = query.eq('needs_reply', true);
@@ -137,7 +138,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
     baseCount().eq('guru_evaluation_status', 'evaluated'),
     baseCount().in('guru_evaluation_status', ['pending', 'partial_history']),
     baseCount().eq('guru_evaluation_status', 'new_evidence'),
-    db.from('lead_intake_inquiries').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('provider', SOURCE_PROVIDER),
+    baseCount().not('last_inbound_at', 'is', null),
     db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('sales_queue_suppressed', true),
   ]);
   if (error) throw new Error(`Unable to load inbound workspace: ${String(error.message ?? 'unknown database error')}`);
