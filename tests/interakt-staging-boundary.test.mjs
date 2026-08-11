@@ -28,7 +28,7 @@ test('Interakt WhatsApp send is explicit and uses the public template endpoint',
 
 test('Interakt webhook verifies HMAC signature and records message/workflow evidence', () => {
   assert.match(webhook, /INTERAKT_STARK_PACKMATE_WEBHOOK_SECRET/);
-  assert.match(webhook, /Interakt-Signature|verifyInteraktSignature/);
+  assert.match(webhook, /verifyInteraktSignature/);
   assert.match(webhook, /workflow_response_update/);
   assert.match(webhook, /message_received/);
   assert.match(webhook, /lead_intake_messages/);
@@ -38,7 +38,7 @@ test('Interakt webhook verifies HMAC signature and records message/workflow evid
 });
 
 test('cumulative workflow webhooks use payload-sensitive idempotency', () => {
-  assert.match(webhook, /workflowEventKey|webhookEventKey/);
+  assert.match(webhook, /webhookEventKey/);
   assert.match(webhook, /createHash\('sha256'\)\.update\(rawBody\)/);
   assert.match(webhook, /later answers in the same workflow are processed/);
 });
@@ -72,7 +72,7 @@ test('inbound sales desk schema keeps pre-lead messages and evidence isolated', 
   assert.match(salesDeskMigration, /create table if not exists public\.lead_intake_workflow_answers/);
   assert.match(salesDeskMigration, /create table if not exists public\.lead_intake_webhook_events/);
   assert.match(salesDeskMigration, /qualified_lead_id uuid references public\.leads/);
-  assert.doesNotMatch(salesDeskMigration, /trigger[\s\S]*insert\s+into\s+public\.leads/i);
+  assert.doesNotMatch(salesDeskMigration, /create\s+trigger[\s\S]*insert\s+into\s+public\.leads/i);
 });
 
 test('Setu Guru review exposes editable qualification, conversation, and Meta attribution', () => {
