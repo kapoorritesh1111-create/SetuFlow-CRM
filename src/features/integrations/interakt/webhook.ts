@@ -51,7 +51,7 @@ function recursiveFindString(value: unknown, keys: string[]): string | null {
   return null;
 }
 
-function findSocialUrl(value: unknown) {
+function findSocialUrl(value: unknown): string | null {
   if (typeof value === 'string') {
     const match = value.match(/https?:\/\/[^\s"']+/i);
     if (match && /(instagram\.com|facebook\.com|fb\.me)/i.test(match[0])) return match[0].replace(/[)\],.]+$/, '');
