@@ -16,18 +16,25 @@ const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
 const TERMINAL = ['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored'];
 
+type WorkspaceAccess = Awaited<ReturnType<typeof requireWorkspace>>;
+type StarkWorkspace = WorkspaceAccess & {
+  organization: NonNullable<WorkspaceAccess['organization']>;
+  user: NonNullable<WorkspaceAccess['user']>;
+};
+
 function clean(value: unknown) { return String(value ?? '').trim(); }
 function nullable(value: unknown) { const text = clean(value); return text || null; }
 function nowIso() { return new Date().toISOString(); }
 function safeSearch(value: unknown) { return clean(value).replace(/[,%()]/g, ' ').replace(/\s+/g, ' ').slice(0, 80); }
 
-async function requireStark(write = false) {
+async function requireStark(write = false): Promise<StarkWorkspace> {
   const workspace = await requireWorkspace();
-  const org = workspace.organization;
-  const isStark = org?.id === STARK_PACKMATE_ORG_ID || String(org?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  if (!isStark || !workspace.user || !workspace.organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
+  const organization = workspace.organization;
+  const user = workspace.user;
+  const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
+  if (!isStark || !user || !organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
   if (write && !workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
-  return workspace;
+  return { ...workspace, organization, user } as StarkWorkspace;
 }
 
 function tagsFrom(value: unknown) {
@@ -73,6 +80,7 @@ export type InboundWorkspaceQuery = {
 
 export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) {
   const workspace = await requireStark(false);
+  const organizationId = workspace.organization.id;
   const db: any = await createClient();
   const pageSize = Math.max(10, Math.min(Number(input.pageSize ?? 15), 50));
   const page = Math.max(1, Number(input.page ?? 1));
@@ -86,7 +94,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   const sort = clean(input.sort) || 'recent';
 
   let query = db.from('lead_intake_staging').select('*', { count: 'exact' })
-    .eq('organization_id', workspace.organization.id)
+    .eq('organization_id', organizationId)
     .eq('source_provider', SOURCE_PROVIDER)
     .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
 
@@ -109,14 +117,14 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
 
   const [{ data, count, error }, totalResult, needsReplyResult, needsInfoResult, readyResult, evaluatedResult, pendingResult, newEvidenceResult, inquiryResult] = await Promise.all([
     query.range(from, to),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).not('intake_status', 'in', `(${TERMINAL.join(',')})`),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).eq('needs_reply', true),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).eq('intake_status', 'needs_info'),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).eq('intake_status', 'ready_to_qualify'),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).eq('guru_evaluation_status', 'evaluated'),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).in('guru_evaluation_status', ['pending', 'partial_history']),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).eq('guru_evaluation_status', 'new_evidence'),
-    db.from('lead_intake_inquiries').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization.id).eq('provider', SOURCE_PROVIDER),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).not('intake_status', 'in', `(${TERMINAL.join(',')})`),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('needs_reply', true),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('intake_status', 'needs_info'),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('intake_status', 'ready_to_qualify'),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('guru_evaluation_status', 'evaluated'),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).in('guru_evaluation_status', ['pending', 'partial_history']),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('guru_evaluation_status', 'new_evidence'),
+    db.from('lead_intake_inquiries').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('provider', SOURCE_PROVIDER),
   ]);
   if (error) throw new Error(`Unable to load inbound workspace: ${String(error.message ?? 'unknown database error')}`);
 
@@ -147,19 +155,20 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
 
 export async function evaluateStarkInteraktPage(formData: FormData): Promise<void> {
   const workspace = await requireStark(true);
+  const organizationId = workspace.organization.id;
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
   const rawIds = clean(formData.get('rowIds'));
   const ids = rawIds.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 50);
   if (!ids.length) return;
-  const { data: rows, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).in('id', ids);
+  const { data: rows, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).in('id', ids);
   if (error) throw new Error(`Unable to load inquiries for Setu Guru: ${String(error.message ?? 'unknown database error')}`);
   const now = nowIso();
   for (const row of rows ?? []) {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
     const evidenceAt = row.last_inbound_at ?? row.first_inquiry_at ?? row.company_intelligence_updated_at ?? row.source_modified_at ?? now;
-    await db.from('lead_intake_staging').update({ qualification_score: assessment.score, guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, updated_at: now }).eq('id', row.id).eq('organization_id', workspace.organization.id);
-    await db.from('lead_intake_inquiries').update({ guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.missing, guru_evaluation: { reason: assessment.reason, next_step: assessment.nextStep, source: assessment.source.label }, updated_at: now }).eq('organization_id', workspace.organization.id).eq('intake_id', row.id).is('ended_at', null);
+    await db.from('lead_intake_staging').update({ qualification_score: assessment.score, guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, updated_at: now }).eq('id', row.id).eq('organization_id', organizationId);
+    await db.from('lead_intake_inquiries').update({ guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.missing, guru_evaluation: { reason: assessment.reason, next_step: assessment.nextStep, source: assessment.source.label }, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
   }
   revalidatePath(INBOUND_PATH);
 }
@@ -180,25 +189,29 @@ async function findDuplicateLead(db: any, organizationId: string, email: string 
 
 export async function createStarkInteraktLeadOverride(formData: FormData): Promise<void> {
   const workspace = await requireStark(true);
+  const organizationId = workspace.organization.id;
+  const userId = workspace.user.id;
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
   const rowId = clean(formData.get('rowId'));
   const overrideReason = nullable(formData.get('overrideReason'));
   if (!rowId) throw new Error('Inbound inquiry is required.');
 
-  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', workspace.organization.id).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
   if (error || !row?.id) throw new Error('Inbound inquiry not found.');
   if (row.qualified_lead_id) redirect(`/leads/${row.qualified_lead_id}`);
 
-  const duplicate = await findDuplicateLead(db, workspace.organization.id, row.email ?? null, row.full_phone_number ?? null);
+  const duplicate = await findDuplicateLead(db, organizationId, row.email ?? null, row.full_phone_number ?? null);
   if (duplicate?.id) {
     const now = nowIso();
-    await db.from('lead_intake_staging').update({ intake_status: 'duplicate', qualified_lead_id: duplicate.id, qualified_at: now, qualified_by: workspace.user.id, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
-    await db.from('lead_intake_inquiries').update({ status: 'duplicate', qualified_lead_id: duplicate.id, qualified_at: now, qualified_by: workspace.user.id, updated_at: now }).eq('organization_id', workspace.organization.id).eq('intake_id', row.id).is('ended_at', null);
-    revalidatePath('/leads'); revalidatePath(INBOUND_PATH); redirect(`/leads/${duplicate.id}?source=inbound-duplicate`);
+    await db.from('lead_intake_staging').update({ intake_status: 'duplicate', qualified_lead_id: duplicate.id, qualified_at: now, qualified_by: userId, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
+    await db.from('lead_intake_inquiries').update({ status: 'duplicate', qualified_lead_id: duplicate.id, qualified_at: now, qualified_by: userId, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
+    revalidatePath('/leads');
+    revalidatePath(INBOUND_PATH);
+    redirect(`/leads/${duplicate.id}?source=inbound-duplicate`);
   }
 
-  const { data: pipeline } = await db.from('pipelines').select('id, pipeline_stages(id,name,sort_order)').eq('organization_id', workspace.organization.id).eq('lead_type', 'buyer').eq('is_default', true).maybeSingle();
+  const { data: pipeline } = await db.from('pipelines').select('id, pipeline_stages(id,name,sort_order)').eq('organization_id', organizationId).eq('lead_type', 'buyer').eq('is_default', true).maybeSingle();
   const stages = Array.isArray(pipeline?.pipeline_stages) ? pipeline.pipeline_stages : [];
   const firstStage = [...stages].sort((a: any, b: any) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))[0] ?? null;
   const sourceLabel = [row.ad_network === 'meta' ? 'Meta' : null, row.acquisition_type === 'ctwa' ? 'CTWA' : null, row.ad_platform ? String(row.ad_platform) : null].filter(Boolean).join(' · ') || 'Interakt';
@@ -209,8 +222,8 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   const now = nowIso();
 
   const { data: lead, error: leadError } = await db.from('leads').insert({
-    organization_id: workspace.organization.id, lead_type: 'buyer', owner_user_id: workspace.user.id,
-    created_by: workspace.user.id, updated_by: workspace.user.id, company_name: companyName,
+    organization_id: organizationId, lead_type: 'buyer', owner_user_id: userId,
+    created_by: userId, updated_by: userId, company_name: companyName,
     contact_name: row.person_name || row.contact_name, email: row.email, phone: row.full_phone_number,
     whatsapp_number: row.full_phone_number, product_type: row.pouch_type || row.packaging_type,
     products_or_needs: needs || null, pipeline_id: pipeline?.id ?? null, stage_id: firstStage?.id ?? null,
@@ -227,7 +240,9 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   }).select('id').single();
   if (leadError || !lead?.id) throw new Error(`Unable to create Lead: ${String(leadError?.message ?? 'unknown database error')}`);
 
-  await db.from('lead_intake_staging').update({ intake_status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: workspace.user.id, qualification_score: assessment.score, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
-  await db.from('lead_intake_inquiries').update({ status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: workspace.user.id, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.missing, updated_at: now }).eq('organization_id', workspace.organization.id).eq('intake_id', row.id).is('ended_at', null);
-  revalidatePath('/leads'); revalidatePath(INBOUND_PATH); redirect(`/leads/${lead.id}?source=inbound-qualified`);
+  await db.from('lead_intake_staging').update({ intake_status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, qualification_score: assessment.score, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
+  await db.from('lead_intake_inquiries').update({ status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.missing, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
+  revalidatePath('/leads');
+  revalidatePath(INBOUND_PATH);
+  redirect(`/leads/${lead.id}?source=inbound-qualified`);
 }
