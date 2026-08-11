@@ -13,7 +13,7 @@ export const INBOUND_COLUMN_OPTIONS = [
   ['owner', 'Owner'],
   ['guru', 'Setu Guru'],
   ['score', 'Score'],
-  ['last_activity', 'Last activity'],
+  ['last_activity', 'Activity / sync'],
   ['needs_reply', 'Needs reply'],
 ] as const;
 
@@ -24,7 +24,7 @@ const premiumStyles = `
   .setu-inbound-controls { isolation: isolate; }
   .setu-inbound-controls button, .setu-inbound-controls summary { transition: all 160ms ease; }
   .setu-inbound-controls summary:hover { border-color:#bfdbfe; box-shadow:0 5px 16px rgba(15,23,42,.07); }
-  main:has(.setu-inbound-controls) table { border-spacing:0; font-variant-numeric:tabular-nums; }
+  main:has(.setu-inbound-controls) table { width:100%; border-spacing:0; font-variant-numeric:tabular-nums; }
   main:has(.setu-inbound-controls) thead { position:sticky; top:0; z-index:8; box-shadow:inset 0 -1px 0 #e2e8f0; }
   main:has(.setu-inbound-controls) thead th { height:46px; background:rgba(248,250,252,.97)!important; backdrop-filter:blur(10px); color:#475569!important; font-size:10px!important; letter-spacing:.08em!important; }
   main:has(.setu-inbound-controls) tbody td { padding-top:14px!important; padding-bottom:14px!important; vertical-align:middle; font-size:11px; color:#334155; }
@@ -39,7 +39,14 @@ const premiumStyles = `
   main:has(.setu-inbound-controls) .overflow-x-auto { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
   main:has(.setu-inbound-controls) .overflow-x-auto::-webkit-scrollbar { height:8px; }
   main:has(.setu-inbound-controls) .overflow-x-auto::-webkit-scrollbar-thumb { border-radius:999px; background:#cbd5e1; }
-  @media (min-width:1280px) { main:has(.setu-inbound-controls) > div { max-width:1680px; margin-inline:auto; } }
+  @media (min-width:1280px) {
+    main:has(.setu-inbound-controls) > div { max-width:none!important; width:100%; margin-inline:0!important; }
+    #app-content:has(.setu-inbound-controls) > div:last-child { padding-left:clamp(14px,1.1vw,22px)!important; padding-right:clamp(14px,1.1vw,22px)!important; }
+  }
+  @media (min-width:1600px) {
+    main:has(.setu-inbound-controls) tbody td { padding-left:18px!important; padding-right:18px!important; }
+    main:has(.setu-inbound-controls) thead th { padding-left:18px!important; padding-right:18px!important; }
+  }
 `;
 
 export function InboundViewControls({ view = 'review', columns }: { view?: string; columns?: string }) {
