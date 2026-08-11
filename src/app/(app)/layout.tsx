@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { DesktopWorkspaceScale } from '@/components/layout/desktop-workspace-scale';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
@@ -129,21 +128,19 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   );
 
   const shell = (
-    <DesktopWorkspaceScale>
-      <AppShell
-        profile={workspace.profile}
-        organization={safeOrganization}
-        membership={workspace.membership}
-        currentRoles={workspace.currentRoles}
-        cardSettings={myCardSettings}
-        cardShareSlug={myCardSettingsRow?.share_slug ?? null}
-        organizationId={workspace.organization.id}
-        userId={workspace.user.id}
-        packagingEnabled={verticals.packagingEnabled}
-      >
-        {inner}
-      </AppShell>
-    </DesktopWorkspaceScale>
+    <AppShell
+      profile={workspace.profile}
+      organization={safeOrganization}
+      membership={workspace.membership}
+      currentRoles={workspace.currentRoles}
+      cardSettings={myCardSettings}
+      cardShareSlug={myCardSettingsRow?.share_slug ?? null}
+      organizationId={workspace.organization.id}
+      userId={workspace.user.id}
+      packagingEnabled={verticals.packagingEnabled}
+    >
+      {inner}
+    </AppShell>
   );
 
   return guidedTourEnabled ? (
