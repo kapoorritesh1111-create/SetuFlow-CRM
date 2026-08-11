@@ -20,8 +20,20 @@ create table if not exists public.lead_intake_staging (
   source_created_via text,
   traits jsonb not null default '{}'::jsonb,
   raw_payload jsonb not null default '{}'::jsonb,
-  intake_status text not null default 'staged'
-    check (intake_status = any (array['staged'::text, 'reviewed'::text, 'ignored'::text])),
+  intake_status text not null default 'new'
+    check (intake_status = any (array[
+      'new'::text,
+      'staged'::text,
+      'reviewed'::text,
+      'needs_info'::text,
+      'ready_to_qualify'::text,
+      'nurture'::text,
+      'not_relevant'::text,
+      'qualified'::text,
+      'duplicate'::text,
+      'existing_customer'::text,
+      'ignored'::text
+    ])),
   sync_batch_id uuid not null default gen_random_uuid(),
   fetched_at timestamp with time zone not null default now(),
   created_at timestamp with time zone not null default now(),
@@ -31,6 +43,9 @@ create table if not exists public.lead_intake_staging (
 
 create index if not exists lead_intake_staging_org_provider_idx
   on public.lead_intake_staging (organization_id, source_provider, fetched_at desc);
+
+create index if not exists lead_intake_staging_org_status_idx
+  on public.lead_intake_staging (organization_id, source_provider, intake_status, source_created_at desc);
 
 create index if not exists lead_intake_staging_phone_idx
   on public.lead_intake_staging (organization_id, full_phone_number);
@@ -94,6 +109,8 @@ with check (
 grant select, insert, update on public.lead_intake_staging to authenticated;
 
 comment on table public.lead_intake_staging is
-  'Isolated inbound-source staging area. Interakt spike writes here only; promotion into public.leads is intentionally out of scope.';
+  'Isolated inbound-source work queue. Terminal statuses stay auditable but are excluded from the active Leads > Inbound view. Promotion into public.leads remains intentionally out of scope for this PR.';
 comment on column public.lead_intake_staging.source_provider is
   'Inbound source identifier such as interakt. Designed so future inbound sources can reuse this staging boundary.';
+comment on column public.lead_intake_staging.intake_status is
+  'Inbound queue lifecycle. qualified, duplicate, existing_customer, not_relevant and ignored are terminal/hidden from the active queue.';
