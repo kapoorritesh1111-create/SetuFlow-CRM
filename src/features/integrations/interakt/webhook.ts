@@ -291,6 +291,15 @@ export function verifyInteraktSignature(rawBody: string, signature: string | nul
   }
 }
 
+function webhookEventKey(eventType: string, data: Record<string, unknown>, rawBody: string) {
+  const messageId = clean(safeObject(data.message).id);
+  if (messageId && eventType !== 'workflow_response_update') return `${eventType}:${messageId}`;
+  // Interakt workflow_response_update payloads are cumulative and reuse the same workflow-run id.
+  // Hash the complete payload so later answers in the same workflow are processed, while exact retries remain idempotent.
+  const bodyHash = crypto.createHash('sha256').update(rawBody).digest('hex');
+  return `${eventType}:${clean(data.id) ?? 'event'}:${bodyHash}`;
+}
+
 export async function processInteraktWebhook(rawBody: string, signature: string | null) {
   const valid = verifyInteraktSignature(rawBody, signature);
   if (!valid) return { ok: false as const, status: 401, error: 'Invalid Interakt signature.' };
@@ -307,9 +316,7 @@ export async function processInteraktWebhook(rawBody: string, signature: string 
 
   const eventType = clean(payload.type) ?? 'unknown';
   const data = safeObject(payload.data);
-  const eventKey = clean(data.id)
-    || clean(safeObject(data.message).id)
-    || crypto.createHash('sha256').update(rawBody).digest('hex');
+  const eventKey = webhookEventKey(eventType, data, rawBody);
 
   const { data: existing } = await db
     .from('lead_intake_webhook_events')
