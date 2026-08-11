@@ -1,0 +1,205 @@
+import Link from 'next/link';
+
+import { WorkspaceState } from '@/components/ui/workspace-state';
+import { logStarkInteraktCall } from '@/features/integrations/interakt/review-actions';
+import {
+  acceptStarkInteraktCompanySuggestion,
+  readStarkInteraktConversation,
+  refreshStarkInteraktStaging,
+  saveStarkInteraktQualification,
+  sendStarkInteraktTemplate,
+  updateStarkInteraktIntakeStatus,
+} from '@/features/integrations/interakt/server';
+import {
+  createStarkInteraktLeadOverride,
+  evaluateStarkInteraktPage,
+  readInboundWorkspaceV2,
+} from '@/features/integrations/interakt/workspace-v2';
+import { getWorkspaceAccess } from '@/lib/workspace/auth';
+
+const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
+const STARK_PACKMATE_SLUG = 'starkpackmate';
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+
+type SearchParams = {
+  review?: string;
+  page?: string;
+  q?: string;
+  status?: string;
+  guru?: string;
+  source?: string;
+  owner?: string;
+  sort?: string;
+};
+
+type ConversationMessage = {
+  id: string;
+  event_type: string | null;
+  direction: 'inbound' | 'outbound' | 'system';
+  actor_type: string;
+  actor_name: string | null;
+  message_type: string | null;
+  message_text: string | null;
+  media_url: string | null;
+  intelligence: { companyName?: string | null; brandName?: string | null; confidence?: number; evidence?: string } | null;
+  received_at: string | null;
+  sent_at: string | null;
+  status: string;
+};
+
+type WorkflowAnswer = { id: string; question_text: string; answer_text: string | null; answered_at: string | null };
+type CompanyEvidenceEntry = { company_name?: string | null; brand_name?: string | null; confidence?: number; evidence?: string };
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function timeAgo(value: string | null | undefined) {
+  if (!value) return 'History pending';
+  const ms = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(ms)) return '—';
+  const minutes = Math.max(0, Math.floor(ms / 60000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function scoreClass(score: number) {
+  if (score >= 80) return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (score >= 70) return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  if (score >= 50) return 'border-amber-200 bg-amber-50 text-amber-700';
+  return 'border-blue-200 bg-blue-50 text-blue-700';
+}
+
+function guruLabel(status: string | null | undefined) {
+  if (status === 'evaluated') return { label: 'Guru evaluated', className: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: '✓' };
+  if (status === 'new_evidence') return { label: 'New evidence', className: 'text-violet-700 bg-violet-50 border-violet-200', icon: '●' };
+  if (status === 'partial_history') return { label: 'History pending', className: 'text-amber-700 bg-amber-50 border-amber-200', icon: '◐' };
+  return { label: 'Guru pending', className: 'text-slate-600 bg-slate-50 border-slate-200', icon: '○' };
+}
+
+function cleanInteractiveText(message: ConversationMessage) {
+  const text = message.message_text ?? '';
+  if (!text.startsWith('{')) return text;
+  try {
+    const parsed = JSON.parse(text) as Record<string, any>;
+    return parsed?.list_reply?.title ?? parsed?.button_reply?.title ?? text;
+  } catch {
+    return text;
+  }
+}
+
+function usefulWorkflowAnswer(answer: WorkflowAnswer) {
+  const q = answer.question_text.toLowerCase();
+  const a = String(answer.answer_text ?? '').trim();
+  if (!a || ['proceed', 'just browsing'].includes(a.toLowerCase())) return false;
+  return /company|business name|packaging type|pouch|quantity|moq|industry|dimension|print|delivery|timeline/.test(q);
+}
+
+function paramsHref(searchParams: SearchParams, patch: Partial<SearchParams>) {
+  const params = new URLSearchParams();
+  const merged = { ...searchParams, ...patch };
+  Object.entries(merged).forEach(([key, value]) => {
+    if (value && value !== 'all') params.set(key, value);
+  });
+  const query = params.toString();
+  return `/leads/inbound${query ? `?${query}` : ''}`;
+}
+
+function missingLabel(value: string) {
+  const labels: Record<string, string> = {
+    company: 'Company', person_company_split: 'Company/contact split', product: 'Product / pouch type',
+    quantity: 'Quantity / MOQ', dimensions: 'Dimensions / print', destination: 'Delivery location', timeline: 'Buying timeline',
+  };
+  return labels[value] ?? value;
+}
+
+export default async function InboundLeadsPage({ searchParams = {} }: { searchParams?: SearchParams }) {
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.membership || !workspace.organization) return <WorkspaceState eyebrow="Leads · Inbound" title="Workspace membership needed" description="Sign in to your organization to review inbound inquiries." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
+  const isStark = workspace.organization.id === STARK_PACKMATE_ORG_ID || String(workspace.organization.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
+  if (!isStark) return <WorkspaceState eyebrow="Leads · Inbound" title="Inbound connector not enabled" description="The Interakt qualification workspace is currently enabled for Stark Packmate." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
+
+  const canWorkInbound = workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)));
+  const page = Math.max(1, Number(searchParams.page ?? '1') || 1);
+  const workspaceData = await readInboundWorkspaceV2({ page, pageSize: 15, q: searchParams.q, status: searchParams.status, guru: searchParams.guru, source: searchParams.source, owner: searchParams.owner, sort: searchParams.sort });
+  const rows = workspaceData.rows as any[];
+  const requestedId = String(searchParams.review ?? '').trim();
+  const selected = rows.find((row) => row.id === requestedId) ?? rows[0] ?? null;
+  const conversation = selected ? await readStarkInteraktConversation(selected.id) : { messages: [], answers: [], error: null };
+  const messages = (conversation.messages ?? []) as ConversationMessage[];
+  const answers = (conversation.answers ?? []) as WorkflowAnswer[];
+  const compactAnswers = answers.filter(usefulWorkflowAnswer);
+  const latestEvidence = selected?.company_evidence?.latest as CompanyEvidenceEntry | undefined;
+  const currentGuru = selected ? guruLabel(selected.guru_evaluation_status) : guruLabel(null);
+
+  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or sync Interakt contacts." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
+
+  return <div className="space-y-3 pb-8">
+    <Header canWorkInbound={canWorkInbound} />
+    <Kpis kpis={workspaceData.kpis} />
+    <FilterBar searchParams={searchParams} />
+
+    <div className="grid items-start gap-3 xl:grid-cols-[300px_minmax(0,1fr)_310px]">
+      <aside className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-4 py-3"><div className="flex items-center justify-between gap-2"><div><h2 className="text-sm font-bold text-slate-950">Inbound queue</h2><p className="mt-0.5 text-[11px] text-slate-500">{workspaceData.count.toLocaleString()} matching records</p></div>{canWorkInbound && rows.length ? <form action={evaluateStarkInteraktPage}><input type="hidden" name="rowIds" value={rows.map((row) => row.id).join(',')} /><button className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[10px] font-bold text-violet-700">✨ Evaluate page</button></form> : null}</div></div>
+        <div className="divide-y divide-slate-100">{rows.map((row) => { const active = row.id === selected.id; const guru = guruLabel(row.guru_evaluation_status); const historyPending = !row.first_inquiry_at && !row.last_inbound_at; return <Link key={row.id} href={paramsHref(searchParams, { review: row.id })} className={`block px-4 py-3.5 transition ${active ? 'bg-blue-50 ring-1 ring-inset ring-blue-200' : 'hover:bg-slate-50'}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-950">{row.person_name || row.contact_name || row.company_name || 'Unnamed contact'}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{row.company_name || row.brand_name || (historyPending ? 'Historical conversation not backfilled yet' : 'Company not confirmed')}</p></div><div className="shrink-0 text-right"><p className="text-[10px] font-semibold text-slate-500">{timeAgo(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p><span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span></div></div><p className="mt-2 truncate text-xs font-medium text-slate-700">{row.pouch_type || row.packaging_type || (historyPending ? 'Contact synced · history pending' : 'Requirement not captured')}{row.quantity_text ? ` · ${row.quantity_text}` : ''}</p><div className="mt-2 flex items-center justify-between gap-2"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span>{row.needs_reply ? <span className="text-[9px] font-black uppercase text-rose-600">Needs reply</span> : null}</div></Link>; })}</div>
+        <Pagination page={workspaceData.page} totalPages={workspaceData.totalPages} count={workspaceData.count} pageSize={workspaceData.pageSize} searchParams={searchParams} />
+      </aside>
+
+      <main className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <header className="sticky top-0 z-10 rounded-t-2xl border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2><span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div><p className="mt-1 text-xs text-slate-500">{selected.computed_source}{selected.company_name ? ` · ${selected.company_name}` : ''}{selected.first_inquiry_at ? ` · First inquiry ${formatDateTime(selected.first_inquiry_at)}` : ' · Historical chat backfill pending'}</p>{selected.interakt_assignee_name ? <p className="mt-1 text-[11px] text-slate-500">Assigned in Interakt to <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}</div><div className="flex flex-wrap gap-2">{selected.full_phone_number ? <a href={`tel:${selected.full_phone_number}`} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">☎ Call</a> : null}<a href="#message-customer" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">💬 Message</a><a href="#create-lead" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">＋ Create Lead</a></div></div></header>
+
+        <div className="space-y-4 px-5 py-5">
+          {!selected.first_inquiry_at ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
+          {conversation.error ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
+
+          <section><div className="mb-3 flex items-center justify-between"><h3 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Conversation</h3><span className="text-[10px] text-slate-400">{messages.length} activities</span></div><div className="space-y-3">{messages.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-xs text-slate-500">No conversation has been imported for this contact yet.</div> : messages.map((message) => { const isCall = message.event_type === 'call_logged' || message.message_type === 'Call'; if (isCall) return <div key={message.id} className="mx-auto max-w-xl rounded-xl border border-blue-100 bg-blue-50 px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="text-[10px] font-black uppercase text-blue-700">☎ Call logged · {message.actor_name || 'Setu Flow user'}</span><span className="text-[10px] text-slate-400">{formatDateTime(message.sent_at || message.received_at)}</span></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-700">{message.message_text}</p></div>; const inbound = message.direction === 'inbound'; const text = cleanInteractiveText(message); const intelligence = message.intelligence; return <div key={message.id} className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[82%] rounded-2xl px-3.5 py-3 ${inbound ? 'bg-slate-100' : 'bg-emerald-50'}`}><div className="flex items-center justify-between gap-4"><span className="text-[9px] font-black uppercase tracking-wider text-slate-500">{inbound ? message.actor_name || selected.person_name || selected.contact_name || 'Customer' : message.actor_name || 'Setu Flow'}</span><span className="text-[9px] text-slate-400">{formatDateTime(message.received_at || message.sent_at)}</span></div>{message.media_url && /^https:\/\//i.test(message.media_url) ? <div className="mt-2"><img src={message.media_url} alt="Customer supplied attachment" className="max-h-72 rounded-xl border border-white object-contain" /><a href={message.media_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[10px] font-bold text-blue-600">Open image ↗</a></div> : null}{text ? <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-800">{text}</p> : null}{intelligence && (intelligence.companyName || intelligence.brandName) ? <div className="mt-2 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-[10px] leading-4 text-violet-800">✨ Setu Guru: {intelligence.companyName ? `Possible company ${intelligence.companyName}. ` : ''}{intelligence.brandName ? `Possible brand ${intelligence.brandName}. ` : ''}{typeof intelligence.confidence === 'number' ? `${Math.round(intelligence.confidence * 100)}% confidence.` : ''}{intelligence.evidence ? ` ${intelligence.evidence}` : ''}</div> : null}</div></div>; })}</div></section>
+
+          {compactAnswers.length ? <details className="rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3" open><summary className="cursor-pointer text-xs font-bold text-violet-800">💬 Chatbot capture · {compactAnswers.length} useful answers</summary><div className="mt-3 grid gap-2 md:grid-cols-2">{compactAnswers.map((answer) => <div key={answer.id} className="rounded-xl bg-white px-3 py-2"><p className="text-[9px] font-bold uppercase text-violet-500">{answer.question_text}</p><p className="mt-1 text-xs font-semibold text-slate-800">{answer.answer_text || '—'}</p></div>)}</div></details> : null}
+
+          <section id="message-customer" className="grid gap-3 lg:grid-cols-2"><details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-black text-slate-800">💬 Message customer</summary><form action={sendStarkInteraktTemplate} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="languageCode" value="en" /><label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Approved Interakt template<input name="templateName" defaultValue="qualification_follow_up" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /></label><label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Message variables<textarea name="bodyValues" rows={4} defaultValue={`${selected.person_name || selected.contact_name || 'Customer'}\n${(selected.missing_fields || []).map(missingLabel).join(', ') || 'Follow-up'}`} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /></label><button disabled={!canWorkInbound} className="w-full rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white disabled:opacity-50">Send WhatsApp</button></form></details><details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><button disabled={!canWorkInbound} className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white disabled:opacity-50">Log call</button></form></details></section>
+        </div>
+      </main>
+
+      <aside className="sticky top-3 space-y-3"><section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><h3 className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">Lead summary</h3><span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100</span></div><div className="mt-3 space-y-2 text-xs">{[['Company', selected.company_name], ['Brand', selected.brand_name], ['Packaging', selected.packaging_type], ['Pouch type', selected.pouch_type], ['Quantity', selected.quantity_text], ['Industry', selected.industry], ['Delivery', selected.delivery_location], ['Timeline', selected.buying_timeline]].map(([label, value]) => <div key={label} className="flex items-start justify-between gap-3"><span className="text-slate-500">{label}</span><span className={`max-w-[170px] text-right font-semibold ${value ? 'text-slate-800' : 'text-amber-600'}`}>{value || 'Missing'}</span></div>)}</div><details className="mt-3 border-t border-slate-100 pt-3"><summary className="cursor-pointer text-[11px] font-bold text-blue-600">Edit qualification details</summary><form action={saveStarkInteraktQualification} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="reviewed" />{[['companyName','Company',selected.company_name],['brandName','Brand',selected.brand_name],['packagingType','Packaging',selected.packaging_type],['pouchType','Pouch type',selected.pouch_type],['quantityText','Quantity / MOQ',selected.quantity_text],['dimensionsPrint','Dimensions / print',selected.dimensions_print],['deliveryLocation','Delivery location',selected.delivery_location],['buyingTimeline','Buying timeline',selected.buying_timeline],['industry','Industry',selected.industry]].map(([name,label,value]) => <label key={name} className="block text-[9px] font-bold uppercase text-slate-500">{label}<input name={name} defaultValue={value || ''} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs normal-case text-slate-800" /></label>)}<input type="hidden" name="personName" value={selected.person_name || selected.contact_name || ''} /><textarea name="qualificationNotes" defaultValue={selected.qualification_notes || ''} placeholder="Qualification notes" rows={3} className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs" /><button disabled={!canWorkInbound} className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Save details</button></form></details></section>
+
+        {(selected.proposed_company_name || selected.proposed_brand_name || latestEvidence) ? <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-violet-700">✨ Setu Guru identity evidence</h3>{selected.proposed_company_name ? <div className="mt-3"><p className="text-[10px] text-violet-600">Suggested company</p><p className="text-sm font-black text-violet-950">{selected.proposed_company_name}</p>{canWorkInbound ? <form action={acceptStarkInteraktCompanySuggestion} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="kind" value="company" /><button className="rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-bold text-violet-700">Use this company</button></form> : null}</div> : null}{selected.proposed_brand_name ? <div className="mt-3"><p className="text-[10px] text-violet-600">Suggested brand</p><p className="text-sm font-black text-violet-950">{selected.proposed_brand_name}</p>{canWorkInbound ? <form action={acceptStarkInteraktCompanySuggestion} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="kind" value="brand" /><button className="rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-bold text-violet-700">Use this brand</button></form> : null}</div> : null}{latestEvidence?.evidence ? <p className="mt-3 text-[10px] leading-4 text-violet-700">Evidence: {latestEvidence.evidence}</p> : null}</section> : null}
+
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm"><div className="flex items-center justify-between"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-800">Setu Guru</h3><span className="text-[9px] font-bold text-emerald-700">{currentGuru.label}</span></div><p className="mt-2 text-xs font-bold text-emerald-950">{selected.computed_band}</p><p className="mt-2 text-[11px] leading-5 text-emerald-800">{selected.missing_fields?.length ? `Recommended before conversion: ${selected.missing_fields.map(missingLabel).join(', ')}.` : 'Current evidence is sufficient for a clean sales handoff.'}</p>{canWorkInbound && selected.guru_evaluation_status !== 'evaluated' ? <form action={evaluateStarkInteraktPage} className="mt-3"><input type="hidden" name="rowIds" value={selected.id} /><button className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-[10px] font-bold text-emerald-800">✨ Evaluate this inquiry</button></form> : null}</section>
+
+        <section id="create-lead" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-600">Sales decision</h3><p className="mt-2 text-xs font-bold text-slate-950">Create Lead</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Setu Guru advises; the salesperson decides. Duplicate checking always runs before Lead creation.</p><form action={createStarkInteraktLeadOverride} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} />{selected.missing_fields?.length ? <select name="overrideReason" required className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs"><option value="">Why create now?</option><option>Customer confirmed by phone</option><option>Sufficient information to proceed</option><option>Existing relationship</option><option>Salesperson judgement</option></select> : <input type="hidden" name="overrideReason" value="Setu Guru requirements satisfied" />}<button disabled={!canWorkInbound} className="w-full rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white disabled:opacity-50">＋ Create Lead</button></form><div className="mt-2 grid grid-cols-2 gap-2"><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="needs_info" /><button disabled={!canWorkInbound} className="w-full rounded-lg border border-amber-200 px-2 py-2 text-[10px] font-bold text-amber-700 disabled:opacity-50">Needs info</button></form><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="nurture" /><button disabled={!canWorkInbound} className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600 disabled:opacity-50">Nurture</button></form></div></section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">Source</h3><div className="mt-3 space-y-2 text-xs">{[['Channel', selected.channel_source || 'WhatsApp'], ['Acquisition', selected.acquisition_type], ['Platform', selected.ad_platform], ['Owner', selected.interakt_assignee_name]].map(([label,value]) => <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><strong className="text-right text-slate-800">{value || '—'}</strong></div>)}</div>{selected.ad_url ? <a href={selected.ad_url} target="_blank" rel="noreferrer" className="mt-3 block rounded-lg bg-violet-50 px-3 py-2 text-[10px] font-bold text-violet-700">Open Meta ad ↗</a> : null}<details className="mt-3"><summary className="cursor-pointer text-[10px] font-bold text-slate-500">Technical attribution</summary><div className="mt-2 space-y-1 text-[9px] text-slate-500"><p>Campaign: {selected.meta_campaign_id || '—'}</p><p>Ad set: {selected.meta_adset_id || '—'}</p><p>Ad: {selected.meta_ad_id || '—'}</p></div></details></section>
+      </aside>
+    </div>
+  </div>;
+}
+
+function Header({ canWorkInbound }: { canWorkInbound: boolean }) {
+  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review, communicate and move real buyer inquiries into the permanent Lead pipeline.</p></div><div className="flex items-center gap-2"><Link href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canWorkInbound ? <form action={refreshStarkInteraktStaging}><button className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">↻ Sync contacts</button></form> : null}</div></div>;
+}
+
+function Kpis({ kpis }: { kpis: any }) {
+  const items = [['Active', kpis.active, 'Current non-terminal records'], ['Inquiries', kpis.inquiries, 'Conversation-backed'], ['Needs reply', kpis.needsReply, 'Customer waiting'], ['Needs info', kpis.needsInfo, 'Qualification gaps'], ['Ready', kpis.ready, 'Marked ready'], ['Guru coverage', `${kpis.evaluated}/${kpis.active}`, `${kpis.newEvidence} new evidence · ${kpis.pending} history/pending`]];
+  return <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">{items.map(([label,value,detail]) => <div key={String(label)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-1 text-xl font-black text-slate-950">{String(value)}</p><p className="mt-1 truncate text-[9px] text-slate-400">{detail}</p></div>)}</div>;
+}
+
+function FilterBar({ searchParams }: { searchParams: SearchParams }) {
+  return <form method="get" className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><label className="min-w-[220px] flex-1 text-[9px] font-bold uppercase text-slate-500">Search<input name="q" defaultValue={searchParams.q || ''} placeholder="Name, company or phone" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label><Select name="status" label="Status" value={searchParams.status || 'all'} options={[['all','All'],['new','New'],['needs_reply','Needs reply'],['needs_info','Needs info'],['ready','Ready'],['history_pending','History pending']]} /><Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[['all','All'],['evaluated','Evaluated'],['new_evidence','New evidence'],['partial_history','History pending'],['pending','Pending']]} /><Select name="source" label="Source" value={searchParams.source || 'all'} options={[['all','All'],['ctwa','CTWA'],['instagram','Instagram'],['whatsapp','WhatsApp']]} /><Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[['recent','Most recent'],['oldest','Oldest'],['score','Highest score'],['name','Name A-Z']]} /><button className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Apply</button><Link href="/leads/inbound" className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Clear</Link></form>;
+}
+
+function Select({ name, label, value, options }: { name: string; label: string; value: string; options: string[][] }) {
+  return <label className="text-[9px] font-bold uppercase text-slate-500">{label}<select name={name} defaultValue={value} className="mt-1 block rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case">{options.map(([optionValue, text]) => <option key={optionValue} value={optionValue}>{text}</option>)}</select></label>;
+}
+
+function Pagination({ page, totalPages, count, pageSize, searchParams }: { page: number; totalPages: number; count: number; pageSize: number; searchParams: SearchParams }) {
+  const start = count === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, count);
+  const startPage = totalPages <= 5 ? 1 : Math.min(Math.max(1, page - 2), Math.max(1, totalPages - 4));
+  return <div className="border-t border-slate-100 px-4 py-3"><p className="text-center text-[10px] text-slate-500">Showing {start}–{end} of {count}</p><div className="mt-2 flex items-center justify-center gap-1"><Link aria-disabled={page <= 1} href={paramsHref(searchParams, { page: String(Math.max(1, page - 1)), review: undefined })} className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-bold ${page <= 1 ? 'pointer-events-none border-slate-100 text-slate-300' : 'border-slate-200 text-slate-600'}`}>‹ Prev</Link>{Array.from({ length: Math.min(5, totalPages) }, (_, index) => startPage + index).map((candidate) => <Link key={candidate} href={paramsHref(searchParams, { page: String(candidate), review: undefined })} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold ${candidate === page ? 'bg-blue-600 text-white' : 'border border-slate-200 text-slate-600'}`}>{candidate}</Link>)}<Link aria-disabled={page >= totalPages} href={paramsHref(searchParams, { page: String(Math.min(totalPages, page + 1)), review: undefined })} className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-bold ${page >= totalPages ? 'pointer-events-none border-slate-100 text-slate-300' : 'border-slate-200 text-slate-600'}`}>Next ›</Link></div></div>;
+}
