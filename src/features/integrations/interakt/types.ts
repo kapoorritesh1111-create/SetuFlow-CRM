@@ -16,14 +16,24 @@ export type InteraktContact = {
   created_at_utc?: string | null;
   modified_at_utc?: string | null;
   created_via?: string | null;
+  customer_created_at_source?: string | null;
   traits?: InteraktTrait[] | Record<string, unknown> | null;
   [key: string]: unknown;
 };
 
 export type InteraktUsersResponse = {
-  result?: InteraktContact[];
+  result?: boolean | InteraktContact[];
+  message?: string;
   users?: InteraktContact[];
-  data?: InteraktContact[] | { users?: InteraktContact[]; result?: InteraktContact[] };
+  data?: InteraktContact[] | {
+    users?: InteraktContact[];
+    result?: InteraktContact[];
+    customers?: InteraktContact[];
+    total_customers?: number;
+    offset?: number;
+    limit?: number;
+    has_next_page?: boolean;
+  };
   has_next_page?: boolean;
   [key: string]: unknown;
 };
