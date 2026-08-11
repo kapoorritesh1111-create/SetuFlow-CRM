@@ -167,9 +167,12 @@ export async function saveStarkInteraktQualification(formData: FormData): Promis
   if (!db) throw new Error('Database admin client unavailable.');
   const rowId = clean(formData.get('rowId'));
   if (!rowId) throw new Error('Inbound inquiry is required.');
+  const companyName = nullable(formData.get('companyName'));
+  const brandName = nullable(formData.get('brandName'));
   const patch = {
     person_name: nullable(formData.get('personName')),
-    company_name: nullable(formData.get('companyName')),
+    company_name: companyName,
+    brand_name: brandName,
     packaging_type: nullable(formData.get('packagingType')),
     pouch_type: nullable(formData.get('pouchType')),
     quantity_text: nullable(formData.get('quantityText')),
@@ -186,9 +189,38 @@ export async function saveStarkInteraktQualification(formData: FormData): Promis
   if (loadError || !current?.id) throw new Error('Inbound inquiry not found.');
   const merged = { ...current, ...patch };
   const score = assessInteraktContact(contactFromRow(merged), new Date(), evidenceFromRow(merged)).score;
-  const { error } = await db.from('lead_intake_staging').update({ ...patch, qualification_score: score })
+  const confirmationPatch = {
+    ...(companyName && companyName === current.proposed_company_name ? { proposed_company_name: null } : {}),
+    ...(brandName && brandName === current.proposed_brand_name ? { proposed_brand_name: null } : {}),
+  };
+  const { error } = await db.from('lead_intake_staging').update({ ...patch, ...confirmationPatch, qualification_score: score })
     .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER);
   if (error) throw new Error(`Unable to save qualification: ${String(error.message ?? 'unknown database error')}`);
+  revalidatePath(INBOUND_PATH);
+}
+
+export async function acceptStarkInteraktCompanySuggestion(formData: FormData): Promise<void> {
+  const workspace = await requireStarkPackmateAccess(true);
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const rowId = clean(formData.get('rowId'));
+  const kind = clean(formData.get('kind'));
+  if (!rowId || !['company', 'brand'].includes(kind)) throw new Error('A valid company intelligence suggestion is required.');
+
+  const { data: row, error: loadError } = await db.from('lead_intake_staging').select('*')
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+  if (loadError || !row?.id) throw new Error('Inbound inquiry not found.');
+
+  const proposed = kind === 'company' ? row.proposed_company_name : row.proposed_brand_name;
+  if (!proposed) throw new Error(`No proposed ${kind} is available to confirm.`);
+  const patch = kind === 'company'
+    ? { company_name: proposed, proposed_company_name: null, updated_at: nowIso() }
+    : { brand_name: proposed, proposed_brand_name: null, updated_at: nowIso() };
+  const merged = { ...row, ...patch };
+  const score = assessInteraktContact(contactFromRow(merged), new Date(), evidenceFromRow(merged)).score;
+  const { error } = await db.from('lead_intake_staging').update({ ...patch, qualification_score: score })
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER);
+  if (error) throw new Error(`Unable to confirm Setu Guru ${kind} suggestion: ${String(error.message ?? 'unknown database error')}`);
   revalidatePath(INBOUND_PATH);
 }
 
@@ -278,7 +310,7 @@ export async function qualifyStarkInteraktAsLead(formData: FormData): Promise<vo
   const sourceLabel = [row.ad_network === 'meta' ? 'Meta' : null, row.acquisition_type === 'ctwa' ? 'CTWA' : null, row.ad_platform ? String(row.ad_platform) : null].filter(Boolean).join(' · ') || 'Interakt';
   const needs = [row.packaging_type, row.pouch_type, row.quantity_text, row.dimensions_print].filter(Boolean).join(' · ');
   const companyName = row.company_name || row.contact_name || row.person_name || 'Inbound WhatsApp inquiry';
-  const notes = [row.qualification_notes, `Inbound source: ${sourceLabel}`, row.ad_url ? `Ad URL: ${row.ad_url}` : null, row.delivery_location ? `Delivery: ${row.delivery_location}` : null, row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null, row.industry ? `Industry: ${row.industry}` : null, `Interakt intake: ${row.id}`].filter(Boolean).join('\n');
+  const notes = [row.qualification_notes, row.brand_name ? `Brand: ${row.brand_name}` : null, `Inbound source: ${sourceLabel}`, row.ad_url ? `Ad URL: ${row.ad_url}` : null, row.delivery_location ? `Delivery: ${row.delivery_location}` : null, row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null, row.industry ? `Industry: ${row.industry}` : null, `Interakt intake: ${row.id}`].filter(Boolean).join('\n');
   const now = nowIso();
 
   const { data: lead, error: leadError } = await db.from('leads').insert({
@@ -292,7 +324,8 @@ export async function qualifyStarkInteraktAsLead(formData: FormData): Promise<vo
       inbound_provider: 'interakt', intake_id: row.id, acquisition_type: row.acquisition_type, ad_network: row.ad_network,
       ad_platform: row.ad_platform, ad_url: row.ad_url, meta_campaign_id: row.meta_campaign_id,
       meta_adset_id: row.meta_adset_id, meta_ad_id: row.meta_ad_id, packaging_type: row.packaging_type,
-      pouch_type: row.pouch_type, quantity_text: row.quantity_text, qualification_score: row.qualification_score,
+      pouch_type: row.pouch_type, quantity_text: row.quantity_text, brand_name: row.brand_name,
+      company_evidence: row.company_evidence, qualification_score: row.qualification_score,
     },
   }).select('id').single();
   if (leadError || !lead?.id) throw new Error(`Unable to create Lead: ${String(leadError?.message ?? 'unknown database error')}`);
