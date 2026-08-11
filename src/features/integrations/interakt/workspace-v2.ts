@@ -67,6 +67,15 @@ function evidenceFromRow(row: any): InteraktInquiryEvidence {
   };
 }
 
+function activeStagingQuery(db: any, organizationId: string, head = false) {
+  return db.from('lead_intake_staging')
+    .select('id', head ? { count: 'exact', head: true } : undefined)
+    .eq('organization_id', organizationId)
+    .eq('source_provider', SOURCE_PROVIDER)
+    .eq('sales_queue_suppressed', false)
+    .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
+}
+
 export type InboundWorkspaceQuery = {
   page?: number;
   pageSize?: number;
@@ -96,6 +105,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   let query = db.from('lead_intake_staging').select('*', { count: 'exact' })
     .eq('organization_id', organizationId)
     .eq('source_provider', SOURCE_PROVIDER)
+    .eq('sales_queue_suppressed', false)
     .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
 
   if (q) query = query.or(`contact_name.ilike.%${q}%,person_name.ilike.%${q}%,company_name.ilike.%${q}%,brand_name.ilike.%${q}%,full_phone_number.ilike.%${q}%`);
@@ -115,22 +125,34 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   else if (sort === 'name') query = query.order('contact_name', { ascending: true, nullsFirst: false });
   else query = query.order('last_inbound_at', { ascending: false, nullsFirst: false }).order('source_modified_at', { ascending: false, nullsFirst: false });
 
-  const [{ data, count, error }, totalResult, needsReplyResult, needsInfoResult, readyResult, evaluatedResult, pendingResult, newEvidenceResult, inquiryResult] = await Promise.all([
+  const baseCount = () => db.from('lead_intake_staging').select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('sales_queue_suppressed', false)
+    .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
+  const [{ data, count, error }, totalResult, needsReplyResult, needsInfoResult, readyResult, evaluatedResult, pendingResult, newEvidenceResult, inquiryResult, browsingResult] = await Promise.all([
     query.range(from, to),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).not('intake_status', 'in', `(${TERMINAL.join(',')})`),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('needs_reply', true),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('intake_status', 'needs_info'),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('intake_status', 'ready_to_qualify'),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('guru_evaluation_status', 'evaluated'),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).in('guru_evaluation_status', ['pending', 'partial_history']),
-    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('guru_evaluation_status', 'new_evidence'),
+    baseCount(),
+    baseCount().eq('needs_reply', true),
+    baseCount().eq('intake_status', 'needs_info'),
+    baseCount().eq('intake_status', 'ready_to_qualify'),
+    baseCount().eq('guru_evaluation_status', 'evaluated'),
+    baseCount().in('guru_evaluation_status', ['pending', 'partial_history']),
+    baseCount().eq('guru_evaluation_status', 'new_evidence'),
     db.from('lead_intake_inquiries').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('provider', SOURCE_PROVIDER),
+    db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('sales_queue_suppressed', true),
   ]);
   if (error) throw new Error(`Unable to load inbound workspace: ${String(error.message ?? 'unknown database error')}`);
 
   const rows = (data ?? []).map((row: any) => {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
-    return { ...row, computed_score: row.qualification_score ?? assessment.score, computed_band: assessment.bandLabel, computed_source: assessment.source.label, missing_fields: assessment.missingFields };
+    return {
+      ...row,
+      computed_score: row.qualification_score ?? assessment.score,
+      computed_band: assessment.bandLabel,
+      computed_source: assessment.source.label,
+      missing_fields: assessment.leadBlockers,
+      lead_blockers: assessment.leadBlockers,
+      later_enrichment: assessment.laterEnrichment,
+    };
   });
 
   const total = Number(totalResult.count ?? 0);
@@ -149,6 +171,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
       pending: Number(pendingResult.count ?? 0),
       newEvidence: Number(newEvidenceResult.count ?? 0),
       inquiries: Number(inquiryResult.count ?? 0),
+      browsingHidden: Number(browsingResult.count ?? 0),
     },
   };
 }
@@ -165,10 +188,16 @@ export async function evaluateStarkInteraktPage(formData: FormData): Promise<voi
   if (error) throw new Error(`Unable to load inquiries for Setu Guru: ${String(error.message ?? 'unknown database error')}`);
   const now = nowIso();
   for (const row of rows ?? []) {
+    if (row.sales_queue_suppressed) continue;
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
     const evidenceAt = row.last_inbound_at ?? row.first_inquiry_at ?? row.company_intelligence_updated_at ?? row.source_modified_at ?? now;
     await db.from('lead_intake_staging').update({ qualification_score: assessment.score, guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, updated_at: now }).eq('id', row.id).eq('organization_id', organizationId);
-    await db.from('lead_intake_inquiries').update({ guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.missingFields, guru_evaluation: { reason: assessment.scoreReason, next_step: assessment.nextStep, source: assessment.source.label }, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
+    await db.from('lead_intake_inquiries').update({
+      guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt,
+      guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.leadBlockers,
+      guru_evaluation: { reason: assessment.scoreReason, next_step: assessment.nextStep, source: assessment.source.label, lead_blockers: assessment.leadBlockers, later_enrichment: assessment.laterEnrichment },
+      updated_at: now,
+    }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
   }
   revalidatePath(INBOUND_PATH);
 }
@@ -200,6 +229,7 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
   if (error || !row?.id) throw new Error('Inbound inquiry not found.');
   if (row.qualified_lead_id) redirect(`/leads/${row.qualified_lead_id}`);
+  if (row.sales_queue_suppressed) throw new Error('This contact is browsing only. Wait for meaningful requirement details before creating a Lead.');
 
   const duplicate = await findDuplicateLead(db, organizationId, row.email ?? null, row.full_phone_number ?? null);
   if (duplicate?.id) {
@@ -217,15 +247,29 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   const sourceLabel = [row.ad_network === 'meta' ? 'Meta' : null, row.acquisition_type === 'ctwa' ? 'CTWA' : null, row.ad_platform ? String(row.ad_platform) : null].filter(Boolean).join(' · ') || 'Interakt';
   const needs = [row.packaging_type, row.pouch_type, row.quantity_text, row.dimensions_print].filter(Boolean).join(' · ');
   const companyName = row.company_name || row.contact_name || row.person_name || 'Inbound WhatsApp inquiry';
+  const productInterestLabel = row.pouch_type || row.packaging_type || null;
   const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
-  const notes = [row.qualification_notes, row.brand_name ? `Brand: ${row.brand_name}` : null, `Inbound source: ${sourceLabel}`, row.ad_url ? `Ad URL: ${row.ad_url}` : null, row.delivery_location ? `Delivery: ${row.delivery_location}` : null, row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null, row.industry ? `Industry: ${row.industry}` : null, overrideReason ? `Setu Guru override reason: ${overrideReason}` : null, `Setu Guru at conversion: ${assessment.score}/100 · ${assessment.bandLabel}`, assessment.missingFields.length ? `Missing at conversion: ${assessment.missingFields.join(', ')}` : null, `Interakt intake: ${row.id}`].filter(Boolean).join('\n');
+  const notes = [
+    row.qualification_notes,
+    row.brand_name ? `Brand: ${row.brand_name}` : null,
+    `Inbound source: ${sourceLabel}`,
+    row.ad_url ? `Ad URL: ${row.ad_url}` : null,
+    row.delivery_location ? `Delivery: ${row.delivery_location}` : null,
+    row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null,
+    row.industry ? `Industry: ${row.industry}` : null,
+    overrideReason ? `Setu Guru override reason: ${overrideReason}` : null,
+    `Setu Guru at conversion: ${assessment.score}/100 · ${assessment.bandLabel}`,
+    assessment.leadBlockers.length ? `Sales handoff blockers at conversion: ${assessment.leadBlockers.join(', ')}` : null,
+    assessment.laterEnrichment.length ? `Can collect during quote preparation: ${assessment.laterEnrichment.join(', ')}` : null,
+    `Interakt intake: ${row.id}`,
+  ].filter(Boolean).join('\n');
   const now = nowIso();
 
   const { data: lead, error: leadError } = await db.from('leads').insert({
     organization_id: organizationId, lead_type: 'buyer', owner_user_id: userId,
     created_by: userId, updated_by: userId, company_name: companyName,
     contact_name: row.person_name || row.contact_name, email: row.email, phone: row.full_phone_number,
-    whatsapp_number: row.full_phone_number, product_type: row.pouch_type || row.packaging_type,
+    whatsapp_number: row.full_phone_number, product_type: productInterestLabel,
     products_or_needs: needs || null, pipeline_id: pipeline?.id ?? null, stage_id: firstStage?.id ?? null,
     source_type: 'interakt', source_label: sourceLabel, notes, last_contacted_at: row.last_inbound_at,
     industry_metadata: {
@@ -234,14 +278,38 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
       meta_adset_id: row.meta_adset_id, meta_ad_id: row.meta_ad_id, packaging_type: row.packaging_type,
       pouch_type: row.pouch_type, quantity_text: row.quantity_text, brand_name: row.brand_name,
       setu_guru_score_at_conversion: assessment.score, setu_guru_band_at_conversion: assessment.bandLabel,
-      setu_guru_missing_at_conversion: assessment.missingFields, manual_override: row.intake_status !== 'ready_to_qualify',
+      setu_guru_missing_at_conversion: assessment.leadBlockers,
+      setu_guru_lead_blockers_at_conversion: assessment.leadBlockers,
+      setu_guru_later_enrichment_at_conversion: assessment.laterEnrichment,
+      manual_override: assessment.leadBlockers.length > 0,
       manual_override_reason: overrideReason,
+      quantity_is_advisory: true,
+      moq_override_allowed: true,
     },
   }).select('id').single();
   if (leadError || !lead?.id) throw new Error(`Unable to create Lead: ${String(leadError?.message ?? 'unknown database error')}`);
 
+  if (productInterestLabel) {
+    const { error: interestError } = await db.from('lead_product_interests').insert({
+      organization_id: organizationId,
+      lead_id: lead.id,
+      product_id: null,
+      label: productInterestLabel,
+      interest_type: 'captured_requirement',
+      source_context: {
+        source: 'interakt_inbound', intake_id: row.id, packaging_type: row.packaging_type,
+        pouch_type: row.pouch_type, quantity_text: row.quantity_text, industry: row.industry,
+        quantity_is_advisory: true, moq_override_allowed: true,
+      },
+    });
+    if (interestError) {
+      await db.from('leads').delete().eq('id', lead.id).eq('organization_id', organizationId);
+      throw new Error(`Lead requirement could not be carried into quote preparation: ${String(interestError.message ?? 'unknown database error')}`);
+    }
+  }
+
   await db.from('lead_intake_staging').update({ intake_status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, qualification_score: assessment.score, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
-  await db.from('lead_intake_inquiries').update({ status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.missingFields, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
+  await db.from('lead_intake_inquiries').update({ status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.leadBlockers, guru_evaluation: { lead_blockers: assessment.leadBlockers, later_enrichment: assessment.laterEnrichment }, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
   revalidatePath('/leads');
   revalidatePath(INBOUND_PATH);
   redirect(`/leads/${lead.id}?source=inbound-qualified`);
