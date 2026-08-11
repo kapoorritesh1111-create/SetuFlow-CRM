@@ -52,6 +52,7 @@ const premiumStyles = `
 export function InboundViewControls({ view = 'review', columns }: { view?: string; columns?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentPage = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
   const initial = useMemo(() => {
     const requested = String(columns ?? '').split(',').filter(Boolean);
     return requested.length ? requested : DEFAULT_COLUMNS;
@@ -62,6 +63,13 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value); else params.delete(key);
     if (key === 'view') params.delete('review');
+    router.push(`/leads/inbound?${params.toString()}`);
+  }
+
+  function goToPage(nextPage: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', String(Math.max(1, nextPage)));
+    params.delete('review');
     router.push(`/leads/inbound?${params.toString()}`);
   }
 
@@ -77,6 +85,15 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
   return (
     <div className="setu-inbound-controls flex flex-wrap items-center gap-2">
       <style dangerouslySetInnerHTML={{ __html: premiumStyles }} />
+
+      {view === 'list' ? (
+        <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Current list page">
+          <button type="button" disabled={currentPage <= 1} onClick={() => goToPage(currentPage - 1)} className="rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300" title="Previous page">‹</button>
+          <span className="min-w-[72px] border-x border-slate-100 px-2.5 py-1.5 text-center text-[10px] font-black text-slate-700">Page {currentPage}</span>
+          <button type="button" onClick={() => goToPage(currentPage + 1)} className="rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-600 hover:bg-slate-50" title="Next page">›</button>
+        </div>
+      ) : null}
+
       <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-inner">
         <button type="button" onClick={() => updateParam('view', 'review')} className={`rounded-lg px-3 py-1.5 text-[10px] font-black ${view !== 'list' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}>▦ Review</button>
         <button type="button" onClick={() => updateParam('view', 'list')} className={`rounded-lg px-3 py-1.5 text-[10px] font-black ${view === 'list' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70' : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'}`}>☷ List</button>
