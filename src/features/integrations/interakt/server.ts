@@ -30,14 +30,10 @@ async function requireStarkPackmateAdmin() {
 
 export async function previewStarkInteraktContacts(input?: { createdAfter?: string | null; limit?: number }) {
   await requireStarkPackmateAdmin();
-  return fetchInteraktContacts({
-    offset: 0,
-    limit: Math.min(Math.max(input?.limit ?? 25, 1), 100),
-    createdAfter: input?.createdAfter ?? null,
-  });
+  return fetchInteraktContacts({ offset: 0, limit: Math.min(Math.max(input?.limit ?? 25, 1), 100), createdAfter: input?.createdAfter ?? null });
 }
 
-export async function stageStarkInteraktContacts(formData: FormData) {
+export async function stageStarkInteraktContacts(formData: FormData): Promise<void> {
   const workspace = await requireStarkPackmateAdmin();
   const admin = createAdminSupabaseClient();
   if (!admin) throw new Error('Supabase service role is required for the isolated staging write.');
@@ -46,13 +42,13 @@ export async function stageStarkInteraktContacts(formData: FormData) {
   const requestedLimit = Number(formData.get('limit') ?? 25);
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 100) : 25;
   const result = await fetchInteraktContacts({ offset: 0, limit, createdAfter });
-  const batchId = randomUUID();
-
   if (result.contacts.length === 0) {
     revalidatePath(TEST_PATH);
-    return { staged: 0, batchId, hasNextPage: result.hasNextPage };
+    return;
   }
 
+  const batchId = randomUUID();
+  const now = new Date().toISOString();
   const rows = result.contacts.map((contact) => ({
     organization_id: workspace.organization!.id,
     source_provider: 'interakt',
@@ -72,23 +68,16 @@ export async function stageStarkInteraktContacts(formData: FormData) {
     raw_payload: contact.rawPayload,
     intake_status: 'staged',
     sync_batch_id: batchId,
-    fetched_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    fetched_at: now,
+    updated_at: now,
   }));
 
-  const { error } = await (admin as any)
-    .from('lead_intake_staging')
-    .upsert(rows, { onConflict: 'organization_id,source_provider,external_contact_id' });
-
+  const { error } = await (admin as any).from('lead_intake_staging').upsert(rows, { onConflict: 'organization_id,source_provider,external_contact_id' });
   if (error) {
-    if (String(error.code ?? '') === '42P01') {
-      throw new Error('The lead_intake_staging migration has not been applied to this database. No lead data was written.');
-    }
+    if (String(error.code ?? '') === '42P01') throw new Error('The lead_intake_staging migration has not been applied to this database. No lead data was written.');
     throw new Error(`Interakt staging write failed: ${String(error.message ?? 'unknown database error')}`);
   }
-
   revalidatePath(TEST_PATH);
-  return { staged: rows.length, batchId, hasNextPage: result.hasNextPage };
 }
 
 export async function readStagedStarkInteraktContacts(limit = 50) {
