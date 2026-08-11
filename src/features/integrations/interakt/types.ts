@@ -17,6 +17,7 @@ export type InteraktContact = {
   modified_at_utc?: string | null;
   created_via?: string | null;
   customer_created_at_source?: string | null;
+  tags?: unknown;
   traits?: InteraktTrait[] | Record<string, unknown> | null;
   [key: string]: unknown;
 };
@@ -59,6 +60,7 @@ export type NormalizedInteraktContact = {
   sourceCreatedAt: string | null;
   sourceModifiedAt: string | null;
   sourceCreatedVia: string | null;
+  tags: string[];
   traits: Record<string, unknown>;
   rawPayload: InteraktContact;
 };
