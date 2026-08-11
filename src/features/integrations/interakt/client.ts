@@ -3,11 +3,14 @@ import 'server-only';
 import type {
   InteraktContact,
   InteraktFetchFilters,
+  InteraktTemplateSendInput,
+  InteraktTemplateSendResult,
   InteraktUsersResponse,
   NormalizedInteraktContact,
 } from '@/features/integrations/interakt/types';
 
 const INTERAKT_USERS_URL = 'https://api.interakt.ai/v1/public/apis/users/';
+const INTERAKT_MESSAGE_URL = 'https://api.interakt.ai/v1/public/message/';
 const INTERAKT_BASELINE_CREATED_AFTER = '2000-01-01T00:00:00.000Z';
 
 type InteraktFilter = {
@@ -17,7 +20,7 @@ type InteraktFilter = {
   supr_op?: 'and';
 };
 
-function getApiKey() {
+export function getInteraktApiKey() {
   const key = process.env.INTERAKT_STARK_PACKMATE_API_KEY?.trim();
   if (!key) throw new Error('INTERAKT_STARK_PACKMATE_API_KEY is not configured.');
   return key;
@@ -138,7 +141,7 @@ export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${getApiKey()}`,
+      Authorization: `Basic ${getInteraktApiKey()}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ filters: buildFilters(filters) }),
@@ -170,4 +173,58 @@ export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) 
     limit,
     hasNextPage: Boolean(nestedHasNextPage ?? payload.has_next_page),
   };
+}
+
+function compactPhone(value: string) {
+  return value.replace(/[^0-9]/g, '');
+}
+
+export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Promise<InteraktTemplateSendResult> {
+  const countryCode = compactPhone(input.countryCode);
+  const phoneNumber = compactPhone(input.phoneNumber);
+  if (!countryCode || !phoneNumber) throw new Error('A valid WhatsApp country code and phone number are required.');
+  if (!input.templateName.trim()) throw new Error('An approved Interakt template name is required.');
+
+  const payload: Record<string, unknown> = {
+    countryCode,
+    phoneNumber,
+    type: 'Template',
+    template: {
+      name: input.templateName.trim(),
+      languageCode: input.languageCode.trim() || 'en',
+      bodyValues: input.bodyValues ?? [],
+      ...(input.headerValues?.length ? { headerValues: input.headerValues } : {}),
+      ...(input.buttonValues && Object.keys(input.buttonValues).length ? { buttonValues: input.buttonValues } : {}),
+    },
+    ...(input.callbackData ? { callbackData: input.callbackData } : {}),
+    ...(input.campaignId ? { campaignId: input.campaignId } : {}),
+  };
+
+  const response = await fetch(INTERAKT_MESSAGE_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${getInteraktApiKey()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  const text = await response.text();
+  let result: Record<string, unknown> = {};
+  try {
+    result = text ? JSON.parse(text) as Record<string, unknown> : {};
+  } catch {
+    throw new Error(`Interakt send returned a non-JSON response (${response.status}).`);
+  }
+
+  const success = response.ok && result.result !== false;
+  if (!success) {
+    throw new Error(String(result.message ?? result.detail ?? `Interakt send failed with status ${response.status}.`));
+  }
+
+  const id = String(result.id ?? result.message_id ?? result.messageId ?? '').trim();
+  if (!id) throw new Error('Interakt accepted the request but did not return a message id.');
+  return { id, message: String(result.message ?? '').trim() || null };
 }
