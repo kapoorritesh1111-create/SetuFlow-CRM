@@ -25,14 +25,12 @@ export type InteraktUsersResponse = {
   users?: InteraktContact[];
   data?: InteraktContact[] | { users?: InteraktContact[]; result?: InteraktContact[] };
   has_next_page?: boolean;
-  next_cursor?: string | null;
-  cursor?: string | null;
   [key: string]: unknown;
 };
 
 export type InteraktFetchFilters = {
-  page?: number;
-  pageSize?: number;
+  offset?: number;
+  limit?: number;
   createdAfter?: string | null;
   createdBefore?: string | null;
   modifiedAfter?: string | null;
