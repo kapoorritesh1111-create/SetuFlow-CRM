@@ -9,18 +9,22 @@ import type {
 
 const INTERAKT_USERS_URL = 'https://api.interakt.ai/v1/public/apis/users/';
 
+type InteraktFilter = {
+  trait: 'created_at_utc' | 'modified_at_utc';
+  op: 'gt' | 'lt';
+  val: string;
+  supr_op?: 'and';
+};
+
 function getApiKey() {
   const key = process.env.INTERAKT_STARK_PACKMATE_API_KEY?.trim();
-  if (!key) {
-    throw new Error('INTERAKT_STARK_PACKMATE_API_KEY is not configured.');
-  }
+  if (!key) throw new Error('INTERAKT_STARK_PACKMATE_API_KEY is not configured.');
   return key;
 }
 
 function toTraitsObject(value: InteraktContact['traits']): Record<string, unknown> {
   if (!value) return {};
   if (!Array.isArray(value)) return value;
-
   return value.reduce<Record<string, unknown>>((acc, item) => {
     const name = String(item?.name ?? '').trim();
     if (name) acc[name] = item?.value ?? null;
@@ -49,6 +53,25 @@ function normalizeDate(value: unknown) {
   if (!text) return null;
   const date = new Date(text);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function toUtc(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error(`Invalid Interakt date filter: ${value}`);
+  return date.toISOString();
+}
+
+function buildFilters(filters: InteraktFetchFilters): InteraktFilter[] {
+  const items: InteraktFilter[] = [];
+  const push = (trait: InteraktFilter['trait'], op: InteraktFilter['op'], value: string | null | undefined) => {
+    if (!value) return;
+    items.push({ trait, op, val: toUtc(value), ...(items.length > 0 ? { supr_op: 'and' as const } : {}) });
+  };
+  push('created_at_utc', 'gt', filters.createdAfter);
+  push('created_at_utc', 'lt', filters.createdBefore);
+  push('modified_at_utc', 'gt', filters.modifiedAfter);
+  push('modified_at_utc', 'lt', filters.modifiedBefore);
+  return items;
 }
 
 export function normalizeInteraktContact(contact: InteraktContact, index: number): NormalizedInteraktContact {
@@ -80,25 +103,20 @@ export function normalizeInteraktContact(contact: InteraktContact, index: number
 }
 
 export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) {
-  const pageSize = Math.max(1, Math.min(filters.pageSize ?? 25, 100));
-  const page = Math.max(1, filters.page ?? 1);
-  const body: Record<string, unknown> = {
-    page,
-    page_size: pageSize,
-  };
+  const limit = Math.max(1, Math.min(filters.limit ?? 25, 100));
+  const offset = Math.max(0, filters.offset ?? 0);
+  const url = new URL(INTERAKT_USERS_URL);
+  url.searchParams.set('offset', String(offset));
+  url.searchParams.set('limit', String(limit));
 
-  if (filters.createdAfter) body.created_at_utc__gte = filters.createdAfter;
-  if (filters.createdBefore) body.created_at_utc__lte = filters.createdBefore;
-  if (filters.modifiedAfter) body.modified_at_utc__gte = filters.modifiedAfter;
-  if (filters.modifiedBefore) body.modified_at_utc__lte = filters.modifiedBefore;
-
-  const response = await fetch(INTERAKT_USERS_URL, {
+  const interaktFilters = buildFilters(filters);
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${getApiKey()}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ filters: interaktFilters }),
     cache: 'no-store',
     signal: AbortSignal.timeout(10_000),
   });
@@ -120,12 +138,10 @@ export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) 
     throw new Error(safeMessage);
   }
 
-  const contacts = asContacts(payload).map(normalizeInteraktContact);
   return {
-    contacts,
-    page,
-    pageSize,
+    contacts: asContacts(payload).map(normalizeInteraktContact),
+    offset,
+    limit,
     hasNextPage: Boolean(payload.has_next_page),
-    nextCursor: typeof payload.next_cursor === 'string' ? payload.next_cursor : null,
   };
 }
