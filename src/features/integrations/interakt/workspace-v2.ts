@@ -190,8 +190,19 @@ export async function evaluateStarkInteraktPage(formData: FormData): Promise<voi
   const now = nowIso();
   for (const row of rows ?? []) {
     if (row.sales_queue_suppressed) continue;
+    const hasConversationEvidence = Boolean(row.first_inquiry_at || row.last_inbound_at || row.packaging_type || row.pouch_type || row.quantity_text || row.industry || row.company_intelligence_updated_at);
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
-    const evidenceAt = row.last_inbound_at ?? row.first_inquiry_at ?? row.company_intelligence_updated_at ?? row.source_modified_at ?? now;
+    if (!hasConversationEvidence) {
+      await db.from('lead_intake_staging').update({
+        qualification_score: assessment.score,
+        guru_evaluation_status: 'partial_history',
+        guru_evaluated_at: null,
+        guru_last_evidence_at: null,
+        updated_at: now,
+      }).eq('id', row.id).eq('organization_id', organizationId);
+      continue;
+    }
+    const evidenceAt = row.last_inbound_at ?? row.first_inquiry_at ?? row.company_intelligence_updated_at ?? now;
     await db.from('lead_intake_staging').update({ qualification_score: assessment.score, guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt, updated_at: now }).eq('id', row.id).eq('organization_id', organizationId);
     await db.from('lead_intake_inquiries').update({
       guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt,
