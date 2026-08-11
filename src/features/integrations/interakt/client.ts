@@ -180,7 +180,8 @@ function compactPhone(value: string) {
 }
 
 export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Promise<InteraktTemplateSendResult> {
-  const countryCode = compactPhone(input.countryCode);
+  const countryDigits = compactPhone(input.countryCode);
+  const countryCode = countryDigits ? `+${countryDigits}` : '';
   const phoneNumber = compactPhone(input.phoneNumber);
   if (!countryCode || !phoneNumber) throw new Error('A valid WhatsApp country code and phone number are required.');
   if (!input.templateName.trim()) throw new Error('An approved Interakt template name is required.');
