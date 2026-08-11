@@ -8,6 +8,7 @@ import type {
 } from '@/features/integrations/interakt/types';
 
 const INTERAKT_USERS_URL = 'https://api.interakt.ai/v1/public/apis/users/';
+const INTERAKT_BASELINE_CREATED_AFTER = '2000-01-01T00:00:00.000Z';
 
 type InteraktFilter = {
   trait: 'created_at_utc' | 'modified_at_utc';
@@ -72,6 +73,15 @@ function buildFilters(filters: InteraktFetchFilters): InteraktFilter[] {
   push('created_at_utc', 'lt', filters.createdBefore);
   push('modified_at_utc', 'gt', filters.modifiedAfter);
   push('modified_at_utc', 'lt', filters.modifiedBefore);
+
+  // Interakt's retrieval examples always send at least one filter. In live testing,
+  // their backend returned a Python NoneType.update error when `filters: []` was
+  // submitted. Use a deliberately old created-at floor for an effectively
+  // unfiltered preview while keeping the request within the documented contract.
+  if (items.length === 0) {
+    items.push({ trait: 'created_at_utc', op: 'gt', val: INTERAKT_BASELINE_CREATED_AFTER });
+  }
+
   return items;
 }
 
