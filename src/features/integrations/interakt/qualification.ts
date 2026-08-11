@@ -28,7 +28,10 @@ export type SetuGuruInteraktAssessment = {
   canRecommendQualification: boolean;
   scoreReason: string;
   nextStep: string;
+  /** Backward-compatible alias for actual Lead blockers only. */
   missingFields: string[];
+  leadBlockers: string[];
+  laterEnrichment: string[];
 };
 
 const COMPANY_WORDS = [
@@ -116,9 +119,9 @@ function recencyPoints(createdAt: string | null, now: Date) {
   return { points: 0, reason: null as string | null };
 }
 
-function bandForScore(score: number): Pick<SetuGuruInteraktAssessment, 'band' | 'bandLabel' | 'isHotLead' | 'canRecommendQualification'> {
-  if (score >= 80) return { band: 'hot', bandLabel: 'Hot lead', isHotLead: true, canRecommendQualification: true };
-  if (score >= 70) return { band: 'qualify', bandLabel: 'Ready to qualify', isHotLead: false, canRecommendQualification: true };
+function bandForScore(score: number, ready: boolean): Pick<SetuGuruInteraktAssessment, 'band' | 'bandLabel' | 'isHotLead' | 'canRecommendQualification'> {
+  if (ready && score >= 80) return { band: 'hot', bandLabel: 'Hot lead', isHotLead: true, canRecommendQualification: true };
+  if (ready) return { band: 'qualify', bandLabel: 'Ready for Lead', isHotLead: false, canRecommendQualification: true };
   if (score >= 50) return { band: 'warm', bandLabel: 'Warm inquiry', isHotLead: false, canRecommendQualification: false };
   if (score >= 30) return { band: 'inquiry', bandLabel: 'Inquiry · needs qualification', isHotLead: false, canRecommendQualification: false };
   return { band: 'low_signal', bandLabel: 'Low signal', isHotLead: false, canRecommendQualification: false };
@@ -139,13 +142,13 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
   if (contact.email) { score += 4; scoreParts.push('+4 email'); }
   if (contact.contactName || evidence?.personName) { score += 6; scoreParts.push('+6 named contact'); }
   if (evidence?.companyName) { score += 8; scoreParts.push('+8 company identified'); }
-
   if (present(evidence?.packagingType)) { score += 8; scoreParts.push('+8 packaging category'); }
   if (present(evidence?.pouchType)) { score += 10; scoreParts.push('+10 specific pouch type'); }
-  if (present(evidence?.quantityText)) { score += 12; scoreParts.push('+12 quantity/MOQ'); }
-  if (present(evidence?.dimensionsPrint)) { score += 8; scoreParts.push('+8 dimensions/print'); }
-  if (present(evidence?.deliveryLocation)) { score += 7; scoreParts.push('+7 delivery location'); }
-  if (present(evidence?.buyingTimeline)) { score += 9; scoreParts.push('+9 buying timeline'); }
+  // Any stated quantity is commercial evidence. There is intentionally no MOQ threshold here.
+  if (present(evidence?.quantityText)) { score += 12; scoreParts.push('+12 quantity captured'); }
+  if (present(evidence?.dimensionsPrint)) { score += 4; scoreParts.push('+4 dimensions/print enrichment'); }
+  if (present(evidence?.deliveryLocation)) { score += 3; scoreParts.push('+3 delivery enrichment'); }
+  if (present(evidence?.buyingTimeline)) { score += 4; scoreParts.push('+4 timeline enrichment'); }
   if (present(evidence?.industry) && lower(evidence?.industry) !== 'na' && lower(evidence?.industry) !== 'n/a') { score += 4; scoreParts.push('+4 industry'); }
 
   const inboundTexts = evidence?.inboundMessageTexts ?? [];
@@ -159,22 +162,26 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
 
   const hasIntentEvidence = inboundTexts.length > 0 || (evidence?.workflowAnswerCount ?? 0) > 0 || present(evidence?.packagingType) || present(evidence?.pouchType) || present(evidence?.quantityText);
   const finalScore = Math.min(hasIntentEvidence ? score : Math.min(score, 69), 100);
-  const band = bandForScore(finalScore);
-  const missingFields = [
+
+  const leadBlockers = [
     !present(evidence?.companyName) ? 'Company' : null,
     !(present(evidence?.packagingType) || present(evidence?.pouchType)) ? 'Product / pouch type' : null,
-    !present(evidence?.quantityText) ? 'Quantity / MOQ' : null,
+  ].filter(Boolean) as string[];
+  const laterEnrichment = [
+    !present(evidence?.quantityText) ? 'Quantity / requirement size' : null,
     !present(evidence?.dimensionsPrint) ? 'Dimensions / print' : null,
     !present(evidence?.deliveryLocation) ? 'Delivery location' : null,
     !present(evidence?.buyingTimeline) ? 'Buying timeline' : null,
   ].filter(Boolean) as string[];
 
+  const readyForLead = leadBlockers.length === 0 && hasIntentEvidence;
+  const band = bandForScore(finalScore, readyForLead);
   const inquiryReceivedAt = evidence?.firstInquiryAt ?? null;
-  const nextStep = missingFields.length
-    ? `Ask only for the missing qualification details: ${missingFields.join(', ')}.`
-    : finalScore >= 70
-      ? 'Qualification evidence is complete enough for a salesperson to promote this inquiry into the Lead pipeline.'
-      : 'Review the conversation for stronger commercial intent before promotion.';
+  const nextStep = leadBlockers.length
+    ? `Capture the sales handoff essentials: ${leadBlockers.join(', ')}.`
+    : laterEnrichment.length
+      ? `Ready for Lead. ${laterEnrichment.join(', ')} can be collected during quote preparation.`
+      : 'Ready for Lead and quote preparation.';
 
   return {
     identity,
@@ -186,6 +193,8 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
     ...band,
     scoreReason: scoreParts.join(' · '),
     nextStep,
-    missingFields,
+    missingFields: leadBlockers,
+    leadBlockers,
+    laterEnrichment,
   };
 }
