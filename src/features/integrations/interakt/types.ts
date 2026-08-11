@@ -64,3 +64,61 @@ export type NormalizedInteraktContact = {
   traits: Record<string, unknown>;
   rawPayload: InteraktContact;
 };
+
+export type InteraktTemplateSendInput = {
+  countryCode: string;
+  phoneNumber: string;
+  templateName: string;
+  languageCode: string;
+  bodyValues?: string[];
+  headerValues?: string[];
+  buttonValues?: Record<string, string[]>;
+  campaignId?: string | null;
+  callbackData?: string | null;
+};
+
+export type InteraktTemplateSendResult = {
+  id: string;
+  message: string | null;
+};
+
+export type InteraktAttribution = {
+  channel: 'whatsapp' | 'instagram' | 'unknown';
+  acquisitionType: 'ctwa' | 'organic' | 'unknown';
+  adNetwork: 'meta' | null;
+  adPlatform: 'instagram' | 'facebook' | null;
+  adUrl: string | null;
+  metaCampaignId: string | null;
+  metaAdsetId: string | null;
+  metaAdId: string | null;
+  evidence: Record<string, unknown>;
+};
+
+export type InteraktInquiryEvidence = {
+  personName?: string | null;
+  companyName?: string | null;
+  packagingType?: string | null;
+  pouchType?: string | null;
+  quantityText?: string | null;
+  dimensionsPrint?: string | null;
+  deliveryLocation?: string | null;
+  buyingTimeline?: string | null;
+  industry?: string | null;
+  firstInquiryAt?: string | null;
+  lastInboundAt?: string | null;
+  channelSource?: string | null;
+  acquisitionType?: string | null;
+  adNetwork?: string | null;
+  adPlatform?: string | null;
+  adUrl?: string | null;
+  inboundMessageTexts?: string[];
+  workflowAnswerCount?: number;
+};
+
+export type InteraktWebhookPayload = {
+  version?: string;
+  timestamp?: string;
+  type?: string;
+  data?: Record<string, unknown>;
+  [key: string]: unknown;
+};
