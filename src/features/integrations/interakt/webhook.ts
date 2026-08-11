@@ -3,6 +3,8 @@ import 'server-only';
 import crypto from 'crypto';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { analyzeInteraktCustomerImage, extractExplicitCompanyFromText } from '@/features/integrations/interakt/intelligence';
+import type { InteraktCompanyIntelligence } from '@/features/integrations/interakt/intelligence';
 import type { InteraktWebhookPayload } from '@/features/integrations/interakt/types';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
@@ -89,7 +91,8 @@ function attributionFromPayload(payload: Record<string, unknown>) {
 
 function qualificationPatchFromAnswer(question: string, answer: string) {
   const q = question.toLowerCase();
-  if (/company|business name/.test(q)) return { company_name: answer };
+  if (/company|business name|organisation|organization/.test(q)) return { company_name: answer };
+  if (/brand/.test(q)) return { brand_name: answer };
   if (/packaging type|packaging category/.test(q)) return { packaging_type: answer };
   if (/what type of pouch|pouch type/.test(q)) return { pouch_type: answer };
   if (/quantity|moq/.test(q)) return { quantity_text: answer };
@@ -98,6 +101,34 @@ function qualificationPatchFromAnswer(question: string, answer: string) {
   if (/timeline|when.*need|required by|delivery date|buying/.test(q)) return { buying_timeline: answer };
   if (/industry|business type|segment/.test(q)) return { industry: answer };
   return {};
+}
+
+function identityQuestion(question: string) {
+  const q = question.toLowerCase();
+  if (/company|business name|organisation|organization/.test(q)) return 'company' as const;
+  if (/brand/.test(q)) return 'brand' as const;
+  return null;
+}
+
+function evidenceEntry(intelligence: InteraktCompanyIntelligence, input: { messageId?: string | null; mediaUrl?: string | null; question?: string | null; at?: string | null }) {
+  return {
+    source: intelligence.source,
+    company_name: intelligence.companyName,
+    brand_name: intelligence.brandName,
+    confidence: intelligence.confidence,
+    evidence: intelligence.evidence,
+    model: intelligence.model,
+    message_id: input.messageId ?? null,
+    media_url: input.mediaUrl ?? null,
+    question: input.question ?? null,
+    observed_at: input.at ?? new Date().toISOString(),
+  };
+}
+
+function mergeEvidence(existing: unknown, next: Record<string, unknown>) {
+  const current = safeObject(existing);
+  const history = Array.isArray(current.history) ? current.history.slice(-19) : [];
+  return { latest: next, history: [...history, next] };
 }
 
 async function findOrCreateIntake(db: any, input: {
@@ -172,6 +203,8 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
   const responses = Array.isArray(data.data) ? data.data : [];
   const patch: Record<string, unknown> = {};
   let latestInboundAt: string | null = intake.last_inbound_at ?? null;
+  let companyEvidence = intake.company_evidence ?? {};
+  let companyIntelligenceUpdatedAt: string | null = intake.company_intelligence_updated_at ?? null;
 
   for (const item of responses) {
     const row = safeObject(item);
@@ -199,7 +232,23 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
       updated_at: now,
     }, { onConflict: 'organization_id,provider,intake_id,evidence_key' });
 
-    if (answerText) Object.assign(patch, qualificationPatchFromAnswer(questionText, answerText));
+    if (answerText) {
+      Object.assign(patch, qualificationPatchFromAnswer(questionText, answerText));
+      const identityKind = identityQuestion(questionText);
+      if (identityKind) {
+        const intelligence: InteraktCompanyIntelligence = {
+          companyName: identityKind === 'company' ? answerText : null,
+          brandName: identityKind === 'brand' ? answerText : null,
+          confidence: 1,
+          evidence: `${questionText}: ${answerText}`,
+          source: 'message_text',
+          model: null,
+        };
+        const entry = evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now });
+        companyEvidence = mergeEvidence(companyEvidence, entry);
+        companyIntelligenceUpdatedAt = now;
+      }
+    }
     if (answeredAt && (!latestInboundAt || answeredAt > latestInboundAt)) latestInboundAt = answeredAt;
   }
 
@@ -210,9 +259,27 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
     first_inquiry_at: intake.first_inquiry_at ?? latestInboundAt,
     last_inbound_at: latestInboundAt,
     source_modified_at: iso(data.modified_at_utc) ?? new Date().toISOString(),
+    company_evidence: companyEvidence,
+    company_intelligence_updated_at: companyIntelligenceUpdatedAt,
     updated_at: new Date().toISOString(),
     ...attribution,
   }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+}
+
+function messageText(message: Record<string, unknown>) {
+  if (typeof message.message === 'string') return message.message;
+  return recursiveFindString(message.message, ['text', 'caption', 'message']) ?? '';
+}
+
+function messageMediaUrl(message: Record<string, unknown>) {
+  const url = recursiveFindString(message, ['media_url', 'mediaUrl']);
+  return url && /^https:\/\//i.test(url) ? url : null;
+}
+
+function isImageMessage(message: Record<string, unknown>, mediaUrl: string | null) {
+  if (!mediaUrl) return false;
+  const type = clean(message.message_content_type ?? message.chat_message_type)?.toLowerCase() ?? '';
+  return type.includes('image') || /\.(?:png|jpe?g|webp|gif)(?:\?|$)/i.test(mediaUrl);
 }
 
 async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
@@ -240,8 +307,15 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
         : eventType.endsWith('_failed') ? 'failed'
           : 'sent';
   const callbackData = recursiveFindString(message.meta_data, ['callback_data']);
-  const text = typeof message.message === 'string' ? message.message : JSON.stringify(message.message ?? '');
+  const text = messageText(message);
+  const mediaUrl = messageMediaUrl(message);
   const now = new Date().toISOString();
+
+  const textIntelligence = incoming ? extractExplicitCompanyFromText(text) : null;
+  const imageIntelligence = incoming && isImageMessage(message, mediaUrl)
+    ? await analyzeInteraktCustomerImage(mediaUrl, text)
+    : null;
+  const intelligence = textIntelligence ?? imageIntelligence;
 
   await db.from('lead_intake_messages').upsert({
     organization_id: STARK_PACKMATE_ORG_ID,
@@ -253,8 +327,10 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     actor_type: incoming ? 'customer' : 'agent',
     actor_name: incoming ? name : null,
     message_type: clean(message.message_content_type ?? message.chat_message_type),
-    message_text: text,
+    message_text: text || (mediaUrl ? '[Customer media]' : ''),
     message_payload: message,
+    media_url: mediaUrl,
+    intelligence: intelligence ?? {},
     received_at: incoming ? receivedAt : null,
     sent_at: incoming ? null : receivedAt,
     delivered_at: deliveredAt,
@@ -266,6 +342,16 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   }, { onConflict: 'organization_id,provider,external_message_id' });
 
   const attribution = attributionFromPayload(data);
+  const identityPatch: Record<string, unknown> = {};
+  if (textIntelligence?.companyName && !intake.company_name) identityPatch.company_name = textIntelligence.companyName;
+  if (textIntelligence?.brandName && !intake.brand_name) identityPatch.brand_name = textIntelligence.brandName;
+  if (imageIntelligence?.companyName && !intake.company_name) identityPatch.proposed_company_name = imageIntelligence.companyName;
+  if (imageIntelligence?.brandName && !intake.brand_name) identityPatch.proposed_brand_name = imageIntelligence.brandName;
+
+  let companyEvidence = intake.company_evidence ?? {};
+  if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
+  if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
+
   await db.from('lead_intake_staging').update({
     contact_name: intake.contact_name ?? name,
     person_name: intake.person_name ?? name,
@@ -275,7 +361,10 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     last_inbound_at: incoming ? receivedAt : intake.last_inbound_at,
     source_modified_at: now,
     raw_payload: data,
+    company_evidence: companyEvidence,
+    company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at,
     updated_at: now,
+    ...identityPatch,
     ...attribution,
   }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
 }
@@ -344,9 +433,9 @@ export async function processInteraktWebhook(rawBody: string, signature: string 
       .eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey);
     return { ok: true as const, duplicate: false };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Webhook processing failed.';
-    await db.from('lead_intake_webhook_events').update({ processing_error: message })
+    const errorMessage = error instanceof Error ? error.message : 'Webhook processing failed.';
+    await db.from('lead_intake_webhook_events').update({ processing_error: errorMessage })
       .eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey);
-    return { ok: false as const, status: 500, error: message };
+    return { ok: false as const, status: 500, error: errorMessage };
   }
 }
