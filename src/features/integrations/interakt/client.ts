@@ -33,6 +33,18 @@ function toTraitsObject(value: InteraktContact['traits']): Record<string, unknow
   }, {});
 }
 
+function normalizeTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map((item) => {
+    if (typeof item === 'string') return item.trim();
+    if (item && typeof item === 'object') {
+      const row = item as Record<string, unknown>;
+      return String(row.name ?? row.tag ?? row.label ?? row.value ?? '').trim();
+    }
+    return '';
+  }).filter(Boolean)));
+}
+
 function asContacts(payload: InteraktUsersResponse): InteraktContact[] {
   if (Array.isArray(payload.result)) return payload.result;
   if (Array.isArray(payload.users)) return payload.users;
@@ -74,10 +86,6 @@ function buildFilters(filters: InteraktFetchFilters): InteraktFilter[] {
   push('modified_at_utc', 'gt', filters.modifiedAfter);
   push('modified_at_utc', 'lt', filters.modifiedBefore);
 
-  // Interakt's retrieval examples always send at least one filter. In live testing,
-  // their backend returned a Python NoneType.update error when `filters: []` was
-  // submitted. Use a deliberately old created-at floor for an effectively
-  // unfiltered preview while keeping the request within the documented contract.
   if (items.length === 0) {
     items.push({ trait: 'created_at_utc', op: 'gt', val: INTERAKT_BASELINE_CREATED_AFTER });
   }
@@ -95,6 +103,8 @@ export function normalizeInteraktContact(contact: InteraktContact, index: number
   const traitName = String(traits.name ?? '').trim() || null;
   const traitEmail = String(traits.email ?? '').trim() || null;
   const traitOptIn = typeof traits.whatsapp_opted_in === 'boolean' ? traits.whatsapp_opted_in : null;
+  const raw = contact as Record<string, unknown>;
+  const tags = normalizeTags(contact.tags ?? raw.customer_tags ?? raw.contact_tags ?? traits.tags);
 
   return {
     externalContactId,
@@ -112,6 +122,7 @@ export function normalizeInteraktContact(contact: InteraktContact, index: number
     sourceCreatedAt: normalizeDate(contact.created_at_utc),
     sourceModifiedAt: normalizeDate(contact.modified_at_utc),
     sourceCreatedVia: String(contact.customer_created_at_source ?? contact.created_via ?? '').trim() || null,
+    tags,
     traits,
     rawPayload: contact,
   };
