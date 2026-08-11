@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { assessInteraktContact } from '@/features/integrations/interakt/qualification';
 import {
+  acceptStarkInteraktCompanySuggestion,
   qualifyStarkInteraktAsLead,
   readStagedStarkInteraktContacts,
   readStarkInteraktConversation,
@@ -21,6 +22,19 @@ const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
 
 type ReviewTab = 'qualification' | 'conversation' | 'source';
 type SearchParams = { review?: string; tab?: string };
+
+type CompanyEvidenceEntry = {
+  source?: string;
+  company_name?: string | null;
+  brand_name?: string | null;
+  confidence?: number;
+  evidence?: string;
+  model?: string | null;
+  message_id?: string | null;
+  media_url?: string | null;
+  question?: string | null;
+  observed_at?: string | null;
+};
 
 type StagedRow = {
   id: string;
@@ -42,6 +56,11 @@ type StagedRow = {
   updated_at: string | null;
   person_name: string | null;
   company_name: string | null;
+  brand_name: string | null;
+  proposed_company_name: string | null;
+  proposed_brand_name: string | null;
+  company_evidence: { latest?: CompanyEvidenceEntry; history?: CompanyEvidenceEntry[] } | null;
+  company_intelligence_updated_at: string | null;
   packaging_type: string | null;
   pouch_type: string | null;
   quantity_text: string | null;
@@ -72,6 +91,14 @@ type ConversationMessage = {
   actor_name: string | null;
   message_type: string | null;
   message_text: string | null;
+  media_url: string | null;
+  intelligence: {
+    companyName?: string | null;
+    brandName?: string | null;
+    confidence?: number;
+    evidence?: string;
+    source?: string;
+  } | null;
   received_at: string | null;
   sent_at: string | null;
   delivered_at: string | null;
@@ -200,6 +227,15 @@ function inputClass() {
   return 'mt-1 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 }
 
+function confidenceLabel(value: number | undefined) {
+  if (typeof value !== 'number') return null;
+  return `${Math.round(value * 100)}% confidence`;
+}
+
+function isSafeMediaUrl(value: string | null) {
+  return Boolean(value && /^https:\/\//i.test(value));
+}
+
 export default async function InboundLeadsPage({ searchParams }: { searchParams?: SearchParams }) {
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) {
@@ -233,6 +269,7 @@ export default async function InboundLeadsPage({ searchParams }: { searchParams?
   const readyCount = rows.filter((row) => row.intake_status === 'ready_to_qualify').length;
   const needsInfoCount = rows.filter((row) => row.intake_status === 'needs_info').length;
   const hotCount = assessments.filter(({ assessment }) => assessment.score >= 80).length;
+  const latestCompanyEvidence = selected?.company_evidence?.latest ?? null;
 
   return (
     <div className="space-y-4">
@@ -263,7 +300,7 @@ export default async function InboundLeadsPage({ searchParams }: { searchParams?
             <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4"><p className="text-[10px] font-black uppercase tracking-wider text-rose-700">Hot</p><p className="mt-1 text-2xl font-bold text-slate-950">{hotCount}</p><p className="mt-1 text-xs text-slate-500">Intent-backed score ≥80</p></div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-900">ⓘ Setu Guru uses contact data plus chatbot answers and messages captured by the Interakt webhook. Scores without intent evidence remain capped below qualification.</div>
+          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-900">ⓘ Setu Guru uses contact data, chatbot answers, customer messages and customer-supplied images. Image-derived company/brand identity always requires human confirmation.</div>
         </div>
       </div>
 
@@ -280,10 +317,10 @@ export default async function InboundLeadsPage({ searchParams }: { searchParams?
                   const identity = assessment.identity.companyName ? `Company · ${assessment.identity.companyName}` : assessment.identity.personName ? `Person · ${assessment.identity.personName}` : 'Unclear identity';
                   return (
                     <tr key={row.id} className={`border-b border-slate-100 align-middle ${active ? 'bg-blue-50/70 ring-1 ring-inset ring-blue-300' : 'hover:bg-slate-50'}`}>
-                      <td className="px-4 py-3"><div className="font-bold text-slate-950">{row.person_name ?? row.contact_name ?? row.company_name ?? 'Unnamed contact'}</div><div className="mt-0.5 text-xs text-slate-500">{row.company_name ? `${row.company_name} · ` : ''}{row.full_phone_number ?? row.email ?? 'No direct contact detail'}</div></td>
+                      <td className="px-4 py-3"><div className="font-bold text-slate-950">{row.person_name ?? row.contact_name ?? row.company_name ?? 'Unnamed contact'}</div><div className="mt-0.5 text-xs text-slate-500">{row.company_name ? `${row.company_name} · ` : ''}{row.brand_name ? `${row.brand_name} · ` : ''}{row.full_phone_number ?? row.email ?? 'No direct contact detail'}</div></td>
                       <td className="px-4 py-3"><div className="font-semibold text-slate-700">{assessment.source.label}</div>{row.ad_network === 'meta' ? <div className="mt-1 text-[10px] font-bold text-violet-600">Meta{row.ad_platform ? ` · ${row.ad_platform}` : ''}</div> : null}</td>
                       <td className="px-4 py-3"><div className="font-semibold text-slate-700">{timeAgo(row.first_inquiry_at ?? row.source_created_at)}</div><div className="mt-0.5 text-[10px] text-slate-400">{row.first_inquiry_at ? 'First inquiry' : 'Contact created'}</div></td>
-                      <td className="px-4 py-3"><div className="font-semibold text-slate-800">{identity}</div><div className="mt-0.5 max-w-[220px] text-xs text-slate-500">{row.pouch_type || row.packaging_type || 'Requirement not captured yet'}{row.quantity_text ? ` · ${row.quantity_text}` : ''}</div></td>
+                      <td className="px-4 py-3"><div className="font-semibold text-slate-800">{identity}</div><div className="mt-0.5 max-w-[220px] text-xs text-slate-500">{row.pouch_type || row.packaging_type || 'Requirement not captured yet'}{row.quantity_text ? ` · ${row.quantity_text}` : ''}</div>{row.proposed_company_name || row.proposed_brand_name ? <div className="mt-1 text-[10px] font-bold text-violet-600">Identity suggestion to review</div> : null}</td>
                       <td className="px-4 py-3"><div className="flex items-center gap-2"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClasses(assessment.score)}`}>{assessment.score}/100</span><span className="text-xs font-semibold text-slate-600">{assessment.bandLabel}</span></div><div className="mt-1 max-w-[230px] text-[11px] text-slate-500">{assessment.missingFields.length ? `Missing: ${assessment.missingFields.slice(0, 2).join(', ')}` : 'Core qualification captured'}</div></td>
                       <td className="px-4 py-3"><StatusBadge label={statusLabel(row.intake_status)} tone={statusTone(row.intake_status)} dot={false} /></td>
                       <td className="px-4 py-3 text-right"><Link href={tabHref(row.id, 'qualification')} className="inline-flex rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50">Review</Link></td>
@@ -300,7 +337,7 @@ export default async function InboundLeadsPage({ searchParams }: { searchParams?
           <aside className="rounded-3xl border border-slate-200 bg-white shadow-soft xl:sticky xl:top-24 xl:self-start">
             <div className="p-5">
               <div className="flex items-start justify-between gap-3">
-                <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">Qualification Review</p><h2 className="mt-1 text-lg font-bold text-slate-950">{selected.person_name ?? selected.contact_name ?? selected.company_name ?? 'Unnamed contact'}</h2><p className="mt-1 text-xs text-slate-500">{selected.company_name ? `${selected.company_name} · ` : ''}{selected.full_phone_number ?? selected.email ?? 'No direct contact detail'}</p></div>
+                <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">Qualification Review</p><h2 className="mt-1 text-lg font-bold text-slate-950">{selected.person_name ?? selected.contact_name ?? selected.company_name ?? 'Unnamed contact'}</h2><p className="mt-1 text-xs text-slate-500">{selected.company_name ? `${selected.company_name} · ` : ''}{selected.brand_name ? `Brand: ${selected.brand_name} · ` : ''}{selected.full_phone_number ?? selected.email ?? 'No direct contact detail'}</p></div>
                 <Link href="/leads/inbound" className="text-sm font-bold text-slate-400 hover:text-slate-700">×</Link>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-slate-600">{selectedAssessment.source.label}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClasses(selectedAssessment.score)}`}>{selectedAssessment.score}/100 · {selectedAssessment.bandLabel}</span></div>
@@ -315,14 +352,17 @@ export default async function InboundLeadsPage({ searchParams }: { searchParams?
               <div className="p-5">
                 <section><h3 className="text-xs font-black text-slate-900">Setu Guru recommendation</h3><p className="mt-2 rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900">{selectedAssessment.nextStep}</p></section>
 
+                {(selected.proposed_company_name || selected.proposed_brand_name) ? <section className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-wider text-violet-700">Setu Guru identity suggestion</p><p className="mt-1 text-[11px] leading-5 text-violet-900">Detected from customer-supplied conversation evidence. Review before confirming.</p></div>{latestCompanyEvidence?.confidence !== undefined ? <span className="rounded-full bg-white px-2 py-1 text-[10px] font-black text-violet-700">{confidenceLabel(latestCompanyEvidence.confidence)}</span> : null}</div>{selected.proposed_company_name ? <div className="mt-3 rounded-xl bg-white p-3"><p className="text-[10px] text-slate-400">Suggested company</p><p className="mt-1 text-sm font-bold text-slate-900">{selected.proposed_company_name}</p>{canWorkInbound ? <form action={acceptStarkInteraktCompanySuggestion} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="kind" value="company" /><button className="rounded-lg border border-violet-200 px-3 py-1.5 text-[10px] font-bold text-violet-700">Confirm company</button></form> : null}</div> : null}{selected.proposed_brand_name ? <div className="mt-2 rounded-xl bg-white p-3"><p className="text-[10px] text-slate-400">Suggested brand</p><p className="mt-1 text-sm font-bold text-slate-900">{selected.proposed_brand_name}</p>{canWorkInbound ? <form action={acceptStarkInteraktCompanySuggestion} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="kind" value="brand" /><button className="rounded-lg border border-violet-200 px-3 py-1.5 text-[10px] font-bold text-violet-700">Confirm brand</button></form> : null}</div> : null}{latestCompanyEvidence?.evidence ? <p className="mt-3 text-[11px] leading-5 text-violet-800">Evidence: {latestCompanyEvidence.evidence}</p> : null}</section> : null}
+
                 <section className="mt-5"><h3 className="text-xs font-black text-slate-900">Missing before qualification</h3><div className="mt-3 flex flex-wrap gap-2">{selectedAssessment.missingFields.length ? selectedAssessment.missingFields.map((field) => <span key={field} className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800">• {field}</span>) : <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700">✓ Core qualification complete</span>}</div></section>
 
                 <form action={saveStarkInteraktQualification} className="mt-5 space-y-3 border-t border-slate-100 pt-4">
                   <input type="hidden" name="rowId" value={selected.id} />
                   <div className="grid grid-cols-2 gap-3">
                     <label className="text-[11px] font-bold text-slate-600">Person<input name="personName" defaultValue={selected.person_name ?? selectedAssessment.identity.personName ?? ''} disabled={!canWorkInbound} className={inputClass()} /></label>
-                    <label className="text-[11px] font-bold text-slate-600">Company<input name="companyName" defaultValue={selected.company_name ?? selectedAssessment.identity.companyName ?? ''} disabled={!canWorkInbound} className={inputClass()} /></label>
+                    <label className="text-[11px] font-bold text-slate-600">Company<input name="companyName" defaultValue={selected.company_name ?? ''} placeholder={selected.proposed_company_name || 'Company name'} disabled={!canWorkInbound} className={inputClass()} /></label>
                   </div>
+                  <label className="block text-[11px] font-bold text-slate-600">Brand<input name="brandName" defaultValue={selected.brand_name ?? ''} placeholder={selected.proposed_brand_name || 'Brand name, if different'} disabled={!canWorkInbound} className={inputClass()} /></label>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="text-[11px] font-bold text-slate-600">Packaging type<input name="packagingType" defaultValue={selected.packaging_type ?? ''} placeholder="Pouches" disabled={!canWorkInbound} className={inputClass()} /></label>
                     <label className="text-[11px] font-bold text-slate-600">Pouch type<input name="pouchType" defaultValue={selected.pouch_type ?? ''} placeholder="Flat Bottom pouch" disabled={!canWorkInbound} className={inputClass()} /></label>
@@ -354,8 +394,8 @@ export default async function InboundLeadsPage({ searchParams }: { searchParams?
               <div className="p-5">
                 {conversation.error ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
                 <section><div className="flex items-center justify-between"><h3 className="text-xs font-black text-slate-900">Conversation</h3><span className="text-[10px] text-slate-400">Captured after webhook activation</span></div>
-                  <div className="mt-3 max-h-[360px] space-y-3 overflow-y-auto pr-1">
-                    {selectedMessages.map((message) => <div key={message.id} className={`rounded-2xl border p-3 ${message.direction === 'inbound' ? 'border-slate-200 bg-slate-50' : 'ml-8 border-emerald-100 bg-emerald-50'}`}><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-black uppercase text-slate-500">{message.direction === 'inbound' ? message.actor_name || 'Customer' : message.actor_name || 'Stark Packmate'}</span><span className="text-[10px] text-slate-400">{formatDateTime(message.received_at ?? message.sent_at)}</span></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-800">{message.message_text || `[${message.message_type || 'message'}]`}</p>{message.direction === 'outbound' ? <p className="mt-2 text-[10px] font-bold text-emerald-700">{message.read_at ? 'Read' : message.delivered_at ? 'Delivered' : message.status}</p> : null}</div>)}
+                  <div className="mt-3 max-h-[460px] space-y-3 overflow-y-auto pr-1">
+                    {selectedMessages.map((message) => <div key={message.id} className={`rounded-2xl border p-3 ${message.direction === 'inbound' ? 'border-slate-200 bg-slate-50' : 'ml-8 border-emerald-100 bg-emerald-50'}`}><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-black uppercase text-slate-500">{message.direction === 'inbound' ? message.actor_name || 'Customer' : message.actor_name || 'Stark Packmate'}</span><span className="text-[10px] text-slate-400">{formatDateTime(message.received_at ?? message.sent_at)}</span></div>{isSafeMediaUrl(message.media_url) ? <a href={message.media_url!} target="_blank" rel="noopener noreferrer" className="mt-3 block overflow-hidden rounded-xl border border-slate-200 bg-white"><img src={message.media_url!} alt="Customer supplied attachment" className="max-h-64 w-full object-contain" /><span className="block px-3 py-2 text-[10px] font-bold text-blue-700">Open customer image ↗</span></a> : null}<p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-800">{message.message_text || `[${message.message_type || 'message'}]`}</p>{message.intelligence && (message.intelligence.companyName || message.intelligence.brandName) ? <div className="mt-2 rounded-xl border border-violet-100 bg-violet-50 p-2.5 text-[10px] text-violet-800"><strong>Setu Guru:</strong> {message.intelligence.companyName ? `possible company ${message.intelligence.companyName}` : ''}{message.intelligence.companyName && message.intelligence.brandName ? ' · ' : ''}{message.intelligence.brandName ? `possible brand ${message.intelligence.brandName}` : ''}{typeof message.intelligence.confidence === 'number' ? ` · ${Math.round(message.intelligence.confidence * 100)}%` : ''}{message.intelligence.evidence ? <div className="mt-1 font-normal">{message.intelligence.evidence}</div> : null}</div> : null}{message.direction === 'outbound' ? <p className="mt-2 text-[10px] font-bold text-emerald-700">{message.read_at ? 'Read' : message.delivered_at ? 'Delivered' : message.status}</p> : null}</div>)}
                     {!selectedMessages.length ? <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">No message webhook history captured yet. Existing Interakt history remains in Interakt; new inbound/outbound events will appear here after webhook configuration.</p> : null}
                   </div>
                 </section>
