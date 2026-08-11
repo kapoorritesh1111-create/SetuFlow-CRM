@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
@@ -99,6 +100,7 @@ export default async function LeadsPage({
   const initialFastField = quickLeadEnabled && Boolean(eventId);
   const modeLeadType = readModeLeadType(searchParams?.mode);
   const isTradeShowQuickLead = quickLeadEnabled && readParam(searchParams?.sourceType).trim() === 'trade_event';
+  const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -138,6 +140,18 @@ export default async function LeadsPage({
         {guidedTrialCoach ? (
           <div className="rounded-panel border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900 shadow-sm">
             Trade Show Trial mode: this list shows captured booth leads. You can add follow-up tasks, but quotes and orders stay preview-only until upgrade.
+          </div>
+        ) : null}
+        {isStarkPackmate && workspace.canAccessAdmin ? (
+          <div className="flex items-center justify-between gap-4 rounded-panel border border-blue-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white">Inbound</span>
+                <p className="text-sm font-bold text-slate-900">Interakt qualification queue</p>
+              </div>
+              <p className="mt-1 text-xs text-slate-600">Review WhatsApp/Instagram contacts with Setu Guru before they enter the qualified Lead Queue.</p>
+            </div>
+            <Link href="/leads/inbound" className="shrink-0 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Open Inbound →</Link>
           </div>
         ) : null}
         <LeadEventFilterNarrower
