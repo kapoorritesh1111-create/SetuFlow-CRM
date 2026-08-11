@@ -1,0 +1,121 @@
+.workspace {
+  --inbound-border: #e2e8f0;
+  --inbound-muted: #64748b;
+  --inbound-ink: #0f172a;
+  position: relative;
+}
+
+.workspace::before {
+  content: '';
+  position: absolute;
+  inset: -12px -8px auto;
+  height: 180px;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, 0.07), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(124, 58, 237, 0.05), transparent 32%);
+}
+
+.workspace :global(input),
+.workspace :global(select),
+.workspace :global(textarea) {
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.workspace :global(input:focus),
+.workspace :global(select:focus),
+.workspace :global(textarea:focus) {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.workspace :global(button),
+.workspace :global(a) {
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.workspace :global(table) {
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace :global(thead) {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  box-shadow: inset 0 -1px 0 var(--inbound-border);
+}
+
+.workspace :global(thead th) {
+  height: 44px;
+  background: rgba(248, 250, 252, 0.97) !important;
+  backdrop-filter: blur(10px);
+  color: #475569 !important;
+  font-size: 10px !important;
+  letter-spacing: 0.08em !important;
+}
+
+.workspace :global(tbody td) {
+  min-height: 58px;
+  padding-top: 13px !important;
+  padding-bottom: 13px !important;
+  vertical-align: middle;
+}
+
+.workspace :global(tbody tr) {
+  background: #fff;
+  transition: background-color 130ms ease, box-shadow 130ms ease;
+}
+
+.workspace :global(tbody tr:nth-child(even)) {
+  background: rgba(248, 250, 252, 0.42);
+}
+
+.workspace :global(tbody tr:hover) {
+  background: rgba(239, 246, 255, 0.72) !important;
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.workspace :global(tbody td:first-child p:first-child) {
+  font-size: 12px !important;
+  letter-spacing: -0.01em;
+}
+
+.workspace :global(tbody td) {
+  font-size: 11px;
+  color: #334155;
+}
+
+.workspace :global(.shadow-sm) {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.035);
+}
+
+.workspace :global(.rounded-2xl.border.border-slate-200.bg-white) {
+  border-color: rgba(203, 213, 225, 0.78);
+}
+
+.workspace :global(.overflow-x-auto) {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.workspace :global(.overflow-x-auto::-webkit-scrollbar) {
+  height: 8px;
+}
+
+.workspace :global(.overflow-x-auto::-webkit-scrollbar-thumb) {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.workspace :global(.overflow-x-auto::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+@media (min-width: 1280px) {
+  .workspace {
+    max-width: 1680px;
+    margin-inline: auto;
+  }
+}
