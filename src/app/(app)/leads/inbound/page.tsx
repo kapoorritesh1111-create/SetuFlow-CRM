@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { logStarkInteraktCall } from '@/features/integrations/interakt/review-actions';
-import { sendStarkInteraktSalesFollowUp } from '@/features/integrations/interakt/sales-message-actions';
+import { sendStarkInteraktSalesFollowUp, sendStarkInteraktSalesText } from '@/features/integrations/interakt/sales-message-actions';
 import {
   acceptStarkInteraktCompanySuggestion,
   readStarkInteraktConversation,
@@ -183,6 +183,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const whatsappReplyWindowOpen = withinWhatsAppReplyWindow(selected.last_inbound_at);
   const customerName = selected.person_name || selected.contact_name || 'Customer';
   const followUpContext = [selected.pouch_type || selected.packaging_type, selected.quantity_text].filter(Boolean).join(' · ') || (leadBlockers.length ? leadBlockers.map(missingLabel).join(', ') : 'Packaging follow-up');
+  const suggestedWhatsappMessage = `Hi ${customerName}, thank you for sharing your packaging requirement. I have the details for ${followUpContext}. How can I help you with the next step?`;
   const summaryRows: Array<[string, unknown, boolean]> = [
     ['Company', selected.company_name, true],
     ['Brand', selected.brand_name, false],
@@ -263,18 +264,20 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
               <summary className="cursor-pointer text-xs font-black text-slate-800">💬 Message customer</summary>
               <div className="mt-4 space-y-3">
                 <div className={`rounded-xl border px-3 py-2 ${whatsappReplyWindowOpen ? 'border-emerald-200 bg-emerald-50' : 'border-blue-200 bg-blue-50'}`}>
-                  <div className="flex items-center justify-between gap-2"><p className={`text-[10px] font-black ${whatsappReplyWindowOpen ? 'text-emerald-800' : 'text-blue-800'}`}>WhatsApp follow-up</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${whatsappReplyWindowOpen ? 'bg-white text-emerald-700' : 'bg-white text-blue-700'}`}>{whatsappReplyWindowOpen ? 'Recent customer reply' : 'Template required'}</span></div>
-                  <p className={`mt-1 text-[10px] leading-4 ${whatsappReplyWindowOpen ? 'text-emerald-700' : 'text-blue-700'}`}>{whatsappReplyWindowOpen ? 'The customer replied within the last 24 hours. Setu Flow will send Stark Packmate’s configured follow-up.' : 'The WhatsApp reply window is not recent, so Setu Flow will use Stark Packmate’s configured follow-up template.'}</p>
+                  <div className="flex items-center justify-between gap-2"><p className={`text-[10px] font-black ${whatsappReplyWindowOpen ? 'text-emerald-800' : 'text-blue-800'}`}>WhatsApp</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${whatsappReplyWindowOpen ? 'bg-white text-emerald-700' : 'bg-white text-blue-700'}`}>{whatsappReplyWindowOpen ? 'Free reply window open' : 'Template required'}</span></div>
+                  <p className={`mt-1 text-[10px] leading-4 ${whatsappReplyWindowOpen ? 'text-emerald-700' : 'text-blue-700'}`}>{whatsappReplyWindowOpen ? 'The customer replied within the last 24 hours. Type or edit your reply below and send it from Setu Flow.' : 'The 24-hour reply window has closed. Use an approved WhatsApp follow-up template to reopen the conversation.'}</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <p className="text-[9px] font-black uppercase tracking-wide text-slate-500">Message personalization</p>
-                  <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2"><div><p className="text-[9px] text-slate-400">Customer</p><p className="font-bold text-slate-800">{customerName}</p></div><div><p className="text-[9px] text-slate-400">Requirement / follow-up</p><p className="font-bold text-slate-800">{followUpContext}</p></div></div>
-                </div>
-                <form action={sendStarkInteraktSalesFollowUp}>
+                {whatsappReplyWindowOpen ? <form action={sendStarkInteraktSalesText} className="space-y-2">
                   <input type="hidden" name="rowId" value={selected.id} />
-                  <input type="hidden" name="messagePreset" value="qualification_follow_up" />
-                  <PendingSubmitButton disabled={!canWorkInbound} idleLabel="Send WhatsApp follow-up" pendingLabel="Sending WhatsApp…" pendingDetail="Waiting for Interakt to accept the message" className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-black text-white" />
-                </form>
+                  <label className="block text-[9px] font-black uppercase tracking-wide text-slate-500">Your message<textarea name="message" required maxLength={4096} rows={5} defaultValue={suggestedWhatsappMessage} className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium leading-5 text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
+                  <div className="flex items-center justify-between gap-2"><p className="text-[9px] text-slate-400">Editable before sending · sent from Stark Packmate’s WhatsApp</p><span className="text-[9px] font-bold text-emerald-700">24h reply</span></div>
+                  <PendingSubmitButton disabled={!canWorkInbound} idleLabel="Send WhatsApp" pendingLabel="Sending WhatsApp…" pendingDetail="Waiting for Interakt to accept your message" className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-black text-white" />
+                </form> : null}
+                <details className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" open={!whatsappReplyWindowOpen}>
+                  <summary className="cursor-pointer text-[10px] font-bold text-slate-600">Use approved follow-up instead</summary>
+                  <div className="mt-2"><div className="grid gap-2 text-xs sm:grid-cols-2"><div><p className="text-[9px] text-slate-400">Customer</p><p className="font-bold text-slate-800">{customerName}</p></div><div><p className="text-[9px] text-slate-400">Requirement / follow-up</p><p className="font-bold text-slate-800">{followUpContext}</p></div></div>
+                  <form action={sendStarkInteraktSalesFollowUp} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="messagePreset" value="qualification_follow_up" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Send approved follow-up" pendingLabel="Sending template…" pendingDetail="Waiting for Interakt to accept the approved message" className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-700" /></form></div>
+                </details>
               </div>
             </details>
             <details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Log call" pendingLabel="Saving call…" className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white" /></form></details>
