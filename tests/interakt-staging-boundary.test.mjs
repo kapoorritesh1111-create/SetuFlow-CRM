@@ -4,6 +4,9 @@ import fs from 'node:fs';
 
 const client = fs.readFileSync('src/features/integrations/interakt/client.ts', 'utf8');
 const server = fs.readFileSync('src/features/integrations/interakt/server.ts', 'utf8');
+const salesMessageActions = fs.readFileSync('src/features/integrations/interakt/sales-message-actions.ts', 'utf8');
+const workspaceV2 = fs.readFileSync('src/features/integrations/interakt/workspace-v2.ts', 'utf8');
+const pendingButton = fs.readFileSync('src/features/integrations/interakt/components/pending-submit-button.tsx', 'utf8');
 const reviewActions = fs.readFileSync('src/features/integrations/interakt/review-actions.ts', 'utf8');
 const webhook = fs.readFileSync('src/features/integrations/interakt/webhook.ts', 'utf8');
 const intelligence = fs.readFileSync('src/features/integrations/interakt/intelligence.ts', 'utf8');
@@ -13,7 +16,7 @@ const baseMigration = fs.readFileSync('supabase/migrations/20260811093000_intera
 const salesDeskMigration = fs.readFileSync('supabase/migrations/20260811112500_interakt_inbound_sales_desk.sql', 'utf8');
 const companyMigration = fs.readFileSync('supabase/migrations/20260811121500_interakt_company_media_intelligence.sql', 'utf8');
 
-const combinedRuntime = `${client}\n${server}\n${reviewActions}\n${webhook}\n${intelligence}\n${route}\n${inboundPage}`;
+const combinedRuntime = `${client}\n${server}\n${salesMessageActions}\n${workspaceV2}\n${reviewActions}\n${webhook}\n${intelligence}\n${route}\n${inboundPage}`;
 
 test('Interakt contacts retrieval uses the documented endpoint and Basic auth', () => {
   assert.match(client, /https:\/\/api\.interakt\.ai\/v1\/public\/apis\/users\//);
@@ -24,10 +27,21 @@ test('Interakt contacts retrieval uses the documented endpoint and Basic auth', 
 test('WhatsApp sending stays explicit and uses the public Interakt template endpoint', () => {
   assert.match(client, /https:\/\/api\.interakt\.ai\/v1\/public\/message\//);
   assert.match(client, /type: 'Template'/);
-  assert.match(server, /export async function sendStarkInteraktTemplate/);
-  assert.match(inboundPage, /Send Message/);
-  assert.match(inboundPage, /Send WhatsApp/);
+  assert.match(salesMessageActions, /sendInteraktTemplate/);
+  assert.match(salesMessageActions, /qualification_follow_up/);
+  assert.match(inboundPage, /Message customer/);
+  assert.match(inboundPage, /Send WhatsApp follow-up/);
+  assert.doesNotMatch(inboundPage, /name="templateName"/);
+  assert.doesNotMatch(inboundPage, /name="bodyValues"/);
   assert.doesNotMatch(webhook, /sendInteraktTemplate/);
+});
+
+test('long-running inbound actions expose visible pending feedback', () => {
+  assert.match(pendingButton, /useFormStatus/);
+  assert.match(pendingButton, /aria-busy/);
+  assert.match(inboundPage, /Syncing contacts/);
+  assert.match(inboundPage, /Evaluating…/);
+  assert.match(inboundPage, /Sending WhatsApp…/);
 });
 
 test('webhook verifies signature and records message and workflow evidence', () => {
@@ -82,25 +96,32 @@ test('image-derived identity remains human confirmed', () => {
   assert.match(inboundPage, /Use this brand/);
 });
 
-test('review workspace supports conversation, messaging and call logging', () => {
-  assert.match(inboundPage, /Review & Qualify/);
-  assert.match(inboundPage, /Customer supplied packaging/);
+test('sales inbox supports conversation, sales-safe messaging and call logging', () => {
+  assert.match(inboundPage, /Sales Inbox/);
+  assert.match(inboundPage, /Conversation/);
   assert.match(inboundPage, /Chatbot capture/);
-  assert.match(inboundPage, /Send Message/);
-  assert.match(inboundPage, /Log Call/);
+  assert.match(inboundPage, /Message customer/);
+  assert.match(inboundPage, /Log a call/);
+  assert.match(salesMessageActions, /sendStarkInteraktSalesFollowUp/);
   assert.match(reviewActions, /export async function logStarkInteraktCall/);
   assert.match(reviewActions, /event_type: 'call_logged'/);
 });
 
-test('lead conversion is human gated and duplicate checked', () => {
-  assert.match(server, /export async function qualifyStarkInteraktAsLead/);
-  assert.match(server, /row\.intake_status !== 'ready_to_qualify'/);
-  assert.match(server, /findDuplicateLead/);
-  assert.match(server, /\.from\('leads'\)\.insert/);
-  assert.match(server, /intake_status: 'qualified'/);
-  assert.match(inboundPage, /selected\.intake_status !== 'ready_to_qualify'/);
-  assert.match(inboundPage, /Convert to Lead/);
+test('lead conversion remains human controlled, duplicate checked and preserves captured requirement', () => {
+  assert.match(workspaceV2, /createStarkInteraktLeadOverride/);
+  assert.match(workspaceV2, /findDuplicateLead/);
+  assert.match(workspaceV2, /\.from\('leads'\)\.insert/);
+  assert.match(workspaceV2, /lead_product_interests/);
+  assert.match(workspaceV2, /interest_type: 'captured_requirement'/);
+  assert.match(workspaceV2, /intake_status: 'qualified'/);
+  assert.match(inboundPage, /Create Lead/);
   assert.doesNotMatch(webhook, /\.from\(['"]leads['"]\)/);
+});
+
+test('browsing-only contacts stay out of active sales queue', () => {
+  assert.match(workspaceV2, /sales_queue_suppressed/);
+  assert.match(workspaceV2, /browsingHidden/);
+  assert.match(inboundPage, /browsing hidden/);
 });
 
 test('active queue hides terminal statuses and incremental sync preserves status', () => {
