@@ -20,6 +20,13 @@ type InteraktFilter = {
   supr_op?: 'and';
 };
 
+type InteraktTextSendInput = {
+  countryCode: string;
+  phoneNumber: string;
+  message: string;
+  callbackData?: string;
+};
+
 export function getInteraktApiKey() {
   const key = process.env.INTERAKT_STARK_PACKMATE_API_KEY?.trim();
   if (!key) throw new Error('INTERAKT_STARK_PACKMATE_API_KEY is not configured.');
@@ -179,28 +186,7 @@ function compactPhone(value: string) {
   return value.replace(/[^0-9]/g, '');
 }
 
-export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Promise<InteraktTemplateSendResult> {
-  const countryDigits = compactPhone(input.countryCode);
-  const countryCode = countryDigits ? `+${countryDigits}` : '';
-  const phoneNumber = compactPhone(input.phoneNumber);
-  if (!countryCode || !phoneNumber) throw new Error('A valid WhatsApp country code and phone number are required.');
-  if (!input.templateName.trim()) throw new Error('An approved Interakt template name is required.');
-
-  const payload: Record<string, unknown> = {
-    countryCode,
-    phoneNumber,
-    type: 'Template',
-    template: {
-      name: input.templateName.trim(),
-      languageCode: input.languageCode.trim() || 'en',
-      bodyValues: input.bodyValues ?? [],
-      ...(input.headerValues?.length ? { headerValues: input.headerValues } : {}),
-      ...(input.buttonValues && Object.keys(input.buttonValues).length ? { buttonValues: input.buttonValues } : {}),
-    },
-    ...(input.callbackData ? { callbackData: input.callbackData } : {}),
-    ...(input.campaignId ? { campaignId: input.campaignId } : {}),
-  };
-
+async function postInteraktMessage(payload: Record<string, unknown>): Promise<InteraktTemplateSendResult> {
   const response = await fetch(INTERAKT_MESSAGE_URL, {
     method: 'POST',
     headers: {
@@ -228,4 +214,45 @@ export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Pr
   const id = String(result.id ?? result.message_id ?? result.messageId ?? '').trim();
   if (!id) throw new Error('Interakt accepted the request but did not return a message id.');
   return { id, message: String(result.message ?? '').trim() || null };
+}
+
+export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Promise<InteraktTemplateSendResult> {
+  const countryDigits = compactPhone(input.countryCode);
+  const countryCode = countryDigits ? `+${countryDigits}` : '';
+  const phoneNumber = compactPhone(input.phoneNumber);
+  if (!countryCode || !phoneNumber) throw new Error('A valid WhatsApp country code and phone number are required.');
+  if (!input.templateName.trim()) throw new Error('An approved Interakt template name is required.');
+
+  return postInteraktMessage({
+    countryCode,
+    phoneNumber,
+    type: 'Template',
+    template: {
+      name: input.templateName.trim(),
+      languageCode: input.languageCode.trim() || 'en',
+      bodyValues: input.bodyValues ?? [],
+      ...(input.headerValues?.length ? { headerValues: input.headerValues } : {}),
+      ...(input.buttonValues && Object.keys(input.buttonValues).length ? { buttonValues: input.buttonValues } : {}),
+    },
+    ...(input.callbackData ? { callbackData: input.callbackData } : {}),
+    ...(input.campaignId ? { campaignId: input.campaignId } : {}),
+  });
+}
+
+export async function sendInteraktText(input: InteraktTextSendInput): Promise<InteraktTemplateSendResult> {
+  const countryDigits = compactPhone(input.countryCode);
+  const countryCode = countryDigits ? `+${countryDigits}` : '';
+  const phoneNumber = compactPhone(input.phoneNumber);
+  const message = input.message.trim();
+  if (!countryCode || !phoneNumber) throw new Error('A valid WhatsApp country code and phone number are required.');
+  if (!message) throw new Error('Type a WhatsApp message before sending.');
+  if (message.length > 4096) throw new Error('WhatsApp messages can be up to 4096 characters.');
+
+  return postInteraktMessage({
+    countryCode,
+    phoneNumber,
+    type: 'Text',
+    data: { message },
+    ...(input.callbackData ? { callbackData: input.callbackData } : {}),
+  });
 }
