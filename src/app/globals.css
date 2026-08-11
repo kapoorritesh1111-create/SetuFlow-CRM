@@ -171,6 +171,16 @@ aside nav a[href^="/reports"] {
   overflow: hidden !important;
 }
 
+/* Inbound qualification review is a sticky work panel, not a modal drawer. Give it its own viewport scroll region. */
+@media (min-width: 1280px) {
+  body:has(a[href="/leads/inbound"][class*="border-blue-500"]) aside[class*="xl:sticky"] {
+    max-height: calc(125dvh - 7rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
 /* Production-safe guided trial mobile compression. The marker is only rendered for guided-trial orgs and can be disabled with NEXT_PUBLIC_TRIAL_MOBILE_COMPRESSION=off. */
 @media (max-width: 767px) {
   body:has(.sf-mobile-trial-compress) main,
