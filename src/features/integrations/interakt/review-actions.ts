@@ -18,15 +18,17 @@ function clean(value: unknown) {
 
 async function requireStarkPackmateSalesAccess() {
   const workspace = await requireWorkspace();
-  const isStark = workspace.organization?.id === STARK_PACKMATE_ORG_ID
-    || String(workspace.organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  if (!isStark || !workspace.user || !workspace.organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
+  const organization = workspace.organization;
+  const user = workspace.user;
+  const isStark = organization?.id === STARK_PACKMATE_ORG_ID
+    || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
+  if (!isStark || !user || !organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
   if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
-  return workspace;
+  return { workspace, organization, user };
 }
 
 export async function logStarkInteraktCall(formData: FormData): Promise<void> {
-  const workspace = await requireStarkPackmateSalesAccess();
+  const { workspace, organization, user } = await requireStarkPackmateSalesAccess();
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
 
@@ -39,17 +41,17 @@ export async function logStarkInteraktCall(formData: FormData): Promise<void> {
   const { data: intake, error: intakeError } = await db.from('lead_intake_staging')
     .select('id, full_phone_number')
     .eq('id', rowId)
-    .eq('organization_id', workspace.organization.id)
+    .eq('organization_id', organization.id)
     .eq('source_provider', SOURCE_PROVIDER)
     .maybeSingle();
   if (intakeError || !intake?.id) throw new Error('Inbound inquiry not found.');
 
   const now = new Date().toISOString();
   const summary = [disposition, duration ? `Duration: ${duration}` : null, notes || null].filter(Boolean).join('\n');
-  const actorName = workspace.profile?.full_name ?? workspace.user.email ?? 'Setu Flow user';
+  const actorName = workspace.profile?.full_name ?? user.email ?? 'Setu Flow user';
 
   const { error } = await db.from('lead_intake_messages').insert({
-    organization_id: workspace.organization.id,
+    organization_id: organization.id,
     intake_id: intake.id,
     provider: SOURCE_PROVIDER,
     external_message_id: `setu-call:${randomUUID()}`,
@@ -64,7 +66,7 @@ export async function logStarkInteraktCall(formData: FormData): Promise<void> {
       duration: duration || null,
       notes: notes || null,
       phone: intake.full_phone_number ?? null,
-      actor_user_id: workspace.user.id,
+      actor_user_id: user.id,
     },
     sent_at: now,
     status: 'logged',
@@ -75,7 +77,7 @@ export async function logStarkInteraktCall(formData: FormData): Promise<void> {
   await db.from('lead_intake_staging')
     .update({ source_modified_at: now, updated_at: now })
     .eq('id', rowId)
-    .eq('organization_id', workspace.organization.id)
+    .eq('organization_id', organization.id)
     .eq('source_provider', SOURCE_PROVIDER);
 
   revalidatePath(INBOUND_PATH);
