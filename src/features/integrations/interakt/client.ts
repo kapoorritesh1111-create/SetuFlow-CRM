@@ -37,6 +37,7 @@ function asContacts(payload: InteraktUsersResponse): InteraktContact[] {
   if (Array.isArray(payload.users)) return payload.users;
   if (Array.isArray(payload.data)) return payload.data;
   if (payload.data && !Array.isArray(payload.data)) {
+    if (Array.isArray(payload.data.customers)) return payload.data.customers;
     if (Array.isArray(payload.data.users)) return payload.data.users;
     if (Array.isArray(payload.data.result)) return payload.data.result;
   }
@@ -75,11 +76,15 @@ function buildFilters(filters: InteraktFetchFilters): InteraktFilter[] {
 }
 
 export function normalizeInteraktContact(contact: InteraktContact, index: number): NormalizedInteraktContact {
+  const traits = toTraitsObject(contact.traits);
   const countryCode = cleanPhonePart(contact.country_code);
   const phoneNumber = cleanPhonePart(contact.phone_number);
   const fullPhoneNumber = cleanPhonePart(contact.full_phone_number)
     ?? (countryCode || phoneNumber ? `${countryCode ?? ''}${phoneNumber ?? ''}` : null);
   const externalContactId = String(contact.id ?? contact.user_id ?? fullPhoneNumber ?? `interakt-row-${index}`).trim();
+  const traitName = String(traits.name ?? '').trim() || null;
+  const traitEmail = String(traits.email ?? '').trim() || null;
+  const traitOptIn = typeof traits.whatsapp_opted_in === 'boolean' ? traits.whatsapp_opted_in : null;
 
   return {
     externalContactId,
@@ -87,17 +92,17 @@ export function normalizeInteraktContact(contact: InteraktContact, index: number
     phoneNumber,
     countryCode,
     fullPhoneNumber,
-    contactName: String(contact.name ?? '').trim() || null,
-    email: String(contact.email ?? '').trim() || null,
+    contactName: String(contact.name ?? '').trim() || traitName,
+    email: String(contact.email ?? '').trim() || traitEmail,
     whatsappOptedIn: typeof contact.opt_in === 'boolean'
       ? contact.opt_in
       : typeof contact.opted_in === 'boolean'
         ? contact.opted_in
-        : null,
+        : traitOptIn,
     sourceCreatedAt: normalizeDate(contact.created_at_utc),
     sourceModifiedAt: normalizeDate(contact.modified_at_utc),
-    sourceCreatedVia: String(contact.created_via ?? '').trim() || null,
-    traits: toTraitsObject(contact.traits),
+    sourceCreatedVia: String(contact.customer_created_at_source ?? contact.created_via ?? '').trim() || null,
+    traits,
     rawPayload: contact,
   };
 }
@@ -109,14 +114,13 @@ export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) 
   url.searchParams.set('offset', String(offset));
   url.searchParams.set('limit', String(limit));
 
-  const interaktFilters = buildFilters(filters);
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${getApiKey()}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ filters: interaktFilters }),
+    body: JSON.stringify({ filters: buildFilters(filters) }),
     cache: 'no-store',
     signal: AbortSignal.timeout(10_000),
   });
@@ -129,7 +133,7 @@ export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) 
     throw new Error(`Interakt returned a non-JSON response (${response.status}).`);
   }
 
-  if (!response.ok) {
+  if (!response.ok || payload.result === false) {
     const safeMessage = typeof payload.message === 'string'
       ? payload.message
       : typeof payload.detail === 'string'
@@ -138,10 +142,11 @@ export async function fetchInteraktContacts(filters: InteraktFetchFilters = {}) 
     throw new Error(safeMessage);
   }
 
+  const nestedHasNextPage = payload.data && !Array.isArray(payload.data) ? payload.data.has_next_page : undefined;
   return {
     contacts: asContacts(payload).map(normalizeInteraktContact),
     offset,
     limit,
-    hasNextPage: Boolean(payload.has_next_page),
+    hasNextPage: Boolean(nestedHasNextPage ?? payload.has_next_page),
   };
 }
