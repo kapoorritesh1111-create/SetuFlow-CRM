@@ -28,6 +28,8 @@ export type CatalogBrochure = {
   family_ids: string[];
   family_names: string[];
   family_slugs: string[];
+  category_ids: string[];
+  category_names: string[];
 };
 
 function clean(value: unknown) {
@@ -55,12 +57,23 @@ async function workspaceWithRole(allowed: Set<string>) {
   return workspace;
 }
 
+async function validateMappings(admin: any, organizationId: string, familyIds: string[], categoryIds: string[]) {
+  if (familyIds.length) {
+    const { data: families, error } = await admin.from('packaging_service_families').select('id').eq('organization_id', organizationId).in('id', familyIds);
+    if (error || (families ?? []).length !== new Set(familyIds).size) throw new Error('One or more selected product families are invalid.');
+  }
+  if (categoryIds.length) {
+    const { data: categories, error } = await admin.from('product_categories').select('id').eq('organization_id', organizationId).in('id', categoryIds);
+    if (error || (categories ?? []).length !== new Set(categoryIds).size) throw new Error('One or more selected product categories are invalid.');
+  }
+}
+
 export async function listCatalogBrochures(input?: { includeInactive?: boolean }) {
   const workspace = await requireWorkspace();
   if (!workspace.organization || !workspace.membership) return [] as CatalogBrochure[];
   const db: any = await createClient();
   let query = db.from('catalog_brochures')
-    .select('id, organization_id, name, description, file_name, file_size, storage_bucket, storage_path, is_active, created_at, catalog_brochure_families(packaging_family_id, packaging_service_families(id,name,slug))')
+    .select('id, organization_id, name, description, file_name, file_size, storage_bucket, storage_path, is_active, created_at, catalog_brochure_families(packaging_family_id, packaging_service_families(id,name,slug)), catalog_brochure_categories(product_category_id, product_categories(id,name))')
     .eq('organization_id', workspace.organization.id)
     .order('created_at', { ascending: false });
   if (!input?.includeInactive) query = query.eq('is_active', true);
@@ -70,8 +83,10 @@ export async function listCatalogBrochures(input?: { includeInactive?: boolean }
     throw new Error(`Brochures could not load: ${String(error.message ?? 'unknown database error')}`);
   }
   return (data ?? []).map((row: any) => {
-    const mappings = Array.isArray(row.catalog_brochure_families) ? row.catalog_brochure_families : [];
-    const families = mappings.map((mapping: any) => mapping.packaging_service_families).filter(Boolean);
+    const familyMappings = Array.isArray(row.catalog_brochure_families) ? row.catalog_brochure_families : [];
+    const families = familyMappings.map((mapping: any) => mapping.packaging_service_families).filter(Boolean);
+    const categoryMappings = Array.isArray(row.catalog_brochure_categories) ? row.catalog_brochure_categories : [];
+    const categories = categoryMappings.map((mapping: any) => mapping.product_categories).filter(Boolean);
     return {
       id: row.id,
       organization_id: row.organization_id,
@@ -86,6 +101,8 @@ export async function listCatalogBrochures(input?: { includeInactive?: boolean }
       family_ids: families.map((family: any) => String(family.id)),
       family_names: families.map((family: any) => String(family.name)),
       family_slugs: families.map((family: any) => String(family.slug)),
+      category_ids: categories.map((category: any) => String(category.id)),
+      category_names: categories.map((category: any) => String(category.name)),
     } satisfies CatalogBrochure;
   });
 }
@@ -96,6 +113,7 @@ export async function uploadCatalogBrochure(formData: FormData): Promise<void> {
   const name = clean(formData.get('name'));
   const description = clean(formData.get('description')) || null;
   const familyIds = formData.getAll('family_ids').map(clean).filter(Boolean);
+  const categoryIds = formData.getAll('category_ids').map(clean).filter(Boolean);
   const file = formData.get('file');
   if (!name) throw new Error('Brochure name is required.');
   if (!(file instanceof File) || file.size <= 0) throw new Error('Choose a PDF brochure to upload.');
@@ -104,10 +122,7 @@ export async function uploadCatalogBrochure(formData: FormData): Promise<void> {
 
   const admin = createAdminSupabaseClient() as any;
   if (!admin) throw new Error('Database admin client is unavailable.');
-  if (familyIds.length) {
-    const { data: families, error: familyError } = await admin.from('packaging_service_families').select('id').eq('organization_id', organizationId).in('id', familyIds);
-    if (familyError || (families ?? []).length !== new Set(familyIds).size) throw new Error('One or more selected product families are invalid.');
-  }
+  await validateMappings(admin, organizationId, familyIds, categoryIds);
 
   const brochureId = randomUUID();
   const normalizedName = safeFileName(file.name.endsWith('.pdf') ? file.name : `${file.name}.pdf`);
@@ -137,6 +152,10 @@ export async function uploadCatalogBrochure(formData: FormData): Promise<void> {
     const { error: mapError } = await admin.from('catalog_brochure_families').insert(familyIds.map((familyId) => ({ brochure_id: brochureId, packaging_family_id: familyId })));
     if (mapError) throw new Error(`Brochure uploaded, but product-family mapping failed: ${String(mapError.message ?? 'database error')}`);
   }
+  if (categoryIds.length) {
+    const { error: categoryMapError } = await admin.from('catalog_brochure_categories').insert(categoryIds.map((categoryId) => ({ brochure_id: brochureId, product_category_id: categoryId })));
+    if (categoryMapError) throw new Error(`Brochure uploaded, but product-category mapping failed: ${String(categoryMapError.message ?? 'database error')}`);
+  }
   revalidatePath('/admin/catalog');
   revalidatePath('/admin/catalog/brochures');
 }
@@ -148,19 +167,21 @@ export async function updateCatalogBrochure(formData: FormData): Promise<void> {
   const name = clean(formData.get('name'));
   const description = clean(formData.get('description')) || null;
   const familyIds = formData.getAll('family_ids').map(clean).filter(Boolean);
+  const categoryIds = formData.getAll('category_ids').map(clean).filter(Boolean);
   if (!id || !name) throw new Error('Brochure and brochure name are required.');
   const admin = createAdminSupabaseClient() as any;
   if (!admin) throw new Error('Database admin client is unavailable.');
   const { data: brochure, error: loadError } = await admin.from('catalog_brochures').select('id').eq('id', id).eq('organization_id', organizationId).maybeSingle();
   if (loadError || !brochure?.id) throw new Error('Brochure not found.');
-  if (familyIds.length) {
-    const { data: families } = await admin.from('packaging_service_families').select('id').eq('organization_id', organizationId).in('id', familyIds);
-    if ((families ?? []).length !== new Set(familyIds).size) throw new Error('One or more selected product families are invalid.');
-  }
+  await validateMappings(admin, organizationId, familyIds, categoryIds);
   const { error } = await admin.from('catalog_brochures').update({ name, description, is_active: formData.get('is_active') === 'on', updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', organizationId);
   if (error) throw new Error(`Brochure could not be updated: ${String(error.message ?? 'database error')}`);
-  await admin.from('catalog_brochure_families').delete().eq('brochure_id', id);
+  await Promise.all([
+    admin.from('catalog_brochure_families').delete().eq('brochure_id', id),
+    admin.from('catalog_brochure_categories').delete().eq('brochure_id', id),
+  ]);
   if (familyIds.length) await admin.from('catalog_brochure_families').insert(familyIds.map((familyId) => ({ brochure_id: id, packaging_family_id: familyId })));
+  if (categoryIds.length) await admin.from('catalog_brochure_categories').insert(categoryIds.map((categoryId) => ({ brochure_id: id, product_category_id: categoryId })));
   revalidatePath('/admin/catalog/brochures');
 }
 
@@ -171,6 +192,14 @@ export async function createCatalogBrochureShare(input: { brochureId: string; le
   if (!admin) throw new Error('Database admin client is unavailable.');
   const { data: brochure, error } = await admin.from('catalog_brochures').select('id,name,is_active').eq('id', input.brochureId).eq('organization_id', organizationId).maybeSingle();
   if (error || !brochure?.id || brochure.is_active === false) throw new Error('Selected brochure is unavailable.');
+  if (input.leadId) {
+    const { data: lead } = await admin.from('leads').select('id').eq('id', input.leadId).eq('organization_id', organizationId).maybeSingle();
+    if (!lead?.id) throw new Error('Lead does not belong to this workspace.');
+  }
+  if (input.intakeId) {
+    const { data: intake } = await admin.from('lead_intake_staging').select('id').eq('id', input.intakeId).eq('organization_id', organizationId).maybeSingle();
+    if (!intake?.id) throw new Error('Inquiry does not belong to this workspace.');
+  }
   const token = randomBytes(24).toString('hex');
   const { data: share, error: shareError } = await admin.from('catalog_brochure_shares').insert({
     organization_id: organizationId,
@@ -186,11 +215,11 @@ export async function createCatalogBrochureShare(input: { brochureId: string; le
   return { id: share.id as string, token: share.token as string, brochureName: brochure.name as string, url: `${requestBaseUrl()}/brochure/${share.token}` };
 }
 
-export function brochureMatchesContext(brochure: Pick<CatalogBrochure, 'family_names' | 'family_slugs'>, context: string | null | undefined) {
+export function brochureMatchesContext(brochure: Pick<CatalogBrochure, 'family_names' | 'family_slugs' | 'category_names'>, context: string | null | undefined) {
   const normalized = clean(context).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   if (!normalized) return false;
-  return [...brochure.family_names, ...brochure.family_slugs].some((value) => {
-    const family = clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    return Boolean(family && (normalized.includes(family) || family.includes(normalized)));
+  return [...brochure.family_names, ...brochure.family_slugs, ...brochure.category_names].some((value) => {
+    const candidate = clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    return Boolean(candidate && (normalized.includes(candidate) || candidate.includes(normalized)));
   });
 }
