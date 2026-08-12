@@ -42,14 +42,16 @@ test('S51-CAT-011 supports generic product categories and packaging families', (
   assert.match(server, /packaging_service_families/);
   assert.match(adminPage, /Standard product categories/);
   assert.match(adminPage, /Packaging service families/);
+  assert.match(inboundComposer, /category_names/);
 });
 
-test('S51-CAT-011 admin Catalog exposes brochure upload and management', () => {
+test('S51-CAT-011 admin Catalog exposes brochure upload and management without new banned typography utilities', () => {
   assert.match(catalogPage, /\/admin\/catalog\/brochures/);
   assert.match(adminPage, /Upload a PDF catalog/);
   assert.match(adminPage, /Available to sales/);
   assert.match(adminPage, /uploadCatalogBrochure/);
   assert.match(adminPage, /updateCatalogBrochure/);
+  assert.doesNotMatch(adminPage, /tracking-\[|font-black|font-extrabold/);
 });
 
 test('S51-CAT-011 public brochure viewer stays login-free, private-storage backed, and token styled', () => {
@@ -60,13 +62,22 @@ test('S51-CAT-011 public brochure viewer stays login-free, private-storage backe
   assert.match(publicFile, /createSignedUrl/);
 });
 
-test('S51-CAT-011 inbound inquiry composer can select and send a brochure link', () => {
+test('S51-CAT-011 inbound inquiry composer recommends but requires explicit brochure selection', () => {
   assert.match(inboundComposer, /Catalog \/ brochure/);
   assert.match(inboundComposer, /Recommended ·/);
   assert.match(inboundComposer, /name="brochureId"/);
+  assert.match(inboundComposer, /No brochure/);
+  assert.match(inboundComposer, /Select it above to attach it/);
+  assert.doesNotMatch(inboundComposer, /setBrochureId\(recommended\.id\)/);
   assert.match(inboundActions, /createCatalogBrochureShare/);
   assert.match(inboundActions, /View our.*catalog/);
   assert.match(inboundActions, /brochure_share_id/);
+});
+
+test('S51-CAT-011 failed inbound sends discard only unsent brochure shares', () => {
+  assert.match(inboundActions, /discardUnsentBrochureShare/);
+  assert.match(inboundActions, /catch \(error\)[\s\S]*discardUnsentBrochureShare/);
+  assert.match(inboundActions, /recordOutboundMessage/);
 });
 
 test('S51-CAT-011 converted lead follow-up can insert family-aware brochure links', () => {
@@ -77,4 +88,5 @@ test('S51-CAT-011 converted lead follow-up can insert family-aware brochure link
   assert.match(followUpComposer, /Insert brochure link/);
   assert.match(followUpComposer, /lead’s product-family context/);
   assert.match(followUpComposer, /\/api\/catalog-brochures\/share/);
+  assert.doesNotMatch(followUpComposer, /font-black|font-extrabold/);
 });
