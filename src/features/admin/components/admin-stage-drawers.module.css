@@ -4,22 +4,30 @@
 .stageDrawerViewport :global([id^='next-step-'] aside) {
   height: 100dvh;
   max-height: 100dvh;
+  overflow-y: auto;
 }
 
 .stageDrawerViewport :global([id^='add-stage-'] aside > form),
 .stageDrawerViewport :global([id^='stage-'] aside > form),
 .stageDrawerViewport :global(#add-next-step-drawer aside > form),
 .stageDrawerViewport :global([id^='next-step-'] aside > form) {
+  flex: 0 0 auto;
   min-height: 0;
+  overflow: visible;
+}
+
+.stageDrawerViewport :global([id^='add-stage-'] aside > form > div),
+.stageDrawerViewport :global([id^='stage-'] aside > form > div),
+.stageDrawerViewport :global(#add-next-step-drawer aside > form > div),
+.stageDrawerViewport :global([id^='next-step-'] aside > form > div) {
+  flex: 0 0 auto;
 }
 
 .stageDrawerViewport :global([id^='add-stage-'] aside > form > div:last-child),
 .stageDrawerViewport :global([id^='stage-'] aside > form > div:last-child),
 .stageDrawerViewport :global(#add-next-step-drawer aside > form > div:last-child),
 .stageDrawerViewport :global([id^='next-step-'] aside > form > div:last-child) {
-  position: sticky;
-  bottom: 0;
+  position: static;
   z-index: 2;
-  flex-shrink: 0;
   background: white;
 }
