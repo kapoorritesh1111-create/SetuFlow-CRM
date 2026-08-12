@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { listCatalogBrochures, updateCatalogBrochure, uploadCatalogBrochure } from '@/features/catalog-brochures/server';
+import type { CatalogBrochure } from '@/features/catalog-brochures/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -15,11 +16,12 @@ export default async function CatalogBrochuresPage() {
   const { membership, organization } = await requireAdminWorkspace();
   if (!membership || !organization) return null;
   const db: any = await createClient();
-  const [brochures, familiesResult, categoriesResult] = await Promise.all([
+  const [brochureData, familiesResult, categoriesResult] = await Promise.all([
     listCatalogBrochures({ includeInactive: true }),
     db.from('packaging_service_families').select('id,name,slug,is_active').eq('organization_id', organization.id).order('sort_order', { ascending: true }).order('name', { ascending: true }),
     db.from('product_categories').select('id,name,is_active').eq('organization_id', organization.id).order('name', { ascending: true }),
   ]);
+  const brochures = brochureData as CatalogBrochure[];
   const families = (familiesResult.data ?? []) as Array<{ id: string; name: string; slug: string; is_active: boolean }>;
   const categories = (categoriesResult.data ?? []) as Array<{ id: string; name: string; is_active: boolean }>;
   const activeCount = brochures.filter((item) => item.is_active).length;
