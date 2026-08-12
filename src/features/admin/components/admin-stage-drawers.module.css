@@ -1,19 +1,25 @@
 .stageDrawerViewport :global([id^='add-stage-'] aside),
-.stageDrawerViewport :global([id^='stage-'] aside) {
+.stageDrawerViewport :global([id^='stage-'] aside),
+.stageDrawerViewport :global(#add-next-step-drawer aside),
+.stageDrawerViewport :global([id^='next-step-'] aside) {
   height: 100dvh;
   max-height: 100dvh;
 }
 
 .stageDrawerViewport :global([id^='add-stage-'] aside > form),
-.stageDrawerViewport :global([id^='stage-'] aside > form) {
+.stageDrawerViewport :global([id^='stage-'] aside > form),
+.stageDrawerViewport :global(#add-next-step-drawer aside > form),
+.stageDrawerViewport :global([id^='next-step-'] aside > form) {
   min-height: 0;
 }
 
 .stageDrawerViewport :global([id^='add-stage-'] aside > form > div:last-child),
-.stageDrawerViewport :global([id^='stage-'] aside > form > div:last-child) {
+.stageDrawerViewport :global([id^='stage-'] aside > form > div:last-child),
+.stageDrawerViewport :global(#add-next-step-drawer aside > form > div:last-child),
+.stageDrawerViewport :global([id^='next-step-'] aside > form > div:last-child) {
   position: sticky;
   bottom: 0;
   z-index: 2;
   flex-shrink: 0;
-  background: inherit;
+  background: white;
 }
