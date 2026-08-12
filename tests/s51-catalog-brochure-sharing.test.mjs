@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 const migration = read('supabase/migrations/20260812162000_catalog_brochure_sharing.sql');
 const categoryMigration = read('supabase/migrations/20260812162500_catalog_brochure_category_mapping.sql');
+const hardeningMigration = read('supabase/migrations/20260812165500_catalog_brochure_share_hardening.sql');
 const server = read('src/features/catalog-brochures/server.ts');
 const adminPage = read('src/app/(app)/admin/catalog/brochures/page.tsx');
 const catalogPage = read('src/app/(app)/admin/categories/page.tsx');
@@ -22,6 +23,16 @@ test('S51-CAT-011 stores organization brochures and opaque shares under RLS', ()
   assert.match(server, /organization-assets/);
   assert.match(server, /randomBytes\(24\)/);
   assert.match(server, /\/public\/brochure\//);
+});
+
+test('S51-CAT-011 enforces same-organization share relationships and atomic opens', () => {
+  assert.match(hardeningMigration, /enforce_catalog_brochure_share_scope/);
+  assert.match(hardeningMigration, /brochure\.organization_id = new\.organization_id/);
+  assert.match(hardeningMigration, /lead_row\.organization_id = new\.organization_id/);
+  assert.match(hardeningMigration, /intake_row\.organization_id = new\.organization_id/);
+  assert.match(hardeningMigration, /increment_catalog_brochure_share_open/);
+  assert.match(hardeningMigration, /open_count = open_count \+ 1/);
+  assert.match(publicFile, /rpc\('increment_catalog_brochure_share_open'/);
 });
 
 test('S51-CAT-011 supports generic product categories and packaging families', () => {
@@ -41,12 +52,12 @@ test('S51-CAT-011 admin Catalog exposes brochure upload and management', () => {
   assert.match(adminPage, /updateCatalogBrochure/);
 });
 
-test('S51-CAT-011 public brochure viewer stays login-free and private-storage backed', () => {
+test('S51-CAT-011 public brochure viewer stays login-free, private-storage backed, and token styled', () => {
   assert.match(publicPage, /Shared catalog/);
   assert.match(publicPage, /\/api\/public\/brochures\//);
+  assert.match(publicPage, /rounded-hero/);
+  assert.doesNotMatch(publicPage, /rounded-\[|tracking-\[|font-black|font-extrabold/);
   assert.match(publicFile, /createSignedUrl/);
-  assert.match(publicFile, /open_count/);
-  assert.match(publicFile, /last_opened_at/);
 });
 
 test('S51-CAT-011 inbound inquiry composer can select and send a brochure link', () => {
