@@ -15,5 +15,5 @@
   bottom: 0;
   z-index: 2;
   flex-shrink: 0;
-  background: white;
+  background: inherit;
 }
