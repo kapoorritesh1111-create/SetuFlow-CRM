@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { createCatalogBrochureShare } from '@/features/catalog-brochures/server';
 import { sendInteraktTemplate, sendInteraktText } from '@/features/integrations/interakt/client';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
@@ -106,10 +107,10 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
   const workspace = await requireStarkSalesAccess();
   const organizationId = workspace.organization!.id;
   const rowId = clean(formData.get('rowId'));
-  const message = clean(formData.get('message'));
+  const originalMessage = clean(formData.get('message'));
+  const brochureId = clean(formData.get('brochureId'));
   if (!rowId) throw new Error('Inbound inquiry is required.');
-  if (!message) throw new Error('Type a WhatsApp message before sending.');
-  if (message.length > 4096) throw new Error('WhatsApp messages can be up to 4096 characters.');
+  if (!originalMessage) throw new Error('Type a WhatsApp message before sending.');
 
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
@@ -118,11 +119,20 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
     throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
   }
 
+  let message = originalMessage;
+  let brochureShare: { id: string; url: string; brochureName: string } | null = null;
+  if (brochureId) {
+    brochureShare = await createCatalogBrochureShare({ brochureId, intakeId: row.id, channel: 'whatsapp' });
+    message = `${originalMessage}\n\nView our ${brochureShare.brochureName} catalog: ${brochureShare.url}`;
+  }
+  if (message.length > 4096) throw new Error('This message is too long after adding the brochure link. Shorten the message and try again.');
+
   const callbackData = JSON.stringify({
     source: 'setu_flow_inbound_sales',
     intake_id: row.id,
     actor_user_id: workspace.user!.id,
     mode: 'free_text',
+    brochure_share_id: brochureShare?.id ?? null,
   });
   const result = await sendInteraktText({
     countryCode: String(row.country_code),
@@ -139,7 +149,7 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
     messageType: 'Text',
     messageText: message,
     callbackData,
-    payload: { mode: 'free_text', message },
+    payload: { mode: 'free_text', message, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null },
   });
   revalidatePath(INBOUND_PATH);
 }
