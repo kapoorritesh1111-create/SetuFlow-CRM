@@ -146,7 +146,7 @@ export default function FollowUpComposer({ leadId, clientName, senderName, sende
             </select>
             {recommended ? <span className="text-[11px] font-semibold text-violet-700">✨ Setu recommends {recommended.name} from the lead’s product-family context.</span> : <span className="text-[11px] text-slate-500">Choose any active brochure configured by your admin.</span>}
           </label>
-          <button type="button" onClick={insertBrochureLink} disabled={!brochureId || linkState === 'loading'} className="h-10 rounded-xl border border-violet-200 bg-white px-4 text-xs font-black text-violet-700 disabled:opacity-40">{linkState === 'loading' ? 'Creating link…' : linkState === 'ready' ? 'Insert another link' : 'Insert brochure link'}</button>
+          <button type="button" onClick={insertBrochureLink} disabled={!brochureId || linkState === 'loading'} className="h-10 rounded-xl border border-violet-200 bg-white px-4 text-xs font-bold text-violet-700 disabled:opacity-40">{linkState === 'loading' ? 'Creating link…' : linkState === 'ready' ? 'Insert another link' : 'Insert brochure link'}</button>
           {linkMessage ? <p className={`text-[11px] md:col-span-2 ${linkState === 'error' ? 'text-rose-600' : 'text-emerald-700'}`}>{linkMessage}</p> : null}
         </div>
       ) : null}
