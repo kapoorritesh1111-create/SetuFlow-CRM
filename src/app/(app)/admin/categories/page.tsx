@@ -27,7 +27,7 @@ export default async function Page() {
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using this admin workspace." tone="warning" />;
   if (!membership || !organization) return null;
 
-  const supabase = await createClient();
+  const supabase: any = await createClient();
   const [categoriesResult, productsResult, pricingRulesResult, brochuresResult] = await Promise.all([
     supabase
       .from('product_categories')
