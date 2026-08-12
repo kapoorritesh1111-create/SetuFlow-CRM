@@ -1,5 +1,6 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import stageDrawerStyles from '@/features/admin/components/admin-stage-drawers.module.css';
 import { StagesAdminWorkspace } from '@/features/admin/components/admin-reference-workspaces';
 import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
 import { getAdminNavSignals } from '@/features/admin/server/nav-signals';
@@ -78,7 +79,9 @@ export default async function Page() {
           <p className="mt-1">Create your first pipeline to define the stages your leads move through.</p>
         </div>
       ) : null}
-      <StagesAdminWorkspace pipelines={pipelines} stages={stages} nextSteps={nextSteps} />
+      <div className={stageDrawerStyles.stageDrawerViewport}>
+        <StagesAdminWorkspace pipelines={pipelines} stages={stages} nextSteps={nextSteps} />
+      </div>
       {counts.markets === 0 ? (
         <KitNextStep icon="🌍" label="Add a market first to unlock pipelines" description="Markets must exist before pipeline stages can be created" href="/admin/markets" warn />
       ) : (
