@@ -19,20 +19,23 @@ export default async function PublicBrochurePage({ params }: { params: { token: 
   const organization = Array.isArray(brochure.organizations) ? brochure.organizations[0] : brochure.organizations;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-900 sm:px-6">
-      <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
-        <header className="border-b border-slate-100 px-6 py-5 sm:px-8">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Shared catalog</p>
+    <main className="min-h-screen bg-brand-950 px-4 py-8 text-content-primary sm:px-6">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-hero bg-surface-1 shadow-hero">
+        <header className="border-b border-line px-6 py-5 sm:px-8">
+          <p className="text-caption font-semibold uppercase text-brand-600">Shared catalog</p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-            <div><h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{brochure.name}</h1><p className="mt-1 text-sm font-semibold text-slate-500">Shared by {organization?.name || 'your supplier'}</p></div>
-            <a href={`/api/public/brochures/${token}/file`} target="_blank" rel="noreferrer" className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-black text-white">Open PDF</a>
+            <div>
+              <h1 className="text-title font-semibold text-content-primary">{brochure.name}</h1>
+              <p className="mt-1 text-small font-medium text-content-muted">Shared by {organization?.name || 'your supplier'}</p>
+            </div>
+            <a href={`/api/public/brochures/${token}/file`} target="_blank" rel="noreferrer" className="rounded-ctl bg-brand-700 px-4 py-2.5 text-small font-semibold text-content-inverse transition hover:bg-brand-800">Open PDF</a>
           </div>
-          {brochure.description ? <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">{brochure.description}</p> : null}
+          {brochure.description ? <p className="mt-4 max-w-3xl text-body text-content-secondary">{brochure.description}</p> : null}
         </header>
-        <section className="bg-slate-100 p-3 sm:p-5">
-          <iframe title={brochure.name} src={`/api/public/brochures/${token}/file`} className="h-[78vh] min-h-[640px] w-full rounded-2xl border border-slate-200 bg-white" />
+        <section className="bg-surface-2 p-3 sm:p-5">
+          <iframe title={brochure.name} src={`/api/public/brochures/${token}/file`} className="h-[78vh] min-h-[640px] w-full rounded-panel border border-line bg-surface-1" />
         </section>
-        <footer className="px-6 py-4 text-center text-[11px] font-medium text-slate-400">Secure brochure link powered by Setu Flow CRM</footer>
+        <footer className="px-6 py-4 text-center text-caption font-medium text-content-faint">Secure brochure link powered by Setu Flow CRM</footer>
       </div>
     </main>
   );
