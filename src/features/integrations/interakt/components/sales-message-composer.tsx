@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { sendStarkInteraktSalesFollowUp, sendStarkInteraktSalesText } from '@/features/integrations/interakt/sales-message-actions';
@@ -93,12 +93,29 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
   }, [customerName, companyName, packagingType, pouchType, quantityText]);
 
   const productContext = clean(pouchType) || clean(packagingType);
-  const orderedBrochures = useMemo(() => [...brochures].sort((a, b) => Number(brochureRecommended(b, productContext)) - Number(brochureRecommended(a, productContext))), [brochures, productContext]);
+  const [availableBrochures, setAvailableBrochures] = useState<BrochureOption[]>(brochures);
+  const [brochureId, setBrochureId] = useState('');
+  useEffect(() => {
+    if (brochures.length) {
+      setAvailableBrochures(brochures);
+      return;
+    }
+    let active = true;
+    void fetch('/api/catalog-brochures', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : { brochures: [] })
+      .then((payload) => { if (active && Array.isArray(payload.brochures)) setAvailableBrochures(payload.brochures); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [brochures]);
+  const orderedBrochures = useMemo(() => [...availableBrochures].sort((a, b) => Number(brochureRecommended(b, productContext)) - Number(brochureRecommended(a, productContext))), [availableBrochures, productContext]);
   const recommended = orderedBrochures.find((brochure) => brochureRecommended(brochure, productContext)) ?? null;
+  useEffect(() => {
+    if (!brochureId && recommended?.id) setBrochureId(recommended.id);
+  }, [brochureId, recommended]);
+
   const initial = suggestions[(clean(packagingType) || clean(pouchType)) ? 0 : 3]?.message ?? '';
   const [message, setMessage] = useState(initial);
   const [selectedId, setSelectedId] = useState((clean(packagingType) || clean(pouchType)) ? 'advance' : 'general-info');
-  const [brochureId, setBrochureId] = useState(recommended?.id ?? '');
 
   return (
     <div className="space-y-3">
