@@ -32,6 +32,13 @@ export type CatalogBrochure = {
   category_names: string[];
 };
 
+export type CatalogBrochureShareResult = {
+  id: string;
+  token: string;
+  brochureName: string;
+  url: string;
+};
+
 function clean(value: unknown) {
   return String(value ?? '').trim();
 }
@@ -68,9 +75,9 @@ async function validateMappings(admin: any, organizationId: string, familyIds: s
   }
 }
 
-export async function listCatalogBrochures(input?: { includeInactive?: boolean }) {
+export async function listCatalogBrochures(input?: { includeInactive?: boolean }): Promise<CatalogBrochure[]> {
   const workspace = await requireWorkspace();
-  if (!workspace.organization || !workspace.membership) return [] as CatalogBrochure[];
+  if (!workspace.organization || !workspace.membership) return [];
   const db: any = await createClient();
   let query = db.from('catalog_brochures')
     .select('id, organization_id, name, description, file_name, file_size, storage_bucket, storage_path, is_active, created_at, catalog_brochure_families(packaging_family_id, packaging_service_families(id,name,slug)), catalog_brochure_categories(product_category_id, product_categories(id,name))')
@@ -79,31 +86,31 @@ export async function listCatalogBrochures(input?: { includeInactive?: boolean }
   if (!input?.includeInactive) query = query.eq('is_active', true);
   const { data, error } = await query;
   if (error) {
-    if (String(error.code ?? '') === '42P01') return [] as CatalogBrochure[];
+    if (String(error.code ?? '') === '42P01') return [];
     throw new Error(`Brochures could not load: ${String(error.message ?? 'unknown database error')}`);
   }
-  return (data ?? []).map((row: any) => {
+  return (data ?? []).map((row: any): CatalogBrochure => {
     const familyMappings = Array.isArray(row.catalog_brochure_families) ? row.catalog_brochure_families : [];
     const families = familyMappings.map((mapping: any) => mapping.packaging_service_families).filter(Boolean);
     const categoryMappings = Array.isArray(row.catalog_brochure_categories) ? row.catalog_brochure_categories : [];
     const categories = categoryMappings.map((mapping: any) => mapping.product_categories).filter(Boolean);
     return {
-      id: row.id,
-      organization_id: row.organization_id,
-      name: row.name,
-      description: row.description ?? null,
-      file_name: row.file_name,
+      id: String(row.id),
+      organization_id: String(row.organization_id),
+      name: String(row.name),
+      description: row.description == null ? null : String(row.description),
+      file_name: String(row.file_name),
       file_size: row.file_size == null ? null : Number(row.file_size),
-      storage_bucket: row.storage_bucket,
-      storage_path: row.storage_path,
+      storage_bucket: String(row.storage_bucket),
+      storage_path: String(row.storage_path),
       is_active: row.is_active !== false,
-      created_at: row.created_at,
+      created_at: String(row.created_at),
       family_ids: families.map((family: any) => String(family.id)),
       family_names: families.map((family: any) => String(family.name)),
       family_slugs: families.map((family: any) => String(family.slug)),
       category_ids: categories.map((category: any) => String(category.id)),
       category_names: categories.map((category: any) => String(category.name)),
-    } satisfies CatalogBrochure;
+    };
   });
 }
 
@@ -185,7 +192,7 @@ export async function updateCatalogBrochure(formData: FormData): Promise<void> {
   revalidatePath('/admin/catalog/brochures');
 }
 
-export async function createCatalogBrochureShare(input: { brochureId: string; leadId?: string | null; intakeId?: string | null; channel?: string | null }) {
+export async function createCatalogBrochureShare(input: { brochureId: string; leadId?: string | null; intakeId?: string | null; channel?: string | null }): Promise<CatalogBrochureShareResult> {
   const workspace = await workspaceWithRole(SHARE_ROLES);
   const organizationId = workspace.organization!.id;
   const admin = createAdminSupabaseClient() as any;
@@ -212,5 +219,5 @@ export async function createCatalogBrochureShare(input: { brochureId: string; le
     expires_at: new Date(Date.now() + 30 * 864e5).toISOString(),
   }).select('id,token').single();
   if (shareError) throw new Error(`Brochure link could not be created: ${String(shareError.message ?? 'database error')}`);
-  return { id: share.id as string, token: share.token as string, brochureName: brochure.name as string, url: `${requestBaseUrl()}/public/brochure/${share.token}` };
+  return { id: String(share.id), token: String(share.token), brochureName: String(brochure.name), url: `${requestBaseUrl()}/public/brochure/${String(share.token)}` };
 }
