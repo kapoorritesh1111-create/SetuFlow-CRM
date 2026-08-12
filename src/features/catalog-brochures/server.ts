@@ -214,12 +214,3 @@ export async function createCatalogBrochureShare(input: { brochureId: string; le
   if (shareError) throw new Error(`Brochure link could not be created: ${String(shareError.message ?? 'database error')}`);
   return { id: share.id as string, token: share.token as string, brochureName: brochure.name as string, url: `${requestBaseUrl()}/public/brochure/${share.token}` };
 }
-
-export function brochureMatchesContext(brochure: Pick<CatalogBrochure, 'family_names' | 'family_slugs' | 'category_names'>, context: string | null | undefined) {
-  const normalized = clean(context).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-  if (!normalized) return false;
-  return [...brochure.family_names, ...brochure.family_slugs, ...brochure.category_names].some((value) => {
-    const candidate = clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    return Boolean(candidate && (normalized.includes(candidate) || candidate.includes(normalized)));
-  });
-}
