@@ -14,8 +14,8 @@ function matches(values: string[], context: string) {
   const target = normalized(context);
   if (!target) return false;
   return values.some((value) => {
-    const family = normalized(value);
-    return Boolean(family && (target.includes(family) || family.includes(target)));
+    const candidate = normalized(value);
+    return Boolean(candidate && (target.includes(candidate) || candidate.includes(target)));
   });
 }
 
@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
         description: item.description,
         family_names: item.family_names,
         family_slugs: item.family_slugs,
-        recommended: matches([...item.family_names, ...item.family_slugs], context),
+        category_names: item.category_names,
+        recommended: matches([...item.family_names, ...item.family_slugs, ...item.category_names], context),
       })),
     });
   } catch (error) {
