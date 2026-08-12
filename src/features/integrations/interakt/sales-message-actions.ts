@@ -66,6 +66,14 @@ async function loadInboundRow(db: any, organizationId: string, rowId: string) {
   return row;
 }
 
+async function discardUnsentBrochureShare(db: any, organizationId: string, shareId: string | null | undefined) {
+  if (!shareId) return;
+  await db.from('catalog_brochure_shares')
+    .delete()
+    .eq('id', shareId)
+    .eq('organization_id', organizationId);
+}
+
 async function recordOutboundMessage({ db, workspace, row, result, messageType, messageText, callbackData, payload }: {
   db: any;
   workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>;
@@ -125,7 +133,10 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
     brochureShare = await createCatalogBrochureShare({ brochureId, intakeId: row.id, channel: 'whatsapp' });
     message = `${originalMessage}\n\nView our ${brochureShare.brochureName} catalog: ${brochureShare.url}`;
   }
-  if (message.length > 4096) throw new Error('This message is too long after adding the brochure link. Shorten the message and try again.');
+  if (message.length > 4096) {
+    await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
+    throw new Error('This message is too long after adding the brochure link. Shorten the message and try again.');
+  }
 
   const callbackData = JSON.stringify({
     source: 'setu_flow_inbound_sales',
@@ -134,12 +145,19 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
     mode: 'free_text',
     brochure_share_id: brochureShare?.id ?? null,
   });
-  const result = await sendInteraktText({
-    countryCode: String(row.country_code),
-    phoneNumber: String(row.phone_number),
-    message,
-    callbackData,
-  });
+
+  let result: { id: string; message: string | null };
+  try {
+    result = await sendInteraktText({
+      countryCode: String(row.country_code),
+      phoneNumber: String(row.phone_number),
+      message,
+      callbackData,
+    });
+  } catch (error) {
+    await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
+    throw error;
+  }
 
   await recordOutboundMessage({
     db,
