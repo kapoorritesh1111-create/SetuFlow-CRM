@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type Props = {
   leadId: string;
@@ -10,6 +10,13 @@ type Props = {
   email?: string | null;
   whatsapp?: string | null;
   action: (formData: FormData) => void | Promise<void>;
+};
+
+type BrochureOption = {
+  id: string;
+  name: string;
+  description?: string | null;
+  recommended?: boolean;
 };
 
 type IconName = 'calendar' | 'mail' | 'message';
@@ -46,14 +53,60 @@ export default function FollowUpComposer({ leadId, clientName, senderName, sende
   const [purpose, setPurpose] = useState('pricing');
   const [channel, setChannel] = useState('whatsapp');
   const [notes, setNotes] = useState(() => draftTemplate('pricing', clientName, senderName, senderCompany));
+  const [brochures, setBrochures] = useState<BrochureOption[]>([]);
+  const [brochureId, setBrochureId] = useState('');
+  const [linkState, setLinkState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [linkMessage, setLinkMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/catalog-brochures?lead_id=${encodeURIComponent(leadId)}`, { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : { brochures: [] })
+      .then((payload) => {
+        if (!active || !Array.isArray(payload.brochures)) return;
+        const ordered = [...payload.brochures].sort((a: BrochureOption, b: BrochureOption) => Number(Boolean(b.recommended)) - Number(Boolean(a.recommended)));
+        setBrochures(ordered);
+        const recommended = ordered.find((item: BrochureOption) => item.recommended);
+        if (recommended?.id) setBrochureId(recommended.id);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [leadId]);
+
   const encodedNotes = encodeURIComponent(notes);
   const waNumber = cleanPhone(whatsapp);
   const emailHref = useMemo(() => `mailto:${email || ''}?subject=${encodeURIComponent(`Follow-up for ${clientName || 'your request'}`)}&body=${encodedNotes}`, [email, encodedNotes, clientName]);
   const whatsappHref = useMemo(() => waNumber ? `https://wa.me/${waNumber}?text=${encodedNotes}` : '#', [waNumber, encodedNotes]);
+  const recommended = brochures.find((item) => item.recommended) ?? null;
 
   function onPurposeChange(next: string) {
     setPurpose(next);
     setNotes(draftTemplate(next, clientName, senderName, senderCompany));
+    setLinkState('idle');
+    setLinkMessage('');
+  }
+
+  async function insertBrochureLink() {
+    if (!brochureId) return;
+    setLinkState('loading');
+    setLinkMessage('');
+    try {
+      const response = await fetch('/api/catalog-brochures/share', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ brochure_id: brochureId, lead_id: leadId, channel }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.share?.url) throw new Error(payload?.error || 'Brochure link could not be created.');
+      const selected = brochures.find((item) => item.id === brochureId);
+      const line = `View our ${selected?.name || 'catalog'}: ${payload.share.url}`;
+      setNotes((current) => current.includes(payload.share.url) ? current : `${current.trim()}\n\n${line}`);
+      setLinkState('ready');
+      setLinkMessage('Brochure link inserted. You can edit the message before sending.');
+    } catch (error) {
+      setLinkState('error');
+      setLinkMessage(error instanceof Error ? error.message : 'Brochure link could not be created.');
+    }
   }
 
   return (
@@ -82,6 +135,22 @@ export default function FollowUpComposer({ leadId, clientName, senderName, sende
           <input name="scheduled_at" type="datetime-local" className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm" />
         </label>
       </div>
+
+      {brochures.length ? (
+        <div className="grid gap-2 rounded-2xl border border-violet-100 bg-violet-50/60 p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
+            Catalog / brochure
+            <select value={brochureId} onChange={(event) => { setBrochureId(event.target.value); setLinkState('idle'); setLinkMessage(''); }} className="h-10 rounded-xl border border-violet-200 bg-white px-3 text-sm font-semibold text-slate-800">
+              <option value="">Select brochure</option>
+              {brochures.map((brochure) => <option key={brochure.id} value={brochure.id}>{brochure.recommended ? 'Recommended · ' : ''}{brochure.name}</option>)}
+            </select>
+            {recommended ? <span className="text-[11px] font-semibold text-violet-700">✨ Setu recommends {recommended.name} from the lead’s product-family context.</span> : <span className="text-[11px] text-slate-500">Choose any active brochure configured by your admin.</span>}
+          </label>
+          <button type="button" onClick={insertBrochureLink} disabled={!brochureId || linkState === 'loading'} className="h-10 rounded-xl border border-violet-200 bg-white px-4 text-xs font-black text-violet-700 disabled:opacity-40">{linkState === 'loading' ? 'Creating link…' : linkState === 'ready' ? 'Insert another link' : 'Insert brochure link'}</button>
+          {linkMessage ? <p className={`text-[11px] md:col-span-2 ${linkState === 'error' ? 'text-rose-600' : 'text-emerald-700'}`}>{linkMessage}</p> : null}
+        </div>
+      ) : null}
+
       <textarea name="notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="min-h-32 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-6 text-slate-700 shadow-sm" />
       <div className="grid gap-3 md:grid-cols-3">
         <button className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-3 text-sm font-semibold text-white shadow-sm"><Icon name="calendar" />Schedule Follow-up</button>
