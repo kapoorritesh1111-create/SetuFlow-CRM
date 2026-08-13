@@ -27,6 +27,7 @@ test('S51-LEADS-015 normalizes company identity without losing the raw workflow 
   assert.match(webhook, /normalizeWorkflowCompanyAnswer\(answerText\)/);
   assert.match(webhook, /patch\.company_name = normalizedCompany\.companyName/);
   assert.match(webhook, /answer_text: answerText/);
+  assert.match(webhook, /evidence: answerText/);
   assert.doesNotMatch(webhook, /return \{ company_name: answer \}/);
 });
 
