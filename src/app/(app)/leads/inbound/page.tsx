@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { WorkspaceState } from '@/components/ui/workspace-state';
+import { InboundConversationPanel } from '@/features/integrations/interakt/components/inbound-conversation-panel';
 import { InboundViewControls } from '@/features/integrations/interakt/components/inbound-view-controls';
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { SalesMessageComposer } from '@/features/integrations/interakt/components/sales-message-composer';
@@ -94,20 +95,6 @@ function guruLabel(status: string | null | undefined) {
   if (status === 'new_evidence') return { label: 'New evidence', className: 'text-violet-700 bg-violet-50 border-violet-200', icon: '●' };
   if (status === 'partial_history') return { label: 'History pending', className: 'text-amber-700 bg-amber-50 border-amber-200', icon: '◐' };
   return { label: 'Guru pending', className: 'text-slate-600 bg-slate-50 border-slate-200', icon: '○' };
-}
-
-function cleanInteractiveText(message: ConversationMessage) {
-  const text = message.message_text ?? '';
-  if (!text.startsWith('{')) return text;
-  try {
-    const parsed = JSON.parse(text) as Record<string, any>;
-    const visible = parsed?.list_reply?.title ?? parsed?.button_reply?.title;
-    if (visible) return String(visible);
-    if (parsed?.type === 'nfm_reply' || parsed?.nfm_reply || text.includes('response_json') || text.includes('flow_token')) return '';
-    return '';
-  } catch {
-    return text;
-  }
 }
 
 function workflowCategory(question: string) {
@@ -261,19 +248,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           {!selected.first_inquiry_at ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
           {conversation.error ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
 
-          <section>
-            <div className="mb-3 flex items-center justify-between"><h3 className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Conversation</h3><span className="text-[10px] text-slate-400">{messages.length} activities</span></div>
-            <div className="space-y-3">
-              {messages.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-xs text-slate-500">No conversation has been imported for this contact yet.</div> : messages.map((message) => {
-                const isCall = message.event_type === 'call_logged' || message.message_type === 'Call';
-                if (isCall) return <div key={message.id} className="mx-auto max-w-xl rounded-xl border border-blue-100 bg-blue-50 px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="text-[10px] font-black uppercase text-blue-700">☎ Call logged · {message.actor_name || 'Setu Flow user'}</span><span className="text-[10px] text-slate-400">{formatDateTime(message.sent_at || message.received_at)}</span></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-700">{message.message_text}</p></div>;
-                const inbound = message.direction === 'inbound';
-                const text = cleanInteractiveText(message);
-                const intelligence = message.intelligence;
-                return <div key={message.id} className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[82%] rounded-2xl px-3.5 py-3 ${inbound ? 'bg-slate-100' : 'bg-emerald-50'}`}><div className="flex items-center justify-between gap-4"><span className="text-[9px] font-black uppercase tracking-wider text-slate-500">{inbound ? message.actor_name || selected.person_name || selected.contact_name || 'Customer' : message.actor_name || 'Setu Flow'}</span><span className="text-[9px] text-slate-400">{formatDateTime(message.received_at || message.sent_at)}</span></div>{message.media_url && /^https:\/\//i.test(message.media_url) ? <div className="mt-2"><img src={message.media_url} alt="Customer supplied attachment" className="max-h-72 rounded-xl border border-white object-contain" /><a href={message.media_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[10px] font-bold text-blue-600">Open image ↗</a></div> : null}{text ? <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-800">{text}</p> : null}{intelligence && (intelligence.companyName || intelligence.brandName) ? <div className="mt-2 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-[10px] leading-4 text-violet-800">✨ Setu Guru: {intelligence.companyName ? `Possible company ${intelligence.companyName}. ` : ''}{intelligence.brandName ? `Possible brand ${intelligence.brandName}. ` : ''}{typeof intelligence.confidence === 'number' ? `${Math.round(intelligence.confidence * 100)}% confidence.` : ''}{intelligence.evidence ? ` ${intelligence.evidence}` : ''}</div> : null}</div></div>;
-              })}
-            </div>
-          </section>
+          <InboundConversationPanel messages={messages} customerName={customerName} />
 
           {compactAnswers.length ? <details className="rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3" open><summary className="cursor-pointer text-xs font-bold text-violet-800">💬 Chatbot capture · {compactAnswers.length} useful answers</summary><div className="mt-3 grid gap-2 md:grid-cols-2">{compactAnswers.map((answer) => <div key={answer.key} className="rounded-xl bg-white px-3 py-2"><p className="text-[9px] font-bold uppercase text-violet-500">{answer.label}</p><p className="mt-1 text-xs font-semibold text-slate-800">{answer.answer_text || '—'}</p></div>)}</div></details> : null}
 
