@@ -17,6 +17,7 @@ test('S51-LEADS-013 clears row-scoped draft state when the selected inquiry chan
   assert.match(composer, /setBrochureId\(''\)/);
   assert.match(composer, /setNotice\(null\)/);
   assert.match(composer, /Preparing reply for/);
+  assert.match(composer, /rounded-card border border-info-border bg-info-bg/);
 });
 
 test('S51-LEADS-013 never submits a free-text or template send under a stale customer context', () => {
