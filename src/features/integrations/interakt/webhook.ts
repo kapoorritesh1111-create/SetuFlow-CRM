@@ -3,7 +3,7 @@ import 'server-only';
 import crypto from 'crypto';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
-import { analyzeInteraktCustomerImage, extractExplicitCompanyFromText } from '@/features/integrations/interakt/intelligence';
+import { analyzeInteraktCustomerImage, extractExplicitCompanyFromText, normalizeWorkflowCompanyAnswer } from '@/features/integrations/interakt/intelligence';
 import type { InteraktCompanyIntelligence } from '@/features/integrations/interakt/intelligence';
 import type { InteraktWebhookPayload } from '@/features/integrations/interakt/types';
 
@@ -71,8 +71,6 @@ function isBrandQuestion(question: string) {
 
 function qualificationPatchFromAnswer(question: string, answer: string) {
   const q = question.toLowerCase();
-  if (/company|business name|organisation|organization/.test(q)) return { company_name: answer };
-  if (isBrandQuestion(question)) return { brand_name: answer };
   if (/packaging type|packaging category/.test(q)) return { packaging_type: answer };
   if (/what type of pouch|pouch type/.test(q)) return { pouch_type: answer };
   if (/quantity|moq/.test(q)) return { quantity_text: answer };
@@ -138,9 +136,37 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
     const evidenceKey = clean(answer.id) || `${clean(data.id) ?? 'workflow'}:${clean(question.id) ?? questionText}:${answerText ?? ''}`; const now = new Date().toISOString();
     await db.from('lead_intake_workflow_answers').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, workflow_id: clean(data.workflow_id), workflow_run_id: clean(data.id), question_id: clean(question.id), question_text: questionText, answer_text: answerText, response_type: clean(answer.message_content_type), answered_at: answeredAt, evidence_key: evidenceKey, raw_payload: row, updated_at: now }, { onConflict: 'organization_id,provider,intake_id,evidence_key' });
     if (answerText) {
-      Object.assign(patch, qualificationPatchFromAnswer(questionText, answerText));
       const identityKind = identityQuestion(questionText);
-      if (identityKind) { const intelligence: InteraktCompanyIntelligence = { companyName: identityKind === 'company' ? answerText : null, brandName: identityKind === 'brand' ? answerText : null, confidence: 1, evidence: `${questionText}: ${answerText}`, source: 'message_text', model: null }; companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now })); companyIntelligenceUpdatedAt = now; }
+      if (!identityKind) {
+        Object.assign(patch, qualificationPatchFromAnswer(questionText, answerText));
+      } else if (identityKind === 'company') {
+        const normalizedCompany = normalizeWorkflowCompanyAnswer(answerText);
+        if (normalizedCompany?.companyName && !intake.company_name && !patch.company_name) {
+          patch.company_name = normalizedCompany.companyName;
+        }
+        const intelligence: InteraktCompanyIntelligence = normalizedCompany ?? {
+          companyName: null,
+          brandName: null,
+          confidence: 0.25,
+          evidence: answerText,
+          source: 'message_text',
+          model: null,
+        };
+        companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now }));
+        companyIntelligenceUpdatedAt = now;
+      } else {
+        if (!intake.brand_name && !patch.brand_name) patch.brand_name = answerText;
+        const intelligence: InteraktCompanyIntelligence = {
+          companyName: null,
+          brandName: answerText,
+          confidence: 0.98,
+          evidence: answerText,
+          source: 'message_text',
+          model: null,
+        };
+        companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now }));
+        companyIntelligenceUpdatedAt = now;
+      }
     }
     if (answeredAt && (!latestInboundAt || answeredAt > latestInboundAt)) latestInboundAt = answeredAt;
   }
