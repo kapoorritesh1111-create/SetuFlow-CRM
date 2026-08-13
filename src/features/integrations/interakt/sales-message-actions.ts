@@ -22,9 +22,18 @@ const SALES_MESSAGE_PRESETS = {
 } as const;
 
 type PresetKey = keyof typeof SALES_MESSAGE_PRESETS;
+type SalesMessageActionResult = { ok: true; message: string } | { ok: false; message: string };
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
+}
+
+function safeObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function phoneDigits(value: unknown) {
+  return clean(value).replace(/[^0-9]/g, '');
 }
 
 function replyWindowOpen(value: unknown) {
@@ -32,6 +41,20 @@ function replyWindowOpen(value: unknown) {
   if (!Number.isFinite(timestamp)) return false;
   const elapsed = Date.now() - timestamp;
   return elapsed >= 0 && elapsed <= WHATSAPP_REPLY_WINDOW_MS;
+}
+
+function safeSalesError(error: unknown) {
+  const message = error instanceof Error ? error.message : 'The message could not be sent.';
+  if (/complete WhatsApp number|valid WhatsApp country code|phone number are required/i.test(message)) {
+    return 'This inquiry does not have a usable WhatsApp number yet. Refresh the contact from Interakt or add a valid number before sending.';
+  }
+  if (/INTERAKT_STARK_PACKMATE_API_KEY|connector is restricted/i.test(message)) {
+    return 'WhatsApp messaging is not available right now. Ask an administrator to check the Interakt connection in Integrations & API.';
+  }
+  if (/Database admin client unavailable/i.test(message)) {
+    return 'Setu Flow could not prepare this message. Please try again.';
+  }
+  return message;
 }
 
 async function requireStarkSalesAccess() {
@@ -55,6 +78,36 @@ function salesFollowUpContext(row: any) {
   return requirement || 'Follow-up';
 }
 
+function resolveWhatsAppRecipient(row: any) {
+  const raw = safeObject(row.raw_payload);
+  const customer = safeObject(raw.customer);
+  let countryCode = clean(row.country_code) || clean(customer.country_code);
+  let phoneNumber = clean(row.phone_number) || clean(customer.phone_number);
+  const fullPhone = clean(row.full_phone_number) || clean(customer.channel_phone_number);
+
+  const fullDigits = phoneDigits(fullPhone);
+  const countryDigits = phoneDigits(countryCode);
+  const localDigits = phoneDigits(phoneNumber);
+
+  if (!phoneNumber && countryDigits && fullDigits.startsWith(countryDigits) && fullDigits.length > countryDigits.length) {
+    phoneNumber = fullDigits.slice(countryDigits.length);
+  }
+  if (!countryCode && localDigits && fullDigits.endsWith(localDigits) && fullDigits.length > localDigits.length) {
+    const prefix = fullDigits.slice(0, fullDigits.length - localDigits.length);
+    if (prefix.length >= 1 && prefix.length <= 3) countryCode = `+${prefix}`;
+  }
+
+  // Stark Packmate's current Interakt account primarily receives Indian E.164 numbers.
+  // Keep this as a last-resort compatibility fallback; webhook payload fields above remain preferred.
+  if (!countryCode && !phoneNumber && fullDigits.length === 12 && fullDigits.startsWith('91')) {
+    countryCode = '+91';
+    phoneNumber = fullDigits.slice(2);
+  }
+
+  if (!countryCode || !phoneNumber) throw new Error('This customer does not have a complete WhatsApp number in Interakt.');
+  return { countryCode, phoneNumber };
+}
+
 async function loadInboundRow(db: any, organizationId: string, rowId: string) {
   const { data: row, error } = await db.from('lead_intake_staging').select('*')
     .eq('id', rowId)
@@ -62,8 +115,19 @@ async function loadInboundRow(db: any, organizationId: string, rowId: string) {
     .eq('source_provider', SOURCE_PROVIDER)
     .maybeSingle();
   if (error || !row?.id) throw new Error('Inbound inquiry not found.');
-  if (!row.phone_number || !row.country_code) throw new Error('This customer does not have a complete WhatsApp number in Interakt.');
   return row;
+}
+
+async function persistResolvedRecipient(db: any, organizationId: string, row: any, recipient: { countryCode: string; phoneNumber: string }) {
+  if (clean(row.country_code) && clean(row.phone_number)) return;
+  await db.from('lead_intake_staging')
+    .update({
+      country_code: clean(row.country_code) || recipient.countryCode,
+      phone_number: clean(row.phone_number) || recipient.phoneNumber,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', row.id)
+    .eq('organization_id', organizationId);
 }
 
 async function discardUnsentBrochureShare(db: any, organizationId: string, shareId: string | null | undefined) {
@@ -111,7 +175,7 @@ async function recordOutboundMessage({ db, workspace, row, result, messageType, 
   }).eq('id', row.id).eq('organization_id', workspace.organization!.id);
 }
 
-export async function sendStarkInteraktSalesText(formData: FormData): Promise<void> {
+async function performStarkInteraktSalesText(formData: FormData): Promise<void> {
   const workspace = await requireStarkSalesAccess();
   const organizationId = workspace.organization!.id;
   const rowId = clean(formData.get('rowId'));
@@ -123,6 +187,8 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
   const row = await loadInboundRow(db, organizationId, rowId);
+  const recipient = resolveWhatsAppRecipient(row);
+  await persistResolvedRecipient(db, organizationId, row, recipient);
   if (!replyWindowOpen(row.last_inbound_at)) {
     throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
   }
@@ -149,8 +215,8 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
   let result: { id: string; message: string | null };
   try {
     result = await sendInteraktText({
-      countryCode: String(row.country_code),
-      phoneNumber: String(row.phone_number),
+      countryCode: recipient.countryCode,
+      phoneNumber: recipient.phoneNumber,
       message,
       callbackData,
     });
@@ -172,7 +238,17 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<vo
   revalidatePath(INBOUND_PATH);
 }
 
-export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promise<void> {
+export async function sendStarkInteraktSalesText(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    const hasBrochure = Boolean(clean(formData.get('brochureId')));
+    await performStarkInteraktSalesText(formData);
+    return { ok: true, message: hasBrochure ? 'WhatsApp message and brochure sent.' : 'WhatsApp message sent.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
+}
+
+async function performStarkInteraktSalesFollowUp(formData: FormData): Promise<void> {
   const workspace = await requireStarkSalesAccess();
   const organizationId = workspace.organization!.id;
   const rowId = clean(formData.get('rowId'));
@@ -183,6 +259,8 @@ export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promis
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
   const row = await loadInboundRow(db, organizationId, rowId);
+  const recipient = resolveWhatsAppRecipient(row);
+  await persistResolvedRecipient(db, organizationId, row, recipient);
 
   const customerName = clean(row.person_name || row.contact_name) || 'Customer';
   const context = salesFollowUpContext(row);
@@ -194,8 +272,8 @@ export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promis
   });
 
   const result = await sendInteraktTemplate({
-    countryCode: String(row.country_code),
-    phoneNumber: String(row.phone_number),
+    countryCode: recipient.countryCode,
+    phoneNumber: recipient.phoneNumber,
     templateName: preset.templateName,
     languageCode: preset.languageCode,
     bodyValues: [customerName, context],
@@ -218,4 +296,13 @@ export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promis
     },
   });
   revalidatePath(INBOUND_PATH);
+}
+
+export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    await performStarkInteraktSalesFollowUp(formData);
+    return { ok: true, message: 'Approved WhatsApp follow-up sent.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
 }
