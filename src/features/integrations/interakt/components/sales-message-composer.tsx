@@ -70,11 +70,17 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
   }, [customerName, companyName, packagingType, pouchType, quantityText]);
 
   const productContext = clean(pouchType) || clean(packagingType);
+  const defaultSelectedId = (clean(packagingType) || clean(pouchType)) ? 'advance' : 'general-info';
+  const initial = suggestions[defaultSelectedId === 'advance' ? 0 : 3]?.message ?? '';
   const [availableBrochures, setAvailableBrochures] = useState<BrochureOption[]>(brochures);
   const [brochureId, setBrochureId] = useState('');
   const [notice, setNotice] = useState<Notice>(null);
   const [isSending, startSending] = useTransition();
   const [isFollowingUp, startFollowingUp] = useTransition();
+  const [message, setMessage] = useState(initial);
+  const [selectedId, setSelectedId] = useState(defaultSelectedId);
+  const [draftRowId, setDraftRowId] = useState(rowId);
+  const contextChanged = draftRowId !== rowId;
 
   useEffect(() => {
     if (brochures.length) {
@@ -89,14 +95,24 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
     return () => { active = false; };
   }, [brochures]);
 
+  useEffect(() => {
+    if (draftRowId === rowId) return;
+    setDraftRowId(rowId);
+    setMessage(initial);
+    setSelectedId(defaultSelectedId);
+    setBrochureId('');
+    setNotice(null);
+  }, [defaultSelectedId, draftRowId, initial, rowId]);
+
   const orderedBrochures = useMemo(() => [...availableBrochures].sort((a, b) => Number(brochureRecommended(b, productContext)) - Number(brochureRecommended(a, productContext))), [availableBrochures, productContext]);
   const recommended = orderedBrochures.find((brochure) => brochureRecommended(brochure, productContext)) ?? null;
-  const initial = suggestions[(clean(packagingType) || clean(pouchType)) ? 0 : 3]?.message ?? '';
-  const [message, setMessage] = useState(initial);
-  const [selectedId, setSelectedId] = useState((clean(packagingType) || clean(pouchType)) ? 'advance' : 'general-info');
 
   function submitMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (contextChanged) {
+      setNotice({ tone: 'error', message: 'Customer changed. Review the refreshed reply before sending.' });
+      return;
+    }
     setNotice(null);
     const formData = new FormData(event.currentTarget);
     startSending(() => {
@@ -108,6 +124,10 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
 
   function submitFollowUp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (contextChanged) {
+      setNotice({ tone: 'error', message: 'Customer changed. Review the selected inquiry before sending.' });
+      return;
+    }
     setNotice(null);
     const formData = new FormData(event.currentTarget);
     startFollowingUp(() => {
@@ -115,6 +135,15 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
         setNotice({ tone: result.ok ? 'success' : 'error', message: result.message });
       }).catch(() => setNotice({ tone: 'error', message: 'The approved WhatsApp follow-up could not be sent. Please try again.' }));
     });
+  }
+
+  if (contextChanged) {
+    return (
+      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4" role="status" aria-live="polite">
+        <p className="text-xs font-bold text-blue-900">Preparing reply for {clean(customerName) || 'selected customer'}…</p>
+        <p className="mt-1 text-[10px] leading-4 text-blue-700">The previous customer draft is being cleared before messaging is enabled.</p>
+      </div>
+    );
   }
 
   return (
@@ -150,17 +179,18 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
 
           <form onSubmit={submitMessage} className="space-y-2">
             <input type="hidden" name="rowId" value={rowId} />
+            <input type="hidden" name="draftRowId" value={draftRowId} />
             {orderedBrochures.length ? <label className="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Catalog / brochure <span className="font-medium normal-case text-slate-400">· optional</span><select name="brochureId" value={brochureId} onChange={(event) => { setBrochureId(event.target.value); setNotice(null); }} className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"><option value="">No brochure</option>{orderedBrochures.map((brochure) => <option key={brochure.id} value={brochure.id}>{brochureRecommended(brochure, productContext) ? 'Recommended · ' : ''}{brochure.name}</option>)}</select>{recommended ? <span className="mt-1 block text-[9px] font-semibold normal-case tracking-normal text-violet-600">✨ Setu recommends {recommended.name} for {productContext}. Select it above to attach it.</span> : <span className="mt-1 block text-[9px] font-medium normal-case tracking-normal text-slate-400">Choose a brochure only when you want its secure link included.</span>}</label> : null}
             <label className="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Your message<textarea name="message" required maxLength={4096} rows={6} value={message} onChange={(event) => { setMessage(event.target.value); setSelectedId(''); setNotice(null); }} placeholder="Type your WhatsApp reply…" className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium leading-5 text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
             <div className="flex items-center justify-between gap-2"><p className="text-[9px] text-slate-400">The brochure link is added only when selected.</p><span className="text-[9px] font-bold text-emerald-700">{message.length}/4096</span></div>
-            <button type="submit" disabled={!canSend || !message.trim() || isSending} className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{isSending ? 'Sending WhatsApp…' : brochureId ? 'Send WhatsApp + brochure' : 'Send WhatsApp'}</button>
+            <button type="submit" disabled={!canSend || !message.trim() || isSending || contextChanged} className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{isSending ? 'Sending WhatsApp…' : brochureId ? 'Send WhatsApp + brochure' : 'Send WhatsApp'}</button>
           </form>
         </>
       ) : null}
 
       <details className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" open={!replyWindowOpen}>
         <summary className="cursor-pointer text-[10px] font-bold text-slate-600">Use approved follow-up</summary>
-        <div className="mt-2"><p className="mb-2 text-[9px] leading-4 text-slate-500">Use Stark Packmate’s approved qualification follow-up template. Catalog links can be added after the customer replies and the free reply window reopens.</p><form onSubmit={submitFollowUp}><input type="hidden" name="rowId" value={rowId} /><input type="hidden" name="messagePreset" value="qualification_follow_up" /><button type="submit" disabled={!canSend || isFollowingUp} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{isFollowingUp ? 'Sending approved follow-up…' : 'Send approved follow-up'}</button></form></div>
+        <div className="mt-2"><p className="mb-2 text-[9px] leading-4 text-slate-500">Use Stark Packmate’s approved qualification follow-up template. Catalog links can be added after the customer replies and the free reply window reopens.</p><form onSubmit={submitFollowUp}><input type="hidden" name="rowId" value={rowId} /><input type="hidden" name="draftRowId" value={draftRowId} /><input type="hidden" name="messagePreset" value="qualification_follow_up" /><button type="submit" disabled={!canSend || isFollowingUp || contextChanged} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{isFollowingUp ? 'Sending approved follow-up…' : 'Send approved follow-up'}</button></form></div>
       </details>
     </div>
   );
