@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle2, ChevronDown, FileText, FolderOpen, Plus, Upload, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, FileText, FolderOpen, MessageCircle, Phone, Plus, Upload, X } from 'lucide-react';
 
+import { updateCatalogBuyerContact } from '@/features/catalog-brochures/contact-actions';
 import { updateCatalogBrochure, uploadCatalogBrochure } from '@/features/catalog-brochures/server';
 import type { CatalogBrochure } from '@/features/catalog-brochures/server';
 
@@ -29,8 +30,12 @@ type Props = {
   brochures: CatalogBrochure[];
   categories: CategoryOption[];
   families: FamilyOption[];
+  contactPhone?: string | null;
+  whatsappPhone?: string | null;
   initialOpen?: boolean;
 };
+
+type ManagerTab = 'library' | 'upload' | 'contact';
 
 function bytes(value: number | null) {
   if (!value) return '—';
@@ -42,18 +47,20 @@ function messageFromError(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export function BrochureManagerModal({ brochures, categories, families, initialOpen = false }: Props) {
+export function BrochureManagerModal({ brochures, categories, families, contactPhone = null, whatsappPhone = null, initialOpen = false }: Props) {
   const router = useRouter();
   const uploadFormRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(initialOpen);
-  const [tab, setTab] = useState<'library' | 'upload'>(brochures.length ? 'library' : 'upload');
+  const [tab, setTab] = useState<ManagerTab>(brochures.length ? 'library' : 'upload');
   const [notice, setNotice] = useState<Notice>(null);
   const [uploading, setUploading] = useState(false);
   const [savingBrochureId, setSavingBrochureId] = useState<string | null>(null);
-  const busy = uploading || savingBrochureId !== null;
+  const [savingContact, setSavingContact] = useState(false);
+  const busy = uploading || savingBrochureId !== null || savingContact;
 
   const activeCount = useMemo(() => brochures.filter((item) => item.is_active).length, [brochures]);
   const mappedCount = useMemo(() => brochures.filter((item) => item.family_ids.length > 0 || item.category_ids.length > 0).length, [brochures]);
+  const buyerContactReady = Boolean(whatsappPhone || contactPhone);
 
   useEffect(() => {
     if (!open) return;
@@ -69,7 +76,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
     };
   }, [open, busy]);
 
-  function showManager(nextTab?: 'library' | 'upload') {
+  function showManager(nextTab?: ManagerTab) {
     setNotice(null);
     if (nextTab) setTab(nextTab);
     setOpen(true);
@@ -115,6 +122,22 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
     }
   }
 
+  async function submitBuyerContact(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setNotice(null);
+    setSavingContact(true);
+    try {
+      await updateCatalogBuyerContact(formData);
+      setNotice({ tone: 'success', message: 'Buyer contact details saved. Shared catalogs will use these actions.' });
+      router.refresh();
+    } catch (error) {
+      setNotice({ tone: 'error', message: messageFromError(error, 'Buyer contact details could not be saved. Please try again.') });
+    } finally {
+      setSavingContact(false);
+    }
+  }
+
   return (
     <>
       <button
@@ -130,6 +153,9 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
           <span className="mt-1 block text-xs text-slate-500">Manage the PDFs your sales team can share with prospects and leads.</span>
         </span>
         <span className="flex items-center gap-2">
+          <span className={`rounded-full border bg-white px-2.5 py-1 text-[10px] font-semibold ${buyerContactReady ? 'border-emerald-200 text-emerald-700' : 'border-amber-200 text-amber-700'}`}>
+            {buyerContactReady ? 'Buyer contact ready' : 'Add buyer contact'}
+          </span>
           <span className="rounded-full border border-violet-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-violet-700">
             {brochures.length} {brochures.length === 1 ? 'brochure' : 'brochures'}
           </span>
@@ -164,12 +190,15 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
             </header>
 
             <div className="border-b border-slate-100 bg-slate-50/70 px-6 py-3">
-              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+              <div className="inline-flex flex-wrap rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
                 <button type="button" onClick={() => { setNotice(null); setTab('library'); }} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition ${tab === 'library' ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
                   <FolderOpen className="h-4 w-4" /> Library <span className={tab === 'library' ? 'text-white/70' : 'text-slate-400'}>{brochures.length}</span>
                 </button>
                 <button type="button" onClick={() => { setNotice(null); setTab('upload'); }} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition ${tab === 'upload' ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
                   <Plus className="h-4 w-4" /> Add brochure
+                </button>
+                <button type="button" onClick={() => { setNotice(null); setTab('contact'); }} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition ${tab === 'contact' ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                  <Phone className="h-4 w-4" /> Buyer contact
                 </button>
               </div>
             </div>
@@ -265,7 +294,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                     </div>
                   )}
                 </section>
-              ) : (
+              ) : tab === 'upload' ? (
                 <section className="mx-auto max-w-4xl">
                   <div className="mb-5">
                     <h3 className="text-lg font-bold text-slate-950">Add brochure</h3>
@@ -310,6 +339,39 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                       <p className="text-[11px] text-slate-500">PDF files up to 12 MB.</p>
                       <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60">
                         <Upload className="h-4 w-4" /> {uploading ? 'Uploading…' : 'Upload brochure'}
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              ) : (
+                <section className="mx-auto max-w-3xl">
+                  <div className="mb-5">
+                    <h3 className="text-lg font-bold text-slate-950">Buyer contact</h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">These details appear as the next action on shared catalogs.</p>
+                  </div>
+
+                  <form onSubmit={(event) => { void submitBuyerContact(event); }} className="space-y-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+                        <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4 text-slate-500" /> Contact phone</span>
+                        <input name="contact_phone" type="tel" defaultValue={contactPhone ?? ''} placeholder="+91 98711 18977" className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" />
+                        <span className="text-[11px] font-normal leading-4 text-slate-500">Used by the Contact us button on shared catalogs.</span>
+                      </label>
+                      <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+                        <span className="inline-flex items-center gap-2"><MessageCircle className="h-4 w-4 text-emerald-600" /> Sales WhatsApp</span>
+                        <input name="whatsapp_phone" type="tel" defaultValue={whatsappPhone ?? contactPhone ?? ''} placeholder="+91 98711 18977" className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" />
+                        <span className="text-[11px] font-normal leading-4 text-slate-500">Use the business WhatsApp number connected to Interakt so quote requests return to the same sales conversation.</span>
+                      </label>
+                    </div>
+
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-xs font-semibold text-emerald-900">Request quote experience</p>
+                      <p className="mt-1 text-xs leading-5 text-emerald-800">The buyer opens WhatsApp with a prefilled quote-request message. They tap Send, and Interakt receives it as a normal customer reply.</p>
+                    </div>
+
+                    <div className="flex justify-end border-t border-slate-200 pt-4">
+                      <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
+                        {savingContact ? 'Saving…' : 'Save buyer contact'}
                       </button>
                     </div>
                   </form>
