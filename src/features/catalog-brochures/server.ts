@@ -57,6 +57,29 @@ function requestBaseUrl() {
   return env.appUrl.replace(/\/$/, '');
 }
 
+function clientShareBaseUrl(organizationSlug: string | null | undefined) {
+  const current = requestBaseUrl();
+  const slug = clean(organizationSlug).toLowerCase();
+  if (!slug) return current;
+
+  try {
+    const currentUrl = new URL(current);
+    const hostname = currentUrl.hostname.toLowerCase();
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isPreview = hostname.endsWith('.vercel.app');
+    if (isLocal || isPreview) return current;
+
+    if (hostname === 'setuflowcrm.com' || hostname === 'www.setuflowcrm.com' || hostname.endsWith('.setuflowcrm.com')) {
+      return `https://${slug}.setuflowcrm.com`;
+    }
+
+    // Preserve a verified custom organization domain when the workspace is already served from one.
+    return current;
+  } catch {
+    return current;
+  }
+}
+
 async function workspaceWithRole(allowed: Set<string>) {
   const workspace = await requireWorkspace();
   if (!workspace.organization || !workspace.membership || !workspace.user) throw new Error('Workspace membership is required.');
@@ -208,7 +231,9 @@ export async function createCatalogBrochureShare(input: { brochureId: string; le
     const { data: intake } = await admin.from('lead_intake_staging').select('id').eq('id', input.intakeId).eq('organization_id', organizationId).maybeSingle();
     if (!intake?.id) throw new Error('Inquiry does not belong to this workspace.');
   }
-  const token = randomBytes(24).toString('hex');
+
+  // 144 bits of URL-safe entropy keeps the client link compact without weakening the opaque share token.
+  const token = randomBytes(18).toString('base64url');
   const { data: share, error: shareError } = await admin.from('catalog_brochure_shares').insert({
     organization_id: organizationId,
     brochure_id: brochure.id,
@@ -220,5 +245,12 @@ export async function createCatalogBrochureShare(input: { brochureId: string; le
     expires_at: new Date(Date.now() + 30 * 864e5).toISOString(),
   }).select('id,token').single();
   if (shareError) throw new Error(`Brochure link could not be created: ${String(shareError.message ?? 'database error')}`);
-  return { id: String(share.id), token: String(share.token), brochureName: String(brochure.name), url: `${requestBaseUrl()}/public/brochure/${String(share.token)}` };
+
+  const baseUrl = clientShareBaseUrl((workspace.organization as any)?.slug);
+  return {
+    id: String(share.id),
+    token: String(share.token),
+    brochureName: String(brochure.name),
+    url: `${baseUrl}/catalogs/${String(share.token)}`,
+  };
 }
