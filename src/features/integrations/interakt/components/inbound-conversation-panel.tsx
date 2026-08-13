@@ -18,6 +18,11 @@ type Props = {
   customerName: string;
 };
 
+type GuruCapture = {
+  label: string;
+  value: string;
+};
+
 function formatDateTime(value: string | null | undefined) {
   if (!value) return '—';
   const date = new Date(value);
@@ -43,6 +48,32 @@ function hasVisibleCustomerContent(message: ConversationMessage) {
   return message.direction === 'inbound' && (Boolean(cleanInteractiveText(message).trim()) || Boolean(message.media_url && /^https:\/\//i.test(message.media_url)));
 }
 
+function inferCustomerIntent(messages: ConversationMessage[]): GuruCapture | null {
+  const latestInbound = [...messages].reverse().find(hasVisibleCustomerContent);
+  const text = latestInbound ? cleanInteractiveText(latestInbound).toLowerCase() : '';
+  if (!text) return null;
+  if (/\bmoq\b|minimum\s+order\s+quantity|minimum\s+qty/.test(text)) return { label: 'Intent', value: 'Asking about MOQ' };
+  if (/\b(?:quote|quotation|price|pricing|cost|rate)\b/.test(text)) return { label: 'Intent', value: 'Asking about pricing' };
+  if (/\b(?:sample|prototype|mockup)\b/.test(text)) return { label: 'Intent', value: 'Interested in sample / prototype' };
+  if (/\b(?:catalog|catalogue|brochure|pic|picture|photo|image)\b/.test(text)) return { label: 'Intent', value: 'Wants a visual / catalog reference' };
+  if (/\b(?:order|buy|need|require|requirement)\b/.test(text)) return { label: 'Intent', value: 'Commercial requirement detected' };
+  return null;
+}
+
+function guruCaptures(messages: ConversationMessage[]) {
+  const captures: GuruCapture[] = [];
+  const intent = inferCustomerIntent(messages);
+  if (intent) captures.push(intent);
+
+  const latestCompany = [...messages].reverse().find((message) => message.intelligence?.companyName)?.intelligence;
+  if (latestCompany?.companyName) captures.push({ label: 'Possible company', value: latestCompany.companyName });
+
+  const latestBrand = [...messages].reverse().find((message) => message.intelligence?.brandName)?.intelligence;
+  if (latestBrand?.brandName) captures.push({ label: 'Possible brand', value: latestBrand.brandName });
+
+  return captures;
+}
+
 function MessageBubble({ message, customerName, latest = false }: { message: ConversationMessage; customerName: string; latest?: boolean }) {
   const isCall = message.event_type === 'call_logged' || message.message_type === 'Call';
   if (isCall) {
@@ -65,13 +96,24 @@ export function InboundConversationPanel({ messages, customerName }: Props) {
   }
 
   const latestCustomerMessage = [...messages].reverse().find(hasVisibleCustomerContent) ?? null;
-  const earlierMessages = latestCustomerMessage ? messages.filter((message) => message.id !== latestCustomerMessage.id) : messages;
+  const captures = guruCaptures(messages);
 
   return <section>
     <div className="mb-2 flex items-center justify-between"><h3 className="text-caption font-bold uppercase text-content-muted">Conversation</h3><span className="text-caption text-content-faint">{messages.length} activities</span></div>
     <div className="space-y-2">
       {latestCustomerMessage ? <MessageBubble message={latestCustomerMessage} customerName={customerName} latest /> : <div className="rounded-card border border-line bg-surface-2 px-3 py-2 text-caption text-content-muted">No customer response is available in the imported history yet.</div>}
-      {earlierMessages.length ? <details className="rounded-card border border-line bg-surface-1 px-3 py-2"><summary className="cursor-pointer text-caption font-bold text-content-secondary">View earlier conversation · {earlierMessages.length} {earlierMessages.length === 1 ? 'activity' : 'activities'}</summary><div className="mt-3 space-y-3 border-t border-line pt-3">{earlierMessages.map((message) => <MessageBubble key={message.id} message={message} customerName={customerName} />)}</div></details> : null}
+
+      <div className="rounded-card border border-line bg-surface-2 px-3 py-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-caption font-bold uppercase text-content-brand">✨ Setu Guru captured</span>
+          {captures.length ? captures.map((capture) => <span key={`${capture.label}:${capture.value}`} className="rounded-pill border border-line bg-surface-1 px-2 py-1 text-caption text-content-secondary"><strong>{capture.label}:</strong> {capture.value}</span>) : <span className="text-caption text-content-muted">No structured buyer detail has been extracted from the imported messages yet.</span>}
+        </div>
+      </div>
+
+      <details className="rounded-card border border-line bg-surface-1 px-3 py-2">
+        <summary className="cursor-pointer text-caption font-bold text-content-secondary">View full conversation · {messages.length} imported {messages.length === 1 ? 'activity' : 'activities'}</summary>
+        <div className="mt-3 space-y-3 border-t border-line pt-3">{messages.map((message) => <MessageBubble key={message.id} message={message} customerName={customerName} />)}</div>
+      </details>
     </div>
   </section>;
 }
