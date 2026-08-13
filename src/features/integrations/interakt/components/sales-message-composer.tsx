@@ -151,9 +151,12 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
   const noticeClass = notice?.tone === 'success'
     ? 'border-success-border bg-success-bg text-success-fg'
     : 'border-danger-border bg-danger-bg text-danger-fg';
-  const whatsappClass = replyWindowOpen
+  const whatsappStatusClass = replyWindowOpen
     ? 'border-success-border bg-success-bg text-success-fg'
     : 'border-info-border bg-info-bg text-info-fg';
+  const whatsappHelp = replyWindowOpen
+    ? 'WhatsApp allows a free-form reply within 24 hours of the customer’s latest message. Setu has prepared the recommended draft below; you can edit it freely before sending.'
+    : 'The 24-hour free-form reply window is closed. Use an approved WhatsApp template below to reopen the conversation.';
 
   return (
     <div className="space-y-3">
@@ -166,12 +169,12 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
         </div>
       ) : null}
 
-      <div className={`rounded-card border px-3 py-2 ${whatsappClass}`}>
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-caption font-bold">WhatsApp</p>
-          <span className="rounded-pill bg-surface-1 px-2 py-0.5 text-caption font-bold">{replyWindowOpen ? 'Free reply window open' : 'Approved template required'}</span>
-        </div>
-        <p className="mt-1 text-caption leading-4">{replyWindowOpen ? 'Setu has prepared one recommended reply. Edit it if needed, add a brochure only when useful, then send.' : 'The 24-hour reply window is closed. Use the approved follow-up below to reopen the WhatsApp conversation.'}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-caption font-bold text-content-secondary">WhatsApp</p>
+        <span className={`inline-flex items-center gap-1 rounded-pill border px-2 py-1 text-caption font-bold ${whatsappStatusClass}`}>
+          {replyWindowOpen ? 'Free reply window open' : 'Approved template required'}
+          <span className="cursor-help font-semibold" title={whatsappHelp} aria-label={whatsappHelp}>ⓘ</span>
+        </span>
       </div>
 
       {replyWindowOpen ? (
