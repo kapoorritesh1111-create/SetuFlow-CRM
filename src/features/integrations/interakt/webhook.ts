@@ -142,7 +142,16 @@ function assigneeFromTraits(traits: Record<string, unknown>) {
 function evidenceEntry(intelligence: InteraktCompanyIntelligence, input: { messageId?: string | null; mediaUrl?: string | null; question?: string | null; at?: string | null }) {
   return { source: intelligence.source, company_name: intelligence.companyName, brand_name: intelligence.brandName, confidence: intelligence.confidence, evidence: intelligence.evidence, model: intelligence.model, message_id: input.messageId ?? null, media_url: input.mediaUrl ?? null, question: input.question ?? null, observed_at: input.at ?? new Date().toISOString() };
 }
-function mergeEvidence(existing: unknown, next: Record<string, unknown>) { const current = safeObject(existing); const history = Array.isArray(current.history) ? current.history.slice(-19) : []; return { latest: next, history: [...history, next] }; }
+function evidenceFingerprint(value: unknown) {
+  const entry = safeObject(value);
+  return [entry.source, entry.company_name, entry.brand_name, entry.evidence, entry.message_id, entry.media_url, entry.question, entry.observed_at].map((part) => String(part ?? '')).join('|');
+}
+function mergeEvidence(existing: unknown, next: Record<string, unknown>) {
+  const current = safeObject(existing);
+  const nextKey = evidenceFingerprint(next);
+  const history = (Array.isArray(current.history) ? current.history : []).filter((entry) => evidenceFingerprint(entry) !== nextKey).slice(-19);
+  return { latest: next, history: [...history, next] };
+}
 
 async function findOrCreateIntake(db: any, input: { customerId?: string | null; phone?: string | null; name?: string | null; email?: string | null; sourcePayload?: Record<string, unknown> }) {
   let row: any = null;
