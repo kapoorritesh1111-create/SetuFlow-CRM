@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle2, ChevronDown, FileText, FolderOpen, Plus, Upload, X } from 'lucide-react';
 
@@ -48,9 +48,9 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
   const [open, setOpen] = useState(initialOpen);
   const [tab, setTab] = useState<'library' | 'upload'>(brochures.length ? 'library' : 'upload');
   const [notice, setNotice] = useState<Notice>(null);
+  const [uploading, setUploading] = useState(false);
   const [savingBrochureId, setSavingBrochureId] = useState<string | null>(null);
-  const [uploadPending, startUpload] = useTransition();
-  const [updatePending, startUpdate] = useTransition();
+  const busy = uploading || savingBrochureId !== null;
 
   const activeCount = useMemo(() => brochures.filter((item) => item.is_active).length, [brochures]);
   const mappedCount = useMemo(() => brochures.filter((item) => item.family_ids.length > 0 || item.category_ids.length > 0).length, [brochures]);
@@ -60,14 +60,14 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !uploadPending && !updatePending) setOpen(false);
+      if (event.key === 'Escape' && !busy) setOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [open, uploadPending, updatePending]);
+  }, [open, busy]);
 
   function showManager(nextTab?: 'library' | 'upload') {
     setNotice(null);
@@ -76,49 +76,43 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
   }
 
   function closeManager() {
-    if (uploadPending || updatePending) return;
+    if (busy) return;
     setNotice(null);
     setOpen(false);
   }
 
-  function submitUpload(event: React.FormEvent<HTMLFormElement>) {
+  async function submitUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
+    const formData = new FormData(event.currentTarget);
     setNotice(null);
-    startUpload(() => {
-      void (async () => {
-        try {
-          await uploadCatalogBrochure(formData);
-          uploadFormRef.current?.reset();
-          setNotice({ tone: 'success', message: 'Brochure uploaded and available to your sales team.' });
-          setTab('library');
-          router.refresh();
-        } catch (error) {
-          setNotice({ tone: 'error', message: messageFromError(error, 'The brochure could not be uploaded. Please try again.') });
-        }
-      })();
-    });
+    setUploading(true);
+    try {
+      await uploadCatalogBrochure(formData);
+      uploadFormRef.current?.reset();
+      setNotice({ tone: 'success', message: 'Brochure uploaded and available to your sales team.' });
+      setTab('library');
+      router.refresh();
+    } catch (error) {
+      setNotice({ tone: 'error', message: messageFromError(error, 'The brochure could not be uploaded. Please try again.') });
+    } finally {
+      setUploading(false);
+    }
   }
 
-  function submitUpdate(event: React.FormEvent<HTMLFormElement>, brochureId: string) {
+  async function submitUpdate(event: React.FormEvent<HTMLFormElement>, brochureId: string) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     setNotice(null);
     setSavingBrochureId(brochureId);
-    startUpdate(() => {
-      void (async () => {
-        try {
-          await updateCatalogBrochure(formData);
-          setNotice({ tone: 'success', message: 'Brochure details updated.' });
-          router.refresh();
-        } catch (error) {
-          setNotice({ tone: 'error', message: messageFromError(error, 'The brochure could not be updated. Please try again.') });
-        } finally {
-          setSavingBrochureId(null);
-        }
-      })();
-    });
+    try {
+      await updateCatalogBrochure(formData);
+      setNotice({ tone: 'success', message: 'Brochure details updated.' });
+      router.refresh();
+    } catch (error) {
+      setNotice({ tone: 'error', message: messageFromError(error, 'The brochure could not be updated. Please try again.') });
+    } finally {
+      setSavingBrochureId(null);
+    }
   }
 
   return (
@@ -163,7 +157,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
               <div className="flex items-center gap-2">
                 <span className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:inline-flex">{activeCount} active</span>
                 <span className="hidden rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 sm:inline-flex">{mappedCount} matched</span>
-                <button type="button" onClick={closeManager} disabled={uploadPending || updatePending} className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50" aria-label="Close brochure manager">
+                <button type="button" onClick={closeManager} disabled={busy} className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50" aria-label="Close brochure manager">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -204,7 +198,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                     <div className="space-y-3">
                       {brochures.map((brochure) => {
                         const mappingNames = [...brochure.category_names, ...brochure.family_names];
-                        const saving = updatePending && savingBrochureId === brochure.id;
+                        const saving = savingBrochureId === brochure.id;
                         return (
                           <details key={brochure.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                             <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-4 transition hover:bg-slate-50">
@@ -222,7 +216,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                               <ChevronDown className="h-4 w-4 text-slate-400 transition group-open:rotate-180" />
                             </summary>
 
-                            <form onSubmit={(event) => submitUpdate(event, brochure.id)} className="grid gap-4 border-t border-slate-100 bg-slate-50/70 p-4 lg:grid-cols-2">
+                            <form onSubmit={(event) => { void submitUpdate(event, brochure.id); }} className="grid gap-4 border-t border-slate-100 bg-slate-50/70 p-4 lg:grid-cols-2">
                               <input type="hidden" name="id" value={brochure.id} />
                               <label className="grid gap-1.5 text-xs font-semibold text-slate-600">Brochure name
                                 <input name="name" required defaultValue={brochure.name} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" />
@@ -255,7 +249,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                               ) : null}
 
                               <div className="flex justify-end lg:col-span-2">
-                                <button type="submit" disabled={saving} className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving…' : 'Save changes'}</button>
+                                <button type="submit" disabled={busy} className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving…' : 'Save changes'}</button>
                               </div>
                             </form>
                           </details>
@@ -278,7 +272,7 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                     <p className="mt-1 text-xs text-slate-500">Upload a PDF and choose where it should be recommended to your sales team.</p>
                   </div>
 
-                  <form ref={uploadFormRef} onSubmit={submitUpload} encType="multipart/form-data" className="grid gap-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 lg:grid-cols-2">
+                  <form ref={uploadFormRef} onSubmit={(event) => { void submitUpload(event); }} encType="multipart/form-data" className="grid gap-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 lg:grid-cols-2">
                     <label className="grid gap-1.5 text-xs font-semibold text-slate-600">Brochure name
                       <input name="name" required placeholder="e.g. Stand-Up Pouches" className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" />
                     </label>
@@ -314,8 +308,8 @@ export function BrochureManagerModal({ brochures, categories, families, initialO
                     <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 lg:col-span-2"><input type="checkbox" name="is_active" value="true" defaultChecked /> Available to sales immediately</label>
                     <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4 lg:col-span-2">
                       <p className="text-[11px] text-slate-500">PDF files up to 12 MB.</p>
-                      <button type="submit" disabled={uploadPending} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60">
-                        <Upload className="h-4 w-4" /> {uploadPending ? 'Uploading…' : 'Upload brochure'}
+                      <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60">
+                        <Upload className="h-4 w-4" /> {uploading ? 'Uploading…' : 'Upload brochure'}
                       </button>
                     </div>
                   </form>
