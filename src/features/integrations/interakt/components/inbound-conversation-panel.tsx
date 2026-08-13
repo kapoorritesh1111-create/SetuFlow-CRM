@@ -92,14 +92,14 @@ function MessageBubble({ message, customerName, latest = false }: { message: Con
 
 export function InboundConversationPanel({ messages, customerName }: Props) {
   if (messages.length === 0) {
-    return <section><div className="mb-2 flex items-center justify-between"><h3 className="text-caption font-bold uppercase text-content-muted">Conversation</h3><span className="text-caption text-content-faint">0 activities</span></div><div className="rounded-card border border-dashed border-line px-4 py-6 text-center text-small text-content-muted">No conversation has been imported for this contact yet.</div></section>;
+    return <section><div className="mb-2 flex items-center justify-between"><h3 className="text-caption font-bold uppercase text-content-muted">Conversation</h3><span className="text-caption text-content-faint">0 imported activities</span></div><div className="rounded-card border border-dashed border-line px-4 py-6 text-center text-small text-content-muted">No conversation has been imported for this contact yet.</div></section>;
   }
 
   const latestCustomerMessage = [...messages].reverse().find(hasVisibleCustomerContent) ?? null;
   const captures = guruCaptures(messages);
 
   return <section>
-    <div className="mb-2 flex items-center justify-between"><h3 className="text-caption font-bold uppercase text-content-muted">Conversation</h3><span className="text-caption text-content-faint">{messages.length} activities</span></div>
+    <div className="mb-2 flex items-center justify-between"><h3 className="text-caption font-bold uppercase text-content-muted">Conversation</h3><span className="text-caption text-content-faint">{messages.length} imported {messages.length === 1 ? 'activity' : 'activities'}</span></div>
     <div className="space-y-2">
       {latestCustomerMessage ? <MessageBubble message={latestCustomerMessage} customerName={customerName} latest /> : <div className="rounded-card border border-line bg-surface-2 px-3 py-2 text-caption text-content-muted">No customer response is available in the imported history yet.</div>}
 
