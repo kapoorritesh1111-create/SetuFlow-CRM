@@ -9,6 +9,7 @@ const categoryMigration = read('supabase/migrations/20260812162500_catalog_broch
 const hardeningMigration = read('supabase/migrations/20260812165500_catalog_brochure_share_hardening.sql');
 const server = read('src/features/catalog-brochures/server.ts');
 const adminPage = read('src/app/(app)/admin/catalog/brochures/page.tsx');
+const brochureModal = read('src/features/catalog-brochures/components/brochure-manager-modal.tsx');
 const catalogPage = read('src/app/(app)/admin/categories/page.tsx');
 const publicPage = read('src/app/public/brochure/[token]/page.tsx');
 const publicFile = read('src/app/api/public/brochures/[token]/file/route.ts');
@@ -40,18 +41,25 @@ test('S51-CAT-011 supports generic product categories and packaging families', (
   assert.match(categoryMigration, /product_categories/);
   assert.match(server, /category_names/);
   assert.match(server, /packaging_service_families/);
-  assert.match(adminPage, /Standard product categories/);
-  assert.match(adminPage, /Packaging service families/);
+  assert.match(brochureModal, /Product categories/);
+  assert.match(brochureModal, /Packaging families/);
   assert.match(inboundComposer, /category_names/);
 });
 
-test('S51-CAT-011 admin Catalog exposes brochure upload and management without new banned typography utilities', () => {
-  assert.match(catalogPage, /\/admin\/catalog\/brochures/);
-  assert.match(adminPage, /Upload a PDF catalog/);
-  assert.match(adminPage, /Available to sales/);
-  assert.match(adminPage, /uploadCatalogBrochure/);
-  assert.match(adminPage, /updateCatalogBrochure/);
-  assert.doesNotMatch(adminPage, /tracking-\[|font-black|font-extrabold/);
+test('S51-CAT-011 admin Catalog manages brochures in a premium in-window modal', () => {
+  assert.match(catalogPage, /BrochureManagerModal/);
+  assert.match(brochureModal, /role="dialog"/);
+  assert.match(brochureModal, /aria-modal="true"/);
+  assert.match(brochureModal, /Manage library/);
+  assert.match(brochureModal, /Upload brochure/);
+  assert.match(brochureModal, /Available to sales immediately/);
+  assert.match(brochureModal, /uploadCatalogBrochure/);
+  assert.match(brochureModal, /updateCatalogBrochure/);
+  assert.match(brochureModal, /router\.refresh\(\)/);
+  assert.match(adminPage, /redirect\('\/admin\/catalog\?brochures=1'\)/);
+  assert.doesNotMatch(catalogPage, /Why is this one admin page/);
+  assert.doesNotMatch(brochureModal, /How sales uses this|Use this for any organization|opaque Setu Flow link|CRM login/);
+  assert.doesNotMatch(brochureModal, /tracking-\[|font-black|font-extrabold/);
 });
 
 test('S51-CAT-011 public brochure viewer stays login-free, private-storage backed, and token styled', () => {
