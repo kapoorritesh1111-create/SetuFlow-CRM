@@ -11,12 +11,22 @@ const intelligence = read('src/features/integrations/interakt/intelligence.ts');
 const webhook = read('src/features/integrations/interakt/webhook.ts');
 const packageJson = read('package.json');
 
-test('S51-LEADS-014 shows the latest customer response and collapses earlier history', () => {
+test('S51-LEADS-014 keeps the latest response compact while always preserving full conversation access', () => {
   assert.match(page, /InboundConversationPanel/);
   assert.match(conversation, /Latest customer response/);
   assert.match(conversation, /\.reverse\(\)\.find\(hasVisibleCustomerContent\)/);
-  assert.match(conversation, /View earlier conversation/);
-  assert.match(conversation, /earlierMessages\.map/);
+  assert.match(conversation, /View full conversation/);
+  assert.match(conversation, /messages\.map\(\(message\) => <MessageBubble/);
+  assert.match(conversation, /imported \{messages\.length === 1 \? 'activity' : 'activities'\}/);
+});
+
+test('S51-LEADS-014 makes Setu Guru message understanding visible without expanding the thread', () => {
+  assert.match(conversation, /Setu Guru captured/);
+  assert.match(conversation, /inferCustomerIntent/);
+  assert.match(conversation, /Asking about MOQ/);
+  assert.match(conversation, /Asking about pricing/);
+  assert.match(conversation, /Possible company/);
+  assert.match(conversation, /No structured buyer detail has been extracted/);
 });
 
 test('S51-LEADS-015 normalizes company identity without losing the raw workflow answer', () => {
@@ -40,6 +50,14 @@ test('S51-LEADS-016 keeps one recommended reply prominent and moves alternatives
   assert.doesNotMatch(composer, /Setu suggested replies/);
   assert.match(composer, /name="draftRowId" value=\{draftRowId\}/);
   assert.match(composer, /const contextChanged = draftRowId !== rowId/);
+});
+
+test('S51-LEADS-016 reduces reply-window guidance to an info affordance instead of a heavy banner', () => {
+  assert.match(composer, /whatsappHelp/);
+  assert.match(composer, /title=\{whatsappHelp\}/);
+  assert.match(composer, /aria-label=\{whatsappHelp\}/);
+  assert.match(composer, /ⓘ/);
+  assert.doesNotMatch(composer, /Setu has prepared one recommended reply\. Edit it if needed, add a brochure only when useful, then send\./);
 });
 
 test('S51 inbound feature additions use product design-system tokens and run in the normal test command', () => {
