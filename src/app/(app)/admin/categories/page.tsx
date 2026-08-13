@@ -1,8 +1,11 @@
 import Link from 'next/link';
+
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { CategoriesGovernanceWorkbench } from '@/features/admin/components/categories-governance-workbench';
 import type { PricingCalculatorDefaultRule } from '@/features/admin/components/product-governance-workbench';
+import { BrochureManagerModal } from '@/features/catalog-brochures/components/brochure-manager-modal';
+import { listCatalogBrochures } from '@/features/catalog-brochures/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -17,18 +20,20 @@ type CategoryRow = {
 };
 
 type ProductRow = { id: string; category_id: string | null };
+type FamilyRow = { id: string; name: string; slug: string; is_active: boolean | null };
+type SearchParams = { brochures?: string };
 
 const chipClass = 'rounded-full border px-2.5 py-1 text-[10px] font-bold';
 const actionClass = 'rounded-lg border px-3 py-1.5 text-[11px] font-bold transition';
 
-export default async function Page() {
+export default async function Page({ searchParams = {} }: { searchParams?: SearchParams }) {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using this admin workspace." tone="warning" />;
   const { missingEnv, membership, organization } = await requireAdminWorkspace();
   if (missingEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment before using this admin workspace." tone="warning" />;
   if (!membership || !organization) return null;
 
   const supabase: any = await createClient();
-  const [categoriesResult, productsResult, pricingRulesResult, brochuresResult] = await Promise.all([
+  const [categoriesResult, productsResult, pricingRulesResult, brochureData, familiesResult] = await Promise.all([
     supabase
       .from('product_categories')
       .select('id, name, sort_order, is_active, parent_id, products(id)')
@@ -44,7 +49,13 @@ export default async function Page() {
       .select('id, organization_id, rule_scope, category_id, currency, margin_mode, inland_transport_cost, export_customs_cost, port_handling_cost, freight_cost, insurance_cost, import_duty_percent, destination_charges, local_delivery_cost, internal_margin_percent, distributor_margin_percent, retail_margin_percent, is_active')
       .eq('organization_id', organization.id)
       .eq('is_active', true),
-    supabase.from('catalog_brochures').select('id,is_active', { count: 'exact' }).eq('organization_id', organization.id),
+    listCatalogBrochures({ includeInactive: true }),
+    supabase
+      .from('packaging_service_families')
+      .select('id,name,slug,is_active')
+      .eq('organization_id', organization.id)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
   ]);
 
   if (categoriesResult.error) return <StateMessage title="Categories could not load" description={categoriesResult.error.message} tone="warning" />;
@@ -61,7 +72,8 @@ export default async function Page() {
   }));
   const uncategorizedProducts = ((productsResult.data ?? []) as ProductRow[]).filter((product) => !product.category_id).length;
   const activeCount = rows.filter((category) => category.is_active !== false).length;
-  const brochureCount = brochuresResult.error ? 0 : Number(brochuresResult.count ?? brochuresResult.data?.length ?? 0);
+  const brochureCount = brochureData.length;
+  const families = (familiesResult.data ?? []) as FamilyRow[];
 
   return (
     <AdminSettingsShell active="categories" organizationName={organization.name} missingCount={rows.length === 0 || uncategorizedProducts > 0 ? 1 : 0}>
@@ -74,32 +86,20 @@ export default async function Page() {
           <span className={`${chipClass} border-emerald-200 bg-emerald-50 text-emerald-700`}>{rows.length} categor{rows.length === 1 ? 'y' : 'ies'}</span>
           <span className={`${chipClass} border-blue-200 bg-blue-50 text-blue-700`}>{activeCount} active</span>
           <span className={`${chipClass} border-violet-200 bg-violet-50 text-violet-700`}>{brochureCount} brochure{brochureCount === 1 ? '' : 's'}</span>
-          <Link href="/admin/catalog/brochures" className={`${actionClass} border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100`}>Brochures</Link>
           <Link href="/admin/catalog#catalog-add-category" className={`${actionClass} border-blue-900 bg-blue-900 text-white hover:bg-blue-950`}>+ Add category</Link>
         </div>
       </div>
+
       <div id="catalog-add-category" className="space-y-4 px-5 py-4 lg:px-5 lg:py-4" data-admin-v2-foundation="S24-ADMUX-24" data-admin-v2-page="catalog">
-        <Link href="/admin/catalog/brochures" className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 p-3 transition hover:bg-violet-100">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-black text-violet-700">PDF</span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-extrabold text-violet-900">Brochures & catalogs</span>
-            <span className="mt-0.5 block text-[10.5px] text-violet-700">Upload buyer-facing PDFs, map them to product families, and make them available in inquiry and lead messages.</span>
-          </span>
-          <span className="text-base font-bold text-violet-700" aria-hidden="true">→</span>
-        </Link>
-        <div className="flex gap-2.5 rounded-ctl border border-slate-200 bg-white px-3.5 py-3">
-          <span aria-hidden="true" className="text-base">🔗</span>
-          <div>
-            <p className="text-xs font-bold text-slate-900">Why is this one admin page?</p>
-            <p className="mt-1 text-[11px] leading-[1.6] text-slate-500">
-              <strong>Taxonomy tab</strong> — category structure, hierarchy, active/inactive (admin-only, set-once).{' '}
-              <strong>Pricing rules tab</strong> — EXW→DDP cost build-up defaults per category.{' '}
-              <strong>Brochures</strong> — buyer-facing PDF catalogs used by sales.{' '}
-              The daily product list lives in <strong>/products</strong> (main nav).
-            </p>
-          </div>
-        </div>
+        <BrochureManagerModal
+          brochures={brochureData}
+          categories={rows.map((category) => ({ id: category.id, name: category.name, is_active: category.is_active }))}
+          families={families}
+          initialOpen={searchParams.brochures === '1'}
+        />
+
         <CategoriesGovernanceWorkbench categories={rows} uncategorizedProducts={uncategorizedProducts} pricingRules={(pricingRulesResult.data ?? []) as PricingCalculatorDefaultRule[]} />
+
         <Link href="/admin/pricing" className="flex items-center gap-3 rounded-xl border border-teal-200 bg-teal-50 p-3 transition hover:bg-teal-100">
           <span className="text-base" aria-hidden="true">💰</span>
           <span className="min-w-0 flex-1">
