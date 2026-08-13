@@ -26,6 +26,20 @@ function looksLikeCompanyName(value: string) {
   return /\b(?:pvt|private|ltd|limited|llp|inc|llc|corp|corporation|company|co\.?|industries|industry|foods?|agro|packaging|packmate|enterprises?|traders?|trading|exports?|imports?|solutions|systems|products?|ventures|international|global|manufacturing|manufacturers?)\b/i.test(value);
 }
 
+function looksLikeNaturalSentence(value: string) {
+  const words = value.split(/\s+/).filter(Boolean);
+  return words.length > 6
+    || /^(?:we|i|our|my|this|it|the)\b/i.test(value)
+    || /\b(?:we|i)\s+(?:are|am|have|make|sell|need|want|do)\b/i.test(value);
+}
+
+function directWorkflowCompanyName(value: string) {
+  const candidate = cleanEntity(value);
+  if (!candidate || looksLikeNaturalSentence(candidate)) return null;
+  if (/\b(?:startup|company|business|firm)\b/i.test(candidate) && candidate.split(/\s+/).length > 4) return null;
+  return candidate;
+}
+
 export function extractExplicitCompanyFromText(textValue: unknown): InteraktCompanyIntelligence | null {
   const text = String(textValue ?? '').trim();
   if (!text || text.length > 5000) return null;
@@ -70,6 +84,49 @@ export function extractExplicitCompanyFromText(textValue: unknown): InteraktComp
       brandName: null,
       confidence: 0.94,
       evidence: fromMatch?.[0]?.trim() || text.slice(0, 240),
+      source: 'message_text',
+      model: null,
+    };
+  }
+
+  return null;
+}
+
+export function normalizeWorkflowCompanyAnswer(answerValue: unknown): InteraktCompanyIntelligence | null {
+  const answer = String(answerValue ?? '').replace(/\s+/g, ' ').trim();
+  if (!answer || answer.length > 500) return null;
+
+  const explicit = extractExplicitCompanyFromText(answer);
+  if (explicit?.companyName) {
+    return { ...explicit, evidence: answer };
+  }
+
+  const contextualPatterns = [
+    /\b(?:startup|company|business|firm)\s+(?:called\s+|named\s+)?([A-Z][A-Za-z0-9&'.-]*(?:\s+[A-Z][A-Za-z0-9&'.-]*){0,3})(?=\s+(?:for|in|with|making|selling|which|that|and)\b|[,.!?]|$)/,
+    /\b(?:startup|company|business|firm)\s+(?:called\s+|named\s+)?([A-Za-z0-9][A-Za-z0-9&'.-]{1,60})(?=\s+(?:for|in|with|making|selling|which|that|and)\b|[,.!?]|$)/i,
+  ];
+  for (const pattern of contextualPatterns) {
+    const match = answer.match(pattern);
+    const companyName = match?.[1] ? cleanEntity(match[1]) : null;
+    if (companyName && !/^(?:new|small|d2c|b2b|startup|company|business)$/i.test(companyName)) {
+      return {
+        companyName,
+        brandName: null,
+        confidence: 0.9,
+        evidence: answer,
+        source: 'message_text',
+        model: null,
+      };
+    }
+  }
+
+  const direct = directWorkflowCompanyName(answer);
+  if (direct) {
+    return {
+      companyName: direct,
+      brandName: null,
+      confidence: 0.98,
+      evidence: answer,
       source: 'message_text',
       model: null,
     };

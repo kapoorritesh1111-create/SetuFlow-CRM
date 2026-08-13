@@ -3,7 +3,7 @@ import 'server-only';
 import crypto from 'crypto';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
-import { analyzeInteraktCustomerImage, extractExplicitCompanyFromText } from '@/features/integrations/interakt/intelligence';
+import { analyzeInteraktCustomerImage, extractExplicitCompanyFromText, normalizeWorkflowCompanyAnswer } from '@/features/integrations/interakt/intelligence';
 import type { InteraktCompanyIntelligence } from '@/features/integrations/interakt/intelligence';
 import type { InteraktWebhookPayload } from '@/features/integrations/interakt/types';
 
@@ -71,8 +71,6 @@ function isBrandQuestion(question: string) {
 
 function qualificationPatchFromAnswer(question: string, answer: string) {
   const q = question.toLowerCase();
-  if (/company|business name|organisation|organization/.test(q)) return { company_name: answer };
-  if (isBrandQuestion(question)) return { brand_name: answer };
   if (/packaging type|packaging category/.test(q)) return { packaging_type: answer };
   if (/what type of pouch|pouch type/.test(q)) return { pouch_type: answer };
   if (/quantity|moq/.test(q)) return { quantity_text: answer };
@@ -90,11 +88,50 @@ function identityQuestion(question: string) {
   return null;
 }
 
-function quantityFromMessage(textValue: unknown) {
+function visibleMessageText(textValue: unknown) {
   const text = String(textValue ?? '').trim();
-  if (!text || text.startsWith('{')) return null;
-  const match = text.match(/\b(\d[\d,.]*(?:\s*(?:-|to)\s*\d[\d,.]*)?\s*(?:pcs?|pieces?|units?|pouches?|bags?|kg|kgs|mt|tons?))\b/i);
-  return match?.[1]?.trim() ?? null;
+  if (!text.startsWith('{')) return text;
+  try {
+    const parsed = JSON.parse(text) as Record<string, any>;
+    return String(parsed?.list_reply?.title ?? parsed?.button_reply?.title ?? '').trim();
+  } catch {
+    return text;
+  }
+}
+
+function quantityFromMessage(textValue: unknown) {
+  const text = visibleMessageText(textValue);
+  if (!text) return null;
+  const withUnits = text.match(/\b(\d[\d,.]*(?:\s*(?:-|to)\s*\d[\d,.]*)?\s*(?:pcs?|pieces?|units?|pouches?|bags?|kg|kgs|mt|tons?))\b/i);
+  if (withUnits?.[1]) return withUnits[1].trim();
+  const bareRange = text.match(/^\s*(\d{3,}[\d,.]*\s*(?:-|to)\s*\d{3,}[\d,.]*)\s*$/i);
+  return bareRange?.[1]?.trim() ?? null;
+}
+
+function industryFromMessage(textValue: unknown) {
+  const text = visibleMessageText(textValue).replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  const normalized = text.toLowerCase().replace(/&/g, 'and');
+  const known = new Map<string, string>([
+    ['food and beverage', 'Food and Beverage'],
+    ['health / supplements', 'Health / supplements'],
+    ['health and supplements', 'Health / supplements'],
+    ['supplements', 'Health / supplements'],
+    ['pharma', 'Pharma'],
+    ['pharmaceutical', 'Pharma'],
+    ['cosmetics', 'Cosmetics / Beauty'],
+    ['beauty', 'Cosmetics / Beauty'],
+    ['personal care', 'Personal Care'],
+    ['pet food', 'Pet Food'],
+    ['spices', 'Spices'],
+    ['snacks', 'Snacks'],
+    ['tea and coffee', 'Tea & Coffee'],
+    ['dry fruits', 'Dry Fruits'],
+    ['confectionery', 'Confectionery'],
+    ['frozen food', 'Frozen Food'],
+    ['dairy', 'Dairy'],
+  ]);
+  return known.get(normalized) ?? null;
 }
 
 function assigneeFromTraits(traits: Record<string, unknown>) {
@@ -105,7 +142,16 @@ function assigneeFromTraits(traits: Record<string, unknown>) {
 function evidenceEntry(intelligence: InteraktCompanyIntelligence, input: { messageId?: string | null; mediaUrl?: string | null; question?: string | null; at?: string | null }) {
   return { source: intelligence.source, company_name: intelligence.companyName, brand_name: intelligence.brandName, confidence: intelligence.confidence, evidence: intelligence.evidence, model: intelligence.model, message_id: input.messageId ?? null, media_url: input.mediaUrl ?? null, question: input.question ?? null, observed_at: input.at ?? new Date().toISOString() };
 }
-function mergeEvidence(existing: unknown, next: Record<string, unknown>) { const current = safeObject(existing); const history = Array.isArray(current.history) ? current.history.slice(-19) : []; return { latest: next, history: [...history, next] }; }
+function evidenceFingerprint(value: unknown) {
+  const entry = safeObject(value);
+  return [entry.source, entry.company_name, entry.brand_name, entry.evidence, entry.message_id, entry.media_url, entry.question, entry.observed_at].map((part) => String(part ?? '')).join('|');
+}
+function mergeEvidence(existing: unknown, next: Record<string, unknown>) {
+  const current = safeObject(existing);
+  const nextKey = evidenceFingerprint(next);
+  const history = (Array.isArray(current.history) ? current.history : []).filter((entry) => evidenceFingerprint(entry) !== nextKey).slice(-19);
+  return { latest: next, history: [...history, next] };
+}
 
 async function findOrCreateIntake(db: any, input: { customerId?: string | null; phone?: string | null; name?: string | null; email?: string | null; sourcePayload?: Record<string, unknown> }) {
   let row: any = null;
@@ -138,9 +184,37 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
     const evidenceKey = clean(answer.id) || `${clean(data.id) ?? 'workflow'}:${clean(question.id) ?? questionText}:${answerText ?? ''}`; const now = new Date().toISOString();
     await db.from('lead_intake_workflow_answers').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, workflow_id: clean(data.workflow_id), workflow_run_id: clean(data.id), question_id: clean(question.id), question_text: questionText, answer_text: answerText, response_type: clean(answer.message_content_type), answered_at: answeredAt, evidence_key: evidenceKey, raw_payload: row, updated_at: now }, { onConflict: 'organization_id,provider,intake_id,evidence_key' });
     if (answerText) {
-      Object.assign(patch, qualificationPatchFromAnswer(questionText, answerText));
       const identityKind = identityQuestion(questionText);
-      if (identityKind) { const intelligence: InteraktCompanyIntelligence = { companyName: identityKind === 'company' ? answerText : null, brandName: identityKind === 'brand' ? answerText : null, confidence: 1, evidence: `${questionText}: ${answerText}`, source: 'message_text', model: null }; companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now })); companyIntelligenceUpdatedAt = now; }
+      if (!identityKind) {
+        Object.assign(patch, qualificationPatchFromAnswer(questionText, answerText));
+      } else if (identityKind === 'company') {
+        const normalizedCompany = normalizeWorkflowCompanyAnswer(answerText);
+        if (normalizedCompany?.companyName && !intake.company_name && !patch.company_name) {
+          patch.company_name = normalizedCompany.companyName;
+        }
+        const intelligence: InteraktCompanyIntelligence = normalizedCompany ?? {
+          companyName: null,
+          brandName: null,
+          confidence: 0.25,
+          evidence: answerText,
+          source: 'message_text',
+          model: null,
+        };
+        companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now }));
+        companyIntelligenceUpdatedAt = now;
+      } else {
+        if (!intake.brand_name && !patch.brand_name) patch.brand_name = answerText;
+        const intelligence: InteraktCompanyIntelligence = {
+          companyName: null,
+          brandName: answerText,
+          confidence: 0.98,
+          evidence: answerText,
+          source: 'message_text',
+          model: null,
+        };
+        companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(intelligence, { question: questionText, at: answeredAt ?? now }));
+        companyIntelligenceUpdatedAt = now;
+      }
     }
     if (answeredAt && (!latestInboundAt || answeredAt > latestInboundAt)) latestInboundAt = answeredAt;
   }
@@ -159,8 +233,8 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const intake = await findOrCreateIntake(db, { customerId, phone, name, email, sourcePayload: data });
   const eventType = clean(payload.type) ?? 'message_received'; const incoming = eventType === 'message_received'; const receivedAt = iso(message.received_at_utc); const deliveredAt = iso(message.delivered_at_utc); const readAt = iso(message.seen_at_utc);
   const status = incoming ? 'received' : eventType.endsWith('_read') ? 'read' : eventType.endsWith('_delivered') ? 'delivered' : eventType.endsWith('_failed') ? 'failed' : 'sent';
-  const callbackData = recursiveFindString(message.meta_data, ['callback_data']); const text = messageText(message); const mediaUrl = messageMediaUrl(message); const now = new Date().toISOString();
-  const textIntelligence = incoming ? extractExplicitCompanyFromText(text) : null; const imageIntelligence = incoming && isImageMessage(message, mediaUrl) ? await analyzeInteraktCustomerImage(mediaUrl, text) : null; const intelligence = textIntelligence ?? imageIntelligence;
+  const callbackData = recursiveFindString(message.meta_data, ['callback_data']); const text = messageText(message); const visibleText = visibleMessageText(text); const mediaUrl = messageMediaUrl(message); const now = new Date().toISOString();
+  const textIntelligence = incoming ? extractExplicitCompanyFromText(visibleText) : null; const imageIntelligence = incoming && isImageMessage(message, mediaUrl) ? await analyzeInteraktCustomerImage(mediaUrl, visibleText) : null; const intelligence = textIntelligence ?? imageIntelligence;
   await db.from('lead_intake_messages').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, external_message_id: messageId, event_type: eventType, direction: incoming ? 'inbound' : 'outbound', actor_type: incoming ? 'customer' : 'agent', actor_name: incoming ? name : null, message_type: clean(message.message_content_type ?? message.chat_message_type), message_text: text || (mediaUrl ? '[Customer media]' : ''), message_payload: message, media_url: mediaUrl, intelligence: intelligence ?? {}, received_at: incoming ? receivedAt : null, sent_at: incoming ? null : receivedAt, delivered_at: deliveredAt, read_at: readAt, failed_at: status === 'failed' ? now : null, status, callback_data: callbackData, updated_at: now }, { onConflict: 'organization_id,provider,external_message_id' });
 
   const identityPatch: Record<string, unknown> = {};
@@ -168,8 +242,10 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence?.brandName && !intake.brand_name) identityPatch.brand_name = textIntelligence.brandName;
   if (imageIntelligence?.companyName && !intake.company_name) identityPatch.proposed_company_name = imageIntelligence.companyName;
   if (imageIntelligence?.brandName && !intake.brand_name) identityPatch.proposed_brand_name = imageIntelligence.brandName;
-  const quantity = incoming && !intake.quantity_text ? quantityFromMessage(text) : null;
+  const quantity = incoming && !intake.quantity_text ? quantityFromMessage(visibleText) : null;
   if (quantity) identityPatch.quantity_text = quantity;
+  const industry = incoming && !intake.industry ? industryFromMessage(visibleText) : null;
+  if (industry) identityPatch.industry = industry;
   let companyEvidence = intake.company_evidence ?? {};
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
