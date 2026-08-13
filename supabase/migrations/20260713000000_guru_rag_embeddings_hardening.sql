@@ -136,7 +136,7 @@ revoke all on function public.delete_guru_embeddings_for_source(uuid, text, uuid
 grant execute on function public.delete_guru_embeddings_for_source(uuid, text, uuid) to authenticated;
 
 -- 6. CDC Tombstone propagation trigger (Module E: Deletion Sync Wired)
--- (FIXED: Replaced stub with dynamic table mapping and wired to compliance_documents)
+-- (FIXED: Replaced stub with dynamic table mapping and wired to documents)
 create or replace function public.guru_embeddings_tombstone_cleanup()
 returns trigger
 language plpgsql
@@ -155,9 +155,9 @@ end;
 $$;
 
 -- Wire the trigger to the actual CRM data table
-drop trigger if exists sync_guru_embeddings_on_document_delete on public.compliance_documents;
+drop trigger if exists sync_guru_embeddings_on_document_delete on public.documents;
 create trigger sync_guru_embeddings_on_document_delete
-after delete on public.compliance_documents
+after delete on public.documents
 for each row execute function public.guru_embeddings_tombstone_cleanup();
 
 

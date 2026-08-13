@@ -147,6 +147,23 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
     payload: { previous: null, new: { lead_id: lead.id, quote_id: quote?.id ?? null, file_name: file.name, storage_path: storagePath, status: 'submitted' }, metadata: { source: quote?.id ? 'quote_compliance_fix_panel' : 'documents_workspace' } },
   });
 
+  // Wire up: Trigger Setu Guru RAG Ingestion for the newly uploaded document
+  try {
+    if (document?.id) {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/setu-guru/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: workspace.organization.id,
+          sourceType: 'documents',
+          sourceId: document.id,
+        }),
+      });
+    }
+  } catch (err) {
+    console.error('[RAG Ingest Webhook Error]:', err);
+  }
+
   revalidatePath('/documents');
   revalidatePath('/compliance');
   revalidatePath('/leads');

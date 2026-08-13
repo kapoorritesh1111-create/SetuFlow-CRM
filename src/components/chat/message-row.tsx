@@ -16,21 +16,118 @@ const EMOJI_GRID = [
 ];
 const pill = { borderRadius: 999, border: "1px solid #dbe7ea", background: "#fff", color: "#0f2744", cursor: "pointer" as const };
 
+/* ── inline-formatting tokenizer ──
+ * Kept as a single module-level constant so the regex is compiled once,
+ * not on every renderContent() call / re-render.
+ *
+ * Recognized tokens (in match-priority order):
+ *   S123-ABC-456      → issue reference link
+ *   @First Last        → mention
+ *   [R1]               → RAG source citation
+ *   *bold*             → bold
+ *   _italic_           → italic
+ *   `code`             → inline code
+ */
+const INLINE_TOKEN_REGEX =
+  /(S\d+-[A-Z]+-\d+|@[A-Za-z][A-Za-z0-9]*(?:\s+[A-Za-z][A-Za-z0-9]*)?|\[R\d+\]|\*[^*]+\*|_[^_]+_|`[^`]+`)/g;
+
+const ISSUE_REF_RE = /^S\d+-[A-Z]+-\d+$/;
+const MENTION_RE = /^@[A-Za-z]/;
+const CITATION_RE = /^\[R\d+\]$/;
+const BOLD_RE = /^\*[^*]+\*$/;
+const ITALIC_RE = /^_[^_]+_$/;
+const CODE_RE = /^`[^`]+`$/;
+
 /* ── helpers ── */
 export function initials(name?: string | null) { return (name || "TM").split(" ").map((x) => x[0]).join("").slice(0, 2).toUpperCase(); }
 export function fmtTime(value: string) { const d = new Date(value); return Number.isNaN(d.getTime()) ? "now" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
 export function fmtBytes(size: number) { if (!Number.isFinite(size) || size <= 0) return "Unknown size"; if (size < 1024) return `${size} B`; if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`; return `${(size / 1048576).toFixed(1)} MB`; }
 
-/* ── renderContent with lightweight formatting (bold/italic/code + issue refs + @mentions) ── */
+/**
+ * Renders message body text with lightweight inline formatting:
+ * issue refs (S123-ABC-456), @mentions, [Rx] AI/RAG source citations,
+ * *bold*, _italic_ and `code` spans.
+ *
+ * `mine` controls the color treatment so tokens stay legible against
+ * both the sent (teal gradient) and received (white) bubble backgrounds.
+ */
 export function renderContent(text: string, mine: boolean) {
-  // split on issue refs, @mentions, *bold*, _italic_, `code`
-  const parts = text.split(/(S\d+-[A-Z]+-\d+|@[A-Za-z][A-Za-z0-9]*(?:\s+[A-Za-z][A-Za-z0-9]*)?|\*[^*]+\*|_[^_]+_|`[^`]+`)/g);
+  const parts = text.split(INLINE_TOKEN_REGEX);
+
   return parts.map((part, i) => {
-    if (/^S\d+-[A-Z]+-\d+$/.test(part)) return <a key={i} href={`/smc/issues?q=${part}`} style={{ color: mine ? "#fff" : "#1F487C", fontWeight: 800, textDecoration: "underline" }}>{part}</a>;
-    if (/^@[A-Za-z]/.test(part)) return <strong key={i} style={{ color: mine ? "#d1faf9" : "#1F487C" }}>{part}</strong>;
-    if (/^\*[^*]+\*$/.test(part)) return <strong key={i}>{part.slice(1, -1)}</strong>;
-    if (/^_[^_]+_$/.test(part)) return <em key={i}>{part.slice(1, -1)}</em>;
-    if (/^`[^`]+`$/.test(part)) return <code key={i} style={{ background: mine ? "rgba(255,255,255,.18)" : "#f1f5f9", padding: "1px 5px", borderRadius: 4, fontSize: 12, fontFamily: "monospace" }}>{part.slice(1, -1)}</code>;
+    if (ISSUE_REF_RE.test(part)) {
+      return (
+        <a
+          key={i}
+          href={`/smc/issues?q=${part}`}
+          style={{ color: mine ? "#fff" : "#1F487C", fontWeight: 800, textDecoration: "underline" }}
+        >
+          {part}
+        </a>
+      );
+    }
+
+    if (MENTION_RE.test(part)) {
+      return (
+        <strong key={i} style={{ color: mine ? "#d1faf9" : "#1F487C" }}>
+          {part}
+        </strong>
+      );
+    }
+
+    // RAG / AI-generated answer source citation, e.g. "[R1]"
+    if (CITATION_RE.test(part)) {
+      return (
+        <sup key={i}>
+          <button
+            type="button"
+            title="View source document"
+            aria-label={`Source citation ${part}`}
+            onClick={() => {
+              // Hook point for wiring up a citation → source-document viewer.
+              // Left as a no-op stub so this file has no side effects on its own.
+              // e.g. onOpenCitation?.(part);
+            }}
+            style={{
+              display: "inline-block",
+              border: "none",
+              background: mine ? "rgba(255,255,255,.2)" : "#dbe7ea",
+              color: mine ? "#fff" : "#1F487C",
+              padding: "1px 6px",
+              borderRadius: 4,
+              fontSize: 11,
+              fontWeight: 700,
+              lineHeight: 1.4,
+              cursor: "pointer",
+              marginLeft: 3,
+              fontFamily: "inherit",
+            }}
+          >
+            {part}
+          </button>
+        </sup>
+      );
+    }
+
+    if (BOLD_RE.test(part)) return <strong key={i}>{part.slice(1, -1)}</strong>;
+    if (ITALIC_RE.test(part)) return <em key={i}>{part.slice(1, -1)}</em>;
+    if (CODE_RE.test(part)) {
+      return (
+        <code
+          key={i}
+          style={{
+            background: mine ? "rgba(255,255,255,.18)" : "#f1f5f9",
+            padding: "1px 5px",
+            borderRadius: 4,
+            fontSize: 12,
+            fontFamily: "monospace",
+          }}
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
     return part;
   });
 }

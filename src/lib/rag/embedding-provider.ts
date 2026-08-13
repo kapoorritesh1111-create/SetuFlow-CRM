@@ -95,7 +95,10 @@ export async function embedChunks(texts: string[]): Promise<EmbeddingResult> {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
-      return { ok: false, error: `BGE-M3 (TEI) inference error ${response.status}: ${errorText}` };
+      // --- ADDED: Fix for silent embedding server failure (Make failures loud) ---
+      console.error(`[EMBEDDING FATAL] Server returned ${response.status}:`, errorText);
+      throw new Error(`Embedding server unreachable or failed. Status: ${response.status}. Details: ${errorText}`);
+      // ------------------------------------------------------------------------
     }
 
     // TEI's /embed returns a bare array of vectors, not { embeddings: [...] }.
@@ -122,10 +125,10 @@ export async function embedChunks(texts: string[]): Promise<EmbeddingResult> {
 
     return { ok: true, embeddings };
   } catch (err: unknown) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : 'BGE-M3 inference fetch failed',
-    };
+    // --- ADDED: Ensure caught network errors also throw loudly ---
+    console.error('[EMBEDDING FATAL] Network or fetch error:', err);
+    throw new Error(`Embedding server unreachable: ${err instanceof Error ? err.message : 'Unknown network error'}`);
+    // -------------------------------------------------------------
   }
 }
 
@@ -147,10 +150,13 @@ export async function checkEmbeddingServerHealth(): Promise<{ healthy: boolean; 
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
     });
     if (!response.ok) {
+      // --- ADDED: Log health check failures clearly ---
+      console.error(`[EMBEDDING HEALTH] Health check failed with status ${response.status}`);
       return { healthy: false, detail: `Health check returned ${response.status} (endpoint may be scaled to zero / cold-starting)` };
     }
     return { healthy: true, detail: 'ok' };
   } catch (err: unknown) {
+    console.error('[EMBEDDING HEALTH] Fetch failed:', err);
     return {
       healthy: false,
       detail: err instanceof Error ? err.message : 'Health check fetch failed',

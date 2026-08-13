@@ -5,7 +5,7 @@ import { ensureConversationAccess, getAuthenticatedChatUser } from "@/lib/chat/a
 export const dynamic = "force-dynamic";
 
 const BUCKET = "chat-attachments";
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
 
 function uuid(value: FormDataEntryValue | null) {
   const text = typeof value === "string" ? value : null;
@@ -49,6 +49,34 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const { data } = admin.storage.from(BUCKET).getPublicUrl(storagePath);
+
+    // --- TRIGGER SETU GURU INGESTION WEBHOOK (Only for PDFs) ---
+    if (file.type === "application/pdf") {
+      try {
+        console.log(`Triggering Ingestion Webhook for PDF: ${filename}`);
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        
+        // Background async fetch (Fire and Forget) so it doesn't slow down the chat UI
+        fetch(`${appUrl}/api/setu-guru/ingest`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-webhook-secret": process.env.WEBHOOK_SECRET_SETU_GURU_INGEST || ""
+          },
+          body: JSON.stringify({
+            organizationId: organizationId,
+            sourceType: "chat_attachment",
+            sourceId: crypto.randomUUID(), // FIX: Passes a valid UUID to satisfy DB constraint
+            fileUrl: data.publicUrl,
+            mimeType: "application/pdf"
+          })
+        }).catch(err => console.error("Webhook network error:", err));
+      } catch (webhookErr) {
+        console.error("Failed to prepare webhook call:", webhookErr);
+      }
+    }
+    // -----------------------------------------------------------
+
     return NextResponse.json({
       attachment: {
         name: file.name || filename,

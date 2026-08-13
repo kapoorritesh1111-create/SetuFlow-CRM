@@ -53,6 +53,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showMentions, setShowMentions] = useState(false);
   const [showComposerEmoji, setShowComposerEmoji] = useState(false);
+  const [askGuru, setAskGuru] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; at: number }>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
@@ -81,7 +82,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { const timer = window.setInterval(() => setTypingUsers((x) => ({ ...x })), 1000); return () => clearInterval(timer); }, []);
 
-  // presence heartbeat
   useEffect(() => {
     if (!organizationId) return;
     function heartbeat() { void fetch("/api/chat/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organization_id: organizationId }) }); }
@@ -90,7 +90,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
     return () => clearInterval(timer);
   }, [organizationId]);
 
-  // close composer emoji on outside click
   useEffect(() => {
     if (!showComposerEmoji) return;
     function handler(e: MouseEvent) { if (composerEmojiRef.current && !composerEmojiRef.current.contains(e.target as Node)) setShowComposerEmoji(false); }
@@ -100,6 +99,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
 
   async function loadReactions(convId: string) { try { const res = await fetch(`/api/chat/reactions?conversation_id=${convId}`, { cache: "no-store" }); const data = await res.json(); const next: Record<string, Reaction[]> = {}; for (const r of data.reactions ?? []) next[r.message_id] = [...(next[r.message_id] ?? []), r]; setReactions(next); } catch {} }
   async function markRead(convId: string) { try { await fetch("/api/chat/read-state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversation_id: convId }) }); setParticipants((p) => p.map((row) => row.user_id === currentUserId ? { ...row, last_read_at: new Date().toISOString() } : row)); } catch {} }
+  
   async function loadMessages(parentId?: string | null) {
     setLoading(true); setError(null);
     try {
@@ -116,6 +116,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
       if (data.conversation_id) { void loadReactions(data.conversation_id); void markRead(data.conversation_id); }
     } catch (err) { setMessages([]); setError(err instanceof Error ? err.message : "Unable to load discussion"); } finally { setLoading(false); }
   }
+  
   useEffect(() => { void loadMessages(threadParent?.id ?? null); }, [activeConversationId, conversationId, entityId, entityType, organizationId, enrollKey, threadParent?.id]);
 
   useEffect(() => {
@@ -136,24 +137,119 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   function updateInput(value: string) { setMessage(value); setShowMentions(/@[^@\s]*$/.test(value)); if (typingRef.current && Date.now() - lastTypingRef.current > 900) { lastTypingRef.current = Date.now(); void typingRef.current.send({ type: "broadcast", event: "typing", payload: { user_id: currentUserId, user_name: currentUserName } }); } }
   function insertMention(m: Member) { setMessage((cur) => cur.replace(/@[^@\s]*$/, `@${m.name} `)); setMentionIds((cur) => Array.from(new Set([...cur, m.userId]))); setShowMentions(false); }
   function cancelEdit() { setEditingId(null); setEditingContent(""); }
+  
   async function toggleReaction(id: string, emoji: string) { if (id.startsWith("temp-")) return; const already = (reactions[id] ?? []).some((r) => r.user_id === currentUserId && r.emoji === emoji); const local: Reaction = { id: `local-${Date.now()}`, message_id: id, user_id: currentUserId, user_name: currentUserName, emoji, created_at: new Date().toISOString() }; setReactions((cur) => ({ ...cur, [id]: already ? (cur[id] ?? []).filter((r) => !(r.user_id === currentUserId && r.emoji === emoji)) : [...(cur[id] ?? []), local] })); try { const res = await fetch("/api/chat/reactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message_id: id, emoji, user_name: currentUserName }) }); if (!res.ok) throw new Error("Reaction failed"); } finally { if (activeConversationId) void loadReactions(activeConversationId); } }
   async function saveEdit() { if (!editingId || !editingContent.trim()) return; const id = editingId, content = editingContent.trim(), previous = messages; cancelEdit(); setMessages((cur) => cur.map((m) => m.id === id ? { ...m, content, edited_at: new Date().toISOString() } : m)); try { const res = await fetch("/api/chat/messages", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, content }) }); const data = await res.json(); if (!res.ok) throw new Error(data.error ?? "Message was not edited"); if (data.message) setMessages((cur) => cur.map((m) => m.id === id ? data.message : m)); } catch (err) { setMessages(previous); setError(err instanceof Error ? err.message : "Message was not edited"); } }
   async function uploadFiles(files: FileList | File[]) { if (!activeConversationId) return; setUploading(true); setError(null); try { for (const file of Array.from(files)) { if (file.size > MAX_UPLOAD_BYTES) throw new Error(`${file.name} is larger than 10MB`); const form = new FormData(); form.append("file", file); form.append("conversation_id", activeConversationId); const res = await fetch("/api/chat/upload", { method: "POST", body: form }); const data = await res.json(); if (!res.ok) throw new Error(data.error ?? "Upload failed"); setAttachments((cur) => [...cur, data.attachment]); } } catch (err) { setError(err instanceof Error ? err.message : "Upload failed"); } finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; } }
-  async function send(event: FormEvent) {
-    event.preventDefault(); const content = message.trim(); if ((!content && attachments.length === 0) || !activeConversationId || sending) return;
-    const pending = attachments, parentId = replyingTo?.id ?? threadParent?.id ?? null; const optimistic: Message = { id: `temp-${Date.now()}`, content, sender_id: currentUserId, sender_name: currentUserName, created_at: new Date().toISOString(), attachments: pending, parent_message_id: parentId, reply_count: 0 };
-    setMessage(""); setAttachments([]); setReplyingTo(null); setSending(true); setShowMentions(false); setMessages((cur) => [...cur, optimistic]);
-    try { const res = await fetch("/api/chat/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organization_id: organizationId, conversation_id: activeConversationId, content, sender_name: currentUserName, mentions: mentionIds, attachments: pending, parent_message_id: parentId }) }); const data = await res.json(); if (!res.ok) throw new Error(data.error ?? "Message was not sent"); if (data.message) setMessages((cur) => [...cur.filter((m) => m.id !== optimistic.id && m.id !== data.message.id), data.message].slice(-50)); }
-    catch (err) { setMessages((cur) => cur.filter((m) => m.id !== optimistic.id)); setMessage(content); setAttachments(pending); setError(err instanceof Error ? err.message : "Message was not sent"); }
-    finally { setMentionIds([]); setSending(false); }
+  
+  // Typewriter streaming helper effect for ChatGPT-like smooth response
+  function simulateTyping(fullText: string, messageId: string, optimisticMsg: Message) {
+    let currentIndex = 0;
+    const intervalTime = 12; // Speed of typing per character
+
+    const aiMessage: Message = {
+      id: messageId,
+      content: "",
+      sender_id: "setu-guru",
+      sender_name: "Setu Guru",
+      created_at: new Date().toISOString(),
+      parent_message_id: null,
+      reply_count: 0
+    };
+
+    setMessages((cur) => [...cur.filter((m) => m.id !== optimisticMsg.id), optimisticMsg, aiMessage]);
+
+    const timer = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        const nextChunk = fullText.slice(0, currentIndex + 1);
+        setMessages((cur) => 
+          cur.map((m) => m.id === messageId ? { ...m, content: nextChunk } : m)
+        );
+        currentIndex++;
+      } else {
+        clearInterval(timer);
+      }
+    }, intervalTime);
   }
+
+  async function send(event: FormEvent) {
+    event.preventDefault(); 
+    const content = message.trim(); 
+    if ((!content && attachments.length === 0) || !activeConversationId || sending) return;
+    
+    const pending = attachments, parentId = replyingTo?.id ?? threadParent?.id ?? null; 
+    const optimistic: Message = { 
+      id: `temp-${Date.now()}`, 
+      content, 
+      sender_id: currentUserId, 
+      sender_name: currentUserName, 
+      created_at: new Date().toISOString(), 
+      attachments: pending, 
+      parent_message_id: parentId, 
+      reply_count: 0 
+    };
+    
+    setMessage(""); 
+    setAttachments([]); 
+    setReplyingTo(null); 
+    setSending(true); 
+    setShowMentions(false); 
+    setMessages((cur) => [...cur, optimistic]);
+    
+    try {
+      const apiEndpoint = askGuru ? "/api/setu-guru/brain" : "/api/chat/messages";
+      
+      const payload = askGuru ? {
+        question: content,
+        route: window.location.pathname
+      } : {
+        organization_id: organizationId,
+        conversation_id: activeConversationId,
+        content,
+        sender_name: currentUserName,
+        mentions: mentionIds,
+        attachments: pending,
+        parent_message_id: parentId,
+      };
+
+      const res = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json(); 
+      if (!res.ok) throw new Error(data.error ?? data.answer ?? "Message was not sent");
+      
+      if (askGuru && (data.answer || data.reply || data.response)) {
+        const replyText = data.answer || data.reply || data.response;
+        const finalContent = typeof replyText === 'string' ? replyText : JSON.stringify(replyText);
+        const aiMessageId = `ai-${Date.now()}`;
+        
+        // Trigger typewriter streaming effect and prevent deletion/vanishing
+        simulateTyping(finalContent, aiMessageId, optimistic);
+      } else if (data.message && typeof data.message === 'object') {
+        setMessages((cur) => [...cur.filter((m) => m.id !== optimistic.id && m.id !== data.message.id), data.message].slice(-50));
+      }
+    }
+    catch (err) { 
+      setMessages((cur) => cur.filter((m) => m.id !== optimistic.id)); 
+      setMessage(content); 
+      setAttachments(pending); 
+      setError(err instanceof Error ? err.message : "Message was not sent"); 
+    }
+    finally { 
+      setMentionIds([]); 
+      setSending(false); 
+    }
+  }
+
   async function removeMessage(id: string) { if (id.startsWith("temp-")) return; setMessages((cur) => cur.filter((m) => m.id !== id)); try { await fetch(`/api/chat/messages?id=${id}`, { method: "DELETE" }); } catch {} }
   async function pinMessage(id: string) { if (!activeConversationId) return; try { const res = await fetch("/api/chat/pin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message_id: id, conversation_id: activeConversationId }) }); const data = await res.json(); if (res.ok) { setMessages((cur) => cur.map((m) => m.id === id ? { ...m, pinned_at: data.pinned ? new Date().toISOString() : null, pinned_by: data.pinned ? currentUserId : null } : m)); } } catch {} }
   function markUnread(messageId: string) { setUnreadFromId(messageId); const msg = messages.find((m) => m.id === messageId); if (msg && activeConversationId) { const beforeTimestamp = new Date(new Date(msg.created_at).getTime() - 1000).toISOString(); void fetch("/api/chat/read-state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversation_id: activeConversationId, timestamp: beforeTimestamp }) }); } }
   function readByOther(m: Message) { const readers = participants.filter((p) => p.user_id !== currentUserId); return conversationType === "dm" && readers.length > 0 && readers.every((p) => p.last_read_at && new Date(p.last_read_at).getTime() > new Date(m.created_at).getTime()); }
   function onDrop(e: DragEvent<HTMLDivElement>) { e.preventDefault(); setDragging(false); if (e.dataTransfer.files?.length) void uploadFiles(e.dataTransfer.files); }
 
-  // auto-resize textarea
   function autoResize() {
     const el = composerRef.current;
     if (!el) return;
@@ -161,7 +257,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   }
 
-  // insert emoji at cursor in composer
   function insertComposerEmoji(emoji: string) {
     const el = composerRef.current;
     if (el) {
@@ -181,7 +276,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
 
   return (
     <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={{ height: compact ? "100%" : undefined, minHeight: compact ? undefined : 520, display: "flex", flexDirection: "column" }}>
-      {/* thread header */}
       {threadParent && (
         <div style={{ padding: 10, borderBottom: "1px solid #e2e8f0", background: "#fff", display: "flex", justifyContent: "space-between", gap: 10 }}>
           <strong>Thread: {threadParent.sender_name}</strong>
@@ -189,7 +283,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
         </div>
       )}
 
-      {/* pinned message bar */}
       {pinnedMessage && !threadParent && (
         <div onClick={() => { const el = document.getElementById(`msg-${pinnedMessage.id}`); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.style.background = "#fffbeb"; setTimeout(() => { el.style.background = ""; }, 1500); } }}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "#FAEEDA", borderBottom: "1px solid #FAC775", fontSize: 12, color: "#854F0B", cursor: "pointer" }}>
@@ -198,7 +291,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
         </div>
       )}
 
-      {/* message area */}
       <div
         onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
         onDragOver={(e) => e.preventDefault()}
@@ -219,43 +311,39 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
               </div>
             )}
             <MessageRow
-            key={m.id}
-            message={m}
-            index={i}
-            messages={messages}
-            currentUserId={currentUserId}
-            currentUserName={currentUserName}
-            compact={compact}
-            reactions={reactions}
-            threadParent={threadParent}
-            editingId={editingId}
-            editingContent={editingContent}
-            onSetEditingId={setEditingId}
-            onSetEditingContent={setEditingContent}
-            onCancelEdit={cancelEdit}
-            onSaveEdit={() => void saveEdit()}
-            onSetReplyingTo={setReplyingTo}
-            onSetThreadParent={setThreadParent}
-            onToggleReaction={(id, emoji) => void toggleReaction(id, emoji)}
-            onRemoveMessage={removeMessage}
-            onPinMessage={pinMessage}
-            onMarkUnread={markUnread}
-            readByOther={readByOtherCb}
-          />
+              key={m.id}
+              message={m}
+              index={i}
+              messages={messages}
+              currentUserId={currentUserId}
+              currentUserName={currentUserName}
+              compact={compact}
+              reactions={reactions}
+              threadParent={threadParent}
+              editingId={editingId}
+              editingContent={editingContent}
+              onSetEditingId={setEditingId}
+              onSetEditingContent={setEditingContent}
+              onCancelEdit={cancelEdit}
+              onSaveEdit={() => void saveEdit()}
+              onSetReplyingTo={setReplyingTo}
+              onSetThreadParent={setThreadParent}
+              onToggleReaction={(id, emoji) => void toggleReaction(id, emoji)}
+              onRemoveMessage={removeMessage}
+              onPinMessage={pinMessage}
+              onMarkUnread={markUnread}
+              readByOther={readByOtherCb}
+            />
           </div>
         ))}
         <div ref={endRef} />
       </div>
 
-      {/* typing indicator */}
       {activeTypers.length > 0 && <div style={{ padding: "6px 14px", background: "#fff", color: "#64748b", fontSize: 11 }}>{activeTypers.join(", ")} typing ...</div>}
-
-      {/* error */}
       {error && <div style={{ color: "#b91c1c", background: "#fee2e2", padding: "8px 12px", fontSize: 12 }}>{error}</div>}
 
-      {/* ── COMPOSER ── */}
-      <div style={{ position: "relative", padding: compact ? 10 : 12, borderTop: "1px solid #e2e8f0", background: "#fff" }}>
-        {/* mention popup */}
+      {/* COMPOSER */}
+      <div style={{ position: "relative", padding: compact ? 10 : 14, borderTop: "1px solid #e2e8f0", background: "#fff", display: "flex", flexDirection: "column", gap: 8 }}>
         {showMentions && (
           <div style={{ position: "absolute", bottom: "100%", left: 12, zIndex: 20, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 6, minWidth: 240, maxHeight: 260, overflowY: "auto", boxShadow: "0 16px 40px rgba(15,39,68,.16)" }}>
             {mentionTargets.length ? mentionTargets.map((m) => (
@@ -268,9 +356,8 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
           </div>
         )}
 
-        {/* reply context + attachments */}
         {(replyingTo || attachments.length > 0) && (
-          <div style={{ display: "grid", gap: 6, marginBottom: 8 }}>
+          <div style={{ display: "grid", gap: 6 }}>
             {replyingTo && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f1f5f9", borderRadius: 12, padding: "6px 10px", fontSize: 12, borderLeft: "3px solid #279491" }}>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Replying to <strong>{replyingTo.sender_name}</strong>: {(replyingTo.content || "Attachment").slice(0, 80)}</span>
@@ -280,9 +367,9 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
             {attachments.length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {attachments.map((f) => (
-                  <span key={f.storage_path} style={{ border: "1px solid #dbe7ea", borderRadius: 999, padding: "4px 8px", fontSize: 11 }}>
+                  <span key={f.storage_path} style={{ border: "1px solid #dbe7ea", borderRadius: 999, padding: "4px 8px", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}>
                     {f.name}
-                    <button type="button" onClick={() => setAttachments((cur) => cur.filter((x) => x.storage_path !== f.storage_path))} style={{ border: "none", background: "transparent", cursor: "pointer" }}>x</button>
+                    <button type="button" onClick={() => setAttachments((cur) => cur.filter((x) => x.storage_path !== f.storage_path))} style={{ border: "none", background: "transparent", cursor: "pointer", fontWeight: 700 }}>×</button>
                   </span>
                 ))}
               </div>
@@ -290,57 +377,90 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
           </div>
         )}
 
-        {/* composer form */}
-        <form onSubmit={send} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <input ref={fileRef} type="file" multiple onChange={(e) => { if (e.target.files) void uploadFiles(e.target.files); }} style={{ display: "none" }} />
-
-          {/* attach button */}
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={!activeConversationId || uploading}
-            style={{ ...pill, width: 36, height: 36, padding: 0, flexShrink: 0, fontSize: 16 }}>
-            📎
-          </button>
-
-          {/* emoji picker for composer */}
-          <div style={{ position: "relative", flexShrink: 0 }} ref={composerEmojiRef}>
-            <button type="button" onClick={() => setShowComposerEmoji(!showComposerEmoji)}
-              style={{ ...pill, width: 36, height: 36, padding: 0, fontSize: 16, background: showComposerEmoji ? "#f1f5f9" : "#fff" }}>
-              😊
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input ref={fileRef} type="file" multiple onChange={(e) => { if (e.target.files) void uploadFiles(e.target.files); }} style={{ display: "none" }} />
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={!activeConversationId || uploading} title="Attach file"
+              style={{ ...pill, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+              📎
             </button>
-            {showComposerEmoji && (
-              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,39,68,.16)", zIndex: 20, width: 230 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 2 }}>
-                  {COMPOSER_EMOJI.map((e) => (
-                    <button key={e} type="button" onClick={() => insertComposerEmoji(e)}
-                      style={{ border: "none", background: "transparent", cursor: "pointer", borderRadius: 6, padding: "4px 2px", fontSize: 18, lineHeight: 1 }}>
-                      {e}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* textarea composer */}
+            <div style={{ position: "relative", flexShrink: 0 }} ref={composerEmojiRef}>
+              <button type="button" onClick={() => setShowComposerEmoji(!showComposerEmoji)} title="Emoji"
+                style={{ ...pill, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, background: showComposerEmoji ? "#f1f5f9" : "#fff" }}>
+                😊
+              </button>
+              {showComposerEmoji && (
+                <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,39,68,.16)", zIndex: 20, width: 230 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 2 }}>
+                    {COMPOSER_EMOJI.map((e) => (
+                      <button key={e} type="button" onClick={() => insertComposerEmoji(e)}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", borderRadius: 6, padding: "4px 2px", fontSize: 18, lineHeight: 1 }}>
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Setu Guru AI Toggle */}
+            <button
+              type="button"
+              onClick={() => setAskGuru(!askGuru)}
+              style={{
+                borderRadius: 999,
+                border: askGuru ? "1px solid #279491" : "1px solid #dbe7ea",
+                background: askGuru ? "#279491" : "#fff",
+                color: askGuru ? "#fff" : "#0f2744",
+                cursor: "pointer",
+                height: 32,
+                padding: "0 10px",
+                fontSize: 12,
+                fontWeight: askGuru ? 700 : 500,
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              ✨ {askGuru ? "Asking Guru" : "Ask Guru"}
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={send} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <textarea
             ref={composerRef}
             value={message}
             onChange={(e) => { updateInput(e.target.value); autoResize(); }}
             onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(e as unknown as FormEvent); } }}
-            placeholder="Message... type @ to mention"
-            rows={1}
-            style={{ flex: 1, border: "1px solid #dbe7ea", borderRadius: 16, padding: "10px 13px", outline: "none", fontSize: 13, fontFamily: "inherit", resize: "none", lineHeight: 1.4, maxHeight: 120, overflowY: "auto" }}
+            placeholder={askGuru ? "Ask Setu Guru... type @ to mention" : "Type a message or question... type @ to mention"}
+            rows={2}
+            style={{ 
+              flex: 1, 
+              border: "1px solid #cbd5e1", 
+              borderRadius: 12, 
+              padding: "10px 12px", 
+              outline: "none", 
+              fontSize: 13, 
+              fontFamily: "inherit", 
+              resize: "none", 
+              lineHeight: 1.4, 
+              minHeight: 48,
+              maxHeight: 120, 
+              overflowY: "auto",
+              background: "#fafafa"
+            }}
           />
 
-          {/* send button */}
           <button type="submit" disabled={(!message.trim() && attachments.length === 0) || sending || !activeConversationId}
-            style={{ border: "none", borderRadius: 999, padding: "10px 18px", background: "#279491", color: "#fff", fontWeight: 700, fontSize: 13, fontFamily: "inherit", opacity: (!message.trim() && attachments.length === 0) || sending || !activeConversationId ? .55 : 1, flexShrink: 0, cursor: "pointer" }}>
-            {uploading ? "Uploading" : "Send"}
+            style={{ border: "none", borderRadius: 10, padding: "10px 16px", background: "#279491", color: "#fff", fontWeight: 700, fontSize: 13, fontFamily: "inherit", opacity: (!message.trim() && attachments.length === 0) || sending || !activeConversationId ? .55 : 1, flexShrink: 0, cursor: "pointer", height: 48 }}>
+            {uploading ? "Uploading..." : sending ? "Sending..." : "Send"}
           </button>
         </form>
 
-        {/* Shift+Enter hint */}
-        <div style={{ textAlign: "center", padding: "4px 0 0", fontSize: 10, color: "#94a3b8" }}>
-          <span style={{ color: "#279491", fontWeight: 600 }}>Shift+Enter</span> starts a new line.
+        <div style={{ textAlign: "right", padding: "0 2px", fontSize: 10, color: "#94a3b8" }}>
+          <span style={{ color: "#279491", fontWeight: 600 }}>Shift+Enter</span> for new line.
         </div>
       </div>
     </section>

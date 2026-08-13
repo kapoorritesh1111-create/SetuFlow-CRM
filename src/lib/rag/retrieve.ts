@@ -11,7 +11,7 @@ export interface RetrieveInput {
   queryEmbedding: number[];
   sourceTypes?: string[];
   matchCount?: number;
-  /** Optional injected client â€” see dedup.ts/ingest.ts for the same
+  /** Optional injected client — see dedup.ts/ingest.ts for the same
    *  pattern. Standalone scripts/tests running outside a Next.js request
    *  scope (where `cookies()` has nothing to read) pass their own
    *  authenticated client here. Production call sites (API routes,
@@ -147,7 +147,6 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
     supabaseUntyped.rpc('match_guru_embeddings', {
       p_organization_id: input.organizationId,
       p_query_embedding: input.queryEmbedding,
-      p_query_text: safeQuestion,
       p_match_count: input.matchCount ?? DEFAULT_MATCH_COUNT,
       p_source_types: input.sourceTypes ?? null,
     }),
@@ -163,6 +162,13 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
     console.error('[RAG] match_guru_embeddings error:', vectorResponse.error);
     return NOT_FOUND;
   }
+
+  // --- ADDED: Fix for silent keyword search failure (Make failures loud) ---
+  if (keywordResponse.error) {
+    console.error('[CRITICAL RAG ERROR] Keyword search failed:', keywordResponse.error);
+    throw new Error(`Hybrid search degraded: Keyword search failed - ${keywordResponse.error.message || JSON.stringify(keywordResponse.error)}`);
+  }
+  // ------------------------------------------------------------------------
 
   const vectorMatches = vectorResponse.data ?? [];
   const keywordMatches = keywordResponse.data ?? [];

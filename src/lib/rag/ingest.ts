@@ -18,6 +18,7 @@ import { embedChunks, EMBEDDING_MODEL_VERSION } from './embedding-provider';
 
 const CONFIDENCE_THRESHOLD = 0.75;
 const EMBED_BATCH_SIZE = 50;
+const MAX_WORDS = 100000; // Define maximum word count threshold to detect possible truncation
 
 export interface IngestInput {
   organizationId: string;
@@ -89,6 +90,15 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
   if (chunks.length === 0) {
     return { status: 'error', error: 'Chunker produced no chunks from parsed pages' };
   }
+
+  // --- ADDED: Document Truncation Warning (Make failures loud) ---
+  // Checked against the final chunk output (not raw VLM pages), so this
+  // reflects what's actually about to be embedded/stored.
+  const totalWordCount = chunks.reduce((acc, chunk) => acc + (chunk.content?.split(/\s+/).length || 0), 0);
+  if (totalWordCount > MAX_WORDS) {
+    console.warn(`[WARNING - TRUNCATION RISK] Document exceeds ${MAX_WORDS} words. It may have been silently cut short by Claude during parsing. Source ID: ${input.sourceId}`);
+  }
+  // ------------------------------------------------------------------------
 
   // --- Step 2.5: Per-chunk hash dedup & [Fix A8] Stale Chunk Cleanup ---
   const { data: existingChunks, error: existingChunksError } = await supabaseUntyped
