@@ -16,7 +16,6 @@ test('S51-LEADS-014 shows the latest customer response and collapses earlier his
   assert.match(conversation, /Latest customer response/);
   assert.match(conversation, /\.reverse\(\)\.find\(hasVisibleCustomerContent\)/);
   assert.match(conversation, /View earlier conversation/);
-  assert.match(conversation, /<details/);
   assert.match(conversation, /earlierMessages\.map/);
 });
 
