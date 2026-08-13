@@ -54,9 +54,14 @@ export default function ResetPasswordClient() {
         return;
       }
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token ?? null;
       const completeResponse = await fetch('/api/auth/reset-password/complete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
       });
 
       if (!completeResponse.ok) {
@@ -65,6 +70,7 @@ export default function ResetPasswordClient() {
         return;
       }
 
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
       setNewSecret("");
       setConfirmSecret("");
       setMessage("Your account credential has been updated. Please sign in again.");
