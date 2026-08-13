@@ -106,6 +106,8 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
 
   const orderedBrochures = useMemo(() => [...availableBrochures].sort((a, b) => Number(brochureRecommended(b, productContext)) - Number(brochureRecommended(a, productContext))), [availableBrochures, productContext]);
   const recommended = orderedBrochures.find((brochure) => brochureRecommended(brochure, productContext)) ?? null;
+  const selectedSuggestion = suggestions.find((suggestion) => suggestion.id === selectedId) ?? null;
+  const selectedBrochure = orderedBrochures.find((brochure) => brochure.id === brochureId) ?? null;
 
   function submitMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -162,30 +164,56 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
           <p className={`text-[10px] font-bold ${replyWindowOpen ? 'text-emerald-800' : 'text-blue-800'}`}>WhatsApp</p>
           <span className={`rounded-full bg-white px-2 py-0.5 text-[9px] font-bold ${replyWindowOpen ? 'text-emerald-700' : 'text-blue-700'}`}>{replyWindowOpen ? 'Free reply window open' : 'Approved template required'}</span>
         </div>
-        <p className={`mt-1 text-[10px] leading-4 ${replyWindowOpen ? 'text-emerald-700' : 'text-blue-700'}`}>{replyWindowOpen ? 'Choose a Setu suggestion, optionally attach a catalog link, edit freely, and send.' : 'The 24-hour reply window is closed. Use the approved follow-up below to reopen the WhatsApp conversation.'}</p>
+        <p className={`mt-1 text-[10px] leading-4 ${replyWindowOpen ? 'text-emerald-700' : 'text-blue-700'}`}>{replyWindowOpen ? 'Setu has prepared one recommended reply. Edit it if needed, add a brochure only when useful, then send.' : 'The 24-hour reply window is closed. Use the approved follow-up below to reopen the WhatsApp conversation.'}</p>
       </div>
 
       {replyWindowOpen ? (
-        <>
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2"><p className="text-[9px] font-bold uppercase tracking-wide text-violet-600">✨ Setu suggested replies</p><span className="text-[9px] text-slate-400">Based on the captured requirement</span></div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {suggestions.map((suggestion) => {
-                const active = selectedId === suggestion.id;
-                return <button key={suggestion.id} type="button" onClick={() => { setSelectedId(suggestion.id); setMessage(suggestion.message); setNotice(null); }} className={`rounded-xl border px-3 py-2.5 text-left transition ${active ? 'border-violet-300 bg-violet-50 ring-2 ring-violet-100' : 'border-slate-200 bg-white hover:border-violet-200 hover:bg-violet-50/40'}`}><p className={`text-[10px] font-bold ${active ? 'text-violet-800' : 'text-slate-800'}`}>{suggestion.label}</p><p className="mt-1 text-[9px] leading-4 text-slate-500">{suggestion.helper}</p></button>;
-              })}
+        <form onSubmit={submitMessage} className="space-y-3">
+          <input type="hidden" name="rowId" value={rowId} />
+          <input type="hidden" name="draftRowId" value={draftRowId} />
+
+          <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-wide text-violet-600">✨ {selectedSuggestion ? 'Setu recommended reply' : 'Custom reply'}</p>
+                <p className="mt-0.5 text-xs font-bold text-violet-950">{selectedSuggestion?.label || 'Edited by you'}</p>
+                <p className="mt-0.5 text-[9px] leading-4 text-violet-700">{selectedSuggestion?.helper || 'Your edits are preserved. Choose another reply style only if you want to replace this draft.'}</p>
+              </div>
+              <label className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-violet-600">Change reply
+                <select value={selectedId} onChange={(event) => {
+                  const nextId = event.target.value;
+                  setSelectedId(nextId);
+                  const next = suggestions.find((suggestion) => suggestion.id === nextId);
+                  if (next) setMessage(next.message);
+                  setNotice(null);
+                }} className="mt-1 block h-9 max-w-[230px] rounded-lg border border-violet-200 bg-white px-2.5 text-[10px] font-semibold normal-case text-slate-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+                  {!selectedSuggestion ? <option value="">Custom reply</option> : null}
+                  {suggestions.map((suggestion) => <option key={suggestion.id} value={suggestion.id}>{suggestion.label}</option>)}
+                </select>
+              </label>
             </div>
           </div>
 
-          <form onSubmit={submitMessage} className="space-y-2">
-            <input type="hidden" name="rowId" value={rowId} />
-            <input type="hidden" name="draftRowId" value={draftRowId} />
-            {orderedBrochures.length ? <label className="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Catalog / brochure <span className="font-medium normal-case text-slate-400">· optional</span><select name="brochureId" value={brochureId} onChange={(event) => { setBrochureId(event.target.value); setNotice(null); }} className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"><option value="">No brochure</option>{orderedBrochures.map((brochure) => <option key={brochure.id} value={brochure.id}>{brochureRecommended(brochure, productContext) ? 'Recommended · ' : ''}{brochure.name}</option>)}</select>{recommended ? <span className="mt-1 block text-[9px] font-semibold normal-case tracking-normal text-violet-600">✨ Setu recommends {recommended.name} for {productContext}. Select it above to attach it.</span> : <span className="mt-1 block text-[9px] font-medium normal-case tracking-normal text-slate-400">Choose a brochure only when you want its secure link included.</span>}</label> : null}
-            <label className="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Your message<textarea name="message" required maxLength={4096} rows={6} value={message} onChange={(event) => { setMessage(event.target.value); setSelectedId(''); setNotice(null); }} placeholder="Type your WhatsApp reply…" className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium leading-5 text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
-            <div className="flex items-center justify-between gap-2"><p className="text-[9px] text-slate-400">The brochure link is added only when selected.</p><span className="text-[9px] font-bold text-emerald-700">{message.length}/4096</span></div>
-            <button type="submit" disabled={!canSend || !message.trim() || isSending || contextChanged} className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{isSending ? 'Sending WhatsApp…' : brochureId ? 'Send WhatsApp + brochure' : 'Send WhatsApp'}</button>
-          </form>
-        </>
+          <label className="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Your message
+            <textarea name="message" required maxLength={4096} rows={5} value={message} onChange={(event) => { setMessage(event.target.value); setSelectedId(''); setNotice(null); }} placeholder="Type your WhatsApp reply…" className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium leading-5 text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
+
+          {orderedBrochures.length ? (
+            <details className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" open={Boolean(brochureId)}>
+              <summary className="cursor-pointer text-[10px] font-bold text-slate-600">📎 Attach brochure <span className="font-medium text-slate-400">· {selectedBrochure?.name || 'optional'}</span></summary>
+              <label className="mt-2 block text-[9px] font-bold uppercase tracking-wide text-slate-500">Catalog / brochure
+                <select name="brochureId" value={brochureId} onChange={(event) => { setBrochureId(event.target.value); setNotice(null); }} className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                  <option value="">No brochure</option>
+                  {orderedBrochures.map((brochure) => <option key={brochure.id} value={brochure.id}>{brochureRecommended(brochure, productContext) ? 'Recommended · ' : ''}{brochure.name}</option>)}
+                </select>
+                {recommended ? <span className="mt-1 block text-[9px] font-semibold normal-case tracking-normal text-violet-600">✨ Recommended for this requirement: {recommended.name}</span> : <span className="mt-1 block text-[9px] font-medium normal-case tracking-normal text-slate-400">Add a secure catalog link only when it helps this conversation.</span>}
+              </label>
+            </details>
+          ) : null}
+
+          <div className="flex items-center justify-between gap-2"><p className="text-[9px] text-slate-400">Review the customer name and requirement before sending.</p><span className="text-[9px] font-bold text-emerald-700">{message.length}/4096</span></div>
+          <button type="submit" disabled={!canSend || !message.trim() || isSending || contextChanged} className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{isSending ? 'Sending WhatsApp…' : brochureId ? 'Send WhatsApp + brochure' : 'Send WhatsApp'}</button>
+        </form>
       ) : null}
 
       <details className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2" open={!replyWindowOpen}>
