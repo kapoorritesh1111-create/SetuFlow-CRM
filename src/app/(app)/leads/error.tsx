@@ -17,8 +17,9 @@ export default function RouteError({
 
   return (
     <ErrorBoundaryView
-      title="Leads workspace unavailable"
-      description="The leads list could not be rendered for this workspace. Retry the route first, then return to the dashboard if the issue keeps repeating."
+      eyebrow="Leads temporarily unavailable"
+      title="We could not load this leads view"
+      description="Your work is still safe. Try loading the view again, or return to the dashboard and continue from there."
       reset={reset}
       homeHref={PRODUCT_ROUTES.app.dashboard}
       homeLabel="Return to dashboard"
