@@ -148,7 +148,7 @@ export async function uploadCatalogBrochure(formData: FormData): Promise<void> {
     file_name: file.name,
     mime_type: 'application/pdf',
     file_size: file.size,
-    is_active: formData.get('is_active') !== 'false',
+    is_active: formData.get('is_active') === 'true' || formData.get('is_active') === 'on',
     created_by: workspace.user!.id,
   });
   if (insertError) {
@@ -189,6 +189,7 @@ export async function updateCatalogBrochure(formData: FormData): Promise<void> {
   ]);
   if (familyIds.length) await admin.from('catalog_brochure_families').insert(familyIds.map((familyId) => ({ brochure_id: id, packaging_family_id: familyId })));
   if (categoryIds.length) await admin.from('catalog_brochure_categories').insert(categoryIds.map((categoryId) => ({ brochure_id: id, product_category_id: categoryId })));
+  revalidatePath('/admin/catalog');
   revalidatePath('/admin/catalog/brochures');
 }
 
