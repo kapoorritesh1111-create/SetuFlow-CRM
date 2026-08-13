@@ -24,12 +24,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ answer: 'Unauthorized' }, { status: 401 });
     }
 
+    // Safely extract a display name or fall back to email / 'there'
+    const userName = (workspace.user as any).name || workspace.user.email?.split('@')[0] || 'there';
+    const userFullName = (workspace.user as any).name || workspace.user.email || 'User';
+
     const qText = parsed.data.question.toLowerCase().trim();
     let replyText = "";
 
     // Greetings handler
     if (["hi", "hello", "hey", "hii", "namaste"].includes(qText)) {
-      replyText = `Hello ${workspace.user.name || 'there'}! How can I help you with Setu Flow today?`;
+      replyText = `Hello ${userName}! How can I help you with Setu Flow today?`;
     } else {
       const result = buildSetuGuruBrainAnswer({
         question: parsed.data.question,
@@ -58,10 +62,10 @@ export async function POST(request: Request) {
         conversation_id: parsed.data.conversation_id,
         content: parsed.data.question,
         sender_id: workspace.user.id,
-        sender_name: workspace.user.name || 'User',
+        sender_name: userFullName,
       });
       if (userError) {
-        console.error("❌ USER MESSAGE INSERT ERROR:", userError.message);
+        console.error("USER MESSAGE INSERT ERROR:", userError.message);
       }
 
       // Insert AI answer
@@ -82,7 +86,7 @@ export async function POST(request: Request) {
       rows: []
     });
   } catch (error) {
-    console.error("❌ CRITICAL ROUTE ERROR:", error);
+    console.error(" CRITICAL ROUTE ERROR:", error);
     return NextResponse.json({ answer: 'Error processing request' }, { status: 500 });
   }
 }
