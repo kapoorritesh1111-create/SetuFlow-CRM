@@ -88,11 +88,50 @@ function identityQuestion(question: string) {
   return null;
 }
 
-function quantityFromMessage(textValue: unknown) {
+function visibleMessageText(textValue: unknown) {
   const text = String(textValue ?? '').trim();
-  if (!text || text.startsWith('{')) return null;
-  const match = text.match(/\b(\d[\d,.]*(?:\s*(?:-|to)\s*\d[\d,.]*)?\s*(?:pcs?|pieces?|units?|pouches?|bags?|kg|kgs|mt|tons?))\b/i);
-  return match?.[1]?.trim() ?? null;
+  if (!text.startsWith('{')) return text;
+  try {
+    const parsed = JSON.parse(text) as Record<string, any>;
+    return String(parsed?.list_reply?.title ?? parsed?.button_reply?.title ?? '').trim();
+  } catch {
+    return text;
+  }
+}
+
+function quantityFromMessage(textValue: unknown) {
+  const text = visibleMessageText(textValue);
+  if (!text) return null;
+  const withUnits = text.match(/\b(\d[\d,.]*(?:\s*(?:-|to)\s*\d[\d,.]*)?\s*(?:pcs?|pieces?|units?|pouches?|bags?|kg|kgs|mt|tons?))\b/i);
+  if (withUnits?.[1]) return withUnits[1].trim();
+  const bareRange = text.match(/^\s*(\d{3,}[\d,.]*\s*(?:-|to)\s*\d{3,}[\d,.]*)\s*$/i);
+  return bareRange?.[1]?.trim() ?? null;
+}
+
+function industryFromMessage(textValue: unknown) {
+  const text = visibleMessageText(textValue).replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  const normalized = text.toLowerCase().replace(/&/g, 'and');
+  const known = new Map<string, string>([
+    ['food and beverage', 'Food and Beverage'],
+    ['health / supplements', 'Health / supplements'],
+    ['health and supplements', 'Health / supplements'],
+    ['supplements', 'Health / supplements'],
+    ['pharma', 'Pharma'],
+    ['pharmaceutical', 'Pharma'],
+    ['cosmetics', 'Cosmetics / Beauty'],
+    ['beauty', 'Cosmetics / Beauty'],
+    ['personal care', 'Personal Care'],
+    ['pet food', 'Pet Food'],
+    ['spices', 'Spices'],
+    ['snacks', 'Snacks'],
+    ['tea and coffee', 'Tea & Coffee'],
+    ['dry fruits', 'Dry Fruits'],
+    ['confectionery', 'Confectionery'],
+    ['frozen food', 'Frozen Food'],
+    ['dairy', 'Dairy'],
+  ]);
+  return known.get(normalized) ?? null;
 }
 
 function assigneeFromTraits(traits: Record<string, unknown>) {
@@ -185,8 +224,8 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const intake = await findOrCreateIntake(db, { customerId, phone, name, email, sourcePayload: data });
   const eventType = clean(payload.type) ?? 'message_received'; const incoming = eventType === 'message_received'; const receivedAt = iso(message.received_at_utc); const deliveredAt = iso(message.delivered_at_utc); const readAt = iso(message.seen_at_utc);
   const status = incoming ? 'received' : eventType.endsWith('_read') ? 'read' : eventType.endsWith('_delivered') ? 'delivered' : eventType.endsWith('_failed') ? 'failed' : 'sent';
-  const callbackData = recursiveFindString(message.meta_data, ['callback_data']); const text = messageText(message); const mediaUrl = messageMediaUrl(message); const now = new Date().toISOString();
-  const textIntelligence = incoming ? extractExplicitCompanyFromText(text) : null; const imageIntelligence = incoming && isImageMessage(message, mediaUrl) ? await analyzeInteraktCustomerImage(mediaUrl, text) : null; const intelligence = textIntelligence ?? imageIntelligence;
+  const callbackData = recursiveFindString(message.meta_data, ['callback_data']); const text = messageText(message); const visibleText = visibleMessageText(text); const mediaUrl = messageMediaUrl(message); const now = new Date().toISOString();
+  const textIntelligence = incoming ? extractExplicitCompanyFromText(visibleText) : null; const imageIntelligence = incoming && isImageMessage(message, mediaUrl) ? await analyzeInteraktCustomerImage(mediaUrl, visibleText) : null; const intelligence = textIntelligence ?? imageIntelligence;
   await db.from('lead_intake_messages').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, external_message_id: messageId, event_type: eventType, direction: incoming ? 'inbound' : 'outbound', actor_type: incoming ? 'customer' : 'agent', actor_name: incoming ? name : null, message_type: clean(message.message_content_type ?? message.chat_message_type), message_text: text || (mediaUrl ? '[Customer media]' : ''), message_payload: message, media_url: mediaUrl, intelligence: intelligence ?? {}, received_at: incoming ? receivedAt : null, sent_at: incoming ? null : receivedAt, delivered_at: deliveredAt, read_at: readAt, failed_at: status === 'failed' ? now : null, status, callback_data: callbackData, updated_at: now }, { onConflict: 'organization_id,provider,external_message_id' });
 
   const identityPatch: Record<string, unknown> = {};
@@ -194,8 +233,10 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence?.brandName && !intake.brand_name) identityPatch.brand_name = textIntelligence.brandName;
   if (imageIntelligence?.companyName && !intake.company_name) identityPatch.proposed_company_name = imageIntelligence.companyName;
   if (imageIntelligence?.brandName && !intake.brand_name) identityPatch.proposed_brand_name = imageIntelligence.brandName;
-  const quantity = incoming && !intake.quantity_text ? quantityFromMessage(text) : null;
+  const quantity = incoming && !intake.quantity_text ? quantityFromMessage(visibleText) : null;
   if (quantity) identityPatch.quantity_text = quantity;
+  const industry = incoming && !intake.industry ? industryFromMessage(visibleText) : null;
+  if (industry) identityPatch.industry = industry;
   let companyEvidence = intake.company_evidence ?? {};
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
