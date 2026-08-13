@@ -11,22 +11,35 @@ const intelligence = read('src/features/integrations/interakt/intelligence.ts');
 const webhook = read('src/features/integrations/interakt/webhook.ts');
 const packageJson = read('package.json');
 
-test('S51-LEADS-014 keeps the latest response compact while always preserving full conversation access', () => {
+test('S51-LEADS-014 presents one coherent conversation intelligence section', () => {
   assert.match(page, /InboundConversationPanel/);
-  assert.match(conversation, /Latest customer response/);
-  assert.match(conversation, /\.reverse\(\)\.find\(hasVisibleCustomerContent\)/);
+  assert.match(page, /captured=\{\{/);
+  assert.match(page, /industry: selected\.industry/);
+  assert.match(page, /evidenceAnswers=\{compactAnswers\.map/);
+  assert.doesNotMatch(page, /Chatbot capture ·/);
+  assert.match(conversation, /Conversation intelligence/);
+  assert.match(conversation, /Setu Guru understood/);
+  assert.match(conversation, /Latest reply/);
   assert.match(conversation, /View full conversation/);
-  assert.match(conversation, /messages\.map\(\(message\) => <MessageBubble/);
-  assert.match(conversation, /imported \{messages\.length === 1 \? 'activity' : 'activities'\}/);
 });
 
-test('S51-LEADS-014 makes Setu Guru message understanding visible without expanding the thread', () => {
-  assert.match(conversation, /Setu Guru captured/);
-  assert.match(conversation, /inferCustomerIntent/);
+test('S51-LEADS-014 keeps useful Guru understanding visible without contradicting captured fields', () => {
+  assert.match(conversation, /requirementCaptures/);
+  assert.match(conversation, /captured\.companyName/);
+  assert.match(conversation, /captured\.packagingType/);
+  assert.match(conversation, /captured\.pouchType/);
+  assert.match(conversation, /captured\.quantityText/);
+  assert.match(conversation, /captured\.industry \|\| inferIndustry/);
+  assert.match(conversation, /Possible pack size/);
   assert.match(conversation, /Asking about MOQ/);
-  assert.match(conversation, /Asking about pricing/);
-  assert.match(conversation, /Possible company/);
-  assert.match(conversation, /No structured buyer detail has been extracted/);
+  assert.doesNotMatch(conversation, /No structured buyer detail has been extracted/);
+});
+
+test('S51-LEADS-014 collapses only rapid exact repeat replies in the visual thread', () => {
+  assert.match(conversation, /function dedupeDisplayMessages/);
+  assert.match(conversation, /currentText === previousText/);
+  assert.match(conversation, /Math\.abs\(currentAt - previousAt\) <= 10_000/);
+  assert.match(conversation, /repeated .*collapsed/);
 });
 
 test('S51-LEADS-015 normalizes company identity without losing the raw workflow answer', () => {
@@ -39,6 +52,16 @@ test('S51-LEADS-015 normalizes company identity without losing the raw workflow 
   assert.match(webhook, /answer_text: answerText/);
   assert.match(webhook, /evidence: answerText/);
   assert.doesNotMatch(webhook, /return \{ company_name: answer \}/);
+});
+
+test('S51-LEADS-017 recovers safe structured message replies when workflow context is missing', () => {
+  assert.match(webhook, /function visibleMessageText/);
+  assert.match(webhook, /function industryFromMessage/);
+  assert.match(webhook, /\['food and beverage', 'Food and Beverage'\]/);
+  assert.match(webhook, /const visibleText = visibleMessageText\(text\)/);
+  assert.match(webhook, /!intake\.industry \? industryFromMessage\(visibleText\)/);
+  assert.match(webhook, /identityPatch\.industry = industry/);
+  assert.match(webhook, /bareRange/);
 });
 
 test('S51-LEADS-016 keeps one recommended reply prominent and moves alternatives and brochure into compact controls', () => {
