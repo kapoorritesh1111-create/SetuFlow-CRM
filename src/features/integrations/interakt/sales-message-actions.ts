@@ -43,6 +43,13 @@ function replyWindowOpen(value: unknown) {
   return elapsed >= 0 && elapsed <= WHATSAPP_REPLY_WINDOW_MS;
 }
 
+function assertDraftContext(formData: FormData, rowId: string) {
+  const draftRowId = clean(formData.get('draftRowId'));
+  if (!draftRowId || draftRowId !== rowId) {
+    throw new Error('Customer changed. The reply has been refreshed for the selected inquiry. Please review it before sending.');
+  }
+}
+
 function safeSalesError(error: unknown) {
   const message = error instanceof Error ? error.message : 'The message could not be sent.';
   if (/complete WhatsApp number|valid WhatsApp country code|phone number are required/i.test(message)) {
@@ -182,6 +189,7 @@ async function performStarkInteraktSalesText(formData: FormData): Promise<void> 
   const originalMessage = clean(formData.get('message'));
   const brochureId = clean(formData.get('brochureId'));
   if (!rowId) throw new Error('Inbound inquiry is required.');
+  assertDraftContext(formData, rowId);
   if (!originalMessage) throw new Error('Type a WhatsApp message before sending.');
 
   const db = createAdminSupabaseClient() as any;
@@ -255,6 +263,7 @@ async function performStarkInteraktSalesFollowUp(formData: FormData): Promise<vo
   const requestedPreset = clean(formData.get('messagePreset')) as PresetKey;
   const preset = SALES_MESSAGE_PRESETS[requestedPreset] ?? SALES_MESSAGE_PRESETS.qualification_follow_up;
   if (!rowId) throw new Error('Inbound inquiry is required.');
+  assertDraftContext(formData, rowId);
 
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
