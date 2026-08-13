@@ -33,7 +33,7 @@ export default async function Page({ searchParams = {} }: { searchParams?: Searc
   if (!membership || !organization) return null;
 
   const supabase: any = await createClient();
-  const [categoriesResult, productsResult, pricingRulesResult, brochureData, familiesResult] = await Promise.all([
+  const [categoriesResult, productsResult, pricingRulesResult, brochureData, familiesResult, buyerContactResult] = await Promise.all([
     supabase
       .from('product_categories')
       .select('id, name, sort_order, is_active, parent_id, products(id)')
@@ -56,6 +56,11 @@ export default async function Page({ searchParams = {} }: { searchParams?: Searc
       .eq('organization_id', organization.id)
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true }),
+    supabase
+      .from('organizations')
+      .select('contact_phone,whatsapp_phone')
+      .eq('id', organization.id)
+      .maybeSingle(),
   ]);
 
   if (categoriesResult.error) return <StateMessage title="Categories could not load" description={categoriesResult.error.message} tone="warning" />;
@@ -74,6 +79,7 @@ export default async function Page({ searchParams = {} }: { searchParams?: Searc
   const activeCount = rows.filter((category) => category.is_active !== false).length;
   const brochureCount = brochureData.length;
   const families = (familiesResult.data ?? []) as FamilyRow[];
+  const buyerContact = (buyerContactResult.data ?? {}) as { contact_phone?: string | null; whatsapp_phone?: string | null };
 
   return (
     <AdminSettingsShell active="categories" organizationName={organization.name} missingCount={rows.length === 0 || uncategorizedProducts > 0 ? 1 : 0}>
@@ -95,6 +101,8 @@ export default async function Page({ searchParams = {} }: { searchParams?: Searc
           brochures={brochureData}
           categories={rows.map((category) => ({ id: category.id, name: category.name, is_active: category.is_active }))}
           families={families}
+          contactPhone={buyerContact.contact_phone ?? null}
+          whatsappPhone={buyerContact.whatsapp_phone ?? null}
           initialOpen={searchParams.brochures === '1'}
         />
 
