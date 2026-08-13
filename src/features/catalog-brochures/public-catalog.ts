@@ -3,6 +3,7 @@ import 'server-only';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{20,128}$/;
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -11,6 +12,11 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
+}
+
+function safeHexColor(value: unknown) {
+  const color = clean(value);
+  return HEX_COLOR_PATTERN.test(color) ? color : null;
 }
 
 export function validCatalogToken(value: unknown) {
@@ -81,9 +87,9 @@ export async function loadPublicCatalog(tokenValue: unknown) {
       whatsappPhone,
       logoStoragePath,
       logoAltText: clean(brand?.logo_alt_text) || `${clean(brand?.brand_display_name) || String(organization.name)} logo`,
-      primaryColor: clean(brand?.primary_color) || null,
-      secondaryColor: clean(brand?.secondary_color) || null,
-      accentColor: clean(brand?.accent_color) || null,
+      primaryColor: safeHexColor(brand?.primary_color),
+      secondaryColor: safeHexColor(brand?.secondary_color),
+      accentColor: safeHexColor(brand?.accent_color),
     },
   };
 }
