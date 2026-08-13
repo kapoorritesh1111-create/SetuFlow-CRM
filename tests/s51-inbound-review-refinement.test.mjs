@@ -30,6 +30,14 @@ test('S51-LEADS-015 normalizes company identity without losing the raw workflow 
   assert.doesNotMatch(webhook, /return \{ company_name: answer \}/);
 });
 
+test('S51-LEADS-015 supports the reported natural-language company-answer shape conservatively', () => {
+  assert.match(intelligence, /\(\?:startup\|company\|business\|firm\)/);
+  assert.match(intelligence, /\(\?:for\|in\|with\|making\|selling\|which\|that\|and\)/);
+  assert.match(intelligence, /looksLikeNaturalSentence/);
+  assert.match(intelligence, /companyName,/);
+  assert.match(intelligence, /evidence: answer/);
+});
+
 test('S51-LEADS-016 keeps one recommended reply prominent and moves alternatives and brochure into compact controls', () => {
   assert.match(composer, /Setu recommended reply/);
   assert.match(composer, /Change reply/);
