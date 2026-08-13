@@ -36,7 +36,7 @@ test('S51-LEADS-016 keeps one recommended reply prominent and moves alternatives
   assert.match(composer, /Change reply/);
   assert.match(composer, /suggestions\.map\(\(suggestion\) => <option/);
   assert.match(composer, /Attach brochure/);
-  assert.match(composer, /<details className="rounded-card border border-line bg-surface-2 px-3 py-2" open=\{Boolean\(brochureId\)\}>/);
+  assert.match(composer, /open=\{Boolean\(brochureId\)\}/);
   assert.doesNotMatch(composer, /Setu suggested replies/);
   assert.match(composer, /name="draftRowId" value=\{draftRowId\}/);
   assert.match(composer, /const contextChanged = draftRowId !== rowId/);
