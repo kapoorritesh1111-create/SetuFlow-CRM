@@ -64,6 +64,12 @@ test('S51-LEADS-017 recovers safe structured message replies when workflow conte
   assert.match(webhook, /bareRange/);
 });
 
+test('S51-LEADS-017 avoids repeated workflow identity evidence while preserving latest evidence', () => {
+  assert.match(webhook, /function evidenceFingerprint/);
+  assert.match(webhook, /filter\(\(entry\) => evidenceFingerprint\(entry\) !== nextKey\)/);
+  assert.match(webhook, /return \{ latest: next, history: \[\.\.\.history, next\] \}/);
+});
+
 test('S51-LEADS-016 keeps one recommended reply prominent and moves alternatives and brochure into compact controls', () => {
   assert.match(composer, /Setu recommended reply/);
   assert.match(composer, /Change reply/);
