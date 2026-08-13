@@ -248,9 +248,22 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           {!selected.first_inquiry_at ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
           {conversation.error ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
 
-          <InboundConversationPanel messages={messages} customerName={customerName} />
-
-          {compactAnswers.length ? <details className="rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3" open><summary className="cursor-pointer text-xs font-bold text-violet-800">💬 Chatbot capture · {compactAnswers.length} useful answers</summary><div className="mt-3 grid gap-2 md:grid-cols-2">{compactAnswers.map((answer) => <div key={answer.key} className="rounded-xl bg-white px-3 py-2"><p className="text-[9px] font-bold uppercase text-violet-500">{answer.label}</p><p className="mt-1 text-xs font-semibold text-slate-800">{answer.answer_text || '—'}</p></div>)}</div></details> : null}
+          <InboundConversationPanel
+            messages={messages}
+            customerName={customerName}
+            captured={{
+              companyName: selected.company_name,
+              brandName: selected.brand_name,
+              packagingType: selected.packaging_type,
+              pouchType: selected.pouch_type,
+              quantityText: selected.quantity_text,
+              industry: selected.industry,
+              dimensionsPrint: selected.dimensions_print,
+              deliveryLocation: selected.delivery_location,
+              buyingTimeline: selected.buying_timeline,
+            }}
+            evidenceAnswers={compactAnswers.map((answer) => ({ label: answer.label, value: answer.answer_text || '—' }))}
+          />
 
           <section id="message-customer" className="grid gap-3 lg:grid-cols-2">
             <details className="rounded-xl border border-slate-200 bg-white p-4" open>
@@ -322,11 +335,11 @@ function FilterBar({ searchParams }: { searchParams: SearchParams }) {
       <input type="hidden" name="view" value={searchParams.view || 'review'} />
       {searchParams.columns ? <input type="hidden" name="columns" value={searchParams.columns} /> : null}
       <label className="min-w-[240px] flex-1 text-[9px] font-bold uppercase text-slate-500">Search<input name="q" defaultValue={searchParams.q || ''} placeholder="Search by name, company or phone" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label>
-      <Select name="status" label="Segment" value={searchParams.status || 'all'} options={[['all','All'],['new','New'],['needs_reply','Needs reply'],['needs_info','Needs info'],['ready','Ready'],['history_pending','History pending']]} />
-      <Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[['all','All'],['evaluated','Evaluated'],['new_evidence','New evidence'],['partial_history','History pending'],['pending','Pending']]} />
-      <Select name="source" label="Source" value={searchParams.source || 'all'} options={[['all','All'],['ctwa','CTWA'],['instagram','Instagram'],['whatsapp','WhatsApp']]} />
+      <Select name="status" label="Segment" value={searchParams.status || 'all'} options={[["all","All"],["new","New"],["needs_reply","Needs reply"],["needs_info","Needs info"],["ready","Ready"],["history_pending","History pending"]]} />
+      <Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[["all","All"],["evaluated","Evaluated"],["new_evidence","New evidence"],["partial_history","History pending"],["pending","Pending"]]} />
+      <Select name="source" label="Source" value={searchParams.source || 'all'} options={[["all","All"],["ctwa","CTWA"],["instagram","Instagram"],["whatsapp","WhatsApp"]]} />
       <label className="text-[9px] font-bold uppercase text-slate-500">Owner<input name="owner" defaultValue={searchParams.owner || ''} placeholder="Any owner" className="mt-1 block w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label>
-      <Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[['recent','Most recent'],['oldest','Oldest'],['score','Highest score'],['name','Name A-Z']]} />
+      <Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[["recent","Most recent"],["oldest","Oldest"],["score","Highest score"],["name","Name A-Z"]]} />
       <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Apply</button>
       <Link href={`/leads/inbound?view=${searchParams.view === 'list' ? 'list' : 'review'}`} className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Clear</Link>
     </form>
