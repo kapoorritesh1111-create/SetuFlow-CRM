@@ -1,0 +1,256 @@
+'use server';
+
+import { randomBytes, randomUUID } from 'crypto';
+import { headers } from 'next/headers';
+import { revalidatePath } from 'next/cache';
+
+import { env } from '@/lib/env';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { requireWorkspace } from '@/lib/workspace/auth';
+
+const BROCHURE_BUCKET = 'organization-assets';
+const MAX_BROCHURE_BYTES = 12 * 1024 * 1024;
+const ADMIN_ROLES = new Set(['owner', 'admin']);
+const SHARE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+
+export type CatalogBrochure = {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  file_name: string;
+  file_size: number | null;
+  storage_bucket: string;
+  storage_path: string;
+  is_active: boolean;
+  created_at: string;
+  family_ids: string[];
+  family_names: string[];
+  family_slugs: string[];
+  category_ids: string[];
+  category_names: string[];
+};
+
+export type CatalogBrochureShareResult = {
+  id: string;
+  token: string;
+  brochureName: string;
+  url: string;
+};
+
+function clean(value: unknown) {
+  return String(value ?? '').trim();
+}
+
+function safeFileName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'brochure.pdf';
+}
+
+function requestBaseUrl() {
+  const h = headers();
+  const origin = h.get('origin')?.trim();
+  if (origin && /^https?:\/\//i.test(origin)) return origin.replace(/\/$/, '');
+  const host = h.get('x-forwarded-host') || h.get('host');
+  const proto = h.get('x-forwarded-proto') || 'https';
+  if (host) return `${proto}://${host}`;
+  return env.appUrl.replace(/\/$/, '');
+}
+
+function clientShareBaseUrl(organizationSlug: string | null | undefined) {
+  const current = requestBaseUrl();
+  const slug = clean(organizationSlug).toLowerCase();
+  if (!slug) return current;
+
+  try {
+    const currentUrl = new URL(current);
+    const hostname = currentUrl.hostname.toLowerCase();
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isPreview = hostname.endsWith('.vercel.app');
+    if (isLocal || isPreview) return current;
+
+    if (hostname === 'setuflowcrm.com' || hostname === 'www.setuflowcrm.com' || hostname.endsWith('.setuflowcrm.com')) {
+      return `https://${slug}.setuflowcrm.com`;
+    }
+
+    // Preserve a verified custom organization domain when the workspace is already served from one.
+    return current;
+  } catch {
+    return current;
+  }
+}
+
+async function workspaceWithRole(allowed: Set<string>) {
+  const workspace = await requireWorkspace();
+  if (!workspace.organization || !workspace.membership || !workspace.user) throw new Error('Workspace membership is required.');
+  if (!workspace.currentRoles.some((role) => allowed.has(String(role)))) throw new Error('You do not have permission for this brochure action.');
+  return workspace;
+}
+
+async function validateMappings(admin: any, organizationId: string, familyIds: string[], categoryIds: string[]) {
+  if (familyIds.length) {
+    const { data: families, error } = await admin.from('packaging_service_families').select('id').eq('organization_id', organizationId).in('id', familyIds);
+    if (error || (families ?? []).length !== new Set(familyIds).size) throw new Error('One or more selected product families are invalid.');
+  }
+  if (categoryIds.length) {
+    const { data: categories, error } = await admin.from('product_categories').select('id').eq('organization_id', organizationId).in('id', categoryIds);
+    if (error || (categories ?? []).length !== new Set(categoryIds).size) throw new Error('One or more selected product categories are invalid.');
+  }
+}
+
+export async function listCatalogBrochures(input?: { includeInactive?: boolean }): Promise<CatalogBrochure[]> {
+  const workspace = await requireWorkspace();
+  if (!workspace.organization || !workspace.membership) return [];
+  const db: any = await createClient();
+  let query = db.from('catalog_brochures')
+    .select('id, organization_id, name, description, file_name, file_size, storage_bucket, storage_path, is_active, created_at, catalog_brochure_families(packaging_family_id, packaging_service_families(id,name,slug)), catalog_brochure_categories(product_category_id, product_categories(id,name))')
+    .eq('organization_id', workspace.organization.id)
+    .order('created_at', { ascending: false });
+  if (!input?.includeInactive) query = query.eq('is_active', true);
+  const { data, error } = await query;
+  if (error) {
+    if (String(error.code ?? '') === '42P01') return [];
+    throw new Error(`Brochures could not load: ${String(error.message ?? 'unknown database error')}`);
+  }
+  return (data ?? []).map((row: any): CatalogBrochure => {
+    const familyMappings = Array.isArray(row.catalog_brochure_families) ? row.catalog_brochure_families : [];
+    const families = familyMappings.map((mapping: any) => mapping.packaging_service_families).filter(Boolean);
+    const categoryMappings = Array.isArray(row.catalog_brochure_categories) ? row.catalog_brochure_categories : [];
+    const categories = categoryMappings.map((mapping: any) => mapping.product_categories).filter(Boolean);
+    return {
+      id: String(row.id),
+      organization_id: String(row.organization_id),
+      name: String(row.name),
+      description: row.description == null ? null : String(row.description),
+      file_name: String(row.file_name),
+      file_size: row.file_size == null ? null : Number(row.file_size),
+      storage_bucket: String(row.storage_bucket),
+      storage_path: String(row.storage_path),
+      is_active: row.is_active !== false,
+      created_at: String(row.created_at),
+      family_ids: families.map((family: any) => String(family.id)),
+      family_names: families.map((family: any) => String(family.name)),
+      family_slugs: families.map((family: any) => String(family.slug)),
+      category_ids: categories.map((category: any) => String(category.id)),
+      category_names: categories.map((category: any) => String(category.name)),
+    };
+  });
+}
+
+export async function uploadCatalogBrochure(formData: FormData): Promise<void> {
+  const workspace = await workspaceWithRole(ADMIN_ROLES);
+  const organizationId = workspace.organization!.id;
+  const name = clean(formData.get('name'));
+  const description = clean(formData.get('description')) || null;
+  const familyIds = formData.getAll('family_ids').map(clean).filter(Boolean);
+  const categoryIds = formData.getAll('category_ids').map(clean).filter(Boolean);
+  const file = formData.get('file');
+  if (!name) throw new Error('Brochure name is required.');
+  if (!(file instanceof File) || file.size <= 0) throw new Error('Choose a PDF brochure to upload.');
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) throw new Error('Brochures must be PDF files.');
+  if (file.size > MAX_BROCHURE_BYTES) throw new Error('Brochure PDF must be 12 MB or smaller.');
+
+  const admin = createAdminSupabaseClient() as any;
+  if (!admin) throw new Error('Database admin client is unavailable.');
+  await validateMappings(admin, organizationId, familyIds, categoryIds);
+
+  const brochureId = randomUUID();
+  const normalizedName = safeFileName(file.name.endsWith('.pdf') ? file.name : `${file.name}.pdf`);
+  const path = `${organizationId}/catalog-brochures/${brochureId}-${normalizedName}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const { error: uploadError } = await admin.storage.from(BROCHURE_BUCKET).upload(path, bytes, { contentType: 'application/pdf', upsert: false });
+  if (uploadError) throw new Error(`Brochure upload failed: ${String(uploadError.message ?? 'storage error')}`);
+
+  const { error: insertError } = await admin.from('catalog_brochures').insert({
+    id: brochureId,
+    organization_id: organizationId,
+    name,
+    description,
+    storage_bucket: BROCHURE_BUCKET,
+    storage_path: path,
+    file_name: file.name,
+    mime_type: 'application/pdf',
+    file_size: file.size,
+    is_active: formData.get('is_active') === 'true' || formData.get('is_active') === 'on',
+    created_by: workspace.user!.id,
+  });
+  if (insertError) {
+    await admin.storage.from(BROCHURE_BUCKET).remove([path]);
+    throw new Error(`Brochure record could not be saved: ${String(insertError.message ?? 'database error')}`);
+  }
+  if (familyIds.length) {
+    const { error: mapError } = await admin.from('catalog_brochure_families').insert(familyIds.map((familyId) => ({ brochure_id: brochureId, packaging_family_id: familyId })));
+    if (mapError) throw new Error(`Brochure uploaded, but product-family mapping failed: ${String(mapError.message ?? 'database error')}`);
+  }
+  if (categoryIds.length) {
+    const { error: categoryMapError } = await admin.from('catalog_brochure_categories').insert(categoryIds.map((categoryId) => ({ brochure_id: brochureId, product_category_id: categoryId })));
+    if (categoryMapError) throw new Error(`Brochure uploaded, but product-category mapping failed: ${String(categoryMapError.message ?? 'database error')}`);
+  }
+  revalidatePath('/admin/catalog');
+  revalidatePath('/admin/catalog/brochures');
+}
+
+export async function updateCatalogBrochure(formData: FormData): Promise<void> {
+  const workspace = await workspaceWithRole(ADMIN_ROLES);
+  const organizationId = workspace.organization!.id;
+  const id = clean(formData.get('id'));
+  const name = clean(formData.get('name'));
+  const description = clean(formData.get('description')) || null;
+  const familyIds = formData.getAll('family_ids').map(clean).filter(Boolean);
+  const categoryIds = formData.getAll('category_ids').map(clean).filter(Boolean);
+  if (!id || !name) throw new Error('Brochure and brochure name are required.');
+  const admin = createAdminSupabaseClient() as any;
+  if (!admin) throw new Error('Database admin client is unavailable.');
+  const { data: brochure, error: loadError } = await admin.from('catalog_brochures').select('id').eq('id', id).eq('organization_id', organizationId).maybeSingle();
+  if (loadError || !brochure?.id) throw new Error('Brochure not found.');
+  await validateMappings(admin, organizationId, familyIds, categoryIds);
+  const { error } = await admin.from('catalog_brochures').update({ name, description, is_active: formData.get('is_active') === 'on', updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', organizationId);
+  if (error) throw new Error(`Brochure could not be updated: ${String(error.message ?? 'database error')}`);
+  await Promise.all([
+    admin.from('catalog_brochure_families').delete().eq('brochure_id', id),
+    admin.from('catalog_brochure_categories').delete().eq('brochure_id', id),
+  ]);
+  if (familyIds.length) await admin.from('catalog_brochure_families').insert(familyIds.map((familyId) => ({ brochure_id: id, packaging_family_id: familyId })));
+  if (categoryIds.length) await admin.from('catalog_brochure_categories').insert(categoryIds.map((categoryId) => ({ brochure_id: id, product_category_id: categoryId })));
+  revalidatePath('/admin/catalog');
+  revalidatePath('/admin/catalog/brochures');
+}
+
+export async function createCatalogBrochureShare(input: { brochureId: string; leadId?: string | null; intakeId?: string | null; channel?: string | null }): Promise<CatalogBrochureShareResult> {
+  const workspace = await workspaceWithRole(SHARE_ROLES);
+  const organizationId = workspace.organization!.id;
+  const admin = createAdminSupabaseClient() as any;
+  if (!admin) throw new Error('Database admin client is unavailable.');
+  const { data: brochure, error } = await admin.from('catalog_brochures').select('id,name,is_active').eq('id', input.brochureId).eq('organization_id', organizationId).maybeSingle();
+  if (error || !brochure?.id || brochure.is_active === false) throw new Error('Selected brochure is unavailable.');
+  if (input.leadId) {
+    const { data: lead } = await admin.from('leads').select('id').eq('id', input.leadId).eq('organization_id', organizationId).maybeSingle();
+    if (!lead?.id) throw new Error('Lead does not belong to this workspace.');
+  }
+  if (input.intakeId) {
+    const { data: intake } = await admin.from('lead_intake_staging').select('id').eq('id', input.intakeId).eq('organization_id', organizationId).maybeSingle();
+    if (!intake?.id) throw new Error('Inquiry does not belong to this workspace.');
+  }
+
+  // 144 bits of URL-safe entropy keeps the client link compact without weakening the opaque share token.
+  const token = randomBytes(18).toString('base64url');
+  const { data: share, error: shareError } = await admin.from('catalog_brochure_shares').insert({
+    organization_id: organizationId,
+    brochure_id: brochure.id,
+    token,
+    lead_id: input.leadId || null,
+    intake_id: input.intakeId || null,
+    share_channel: input.channel || null,
+    shared_by: workspace.user!.id,
+    expires_at: new Date(Date.now() + 30 * 864e5).toISOString(),
+  }).select('id,token').single();
+  if (shareError) throw new Error(`Brochure link could not be created: ${String(shareError.message ?? 'database error')}`);
+
+  const baseUrl = clientShareBaseUrl((workspace.organization as any)?.slug);
+  return {
+    id: String(share.id),
+    token: String(share.token),
+    brochureName: String(brochure.name),
+    url: `${baseUrl}/catalogs/${String(share.token)}`,
+  };
+}
