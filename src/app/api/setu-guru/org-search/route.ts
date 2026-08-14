@@ -58,7 +58,61 @@ function questionMode(question: string): SetuGuruOrgSearchMode {
 function normalizeSetuGuruOrgSearchMode(rawMode: string, question = ''): SetuGuruOrgSearchMode { const key = modeKey(rawMode); if (key && MODE_ALIASES[key]) return MODE_ALIASES[key]; return questionMode(question); }
 function isPureCountQuestion(question: string) { const q = question.toLowerCase(); return /how many|count|total/.test(q) && !/named|called|find|search|filter|missing/.test(q); }
 function extractSearchTerm(question: string, mode: string) { if (isPureCountQuestion(question)) return ''; const filler = ['how many', 'count', 'total', 'show me', 'find', 'search', 'filter', 'buyer', 'buyers', 'supplier', 'suppliers', 'lead', 'leads', 'product', 'products', 'catalog', 'category', 'categories', 'named', 'called', 'by name', 'in my', 'my', 'are in', 'there are', 'missing', 'hsn', 'hs code', 'hs-code', mode.replaceAll('_', ' ')]; let cleaned = question.toLowerCase(); for (const word of filler) cleaned = cleaned.replaceAll(word, ' '); cleaned = cleaned.replace(/[^a-z0-9\s-]/gi, ' ').replace(/\s+/g, ' ').trim(); return cleaned.length >= 2 ? cleaned : ''; }
-function includesTerm(row: Record<string, unknown>, term: string) { if (!term) return true; const haystack = Object.values(row).map((value) => String(value ?? '').toLowerCase()).join(' '); return haystack.includes(term.toLowerCase()); }
+
+// --- STRICT WORD-LEVEL FUZZY SEARCH (NO OVERFETCHING) ---
+function fuzzyMatchString(source: string, target: string): boolean {
+  if (!source || !target) return false;
+  const s = source.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+  const t = target.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+  
+  if (s.includes(t) || t.includes(s)) return true;
+
+  const targetWords = t.split(/\s+/).filter(w => w.length > 2);
+  const sourceWords = s.split(/\s+/).filter(w => w.length > 2);
+
+  if (targetWords.length === 0) return false;
+
+  let matchedWordsCount = 0;
+  for (const tWord of targetWords) {
+    let wordMatched = false;
+    for (const sWord of sourceWords) {
+      if (sWord.includes(tWord) || tWord.includes(sWord)) {
+        wordMatched = true;
+        break;
+      }
+      let matchCount = 0;
+      let sIdx = 0;
+      for (let tIdx = 0; tIdx < tWord.length && sIdx < sWord.length; tIdx++) {
+        if (tWord[tIdx] === sWord[sIdx]) {
+          matchCount++;
+          sIdx++;
+        } else if (sIdx + 1 < sWord.length && tWord[tIdx] === sWord[sIdx + 1]) {
+          matchCount++;
+          sIdx += 2;
+        }
+      }
+      // Word match threshold: 75%
+      if (matchCount / Math.max(sWord.length, tWord.length) > 0.75) {
+        wordMatched = true;
+        break;
+      }
+    }
+    if (wordMatched) matchedWordsCount++;
+  }
+  
+  // STRICT RULE: User input ke zyada tar words (>= 70%) match hone chahiye, sirf ek lamba keyword nahi.
+  return (matchedWordsCount / targetWords.length) >= 0.7; 
+}
+
+function includesTerm(row: Record<string, unknown>, term: string) { 
+  if (!term) return true; 
+  const haystack = Object.values(row).map((value) => String(value ?? '').toLowerCase()).join(' '); 
+  if (haystack.includes(term.toLowerCase())) return true;
+  const rowName = String(row.name ?? row.company_name ?? row.contact_name ?? '').toLowerCase();
+  return fuzzyMatchString(rowName, term);
+}
+// ----------------------------------------
+
 function parseRouteId(route: string, pattern: RegExp) { return route.match(pattern)?.[1] ?? null; }
 function parseLeadIdFromRoute(route: string) { return parseRouteId(route, /\/leads\/([^/?#]+)/); }
 function parseProductIdFromRoute(route: string) { return parseRouteId(route, /\/products\/([^/?#]+)/); }
@@ -108,13 +162,11 @@ function fuzzyMatchClient(name: string, query: string): boolean {
   const n = name.toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
   const q = query.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').trim();
   if (!q) return false;
-  // Match any token of the query against the name
   return q.split(/\s+/).filter(t => t.length > 1).some(token => n.includes(token));
 }
 
 function extractClientNameFromQuestion(question: string): string {
   const q = question.toLowerCase();
-  // Remove intent phrases to isolate the client name
   const stripped = q
     .replace(/\b(what is the status|status of|order status|quote status|check|show me|for|of|the|order|quote|sf-o-\d{6}-\d{3}|sf-q-\d{6}-\d{3})\b/g, ' ')
     .replace(/\s{2,}/g, ' ').trim();
@@ -130,7 +182,6 @@ async function resolveOrderWithDisambiguation(
 ): Promise<DisambiguationResult> {
   const columns = 'id, order_number, status, current_stage, order_lifecycle_status, approval_state, payment_status, fulfillment_status, dispatch_status, source_quote_id, source_quote_version_id, lead_id, total_order_value, currency, updated_at';
 
-  // 1. Exact order number in question → direct lookup
   const orderNumber = parseOrderNumberFromQuestion(question);
   if (orderNumber) {
     const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('order_number', orderNumber).maybeSingle();
@@ -141,7 +192,6 @@ async function resolveOrderWithDisambiguation(
     }
   }
 
-  // 2. Order ID in route → direct lookup
   const orderId = parseOrderIdFromRoute(route);
   if (orderId) {
     const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('id', orderId).maybeSingle();
@@ -152,7 +202,6 @@ async function resolveOrderWithDisambiguation(
     }
   }
 
-  // 3. Order number visible in page text
   const pageOrderNumber = (/SF-O-\d{6}-\d{3}/i.exec(pageText) ?? [])[0]?.toUpperCase() ?? null;
   if (pageOrderNumber) {
     const { data } = await db.from('orders').select(columns).eq('organization_id', organizationId).eq('order_number', pageOrderNumber).maybeSingle();
@@ -163,10 +212,7 @@ async function resolveOrderWithDisambiguation(
     }
   }
 
-  // 4. Try to extract client name from question for fuzzy match
   const clientQuery = extractClientNameFromQuestion(question);
-
-  // Load recent orders with lead names for matching
   const { data: recent } = await db.from('orders')
     .select('id, order_number, status, current_stage, order_lifecycle_status, approval_state, payment_status, fulfillment_status, dispatch_status, source_quote_id, source_quote_version_id, lead_id, total_order_value, currency, updated_at')
     .eq('organization_id', organizationId)
@@ -176,30 +222,25 @@ async function resolveOrderWithDisambiguation(
   const orders = rowList(recent);
   if (!orders.length) return { kind: 'not_found', message: 'No orders found in this organization yet.' };
 
-  // Load lead names for all orders
   const leadIds = [...new Set(orders.map(o => asText(o.lead_id)).filter(Boolean))];
   const { data: leadsData } = leadIds.length
     ? await db.from('leads').select('id, company_name, contact_name').eq('organization_id', organizationId).in('id', leadIds)
     : { data: [] };
   const leadMap = new Map(rowList(leadsData).map(l => [asText(l.id), asText(l.company_name || l.contact_name)]));
 
-  // Annotate orders with customer names
   const annotated = orders.map(o => ({
     order: o,
     customerName: leadMap.get(asText(o.lead_id)) ?? '',
   }));
 
-  // 5. Client name match
   if (clientQuery) {
     const matched = annotated.filter(a => fuzzyMatchClient(a.customerName, clientQuery));
     if (matched.length === 1) {
       return { kind: 'found', order: matched[0].order, customerName: matched[0].customerName };
     }
     if (matched.length > 1) {
-      // Multiple orders for matched clients — ask which one
       const uniqueClients = [...new Set(matched.map(m => m.customerName))];
       if (uniqueClients.length === 1) {
-        // Same client, multiple orders — ask which order
         const rows = matched.slice(0, 5).map(m => ({
           id: asText(m.order.id),
           name: asText(m.order.order_number),
@@ -215,7 +256,6 @@ async function resolveOrderWithDisambiguation(
           rows,
         };
       }
-      // Multiple clients partially matched — ask to clarify
       const rows = matched.slice(0, 5).map(m => ({
         id: asText(m.order.id),
         name: m.customerName,
@@ -231,7 +271,6 @@ async function resolveOrderWithDisambiguation(
     }
   }
 
-  // 6. No match at all — ask for client name
   return {
     kind: 'ask_client',
     message: "Which client or order number are you asking about? Give me a client name or order number (like SF-O-202605-004) and I'll pull the live status.",
@@ -259,7 +298,6 @@ async function resolveQuoteWithDisambiguation(
 
   const targetLeads = matched.length > 0 ? matched : leadRows.slice(0, 3);
 
-  // Load quotes for matched leads
   const leadIds = targetLeads.map(l => asText(l.id));
   const { data: quotes } = await db.from('quotes').select('id, quote_number, status, lead_id').eq('organization_id', organizationId).in('lead_id', leadIds).order('updated_at', { ascending: false }).limit(20);
   const quoteRows = rowList(quotes);
@@ -287,7 +325,6 @@ async function resolveQuoteWithDisambiguation(
 async function buildWorkflowStatusResponse(db: SupabaseReader, organizationId: string, organizationName: string, route: string, pageText: string, mode: SetuGuruOrgSearchMode, question = '') {
   const result = await resolveOrderWithDisambiguation(db, organizationId, route, pageText, question);
 
-  // Need more info — return disambiguation prompt with suggestion rows
   if (result.kind === 'ask_client' || result.kind === 'pick_order') {
     return NextResponse.json({
       answer: result.kind === 'ask_client' ? result.message : result.message,
@@ -325,50 +362,127 @@ async function buildWorkflowStatusResponse(db: SupabaseReader, organizationId: s
   return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows, metrics: { blockers: built.blockers.length, orderStages: rowList(stagesResult.data).length, orderDocuments: rowList(docsResult.data).length, freightRequests: rowList(freightRequestsResult.data).length, financeSyncRecords: rowList(financeResult.data).length }, actions: ['Open order workspace', 'Review order approval boundary', 'Draft dispatch evidence checklist'], actionHref: `/orders/${orderId}`, actionHrefs: { 'Open order workspace': `/orders/${orderId}`, 'Review order approval boundary': `/orders/${orderId}?tab=approvals`, 'Draft dispatch evidence checklist': `/orders/${orderId}?tab=documents` } });
 }
 
-
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const question = asText(body.question);
+    const qNormalized = question.trim().toLowerCase();
+
+    // --- API LEVEL FIX 1: Smart Conversational Interceptors (Zero Hallucination) ---
+    // 1. Greetings (Varied responses to feel human)
+    if (/^(hi+|hello|hey+|heya|namaste|greetings)[\s!?.]*$/.test(qNormalized)) {
+      const greetings = [
+        "Hello! This is Setu Guru AI. How can I help you today? You can ask me about catalog products, active leads, or CRM workflows.",
+        "Hi there! Setu Guru here. Looking for a specific product, lead, or quote status?",
+        "Namaste! I'm Setu Guru. Need help finding a catalog item or checking on a workflow?",
+        "Hey! I'm your Setu Guru assistant. What can I look up for you in the CRM today?"
+      ];
+      return NextResponse.json({
+        answer: greetings[Math.floor(Math.random() * greetings.length)],
+        confidence: 'high',
+        mode: 'page_help',
+        rows: [],
+        actions: ['Open Products', 'Open Leads']
+      });
+    }
+
+    // 2. Closings & Acknowledgements (MULTI-WORD SUPPORT)
+    const isClosing = qNormalized.split(/\s+/).every(w => /^(bye+|goodbye|thanks+|thank|you|ok+|okay+|okey|alright|cool|awesome|great|nice|perfect|done|achha|ha|haan)$/.test(w.replace(/[^a-z]/g, '')));
+    
+    if (isClosing && qNormalized.length > 0) {
+      const closings = [
+        "You're very welcome! I'm right here if you need to check anything else.",
+        "Happy to help! Let me know if you need anything else from Setu Flow.",
+        "Anytime! Just type here if you need to look up more leads or products.",
+        "Got it! Have a great day, and let me know if you need further assistance."
+      ];
+      return NextResponse.json({
+        answer: closings[Math.floor(Math.random() * closings.length)],
+        confidence: 'high',
+        mode: 'page_help',
+        rows: [],
+        actions: []
+      });
+    }
+    // ---------------------------------------------------------
+
     const route = asText(body.route);
     const pageText = asText(body.pageText);
     if (!question) return NextResponse.json({ answer: 'Ask a catalog, product, buyer, supplier, lead, quote blocker, workflow, route help, or live research question.', confidence: 'low', rows: [] }, { status: 400 });
     const mode = normalizeSetuGuruOrgSearchMode(asText(body.mode), question);
+    
     if (mode === 'page_help') return NextResponse.json({ ...buildPageHelpAnswer(question, route), confidence: 'high' });
     if (isResearchRoutingMode(mode, question)) { let entityContext: SetuGuruResearchEntityContext | null = null; let hsnCatalogReview: SetuGuruHsnCatalogReview | null = null; if (hasSupabaseEnv) { const workspace = await getWorkspaceAccess().catch(() => null); if (workspace?.user && workspace.organization) { const db = await createClient() as unknown as SupabaseReader; entityContext = await resolveActiveResearchEntityContext(db, workspace.organization.id, route).catch(() => null); if (mode === 'hsn_enrichment') hsnCatalogReview = await resolveHsnCatalogReview(workspace.organization.id, question, pageText, entityContext).catch(() => null); } } return NextResponse.json(buildResearchRoutingAnswer(question, route, pageText, mode, entityContext, hsnCatalogReview)); }
     if (!hasSupabaseEnv) return NextResponse.json({ answer: 'Setu Guru cannot read live organization data because Supabase environment variables are missing. Ask “what can you do on this page?” for route help, or ask for live research guidance for HS/HSN, document requirements, duties, tariffs, or margins.', confidence: 'low', rows: [], actions: ['Show page help', 'Ask live research'] }, { status: 500 });
+    
     const workspace = await getWorkspaceAccess();
     if (!workspace.user || !workspace.organization) return NextResponse.json({ answer: 'Please sign in to Setu Flow before asking Setu Guru to search organization data.', confidence: 'low', rows: [] }, { status: 401 });
+    
     const organizationId = workspace.organization.id;
     const organizationName = workspace.organization.name ?? 'this organization';
     const term = asText(body.term) || extractSearchTerm(question, mode);
     const db = await createClient() as unknown as SupabaseReader;
 
-    // S24-TRIAL-205 Pass C: guided-trial orgs get the journey coach for
-    // "what do I do next"-style questions. resolveTrialCoachContext returns
-    // null for every non-trial org, so paying orgs never see trial context.
     const startedAt = Date.now();
     const trialCoach = await resolveTrialCoachContext(organizationId).catch(() => null);
     if (trialCoach && isTrialJourneyQuestion(question)) {
       const coachAnswer = buildTrialCoachAnswer(trialCoach, organizationName);
-      void writeTelemetry({
-        organizationId,
-        userId: workspace.user.id,
-        route: route || '/',
-        // question, // Fixed TS error
-        mode: 'trial_journey',
-        confidence: 'high',
-        blockerCount: 0,
-        answerSourceType: coachAnswer.trialAction ? 'trial_coach_show_step' : 'trial_coach',
-        latencyMs: Date.now() - startedAt,
-        blocked: false,
-      });
+      void writeTelemetry({ organizationId, userId: workspace.user.id, route: route || '/', mode: 'trial_journey', confidence: 'high', blockerCount: 0, answerSourceType: coachAnswer.trialAction ? 'trial_coach_show_step' : 'trial_coach', latencyMs: Date.now() - startedAt, blocked: false });
       return NextResponse.json(coachAnswer);
     }
+    
     if (mode === 'workflow_status') return buildWorkflowStatusResponse(db, organizationId, organizationName, route, pageText, mode, question);
+    
     if (mode === 'quote_compliance') { const lead = await resolveActiveLead(db, organizationId, route, pageText); if (!lead?.id) return NextResponse.json({ answer: 'I can help with quote compliance, but I could not identify a lead from the route or visible page. Open the quote or lead workspace and ask again.', confidence: 'medium', rows: [], actions: ['Open Leads', 'Open compliance'], actionHref: '/leads' }); const [{ data: quotes }, { data: leadProducts }, { data: documents }, { data: complianceRows }, { data: rules }, { data: country }] = await Promise.all([db.from('quotes').select('id, quote_number, status, country_id, market_id, currency, display_currency').eq('organization_id', organizationId).eq('lead_id', lead.id).order('updated_at', { ascending: false }).limit(1), db.from('lead_product_interests').select('product_id, products(id, name, hsn_code, category_id)').eq('organization_id', organizationId).eq('lead_id', lead.id), db.from('documents').select('id, requirement_code, file_name, status, expires_at, related_entity, related_id').eq('organization_id', organizationId).eq('related_entity', 'lead').eq('related_id', lead.id), db.from('lead_compliance_items').select('id, status, severity, due_at, compliance_checklist_items(code, description, is_mandatory)').eq('organization_id', organizationId).eq('lead_id', lead.id), db.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, is_mandatory, is_active').eq('organization_id', organizationId).eq('is_active', true).in('progression_scope', ['general', 'quote_send']), lead.country ? db.from('countries').select('id, name, market_id').eq('organization_id', organizationId).ilike('name', asText(lead.country)).maybeSingle() : Promise.resolve({ data: null })]); const quote = firstRow(quotes); const productRows = rowList(leadProducts).map((row) => nestedRow(row.products)).filter(isRecord); const productIdSet = new Set(productRows.map((product) => product.id)); const marketId = quote?.market_id ?? country?.market_id ?? null; const applicableRules = rowList(rules).filter((rule) => { if (rule.lead_type && rule.lead_type !== lead.lead_type) return false; if (rule.market_id && rule.market_id !== marketId) return false; if (rule.product_id && !productIdSet.has(rule.product_id)) return false; return true; }); const built = buildQuoteComplianceAnswer({ organizationName, lead, quote, complianceRows: rowList(complianceRows), documentRows: rowList(documents), requirementRows: applicableRules, productRows, countryName: asText(country?.name) || asText(lead.country) }); const rows = [...built.blockers.map((item, index) => ({ id: `blocker-${index}`, name: item, type: 'mandatory blocker', next: 'Upload evidence, submit review, or owner/admin waive with reason' })), ...applicableRules.filter((rule) => rule.is_mandatory !== true).slice(0, 4).map((rule) => ({ id: rule.id, name: rule.title || rule.requirement_code, type: 'advisory before dispatch', next: 'Prepare before order dispatch' }))]; return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows, actions: ['Open lead documents', 'Open compliance', 'Ask AI evidence checklist'], actionHref: `/leads/${lead.id}`, actionHrefs: { 'Open lead documents': `/leads/${lead.id}?tab=documents`, 'Open compliance': `/compliance/assist?leadId=${lead.id}`, 'Ask AI evidence checklist': `/compliance/assist?leadId=${lead.id}&mode=evidence` } }); }
-    if (mode === 'catalog_search' || mode === 'hsn_enrichment') { const workspaceData = await getProductsData(organizationId); const products = workspaceData?.products ?? []; const categories = workspaceData?.categories ?? []; const categoryNameById = new Map(categories.map((category: TableRow) => [category.id, category.name])); const visibleProducts = products.filter((product: TableRow) => product.is_active !== false); const missingHsnProducts = visibleProducts.filter((product: TableRow) => !asText(product.hsn_code)); const sourceProducts = mode === 'hsn_enrichment' ? missingHsnProducts : visibleProducts; const matchedProducts = term ? sourceProducts.filter((product: TableRow) => includesTerm({ name: product.name, sku: product.sku, sku_code: product.sku_code, hsn_code: product.hsn_code, category: categoryNameById.get(product.category_id) }, term)) : sourceProducts; const rows = matchedProducts.slice(0, 8).map((product: TableRow) => ({ id: product.id, name: product.name, sku: product.sku ?? product.sku_code ?? null, hsnCode: product.hsn_code ?? null, category: categoryNameById.get(product.category_id) ?? null })); const answer = mode === 'hsn_enrichment' ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review. For actual HS/HSN assignment, use live source-backed research and human review before write-back.` : term ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.` : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`; return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn_enrichment' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn_enrichment' ? '/products?guru=missing-hsn' : '/products' }); }
-    if (mode === 'buyer_search' || mode === 'supplier_search' || mode === 'lead_search') { let countQuery = db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId); if (mode === 'buyer_search') countQuery = countQuery.eq('lead_type', 'buyer'); if (mode === 'supplier_search') countQuery = countQuery.eq('lead_type', 'supplier'); const { count, error: countError } = await countQuery; if (countError) throw countError; let query = db.from('leads').select('id, company_name, contact_name, email, phone, lead_type, country, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(8); if (mode === 'buyer_search') query = query.eq('lead_type', 'buyer'); if (mode === 'supplier_search') query = query.eq('lead_type', 'supplier'); if (term) query = query.or(`company_name.ilike.%${term}%,contact_name.ilike.%${term}%,email.ilike.%${term}%,country.ilike.%${term}%`); const { data: leads, error } = await query; if (error) throw error; const rows = rowList(leads).map((lead) => ({ id: lead.id, company: lead.company_name, contact: lead.contact_name, email: lead.email, phone: lead.phone, type: lead.lead_type, country: lead.country })); const label = mode === 'buyer_search' ? 'buyer' : mode === 'supplier_search' ? 'supplier' : 'lead'; return NextResponse.json({ answer: term ? `I found ${rows.length} matching ${label} record(s) for "${term}" in ${organizationName}. There are ${count ?? 0} ${label} record(s) total.` : `${organizationName} has ${count ?? 0} ${label} record(s). I listed the latest ${rows.length}.`, confidence: 'high', mode, term, rows, metrics: { count: count ?? 0 }, nextAction: mode === 'buyer_search' ? 'Open Leads in Buyers mode.' : mode === 'supplier_search' ? 'Open Leads in Suppliers mode.' : 'Open Leads to filter or edit records.', actionHref: mode === 'buyer_search' ? '/leads?mode=buyers' : mode === 'supplier_search' ? '/leads?mode=suppliers' : '/leads' }); }
+    
+    if (mode === 'catalog_search' || mode === 'hsn_enrichment') { 
+      const workspaceData = await getProductsData(organizationId); 
+      const products = workspaceData?.products ?? []; 
+      const categories = workspaceData?.categories ?? []; 
+      const categoryNameById = new Map(categories.map((category: TableRow) => [category.id, category.name])); 
+      const visibleProducts = products.filter((product: TableRow) => product.is_active !== false); 
+      const missingHsnProducts = visibleProducts.filter((product: TableRow) => !asText(product.hsn_code)); 
+      const sourceProducts = mode === 'hsn_enrichment' ? missingHsnProducts : visibleProducts; 
+      
+      const matchedProducts = term ? sourceProducts.filter((product: TableRow) => includesTerm({ name: product.name, sku: product.sku, sku_code: product.sku_code, hsn_code: product.hsn_code, category: categoryNameById.get(product.category_id) }, term)) : sourceProducts; 
+      
+      const rows = matchedProducts.slice(0, 8).map((product: TableRow) => ({ id: product.id, name: product.name, sku: product.sku ?? product.sku_code ?? null, hsnCode: product.hsn_code ?? null, category: categoryNameById.get(product.category_id) ?? null })); 
+      const answer = mode === 'hsn_enrichment' ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review. For actual HS/HSN assignment, use live source-backed research and human review before write-back.` : term ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.` : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`; 
+      
+      return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn_enrichment' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn_enrichment' ? '/products?guru=missing-hsn' : '/products' }); 
+    }
+    
+    if (mode === 'buyer_search' || mode === 'supplier_search' || mode === 'lead_search') { 
+      let countQuery = db.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId); 
+      if (mode === 'buyer_search') countQuery = countQuery.eq('lead_type', 'buyer'); 
+      if (mode === 'supplier_search') countQuery = countQuery.eq('lead_type', 'supplier'); 
+      const { count, error: countError } = await countQuery; 
+      if (countError) throw countError; 
+      
+      let query = db.from('leads').select('id, company_name, contact_name, email, phone, lead_type, country, updated_at').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(50);
+      if (mode === 'buyer_search') query = query.eq('lead_type', 'buyer'); 
+      if (mode === 'supplier_search') query = query.eq('lead_type', 'supplier'); 
+      
+      const { data: leads, error } = await query; 
+      if (error) throw error; 
+      
+      let filteredLeads = rowList(leads);
+      if (term) {
+        filteredLeads = filteredLeads.filter(lead => includesTerm({
+          name: lead.company_name,
+          contact: lead.contact_name,
+          email: lead.email,
+          country: lead.country
+        }, term));
+      }
+      
+      const rows = filteredLeads.slice(0, 8).map((lead) => ({ id: lead.id, company: lead.company_name, contact: lead.contact_name, email: lead.email, phone: lead.phone, type: lead.lead_type, country: lead.country })); 
+      const label = mode === 'buyer_search' ? 'buyer' : mode === 'supplier_search' ? 'supplier' : 'lead'; 
+      return NextResponse.json({ answer: term ? `I found ${rows.length} matching ${label} record(s) for "${term}" in ${organizationName}. There are ${count ?? 0} ${label} record(s) total.` : `${organizationName} has ${count ?? 0} ${label} record(s). I listed the latest ${rows.length}.`, confidence: 'high', mode, term, rows, metrics: { count: count ?? 0 }, nextAction: mode === 'buyer_search' ? 'Open Leads in Buyers mode.' : mode === 'supplier_search' ? 'Open Leads in Suppliers mode.' : 'Open Leads to filter or edit records.', actionHref: mode === 'buyer_search' ? '/leads?mode=buyers' : mode === 'supplier_search' ? '/leads?mode=suppliers' : '/leads' }); 
+    }
+    
     return NextResponse.json({ answer: 'I can search live products, HSN gaps, buyers, suppliers, leads, quote compliance blockers, workflow state, route help, and research-intent routing for HS/HSN, document requirements, duties, tariffs, and margins. Try “what can you do on this page?” for page-specific help.', confidence: 'medium', rows: [], actions: ['Show page help', 'Ask live research'] });
-  } catch (error) { return NextResponse.json({ answer: error instanceof Error ? error.message : 'Setu Guru organization search failed.', confidence: 'low', rows: [] }, { status: 500 }); }
+  } catch (error) { 
+    return NextResponse.json({ answer: error instanceof Error ? error.message : 'Setu Guru organization search failed.', confidence: 'low', rows: [] }, { status: 500 }); 
+  }
 }

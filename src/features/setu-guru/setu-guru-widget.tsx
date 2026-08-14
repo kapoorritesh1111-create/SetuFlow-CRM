@@ -34,7 +34,6 @@ type ChatMessage = {
   hsnCatalogReview?: HsnCatalogReview | null;
   sourceQuestion?: string;
   tone?: 'normal' | 'loading' | 'error' | 'success';
-  /** S24-TRIAL-205: registry-validated guided-tour step suggested by the trial coach. */
   trialAction?: TrialShowStepAction | null;
 };
 
@@ -158,7 +157,6 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
 export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLabel }: { pathname: string; routeTitle: string; organizationName?: string | null; roleLabel: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
-  // S24-TRIAL-205: null for non-trial orgs (no provider mounted) — hides "Show me".
   const trialTour = useTrialTour();
 
   const handleShowStep = useCallback((action: TrialShowStepAction) => {
@@ -185,16 +183,15 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   const quickPrompts = useMemo(() => getSetuGuruRouteTopics(pathname).slice(0, 4), [pathname]);
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
-  // Mobile consolidation: the header's Guru icon (BrandedMobileTopBar) dispatches this
-  // event instead of duplicating drawer-open logic — keeps a single source of truth
-  // for the chat state while giving mobile a docked, predictable entry point alongside
-  // the free-floating SetuGuruFab.
+  
   useEffect(() => {
     function handleDockOpen() { setDrawerOpen(true); }
     window.addEventListener('setu-guru:open', handleDockOpen);
     return () => window.removeEventListener('setu-guru:open', handleDockOpen);
   }, []);
+  
   useEffect(() => { setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
+  
   useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
 
   function appendAssistant(content: string, tone: ChatMessage['tone'] = 'normal', extra?: Partial<ChatMessage>) {
@@ -293,17 +290,20 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (!question || isThinking) return;
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
+    
     if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
     if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
     if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
-   if (!isSetuGuruQuestionInScope(question)) {
-      appendAssistant(
-        'Data Not Found - this question does not match any Setu Guru product, workflow, or page topic in the current knowledge base.\n\nSetu Guru can help with leads, quotes, compliance, pricing defaults, HS codes, and CRM workflow questions.\n\nRecommended next step: ask a question related to a lead, quote, or CRM workflow, or open the relevant record for context.',
-      );
-      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-      return;
+    
+    // THE FIX: Removed the hardcoded "Data Not Found" block.
+    // Now, if it matches a local static topic, show the topic. 
+    // Otherwise, route it directly to the new Agentic backend to handle intelligently!
+    if (isSetuGuruQuestionInScope(question)) {
+      setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeTitle)]);
+    } else {
+      void runOrgSearch(question);
     }
-    setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeTitle)]);
+    
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 

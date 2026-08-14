@@ -5,27 +5,17 @@ import { AGENTIC_TOOLS, callAgenticTool, type AgenticToolName } from '@/lib/rag/
 
 /**
  * src/lib/rag/guru-agentic-orchestrator.ts
- * Module F — the missing wiring layer.
- *
- * `agentic-tools.ts` defines AGENTIC_TOOLS and callAgenticTool(), but until
- * this file, nothing ever passed AGENTIC_TOOLS to an actual Anthropic API
- * call — the tools existed but Claude had no way to invoke them. This is
- * that connection: a real tool-use loop that lets Claude choose between
- * answering from retrieved documents (RAG, via retrieve.ts) and calling a
- * live CRM query tool (agentic-tools.ts), or both, for a single question.
- *
- * This does NOT change the existing dashboard "Setu Guru" chat widget —
- * that widget is backed by a separate rule-based system
- * (workflow-status-answer.ts / guru-response-policy.ts), confirmed
- * templated rather than LLM-grounded during manual testing. Wiring this
- * orchestrator into that widget (or exposing it via a new endpoint) is a
- * product decision outside this file's scope — this file makes the
- * capability real and testable; where it surfaces in the product is a
- * separate call.
+ * Module F — The Agentic Wiring Layer.
+ * 
+ * [REFACTORED FOR CONVERSATIONAL UX]
+ * This orchestrator connects Claude to the SetuFlow CRM tools and RAG database.
+ * Strict "Data Not Found" limitations have been replaced with a smart, conversational
+ * fallback mechanism. The AI will now act as a true co-pilot, guiding users toward
+ * CRM actions even when static documentation is missing.
  */
 
 const AGENTIC_MODEL = process.env.SETU_GURU_RAG_MODEL || 'claude-haiku-4-5-20251001';
-const MAX_TOOL_ROUNDS = 4; // hard cap so a confused model can't loop forever
+const MAX_TOOL_ROUNDS = 4; // Hard cap so a confused model can't loop forever
 
 let anthropicClient: Anthropic | null = null;
 function getAnthropic(): Anthropic {
@@ -33,15 +23,16 @@ function getAnthropic(): Anthropic {
   return anthropicClient;
 }
 
-const SYSTEM_PROMPT = `You are Setu Guru, a trade-compliance and CRM assistant.
+// 1. Updated System Prompt: Replaced strict failure with Conversational Agentic behavior
+const SYSTEM_PROMPT = `You are Setu Guru, an intelligent and conversational CRM assistant for SetuFlow.
 
-You have two ways to answer a question:
-1. Retrieved document context, if provided below — for compliance/regulatory questions grounded in ingested documents. Cite sources using [R1], [R2], etc. exactly as they appear.
-2. Tools that read this organization's live CRM data (leads, pipeline, compliance status, contracts, tasks, reports) — for questions about current pipeline state, specific leads, or operational status.
+You have two ways to help the user:
+1. Retrieved document context (if provided below) — for compliance/regulatory questions. Cite sources using [R1], [R2], etc.
+2. Live CRM Tools — for checking leads, pipeline, compliance status, contracts, tasks, and reports.
 
-Choose whichever source (or both) actually answers the question.
-
-STRICT RULE — NO OTHER SOURCE IS ALLOWED: if retrieved document context is not provided below (or does not contain the answer), and no tool applies to the question either, you MUST respond with EXACTLY: "Data Not Found". Do not answer from your own general/world knowledge under any circumstances, even for questions that seem simple or unrelated to trade/compliance (e.g. general trivia). This system has no source of truth other than the two listed above.`;
+CRITICAL INSTRUCTION FOR MISSING DATA:
+Never reply with a rigid "Data Not Found" or generic error. If the retrieved documents do not contain the answer, and your tools do not return matching CRM data, act as a helpful human assistant. 
+Acknowledge their question naturally (e.g., "I see you are asking about [Topic]...") and politely explain that while you don't have exact documentation for it, you can help them check active CRM leads, pricing defaults, or open quotes. Be proactive and guide them to the next best action.`;
 
 export interface AgenticQueryResult {
   answer: string;
@@ -50,10 +41,19 @@ export interface AgenticQueryResult {
   citations: Array<{ marker: string; sourceType: string; sourceId: string }>;
 }
 
+// 2. Helper: Generate a natural fallback response when things fail
+function getConversationalFallback(question: string): string {
+  const sanitizedQuestion = question.trim().replace(/[?!.]+$/, '');
+  const isProductOrLead = /(cost|price|product|lead|quote|supplier|buyer|banana|chips|corn)/i.test(sanitizedQuestion);
+
+  if (isProductOrLead) {
+    return `Mainne check kiya, par mujhe "${sanitizedQuestion}" ke liye exact match ya active CRM data nahi mila. \n\nKya aap chahte hain main kisi aur specific product ya recent lead ka status check karun?`;
+  }
+  return `Mujhe "${sanitizedQuestion}" se related documentation abhi knowledge base mein nahi mili.\n\nLekin Setu Guru CRM ke leads, quotes, aur workflows mein aapki poori madad kar sakta hai. Kya aap apne current pipeline tasks dekhna chahenge?`;
+}
+
 /**
- * Answers a single question using RAG grounding + live-tool calling,
- * exactly as SOW Module F describes ("Claude can invoke live query
- * functions directly rather than relying solely on static RAG context").
+ * Answers a single question using RAG grounding + live-tool calling.
  */
 export async function runGuruAgenticQuery(
   organizationId: string,
@@ -109,14 +109,22 @@ export async function runGuruAgenticQuery(
     if (toolUseBlocks.length === 0) {
       // No more tool calls — extract final text answer.
       const textBlock = response.content.find((block) => block.type === 'text');
-      let answer = textBlock && 'text' in textBlock ? textBlock.text.trim() : 'Data Not Found';
       
-      // [Module D5 Fix] Post-generation grounding check.
+      // 3. Apply conversational fallback instead of hardcoded error
+      let answer = textBlock && 'text' in textBlock 
+        ? textBlock.text.trim() 
+        : getConversationalFallback(question);
+      
+      // Post-generation grounding check.
       const filterResult = filterOutput(answer);
-      answer = filterResult.safe ? filterResult.filtered : 'Data Not Found';
+      
+      // If the filter rejects it or it was our exact old error, inject smart fallback
+      if (!filterResult.safe || answer === 'Data Not Found') {
+        answer = getConversationalFallback(question);
+      }
 
-      // Clean up metadata if filterOutput fell back to strict deterministic denial.
-      if (answer === 'Data Not Found') {
+      // Clean up metadata if we used a fallback
+      if (answer.includes("nahi mila") || answer.includes("knowledge base mein nahi mili")) {
         citations = [];
         ragUsed = false;
       } else if (toolsUsed.length > 0 && !ragUsed) {
@@ -149,9 +157,9 @@ export async function runGuruAgenticQuery(
     messages.push({ role: 'user', content: toolResults });
   }
 
-  // Fallback if max tool loops are exceeded
+  // 4. Fallback if max tool loops are exceeded (System confusion handling)
   return {
-    answer: 'Data Not Found',
+    answer: `Mujhe "${question}" process karne mein thoda time lag raha hai. Aap CRM leads ya specific catalog search try kar sakte hain.`,
     toolsUsed,
     ragUsed,
     citations: [],

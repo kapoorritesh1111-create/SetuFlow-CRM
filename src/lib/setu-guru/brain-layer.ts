@@ -44,27 +44,8 @@ const DEFAULT_ROUTE = '/dashboard';
 const LOW_CONFIDENCE_ACTIONS = ['Ask what can you do on this page?', 'Open help source'];
 const MIN_QUESTION_LENGTH_FOR_CONFIDENCE = 8;
 const HIGH_CONFIDENCE_SCORE_THRESHOLD = 5;
-
-/**
- * Minimum number of DISTINCT question tokens that must match somewhere
- * across all candidate sources before a question is treated as in-scope.
- * A threshold of 1 is too weak: in a large concatenated corpus, a single
- * generic word (e.g. "capital" appearing in unrelated "working capital
- * financing" content) can coincidentally match and make a completely
- * off-topic question look relevant. Requiring 3+ distinct matches makes
- * that kind of accidental single-word overlap much less likely to pass.
- */
 const MIN_DISTINCT_TOKEN_MATCHES = 3;
 
-function normalize(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-}
-
-/**
- * Common English function words. These appear in almost every source's
- * content ("use", "the", "for", "what", ...) so leaving them in the
- * token set would inflate overlap scores regardless of topical relevance.
- */
 const STOPWORDS = new Set([
   'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can',
   'has', 'have', 'had', 'was', 'were', 'what', 'when', 'where',
@@ -74,6 +55,10 @@ const STOPWORDS = new Set([
   'than', 'then', 'will', 'would', 'should', 'could', 'does', 'did',
   'doing', 'each', 'any', 'may', 'must', 'shall', 'per', 'via',
 ]);
+
+function normalize(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
 
 function tokens(value: string): string[] {
   return normalize(value)
@@ -86,14 +71,6 @@ function scoreSource(question: string, source: BrainSourceSeed): number {
   return tokens(question).reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
 }
 
-/**
- * Counts how many DISTINCT question tokens match anywhere across the
- * full set of candidate sources. Unlike scoreSource (which sums matches
- * per source and can be inflated by the same token matching in several
- * sources), this counts each token at most once — it answers "how many
- * different concepts from the question does the corpus recognize?"
- * rather than "how many total hits were there?".
- */
 function distinctMatchedTokenCount(question: string, sources: BrainSourceSeed[]): number {
   const combinedHaystack = normalize(
     sources.map((source) => `${source.name} ${source.content} ${source.next}`).join(' '),
@@ -111,12 +88,6 @@ function sumScores(scored: ScoredSource[]): number {
   return scored.reduce((sum, item) => sum + item.score, 0);
 }
 
-/**
- * Confidence is driven by total keyword overlap across all candidate
- * sources. Whether the question is in-scope at all is decided separately
- * in buildSetuGuruBrainAnswer via distinctMatchedTokenCount — this only
- * grades relevance once in-scope has already been established.
- */
 function confidenceFor(question: string, totalScore: number): SetuGuruBrainConfidence {
   if (question.trim().length < MIN_QUESTION_LENGTH_FOR_CONFIDENCE || totalScore === 0) return 'low';
   if (totalScore >= HIGH_CONFIDENCE_SCORE_THRESHOLD) return 'high';
@@ -185,33 +156,43 @@ function buildRepoSources(input: SetuGuruBrainAnswerInput): BrainSourceSeed[] {
 }
 
 /**
- * Response for questions that don't clear MIN_DISTINCT_TOKEN_MATCHES.
- * `getBestSetuGuruHelpTopic` always returns *some* topic even when
- * nothing is genuinely relevant, so this branch exists specifically to
- * avoid presenting that default topic as if it answered the question —
- * the caller gets an explicit out-of-scope message and no fabricated
- * evidence rows instead.
+ * REFACTORED: Smart, Agentic Fallback Handler.
+ * Instead of a robotic "Data Not Found", this acts as a conversational co-pilot.
+ * It acknowledges the user's input and gently guides them towards CRM data retrieval.
  */
 function buildOutOfScopeAnswer(
+  question: string,
   routeHelp: ReturnType<typeof getRouteHelpSummary>,
   policy: ReturnType<typeof classifySetuGuruResponse>,
   topic: ReturnType<typeof getBestSetuGuruHelpTopic>,
 ): SetuGuruBrainAnswer {
-  const answer = [
-    'Data Not Found - this question does not match any Setu Guru product, workflow, or page topic in the current knowledge base.',
-    'Setu Guru can help with leads, quotes, compliance, pricing defaults, HS codes, and CRM workflow questions.',
-    'Recommended next step: ask a question related to a lead, quote, or CRM workflow, or open the relevant record for context.',
-  ].join('\n\n');
+  
+  // Extract key intent to sound natural (basic NLP heuristic for the fallback)
+  const isProductOrLeadQuery = /(cost|price|product|lead|quote|supplier|buyer|banana|chips|corn)/i.test(question);
+  
+  // Clean up the question for a natural echo back to the user
+  const sanitizedQuestion = question.trim().replace(/[?!.]+$/, '');
+
+  let conversationalAnswer = '';
+  let dynamicActions = [...LOW_CONFIDENCE_ACTIONS];
+
+  if (isProductOrLeadQuery) {
+    conversationalAnswer = `Aap "${sanitizedQuestion}" ke baare mein pooch rahe hain, right?\n\nMere paas iski static documentation abhi nahi hai, lekin SetuFlow CRM mein is se jude live leads, quotes, aur pricing hum check kar sakte hain.\n\nKya main aapke liye is product ki active leads ya pricing defaults pull karun?`;
+    dynamicActions = ['Search CRM catalog', 'Check active leads', 'Show open quotes'];
+  } else {
+    conversationalAnswer = `Mujhe "${sanitizedQuestion}" se juda exact match knowledge base mein nahi mila.\n\nLekin fikar mat kijiye! Main aapki help leads, quotes, compliance, aur CRM workflows track karne mein kar sakta hoon.\n\nKya aap kisi specific lead ya quote ka status janna chahte hain?`;
+    dynamicActions = ['Show my active tasks', 'View recent quotes', ...LOW_CONFIDENCE_ACTIONS];
+  }
 
   return {
-    answer,
+    answer: conversationalAnswer,
     confidence: 'low',
     mode: 'brain_layer',
     sourceOrder: policy.sourceOrder,
     intents: policy.intents,
     requiresHumanApproval: policy.requiresHumanApproval,
     rows: [],
-    actions: LOW_CONFIDENCE_ACTIONS,
+    actions: dynamicActions,
     routeHelp,
     topic: { id: topic.id, title: topic.title, helpFile: topic.helpFile },
   };
@@ -229,23 +210,24 @@ function buildGroundedAnswer(
     ? topic.approvalRules.join(' ')
     : 'Human approval is required before Setu Guru sends, waives, writes back, deletes, changes pricing, or advances execution.';
 
+  // Natural language variations added here as well for grounded answers
   const answer = confidence === 'low'
     ? [
-        `I checked the Setu Guru brain layer for ${routeHelp.routeTitle}, but the question needs more route or record context before I can give a precise product answer.`,
+        `Mainne ${routeHelp.routeTitle} ke liye Setu Guru brain check kiya, par mujhe thode aur context ki zaroorat hai ekdam precise answer dene ke liye.`,
         `Best repo-backed starting point: ${topic.summary}`,
         `Evidence checked: ${sourceList}.`,
         `Approval boundary: ${approvalBoundary}`,
-        'Recommended next step: ask what can you do on this page, or open the related record so I can use live organization context before answering.',
+        'Recommended next step: Aap mujhse is page ke actions pooch sakte hain, ya related record open kar sakte hain taaki main live org data use kar sakun.',
       ].join('\n\n')
     : [
-        `I checked repo-backed Setu Guru sources for ${routeHelp.routeTitle} before answering.`,
+        `Mainne repo-backed Setu Guru sources check kar liye hain for ${routeHelp.routeTitle}.`,
         topic.summary,
         ...topic.answer.slice(0, 3),
         `Evidence checked: ${sourceList}.`,
         `Approval boundary: ${approvalBoundary}`,
         policy.reminders.length
           ? `Policy reminder: ${policy.reminders.join(' ')}`
-          : 'Policy reminder: use page context, live organization data, route help, then research before generic guidance.',
+          : 'Policy reminder: Use page context, live organization data, route help, then research before generic guidance.',
       ].join('\n\n');
 
   return {
@@ -272,7 +254,8 @@ export function buildSetuGuruBrainAnswer(input: SetuGuruBrainAnswerInput): SetuG
   const sources = buildRepoSources(input);
 
   if (distinctMatchedTokenCount(question, sources) < MIN_DISTINCT_TOKEN_MATCHES) {
-    return buildOutOfScopeAnswer(routeHelp, policy, topic);
+    // QUESTION AB PASS HO RAHA HAI: AI ab blind nahi hai!
+    return buildOutOfScopeAnswer(question, routeHelp, policy, topic);
   }
 
   const ranked: ScoredSource[] = sources
