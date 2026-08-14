@@ -148,17 +148,36 @@ export async function uploadWorkspaceDocument(_: ActionState | undefined, formDa
   });
 
   // Wire up: Trigger Setu Guru RAG Ingestion for the newly uploaded document
+  // FIX: previously missing x-webhook-secret header, fileUrl, and mimeType — the
+  // ingest route requires all 5 fields and only accepts https:// URLs, so this
+  // was silently failing (400/401) every single time.
   try {
     if (document?.id) {
-      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/setu-guru/ingest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          organizationId: workspace.organization.id,
-          sourceType: 'documents',
-          sourceId: document.id,
-        }),
-      });
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from(COMPLIANCE_DOCS_BUCKET)
+        .createSignedUrl(storagePath, 60 * 15); // valid 15 minutes — enough time for ingest to fetch it
+
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        console.error('[RAG Ingest Webhook] Could not create signed URL:', signedUrlError?.message);
+      } else {
+        const ingestRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/setu-guru/ingest`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-webhook-secret': process.env.WEBHOOK_SECRET_SETU_GURU_INGEST || '',
+          },
+          body: JSON.stringify({
+            organizationId: workspace.organization.id,
+            sourceType: 'documents',
+            sourceId: document.id,
+            fileUrl: signedUrlData.signedUrl,
+            mimeType: file.type,
+          }),
+        });
+        if (!ingestRes.ok) {
+          console.error('[RAG Ingest Webhook] Failed:', ingestRes.status, await ingestRes.text());
+        }
+      }
     }
   } catch (err) {
     console.error('[RAG Ingest Webhook Error]:', err);

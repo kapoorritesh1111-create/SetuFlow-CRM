@@ -16,20 +16,19 @@
  *                         the expected tool was invoked and the answer
  *                         reflects that tool's live data.
  *
- * STATUS (updated 02-Aug-2026):
+ * STATUS (updated 14-Aug-2026):
  *   - Wiring: AGENTIC_TOOLS + callAgenticTool() are now actually callable
- *     by Claude via src/lib/rag/guru-agentic-orchestrator.ts — previously
- *     they were defined but never passed to any Anthropic API call.
- *   - Grading script: scripts/golden-eval-runner.ts now exists and can
+ *     by Claude via src/lib/rag/guru-agentic-orchestrator.ts.
+ *   - Grading script: scripts/golden-eval-runner.ts exists and can
  *     execute this dataset (see that file for how each case type is
  *     scored).
- *   - `rag-001` / `rag-002` remain PLACEHOLDER: no real UAE spice-export
- *     compliance document or HS-code reference document has been
- *     ingested yet (only the SOW PDF itself has been used as a test
- *     document for Module A/B validation). The grading script skips
- *     these with a visible "SKIPPED (placeholder)" note rather than
- *     silently passing or failing them — replace with real expected
- *     answers once real documents are ingested.
+ *   - `rag-001` / `rag-002` are no longer PLACEHOLDER: no real UAE
+ *     spice-export or HS-code document has been ingested yet, but a real
+ *     ISO 9001:2015 Quality Management Systems document HAS been ingested
+ *     (organization 823981b0-4566-44be-a94d-168dad153d78), so these two
+ *     cases now test against that real document instead of sitting idle
+ *     as placeholders. Swap in the original UAE spice-export / HS-code
+ *     cases (or add new ones) once those specific documents are ingested.
  *   - `agentic-002`'s query is a template (`{{LEAD_NAME}}`) rather than a
  *     hardcoded name: the grading script resolves it against a real lead
  *     fetched live via get_leads at run time, so this case is genuinely
@@ -81,23 +80,23 @@ type AgenticToolNameForEval =
   | 'get_reports';
 
 export const GOLDEN_DATASET: GoldenCase[] = [
-  // --- RAG cases: require real ingested documents (Module A/B) to be gradable ---
+  // --- RAG cases: rag-001/rag-002 now grade against the real ISO 9001
+  // document ingested for org 823981b0-4566-44be-a94d-168dad153d78 ---
   {
     id: 'rag-001',
     type: 'rag',
-    query: 'What compliance documents are required for exporting spices to UAE?',
+    query: 'What ISO standard covers our quality management system?',
     expectedAnswer:
-      'PLACEHOLDER — replace once a real UAE spice-export compliance document has been ingested. The answer must cite the specific source via [R1]/[R2].',
-    isPlaceholder: true,
+      'ISO 9001:2015 — Quality Management Systems - Requirements. The answer must cite the source document via [R1].',
     category: 'compliance',
   },
   {
     id: 'rag-002',
     type: 'rag',
-    query: 'What is the HSN code for turmeric powder?',
-    expectedAnswer: 'PLACEHOLDER — replace once an HS code reference document has been ingested.',
-    isPlaceholder: true,
-    category: 'hs-code',
+    query: 'Do we have a quality management compliance document on file?',
+    expectedAnswer:
+      'Yes — an ISO 9001:2015 Quality Management Systems Requirements compliance document is on file, described as ensuring organizational quality standards. The answer must cite [R1].',
+    category: 'compliance',
   },
   {
     id: 'rag-003',

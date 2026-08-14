@@ -34,7 +34,8 @@
     "test:security": "tsx --test tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts",
     "check:mobile-scan": "node scripts/check-mobile-scan-prod.mjs",
     "test:docs-drift": "node --test tests/docs-drift.test.mjs",
-    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts"
+    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts",
+    "test:golden-eval": "tsx scripts/golden-eval-runner.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.113.0",
