@@ -45,9 +45,9 @@ export function SupportModeBadge({ organizationName }: { organizationName: strin
         onClick={restore}
         aria-label="Show SETU Support Mode controls"
         title="Show SETU Support Mode"
-        className="fixed bottom-4 right-4 z-[90] flex h-10 w-10 items-center justify-center rounded-full border border-teal-300/40 bg-slate-950 text-sm font-black text-teal-300 shadow-xl hover:bg-slate-900"
+        className="fixed bottom-4 right-4 z-[90] flex h-9 items-center justify-center rounded-full border border-teal-300/40 bg-slate-950 px-3 text-[10px] font-black tracking-[0.12em] text-teal-300 shadow-xl hover:bg-slate-900"
       >
-        S
+        SETU
       </button>
     );
   }
