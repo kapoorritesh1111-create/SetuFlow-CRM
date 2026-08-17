@@ -3,14 +3,93 @@ import {
   setPackagingVariationQuoteableV4,
   updatePackagingChargeMasterV4,
   updatePackagingCostMasterV4,
+  updatePackagingMatrixRowV4,
 } from '@/features/packaging/server/pricing-v4-admin-actions';
+import { matrixEditableFields, type MatrixRateField } from '@/lib/packaging-pricing/matrix-source-formulas';
 import PricingV4TestQuote from './pricing-v4-test-quote';
 
 const STAGES = ['Customer Requirement','Production Calculation','Cost Build / COGS','Commercial Rules','Final Selling Price'];
+const EDIT_FIELD = 'rounded-lg border border-yellow-300 bg-yellow-50 px-2 py-2 text-sm text-slate-900 outline-none ring-yellow-200 focus:ring-2';
+const CALCULATED_FIELD = 'rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700';
+const MATRIX_RATE_FIELDS: Array<{ field: MatrixRateField; label: string }> = [
+  { field: 'q1_rate_per_frame', label: 'Q1' },
+  { field: 'q2_rate_per_frame', label: 'Q2' },
+  { field: 'q3_rate_per_frame', label: 'Q3' },
+  { field: 'q4_rate_per_frame', label: 'Q4' },
+  { field: 'q5_rate_per_frame', label: 'Q5' },
+];
 
 function Pill({ children, tone='default' }: { children: React.ReactNode; tone?: 'default'|'good'|'warn'|'info' }) {
   const toneClass = tone === 'good' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : tone === 'warn' ? 'border-amber-200 bg-amber-50 text-amber-700' : tone === 'info' ? 'border-sky-200 bg-sky-50 text-sky-700' : 'border-slate-200 bg-slate-50 text-slate-600';
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass}`}>{children}</span>;
+}
+
+function MatrixRateCell({ row, field, label, editable }: { row: any; field: MatrixRateField; label: string; editable: boolean }) {
+  const value = row[field];
+  return (
+    <label className="block min-w-[88px]">
+      <span className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+        {label}
+        {!editable && <span className="font-medium normal-case text-slate-400">calc</span>}
+      </span>
+      {editable ? (
+        <input name={field} type="number" min="0" step="0.001" defaultValue={value ?? ''} className={`${EDIT_FIELD} w-full`} />
+      ) : (
+        <div className={`${CALCULATED_FIELD} w-full`} title="Calculated from the source workbook formula">{value ?? '—'}</div>
+      )}
+    </label>
+  );
+}
+
+function MatrixEditor({ templates, matrixRows }: { templates: any[]; matrixRows: any[] }) {
+  const matrixTemplates = templates.filter((template: any) => template.calculation_engine_key === 'matrix_per_frame');
+  if (!matrixTemplates.length) return null;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">Matrix Pricing Data</h3>
+          <p className="mt-1 max-w-3xl text-sm text-slate-500">Imported from the Stark workbook. Yellow cells are source values you can change. Gray cells are calculated from workbook formulas and update automatically when a source value changes.</p>
+        </div>
+        <div className="flex flex-wrap gap-2"><Pill tone="warn">Yellow = editable</Pill><Pill>Gray = calculated</Pill><Pill tone="good">{matrixRows.length} source rows</Pill></div>
+      </div>
+
+      <div className="space-y-3">
+        {matrixTemplates.map((template: any) => {
+          const rows = matrixRows.filter((row: any) => row.template_id === template.id);
+          return (
+            <details key={template.id} className="group overflow-hidden rounded-xl border border-slate-200" open={rows.length > 0 && rows.length <= 48}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 bg-slate-50 px-4 py-3 hover:bg-slate-100">
+                <div><div className="font-semibold text-slate-900">{template.name}</div><div className="text-xs text-slate-500">{rows[0]?.source_worksheet ?? 'Workbook source'} · {rows.length} rows</div></div>
+                <div className="flex items-center gap-2"><Pill tone={rows.length ? 'good' : 'warn'}>{rows.length ? 'Loaded' : 'Waiting'}</Pill><span className="text-xs font-semibold text-slate-500 group-open:rotate-180">⌄</span></div>
+              </summary>
+              <div className="max-h-[720px] space-y-2 overflow-auto p-3">
+                {rows.map((row: any) => {
+                  const editable = new Set(matrixEditableFields(row));
+                  return (
+                    <form key={row.id} action={updatePackagingMatrixRowV4} className="rounded-xl border border-slate-200 bg-white p-3">
+                      <input type="hidden" name="id" value={row.id} />
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-xs text-slate-500">{row.source_worksheet} · row {row.source_row_number}</div>
+                        <Pill tone="info">{row.supply_form.replaceAll('_',' ')}</Pill>
+                      </div>
+                      <div className="grid gap-2 xl:grid-cols-[130px_minmax(260px,1fr)_repeat(5,minmax(88px,110px))_auto] xl:items-end">
+                        <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Product ID</span>{editable.has('client_product_id') ? <input name="client_product_id" defaultValue={row.client_product_id} className={`${EDIT_FIELD} w-full`} /> : <div className={CALCULATED_FIELD}>{row.client_product_id}</div>}</label>
+                        <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Construction</span>{editable.has('construction_key') ? <input name="construction_key" defaultValue={row.construction_key} className={`${EDIT_FIELD} w-full`} /> : <div className={CALCULATED_FIELD}>{row.construction_key}</div>}</label>
+                        {MATRIX_RATE_FIELDS.map(({ field, label }) => <MatrixRateCell key={field} row={row} field={field} label={label} editable={editable.has(field)} />)}
+                        <button className="rounded-lg bg-slate-900 px-3 py-2.5 text-xs font-semibold text-white hover:bg-slate-800">Save row</button>
+                      </div>
+                    </form>
+                  );
+                })}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 export default function PricingV4AdminWorkspace({ data }: { data: any }) {
@@ -28,15 +107,19 @@ export default function PricingV4AdminWorkspace({ data }: { data: any }) {
         <div className="grid gap-2 p-4 md:grid-cols-5">{STAGES.map((stage, i) => <div key={stage} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">{i+1}</div><div className="text-sm font-semibold text-slate-800">{stage}</div></div>)}</div>
       </section>
 
+      <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"><strong>Edit convention:</strong> any pricing value that can be changed is highlighted yellow. Calculated values stay gray/read-only so an operator cannot accidentally overwrite a formula result.</div>
+
       <section className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">Service Families</h3><p className="text-sm text-slate-500">Family controls and quote readiness.</p></div><Pill>{families.length} families</Pill></div><div className="space-y-2">{families.map((f:any)=><div key={f.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3"><div><div className="font-semibold text-slate-900">{f.name}</div><div className="text-xs text-slate-500">{f.product_setup_mode ?? 'Legacy'} · {f.pricing_engine_type ?? f.pricing_mode}</div></div><div className="flex gap-2"><Pill tone={f.is_quoteable?'good':'warn'}>{f.is_quoteable?'Quoteable':'Draft'}</Pill></div></div>)}</div></div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">Product Sizes</h3><p className="text-sm text-slate-500">Physical dimensions only. Material selection stays in the recipe.</p></div><Pill>{variations.length} approved sizes</Pill></div><div className="max-h-[420px] space-y-2 overflow-auto pr-1">{variations.map((v:any)=><div key={v.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3"><div><div className="font-semibold text-slate-900">{v.name}</div><div className="text-xs text-slate-500">{v.dimension_label}</div></div><form action={setPackagingVariationQuoteableV4} className="flex items-center gap-2"><input type="hidden" name="id" value={v.id}/><input type="hidden" name="is_quoteable" value={String(!v.is_quoteable)}/><Pill tone={v.is_quoteable?'good':'warn'}>{v.is_quoteable?'Quoteable':'Draft'}</Pill><button className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold hover:bg-slate-50">{v.is_quoteable?'Pause':'Enable'}</button></form></div>)}</div></div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h3 className="text-lg font-bold text-slate-900">Cost & Charges</h3><p className="text-sm text-slate-500">Reusable organization-wide Masters. Blank rate means Needs rate and blocks that pricing path.</p></div><Pill tone={needsRate?'warn':'good'}>{needsRate} Needs rate</Pill></div><div className="grid gap-5 xl:grid-cols-2"><div><h4 className="mb-2 text-sm font-bold text-slate-700">Material & Process Cost Master</h4><div className="max-h-[520px] space-y-2 overflow-auto pr-1">{costs.map((c:any)=><form key={c.id} action={updatePackagingCostMasterV4} className="grid grid-cols-[1fr_120px_auto] items-center gap-3 rounded-xl border border-slate-200 p-3"><input type="hidden" name="id" value={c.id}/><div><div className="text-sm font-semibold text-slate-900">{c.name}</div><div className="text-xs text-slate-500">{c.specification || c.rate_basis} · {c.rate_uom}</div></div><input name="current_rate" type="number" min="0" step="0.001" defaultValue={c.current_rate ?? ''} placeholder="Needs rate" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"/><button className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Save</button></form>)}</div></div><div><h4 className="mb-2 text-sm font-bold text-slate-700">Extras · Pre · Post</h4><div className="max-h-[520px] space-y-2 overflow-auto pr-1">{charges.map((c:any)=><form key={c.id} action={updatePackagingChargeMasterV4} className="rounded-xl border border-slate-200 p-3"><input type="hidden" name="id" value={c.id}/><div className="mb-2 flex items-center justify-between"><div className="text-sm font-semibold text-slate-900">{c.name}</div><Pill tone={c.current_rate==null?'warn':'good'}>{c.current_rate==null?'Needs rate':'Ready'}</Pill></div><div className="grid gap-2 sm:grid-cols-3"><input name="current_rate" type="number" min="0" step="0.001" defaultValue={c.current_rate ?? ''} placeholder="Rate" className="rounded-lg border border-slate-300 px-2 py-2 text-sm"/><select name="basis" defaultValue={c.basis ?? ''} className="rounded-lg border border-slate-300 px-2 py-2 text-xs"><option value="">Needs basis</option><option value="per_unit">Per unit</option><option value="per_running_metre">Per running metre</option><option value="per_frame">Per frame</option><option value="flat">Flat</option><option value="percent">Percent</option></select><select name="application_stage" defaultValue={c.application_stage ?? ''} className="rounded-lg border border-slate-300 px-2 py-2 text-xs"><option value="">Needs stage</option><option value="before_wastage_margin">Before waste & margin</option><option value="after_core_price">After core price</option><option value="separate_quote_line">Separate quote line</option></select></div><button className="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Save charge</button></form>)}</div></div></div></section>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h3 className="text-lg font-bold text-slate-900">Cost & Charges</h3><p className="text-sm text-slate-500">Reusable organization-wide Masters. Blank rate means Needs rate and blocks that pricing path.</p></div><Pill tone={needsRate?'warn':'good'}>{needsRate} Needs rate</Pill></div><div className="grid gap-5 xl:grid-cols-2"><div><h4 className="mb-2 text-sm font-bold text-slate-700">Material & Process Cost Master</h4><div className="max-h-[520px] space-y-2 overflow-auto pr-1">{costs.map((c:any)=><form key={c.id} action={updatePackagingCostMasterV4} className="grid grid-cols-[1fr_120px_auto] items-center gap-3 rounded-xl border border-slate-200 p-3"><input type="hidden" name="id" value={c.id}/><div><div className="text-sm font-semibold text-slate-900">{c.name}</div><div className="text-xs text-slate-500">{c.specification || c.rate_basis} · {c.rate_uom}</div></div><input name="current_rate" type="number" min="0" step="0.001" defaultValue={c.current_rate ?? ''} placeholder="Needs rate" className={`${EDIT_FIELD} w-full`}/><button className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Save</button></form>)}</div></div><div><h4 className="mb-2 text-sm font-bold text-slate-700">Extras · Pre · Post</h4><div className="max-h-[520px] space-y-2 overflow-auto pr-1">{charges.map((c:any)=><form key={c.id} action={updatePackagingChargeMasterV4} className="rounded-xl border border-slate-200 p-3"><input type="hidden" name="id" value={c.id}/><div className="mb-2 flex items-center justify-between"><div className="text-sm font-semibold text-slate-900">{c.name}</div><Pill tone={c.current_rate==null?'warn':'good'}>{c.current_rate==null?'Needs rate':'Ready'}</Pill></div><div className="grid gap-2 sm:grid-cols-3"><input name="current_rate" type="number" min="0" step="0.001" defaultValue={c.current_rate ?? ''} placeholder="Rate" className={EDIT_FIELD}/><select name="basis" defaultValue={c.basis ?? ''} className={`${EDIT_FIELD} text-xs`}><option value="">Needs basis</option><option value="per_unit">Per unit</option><option value="per_running_metre">Per running metre</option><option value="per_frame">Per frame</option><option value="flat">Flat</option><option value="percent">Percent</option></select><select name="application_stage" defaultValue={c.application_stage ?? ''} className={`${EDIT_FIELD} text-xs`}><option value="">Needs stage</option><option value="before_wastage_margin">Before waste & margin</option><option value="after_core_price">After core price</option><option value="separate_quote_line">Separate quote line</option></select></div><button className="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Save charge</button></form>)}</div></div></div></section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">Pricing Templates</h3><p className="text-sm text-slate-500">Draft → validate → publish. Matrix publication is blocked until the full workbook is loaded.</p></div><Pill>{templates.length} v4 templates</Pill></div><div className="grid gap-3 lg:grid-cols-2">{templates.map((t:any)=>{const matrixCount=matrixRows.filter((r:any)=>r.template_id===t.id).length; const bandCount=bands.filter((b:any)=>b.template_id===t.id).length; return <div key={t.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><div className="font-bold text-slate-900">{t.name}</div><div className="mt-1 text-xs text-slate-500">v{t.calculation_version} · {t.calculation_engine_key}</div></div><Pill tone={t.status==='published'?'good':'warn'}>{t.status || 'Draft'}</Pill></div><div className="mt-3 flex flex-wrap gap-2 text-xs"><Pill>{t.calculation_engine_key==='matrix_per_frame'?`${matrixCount} matrix rows`:`${bandCount}/6 commercial bands`}</Pill>{t.calculation_engine_key==='matrix_per_frame' && <Pill tone="warn">Full source required</Pill>}</div>{t.status!=='published'&&<form action={publishPackagingTemplateV4} className="mt-4"><input type="hidden" name="id" value={t.id}/><button className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Validate & publish</button></form>}</div>})}</div></section>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">Pricing Templates</h3><p className="text-sm text-slate-500">Draft → validate → publish. Matrix publication requires the complete workbook source.</p></div><Pill>{templates.length} v4 templates</Pill></div><div className="grid gap-3 lg:grid-cols-2">{templates.map((t:any)=>{const matrixCount=matrixRows.filter((r:any)=>r.template_id===t.id).length; const bandCount=bands.filter((b:any)=>b.template_id===t.id).length; return <div key={t.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><div className="font-bold text-slate-900">{t.name}</div><div className="mt-1 text-xs text-slate-500">v{t.calculation_version} · {t.calculation_engine_key}</div></div><Pill tone={t.status==='published'?'good':'warn'}>{t.status || 'Draft'}</Pill></div><div className="mt-3 flex flex-wrap gap-2 text-xs"><Pill>{t.calculation_engine_key==='matrix_per_frame'?`${matrixCount} matrix rows`:`${bandCount}/6 commercial bands`}</Pill>{t.calculation_engine_key==='matrix_per_frame' && <Pill tone={matrixCount ? 'good':'warn'}>{matrixCount ? 'Workbook loaded':'Source required'}</Pill>}</div>{t.status!=='published'&&<form action={publishPackagingTemplateV4} className="mt-4"><input type="hidden" name="id" value={t.id}/><button className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Validate & publish</button></form>}</div>})}</div></section>
+
+      <MatrixEditor templates={templates} matrixRows={matrixRows} />
 
       <PricingV4TestQuote templates={templates} variations={variations} matrixRows={matrixRows} />
     </div>
