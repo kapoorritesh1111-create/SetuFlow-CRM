@@ -5,6 +5,7 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const ADMIN_PATH = '/admin/packaging-templates';
+const COMPONENT_PATH = '/admin/packaging-reference-library';
 const SETUP_MODES = new Set(['approved_sizes','custom_dimensions','both']);
 const ENGINES = new Set(['sup_formula','matrix_per_frame','service_formula']);
 const COST_TYPES = new Set(['material','process']);
@@ -58,6 +59,33 @@ function percentMetadata(existing: unknown, basis: string|null, stage: string|nu
   if (stage === 'after_core_price' && percentBase === 'product_total') throw new Error('After-core percent charges cannot use Product total because it is not final until after-core charges are applied.');
   metadata.percent_base = percentBase;
   return metadata;
+}
+
+async function savePricingMasterRateOnly(
+  table: 'packaging_cost_master_items'|'packaging_charge_master_items',
+  formData: FormData,
+) {
+  const { organization, user, supabase } = await adminDb();
+  const id = required(formData,'id','Pricing component');
+  const currentRate = optionalNumber(formData,'current_rate');
+  const { data, error } = await supabase.from(table)
+    .update({ current_rate: currentRate, updated_by:user.id, updated_at:new Date().toISOString() })
+    .eq('organization_id', organization.id)
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.id) throw new Error('Pricing component was not found in this organization.');
+  revalidatePath(COMPONENT_PATH);
+  revalidatePath(ADMIN_PATH);
+}
+
+export async function savePackagingCostMasterRateV4(formData: FormData) {
+  await savePricingMasterRateOnly('packaging_cost_master_items', formData);
+}
+
+export async function savePackagingChargeMasterRateV4(formData: FormData) {
+  await savePricingMasterRateOnly('packaging_charge_master_items', formData);
 }
 
 export async function savePackagingServiceFamilyV4(formData: FormData) {
