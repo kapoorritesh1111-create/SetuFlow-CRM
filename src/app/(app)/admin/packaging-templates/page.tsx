@@ -8,6 +8,7 @@ import { AdminSettingsShell } from '@/features/admin/components/admin-settings-s
 
 export const dynamic = 'force-dynamic';
 
+// Pricing Builder intentionally exposes only the v4 guided recipe workspace. Legacy v3 data remains untouched for compatibility but is no longer rendered in Admin.
 export default async function PackagingTemplatesAdminPage() {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning" />;
   const { missingEnv, organization } = await requireAdminWorkspace();
