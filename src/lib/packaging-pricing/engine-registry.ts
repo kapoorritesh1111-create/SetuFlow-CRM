@@ -27,8 +27,8 @@ export function calculatePackagingPriceV4(context: PricingContext, input: Packag
 
 /**
  * Sales responses are intentionally a whitelist rather than a delete-list.
- * Internal materials, process cost, wastage amount and margin never cross the
- * server boundary for a non-admin quote experience.
+ * Internal materials, process cost, wastage amount, margin, charge Master IDs,
+ * charge rates and charge application rules never cross the non-admin boundary.
  */
 export function toSalesPricingResult(result: PackagingPricingResult) {
   return {
@@ -40,7 +40,12 @@ export function toSalesPricingResult(result: PackagingPricingResult) {
     customer_requirement: result.customer_requirement,
     production_calculation: result.production_calculation,
     selling_price: result.selling_price,
-    separate_charges: result.separate_charges,
+    separate_charges: result.separate_charges.map((charge) => ({
+      code: charge.code,
+      name: charge.name,
+      category: charge.category,
+      amount: charge.amount,
+    })),
     kld: result.kld,
     source_hash: result.source_hash,
     validation_errors: result.validation_errors,
