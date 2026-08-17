@@ -72,6 +72,7 @@ export type MatrixRow = {
   source_worksheet: string | null;
   source_row_number: number | null;
   source_reference: string | null;
+  metadata?: Record<string, unknown>;
 };
 
 export type PackagingPricingTemplateV4 = {
