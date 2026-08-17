@@ -3,9 +3,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
-import { getPackagingFamilies, getPackagingReferenceItems, getPackagingTemplates } from '@/lib/packaging/queries';
-import PricingTemplateBuilderGuided from '@/features/packaging/components/pricing-template-builder-guided';
-import PricingBuilderV4Workspace from '@/features/packaging/components/pricing-builder-v4-workspace';
+import PricingBuilderV4CompactWorkspace from '@/features/packaging/components/pricing-builder-v4-compact-workspace';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 
 export const dynamic = 'force-dynamic';
@@ -19,10 +17,7 @@ export default async function PackagingTemplatesAdminPage() {
   const verticals = await getOrganizationVerticals(organization.id, supabase);
   if (!verticals.packagingEnabled) return <StateMessage title="Packaging vertical is not enabled" description="Pricing Builder is available for packaging-vertical workspaces. Contact SETU Flow to enable it." tone="info" />;
 
-  const [legacyFamilies, legacyTemplates, referenceItems, families, variations, costs, charges, templates, bands, matrixRows, recipes, chargeLinks, flag] = await Promise.all([
-    getPackagingFamilies(organization.id, supabase),
-    getPackagingTemplates(organization.id, supabase),
-    getPackagingReferenceItems(organization.id, supabase),
+  const [families, variations, costs, charges, templates, bands, matrixRows, recipes, chargeLinks, flag] = await Promise.all([
     supabase.from('packaging_service_families').select('id,slug,name,description,pricing_mode,product_setup_mode,pricing_engine_type,default_uom,is_quoteable,is_active,sort_order').eq('organization_id', organization.id).order('sort_order'),
     supabase.from('packaging_product_variations').select('id,family_id,variation_key,name,capacity_label,width_mm,height_mm,bottom_gusset_each_mm,dimension_label,approval_state,is_quoteable,is_active,sort_order').eq('organization_id', organization.id).order('sort_order'),
     supabase.from('packaging_cost_master_items').select('id,code,name,item_type,specification,rate_basis,current_rate,rate_uom,currency,micron,gsm,density,is_active').eq('organization_id', organization.id).order('item_type').order('name'),
@@ -57,11 +52,7 @@ export default async function PackagingTemplatesAdminPage() {
       { label: `${published} published`, tone: published ? 'ok' : 'warn' },
       { label: `${data.matrixRows.length} matrix source rows`, tone: data.matrixRows.length === 192 ? 'ok' : 'warn' },
     ]}>
-      <PricingBuilderV4Workspace data={data} />
-      <details className="my-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 bg-slate-50 px-5 py-4 hover:bg-slate-100"><div><h2 className="text-base font-bold text-slate-900">Legacy v3 pricing builder</h2><p className="mt-1 text-sm text-slate-500">Dual-run comparison only. The v4 recipe builder above is the primary Admin experience.</p></div><span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">{legacyTemplates.length} legacy · Open</span></summary>
-        <div className="border-t border-slate-200 p-4"><PricingTemplateBuilderGuided families={legacyFamilies} templates={legacyTemplates} referenceItems={referenceItems} /></div>
-      </details>
+      <PricingBuilderV4CompactWorkspace data={data} />
     </AdminSettingsShell>
   );
 }
