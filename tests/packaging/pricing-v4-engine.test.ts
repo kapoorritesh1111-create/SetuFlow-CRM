@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateSupFormula } from '../../src/lib/packaging-pricing/sup-formula-engine';
 import { calculateMatrixPerFrame, matrixGeometry } from '../../src/lib/packaging-pricing/matrix-per-frame-engine';
+import { matrixEditableRateFields, recalculateMatrixSourceRows } from '../../src/lib/packaging-pricing/matrix-source-formulas';
 import type { PricingContext } from '../../src/lib/packaging-pricing/types';
 
 const m = (id: string, code: string, name: string, type: 'material'|'process', basis: any, rate: number|null, micron: number|null=null, density: number|null=null, gsm: number|null=null, metadata: any={}) => ({ id,code,name,item_type:type,rate_basis:basis,current_rate:rate,rate_uom:basis==='per_kg'?'kg':basis==='per_frame'?'frame':'running_m',currency:'INR',micron,gsm,density,metadata });
@@ -71,4 +72,32 @@ test('S51-PKG-046/047: source-backed Center Seal SPPL78 Q1-Q5 is preserved',()=>
 test('S51-PKG-046: 3SS pouch uses approved open laminate width rule',()=>{
   const g=matrixGeometry(100,140,'three_side_seal_pouch');
   assert.equal(g.open_laminate_width_mm,292);
+});
+
+test('S51-PKG-047: workbook hardcoded cells remain editable while formula cells recalculate across sheets',()=>{
+  const row=(id:string,sheet:string,rowNumber:number,product:string,values:number[],formulas:Record<string,string>,editable:string[])=>({
+    id,supply_form:sheet==='3SS POUCH FORM DATA'?'three_side_seal_pouch':'center_seal',construction_key:'construction',client_product_id:product,width_mm:null,height_mm:null,
+    q1_rate_per_frame:values[0],q2_rate_per_frame:values[1],q3_rate_per_frame:values[2],q4_rate_per_frame:values[3],q5_rate_per_frame:values[4],
+    source_worksheet:sheet,source_row_number:rowNumber,source_reference:`${sheet}!A${rowNumber}:G${rowNumber}`,
+    metadata:{source_formulas:formulas,editable_fields:['construction_key','client_product_id',...editable],calculated_fields:Object.keys(formulas)},
+  } as any);
+
+  const rows=[
+    row('cs2','CS DATA',2,'SPPL78',[111,105,85,79.5,74.5],{q2_rate_per_frame:'=C2-5',q4_rate_per_frame:'=E2-5.5',q5_rate_per_frame:'=F2-5'},['q1_rate_per_frame','q3_rate_per_frame']),
+    row('cs50','CS DATA',50,'SPPL126',[120,115,98.8,90.27,83.225],{q1_rate_per_frame:'=C2+10',q2_rate_per_frame:'=C50-5',q3_rate_per_frame:'=(E2+7)+0.08*E2',q4_rate_per_frame:'=(F2+6)+0.06*F2',q5_rate_per_frame:'=(G2+5)+0.05*G2'},[]),
+    row('p2','3SS POUCH FORM DATA',2,'SPPL222',[120,115,99.8,92.27,86.225],{q1_rate_per_frame:"='CS DATA'!C50",q2_rate_per_frame:"='CS DATA'!D50",q3_rate_per_frame:"=('CS DATA'!E2+8)+0.08*'CS DATA'!E2",q4_rate_per_frame:"=('CS DATA'!F2+8)+0.06*'CS DATA'!F2",q5_rate_per_frame:"=('CS DATA'!G2+8)+0.05*'CS DATA'!G2"},[]),
+  ];
+
+  assert.deepEqual(matrixEditableRateFields(rows[0]),['q1_rate_per_frame','q3_rate_per_frame']);
+  assert.deepEqual(matrixEditableRateFields(rows[1]),[]);
+  const recalculated=recalculateMatrixSourceRows(rows);
+  const cs2=recalculated.find(x=>x.id==='cs2')!;
+  const cs50=recalculated.find(x=>x.id==='cs50')!;
+  const pouch=recalculated.find(x=>x.id==='p2')!;
+  assert.equal(cs2.q2_rate_per_frame,106);
+  assert.equal(cs50.q1_rate_per_frame,121);
+  assert.equal(cs50.q2_rate_per_frame,116);
+  assert.equal(pouch.q1_rate_per_frame,121);
+  assert.equal(pouch.q2_rate_per_frame,116);
+  assert.equal(pouch.q3_rate_per_frame,99.8);
 });
