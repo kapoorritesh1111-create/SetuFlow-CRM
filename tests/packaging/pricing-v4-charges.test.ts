@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { evaluatePackagingCharges, toSalesChargeLines } from '../../src/lib/packaging-pricing/charges';
+import { toSalesPricingResult } from '../../src/lib/packaging-pricing/engine-registry';
 
 const charge = (overrides: Record<string, unknown>) => ({
   id: 'charge',
@@ -100,4 +101,28 @@ test('S51-PKG-049: Sales projection omits Master ID, rate, basis and application
   assert.equal('master_id' in sales[0], false);
   assert.equal('basis' in sales[0], false);
   assert.equal('application_stage' in sales[0], false);
+});
+
+test('S51-PKG-049: full Sales pricing result also redacts separate charge internals', () => {
+  const sales = toSalesPricingResult({
+    ok: true,
+    engine_version: 4,
+    family_id: 'family',
+    template_id: 'template',
+    template_version: 4,
+    customer_requirement: {},
+    production_calculation: {},
+    commercial_rules: {},
+    selling_price: { unit_price: 10, product_total: 1000, currency: 'INR', gst_pct: 18, gst: 180, grand_total_before_freight: 1180 },
+    separate_charges: [{ master_id:'secret-master-id', code:'PRE', name:'Design', category:'pre', basis:'flat', rate:120, amount:120 }],
+    kld: { file_id: null },
+    source_hash: 'hash',
+    validation_errors: [],
+    warnings: [],
+  } as any);
+  assert.deepEqual(sales.separate_charges, [{ code:'PRE', name:'Design', category:'pre', amount:120 }]);
+  assert.equal('rate' in sales.separate_charges[0], false);
+  assert.equal('master_id' in sales.separate_charges[0], false);
+  assert.equal('basis' in sales.separate_charges[0], false);
+  assert.equal('application_stage' in sales.separate_charges[0], false);
 });
