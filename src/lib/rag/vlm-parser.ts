@@ -1,33 +1,14 @@
 /**
  * src/lib/rag/vlm-parser.ts
  * Module A, Step 2 — VLM Document Parser
- *
- * Uses Claude's native PDF document input (no Apryse SDK, no image
- * rasterization step needed — the Anthropic Messages API accepts a PDF
- * directly as a base64 `document` content block). Matches the raw-fetch
- * convention already used in `src/lib/ai/provider.ts` rather than pulling
- * in `@anthropic-ai/sdk` for this call site.
- *
- * IMPORTANT CAVEAT ON CONFIDENCE SCORES:
- * The `confidence` value returned per page is the model's own self-reported
- * estimate (requested via the prompt below), not a calibrated statistical
- * confidence. It's a reasonable signal for "does this page look like it
- * extracted cleanly" (e.g. flags garbled tables, illegible scans) but
- * should not be treated as a precise probability. If tighter calibration
- * is needed later, that's a separate eval task (ties into Module F's
- * golden dataset — use it to check how well self-reported confidence
- * actually correlates with extraction correctness).
  */
 
-/** A single page/section of extracted text, prior to chunking. Any parser
- *  implementation (VLM here, or Apryse if that path is ever revisited)
- *  must normalize its output to this shape — that's the entire
- *  integration surface between parsing and chunking. */
 export interface ParsedPage {
   pageNumber: number;
   sectionTitle?: string;
   text: string;
   confidence: number;
+  truncated?: boolean;
 }
 
 interface VlmExtractionResponse {
@@ -53,13 +34,6 @@ Respond with ONLY a JSON object of the shape:
 
 No preamble, no markdown fencing, no explanation — JSON only.`;
 
-/**
- * Parses a PDF via Claude Vision (native PDF document support) into
- * per-page structured text with self-reported confidence.
- *
- * Conforms to the `DocumentParser` shape expected by ingest.ts:
- * `(fileBuffer, mimeType) => Promise<ParsedPage[]>`.
- */
 export async function parseWithVlm(fileBuffer: Buffer, mimeType: string): Promise<ParsedPage[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -106,10 +80,17 @@ export async function parseWithVlm(fileBuffer: Buffer, mimeType: string): Promis
   const json = (await response.json()) as {
     content?: Array<{ type: string; text?: string }>;
     error?: { message?: string };
+    stop_reason?: string;
   };
 
   if (json.error?.message) {
     throw new Error(`VLM parse error: ${json.error.message}`);
+  }
+
+  // Issue #14 fix: detect truncation instead of silently accepting a cut-off response.
+  const wasTruncated = json.stop_reason === 'max_tokens';
+  if (wasTruncated) {
+    console.warn('[VLM Parser] Response truncated — hit max_tokens (8192) ceiling. Flagging pages as truncated.');
   }
 
   const rawText = (json.content ?? [])
@@ -118,8 +99,6 @@ export async function parseWithVlm(fileBuffer: Buffer, mimeType: string): Promis
     .join('\n')
     .trim();
 
-  // Defensive: strip markdown code fences in case the model wraps the JSON
-  // despite instructions not to (observed in practice with some responses).
   let cleanedText = rawText.trim();
   if (cleanedText.startsWith('```')) {
     cleanedText = cleanedText
@@ -133,6 +112,11 @@ export async function parseWithVlm(fileBuffer: Buffer, mimeType: string): Promis
     parsed = JSON.parse(cleanedText);
   } catch {
     const snippet = rawText.slice(0, 300);
+    if (wasTruncated) {
+      throw new Error(
+        `VLM response was truncated by the max_tokens ceiling, so the JSON is incomplete. Raw response started with: ${JSON.stringify(snippet)}`,
+      );
+    }
     throw new Error(
       `VLM response was not valid JSON — check prompt/model output format drift. Raw response started with: ${JSON.stringify(snippet)}`,
     );
@@ -147,5 +131,6 @@ export async function parseWithVlm(fileBuffer: Buffer, mimeType: string): Promis
     sectionTitle: p.section_title,
     text: p.text,
     confidence: p.confidence,
+    ...(wasTruncated ? { truncated: true } : {}),
   }));
 }

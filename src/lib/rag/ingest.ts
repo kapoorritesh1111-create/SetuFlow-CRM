@@ -18,7 +18,7 @@ import { embedChunks, EMBEDDING_MODEL_VERSION } from './embedding-provider';
 
 const CONFIDENCE_THRESHOLD = 0.75;
 const EMBED_BATCH_SIZE = 50;
-const MAX_WORDS = 100000; // Define maximum word count threshold to detect possible truncation
+const MAX_WORDS = 100000; // backup heuristic if stop_reason isn't available
 
 export interface IngestInput {
   organizationId: string;
@@ -26,12 +26,6 @@ export interface IngestInput {
   sourceId: string;
   fileBuffer: Buffer;
   mimeType: string;
-  /** Optional injected Supabase client. Production (API route) omits this
-   *  and gets the normal request-scoped `@/lib/supabase/server` client.
-   *  Standalone scripts/tests running outside a Next.js request (where
-   *  `cookies()` has no request scope to read) pass their own client here
-   *  — e.g. a service-role `@supabase/supabase-js` client for local
-   *  testing. Never used in a browser context; this is server-only code. */
   dbClient?: any;
 }
 
@@ -43,14 +37,12 @@ export type IngestOutcome =
       chunksWritten: number;
       chunksSkippedUnchanged: number;
       chunksQueuedForReview: number;
-      chunksDeletedStale: number; // New metric for stale chunks deleted
+      chunksDeletedStale: number;
+      truncated?: boolean;
     }
   | { status: 'error'; error: string };
 
 export async function ingestDocument(input: IngestInput): Promise<IngestOutcome> {
-  // [Fix A1]: Webhooks have no session cookie, so they fail standard RLS.
-  // We must use the service_role client for background ingestion.
-  // Assuming createClient(true) returns the admin/service_role client in your setup.
   const supabaseUntyped: any = input.dbClient ?? (await createClient());
 
   // --- Step 1: file-level dedup -----------------------------------------
@@ -86,21 +78,27 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     return { status: 'error', error: 'VLM parser returned no pages' };
   }
 
+  // Issue #14 fix: exact truncation signal from vlm-parser's stop_reason check.
+  const wasTruncatedByStopReason = pages.some((p: any) => p.truncated === true);
+  if (wasTruncatedByStopReason) {
+    console.warn(`[TRUNCATION CONFIRMED] max_tokens ceiling hit while parsing source ${input.sourceId}.`);
+  }
+
   const chunks = chunkPages(pages);
   if (chunks.length === 0) {
     return { status: 'error', error: 'Chunker produced no chunks from parsed pages' };
   }
 
-  // --- ADDED: Document Truncation Warning (Make failures loud) ---
-  // Checked against the final chunk output (not raw VLM pages), so this
-  // reflects what's actually about to be embedded/stored.
+  // Backup heuristic — catches truncation even if stop_reason wasn't available.
   const totalWordCount = chunks.reduce((acc, chunk) => acc + (chunk.content?.split(/\s+/).length || 0), 0);
-  if (totalWordCount > MAX_WORDS) {
-    console.warn(`[WARNING - TRUNCATION RISK] Document exceeds ${MAX_WORDS} words. It may have been silently cut short by Claude during parsing. Source ID: ${input.sourceId}`);
+  const wasTruncatedByWordCount = totalWordCount > MAX_WORDS;
+  if (wasTruncatedByWordCount) {
+    console.warn(`[WARNING - TRUNCATION RISK] Document exceeds ${MAX_WORDS} words. Source ID: ${input.sourceId}`);
   }
-  // ------------------------------------------------------------------------
 
-  // --- Step 2.5: Per-chunk hash dedup & [Fix A8] Stale Chunk Cleanup ---
+  const documentTruncated = wasTruncatedByStopReason || wasTruncatedByWordCount;
+
+  // --- Step 2.5: Per-chunk hash dedup & stale chunk cleanup ---
   const { data: existingChunks, error: existingChunksError } = await supabaseUntyped
     .from('guru_embeddings')
     .select('chunk_index, metadata')
@@ -116,7 +114,6 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     (existingChunks ?? []).map((row: any) => [row.chunk_index, row.metadata?.chunk_hash]),
   );
 
-  // Identify stale chunks (chunks in DB that are beyond the new document length)
   const incomingChunkIndices = new Set(chunks.map(c => c.chunkIndex));
   const staleChunkIndices = (existingChunks ?? [])
     .filter((row: any) => !incomingChunkIndices.has(row.chunk_index))
@@ -134,7 +131,6 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
 
     if (deleteError) {
       console.error('[ingest] Failed to delete stale chunks:', deleteError.message);
-      // We log but don't strictly fail ingestion, to allow the upsert to proceed.
     } else {
       chunksDeletedStale = staleChunkIndices.length;
     }
@@ -179,6 +175,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       chunksSkippedUnchanged: unchangedCount,
       chunksQueuedForReview: queuedCount,
       chunksDeletedStale,
+      truncated: documentTruncated,
     };
   }
 
@@ -210,6 +207,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
         prev_chunk_index: chunk.prevChunkIndex,
         next_chunk_index: chunk.nextChunkIndex,
         confidence: chunk.confidence,
+        ...(documentTruncated ? { truncated: true } : {}),
       },
     }));
 
@@ -234,5 +232,6 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     chunksSkippedUnchanged: unchangedCount,
     chunksQueuedForReview: queuedCount,
     chunksDeletedStale,
+    truncated: documentTruncated,
   };
 }

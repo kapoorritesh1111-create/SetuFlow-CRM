@@ -253,6 +253,46 @@ export async function uploadOrderDocument(_: { error?: string; success?: string 
   const documentRow = documentData as DocumentInsertRow | null;
   if (documentError) return { error: 'The file uploaded, but the document record could not be linked to this order.' };
 
+  // --- Setu Guru RAG ingestion notification (Issue #1 fix) ---
+  // Non-blocking: the upload has already succeeded and been linked above.
+  // If this call fails, we log it but do not fail the user-facing upload action.
+  if (documentRow?.id) {
+    try {
+      const ingestUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/setu-guru/ingest`;
+      const webhookSecret = process.env.WEBHOOK_SECRET_SETU_GURU_INGEST;
+      if (!webhookSecret) {
+        console.error('[Setu Guru ingest] WEBHOOK_SECRET_SETU_GURU_INGEST is not set — skipping ingestion notification.');
+      } else {
+        fetch(ingestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-webhook-secret': webhookSecret,
+          },
+          body: JSON.stringify({
+            organizationId: workspace.organization.id,
+            sourceType: 'contract',
+            sourceId: documentRow.id,
+            fileUrl,
+            mimeType: fileValue.type || 'application/pdf',
+          }),
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const body = await res.text().catch(() => '');
+              console.error('[Setu Guru ingest] webhook responded with error:', res.status, body);
+            }
+          })
+          .catch((err) => {
+            console.error('[Setu Guru ingest] webhook call failed:', err);
+          });
+      }
+    } catch (err) {
+      console.error('[Setu Guru ingest] unexpected error triggering ingestion:', err);
+    }
+  }
+  // --- end Setu Guru RAG ingestion notification ---
+
   await writeAuditLog({ organizationId: workspace.organization.id, action: 'document_status_changed', entityType: 'contract', entityId: contractId, actorUserId: workspace.user.id, payload: { previous: { execution_state: contract.execution_state ?? null }, new: { document_id: documentRow?.id ?? null, doc_type: docType, file_name: safeName }, metadata: { source: 'uploadOrderDocument', quote_id: contract.quote_id, lead_id: contract.lead_id, storage_bucket: 'order-documents', storage_path: storagePath } } });
 
   revalidatePath('/orders');
