@@ -34,7 +34,7 @@
     "test:security": "tsx --test tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts",
     "check:mobile-scan": "node scripts/check-mobile-scan-prod.mjs",
     "test:docs-drift": "node --test tests/docs-drift.test.mjs",
-    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts tests/packaging/design-proof.test.ts && node --test tests/s50-packaging-intelligence-completion.test.mjs"
+    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts tests/packaging/pricing-v4-engine.test.ts tests/packaging/design-proof.test.ts && node --test tests/s50-packaging-intelligence-completion.test.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^137.0.1",
