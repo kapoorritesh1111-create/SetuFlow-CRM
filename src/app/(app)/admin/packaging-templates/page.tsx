@@ -49,15 +49,41 @@ export default async function PackagingTemplatesAdminPage() {
     costLinks: costLinks?.data ?? [], chargeLinks: chargeLinks?.data ?? [], flagEnabled,
   };
 
+  const legacyBuilder = <PricingTemplateBuilderGuided families={families} templates={templates} referenceItems={referenceItems} />;
+
   return (
-    <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Packaging Pricing" tbarChips={[{ label: `${templates.length} legacy template${templates.length === 1 ? '' : 's'}`, tone: 'info' }, { label: `${v4Data.templates.length} v4`, tone: 'info' }]}>
+    <AdminSettingsShell
+      active="packaging-templates"
+      organizationName={organization.name}
+      sectionTitle="Packaging Pricing"
+      tbarChips={[
+        { label: `${v4Data.families.length} v4 families`, tone: 'info' },
+        { label: `${v4Data.templates.length} v4 templates`, tone: 'info' },
+        { label: `${v4Data.matrixRows.length} matrix rows`, tone: v4Data.matrixRows.length === 192 ? 'success' : 'warning' },
+        { label: `${templates.length} legacy template${templates.length === 1 ? '' : 's'}`, tone: 'neutral' },
+      ]}
+    >
       {v4SchemaReady ? <PricingV4AdminWorkspace data={v4Data} /> : (
         <StateMessage title="Pricing v4 is waiting for its database migration" description="The new control center is in this preview branch, but its additive schema has not been applied to production yet. Legacy pricing below remains unchanged." tone="info" />
       )}
-      <div className="my-8 border-t border-slate-200 pt-6">
-        <div className="mb-4"><h2 className="text-lg font-bold text-slate-900">Legacy pricing builder</h2><p className="text-sm text-slate-500">Kept available during v4 dual-run. It will not be removed until the new engine passes Stark UAT.</p></div>
-        <PricingTemplateBuilderGuided families={families} templates={templates} referenceItems={referenceItems} />
-      </div>
+
+      {v4SchemaReady ? (
+        <details className="my-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 bg-slate-50 px-5 py-4 hover:bg-slate-100">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Legacy v3 pricing builder</h2>
+              <p className="mt-1 text-sm text-slate-500">Kept for dual-run comparison only. Open this section when you need to compare against the previous pricing setup.</p>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">{templates.length} legacy · Open</span>
+          </summary>
+          <div className="border-t border-slate-200 p-4">{legacyBuilder}</div>
+        </details>
+      ) : (
+        <div className="my-8 border-t border-slate-200 pt-6">
+          <div className="mb-4"><h2 className="text-lg font-bold text-slate-900">Legacy pricing builder</h2><p className="text-sm text-slate-500">Kept available while v4 is unavailable. It will not be removed until the new engine passes Stark UAT.</p></div>
+          {legacyBuilder}
+        </div>
+      )}
     </AdminSettingsShell>
   );
 }
