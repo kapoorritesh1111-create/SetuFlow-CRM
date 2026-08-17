@@ -31,16 +31,16 @@ function refresh() {
 }
 
 function eventPayload(formData: FormData, organizationId?: string) {
-  return {
-    ...(organizationId ? { organization_id: organizationId } : {}),
-    name: text(formData.get('name')),
-    city: text(formData.get('city')),
-    country: text(formData.get('country')),
-    starts_on: date(formData.get('starts_on')),
-    ends_on: date(formData.get('ends_on')),
-    booth_number: text(formData.get('booth_number')),
-    notes: text(formData.get('notes')),
-  };
+  return { ...(organizationId ? { organization_id: organizationId } : {}), name: text(formData.get('name')), city: text(formData.get('city')), country: text(formData.get('country')), starts_on: date(formData.get('starts_on')), ends_on: date(formData.get('ends_on')), booth_number: text(formData.get('booth_number')), notes: text(formData.get('notes')) };
+}
+
+function possibleDuplicateUrl(candidateId: string, payload: ReturnType<typeof eventPayload>, formData: FormData) {
+  const params = new URLSearchParams({ notice: 'event-possible-duplicate', eventId: candidateId, eventName: payload.name ?? '' });
+  for (const key of ['name','city','country','starts_on','ends_on','booth_number','notes','image_url','website_url']) {
+    const value = String(formData.get(key) ?? '').trim();
+    if (value) params.set(`draft_${key}`, value);
+  }
+  return `/admin/trade-events?${params.toString()}`;
 }
 
 export async function createEnrichedTradeEvent(formData: FormData): Promise<void> {
@@ -48,16 +48,12 @@ export async function createEnrichedTradeEvent(formData: FormData): Promise<void
   if (!ctx) return;
   const payload = eventPayload(formData, ctx.organizationId);
   if (!payload.name) return;
-
   const { data: existing } = await (ctx.supabase as any).from('trade_events').select('id, name, city, country, starts_on, ends_on').eq('organization_id', ctx.organizationId);
   const matches = (existing ?? []).map((event: any) => ({ event, strength: classifyTradeEventMatch(payload, event) }));
   const exact = matches.find((item: any) => item.strength === 'exact');
   if (exact) redirect(`/admin/trade-events?notice=event-duplicate&eventId=${encodeURIComponent(String(exact.event.id))}&eventName=${encodeURIComponent(payload.name)}`);
-
   const possible = matches.find((item: any) => item.strength === 'possible');
-  const allowDuplicate = String(formData.get('allow_duplicate') ?? '') === '1';
-  if (possible && !allowDuplicate) redirect(`/admin/trade-events?notice=event-possible-duplicate&eventId=${encodeURIComponent(String(possible.event.id))}&eventName=${encodeURIComponent(payload.name)}`);
-
+  if (possible && String(formData.get('allow_duplicate') ?? '') !== '1') redirect(possibleDuplicateUrl(String(possible.event.id), payload, formData));
   await (ctx.supabase as any).from('trade_events').insert({ ...payload, capture_defaults: captureDefaults(formData) });
   refresh();
   redirect('/admin/trade-events?notice=event-created');
