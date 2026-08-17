@@ -59,7 +59,7 @@ export default async function PackagingTemplatesAdminPage() {
       tbarChips={[
         { label: `${v4Data.families.length} v4 families`, tone: 'info' },
         { label: `${v4Data.templates.length} v4 templates`, tone: 'info' },
-        { label: `${v4Data.matrixRows.length} matrix rows`, tone: v4Data.matrixRows.length === 192 ? 'success' : 'warning' },
+        { label: `${v4Data.matrixRows.length} matrix rows`, tone: v4Data.matrixRows.length === 192 ? 'ok' : 'warn' },
         { label: `${templates.length} legacy template${templates.length === 1 ? '' : 's'}`, tone: 'neutral' },
       ]}
     >
