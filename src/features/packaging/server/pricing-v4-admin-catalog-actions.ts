@@ -12,6 +12,7 @@ const COST_BASES = new Set(['per_kg','per_running_metre','per_frame','per_unit',
 const CHARGE_CATEGORIES = new Set(['extra','pre','post']);
 const CHARGE_BASES = new Set(['per_unit','per_running_metre','per_frame','flat','percent']);
 const CHARGE_STAGES = new Set(['before_wastage_margin','after_core_price','separate_quote_line']);
+const PERCENT_BASES = new Set(['material_process_cogs_total','core_product_total','product_total']);
 
 async function adminDb() {
   const { organization, user } = await requireAdminWorkspace();
@@ -48,6 +49,15 @@ function checked(formData: FormData, key: string, fallback = false) {
 }
 function selectedIds(formData: FormData, key: string) {
   return [...new Set(formData.getAll(key).map((entry)=>String(entry).trim()).filter(Boolean))];
+}
+function percentMetadata(existing: unknown, basis: string|null, stage: string|null, percentBase: string) {
+  const metadata: Record<string,unknown> = existing && typeof existing === 'object' ? { ...(existing as Record<string,unknown>) } : {};
+  if (basis !== 'percent') { delete metadata.percent_base; return metadata; }
+  if (!PERCENT_BASES.has(percentBase)) throw new Error('Percent charges require an approved percent base.');
+  if (stage === 'before_wastage_margin' && percentBase !== 'material_process_cogs_total') throw new Error('Before-wastage percent charges must use Material + Process COGS total.');
+  if (stage === 'after_core_price' && percentBase === 'product_total') throw new Error('After-core percent charges cannot use Product total because it is not final until after-core charges are applied.');
+  metadata.percent_base = percentBase;
+  return metadata;
 }
 
 export async function savePackagingServiceFamilyV4(formData: FormData) {
@@ -162,10 +172,17 @@ export async function savePackagingChargeMasterV4(formData: FormData) {
   const basis=text(formData,'basis') || null;
   const stage=text(formData,'application_stage') || null;
   if (!CHARGE_CATEGORIES.has(category) || (basis && !CHARGE_BASES.has(basis)) || (stage && !CHARGE_STAGES.has(stage))) throw new Error('Unsupported Charge Master configuration.');
+  let existingMetadata: Record<string,unknown> = {};
+  if (id) {
+    const { data,error }=await supabase.from('packaging_charge_master_items').select('metadata').eq('organization_id',organization.id).eq('id',id).maybeSingle();
+    if (error) throw new Error(error.message);
+    existingMetadata = data?.metadata && typeof data.metadata === 'object' ? data.metadata : {};
+  }
   const payload={
     code:required(formData,'code','Code').toUpperCase().replace(/[^A-Z0-9_]+/g,'_'),
     name:required(formData,'name','Name'), category, basis, application_stage:stage,
     current_rate:optionalNumber(formData,'current_rate'), currency:(text(formData,'currency')||'INR').toUpperCase(),
+    metadata:percentMetadata(existingMetadata,basis,stage,text(formData,'percent_base')),
     is_active:checked(formData,'is_active',true), updated_by:user.id, updated_at:new Date().toISOString(),
   };
   let itemId=id;

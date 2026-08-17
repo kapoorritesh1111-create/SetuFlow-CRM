@@ -19,19 +19,22 @@ export async function loadPricingContext(organizationId: string, templateId: str
   if (templateError) throw new Error(templateError.message);
   if (!template?.calculation_engine_key) throw new Error('Pricing template is not available for v4 calculation.');
 
-  const [mastersRes, chargesRes, recipesRes, bandsRes, variationsRes, matrixRes] = await Promise.all([
+  const [mastersRes, chargesRes, chargeLinksRes, recipesRes, bandsRes, variationsRes, matrixRes] = await Promise.all([
     db.from('packaging_cost_master_items').select('id,code,name,item_type,rate_basis,current_rate,rate_uom,currency,micron,gsm,density,metadata').eq('organization_id', organizationId).eq('is_active', true),
     db.from('packaging_charge_master_items').select('id,code,name,category,basis,application_stage,current_rate,currency,metadata').eq('organization_id', organizationId).eq('is_active', true),
+    db.from('packaging_charge_master_family_links').select('charge_master_item_id').eq('organization_id', organizationId).eq('family_id', template.family_id),
     db.from('packaging_pricing_recipe_items').select('id,construction_key,role_key,source_type,cost_master_item_id,charge_master_item_id,consumption_rule_json,condition_json,sort_order,is_required').eq('organization_id', organizationId).eq('template_id', templateId).order('sort_order'),
     db.from('packaging_pricing_commercial_bands').select('run_length_max_m,wastage_pct,margin_per_frame,sort_order').eq('organization_id', organizationId).eq('template_id', templateId).order('sort_order'),
     db.from('packaging_product_variations').select('id,variation_key,name,capacity_label,width_mm,height_mm,bottom_gusset_each_mm,dimension_label').eq('organization_id', organizationId).eq('family_id', template.family_id).eq('approval_state', 'approved').eq('is_active', true).order('sort_order'),
     db.from('packaging_pricing_matrix_rows').select('id,supply_form,construction_key,client_product_id,width_mm,height_mm,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame,source_worksheet,source_row_number,source_reference,metadata').eq('organization_id', organizationId).eq('template_id', templateId).eq('is_active', true),
   ]);
-  for (const result of [mastersRes, chargesRes, recipesRes, bandsRes, variationsRes, matrixRes]) if (result.error) throw new Error(result.error.message);
+  for (const result of [mastersRes, chargesRes, chargeLinksRes, recipesRes, bandsRes, variationsRes, matrixRes]) if (result.error) throw new Error(result.error.message);
+  const allowedChargeIds = new Set((chargeLinksRes.data ?? []).map((link: any) => String(link.charge_master_item_id)));
   return {
     template: template as PackagingPricingTemplateV4,
-    masters: mastersRes.data ?? [], charges: chargesRes.data ?? [], recipes: recipesRes.data ?? [], bands: bandsRes.data ?? [],
-    variations: variationsRes.data ?? [], matrixRows: matrixRes.data ?? [],
+    masters: mastersRes.data ?? [],
+    charges: (chargesRes.data ?? []).filter((charge: any) => allowedChargeIds.has(String(charge.id))),
+    recipes: recipesRes.data ?? [], bands: bandsRes.data ?? [], variations: variationsRes.data ?? [], matrixRows: matrixRes.data ?? [],
   } as PricingContext;
 }
 
