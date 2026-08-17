@@ -5,6 +5,8 @@
 -- Preflight verification proved the existing 96/48/48 Product ID + Q1-Q5 rate payloads
 -- and preserved source formulas are byte-for-byte equivalent to the newly supplied workbook.
 -- The defect being corrected is template ownership/geometry/UX, not the feeding-sheet rates.
+-- pricing_model remains the existing allowed sup_standard_matrix discriminator; the v4 workbook
+-- behavior is identified by calculation_engine_key + quote_config_json.workbook_model.
 
 begin;
 
@@ -44,7 +46,7 @@ select
   'b97913cb-3b95-4247-8ced-ffdc0d392d2a'::uuid, f.id,
   'stark-center-seal-matrix-v4', 'Stark Center Seal Workbook v4',
   'Client workbook-backed calculator. Enter pouch width-open and pouch height; construction rates come from CS DATA.',
-  'INR', false, 4, 'draft', 'matrix_per_frame', 'workbook_matrix_v4',
+  'INR', false, 4, 'draft', 'matrix_per_frame', 'sup_standard_matrix',
   '{"geometry":"fixed_orientation_workbook_v2","machine_width_mm":740,"machine_length_mm":1120}'::jsonb,
   '{"gst_pct":18,"tiers":{"Q1":250,"Q2":500,"Q3":1000,"Q4":2000,"Q5":3000},"workbook_model":"dimension_construction_price_breaks","source_form_sheet":"CENTER SEAL POUCH","dimension_labels":{"width":"Pouch width - open","height":"Pouch height"},"default_dimensions":{"width_mm":100,"height_mm":140}}'::jsonb
 from public.packaging_service_families f
@@ -60,7 +62,7 @@ select
   'b97913cb-3b95-4247-8ced-ffdc0d392d2a'::uuid, f.id,
   'stark-3ss-roll-matrix-v4', 'Stark 3SS Roll Form Workbook v4',
   'Client workbook-backed calculator. Enter open book-fold pouch width and pouch height; construction rates come from 3SS ROLL FORM DATA.',
-  'INR', false, 4, 'draft', 'matrix_per_frame', 'workbook_matrix_v4',
+  'INR', false, 4, 'draft', 'matrix_per_frame', 'sup_standard_matrix',
   '{"geometry":"fixed_orientation_workbook_v2","machine_width_mm":740,"machine_length_mm":1120}'::jsonb,
   '{"gst_pct":18,"tiers":{"Q1":250,"Q2":500,"Q3":1000,"Q4":2000,"Q5":3000},"workbook_model":"dimension_construction_price_breaks","source_form_sheet":"3SS ROLL FORM","dimension_labels":{"width":"Pouch width - open - Book fold style","height":"Pouch height"},"default_dimensions":{"width_mm":148,"height_mm":50}}'::jsonb
 from public.packaging_service_families f
@@ -76,7 +78,7 @@ select
   'b97913cb-3b95-4247-8ced-ffdc0d392d2a'::uuid, f.id,
   'stark-3ss-pouch-matrix-v4', 'Stark 3SS Pouch Form Workbook v4',
   'Client workbook-backed calculator. Enter formed pouch width/height; SETU derives laminate open width = 2 x height + 12 and repeat = formed width.',
-  'INR', false, 4, 'draft', 'matrix_per_frame', 'workbook_matrix_v4',
+  'INR', false, 4, 'draft', 'matrix_per_frame', 'sup_standard_matrix',
   '{"geometry":"three_side_seal_pouch_workbook_v2","machine_width_mm":740,"machine_length_mm":1120,"open_laminate_width_rule":"2*formed_height_mm+12","repeat_length_rule":"formed_width_mm"}'::jsonb,
   '{"gst_pct":18,"tiers":{"Q1":250,"Q2":500,"Q3":1000,"Q4":2000,"Q5":3000},"workbook_model":"dimension_construction_price_breaks","source_form_sheet":"3SS POUCH FORM","dimension_labels":{"width":"Formed pouch width","height":"Formed pouch height"},"default_dimensions":{"width_mm":60,"height_mm":60}}'::jsonb
 from public.packaging_service_families f
