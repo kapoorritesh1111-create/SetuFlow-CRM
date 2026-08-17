@@ -6,6 +6,7 @@ import path from 'node:path';
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
+// This suite is intentionally part of test:packaging so the preview cannot ship the old all-in-one Admin UX by accident.
 test('S51-PKG-048: Packaging Admin uses the approved Products Components Builder language', () => {
   const shell = read('src/features/admin/components/admin-settings-shell.tsx');
   assert.match(shell, /label: 'Packaging Products'/);
