@@ -65,9 +65,9 @@ export default async function QuotePage({
   const sortedQuotes = [...data.quotes].sort((a: any, b: any) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
   const activeQuote = (quoteId ? sortedQuotes.find((quote: any) => quote.id === quoteId) : null) ?? sortedQuotes[0] ?? null;
 
-  // Packaging remains dual-run during v4 rollout. The existing legacy section is
-  // preserved unchanged; the v4 configurator appears only when the server-side
-  // org feature flag is enabled and published v4 pricing exists.
+  // Legacy packaging data/routing stays intact for flag-first rollback. When v4
+  // is enabled for this org, only the authoritative v4 configurator is shown so
+  // server-derived separate-charge rows cannot be edited by the legacy line UI.
   let packaging: { enabled: boolean; families: any[]; templates: any[]; charges: any[]; savedSpecs: any[] } | null = null;
   let pricingV4Options: any | null = null;
   try {
@@ -93,6 +93,8 @@ export default async function QuotePage({
     pricingV4Options = null;
   }
 
+  const canonicalPackaging = pricingV4Options ? null : packaging;
+
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
@@ -108,7 +110,7 @@ export default async function QuotePage({
         quoteDraftError={readParam(searchParams?.quoteDraftError).trim() ? decodeURIComponent(readParam(searchParams?.quoteDraftError).trim()) : null}
         quoteActionError={readParam(searchParams?.quoteActionError).trim() ? decodeURIComponent(readParam(searchParams?.quoteActionError).trim()) : null}
         saved={readParam(searchParams?.saved).trim() || null}
-        packaging={packaging}
+        packaging={canonicalPackaging}
       />
     </>
   );
