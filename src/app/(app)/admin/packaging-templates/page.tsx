@@ -33,7 +33,7 @@ export default async function PackagingTemplatesAdminPage() {
     supabase.from('packaging_charge_master_items').select('id,code,name,category,basis,application_stage,current_rate,currency,is_active').eq('organization_id', organization.id).eq('is_active', true).order('category').order('name'),
     supabase.from('packaging_pricing_templates').select('id,family_id,slug,name,description,currency,is_active,calculation_version,calculation_engine_key,status,quote_config_json,published_at').eq('organization_id', organization.id).eq('calculation_version', 4).order('name'),
     supabase.from('packaging_pricing_commercial_bands').select('id,template_id,run_length_max_m,wastage_pct,margin_per_frame,sort_order').eq('organization_id', organization.id).order('sort_order'),
-    supabase.from('packaging_pricing_matrix_rows').select('id,template_id,supply_form,construction_key,client_product_id,width_mm,height_mm,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame,source_reference,is_active').eq('organization_id', organization.id).eq('is_active', true),
+    supabase.from('packaging_pricing_matrix_rows').select('id,template_id,supply_form,construction_key,client_product_id,width_mm,height_mm,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame,source_worksheet,source_row_number,source_reference,is_active,metadata').eq('organization_id', organization.id).eq('is_active', true).order('source_worksheet').order('source_row_number'),
     supabase.from('smc_feature_flags').select('enabled,rollout_percentage,allowed_orgs').eq('flag_key','packaging_pricing_v4').maybeSingle(),
   ]);
 
