@@ -84,3 +84,22 @@ test('S51-PKG-050: KLD repository reads the actual live table columns and normal
   assert.doesNotMatch(repository, /\.select\([^\n]*file_url/);
   assert.doesNotMatch(sales, /\.select\([^\n]*version_label/);
 });
+
+test('S51-PKG-048: Pricing Components supports safe inline rate-only updates', () => {
+  const components = read('src/features/packaging/components/pricing-components-v4-manager.tsx');
+  const actions = read('src/features/packaging/server/pricing-v4-admin-catalog-actions.ts');
+  assert.match(components, /savePackagingCostMasterRateV4/);
+  assert.match(components, /savePackagingChargeMasterRateV4/);
+  assert.match(components, /Save rate/);
+  assert.match(components, /Edit setup/);
+  assert.match(components, /name="current_rate"/);
+  assert.match(components, /bg-yellow-50/);
+  assert.match(actions, /export async function savePackagingCostMasterRateV4/);
+  assert.match(actions, /export async function savePackagingChargeMasterRateV4/);
+  const helper = actions.match(/async function savePricingMasterRateOnly[\s\S]*?export async function savePackagingCostMasterRateV4/)?.[0] ?? '';
+  assert.match(helper, /adminDb\(\)/);
+  assert.match(helper, /\.eq\('organization_id', organization\.id\)/);
+  assert.match(helper, /current_rate: currentRate/);
+  assert.match(helper, /updated_by:user\.id/);
+  assert.doesNotMatch(helper, /syncCostFamilies|syncChargeFamilies|family_ids/);
+});
