@@ -3,6 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
+import {
+  matrixEditableFields,
+  matrixEditableRateFields,
+  recalculateMatrixSourceRows,
+  type MatrixRateField,
+} from '@/lib/packaging-pricing/matrix-source-formulas';
 
 const ADMIN_PATH = '/admin/packaging-templates';
 const MATRIX_EXPECTED: Record<string, number> = {
@@ -21,7 +27,14 @@ function optionalNumber(value: FormDataEntryValue | null) {
   const raw = String(value ?? '').trim();
   if (!raw) return null;
   const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0) throw new Error('Rate must be a positive number or left blank for Needs rate.');
+  if (!Number.isFinite(parsed) || parsed < 0) throw new Error('Rate must be a non-negative number or left blank for Needs rate.');
+  return parsed;
+}
+
+function requiredNumber(value: FormDataEntryValue | null, label: string) {
+  const raw = String(value ?? '').trim();
+  const parsed = Number(raw);
+  if (!raw || !Number.isFinite(parsed) || parsed < 0) throw new Error(`${label} must be a non-negative number.`);
   return parsed;
 }
 
@@ -58,6 +71,87 @@ export async function setPackagingVariationQuoteableV4(formData: FormData) {
   const { error } = await supabase.from('packaging_product_variations').update({ is_quoteable: quoteable, updated_by: user.id, updated_at: new Date().toISOString() })
     .eq('organization_id', organization.id).eq('id', id).eq('approval_state', 'approved');
   if (error) throw new Error(error.message);
+  revalidatePath(ADMIN_PATH);
+}
+
+/**
+ * Matrix data keeps the workbook's distinction between source inputs and formulas.
+ * Only metadata-declared editable cells can be changed. Formula cells are always
+ * recalculated from the preserved workbook formula graph and can never be directly
+ * overwritten through the Admin UI.
+ */
+export async function updatePackagingMatrixRowV4(formData: FormData) {
+  const { organization, supabase } = await adminDb();
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) throw new Error('Matrix row is required.');
+
+  const { data: rows, error } = await supabase
+    .from('packaging_pricing_matrix_rows')
+    .select('id,organization_id,template_id,supply_form,construction_key,client_product_id,width_mm,height_mm,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame,source_worksheet,source_row_number,source_reference,is_active,metadata')
+    .eq('organization_id', organization.id)
+    .eq('is_active', true);
+  if (error) throw new Error(error.message);
+
+  const sourceRows = rows ?? [];
+  const target = sourceRows.find((row: any) => row.id === id);
+  if (!target) throw new Error('Matrix row was not found in this workspace.');
+
+  const editableFields = new Set(matrixEditableFields(target));
+  const editableRateFields = new Set(matrixEditableRateFields(target));
+  const nextRows = sourceRows.map((row: any) => ({ ...row, metadata: row.metadata ? { ...row.metadata } : row.metadata }));
+  const nextTarget = nextRows.find((row: any) => row.id === id);
+  if (!nextTarget) throw new Error('Matrix row could not be prepared for editing.');
+
+  if (editableFields.has('construction_key') && formData.has('construction_key')) {
+    const construction = String(formData.get('construction_key') ?? '').trim();
+    if (!construction) throw new Error('Construction cannot be blank.');
+    nextTarget.construction_key = construction;
+  }
+  if (editableFields.has('client_product_id') && formData.has('client_product_id')) {
+    const productId = String(formData.get('client_product_id') ?? '').trim();
+    if (!productId) throw new Error('Client product ID cannot be blank.');
+    nextTarget.client_product_id = productId;
+  }
+
+  const rateFields: MatrixRateField[] = [
+    'q1_rate_per_frame',
+    'q2_rate_per_frame',
+    'q3_rate_per_frame',
+    'q4_rate_per_frame',
+    'q5_rate_per_frame',
+  ];
+  for (const field of rateFields) {
+    if (!formData.has(field)) continue;
+    if (!editableRateFields.has(field)) throw new Error(`${field} is calculated by the source workbook and cannot be edited directly.`);
+    nextTarget[field] = requiredNumber(formData.get(field), field.replace('_rate_per_frame', '').toUpperCase());
+  }
+
+  const recalculated = recalculateMatrixSourceRows(nextRows as any[]);
+  const now = new Date().toISOString();
+  const payload = recalculated.map((row: any) => ({
+    id: row.id,
+    organization_id: row.organization_id,
+    template_id: row.template_id,
+    supply_form: row.supply_form,
+    construction_key: row.construction_key,
+    client_product_id: row.client_product_id,
+    width_mm: row.width_mm,
+    height_mm: row.height_mm,
+    q1_rate_per_frame: row.q1_rate_per_frame,
+    q2_rate_per_frame: row.q2_rate_per_frame,
+    q3_rate_per_frame: row.q3_rate_per_frame,
+    q4_rate_per_frame: row.q4_rate_per_frame,
+    q5_rate_per_frame: row.q5_rate_per_frame,
+    source_worksheet: row.source_worksheet,
+    source_row_number: row.source_row_number,
+    source_reference: row.source_reference,
+    is_active: row.is_active,
+    metadata: row.metadata,
+    updated_at: now,
+  }));
+
+  const { error: saveError } = await supabase.from('packaging_pricing_matrix_rows').upsert(payload, { onConflict: 'id' });
+  if (saveError) throw new Error(saveError.message);
   revalidatePath(ADMIN_PATH);
 }
 
