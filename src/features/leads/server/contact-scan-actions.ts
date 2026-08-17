@@ -6,37 +6,21 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 import { buildContactPostApplyAssist, type ContactAssistLeadCandidate, type ContactPostApplyAssistDraft, type ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
 import { extractContactSource, extractPdfTextLayer, type ContactServerExtractionResult } from '@/lib/contact-exchange/contact-extraction';
 import { saveLead } from '@/features/leads/server/actions';
+import { findExistingTradeEventScanLead, linkCreatedLeadToTradeEventScan, type TradeEventScanDraft } from '@/features/trade-events/server/event-scan-link';
 import type { ContactSourceProfile } from '@/lib/contact-exchange/contact-parser';
 
-export type ContactScanActionState = {
-  error?: string;
-  extraction?: ContactServerExtractionResult;
-};
-
+export type ContactScanActionState = { error?: string; extraction?: ContactServerExtractionResult };
 const MAX_SOURCE_BYTES = 10 * 1024 * 1024;
-
-function normalizeSearchValue(value: string) {
-  return value.replace(/[%_]/g, '').trim();
-}
+const normalizeSearchValue = (value: string) => value.replace(/[%_]/g, '').trim();
 
 async function fetchLeadCandidates(organizationId: string, draft: ContactPostApplyAssistDraft) {
   if (!hasSupabaseEnv) return [] as ContactAssistLeadCandidate[];
-
   const db: any = await createClient();
   const selectColumns = 'id, company_name, contact_name, email, phone, phone_secondary, website, next_follow_up_at';
   const candidates = new Map<string, ContactAssistLeadCandidate>();
-
   const collect = async (runner: (() => Promise<{ data: ContactAssistLeadCandidate[] | null; error?: { message?: string } }>) | null) => {
     if (!runner) return;
-    try {
-      const result = await runner();
-      for (const row of result.data ?? []) {
-        if (!row?.id) continue;
-        candidates.set(row.id, row);
-      }
-    } catch {
-      // fall through to heuristic-only assist
-    }
+    try { const result = await runner(); for (const row of result.data ?? []) if (row?.id) candidates.set(row.id, row); } catch { /* heuristic fallback */ }
   };
 
   const email = normalizeSearchValue(draft.email);
@@ -56,7 +40,6 @@ async function fetchLeadCandidates(organizationId: string, draft: ContactPostApp
   await collect(phoneTail ? () => db.from('leads').select(selectColumns).eq('organization_id', organizationId).ilike('phone_secondary', `%${phoneTail}%`).limit(6) : null);
   await collect(phoneSecondaryTail ? () => db.from('leads').select(selectColumns).eq('organization_id', organizationId).ilike('phone', `%${phoneSecondaryTail}%`).limit(6) : null);
   await collect(phoneSecondaryTail ? () => db.from('leads').select(selectColumns).eq('organization_id', organizationId).ilike('phone_secondary', `%${phoneSecondaryTail}%`).limit(6) : null);
-
   return Array.from(candidates.values());
 }
 
@@ -65,112 +48,50 @@ export async function extractContactScan(_: ContactScanActionState | undefined, 
   const sourceModeValue = String(formData.get('source_mode') ?? 'upload').trim();
   const sourceMode = sourceModeValue === 'camera' ? 'camera' : sourceModeValue === 'manual' ? 'manual' : 'upload';
   const source = formData.get('source');
+  if (!(source instanceof File) && !assistText) return { error: 'Attach a source or provide assist text before running extraction.' };
+  if (source instanceof File && source.size > MAX_SOURCE_BYTES) return { error: 'Source file is too large for quick-entry extraction. Keep files under 10 MB in this batch.' };
 
-  if (!(source instanceof File) && !assistText) {
-    return { error: 'Attach a source or provide assist text before running extraction.' };
-  }
-
-  if (source instanceof File && source.size > MAX_SOURCE_BYTES) {
-    return { error: 'Source file is too large for quick-entry extraction. Keep files under 10 MB in this batch.' };
-  }
-
-  let fileText = '';
-  let pdfText = '';
-  let filename = '';
-  let fileType = '';
-
+  let fileText = ''; let pdfText = ''; let filename = ''; let fileType = '';
   if (source instanceof File) {
-    filename = source.name;
-    fileType = source.type;
-
-    if (fileType.startsWith('text/') || fileType === 'application/json') {
-      fileText = await source.text();
-    } else if (fileType === 'application/pdf') {
-      const pdfBuffer = Buffer.from(await source.arrayBuffer());
-      pdfText = extractPdfTextLayer(pdfBuffer);
-    }
+    filename = source.name; fileType = source.type;
+    if (fileType.startsWith('text/') || fileType === 'application/json') fileText = await source.text();
+    else if (fileType === 'application/pdf') pdfText = extractPdfTextLayer(Buffer.from(await source.arrayBuffer()));
   }
-
-  return {
-    extraction: await extractContactSource({
-      assistText,
-      sourceMode,
-      filename,
-      fileType,
-      fileText,
-      pdfText,
-      source: source instanceof File ? source : null,
-    }),
-  };
+  return { extraction: await extractContactSource({ assistText, sourceMode, filename, fileType, fileText, pdfText, source: source instanceof File ? source : null }) };
 }
 
 export async function suggestContactScanPostApplyAssist(formData: FormData): Promise<ContactPostApplyAssistResult> {
   const draft: ContactPostApplyAssistDraft = {
     currentLeadId: String(formData.get('current_lead_id') ?? '').trim() || null,
-    companyName: String(formData.get('company_name') ?? '').trim(),
-    contactName: String(formData.get('contact_name') ?? '').trim(),
-    jobTitle: String(formData.get('job_title') ?? '').trim(),
-    email: String(formData.get('email') ?? '').trim(),
-    phone: String(formData.get('phone') ?? '').trim(),
-    phoneSecondary: String(formData.get('phone_secondary') ?? '').trim(),
-    website: String(formData.get('website') ?? '').trim(),
-    notes: String(formData.get('notes') ?? '').trim(),
-    sourceType: String(formData.get('source_type') ?? '').trim(),
-    sourceLabel: String(formData.get('source_label') ?? '').trim(),
+    companyName: String(formData.get('company_name') ?? '').trim(), contactName: String(formData.get('contact_name') ?? '').trim(),
+    jobTitle: String(formData.get('job_title') ?? '').trim(), email: String(formData.get('email') ?? '').trim(),
+    phone: String(formData.get('phone') ?? '').trim(), phoneSecondary: String(formData.get('phone_secondary') ?? '').trim(),
+    website: String(formData.get('website') ?? '').trim(), notes: String(formData.get('notes') ?? '').trim(),
+    sourceType: String(formData.get('source_type') ?? '').trim(), sourceLabel: String(formData.get('source_label') ?? '').trim(),
     sourceProfile: (String(formData.get('source_profile') ?? '').trim() || 'generic') as ContactSourceProfile,
   };
-
   const enoughSignal = Boolean(draft.email || draft.phone || draft.phoneSecondary || draft.companyName || draft.contactName || draft.website);
-  if (!enoughSignal || !hasSupabaseEnv) {
-    return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' });
-  }
-
+  if (!enoughSignal || !hasSupabaseEnv) return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' });
   try {
     const workspace = await requireWorkspace();
     const organizationId = workspace.organization?.id;
-    if (!organizationId) {
-      return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' });
-    }
-
+    if (!organizationId) return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' });
     const candidates = await fetchLeadCandidates(organizationId, draft);
-    return buildContactPostApplyAssist({
-      draft,
-      candidates,
-      lookupMode: candidates.length ? 'live' : 'heuristic',
-    });
-  } catch {
-    return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' });
-  }
+    return buildContactPostApplyAssist({ draft, candidates, lookupMode: candidates.length ? 'live' : 'heuristic' });
+  } catch { return buildContactPostApplyAssist({ draft, lookupMode: 'heuristic' }); }
 }
 
-
-export type ContactScanCreateLeadResult = {
-  error?: string;
-  success?: string;
-  lead?: {
-    id: string;
-    company_name: string;
-    source_label: string | null;
-  };
-};
-
-function buildDefaultFollowUpAt() {
-  return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-}
-
-function mergeLeadNotes(...values: Array<string | null | undefined>) {
-  return values
-    .map((value) => String(value ?? '').trim())
-    .filter(Boolean)
-    .join('\n\n');
-}
+export type ContactScanCreateLeadResult = { error?: string; success?: string; lead?: { id: string; company_name: string; source_label: string | null } };
+const buildDefaultFollowUpAt = () => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+const mergeLeadNotes = (...values: Array<string | null | undefined>) => values.map((value) => String(value ?? '').trim()).filter(Boolean).join('\n\n');
 
 function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null {
   const rawLeadType = String(formData.get('lead_type') ?? '').trim().toLowerCase();
   const rawMode = String(formData.get('mode') ?? formData.get('workspace_mode') ?? formData.get('lead_mode') ?? '').trim().toLowerCase();
-  const derivedFromMode = rawMode === 'supplier' || rawMode === 'suppliers' ? 'supplier' : rawMode === 'buyer' || rawMode === 'buyers' ? 'buyer' : null;
   if (rawLeadType === 'supplier' || rawLeadType === 'buyer') return rawLeadType;
-  return derivedFromMode;
+  if (rawMode === 'supplier' || rawMode === 'suppliers') return 'supplier';
+  if (rawMode === 'buyer' || rawMode === 'buyers') return 'buyer';
+  return null;
 }
 
 export async function createLeadFromContactScanReview(formData: FormData): Promise<ContactScanCreateLeadResult> {
@@ -190,38 +111,47 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
   const sourceLabel = rawSourceLabel.startsWith('Contact Scan') ? rawSourceLabel : `Contact Scan Review · ${rawSourceLabel}`;
   const tradeEventId = String(formData.get('trade_event_id') ?? '').trim();
 
+  const eventDraft: TradeEventScanDraft | null = tradeEventId ? {
+    tradeEventId, leadType, companyName, contactName, jobTitle, email, phone, notes,
+    sourceLabel, sourceProfile, extractionBoundary,
+  } : null;
+
+  if (eventDraft) {
+    try {
+      const existing = await findExistingTradeEventScanLead(eventDraft);
+      if (existing) {
+        return {
+          success: existing.repeatEntryId ? 'This person was already captured at this event. The scan was saved as another event interaction.' : 'Existing CRM contact found. This event scan was linked without creating a duplicate lead.',
+          lead: { id: existing.leadId, company_name: existing.companyName, source_label: existing.sourceLabel },
+        };
+      }
+    } catch (error) {
+      console.error('[trade-event-scan] existing identity link failed', error);
+    }
+  }
+
   const leadFormData = new FormData();
   leadFormData.set('lead_type', leadType);
   leadFormData.set('workspace_mode', leadType === 'supplier' ? 'suppliers' : 'buyers');
-  leadFormData.set('company_name', companyName);
-  leadFormData.set('contact_name', contactName);
-  leadFormData.set('job_title', jobTitle);
-  leadFormData.set('email', email);
-  leadFormData.set('phone', phone);
-  leadFormData.set('phone_secondary', phoneSecondary);
-  leadFormData.set('website', website);
-  leadFormData.set('source_type', 'contact_scan_review');
-  leadFormData.set('source_label', sourceLabel);
-  leadFormData.set('notes', mergeLeadNotes(
-    notes,
-    `Captured from contact scan review.`,
-    `Source profile: ${sourceProfile.replace(/_/g, ' ')}`,
-    `Extraction boundary: ${extractionBoundary.replace(/_/g, ' ')}`
-  ));
-  leadFormData.set('next_follow_up_at', buildDefaultFollowUpAt());
-  leadFormData.set('intro_sent', 'false');
+  leadFormData.set('company_name', companyName); leadFormData.set('contact_name', contactName); leadFormData.set('job_title', jobTitle);
+  leadFormData.set('email', email); leadFormData.set('phone', phone); leadFormData.set('phone_secondary', phoneSecondary); leadFormData.set('website', website);
+  leadFormData.set('source_type', 'contact_scan_review'); leadFormData.set('source_label', sourceLabel);
+  leadFormData.set('notes', mergeLeadNotes(notes, 'Captured from contact scan review.', `Source profile: ${sourceProfile.replace(/_/g, ' ')}`, `Extraction boundary: ${extractionBoundary.replace(/_/g, ' ')}`));
+  leadFormData.set('next_follow_up_at', buildDefaultFollowUpAt()); leadFormData.set('intro_sent', 'false');
   if (tradeEventId) leadFormData.set('trade_event_id', tradeEventId);
 
   const result = await saveLead(undefined, leadFormData);
   if (result.error) return { error: result.error };
   if (!result.lead?.id) return { error: 'Lead save completed without a CRM record.' };
 
+  let interactionSaved = true;
+  if (eventDraft) {
+    try { await linkCreatedLeadToTradeEventScan(eventDraft, result.lead.id); }
+    catch (error) { interactionSaved = false; console.error('[trade-event-scan] event interaction save failed', error); }
+  }
+
   return {
-    success: 'Reviewed scan confirmed and created as a lead.',
-    lead: {
-      id: result.lead.id,
-      company_name: result.lead.company_name,
-      source_label: result.lead.source_label ?? sourceLabel,
-    },
+    success: interactionSaved ? 'Reviewed scan confirmed and created as a lead with its event interaction.' : 'Reviewed scan created as a lead. The event interaction needs review.',
+    lead: { id: result.lead.id, company_name: result.lead.company_name, source_label: result.lead.source_label ?? sourceLabel },
   };
 }
