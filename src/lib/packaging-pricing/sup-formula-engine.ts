@@ -1,28 +1,15 @@
+import { evaluatePackagingCharges, resolveSelectedPackagingCharges, type EvaluatedPackagingCharge } from './charges';
 import { pricingSourceHash } from './snapshot';
+import { SUP_CONSTRUCTION_LABELS, SUP_CONSTRUCTION_LAYER_ROLES } from './sup-availability';
 import type {
   AdminCostLine,
   PackagingPricingResult,
-  PricingCharge,
   PricingContext,
   PricingMasterRate,
   RecipeItem,
   SupPricingInput,
 } from './types';
 import { PACKAGING_PRICING_ENGINE_VERSION } from './types';
-
-const CONSTRUCTION_LABELS: Record<SupPricingInput['construction_key'], string> = {
-  glossy_foil: 'Glossy + Foil',
-  matte_foil: 'Matte + Foil',
-  glossy_clear_window: 'Glossy Clear Window',
-  matte_frosted_window: 'Matte Frosted Window',
-};
-
-const CONSTRUCTION_LAYER_ROLES: Record<SupPricingInput['construction_key'], string[]> = {
-  glossy_foil: ['outer_layer', 'middle_layer', 'inner_pe'],
-  matte_foil: ['outer_layer', 'middle_layer', 'inner_pe'],
-  glossy_clear_window: ['outer_layer', 'inner_pe'],
-  matte_frosted_window: ['outer_layer', 'middle_layer', 'inner_pe'],
-};
 
 function n(value: unknown): number {
   return typeof value === 'number' ? value : Number(value ?? 0);
@@ -43,10 +30,6 @@ function stockWeb(required: number, ladder: Array<{ required_max_mm?: number; st
 function masterById(context: PricingContext, id: string | null): PricingMasterRate | null {
   if (!id) return null;
   return context.masters.find((item) => item.id === id) ?? null;
-}
-
-function chargeByCode(context: PricingContext, code: string): PricingCharge | null {
-  return context.charges.find((item) => item.code === code) ?? null;
 }
 
 function matchesVariation(item: RecipeItem, variationKey: string): boolean {
@@ -108,6 +91,25 @@ function processLine(master: PricingMasterRate, webRunM: number): AdminCostLine 
   };
 }
 
+function chargeAdminLine(charge: EvaluatedPackagingCharge): AdminCostLine {
+  const usageUom = charge.basis === 'per_running_metre' ? 'running_m/frame'
+    : charge.basis === 'per_unit' ? 'unit/frame'
+      : charge.basis === 'per_frame' ? 'frame'
+        : charge.basis === 'percent' ? 'percent_base/frame'
+          : 'flat/frame';
+  return {
+    master_id: charge.master_id,
+    code: charge.code,
+    name: charge.name,
+    basis: charge.basis,
+    snapshotted_rate: charge.rate,
+    rate_uom: charge.basis,
+    amount_per_frame: n(charge.amount_per_frame),
+    usage: charge.usage_per_frame == null ? undefined : charge.usage_per_frame,
+    usage_uom: charge.usage_per_frame == null ? undefined : usageUom,
+  };
+}
+
 export function calculateSupFormula(context: PricingContext, input: SupPricingInput): PackagingPricingResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -116,7 +118,7 @@ export function calculateSupFormula(context: PricingContext, input: SupPricingIn
   const quantity = Math.max(0, Math.floor(n(input.quantity)));
   if (!variation) errors.push('Selected Product Variation is not available on this template.');
   if (!quantity) errors.push('Quantity is required.');
-  if (!CONSTRUCTION_LABELS[input.construction_key]) errors.push('Construction is not supported by the SUP formula engine.');
+  if (!SUP_CONSTRUCTION_LABELS[input.construction_key]) errors.push('Construction is not supported by the SUP formula engine.');
 
   const rules = template.production_rules_json ?? {};
   const machineWidth = n(rules.machine_width_mm ?? 740);
@@ -153,10 +155,10 @@ export function calculateSupFormula(context: PricingContext, input: SupPricingIn
 
   const materialLines: AdminCostLine[] = [];
   const processLines: AdminCostLine[] = [];
-  const extraLines: AdminCostLine[] = [];
+  let extraLines: AdminCostLine[] = [];
 
   if (!errors.length && variation) {
-    for (const role of CONSTRUCTION_LAYER_ROLES[input.construction_key]) {
+    for (const role of [...SUP_CONSTRUCTION_LAYER_ROLES[input.construction_key], 'inner_pe']) {
       const recipe = recipeForRole(context, input.construction_key, role, variation.variation_key);
       const master = masterById(context, recipe?.cost_master_item_id ?? null);
       if (!requireRate(master, role, errors)) continue;
@@ -164,7 +166,7 @@ export function calculateSupFormula(context: PricingContext, input: SupPricingIn
       materialLines.push(materialLine(master, web, webRunMm));
     }
 
-    const layerCount = CONSTRUCTION_LAYER_ROLES[input.construction_key].length;
+    const layerCount = SUP_CONSTRUCTION_LAYER_ROLES[input.construction_key].length + 1;
     const adhesiveRecipe = recipeForRole(context, input.construction_key, 'adhesive', variation.variation_key);
     const adhesive = masterById(context, adhesiveRecipe?.cost_master_item_id ?? null);
     if (requireRate(adhesive, 'Adhesive', errors)) {
@@ -185,69 +187,94 @@ export function calculateSupFormula(context: PricingContext, input: SupPricingIn
       if (!requireRate(master, role, errors)) continue;
       processLines.push(processLine(master, webRunM));
     }
-
-    for (const code of input.selected_charge_codes ?? []) {
-      const charge = chargeByCode(context, code);
-      if (!charge) { errors.push(`Charge ${code} is not available.`); continue; }
-      if (charge.current_rate == null || !charge.basis || !charge.application_stage) {
-        errors.push(`${charge.name} needs a confirmed rate, charging basis and application stage before use.`);
-        continue;
-      }
-      if (charge.application_stage !== 'before_wastage_margin') continue;
-      const metres = n(variation.width_mm) * pouchesPerFrame / 1000;
-      const amount = charge.basis === 'per_running_metre' ? n(charge.current_rate) * metres
-        : charge.basis === 'per_frame' ? n(charge.current_rate)
-        : charge.basis === 'per_unit' ? n(charge.current_rate) * pouchesPerFrame
-        : n(charge.current_rate);
-      extraLines.push({
-        master_id: charge.id, code: charge.code, name: charge.name, basis: charge.basis,
-        snapshotted_rate: n(charge.current_rate), rate_uom: charge.basis,
-        amount_per_frame: amount, usage: charge.basis === 'per_running_metre' ? metres : undefined,
-        usage_uom: charge.basis === 'per_running_metre' ? 'running_m/frame' : undefined,
-      });
-    }
   }
 
   const framesExact = pouchesPerFrame ? quantity / pouchesPerFrame : 0;
   const runLengthM = framesExact * webRunM;
+  const chargeRunningMetresPerFrame = variation ? n(variation.width_mm) * pouchesPerFrame / 1000 : null;
+  const chargeTotalRunningMetres = chargeRunningMetresPerFrame == null ? null : chargeRunningMetresPerFrame * framesExact;
+  const materialTotal = materialLines.reduce((sum, line) => sum + line.amount_per_frame, 0);
+  const processTotal = processLines.reduce((sum, line) => sum + line.amount_per_frame, 0);
+  const materialProcessCogsTotal = (materialTotal + processTotal) * framesExact;
+  const selectedCharges = resolveSelectedPackagingCharges(context.charges, input.selected_charge_codes);
+  errors.push(...selectedCharges.validation_errors);
+
+  const beforeCharges = evaluatePackagingCharges(context.charges, selectedCharges.by_stage.before_wastage_margin, {
+    quantity,
+    frames_exact: framesExact,
+    units_per_frame: pouchesPerFrame,
+    running_metres_per_frame: chargeRunningMetresPerFrame,
+    total_running_metres: chargeTotalRunningMetres,
+    percent_bases: { material_process_cogs_total: materialProcessCogsTotal },
+  });
+  errors.push(...beforeCharges.validation_errors);
+  extraLines = beforeCharges.before_wastage_margin.map(chargeAdminLine);
+
   const band = [...context.bands].sort((a, b) => a.run_length_max_m - b.run_length_max_m)
     .find((item) => runLengthM <= n(item.run_length_max_m)) ?? [...context.bands].sort((a, b) => b.run_length_max_m - a.run_length_max_m)[0];
   if (!band && quantity) errors.push('No commercial run-length bands are configured.');
 
-  const materialTotal = materialLines.reduce((sum, line) => sum + line.amount_per_frame, 0);
-  const processTotal = processLines.reduce((sum, line) => sum + line.amount_per_frame, 0);
   const extraTotal = extraLines.reduce((sum, line) => sum + line.amount_per_frame, 0);
   const preCommercial = materialTotal + processTotal + extraTotal;
   const wasteCost = band ? preCommercial * n(band.wastage_pct) / 100 : 0;
   const sellingPerFrame = band ? preCommercial + wasteCost + n(band.margin_per_frame) : 0;
-  let unitPrice = pouchesPerFrame ? sellingPerFrame / pouchesPerFrame : 0;
+  const coreUnitPrice = pouchesPerFrame ? sellingPerFrame / pouchesPerFrame : 0;
+  const coreProductTotal = coreUnitPrice * quantity;
 
-  const separateCharges = [] as PackagingPricingResult['separate_charges'];
-  for (const code of input.selected_charge_codes ?? []) {
-    const charge = chargeByCode(context, code);
-    if (!charge || charge.current_rate == null || !charge.basis || !charge.application_stage) continue;
-    if (charge.application_stage === 'after_core_price') {
-      if (charge.basis === 'per_unit') unitPrice += n(charge.current_rate);
-      else warnings.push(`${charge.name} is configured after core price with ${charge.basis}; it is kept outside the unit price until a supported unit rule is selected.`);
-    }
-    if (charge.application_stage === 'separate_quote_line') {
-      const amount = charge.basis === 'per_unit' ? n(charge.current_rate) * quantity
-        : charge.basis === 'per_running_metre' ? n(charge.current_rate) * runLengthM
-        : charge.basis === 'per_frame' ? n(charge.current_rate) * framesExact
-        : charge.basis === 'percent' ? (unitPrice * quantity) * n(charge.current_rate) / 100
-        : n(charge.current_rate);
-      separateCharges.push({ master_id: charge.id, code: charge.code, name: charge.name, category: charge.category, basis: charge.basis, rate: n(charge.current_rate), amount });
-    }
-  }
+  const afterCharges = evaluatePackagingCharges(context.charges, selectedCharges.by_stage.after_core_price, {
+    quantity,
+    frames_exact: framesExact,
+    units_per_frame: pouchesPerFrame,
+    running_metres_per_frame: chargeRunningMetresPerFrame,
+    total_running_metres: chargeTotalRunningMetres,
+    percent_bases: {
+      material_process_cogs_total: materialProcessCogsTotal,
+      core_product_total: coreProductTotal,
+    },
+  });
+  errors.push(...afterCharges.validation_errors);
+  const productTotal = coreProductTotal + afterCharges.after_core_price_total;
+  const unitPrice = quantity ? productTotal / quantity : 0;
 
-  const productTotal = unitPrice * quantity;
+  const separateChargesEval = evaluatePackagingCharges(context.charges, selectedCharges.by_stage.separate_quote_line, {
+    quantity,
+    frames_exact: framesExact,
+    units_per_frame: pouchesPerFrame,
+    running_metres_per_frame: chargeRunningMetresPerFrame,
+    total_running_metres: chargeTotalRunningMetres,
+    percent_bases: {
+      material_process_cogs_total: materialProcessCogsTotal,
+      core_product_total: coreProductTotal,
+      product_total: productTotal,
+    },
+  });
+  errors.push(...separateChargesEval.validation_errors);
+  const separateCharges: PackagingPricingResult['separate_charges'] = separateChargesEval.separate_quote_line.map((item) => ({
+    master_id: item.master_id,
+    code: item.code,
+    name: item.name,
+    category: item.category,
+    basis: item.basis,
+    rate: item.rate,
+    amount: round(item.amount_total, 2),
+  }));
+
   const gstPct = n(template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
   const hashPayload = {
-    engine_version: PACKAGING_PRICING_ENGINE_VERSION, template_id: template.id, template_version: template.calculation_version,
-    input, variation, production: { machineWidth, machineLength, trim, outerPrintWeb, openWebMm, across, along, pouchesPerFrame, webRunMm, webNeededMm, innerWebMm, peWebMm },
-    masters: [...materialLines, ...processLines, ...extraLines].map((line) => ({ master_id: line.master_id, code: line.code, rate: line.snapshotted_rate, rate_uom: line.rate_uom })),
-    band, separateCharges,
+    engine_version: PACKAGING_PRICING_ENGINE_VERSION,
+    template_id: template.id,
+    template_version: template.calculation_version,
+    input,
+    variation,
+    production: { machineWidth, machineLength, trim, outerPrintWeb, openWebMm, across, along, pouchesPerFrame, webRunMm, webNeededMm, innerWebMm, peWebMm },
+    masters: [...materialLines, ...processLines].map((line) => ({ master_id: line.master_id, code: line.code, rate: line.snapshotted_rate, rate_uom: line.rate_uom })),
+    charges: {
+      before_wastage_margin: beforeCharges.before_wastage_margin,
+      after_core_price: afterCharges.after_core_price,
+      separate_quote_line: separateChargesEval.separate_quote_line,
+    },
+    band,
   };
 
   return {
@@ -262,7 +289,7 @@ export function calculateSupFormula(context: PricingContext, input: SupPricingIn
       product: variation?.name ?? null,
       dimensions: variation ? { width_mm: variation.width_mm, height_mm: variation.height_mm, bottom_gusset_each_mm: variation.bottom_gusset_each_mm } : null,
       construction_key: input.construction_key,
-      construction: CONSTRUCTION_LABELS[input.construction_key] ?? input.construction_key,
+      construction: SUP_CONSTRUCTION_LABELS[input.construction_key] ?? input.construction_key,
       print: input.print,
       quantity,
       selected_charge_codes: input.selected_charge_codes ?? [],
@@ -283,15 +310,22 @@ export function calculateSupFormula(context: PricingContext, input: SupPricingIn
       pre_commercial_cogs_per_frame: preCommercial,
     },
     commercial_rules: band ? {
-      run_length_max_m: band.run_length_max_m, wastage_pct: band.wastage_pct,
-      wastage_amount_per_frame: wasteCost, margin_per_frame: band.margin_per_frame,
+      run_length_max_m: band.run_length_max_m,
+      wastage_pct: band.wastage_pct,
+      wastage_amount_per_frame: wasteCost,
+      margin_per_frame: band.margin_per_frame,
       selling_price_per_frame: sellingPerFrame,
+      after_core_charge_total: afterCharges.after_core_price_total,
     } : {},
     selling_price: {
-      unit_price: round(unitPrice), product_total: round(productTotal, 2), currency: template.currency,
-      gst_pct: gstPct, gst: round(gst, 2), grand_total_before_freight: round(productTotal + gst, 2),
+      unit_price: round(unitPrice),
+      product_total: round(productTotal, 2),
+      currency: template.currency,
+      gst_pct: gstPct,
+      gst: round(gst, 2),
+      grand_total_before_freight: round(productTotal + gst, 2),
     },
-    separate_charges: separateCharges.map((item) => ({ ...item, amount: round(item.amount, 2) })),
+    separate_charges: separateCharges,
     kld: { file_id: input.kld_file_id ?? null },
     source_hash: pricingSourceHash(hashPayload),
     validation_errors: errors,

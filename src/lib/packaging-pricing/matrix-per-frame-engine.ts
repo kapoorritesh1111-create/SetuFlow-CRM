@@ -1,3 +1,4 @@
+import { evaluatePackagingCharges, resolveSelectedPackagingCharges } from './charges';
 import { pricingSourceHash } from './snapshot';
 import type { MatrixPricingInput, MatrixRow, PackagingPricingResult, PricingContext } from './types';
 import { PACKAGING_PRICING_ENGINE_VERSION } from './types';
@@ -41,26 +42,76 @@ export function calculateMatrixPerFrame(context: PricingContext, input: MatrixPr
   const frameRate = row && rateField ? n(row[rateField]) : 0;
   if (!rateField) errors.push('Frame tier is invalid.');
   if (row && row[rateField] == null) errors.push(`Matrix rate ${input.tier} is missing for ${row.client_product_id}.`);
-  const unitPrice = geometry.pouches_per_frame ? frameRate / geometry.pouches_per_frame : 0;
+
+  const baseUnitPrice = geometry.pouches_per_frame ? frameRate / geometry.pouches_per_frame : 0;
   const qty = Math.max(0, Math.floor(n(input.quantity)));
   const frames = qty && geometry.pouches_per_frame ? qty / geometry.pouches_per_frame : TIER_FRAMES[input.tier];
-  const productTotal = qty ? unitPrice * qty : 0;
+  const baseProductTotal = qty ? baseUnitPrice * qty : 0;
+  const selectedCharges = resolveSelectedPackagingCharges(context.charges, input.selected_charge_codes);
+  errors.push(...selectedCharges.validation_errors);
+  if ((input.selected_charge_codes?.length ?? 0) > 0 && !qty) errors.push('Quantity is required when matrix charges are selected.');
+  for (const code of selectedCharges.by_stage.before_wastage_margin) {
+    const name = context.charges.find((item) => item.code === code)?.name ?? code;
+    errors.push(`${name} cannot be applied before wastage/margin in matrix pricing because the approved matrix rate is already commercial.`);
+  }
+
+  const usage = {
+    quantity: qty,
+    frames_exact: frames,
+    units_per_frame: geometry.pouches_per_frame,
+    running_metres_per_frame: null,
+    total_running_metres: null,
+  };
+  const afterCharges = evaluatePackagingCharges(context.charges, selectedCharges.by_stage.after_core_price, {
+    ...usage,
+    percent_bases: { core_product_total: baseProductTotal },
+  });
+  errors.push(...afterCharges.validation_errors);
+  const productTotal = baseProductTotal + afterCharges.after_core_price_total;
+  const unitPrice = qty ? productTotal / qty : baseUnitPrice;
+  const separateChargesEval = evaluatePackagingCharges(context.charges, selectedCharges.by_stage.separate_quote_line, {
+    ...usage,
+    percent_bases: { core_product_total: baseProductTotal, product_total: productTotal },
+  });
+  errors.push(...separateChargesEval.validation_errors);
+  const separateCharges: PackagingPricingResult['separate_charges'] = separateChargesEval.separate_quote_line.map((item) => ({
+    master_id: item.master_id,
+    code: item.code,
+    name: item.name,
+    category: item.category,
+    basis: item.basis,
+    rate: item.rate,
+    amount: round(item.amount_total, 2),
+  }));
+
   const gstPct = n(template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
   if (row?.metadata && (row as any).metadata?.seed_scope === 'anchor_only') warnings.push('Only the source-backed acceptance anchor is loaded; full workbook import is still required before publication.');
-  const hashPayload = { engine_version: 4, template_id: template.id, template_version: template.calculation_version, input, row, geometry, frame_rate: frameRate };
+  const hashPayload = {
+    engine_version: 4,
+    template_id: template.id,
+    template_version: template.calculation_version,
+    input,
+    row,
+    geometry,
+    frame_rate: frameRate,
+    charges: {
+      after_core_price: afterCharges.after_core_price,
+      separate_quote_line: separateChargesEval.separate_quote_line,
+    },
+  };
   return {
     ok: errors.length === 0,
     engine_version: PACKAGING_PRICING_ENGINE_VERSION,
     family_id: template.family_id,
     template_id: template.id,
     template_version: template.calculation_version,
-    customer_requirement: { width_mm: width, height_mm: height, supply_form: input.supply_form, client_product_id: input.client_product_id, tier: input.tier, quantity: qty || null },
+    customer_requirement: { width_mm: width, height_mm: height, supply_form: input.supply_form, client_product_id: input.client_product_id, tier: input.tier, quantity: qty || null, selected_charge_codes: input.selected_charge_codes ?? [] },
     production_calculation: { ...geometry, machine_width_mm: n(rules.machine_width_mm ?? 740), machine_length_mm: n(rules.machine_length_mm ?? 1120), frame_tier: input.tier, frame_tier_quantity: TIER_FRAMES[input.tier], frames_exact: frames },
     cost_build: undefined,
-    commercial_rules: { source: 'approved_matrix_row', frame_rate: frameRate, source_worksheet: row?.source_worksheet ?? null, source_row_number: row?.source_row_number ?? null, source_reference: row?.source_reference ?? null },
+    commercial_rules: { source: 'approved_matrix_row', frame_rate: frameRate, source_worksheet: row?.source_worksheet ?? null, source_row_number: row?.source_row_number ?? null, source_reference: row?.source_reference ?? null, after_core_charge_total: afterCharges.after_core_price_total },
     selling_price: { unit_price: round(unitPrice), product_total: round(productTotal, 2), currency: template.currency, gst_pct: gstPct, gst: round(gst, 2), grand_total_before_freight: round(productTotal + gst, 2) },
-    separate_charges: [],
+    separate_charges: separateCharges,
     kld: { file_id: input.kld_file_id ?? null },
     source_hash: pricingSourceHash(hashPayload),
     validation_errors: errors,

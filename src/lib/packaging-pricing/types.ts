@@ -24,6 +24,7 @@ export type PricingCharge = {
   application_stage: 'before_wastage_margin' | 'after_core_price' | 'separate_quote_line' | null;
   current_rate: number | null;
   currency: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type ProductVariation = {

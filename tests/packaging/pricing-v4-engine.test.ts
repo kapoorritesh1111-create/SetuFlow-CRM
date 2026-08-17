@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateSupFormula } from '../../src/lib/packaging-pricing/sup-formula-engine';
 import { calculateMatrixPerFrame, matrixGeometry } from '../../src/lib/packaging-pricing/matrix-per-frame-engine';
+import { buildSupConstructionAvailability } from '../../src/lib/packaging-pricing/sup-availability';
 import { matrixEditableRateFields, recalculateMatrixSourceRows } from '../../src/lib/packaging-pricing/matrix-source-formulas';
 import type { PricingContext } from '../../src/lib/packaging-pricing/types';
 
@@ -19,7 +20,7 @@ const base: PricingContext = {
     m('slit','PROC_SLITTING','Slitting','process','per_running_metre',2),
     m('pouch','PROC_POUCHING','Pouching','process','per_running_metre',8),
   ],
-  charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR'}],
+  charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
   recipes:[
     {id:'1',construction_key:'matte_foil',role_key:'outer_layer',source_type:'cost_master',cost_master_item_id:'bopp',charge_master_item_id:null,consumption_rule_json:{web:'outer'},condition_json:{},sort_order:10,is_required:true},
     {id:'2',construction_key:'matte_foil',role_key:'middle_layer',source_type:'cost_master',cost_master_item_id:'met',charge_master_item_id:null,consumption_rule_json:{web:'inner'},condition_json:{},sort_order:20,is_required:true},
@@ -56,6 +57,25 @@ test('S51-PKG-045: missing selected Master rate blocks pricing instead of becomi
   assert.match(result.validation_errors.join(' '),/needs a rate/i);
 });
 
+test('S51-PKG-049: centralized SUP charges preserve zipper and apply later stages deterministically', () => {
+  const charged:PricingContext={...base,charges:[...base.charges,
+    {id:'after',code:'AFTER_FLAT',name:'After flat',category:'extra',basis:'flat',application_stage:'after_core_price',current_rate:100,currency:'INR',metadata:{}},
+    {id:'design',code:'PRE_DESIGN',name:'Design',category:'pre',basis:'flat',application_stage:'separate_quote_line',current_rate:500,currency:'INR',metadata:{}},
+  ]};
+  const result=calculateSupFormula(charged,{product_variation_id:'v250',construction_key:'matte_foil',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER','AFTER_FLAT','PRE_DESIGN']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.ok(Math.abs(result.selling_price.product_total-79280.27)<0.01);
+  assert.ok(Math.abs(result.selling_price.unit_price-15.85605329)<0.000001);
+  assert.deepEqual(result.separate_charges.map(x=>({code:x.code,amount:x.amount})),[{code:'PRE_DESIGN',amount:500}]);
+});
+
+test('S51-PKG-049: construction availability exposes only fully rated recipe paths', () => {
+  const rows=buildSupConstructionAvailability(base);
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].variation_id,'v250');
+  assert.deepEqual(rows[0].constructions,[{key:'matte_foil',label:'Matte + Foil',print_options:['CMYKW']}]);
+});
+
 test('S51-PKG-046: Center Seal 100×140 resolves to 56 pouches/frame',()=>{
   assert.equal(matrixGeometry(100,140,'center_seal').pouches_per_frame,56);
 });
@@ -67,6 +87,21 @@ test('S51-PKG-046/047: source-backed Center Seal SPPL78 Q1-Q5 is preserved',()=>
     assert.equal(result.ok,true);
     assert.ok(Math.abs(result.selling_price.unit_price-rate/56)<1e-8);
   }
+});
+
+test('S51-PKG-049: matrix charges support after-core/separate stages and fail closed on metre usage',()=>{
+  const matrixBase:PricingContext={...base,template:{...base.template,id:'center',family_id:'center-family',calculation_engine_key:'matrix_per_frame'},matrixRows:[{id:'row',supply_form:'center_seal',construction_key:'construction',client_product_id:'SPPL78',width_mm:100,height_mm:140,q1_rate_per_frame:110,q2_rate_per_frame:105,q3_rate_per_frame:85,q4_rate_per_frame:79.5,q5_rate_per_frame:74.5,source_worksheet:'CS DATA',source_row_number:2,source_reference:'CS DATA!A2:G2'}],charges:[
+    {id:'after',code:'AFTER_FLAT',name:'After flat',category:'extra',basis:'flat',application_stage:'after_core_price',current_rate:100,currency:'INR',metadata:{}},
+    {id:'pre',code:'PRE_DESIGN',name:'Design',category:'pre',basis:'flat',application_stage:'separate_quote_line',current_rate:50,currency:'INR',metadata:{}},
+    {id:'metre',code:'POST_METRE',name:'Metre charge',category:'post',basis:'per_running_metre',application_stage:'separate_quote_line',current_rate:2,currency:'INR',metadata:{}},
+  ]};
+  const ok=calculateMatrixPerFrame(matrixBase,{width_mm:100,height_mm:140,supply_form:'center_seal',client_product_id:'SPPL78',tier:'Q1',quantity:5600,selected_charge_codes:['AFTER_FLAT','PRE_DESIGN']});
+  assert.equal(ok.ok,true,ok.validation_errors.join(' '));
+  assert.equal(ok.selling_price.product_total,11100);
+  assert.deepEqual(ok.separate_charges.map(x=>({code:x.code,amount:x.amount})),[{code:'PRE_DESIGN',amount:50}]);
+  const blocked=calculateMatrixPerFrame(matrixBase,{width_mm:100,height_mm:140,supply_form:'center_seal',client_product_id:'SPPL78',tier:'Q1',quantity:5600,selected_charge_codes:['POST_METRE']});
+  assert.equal(blocked.ok,false);
+  assert.match(blocked.validation_errors.join(' '),/running-metre usage rule/i);
 });
 
 test('S51-PKG-046: 3SS pouch uses approved open laminate width rule',()=>{

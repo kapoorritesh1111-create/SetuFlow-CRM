@@ -43,29 +43,60 @@ export type ChargeEvaluation = {
   post_production_total: number;
 };
 
+export type ResolvedSelectedPackagingCharges = {
+  ok: boolean;
+  validation_errors: string[];
+  by_stage: Record<ChargeStage, string[]>;
+};
+
 function finiteNonNegative(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
 function metadataOf(charge: PricingCharge): Record<string, unknown> {
-  const metadata = (charge as PricingCharge & { metadata?: Record<string, unknown> }).metadata;
-  return metadata && typeof metadata === 'object' ? metadata : {};
+  return charge.metadata && typeof charge.metadata === 'object' ? charge.metadata : {};
+}
+
+/** Resolve selected codes once so engines can evaluate each commercial stage with the correct physical/financial bases. */
+export function resolveSelectedPackagingCharges(
+  charges: PricingContext['charges'],
+  selectedCodes: string[] | undefined,
+): ResolvedSelectedPackagingCharges {
+  const validationErrors: string[] = [];
+  const byStage: Record<ChargeStage, string[]> = {
+    before_wastage_margin: [],
+    after_core_price: [],
+    separate_quote_line: [],
+  };
+  const selected = [...new Set((selectedCodes ?? []).map((code) => String(code).trim()).filter(Boolean))];
+  for (const code of selected) {
+    const charge = charges.find((item) => item.code === code);
+    if (!charge) {
+      validationErrors.push(`Selected charge ${code} is not available for this pricing context.`);
+      continue;
+    }
+    if (!finiteNonNegative(charge.current_rate)) {
+      validationErrors.push(`${charge.name} needs a rate before it can be selected.`);
+      continue;
+    }
+    if (!charge.basis) {
+      validationErrors.push(`${charge.name} needs a charge basis before it can be selected.`);
+      continue;
+    }
+    if (!charge.application_stage) {
+      validationErrors.push(`${charge.name} needs an application stage before it can be selected.`);
+      continue;
+    }
+    byStage[charge.application_stage].push(code);
+  }
+  return { ok: validationErrors.length === 0, validation_errors: validationErrors, by_stage: byStage };
 }
 
 function usageForCharge(charge: PricingCharge, usage: ChargeUsageContext): { perFrame: number | null; total: number } {
   const basis = charge.basis as ChargeBasis | null;
-  if (basis === 'per_unit') {
-    return { perFrame: usage.units_per_frame, total: usage.quantity };
-  }
-  if (basis === 'per_frame') {
-    return { perFrame: 1, total: usage.frames_exact };
-  }
-  if (basis === 'flat') {
-    return {
-      perFrame: usage.frames_exact > 0 ? 1 / usage.frames_exact : null,
-      total: 1,
-    };
-  }
+  if (basis === 'per_unit') return { perFrame: usage.units_per_frame, total: usage.quantity };
+  if (basis === 'per_frame') return { perFrame: 1, total: usage.frames_exact };
+  if (basis === 'flat') return { perFrame: usage.frames_exact > 0 ? 1 / usage.frames_exact : null, total: 1 };
   if (basis === 'per_running_metre') {
     const perFrame = usage.running_metres_per_frame;
     const total = usage.total_running_metres ?? (perFrame != null ? perFrame * usage.frames_exact : null);
@@ -76,14 +107,9 @@ function usageForCharge(charge: PricingCharge, usage: ChargeUsageContext): { per
   }
   if (basis === 'percent') {
     const percentBase = String(metadataOf(charge).percent_base ?? '').trim();
-    if (!percentBase) {
-      throw new Error(`${charge.name} is percent-based but metadata.percent_base is not configured.`);
-    }
+    if (!percentBase) throw new Error(`${charge.name} is percent-based but metadata.percent_base is not configured.`);
     const base = usage.percent_bases?.[percentBase];
-    if (!finiteNonNegative(base)) {
-      throw new Error(`${charge.name} references unavailable percent base "${percentBase}".`);
-    }
-    // Percent charges are represented as one explicit base amount rather than an invented physical usage.
+    if (!finiteNonNegative(base)) throw new Error(`${charge.name} references unavailable percent base "${percentBase}".`);
     return { perFrame: null, total: base / 100 };
   }
   throw new Error(`${charge.name} has no supported charge basis.`);
@@ -97,7 +123,7 @@ function evaluateOne(charge: PricingCharge, usage: ChargeUsageContext): Evaluate
 
   const { perFrame, total } = usageForCharge(charge, usage);
   const basis = charge.basis as ChargeBasis;
-  const amountTotal = basis === 'percent' ? total * rate : total * rate;
+  const amountTotal = total * rate;
   const amountPerFrame = basis === 'percent'
     ? (usage.frames_exact > 0 ? amountTotal / usage.frames_exact : null)
     : (perFrame == null ? null : perFrame * rate);
@@ -117,25 +143,23 @@ function evaluateOne(charge: PricingCharge, usage: ChargeUsageContext): Evaluate
   };
 }
 
-/**
- * Evaluate only charges explicitly selected by the quote input. Missing configuration fails closed.
- * The pricing engine supplies physical usage and explicit percent bases; this module never guesses them.
- */
+/** Evaluate only explicitly selected charges. Missing configuration and missing engine usage rules fail closed. */
 export function evaluatePackagingCharges(
   charges: PricingContext['charges'],
   selectedCodes: string[] | undefined,
   usage: ChargeUsageContext,
 ): ChargeEvaluation {
-  const validationErrors: string[] = [];
-  const selected = [...new Set((selectedCodes ?? []).map((code) => String(code).trim()).filter(Boolean))];
+  const resolved = resolveSelectedPackagingCharges(charges, selectedCodes);
+  const validationErrors = [...resolved.validation_errors];
   const evaluated: EvaluatedPackagingCharge[] = [];
+  const configuredCodes = [
+    ...resolved.by_stage.before_wastage_margin,
+    ...resolved.by_stage.after_core_price,
+    ...resolved.by_stage.separate_quote_line,
+  ];
 
-  for (const code of selected) {
-    const charge = charges.find((item) => item.code === code);
-    if (!charge) {
-      validationErrors.push(`Selected charge ${code} is not available for this pricing context.`);
-      continue;
-    }
+  for (const code of configuredCodes) {
+    const charge = charges.find((item) => item.code === code)!;
     try {
       evaluated.push(evaluateOne(charge, usage));
     } catch (error) {
