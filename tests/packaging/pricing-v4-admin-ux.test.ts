@@ -6,6 +6,15 @@ import path from 'node:path';
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
+test('S51-PKG-048: Packaging Admin uses the approved Products Components Builder language', () => {
+  const shell = read('src/features/admin/components/admin-settings-shell.tsx');
+  assert.match(shell, /label: 'Packaging Products'/);
+  assert.match(shell, /label: 'Pricing Components'/);
+  assert.match(shell, /label: 'Pricing Builder'/);
+  assert.match(shell, /Products, sizes & KLDs/);
+  assert.match(shell, /Recipes, rules & live preview/);
+});
+
 test('S51-PKG-048: Packaging Products owns sizes and KLD UX', () => {
   const page = read('src/app/(app)/admin/packaging-families/page.tsx');
   const manager = read('src/features/packaging/components/packaging-products-v4-manager.tsx');
