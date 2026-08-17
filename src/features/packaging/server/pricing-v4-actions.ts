@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { calculatePackagingPriceV4, toSalesPricingResult, type PackagingPricingInputV4 } from '@/lib/packaging-pricing/engine-registry';
-import { loadPricingContext } from '@/lib/packaging-pricing/repository';
+import { loadKldSnapshot, loadPricingContext } from '@/lib/packaging-pricing/repository';
 
 async function workspaceContext() {
   const workspace = await requireWorkspace();
@@ -25,9 +25,9 @@ export async function previewPackagingPricingV4(params: { templateId: string; in
 }
 
 /**
- * Authoritative v4 save path. The browser submits choices, never a unit price.
- * The server re-loads the published template + current Master rates, calculates,
- * and freezes the full result/source hash into the existing quote/version model.
+ * Authoritative mutable-draft save path. The browser submits choices, never a
+ * unit price. Immutable quote versions remain owned by the existing canonical
+ * quote compile transaction (app_create_draft_quote_version_from_compile_tx).
  */
 export async function savePackagingPricingV4QuoteLine(params: {
   quoteId: string;
@@ -43,11 +43,11 @@ export async function savePackagingPricingV4QuoteLine(params: {
     const supabase: any = await createClient();
 
     const { data: quote, error: quoteError } = await supabase.from('quotes')
-      .select('id,organization_id,lead_id,status,currency,display_currency,current_version_id')
+      .select('id,organization_id,lead_id,status')
       .eq('organization_id', organizationId).eq('id', params.quoteId).maybeSingle();
     if (quoteError || !quote?.id) return { ok: false, error: 'Quote not found in this workspace.' };
     if (quote.lead_id && quote.lead_id !== params.leadId) return { ok: false, error: 'Quote does not belong to this lead.' };
-    if (new Set(['accepted','rejected','expired','cancelled','declined','sent']).has(String(quote.status ?? '').toLowerCase())) return { ok: false, error: 'This quote version is locked. Create a new version before changing pricing.' };
+    if (new Set(['accepted','rejected','expired','cancelled','declined','sent']).has(String(quote.status ?? '').toLowerCase())) return { ok: false, error: 'This quote is locked. Create a new draft/version before changing pricing.' };
 
     const { data: family } = await supabase.from('packaging_service_families')
       .select('id,name,is_quoteable').eq('organization_id', organizationId).eq('id', params.familyId).eq('is_active', true).maybeSingle();
@@ -62,6 +62,12 @@ export async function savePackagingPricingV4QuoteLine(params: {
     const quantity = Math.max(1, Math.floor(Number(inputAny.quantity ?? 1)));
     const productVariationId = inputAny.product_variation_id ?? null;
     const kldFileId = inputAny.kld_file_id ?? null;
+    const kld = await loadKldSnapshot(organizationId, kldFileId);
+    if (kld && kld.family_id !== family.id) return { ok: false, error: 'Selected KLD does not belong to this packaging family.' };
+    if (kld?.product_variation_id && productVariationId && kld.product_variation_id !== productVariationId) {
+      return { ok: false, error: 'Selected KLD does not belong to this Product Variation.' };
+    }
+
     const salesResult = toSalesPricingResult(result);
     const inputSnapshot = {
       engine_version: result.engine_version,
@@ -70,9 +76,10 @@ export async function savePackagingPricingV4QuoteLine(params: {
       template_id: context.template.id,
       template_name: context.template.name,
       template_version: context.template.calculation_version,
+      calculation_engine_key: context.template.calculation_engine_key,
       input: params.input,
       source_hash: result.source_hash,
-      kld_file_id: kldFileId,
+      kld,
     };
     const lineRow = {
       quote_id: quote.id,
@@ -84,7 +91,7 @@ export async function savePackagingPricingV4QuoteLine(params: {
       packaging_product_variation_id: productVariationId,
       packaging_kld_file_id: kldFileId,
       input_snapshot_json: inputSnapshot,
-      // Quote line payload is sales-safe. Full COGS is frozen in quote_pricing_snapshots.
+      // Only sales-safe outputs live on the mutable quote line. COGS remains server-only.
       pricing_breakdown_json: salesResult,
       calculation_version: context.template.calculation_version,
       quantity,
@@ -105,34 +112,6 @@ export async function savePackagingPricingV4QuoteLine(params: {
       const { data: inserted, error } = await supabase.from('quote_line_items').insert(lineRow).select('id').maybeSingle();
       if (error || !inserted?.id) return { ok: false, error: error?.message ?? 'Packaging quote line was not created.' };
       lineId = inserted.id;
-    }
-
-    if (quote.current_version_id) {
-      const displayCurrency = quote.display_currency || quote.currency || result.selling_price.currency;
-      const versionSku = `PKG-${String(lineId).slice(0,8).toUpperCase()}`;
-      await supabase.from('quote_version_line_items').delete()
-        .eq('quote_version_id', quote.current_version_id).eq('line_type', 'packaging').eq('sku_code', versionSku);
-      const { error: versionError } = await supabase.from('quote_version_line_items').insert({
-        quote_version_id: quote.current_version_id,
-        product_id: null, product_variant_id: null, line_type: 'packaging', sku_code: versionSku,
-        hsn_code: null, product_name: `${family.name} [${String(lineId).slice(0,8)}]`, category_type: 'packaging', pack_label: family.name,
-        basis_applied: 'exw', pricing_mode: 'unit', moq: quantity,
-        final_unit_price: result.selling_price.unit_price, final_case_price: result.selling_price.product_total,
-        display_currency: displayCurrency, is_overridden: false, line_notes: `${family.name} · Packaging pricing v4`, sort_order: 500,
-        calculation_meta: { ...salesResult, input_snapshot: inputSnapshot },
-      });
-      if (versionError) return { ok: false, error: versionError.message };
-
-      const { error: snapshotError } = await supabase.from('quote_pricing_snapshots').insert({
-        quote_version_id: quote.current_version_id,
-        fx_base_currency: result.selling_price.currency,
-        fx_display_currency: displayCurrency,
-        quote_context: { quote_id: quote.id, line_id: lineId, family_id: family.id, template_id: context.template.id },
-        freight_context: {},
-        calculation_payload: { pricing_v4: result, input_snapshot: inputSnapshot },
-        source_hash: result.source_hash,
-      });
-      if (snapshotError) return { ok: false, error: snapshotError.message };
     }
 
     revalidatePath(`/leads/${params.leadId}/quote`);
