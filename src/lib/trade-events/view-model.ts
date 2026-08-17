@@ -47,5 +47,5 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const dictateHref = isTrial ? `${captureHref}${join}source=dictate` : eventId ? `/leads?quickLead=1&sourceType=trade_event&eventId=${encodeURIComponent(eventId)}&sourceLabel=${encodeURIComponent(eventName)}&dictate=1` : '/leads?quickLead=1&sourceType=trade_event&dictate=1';
   const pipeline = formatEventPipeline(leads);
   const outcome = current ? buildEventOutcome(current, leads, quotes, orders) : null;
-  return { groups, events, current, group, entries, leads, tasks, quotes, orders, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, influenced, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline, outcome };
+  return { allData: data, groups, events, current, group, entries, leads, tasks, quotes, orders, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, influenced, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline, outcome };
 }
