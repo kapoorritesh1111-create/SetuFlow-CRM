@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "python scripts/run-product-overview-ux-polish.py && npm run test:growth-agent && next build",
+    "build": "python scripts/run-product-overview-ux-polish.py && npm run test:growth-agent && npm run test:packaging && next build",
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
