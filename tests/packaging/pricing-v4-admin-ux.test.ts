@@ -37,19 +37,42 @@ test('S51-PKG-048: Pricing Components reuses the Reference Library route without
   assert.doesNotMatch(builderPage, /PricingV4AdminWorkspace/);
 });
 
-test('S51-PKG-048: Pricing Builder is a recipe editor with sticky live calculation preview and source matrix drill-down', () => {
-  const builder = read('src/features/packaging/components/pricing-builder-v4-workspace.tsx');
-  const preview = read('src/features/packaging/components/pricing-v4-live-preview.tsx');
-  assert.match(builder, /Construction · Material Recipe/);
-  assert.match(builder, /Printing & Lamination/);
-  assert.match(builder, /Production Processes/);
-  assert.match(builder, /Wastage & Margin Rules/);
-  assert.match(builder, /Extras \/ Charges/);
+test('S51-PKG-048: Pricing Builder uses a compact single-active-step recipe workflow', () => {
+  const page = read('src/app/(app)/admin/packaging-templates/page.tsx');
+  const builder = read('src/features/packaging/components/pricing-builder-v4-compact-workspace.tsx');
+  assert.match(page, /PricingBuilderV4CompactWorkspace/);
+  assert.match(builder, /type FormulaStep='recipe'\|'construction'\|'processes'\|'commercial'\|'extras'\|'review'/);
+  assert.match(builder, /StepNav/);
+  assert.match(builder, /activeStep==='construction'/);
+  assert.match(builder, /activeStep==='processes'/);
+  assert.match(builder, /Choose one construction at a time/);
   assert.match(builder, /View \/ Edit Source Matrix/);
+  assert.doesNotMatch(page, /PricingTemplateBuilderGuided/);
+  assert.doesNotMatch(page, /Legacy v3 pricing builder/);
+});
+
+test('S51-PKG-048: Price Per Pouch is the primary always-visible selling KPI', () => {
+  const preview = read('src/features/packaging/components/pricing-v4-live-preview.tsx');
   assert.match(preview, /Live Price Preview/);
   assert.match(preview, /xl:sticky/);
-  assert.match(preview, /Cost build/);
+  assert.match(preview, /Price Per Pouch/);
+  assert.match(preview, /text-4xl/);
+  assert.match(preview, /selling_price\?\.unit_price/);
+  assert.match(preview, /Product total/);
+  assert.match(preview, /GST/);
   assert.match(preview, /Total before freight/);
+  assert.match(preview, /Production & cost breakdown/);
+});
+
+test('S51-PKG-051: SETU Support Mode can be hidden without losing the org switch control', () => {
+  const layout = read('src/app/(app)/layout.tsx');
+  const badge = read('src/components/shell/support-mode-badge.tsx');
+  assert.match(layout, /SupportModeBadge/);
+  assert.match(badge, /setu-support-mode-badge-hidden/);
+  assert.match(badge, /Hide SETU Support Mode controls/);
+  assert.match(badge, /Show SETU Support Mode controls/);
+  assert.match(badge, /Switch org/);
+  assert.match(badge, /localStorage/);
 });
 
 test('S51-PKG-050: KLD repository reads the actual live table columns and normalizes snapshot metadata', () => {
