@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { calculatePackagingPriceV4, toSalesPricingResult, type PackagingPricingInputV4 } from '@/lib/packaging-pricing/engine-registry';
 import { loadKldSnapshot, loadPricingContext } from '@/lib/packaging-pricing/repository';
 
@@ -25,9 +26,10 @@ export async function previewPackagingPricingV4(params: { templateId: string; in
 }
 
 /**
- * Authoritative mutable-draft save path. The browser submits choices, never a
- * unit price. Immutable quote versions remain owned by the existing canonical
- * quote compile transaction (app_create_draft_quote_version_from_compile_tx).
+ * Server-authoritative v4 save. The browser submits requirements only. We load
+ * the published template + current Master records, recalculate, snapshot KLD
+ * metadata, then execute one service-role-only DB transaction that keeps the
+ * existing quote, quote-version line and quote-pricing snapshot in sync.
  */
 export async function savePackagingPricingV4QuoteLine(params: {
   quoteId: string;
@@ -42,6 +44,8 @@ export async function savePackagingPricingV4QuoteLine(params: {
     const organizationId = workspace.organization!.id;
     const supabase: any = await createClient();
 
+    // Authorization uses the authenticated client/workspace. Never trust an org id
+    // supplied by the browser; it comes only from requireWorkspace().
     const { data: quote, error: quoteError } = await supabase.from('quotes')
       .select('id,organization_id,lead_id,status')
       .eq('organization_id', organizationId).eq('id', params.quoteId).maybeSingle();
@@ -81,41 +85,38 @@ export async function savePackagingPricingV4QuoteLine(params: {
       source_hash: result.source_hash,
       kld,
     };
-    const lineRow = {
-      quote_id: quote.id,
-      product_id: null,
-      product_variant_id: null,
-      line_type: 'packaging',
-      packaging_family_id: family.id,
-      packaging_template_id: context.template.id,
-      packaging_product_variation_id: productVariationId,
-      packaging_kld_file_id: kldFileId,
-      input_snapshot_json: inputSnapshot,
-      // Only sales-safe outputs live on the mutable quote line. COGS remains server-only.
-      pricing_breakdown_json: salesResult,
-      calculation_version: context.template.calculation_version,
-      quantity,
-      unit_price: result.selling_price.unit_price,
-      currency: result.selling_price.currency,
-      catalog_price_amount: result.selling_price.unit_price,
-      catalog_price_currency: result.selling_price.currency,
-      notes: `${family.name} · Packaging pricing v4`,
-      is_price_overridden: false,
+    const internalPricingSnapshot = {
+      input_snapshot: inputSnapshot,
+      pricing_result: result,
+      snapshotted_at: new Date().toISOString(),
     };
 
-    let lineId = params.lineId ?? null;
-    if (lineId) {
-      const { data: updated, error } = await supabase.from('quote_line_items').update(lineRow)
-        .eq('id', lineId).eq('quote_id', quote.id).eq('line_type', 'packaging').select('id').maybeSingle();
-      if (error || !updated?.id) return { ok: false, error: error?.message ?? 'Packaging quote line was not updated.' };
-    } else {
-      const { data: inserted, error } = await supabase.from('quote_line_items').insert(lineRow).select('id').maybeSingle();
-      if (error || !inserted?.id) return { ok: false, error: error?.message ?? 'Packaging quote line was not created.' };
-      lineId = inserted.id;
-    }
+    const service = createServiceRoleClient() as any;
+    if (!service) return { ok: false, error: 'Pricing persistence service is unavailable.' };
+    const { data: savedRows, error: saveError } = await service.rpc('app_save_packaging_v4_quote_line_tx', {
+      p_organization_id: organizationId,
+      p_quote_id: quote.id,
+      p_lead_id: params.leadId,
+      p_line_id: params.lineId ?? null,
+      p_family_id: family.id,
+      p_template_id: context.template.id,
+      p_product_variation_id: productVariationId,
+      p_kld_file_id: kldFileId,
+      p_quantity: quantity,
+      p_unit_price: result.selling_price.unit_price,
+      p_currency: result.selling_price.currency,
+      p_input_snapshot: inputSnapshot,
+      p_sales_pricing: salesResult,
+      p_internal_pricing: internalPricingSnapshot,
+      p_source_hash: result.source_hash,
+    });
+    if (saveError) return { ok: false, error: saveError.message ?? 'Packaging quote line could not be persisted.' };
+    const saved = Array.isArray(savedRows) ? savedRows[0] : savedRows;
+    const lineId = saved?.line_id ?? params.lineId ?? null;
+    if (!lineId) return { ok: false, error: 'Packaging quote transaction completed without a line id.' };
 
     revalidatePath(`/leads/${params.leadId}/quote`);
-    return { ok: true, lineId, result: salesResult };
+    return { ok: true, lineId, quoteVersionId: saved?.quote_version_id ?? null, result: salesResult };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Packaging quote save failed.' };
   }
