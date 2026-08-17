@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { calculatePackagingPriceV4, toSalesPricingResult, type PackagingPricingInputV4 } from '@/lib/packaging-pricing/engine-registry';
 import { loadKldSnapshot, loadPricingContext } from '@/lib/packaging-pricing/repository';
+import { createPackagingPricingSnapshot, type PackagingPricingInputSnapshotV4 } from '@/lib/packaging-pricing/snapshot';
 
 async function workspaceContext() {
   const workspace = await requireWorkspace();
@@ -74,7 +75,7 @@ export async function savePackagingPricingV4QuoteLine(params: {
     }
 
     const salesResult = toSalesPricingResult(result);
-    const inputSnapshot = {
+    const inputSnapshot: PackagingPricingInputSnapshotV4 = {
       engine_version: result.engine_version,
       family_id: family.id,
       family_name: family.name,
@@ -84,13 +85,9 @@ export async function savePackagingPricingV4QuoteLine(params: {
       calculation_engine_key: context.template.calculation_engine_key,
       input: params.input,
       source_hash: result.source_hash,
-      kld,
+      kld: kld ? { ...kld } : null,
     };
-    const internalPricingSnapshot = {
-      input_snapshot: inputSnapshot,
-      pricing_result: result,
-      snapshotted_at: new Date().toISOString(),
-    };
+    const internalPricingSnapshot = createPackagingPricingSnapshot(inputSnapshot, result);
 
     const service = createServiceRoleClient() as any;
     if (!service) return { ok: false, error: 'Pricing persistence service is unavailable.' };

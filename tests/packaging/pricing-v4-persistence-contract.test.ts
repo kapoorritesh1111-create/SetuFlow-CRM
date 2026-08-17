@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/20260817113000_s51_pkg_050_packaging_v4_atomic_quote_persistence.sql'), 'utf8');
+const snapshotRls = readFileSync(resolve(process.cwd(), 'supabase/migrations/20260817110000_s51_pkg_050_pricing_snapshot_cogs_rls.sql'), 'utf8');
 const pdfRoute = readFileSync(resolve(process.cwd(), 'src/app/api/quotes/[quoteId]/pdf/route.ts'), 'utf8');
 
 function count(text: string, needle: string) {
@@ -33,4 +34,19 @@ test('S51-PKG-049: canonical PDF already renders packaging rows from mutable quo
 test('S51-PKG-050: RPC remains service-role only', () => {
   assert.match(migration, /revoke all on function public\.app_save_packaging_v4_quote_line_tx[\s\S]*from public, anon, authenticated/);
   assert.match(migration, /grant execute on function public\.app_save_packaging_v4_quote_line_tx[\s\S]*to service_role/);
+});
+
+test('S51-PKG-050: internal v4 snapshots merge by parent line inside the unique quote-version snapshot', () => {
+  assert.match(migration, /v_packaging_payload := coalesce\(v_existing_payload -> 'packaging_pricing_v4'/);
+  assert.match(migration, /jsonb_build_object\(v_line_id::text, coalesce\(p_internal_pricing/);
+  assert.match(migration, /on conflict \(quote_version_id\) do update/);
+  assert.match(migration, /'source_hash', p_source_hash/);
+});
+
+test('S51-PKG-050: raw pricing snapshot SELECT is Admin-only', () => {
+  const policy = snapshotRls.match(/create policy quote_pricing_snapshots_admin_select[\s\S]*?\n\s*\);/i)?.[0] ?? '';
+  assert.ok(policy, 'Admin SELECT policy must exist');
+  assert.match(policy, /for select[\s\S]*to authenticated/i);
+  assert.match(policy, /is_org_admin\(q\.organization_id\)/);
+  assert.doesNotMatch(policy, /is_org_member/);
 });
