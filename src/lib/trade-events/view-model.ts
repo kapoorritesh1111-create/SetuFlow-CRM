@@ -1,3 +1,4 @@
+import { buildEventOutcome } from './analytics';
 import { entryProductInterest, eventEntrySummary, eventReadiness, getTradeEventStatus, selectCommandEvent } from './command-center';
 import { collapseTradeEventDuplicates } from './dedupe';
 import type { TradeEventsCommandCenterData } from './query';
@@ -22,6 +23,8 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const leads = data.leads.filter((lead) => ids.includes(String(lead.trade_event_id ?? '')) || (lead.event_influence_ids ?? []).some((id) => ids.includes(String(id))));
   const leadIds = new Set(leads.map((lead) => lead.id));
   const tasks = data.tasks.filter((task) => Boolean(task.lead_id && leadIds.has(task.lead_id)));
+  const quotes = data.quotes.filter((quote) => Boolean(quote.lead_id && leadIds.has(quote.lead_id)));
+  const orders = data.orders.filter((order) => Boolean(order.lead_id && leadIds.has(order.lead_id)));
   const openTasks = tasks.filter((task) => !['completed', 'cancelled'].includes(String(task.status ?? '').toLowerCase()));
   const entrySummary = eventEntrySummary(entries);
   const convertedIds = new Set(entries.map((entry) => entry.converted_lead_id).filter(Boolean));
@@ -43,5 +46,6 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const scanHref = isTrial ? `${captureHref}${join}source=scan` : eventId ? `/contact-exchange/scan?eventId=${encodeURIComponent(eventId)}&sourceType=trade_event` : '/contact-exchange/scan?sourceType=trade_event';
   const dictateHref = isTrial ? `${captureHref}${join}source=dictate` : eventId ? `/leads?quickLead=1&sourceType=trade_event&eventId=${encodeURIComponent(eventId)}&sourceLabel=${encodeURIComponent(eventName)}&dictate=1` : '/leads?quickLead=1&sourceType=trade_event&dictate=1';
   const pipeline = formatEventPipeline(leads);
-  return { groups, events, current, group, entries, leads, tasks, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, influenced, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline };
+  const outcome = current ? buildEventOutcome(current, leads, quotes, orders) : null;
+  return { groups, events, current, group, entries, leads, tasks, quotes, orders, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, influenced, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline, outcome };
 }
