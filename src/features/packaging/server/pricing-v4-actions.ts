@@ -47,11 +47,12 @@ export async function savePackagingPricingV4QuoteLine(params: {
     // Authorization uses the authenticated client/workspace. Never trust an org id
     // supplied by the browser; it comes only from requireWorkspace().
     const { data: quote, error: quoteError } = await supabase.from('quotes')
-      .select('id,organization_id,lead_id,status')
+      .select('id,organization_id,lead_id,status,current_version_id')
       .eq('organization_id', organizationId).eq('id', params.quoteId).maybeSingle();
     if (quoteError || !quote?.id) return { ok: false, error: 'Quote not found in this workspace.' };
     if (quote.lead_id && quote.lead_id !== params.leadId) return { ok: false, error: 'Quote does not belong to this lead.' };
     if (new Set(['accepted','rejected','expired','cancelled','declined','sent']).has(String(quote.status ?? '').toLowerCase())) return { ok: false, error: 'This quote is locked. Create a new draft/version before changing pricing.' };
+    if (!quote.current_version_id) return { ok: false, error: 'Create or compile a draft quote version before adding Packaging Pricing v4. An immutable pricing snapshot is required.' };
 
     const { data: family } = await supabase.from('packaging_service_families')
       .select('id,name,is_quoteable').eq('organization_id', organizationId).eq('id', params.familyId).eq('is_active', true).maybeSingle();
