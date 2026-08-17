@@ -38,25 +38,43 @@ export async function loadPricingContext(organizationId: string, templateId: str
   } as PricingContext;
 }
 
+function normalizeKld(data: any) {
+  if (!data) return null;
+  return {
+    id: data.id,
+    family_id: data.family_id,
+    product_variation_id: data.product_variation_id ?? null,
+    spec_key: data.spec_key ?? null,
+    size_preset_key: data.size_preset_key,
+    file_name: data.file_name,
+    file_url: null,
+    storage_bucket: 'compliance-docs',
+    storage_path: data.file_path,
+    version_label: `v${Number(data.version ?? 1)}`,
+    mime_type: data.mime_type ?? null,
+    file_size_bytes: data.file_size ?? null,
+  };
+}
+
 export async function loadKldSnapshot(organizationId: string, kldFileId: string | null | undefined) {
   if (!kldFileId) return null;
   const db = service();
   const { data, error } = await db.from('packaging_kld_files')
-    .select('id,family_id,product_variation_id,spec_key,size_preset_key,file_name,file_url,storage_bucket,storage_path,version_label,mime_type,file_size_bytes')
+    .select('id,family_id,product_variation_id,spec_key,size_preset_key,file_path,file_name,version,mime_type,file_size')
     .eq('organization_id', organizationId).eq('id', kldFileId).eq('is_active', true).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.id) throw new Error('Selected KLD is not available in this workspace.');
-  return data;
+  return normalizeKld(data);
 }
 
 export async function listPublishedPricingOptions(organizationId: string) {
   const db = service();
-  const [{ data: families, error: familyError }, { data: templates, error: templateError }, { data: variations, error: variationError }, { data: klds, error: kldError }] = await Promise.all([
+  const [{ data: families, error: familyError }, { data: templates, error: templateError }, { data: variations, error: variationError }, { data: kldRows, error: kldError }] = await Promise.all([
     db.from('packaging_service_families').select('id,slug,name,product_setup_mode,pricing_engine_type,default_uom').eq('organization_id', organizationId).eq('is_active', true).eq('is_quoteable', true).order('sort_order'),
     db.from('packaging_pricing_templates').select('id,family_id,name,calculation_version,calculation_engine_key,quote_config_json').eq('organization_id', organizationId).eq('status', 'published').eq('is_active', true),
     db.from('packaging_product_variations').select('id,family_id,variation_key,name,capacity_label,width_mm,height_mm,bottom_gusset_each_mm,dimension_label').eq('organization_id', organizationId).eq('approval_state', 'approved').eq('is_quoteable', true).eq('is_active', true).order('sort_order'),
-    db.from('packaging_kld_files').select('id,family_id,product_variation_id,spec_key,file_name,file_url,version_label').eq('organization_id', organizationId).eq('is_active', true),
+    db.from('packaging_kld_files').select('id,family_id,product_variation_id,spec_key,size_preset_key,file_path,file_name,version,mime_type,file_size').eq('organization_id', organizationId).eq('is_active', true),
   ]);
   for (const result of [{ error: familyError }, { error: templateError }, { error: variationError }, { error: kldError }]) if (result.error) throw new Error(result.error.message);
-  return { families: families ?? [], templates: templates ?? [], variations: variations ?? [], klds: klds ?? [] };
+  return { families: families ?? [], templates: templates ?? [], variations: variations ?? [], klds: (kldRows ?? []).map(normalizeKld) };
 }
