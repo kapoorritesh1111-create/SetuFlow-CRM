@@ -16,6 +16,10 @@ function Pill({children,tone='default'}:{children:React.ReactNode;tone?:'default
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass}`}>{children}</span>;
 }
 
+function Metric({label,value,detail}:{label:string;value:number|string;detail:string}){
+  return <div className="rounded-xl border border-emerald-200 bg-white p-3"><div className="text-2xl font-black text-slate-950">{value}</div><div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-600">{label}</div><div className="mt-1 text-xs text-slate-500">{detail}</div></div>;
+}
+
 function MatrixRateCell({row,field,label,editable}:{row:any;field:MatrixRateField;label:string;editable:boolean}){
   const value=row[field];
   return <label className="block min-w-[88px]"><span className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}{!editable&&<span className="font-medium normal-case text-slate-400">calc</span>}</span>{editable?<input name={field} type="number" min="0" step="0.001" defaultValue={value??''} className={`${EDIT_FIELD} w-full`}/>:<div className={`${CALCULATED_FIELD} w-full`} title="Calculated from the source workbook formula">{value??'—'}</div>}</label>;
@@ -28,7 +32,25 @@ function MatrixEditor({templates,matrixRows}:{templates:any[];matrixRows:any[]})
 }
 
 export default function PricingV4AdminWorkspace({data}:{data:any}){
-  const {costs,charges,templates,matrixRows,flagEnabled}=data;
+  const {families,variations,costs,charges,templates,bands,matrixRows,recipes,flagEnabled}=data;
   const needsRate=[...costs,...charges].filter((x:any)=>x.current_rate==null).length;
-  return <div className="space-y-6"><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Packaging Pricing v4</p><h2 className="mt-1 text-2xl font-bold">Pricing Control Center</h2><p className="mt-1 max-w-2xl text-sm text-slate-300">Build customer requirements, calculate production, protect COGS, apply commercial rules, then publish the selling price.</p></div><div className="flex flex-wrap gap-2"><Pill tone={flagEnabled?'good':'warn'}>{flagEnabled?'v4 routing on':'v4 routing off'}</Pill><Pill tone={needsRate?'warn':'good'}>{needsRate} Needs rate</Pill><Pill tone="info">Admin / Pricing only</Pill></div></div></div><div className="grid gap-2 p-4 md:grid-cols-5">{STAGES.map((stage,i)=><div key={stage} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">{i+1}</div><div className="text-sm font-semibold text-slate-800">{stage}</div></div>)}</div></section><div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"><strong>Edit convention:</strong> every value that can change pricing or setup is yellow in edit mode. Calculated and immutable values are gray/read-only.</div><PricingV4AdminCatalogEditor data={data}/><PricingV4AdminTemplateEditor data={data}/><MatrixEditor templates={templates} matrixRows={matrixRows}/><PricingV4TestQuote templates={templates} variations={data.variations} matrixRows={matrixRows}/></div>;
+  const centerRows=matrixRows.filter((row:any)=>row.supply_form==='center_seal').length;
+  const rollRows=matrixRows.filter((row:any)=>row.supply_form==='three_side_seal_roll').length;
+  const pouchRows=matrixRows.filter((row:any)=>row.supply_form==='three_side_seal_pouch').length;
+  const matrixComplete=centerRows===96&&rollRows===48&&pouchRows===48;
+  const supVariations=variations.filter((variation:any)=>families.find((family:any)=>family.id===variation.family_id)?.pricing_engine_type==='sup_formula').length;
+  const supBands=bands.filter((band:any)=>templates.find((template:any)=>template.id===band.template_id)?.calculation_engine_key==='sup_formula').length;
+  const supRecipes=recipes.filter((recipe:any)=>templates.find((template:any)=>template.id===recipe.template_id)?.calculation_engine_key==='sup_formula').length;
+
+  return <div className="space-y-6">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Packaging Pricing v4</p><h2 className="mt-1 text-2xl font-bold">Pricing Control Center</h2><p className="mt-1 max-w-2xl text-sm text-slate-300">Build customer requirements, calculate production, protect COGS, apply commercial rules, then publish the selling price.</p></div><div className="flex flex-wrap gap-2"><Pill tone={flagEnabled?'good':'warn'}>{flagEnabled?'v4 routing on':'v4 routing off'}</Pill><Pill tone={needsRate?'warn':'good'}>{needsRate} Needs rate</Pill><Pill tone="info">Admin / Pricing only</Pill></div></div></div><div className="grid gap-2 p-4 md:grid-cols-5">{STAGES.map((stage,i)=><div key={stage} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">{i+1}</div><div className="text-sm font-semibold text-slate-800">{stage}</div></div>)}</div></section>
+
+    <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Live v4 data loaded</p><h3 className="mt-1 text-lg font-bold text-slate-950">Stark pricing foundation is connected to Admin</h3><p className="mt-1 max-w-3xl text-sm text-slate-600">These counts come from the normalized v4 database tables used by the server pricing engines. They are not legacy-template counts.</p></div><div className="flex flex-wrap gap-2"><Pill tone={matrixComplete?'good':'warn'}>{matrixComplete?'192 matrix rows verified':'Matrix incomplete'}</Pill><Pill tone="warn">Sales routing remains off</Pill></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"><Metric label="Service families" value={families.length} detail="SUP, flat bottom, center seal, 3SS, labels, sleeves"/><Metric label="SUP sizes" value={supVariations} detail="Approved physical size records"/><Metric label="Cost Master" value={costs.length} detail="Materials + production processes"/><Metric label="Charge Master" value={charges.length} detail="Extras, pre-press and post charges"/><Metric label="SUP rules" value={`${supRecipes} + ${supBands}`} detail="Recipe items + commercial bands"/><Metric label="Matrix data" value={matrixRows.length} detail={`${centerRows} CS · ${rollRows} 3SS Roll · ${pouchRows} 3SS Pouch`}/></div></section>
+
+    <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"><strong>Edit convention:</strong> every value that can change pricing or setup is yellow in edit mode. Calculated and immutable values are gray/read-only.</div>
+    <PricingV4AdminCatalogEditor data={data}/>
+    <PricingV4AdminTemplateEditor data={data}/>
+    <MatrixEditor templates={templates} matrixRows={matrixRows}/>
+    <PricingV4TestQuote templates={templates} variations={data.variations} matrixRows={matrixRows}/>
+  </div>;
 }
