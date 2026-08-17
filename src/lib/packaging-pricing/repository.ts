@@ -35,6 +35,17 @@ export async function loadPricingContext(organizationId: string, templateId: str
   } as PricingContext;
 }
 
+export async function loadKldSnapshot(organizationId: string, kldFileId: string | null | undefined) {
+  if (!kldFileId) return null;
+  const db = service();
+  const { data, error } = await db.from('packaging_kld_files')
+    .select('id,family_id,product_variation_id,spec_key,size_preset_key,file_name,file_url,storage_bucket,storage_path,version_label,mime_type,file_size_bytes')
+    .eq('organization_id', organizationId).eq('id', kldFileId).eq('is_active', true).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.id) throw new Error('Selected KLD is not available in this workspace.');
+  return data;
+}
+
 export async function listPublishedPricingOptions(organizationId: string) {
   const db = service();
   const [{ data: families, error: familyError }, { data: templates, error: templateError }, { data: variations, error: variationError }, { data: klds, error: kldError }] = await Promise.all([
