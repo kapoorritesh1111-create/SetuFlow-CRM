@@ -280,9 +280,21 @@ create table if not exists public.packaging_pricing_recipe_items (
       or
       (source_type = 'charge_master' and charge_master_item_id is not null and cost_master_item_id is null)
     ),
-  unique (organization_id, template_id, construction_key, role_key, source_type, cost_master_item_id, charge_master_item_id),
   unique (organization_id, id)
 );
+
+-- NULL-aware uniqueness for recipe source IDs: one role/source may not be duplicated.
+create unique index if not exists uq_packaging_recipe_cost_source
+  on public.packaging_pricing_recipe_items (
+    organization_id, template_id, construction_key, role_key, cost_master_item_id
+  )
+  where source_type = 'cost_master';
+
+create unique index if not exists uq_packaging_recipe_charge_source
+  on public.packaging_pricing_recipe_items (
+    organization_id, template_id, construction_key, role_key, charge_master_item_id
+  )
+  where source_type = 'charge_master';
 
 -- ---------------------------------------------------------------------------
 -- Commercial bands: SUP run-length waste + margin rules.
@@ -368,9 +380,6 @@ alter table public.packaging_kld_files
   add column if not exists product_variation_id uuid,
   add column if not exists spec_key text;
 
-create unique index if not exists uq_packaging_product_variations_org_id_id
-  on public.packaging_product_variations (organization_id, id);
-
 alter table public.packaging_kld_files
   drop constraint if exists packaging_kld_files_product_variation_org_fkey;
 
@@ -378,7 +387,7 @@ alter table public.packaging_kld_files
   add constraint packaging_kld_files_product_variation_org_fkey
   foreign key (organization_id, product_variation_id)
   references public.packaging_product_variations(organization_id, id)
-  on delete set null;
+  on delete set null (product_variation_id);
 
 alter table public.quote_line_items
   add column if not exists packaging_product_variation_id uuid,
@@ -582,6 +591,8 @@ values (
 on conflict (flag_key) do update
 set name = excluded.name,
     description = excluded.description,
+    enabled = false,
+    rollout_percentage = 0,
     allowed_orgs = excluded.allowed_orgs,
     updated_at = now();
 
