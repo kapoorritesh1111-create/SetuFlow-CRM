@@ -61,7 +61,7 @@ export async function listSalesPackagingPricingV4Options(organizationId: string)
       .select('id,family_id,variation_key,name,capacity_label,width_mm,height_mm,bottom_gusset_each_mm,dimension_label')
       .eq('organization_id', organizationId).eq('approval_state', 'approved').eq('is_quoteable', true).eq('is_active', true).order('sort_order'),
     db.from('packaging_kld_files')
-      .select('id,family_id,product_variation_id,spec_key,file_name,version_label')
+      .select('id,family_id,product_variation_id,spec_key,file_name,version')
       .eq('organization_id', organizationId).eq('is_active', true),
     db.from('packaging_pricing_matrix_rows')
       .select('id,template_id,supply_form,construction_key,client_product_id,width_mm,height_mm')
@@ -82,7 +82,14 @@ export async function listSalesPackagingPricingV4Options(organizationId: string)
   const templateIds = new Set(templates.map((template: any) => String(template.id)));
   const variations = (variationRes.data ?? []).filter((variation: any) => familyIds.has(String(variation.family_id)));
   const variationIds = new Set(variations.map((variation: any) => String(variation.id)));
-  const klds = (kldRes.data ?? []).filter((file: any) => familyIds.has(String(file.family_id)));
+  const klds = (kldRes.data ?? []).filter((file: any) => familyIds.has(String(file.family_id))).map((file: any) => ({
+    id: file.id,
+    family_id: file.family_id,
+    product_variation_id: file.product_variation_id ?? null,
+    spec_key: file.spec_key ?? null,
+    file_name: file.file_name,
+    version_label: `v${Number(file.version ?? 1)}`,
+  }));
   const matrixRows = (rowRes.data ?? []).filter((row: any) => templateIds.has(String(row.template_id)));
   const linksByCharge = new Map<string, string[]>();
   for (const link of chargeLinkRes.data ?? []) {
