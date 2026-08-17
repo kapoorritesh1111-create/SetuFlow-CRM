@@ -19,7 +19,7 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const group = current ? groups.find((item) => item.event.id === current.id) : null;
   const ids = group ? [group.event, ...group.duplicates].map((event) => String(event.id)) : [];
   const entries = data.entries.filter((entry) => ids.includes(String(entry.trade_event_id ?? '')));
-  const leads = data.leads.filter((lead) => ids.includes(String(lead.trade_event_id ?? '')));
+  const leads = data.leads.filter((lead) => ids.includes(String(lead.trade_event_id ?? '')) || (lead.event_influence_ids ?? []).some((id) => ids.includes(String(id))));
   const leadIds = new Set(leads.map((lead) => lead.id));
   const tasks = data.tasks.filter((task) => Boolean(task.lead_id && leadIds.has(task.lead_id)));
   const openTasks = tasks.filter((task) => !['completed', 'cancelled'].includes(String(task.status ?? '').toLowerCase()));
@@ -31,6 +31,7 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const unassigned = leads.filter((lead) => !lead.owner_user_id).length;
   const noNextAction = leads.filter((lead) => !openTasks.some((task) => task.lead_id === lead.id)).length;
   const meetings = tasks.filter((task) => String(task.task_type ?? '').toLowerCase().includes('meeting')).length;
+  const influenced = leads.filter((lead) => (lead.event_influence_ids ?? []).some((id) => ids.includes(String(id)))).length;
   const duplicateCount = groups.reduce((sum, item) => sum + item.duplicates.length, 0);
   const possibleCount = groups.reduce((sum, item) => sum + item.possibleMatches.length, 0);
   const status = current ? getTradeEventStatus(current) : 'unscheduled';
@@ -42,5 +43,5 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const scanHref = isTrial ? `${captureHref}${join}source=scan` : eventId ? `/contact-exchange/scan?eventId=${encodeURIComponent(eventId)}&sourceType=trade_event` : '/contact-exchange/scan?sourceType=trade_event';
   const dictateHref = isTrial ? `${captureHref}${join}source=dictate` : eventId ? `/leads?quickLead=1&sourceType=trade_event&eventId=${encodeURIComponent(eventId)}&sourceLabel=${encodeURIComponent(eventName)}&dictate=1` : '/leads?quickLead=1&sourceType=trade_event&dictate=1';
   const pipeline = formatEventPipeline(leads);
-  return { groups, events, current, group, entries, leads, tasks, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline };
+  return { groups, events, current, group, entries, leads, tasks, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, influenced, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline };
 }
