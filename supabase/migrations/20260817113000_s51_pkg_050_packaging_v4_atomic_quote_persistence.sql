@@ -149,10 +149,64 @@ begin
         notes = v_family_name || ' · Packaging pricing v4',
         is_price_overridden = false,
         updated_at = v_now
-    where id = p_line_id and quote_id = p_quote_id and line_type = 'packaging'
+    where id = p_line_id
+      and quote_id = p_quote_id
+      and line_type = 'packaging'
+      and coalesce(pricing_breakdown_json ->> 'line_kind','') <> 'separate_charge'
     returning id into v_line_id;
     if v_line_id is null then raise exception 'Packaging quote line not found'; end if;
   end if;
+
+  -- separate_quote_line charges are first-class canonical quote lines. They are
+  -- derived only from the server-authoritative Sales-safe result; repricing the
+  -- parent line removes stale derived rows before rebuilding the current set.
+  delete from public.quote_line_items
+  where quote_id = p_quote_id
+    and line_type = 'packaging'
+    and pricing_breakdown_json ->> 'line_kind' = 'separate_charge'
+    and pricing_breakdown_json ->> 'parent_source_quote_line_id' = v_line_id::text;
+
+  insert into public.quote_line_items (
+    quote_id, product_id, product_variant_id, line_type,
+    packaging_family_id, packaging_template_id,
+    packaging_product_variation_id, packaging_kld_file_id,
+    input_snapshot_json, pricing_breakdown_json, calculation_version,
+    quantity, unit_price, currency,
+    catalog_price_amount, catalog_price_currency, notes, is_price_overridden
+  )
+  select
+    p_quote_id, null, null, 'packaging',
+    p_family_id, p_template_id,
+    null, null,
+    jsonb_build_object(
+      'source','packaging_pricing_v4_charge',
+      'spec_summary', charge ->> 'name',
+      'parent_source_quote_line_id', v_line_id::text,
+      'charge_code', charge ->> 'code'
+    ),
+    jsonb_build_object(
+      'line_kind','separate_charge',
+      'source','packaging_pricing_v4_charge',
+      'parent_source_quote_line_id', v_line_id::text,
+      'charge_code', charge ->> 'code',
+      'charge_category', charge ->> 'category',
+      'amount', (charge ->> 'amount')::numeric
+    ),
+    4,
+    1, (charge ->> 'amount')::numeric, upper(p_currency),
+    (charge ->> 'amount')::numeric, upper(p_currency),
+    charge ->> 'name', false
+  from jsonb_array_elements(
+    case
+      when jsonb_typeof(coalesce(p_sales_pricing -> 'separate_charges','[]'::jsonb)) = 'array'
+        then coalesce(p_sales_pricing -> 'separate_charges','[]'::jsonb)
+      else '[]'::jsonb
+    end
+  ) as charge
+  where jsonb_typeof(charge -> 'amount') = 'number'
+    and (charge ->> 'amount')::numeric >= 0
+    and nullif(trim(coalesce(charge ->> 'name','')), '') is not null
+    and nullif(trim(coalesce(charge ->> 'code','')), '') is not null;
 
   -- v_version_id/v_version were locked and validated before the mutable write.
   v_version_sku := 'PKG-' || upper(substr(v_line_id::text, 1, 8));
@@ -160,7 +214,10 @@ begin
   delete from public.quote_version_line_items
   where quote_version_id = v_version_id
     and line_type = 'packaging'
-    and calculation_meta ->> 'source_quote_line_id' = v_line_id::text;
+    and (
+      calculation_meta ->> 'source_quote_line_id' = v_line_id::text
+      or calculation_meta ->> 'parent_source_quote_line_id' = v_line_id::text
+    );
 
   insert into public.quote_version_line_items (
     quote_version_id, product_id, product_variant_id, sku_code, hsn_code,
@@ -186,6 +243,39 @@ begin
     ),
     'packaging'
   );
+
+  insert into public.quote_version_line_items (
+    quote_version_id, product_id, product_variant_id, sku_code, hsn_code,
+    product_name, category_type, pack_label, basis_applied, pricing_mode,
+    moq, final_unit_price, final_case_price, display_currency,
+    is_overridden, line_notes, sort_order, calculation_meta, catalog_price_snapshot, line_type
+  )
+  select
+    v_version_id, null, null,
+    'PKG-CHG-' || upper(substr(md5(qli.id::text),1,8)), null,
+    coalesce(qli.input_snapshot_json ->> 'spec_summary', qli.notes, 'Additional charge'),
+    'packaging', 'Additional charge', 'service_fee', 'unit',
+    1, qli.unit_price, qli.unit_price, upper(p_currency),
+    false, qli.notes, 510,
+    coalesce(qli.pricing_breakdown_json,'{}'::jsonb) || jsonb_build_object(
+      'source','packaging_pricing_v4_charge',
+      'source_quote_line_id', qli.id::text,
+      'parent_source_quote_line_id', v_line_id::text,
+      'source_hash', p_source_hash
+    ),
+    jsonb_build_object(
+      'source','packaging_pricing_v4_charge',
+      'source_quote_line_id', qli.id::text,
+      'parent_source_quote_line_id', v_line_id::text,
+      'amount', qli.unit_price,
+      'currency', upper(p_currency)
+    ),
+    'packaging'
+  from public.quote_line_items qli
+  where qli.quote_id = p_quote_id
+    and qli.line_type = 'packaging'
+    and qli.pricing_breakdown_json ->> 'line_kind' = 'separate_charge'
+    and qli.pricing_breakdown_json ->> 'parent_source_quote_line_id' = v_line_id::text;
 
   select coalesce(calculation_payload,'{}'::jsonb), coalesce(quote_context,'{}'::jsonb)
   into v_existing_payload, v_existing_context
