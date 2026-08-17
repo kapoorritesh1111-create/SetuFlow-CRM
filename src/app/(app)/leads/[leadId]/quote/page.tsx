@@ -5,9 +5,11 @@ import { getLeadProfileData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 import CanonicalQuoteBuilderApprovalQueueV2 from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2';
+import PricingV4SalesConfigurator from '@/features/packaging/components/pricing-v4-sales-configurator';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges, getPackagingSavedSpecs } from '@/lib/packaging/queries';
+import { isPackagingPricingV4EnabledForOrg, listSalesPackagingPricingV4Options } from '@/lib/packaging-pricing/sales-options';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -60,16 +62,18 @@ export default async function QuotePage({
     redirect(`/quotes?status=sent&mode=buyers&quoteId=${selectedQuote.id}`);
   }
   const feedback = quoteFeedback(searchParams);
+  const sortedQuotes = [...data.quotes].sort((a: any, b: any) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
+  const activeQuote = (quoteId ? sortedQuotes.find((quote: any) => quote.id === quoteId) : null) ?? sortedQuotes[0] ?? null;
 
-  // S24-SPEN-203/208: packaging-vertical workspaces get the packaging section
-  // inside the canonical builder. Everyone else sees no change.
+  // Packaging remains dual-run during v4 rollout. The existing legacy section is
+  // preserved unchanged; the v4 configurator appears only when the server-side
+  // org feature flag is enabled and published v4 pricing exists.
   let packaging: { enabled: boolean; families: any[]; templates: any[]; charges: any[]; savedSpecs: any[] } | null = null;
+  let pricingV4Options: any | null = null;
   try {
     const supabase = await createClient();
     const verticals = await getOrganizationVerticals(workspace.organization.id, supabase);
     if (verticals.packagingEnabled) {
-      const sorted = [...data.quotes].sort((a: any, b: any) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
-      const activeQuote = (quoteId ? sorted.find((quote: any) => quote.id === quoteId) : null) ?? sorted[0] ?? null;
       const [families, templates, charges, savedSpecs] = await Promise.all([
         getPackagingFamilies(workspace.organization.id, supabase),
         getPackagingTemplates(workspace.organization.id, supabase),
@@ -77,14 +81,26 @@ export default async function QuotePage({
         getPackagingSavedSpecs(workspace.organization.id, params.leadId, supabase),
       ]);
       packaging = { enabled: true, families, templates, charges, savedSpecs };
+
+      const v4Enabled = await isPackagingPricingV4EnabledForOrg(workspace.organization.id);
+      if (v4Enabled && activeQuote && !['sent','accepted','rejected','expired','cancelled','declined'].includes(String(activeQuote.status ?? '').toLowerCase())) {
+        const options = await listSalesPackagingPricingV4Options(workspace.organization.id);
+        if (options.families.length && options.templates.length) pricingV4Options = options;
+      }
     }
   } catch {
-    packaging = null;
+    // Legacy packaging/query behavior remains available if v4 is not yet migrated.
+    pricingV4Options = null;
   }
 
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
+      {pricingV4Options && activeQuote ? (
+        <div className="mb-4">
+          <PricingV4SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV4Options} />
+        </div>
+      ) : null}
       <CanonicalQuoteBuilderApprovalQueueV2
         data={data}
         quoteId={quoteId}
