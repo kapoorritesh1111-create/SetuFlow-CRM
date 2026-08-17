@@ -44,19 +44,11 @@ export function getTradeEventStatus(event: CommandCenterEvent, now = new Date())
 }
 
 export function selectCommandEvent<T extends CommandCenterEvent>(events: T[], now = new Date()): T | null {
-  const live = events
-    .filter((event) => getTradeEventStatus(event, now) === 'live')
-    .sort((left, right) => timestamp(left.ends_on ?? left.starts_on) - timestamp(right.ends_on ?? right.starts_on));
+  const live = events.filter((event) => getTradeEventStatus(event, now) === 'live').sort((left, right) => timestamp(left.ends_on ?? left.starts_on) - timestamp(right.ends_on ?? right.starts_on));
   if (live.length) return live[0];
-
-  const upcoming = events
-    .filter((event) => getTradeEventStatus(event, now) === 'upcoming')
-    .sort((left, right) => timestamp(left.starts_on) - timestamp(right.starts_on));
+  const upcoming = events.filter((event) => getTradeEventStatus(event, now) === 'upcoming').sort((left, right) => timestamp(left.starts_on) - timestamp(right.starts_on));
   if (upcoming.length) return upcoming[0];
-
-  const completed = events
-    .filter((event) => getTradeEventStatus(event, now) === 'completed')
-    .sort((left, right) => timestamp(right.ends_on ?? right.starts_on) - timestamp(left.ends_on ?? left.starts_on));
+  const completed = events.filter((event) => getTradeEventStatus(event, now) === 'completed').sort((left, right) => timestamp(right.ends_on ?? right.starts_on) - timestamp(left.ends_on ?? left.starts_on));
   return completed[0] ?? events[0] ?? null;
 }
 
@@ -95,12 +87,7 @@ export function eventReadiness(event: CommandCenterEvent) {
     { key: 'image', label: 'Event artwork / image ready', done: Boolean(text(defaults.image_url)) },
     { key: 'capture', label: 'Capture workspace ready', done: Boolean(event.id) },
   ];
-  return {
-    score: Math.round((checks.filter((item) => item.done).length / checks.length) * 100),
-    complete: checks.filter((item) => item.done).length,
-    total: checks.length,
-    checks,
-  };
+  return { score: Math.round((checks.filter((item) => item.done).length / checks.length) * 100), complete: checks.filter((item) => item.done).length, total: checks.length, checks };
 }
 
 export function entryProductInterest(entry: TradeEventEntryLike) {
@@ -108,10 +95,25 @@ export function entryProductInterest(entry: TradeEventEntryLike) {
   return text(payload.product_interest) || text(payload.productInterest) || text(payload.interest);
 }
 
-export function eventEntrySummary(entries: TradeEventEntryLike[]) {
+export function entryFollowUpSla(entry: TradeEventEntryLike, now = new Date()) {
+  const payload = objectValue(entry.normalized_payload);
+  const dueRaw = text(payload.follow_up_promise_due_at) || text(payload.follow_up_sla_due_at);
+  const due = dueRaw ? new Date(dueRaw) : null;
+  const heat = text(payload.lead_heat) || 'review_later';
+  const closed = ['converted', 'discarded'].includes(String(entry.status ?? '').toLowerCase());
+  return {
+    heat,
+    dueAt: due && !Number.isNaN(due.getTime()) ? due.toISOString() : null,
+    overdue: Boolean(!closed && due && !Number.isNaN(due.getTime()) && due.getTime() < now.getTime()),
+  };
+}
+
+export function eventEntrySummary(entries: TradeEventEntryLike[], now = new Date()) {
   const pending = entries.filter((entry) => String(entry.status ?? '').toLowerCase() !== 'converted');
   const converted = entries.length - pending.length;
   const incomplete = entries.filter((entry) => !entryProductInterest(entry)).length;
   const contactable = entries.filter((entry) => Boolean(text(entry.captured_email) || text(entry.captured_phone))).length;
-  return { captured: entries.length, pending: pending.length, converted, incomplete, contactable };
+  const overdue = entries.filter((entry) => entryFollowUpSla(entry, now).overdue).length;
+  const hot = entries.filter((entry) => entryFollowUpSla(entry, now).heat === 'hot').length;
+  return { captured: entries.length, pending: pending.length, converted, incomplete, contactable, overdue, hot };
 }
