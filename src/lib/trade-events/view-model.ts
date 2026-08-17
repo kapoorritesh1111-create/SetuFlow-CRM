@@ -37,11 +37,10 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const readiness = current ? eventReadiness(current) : null;
   const eventId = current?.id ? String(current.id) : '';
   const eventName = current?.name ? String(current.name) : '';
-  const fullCapture = eventId ? `/leads?quickLead=1&sourceType=trade_event&eventId=${encodeURIComponent(eventId)}&sourceLabel=${encodeURIComponent(eventName)}` : '/leads?quickLead=1&sourceType=trade_event';
-  const captureHref = isTrial ? (eventId ? `/trade-events/capture?eventId=${encodeURIComponent(eventId)}` : '/trade-events/capture') : fullCapture;
+  const captureHref = eventId ? `/trade-events/capture?eventId=${encodeURIComponent(eventId)}` : '/trade-events/capture';
   const join = captureHref.includes('?') ? '&' : '?';
   const scanHref = isTrial ? `${captureHref}${join}source=scan` : eventId ? `/contact-exchange/scan?eventId=${encodeURIComponent(eventId)}&sourceType=trade_event` : '/contact-exchange/scan?sourceType=trade_event';
-  const dictateHref = isTrial ? `${captureHref}${join}source=dictate` : `${captureHref}&dictate=1`;
+  const dictateHref = isTrial ? `${captureHref}${join}source=dictate` : eventId ? `/leads?quickLead=1&sourceType=trade_event&eventId=${encodeURIComponent(eventId)}&sourceLabel=${encodeURIComponent(eventName)}&dictate=1` : '/leads?quickLead=1&sourceType=trade_event&dictate=1';
   const pipeline = formatEventPipeline(leads);
   return { groups, events, current, group, entries, leads, tasks, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline };
 }
