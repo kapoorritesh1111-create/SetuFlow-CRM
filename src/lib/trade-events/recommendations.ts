@@ -15,9 +15,9 @@ export type TradeEventRecommendation = {
   reasons: string[];
 };
 
-const words = (value: unknown) => String(value ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+const words = (value: unknown): string[] => String(value ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2);
 const objectValue = (value: unknown) => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-const arrayValue = (value: unknown) => Array.isArray(value) ? value.map(String) : [];
+const arrayValue = (value: unknown): string[] => Array.isArray(value) ? value.map((item) => String(item)) : [];
 
 export async function getTradeEventRecommendations(organizationId: string, data: TradeEventsCommandCenterData): Promise<TradeEventRecommendation[]> {
   const db: any = await createClient();
@@ -29,31 +29,29 @@ export async function getTradeEventRecommendations(organizationId: string, data:
     db.from('markets').select('name, market_code').eq('organization_id', organizationId).eq('is_active', true).limit(50),
     db.from('trade_event_recommendation_feedback').select('catalog_event_id, feedback, reason').eq('organization_id', organizationId),
   ]);
-
-  // Catalog/feedback tables are introduced by the PR migration. Until that migration is applied,
-  // Discover Events intentionally returns no recommendations rather than fabricating data.
   if (catalogResult.error) return [];
 
   const industry = String(profileResult.data?.industry_key ?? '').toLowerCase();
-  const productTokens = new Set((productsResult.data ?? []).flatMap((product: any) => [...words(product.name), ...words(product.description)]));
-  const marketTokens = new Set((marketsResult.data ?? []).flatMap((market: any) => [...words(market.name), ...words(market.market_code)]));
-  const dismissed = new Set((feedbackResult.data ?? []).filter((row: any) => row.feedback === 'not_relevant').map((row: any) => String(row.catalog_event_id)));
+  const productTokens: Set<string> = new Set<string>((productsResult.data ?? []).flatMap((product: any) => [...words(product.name), ...words(product.description)]));
+  const marketTokens: Set<string> = new Set<string>((marketsResult.data ?? []).flatMap((market: any) => [...words(market.name), ...words(market.market_code)]));
+  const dismissed: Set<string> = new Set<string>((feedbackResult.data ?? []).filter((row: any) => row.feedback === 'not_relevant').map((row: any) => String(row.catalog_event_id)));
   const history = buildTradeEventHistoryRows(data);
 
-  return (catalogResult.data ?? []).flatMap((event: any) => {
-    if (dismissed.has(String(event.id))) return [];
-    if (String(event.status ?? '').toLowerCase() === 'cancelled') return [];
-    if (event.ends_on && event.ends_on < today) return [];
-    if (data.events.some((attendance) => classifyTradeEventMatch(attendance, event) === 'exact')) return [];
+  const recommendations: TradeEventRecommendation[] = [];
+  for (const event of catalogResult.data ?? []) {
+    if (dismissed.has(String(event.id))) continue;
+    if (String(event.status ?? '').toLowerCase() === 'cancelled') continue;
+    if (event.ends_on && event.ends_on < today) continue;
+    if (data.events.some((attendance) => classifyTradeEventMatch(attendance, event) === 'exact')) continue;
 
-    const tags = arrayValue(event.vertical_tags).map((tag) => tag.toLowerCase());
+    const tags: string[] = arrayValue(event.vertical_tags).map((tag) => tag.toLowerCase());
     const metadata = objectValue(event.metadata);
-    const metadataTokens = new Set([...arrayValue(metadata.product_tags), ...arrayValue(metadata.buyer_types), ...arrayValue(metadata.markets)].flatMap(words));
-    const industryTokens = new Set(words(industry));
+    const metadataTokens: Set<string> = new Set<string>([...arrayValue(metadata.product_tags), ...arrayValue(metadata.buyer_types), ...arrayValue(metadata.markets)].flatMap((item) => words(item)));
+    const industryTokens: Set<string> = new Set<string>(words(industry));
     const verticalMatch = tags.some((tag) => industry.includes(tag) || words(tag).some((token) => industryTokens.has(token)));
-    const productMatchCount = [...productTokens].filter((token) => tags.some((tag) => tag.includes(token)) || metadataTokens.has(token)).length;
-    const marketMatch = [event.country, event.city, ...arrayValue(metadata.markets)].flatMap(words).some((token) => marketTokens.has(token));
-    if (industry && tags.length && !verticalMatch && productMatchCount === 0) return [];
+    const productMatchCount = [...productTokens].filter((token: string) => tags.some((tag: string) => tag.includes(token)) || metadataTokens.has(token)).length;
+    const marketMatch = [event.country, event.city, ...arrayValue(metadata.markets)].flatMap((item) => words(item)).some((token: string) => marketTokens.has(token));
+    if (industry && tags.length && !verticalMatch && productMatchCount === 0) continue;
 
     let score = 10;
     const reasons: string[] = [];
@@ -62,13 +60,18 @@ export async function getTradeEventRecommendations(organizationId: string, data:
     if (marketMatch) { score += 15; reasons.push('Fits an active target market'); }
 
     const baseName = normalizeTradeEventName(String(event.name ?? '').replace(/\b20\d{2}\b/g, ''));
-    const prior = history.find((row) => normalizeTradeEventName(String(row.event.name ?? '').replace(/\b20\d{2}\b/g, '')) === baseName && baseName);
-    if (prior) {
-      if (prior.outcome.orderCount > 0 || prior.outcome.roiMultiple != null) { score += 25; reasons.push(`Prior edition produced ${prior.outcome.orderCount} order${prior.outcome.orderCount === 1 ? '' : 's'}${prior.outcome.roiMultiple == null ? '' : ` and ${prior.outcome.roiMultiple.toFixed(2)}× revenue/spend`}`); }
-      else if (prior.qualified > 0) { score += 10; reasons.push(`Prior edition produced ${prior.qualified} qualified conversations`); }
+    const prior = history.find((row) => normalizeTradeEventName(String(row.event.name ?? '').replace(/\b20\d{2}\b/g, '')) === baseName && Boolean(baseName));
+    if (prior?.outcome.orderCount || prior?.outcome.roiMultiple != null) {
+      score += 25;
+      reasons.push(`Prior edition produced ${prior.outcome.orderCount} order${prior.outcome.orderCount === 1 ? '' : 's'}${prior.outcome.roiMultiple == null ? '' : ` and ${prior.outcome.roiMultiple.toFixed(2)}× revenue/spend`}`);
+    } else if (prior?.qualified) {
+      score += 10;
+      reasons.push(`Prior edition produced ${prior.qualified} qualified conversations`);
     }
 
-    if (!reasons.length) return [];
-    return [{ id: String(event.id), name: String(event.name), city: event.city ?? null, country: event.country ?? null, startsOn: event.starts_on ?? null, endsOn: event.ends_on ?? null, websiteUrl: event.website_url ?? null, score: Math.min(100, score), reasons }];
-  }).sort((left: TradeEventRecommendation, right: TradeEventRecommendation) => right.score - left.score || String(left.startsOn ?? '').localeCompare(String(right.startsOn ?? ''))).slice(0, 12);
+    if (!reasons.length) continue;
+    recommendations.push({ id: String(event.id), name: String(event.name), city: event.city ?? null, country: event.country ?? null, startsOn: event.starts_on ?? null, endsOn: event.ends_on ?? null, websiteUrl: event.website_url ?? null, score: Math.min(100, score), reasons });
+  }
+
+  return recommendations.sort((left, right) => right.score - left.score || String(left.startsOn ?? '').localeCompare(String(right.startsOn ?? ''))).slice(0, 12);
 }
