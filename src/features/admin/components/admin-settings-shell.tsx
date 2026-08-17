@@ -83,9 +83,9 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
       { key: 'classic-catalog', href: '/products?mode=products', icon: 'box', label: 'Classic Product Catalog', sublabel: 'SKU manager (non-packaging items)', statusDot: 'ok', packagingOnly: true },
       { key: 'product-management', href: '/admin/catalog-governance', icon: 'clipboard', label: 'Catalog Governance', sublabel: 'Imports, cleanup, audit', statusDot: 'ok' },
       { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade Events', statusDot: 'ok' },
-      { key: 'packaging-families', href: '/admin/packaging-families', icon: 'tag', label: 'Packaging Service Families', sublabel: 'Catalog categories', statusDot: 'ok', packagingOnly: true },
-      { key: 'packaging-templates', href: '/admin/packaging-templates', icon: 'box', label: 'Packaging Pricing Templates', sublabel: 'Rules & rates', statusDot: 'ok', packagingOnly: true },
-      { key: 'packaging-reference-library', href: '/admin/packaging-reference-library', icon: 'layers', label: 'Reference Library', sublabel: 'Materials, finishes, service items', statusDot: 'ok', packagingOnly: true },
+      { key: 'packaging-families', href: '/admin/packaging-families', icon: 'tag', label: 'Packaging Products', sublabel: 'Products, sizes & KLDs', statusDot: 'ok', packagingOnly: true },
+      { key: 'packaging-reference-library', href: '/admin/packaging-reference-library', icon: 'layers', label: 'Pricing Components', sublabel: 'Materials, processes, extras & rates', statusDot: 'ok', packagingOnly: true },
+      { key: 'packaging-templates', href: '/admin/packaging-templates', icon: 'box', label: 'Pricing Builder', sublabel: 'Recipes, rules & live preview', statusDot: 'ok', packagingOnly: true },
     ],
   },
   {
