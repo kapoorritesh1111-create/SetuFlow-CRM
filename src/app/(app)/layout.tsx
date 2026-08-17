@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
 import { S47FinalUiPolish } from '@/components/shell/s47-final-ui-polish';
+import { SupportModeBadge } from '@/components/shell/support-mode-badge';
 import { StateMessage } from '@/components/ui/state-message';
 import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-bridge';
 import { GlobalGrowthCenterEntry } from '@/features/setu-guru/global-growth-center-entry';
@@ -110,17 +110,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <GlobalGrowthCenterEntry />
       <ProductPricingDeepLinkDrawer />
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
-      {isPlatformSupport ? (
-        <div className="fixed bottom-4 right-4 z-[90] flex items-center gap-3 rounded-2xl border border-teal-300/40 bg-slate-950 px-4 py-3 text-white shadow-2xl">
-          <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-300">SETU Support Mode</p>
-            <p className="max-w-48 truncate text-xs font-bold text-white">{workspace.organization.name}</p>
-          </div>
-          <Link href="/support" className="rounded-xl bg-teal-400 px-3 py-2 text-xs font-black text-slate-950 hover:bg-teal-300">
-            Switch org
-          </Link>
-        </div>
-      ) : null}
+      {isPlatformSupport ? <SupportModeBadge organizationName={workspace.organization.name} /> : null}
       <SetuGuruFeedbackBridge />
       <LeadCoverageRecoveryBoundary />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
