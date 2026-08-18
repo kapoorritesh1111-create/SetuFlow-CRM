@@ -30,7 +30,10 @@ export default async function TradeEventOfflineCapturePage({
     );
   }
 
-  const db = await createClient();
+  // The generated DB type file intentionally stays production-schema aligned until
+  // the full S51 migration rollout. Use the live, org-scoped query shape here so
+  // this additive preview route can compile before that type refresh is released.
+  const db: any = await createClient();
   const { data: event } = await db
     .from('trade_events')
     .select('id, name, city, country')
