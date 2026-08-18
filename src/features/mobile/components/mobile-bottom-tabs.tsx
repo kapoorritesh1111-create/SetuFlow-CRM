@@ -105,7 +105,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
           className={`relative z-[521] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${moreActive || moreOpen ? 'bg-blue-500/10 text-blue-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}`}
         >
           <SetuIcon name="more" className="mb-0.5 h-5 w-5" />
-          More
+          <span>More</span>
         </button>
       </nav>
     </>
