@@ -153,13 +153,13 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
         body:JSON.stringify({subject:subject.trim(), message:message.trim(), message_mode:sendMode, sender_name:selected.assigned_to_name || 'Ritesh Kapoor'}),
       });
       const data = await res.json().catch(()=>({}));
-      if (!res.ok && res.status !== 207) throw new Error(data.error || 'Mailtrap send failed.');
+      if (!res.ok && res.status !== 207) throw new Error(data.error || 'Email send failed.');
       const sentAt = new Date().toISOString();
-      setLeads(prev => prev.map(l => l.id===selected.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(data.message_mode || resolvedSingleMode)} email sent via Mailtrap — ${subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
+      setLeads(prev => prev.map(l => l.id===selected.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(data.message_mode || resolvedSingleMode)} email sent — ${subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
       setResolvedSingleMode('follow_up');
-      setNotice({kind:'ok',text:data.error ? data.error : `Sent through Mailtrap to ${selected.primary_admin_email}. Future auto-generated messages will be follow-ups.`});
+      setNotice({kind:'ok',text:data.error ? data.error : `Email sent to ${selected.primary_admin_email}. Future auto-generated messages will be follow-ups.`});
     } catch (error) {
-      setNotice({kind:'error',text:error instanceof Error ? error.message : 'Mailtrap send failed.'});
+      setNotice({kind:'error',text:error instanceof Error ? error.message : 'Email send failed.'});
     } finally { setSending(false); }
   }
 
@@ -192,7 +192,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
 
   async function sendBulk() {
     if (!readyDrafts.length) return;
-    const ok = window.confirm(`Send ${readyDrafts.length} personalized email${readyDrafts.length===1?'':'s'} individually through Mailtrap? Each send will be logged to its SMC lead.`);
+    const ok = window.confirm(`Send ${readyDrafts.length} personalized email${readyDrafts.length===1?'':'s'} individually? Each send will be logged to its SMC lead.`);
     if (!ok) return;
     setBulkSending(true); setNotice(null);
     let sent = 0;
@@ -205,18 +205,18 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
           body:JSON.stringify({subject:draft.subject.trim(),message:draft.body.trim(),message_mode:draft.mode,sender_name:lead.assigned_to_name || 'Ritesh Kapoor'}),
         });
         const data = await res.json().catch(()=>({}));
-        if (!res.ok && res.status !== 207) throw new Error(data.error || 'Mailtrap send failed.');
+        if (!res.ok && res.status !== 207) throw new Error(data.error || 'Email send failed.');
         sent += 1;
         updateDraft(lead.id,{status:'sent',error:undefined});
         const sentAt = new Date().toISOString();
-        setLeads(prev => prev.map(l => l.id===lead.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(draft.mode)} email sent via Mailtrap — ${draft.subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
+        setLeads(prev => prev.map(l => l.id===lead.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(draft.mode)} email sent — ${draft.subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
       } catch (error) {
         failed += 1;
-        updateDraft(lead.id,{status:'error',error:error instanceof Error ? error.message : 'Mailtrap send failed.'});
+        updateDraft(lead.id,{status:'error',error:error instanceof Error ? error.message : 'Email send failed.'});
       }
     }
     setBulkSending(false);
-    setNotice({kind:failed?'error':'ok',text:`Bulk outreach complete: ${sent} sent through Mailtrap${failed?`, ${failed} failed and remain available for review/retry.`:'.'}`});
+    setNotice({kind:failed?'error':'ok',text:`Bulk outreach complete: ${sent} email${sent===1?'':'s'} sent${failed?`, ${failed} failed and remain available for review/retry.`:'.'}`});
   }
 
   const sendReady = Boolean(selected?.primary_admin_email && subject.trim() && message.trim() && !sending);
@@ -263,7 +263,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
           {!selected ? <div style={{color:'#94a3b8',fontSize:13}}>Select a lead to compose outreach.</div> : <>
             <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start',marginBottom:12}}>
               <div><div style={{fontSize:11,color:'#64748b'}}>To</div><div style={{fontSize:14,fontWeight:800,color:'#1e293b'}}>{selected.company_name}</div><div style={{fontSize:11,color:selected.primary_admin_email?'#475569':'#dc2626'}}>{selected.primary_admin_email || 'Add an email address in Lead Manager before sending.'}</div></div>
-              <div style={{fontSize:10.5,color:'#64748b',textAlign:'right'}}>Provider<br/><strong style={{color:'#7c3aed'}}>Mailtrap</strong></div>
+              <div style={{fontSize:10.5,color:'#64748b',textAlign:'right'}}>Channel<br/><strong style={{color:'#7c3aed'}}>Email</strong></div>
             </div>
 
             {!selectedBulkEligible && BULK_EXCLUDED_STAGES.has(String(selected.pipeline_stage ?? '').toLowerCase()) && <div style={{marginBottom:10,fontSize:10.5,color:'#92400e',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:8,padding:'7px 9px'}}>This lead is <strong>{stageLabel(selected)}</strong>. It remains available for intentional one-to-one email, but SMC excludes it from bulk prospect selection.</div>}
@@ -293,7 +293,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
 
             <div style={{display:'flex',justifyContent:'space-between',gap:8,marginTop:12}}>
               <button type="button" onClick={generate} disabled={generating} style={{border:'1px solid #c7d2fe',background:'#eef2ff',color:'#4338ca',borderRadius:9,padding:'9px 14px',fontSize:12,fontWeight:800,cursor:generating?'not-allowed':'pointer'}}>{generating?'Generating…':'✨ Generate personalized message'}</button>
-              <button type="button" onClick={send} disabled={!sendReady} style={{border:'none',background:sendReady?'#7c3aed':'#e2e8f0',color:sendReady?'#fff':'#94a3b8',borderRadius:9,padding:'9px 18px',fontSize:12,fontWeight:800,cursor:sendReady?'pointer':'not-allowed'}}>{sending?'Sending…':'Send via Mailtrap'}</button>
+              <button type="button" onClick={send} disabled={!sendReady} style={{border:'none',background:sendReady?'#7c3aed':'#e2e8f0',color:sendReady?'#fff':'#94a3b8',borderRadius:9,padding:'9px 18px',fontSize:12,fontWeight:800,cursor:sendReady?'pointer':'not-allowed'}}>{sending?'Sending…':'Send mail'}</button>
             </div>
             <div style={{marginTop:9,fontSize:10,color:'#94a3b8'}}>Generating never sends. A successful send is logged to this lead and changes future Auto messages to follow-up mode.</div>
           </>}
@@ -304,7 +304,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
         <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start',flexWrap:'wrap'}}>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:'#1e293b'}}>Bulk personalized email</div>
-            <div style={{fontSize:11,color:'#64748b',marginTop:3}}>Select up to {MAX_BULK} active prospects above. Converted/lost leads remain visible for parity but are intentionally excluded from bulk selection. SMC sends one separate Mailtrap email per company — never a shared To/CC blast.</div>
+            <div style={{fontSize:11,color:'#64748b',marginTop:3}}>Select up to {MAX_BULK} active prospects above. Converted/lost leads remain visible for parity but are intentionally excluded from bulk selection. SMC sends one separate email per company — never a shared To/CC blast.</div>
           </div>
           <div style={{display:'flex',gap:8,alignItems:'end',flexWrap:'wrap'}}>
             <label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>Campaign mode
