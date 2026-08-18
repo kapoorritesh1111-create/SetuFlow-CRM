@@ -109,6 +109,9 @@ test('mobile event capture falls back to a durable offline queue and syncs autom
   assert.match(offlineCapturePage, /TradeEventOfflineCapture/);
   assert.match(offlineQueue, /setu:trade-event-offline-queue:v1/);
   assert.match(offlineQueue, /clientCaptureId/);
+  assert.match(offlineQueue, /MAX_QUEUE_ITEMS = 150/);
+  assert.match(offlineQueue, /MAX_QUEUE_AGE_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
+  assert.match(offlineQueue, /browser could not safely store the offline lead/i);
   assert.match(offlineSync, /window\.addEventListener\('online'/);
   assert.match(offlineSync, /\/api\/trade-events\/offline-capture/);
   assert.match(offlineCapture, /saved on this device/i);
