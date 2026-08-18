@@ -26,11 +26,18 @@ function readModeLeadType(value?: string | string[]): MobileLeadType {
   return '';
 }
 
+function readRequestedLeadType(value?: string | string[]): MobileLeadType {
+  const leadType = readParam(value).toLowerCase();
+  if (leadType === 'buyer' || leadType === 'supplier') return leadType;
+  return '';
+}
+
 export default async function LeadsPage({
   searchParams,
 }: {
   searchParams?: {
     mode?: string | string[];
+    leadType?: string | string[];
     quickLead?: string | string[];
     sourceType?: string | string[];
     sourceLabel?: string | string[];
@@ -100,6 +107,8 @@ export default async function LeadsPage({
   const requestedSourceType = readParam(searchParams?.sourceType).trim();
   const requestedSourceLabel = readParam(searchParams?.sourceLabel).trim();
   const modeLeadType = readModeLeadType(searchParams?.mode);
+  const requestedLeadType = readRequestedLeadType(searchParams?.leadType);
+  const quickLeadType: 'buyer' | 'supplier' = requestedLeadType || modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer');
   const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
@@ -110,6 +119,8 @@ export default async function LeadsPage({
     ? {
         ...(requestedSourceType ? { sourceType: requestedSourceType } : {}),
         ...(requestedSourceLabel ? { sourceLabel: requestedSourceLabel } : {}),
+        ...(eventId ? { tradeEventId: eventId } : {}),
+        leadType: quickLeadType,
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
         autoOpenQuoteAfterSave: false,
         title: 'Quick lead',
@@ -121,7 +132,7 @@ export default async function LeadsPage({
     <div className="space-y-4">
       <div className="md:hidden">
         <LeadsMobileSurface
-          initialLeadType={modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer')}
+          initialLeadType={quickLeadType}
           leads={mobileLeadCards}
           user={mobileUser}
           signedIn={mobileSignedIn}
