@@ -97,9 +97,9 @@ export default async function LeadsPage({
   const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
   const quickLeadProductId = readParam(searchParams?.productId).trim();
   const eventId = readParam(searchParams?.eventId).trim();
-  const initialFastField = quickLeadEnabled && Boolean(eventId);
+  const requestedSourceType = readParam(searchParams?.sourceType).trim();
+  const requestedSourceLabel = readParam(searchParams?.sourceLabel).trim();
   const modeLeadType = readModeLeadType(searchParams?.mode);
-  const isTradeShowQuickLead = quickLeadEnabled && readParam(searchParams?.sourceType).trim() === 'trade_event';
   const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
@@ -108,14 +108,12 @@ export default async function LeadsPage({
 
   const initialQuickCapture = quickLeadEnabled
     ? {
-        sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
-        sourceLabel: readParam(searchParams?.sourceLabel).trim() || 'Trade show fast lane',
+        ...(requestedSourceType ? { sourceType: requestedSourceType } : {}),
+        ...(requestedSourceLabel ? { sourceLabel: requestedSourceLabel } : {}),
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
         autoOpenQuoteAfterSave: false,
-        title: isTradeShowQuickLead ? 'Trade show booth capture' : 'Quick lead',
-        description: isTradeShowQuickLead
-          ? 'Capture the visitor, company, interest, source event, and follow-up task from the existing Quick Lead drawer. Quotes and orders stay locked during the trial.'
-          : 'Capture the minimum buyer context, keep the product lane pre-linked, and move into Quote faster.',
+        title: 'Quick lead',
+        description: 'Capture the minimum buyer context, keep the product lane pre-linked, and move into follow-up or Quote when ready.',
       }
     : null;
 
@@ -124,7 +122,7 @@ export default async function LeadsPage({
       <div className="md:hidden">
         <LeadsMobileSurface
           quickLeadEnabled={quickLeadEnabled}
-          initialLeadType={modeLeadType || (readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer')}
+          initialLeadType={modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer')}
           eventId={eventId || null}
           leads={mobileLeadCards}
           user={mobileUser}
@@ -202,7 +200,7 @@ export default async function LeadsPage({
           initialTodayState={viewModel.todayState}
           initialQuickCapture={initialQuickCapture}
           initialEventId={eventId || null}
-          initialFastField={initialFastField}
+          initialFastField={false}
         />
         <QuoteReviewInlineComplianceFix />
       </div>
