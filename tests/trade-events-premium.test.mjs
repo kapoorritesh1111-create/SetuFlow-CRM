@@ -5,6 +5,8 @@ import test from 'node:test';
 const page = readFileSync('src/app/(app)/trade-events/page.tsx', 'utf8');
 const capturePage = readFileSync('src/app/(app)/trade-events/capture/page.tsx', 'utf8');
 const leadsPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+const leadsMobileSurface = readFileSync('src/features/leads/components/leads-mobile-surface.tsx', 'utf8');
+const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
 const mobile = readFileSync('src/features/trade-events/components/trade-events-mobile-workspace.tsx', 'utf8');
 const captureDedupe = readFileSync('src/lib/trade-events/event-capture-dedupe.ts', 'utf8');
@@ -60,7 +62,7 @@ test('event identity separates exact duplicates from possible matches', () => {
   assert.match(adminActions, /allow_duplicate/);
 });
 
-test('full CRM Capture Lead reuses the canonical Quick Lead drawer while trial capture stays isolated', () => {
+test('full CRM Capture Lead reuses one canonical Quick Lead drawer while trial capture stays isolated', () => {
   assert.match(quickLeadRoute, /quickLead/);
   assert.match(quickLeadRoute, /sourceType/);
   assert.match(quickLeadRoute, /sourceLabel/);
@@ -70,6 +72,15 @@ test('full CRM Capture Lead reuses the canonical Quick Lead drawer while trial c
   assert.doesNotMatch(capturePage, /EventQuickCapturePanel/);
   assert.match(leadsPage, /title: 'Quick lead'/);
   assert.match(leadsPage, /initialFastField=\{false\}/);
+  assert.match(leadsMobileSurface, /RoleAwareLeadList/);
+  assert.doesNotMatch(leadsMobileSurface, /MobileBusinessCardScanner/);
+});
+
+test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
+  assert.match(mobileBottomTabs, /mobileMoreNavItems/);
+  assert.match(mobileBottomTabs, /Tasks & Events/);
+  assert.match(mobileBottomTabs, /Trade Event Command Center/);
+  assert.match(mobileBottomTabs, />More</);
 });
 
 test('event Quick Lead enforces the initiating event as source regardless of scan method', () => {
