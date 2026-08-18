@@ -45,7 +45,7 @@ export type IngestOutcome =
 export async function ingestDocument(input: IngestInput): Promise<IngestOutcome> {
   const supabaseUntyped: any = input.dbClient ?? (await createClient());
 
-  // --- Step 1: file-level dedup -----------------------------------------
+  // --- Step 1: file-level dedup (Existing instance check) ----------------
   let dedupResult;
   try {
     dedupResult = await checkFileDuplicate({
@@ -62,6 +62,27 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
   if (dedupResult.isDuplicate) {
     return { status: 'skipped_duplicate', fileHash: dedupResult.fileHash };
   }
+
+  // --- Step 1.5: Global Content/File-Hash Deduplication (Senior Guardrail) ---
+  // Prevents duplicate records from being created under a different generated source_id 
+  // if the exact file binary has already been ingested previously for this organization.
+  const { data: globalDuplicateMatch, error: globalDupError } = await supabaseUntyped
+    .from('guru_embeddings')
+    .select('source_id')
+    .eq('organization_id', input.organizationId)
+    .eq('source_type', input.sourceType)
+    .eq('metadata->>file_hash', dedupResult.fileHash)
+    .limit(1);
+
+  if (!globalDupError && globalDuplicateMatch && globalDuplicateMatch.length > 0) {
+    const existingSourceId = globalDuplicateMatch[0].source_id;
+    // If it's a completely different source_id trying to upload the exact same file content, skip it cleanly.
+    if (existingSourceId !== input.sourceId) {
+      console.warn(`[INGEST DEDUP] Exact file match found for hash ${dedupResult.fileHash} under different source_id (${existingSourceId}). Skipping duplicate ingestion.`);
+      return { status: 'skipped_duplicate', fileHash: dedupResult.fileHash };
+    }
+  }
+  // -------------------------------------------------------------------------
 
   // --- Step 2: VLM parse ---------------------------------------------------
   let pages;

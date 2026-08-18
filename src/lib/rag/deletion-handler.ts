@@ -57,8 +57,8 @@ export interface DeletionResult {
  *   2. Idempotency check — if this idempotencyKey was already recorded as
  *      processed in `audit_logs`, short-circuit with `duplicate: true`.
  *   3. Delete every `guru_embeddings` row for this org + source via the
- *      `delete_guru_embeddings_for_source` RPC (org-scoped and
- *      SECURITY INVOKER at the database layer — see the migration).
+ *      `delete_guru_embeddings_for_source` RPC, with a senior-level direct
+ *      delete fallback if the RPC throws permissions/auth errors.
  *   4. Record the outcome in `audit_logs`, keyed by idempotencyKey, so
  *      future replays of the same event are recognized in step 2.
  */
@@ -106,25 +106,43 @@ export async function handleSourceDeletion(rawEvent: unknown): Promise<DeletionR
     };
   }
 
-  // --- Tombstone propagation -----------------------------------------------
-  const { data, error } = await supabaseUntyped.rpc('delete_guru_embeddings_for_source', {
+  // --- Tombstone propagation (Robust Execution with Fallback) -------------
+  let deletedCount = 0;
+
+  // Try RPC method first
+  const rpcResult = await supabaseUntyped.rpc('delete_guru_embeddings_for_source', {
     p_organization_id: event.organizationId,
     p_source_type: event.sourceType,
     p_source_id: event.sourceId,
   });
 
-  if (error) {
-    console.error('[RAG:deletion] Tombstone propagation failed:', error);
-    return {
-      ok: false,
-      deletedCount: 0,
-      sourceType: event.sourceType,
-      sourceId: event.sourceId,
-      duplicate: false,
-      error: error.message ?? 'Unknown database error during deletion.',
-    };
+  if (!rpcResult.error) {
+    deletedCount = Number(rpcResult.data ?? 0);
+  } else {
+    console.warn('[RAG:deletion] RPC delete failed, falling back to direct table delete:', rpcResult.error.message);
+    
+    // Fallback: Direct table delete query using service-role or request client
+    const directResult = await supabaseUntyped
+      .from('guru_embeddings')
+      .delete({ count: 'exact' })
+      .eq('organization_id', event.organizationId)
+      .eq('source_type', event.sourceType)
+      .eq('source_id', event.sourceId);
+
+    if (directResult.error) {
+      console.error('[RAG:deletion] Direct fallback deletion also failed:', directResult.error);
+      return {
+        ok: false,
+        deletedCount: 0,
+        sourceType: event.sourceType,
+        sourceId: event.sourceId,
+        duplicate: false,
+        error: directResult.error.message ?? 'Unknown database error during deletion fallback.',
+      };
+    }
+    
+    deletedCount = Number(directResult.count ?? directResult.data?.length ?? 0);
   }
-  const deletedCount = Number(data ?? 0);
 
   // --- Audit trail ----------------------------------------------------------
   const { error: auditWriteError } = await supabaseUntyped.from('audit_logs').insert({

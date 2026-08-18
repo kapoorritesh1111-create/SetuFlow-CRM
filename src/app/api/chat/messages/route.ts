@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { handleSourceDeletion } from "@/lib/rag/deletion-handler";
+import crypto from "crypto";
 import {
   createEntityConversation,
   ensureConversationAccess,
@@ -340,9 +342,10 @@ export async function DELETE(request: NextRequest) {
     const admin = createServiceRoleClient();
     if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
 
+    // Select attachments to capture uploaded file data
     const { data: msg } = await admin
       .from("chat_messages")
-      .select("id, sender_id, conversation_id")
+      .select("id, sender_id, conversation_id, attachments")
       .eq("id", msgId)
       .maybeSingle();
 
@@ -351,6 +354,53 @@ export async function DELETE(request: NextRequest) {
 
     const organizationId = await ensureConversationAccess(admin, chatUser.id, msg.conversation_id);
     if (!organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // --- RAG EMBEDDINGS TOMBSTONE PROPAGATION ---
+
+    // 1. Delete associated attachments/documents from RAG embeddings
+    if (msg.attachments && Array.isArray(msg.attachments)) {
+      for (const attachment of msg.attachments) {
+        const urlOrPath = (attachment.storage_path || attachment.url || "") as string;
+        
+        // Extract all UUIDs using the /g flag and pick the LAST ONE.
+        // The last UUID is the actual file source_id, preventing org ID deletion mismatch.
+        const uuidMatches = urlOrPath.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g);
+        const fileSourceId = uuidMatches ? uuidMatches[uuidMatches.length - 1] : null;
+
+        if (fileSourceId) {
+          // 1st Try: Delete using 'chat_attachment' source_type
+          await handleSourceDeletion({
+            organizationId: organizationId,
+            sourceType: "chat_attachment", 
+            sourceId: fileSourceId,
+            idempotencyKey: crypto.randomUUID(),
+            actorUserId: chatUser.id,
+            dbClient: admin,
+          });
+
+          // 2nd Try: Delete using 'documents' source_type (just in case)
+          await handleSourceDeletion({
+            organizationId: organizationId,
+            sourceType: "documents", 
+            sourceId: fileSourceId,
+            idempotencyKey: crypto.randomUUID(),
+            actorUserId: chatUser.id,
+            dbClient: admin,
+          });
+        }
+      }
+    }
+
+    // 2. Delete the chat message itself from RAG embeddings
+    await handleSourceDeletion({
+      organizationId: organizationId,
+      sourceType: "chat_message",
+      sourceId: msgId,
+      idempotencyKey: crypto.randomUUID(),
+      actorUserId: chatUser.id,
+      dbClient: admin,
+    });
+    // --------------------------------------------
 
     await admin.from("chat_messages").delete().eq("id", msgId);
     return NextResponse.json({ deleted: true });

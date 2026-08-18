@@ -2,44 +2,90 @@
  * src/lib/rag/embedding-provider.ts
  * Module B — Deep Embedding Generation Server (wrapper)
  *
- * Standardizes calls to the standalone BGE-M3 inference server, now
- * deployed as a HuggingFace Inference Endpoint running the
- * text-embeddings-inference (TEI) engine (private auth, scale-to-zero
- * after 1h idle — see endpoint dashboard).
- *
- * TEI's actual API contract (confirmed from the live deployed endpoint,
- * not assumed):
- *   - POST /embed with body { "inputs": string[] } — NOT wrapped with a
- *     "model" field; the model is baked into the deployment itself.
- *   - Response is a bare array of embedding vectors: number[][] — NOT
- *     wrapped in { embeddings: [...] }.
- *   - Endpoint is "Private", so every request needs
- *     Authorization: Bearer <token> with a HuggingFace access token that
- *     has Inference Endpoint call permission.
- *   - GET /health returns 200 when the replica is warm and ready.
- *
- * Vector dimension: 1024 (matches `guru_embeddings.embedding vector(1024)`
- * in supabase/migrations/20260713000000_guru_rag_embeddings_hardening.sql).
- * If the embedding model or its output dimension ever changes, that is a
- * breaking schema change — see EMBEDDING_MODEL_VERSION note below before
- * touching this file.
+ * -------------------------------------------------------------------------
+ * NOTE FOR CLIENT / REVIEWER (TESTING EMBEDDING PROVIDER SWITCH):
+ * Originally configured to use the BGE-M3 HuggingFace inference endpoint.
+ * However, due to Hugging Face account credits expiring/running out, the 
+ * endpoint paused (returning 400 Bad Request: "The endpoint is paused"). 
+ * 
+ * To ensure testing and document ingestion remain unblocked, this provider 
+ * has been temporarily switched to use OpenAI embeddings (text-embedding-3-small) 
+ * with explicit 1024 dimensions matching the Supabase vector table constraints.
+ * 
+ * To revert back to BGE-M3 later, simply comment out the OpenAI section below 
+ * and uncomment the original BGE-M3 implementation at the bottom.
+ * -------------------------------------------------------------------------
  */
+
+import OpenAI from 'openai';
 
 export const EMBEDDING_DIMENSIONS = 1024;
 
-/**
- * Bumping this string is how a future re-index / model-migration path
- * would be triggered. Every row written to guru_embeddings stores this
- * value in `embedding_model`. A migration script can then find all rows
- * where `embedding_model <> EMBEDDING_MODEL_VERSION` and re-embed them.
- */
-export const EMBEDDING_MODEL_VERSION = 'bge-m3';
+// ==========================================
+// CURRENT ACTIVE TESTING CONFIG (OpenAI)
+// ==========================================
+export const EMBEDDING_MODEL_VERSION = 'text-embedding-3-small';
 
 export interface EmbeddingResult {
   ok: boolean;
   embeddings?: number[][];
   error?: string;
 }
+
+export async function embedChunks(texts: string[]): Promise<EmbeddingResult> {
+  if (!texts.length) {
+    return { ok: false, error: 'embedChunks called with an empty texts array' };
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: 'OPENAI_API_KEY is not set in the environment' };
+  }
+
+  try {
+    const openai = new OpenAI({ apiKey });
+
+    const response = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: texts,
+      dimensions: EMBEDDING_DIMENSIONS,
+    });
+
+    const embeddings = response.data.map((item) => item.embedding);
+
+    if (!Array.isArray(embeddings) || embeddings.length !== texts.length) {
+      return { ok: false, error: 'OpenAI embedding response format mismatch' };
+    }
+
+    const badIndex = embeddings.findIndex((vec) => !Array.isArray(vec) || vec.length !== EMBEDDING_DIMENSIONS);
+    if (badIndex !== -1) {
+      return {
+        ok: false,
+        error: `Embedding at index ${badIndex} has ${embeddings[badIndex]?.length ?? 'unknown'} dims, expected ${EMBEDDING_DIMENSIONS}`,
+      };
+    }
+
+    return { ok: true, embeddings };
+  } catch (err: unknown) {
+    console.error('[EMBEDDING FATAL] OpenAI embedding generation failed:', err);
+    throw new Error(`Embedding server unreachable: ${err instanceof Error ? err.message : 'Unknown network error'}`);
+  }
+}
+
+export async function checkEmbeddingServerHealth(): Promise<{ healthy: boolean; detail: string }> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return { healthy: false, detail: 'OPENAI_API_KEY is not set' };
+  }
+  return { healthy: true, detail: 'OpenAI embedding provider is ready' };
+}
+
+
+/* =========================================================================
+   ORIGINAL BGE-M3 HUGGINGFACE INFERENCE ENDPOINT CODE (COMMENTED OUT)
+   =========================================================================
+
+export const EMBEDDING_MODEL_VERSION = 'bge-m3';
 
 function getInferenceUrl(): string | null {
   const url = process.env.BGE_M3_INFERENCE_URL;
@@ -51,24 +97,7 @@ function getApiKey(): string | null {
   return key && key.trim() ? key.trim() : null;
 }
 
-/**
- * Embeds a batch of text chunks via the BGE-M3 (TEI) inference endpoint.
- *
- * Batches everything in one request rather than looping per-chunk — the
- * caller (ingest.ts) is responsible for keeping batch size reasonable
- * (e.g. chunking a large document into multiple calls of ~50-100 chunks)
- * so a single request doesn't time out.
- *
- * NOTE: this endpoint scales to zero after 1h idle. The first request
- * after a cold period may take significantly longer (cold start) than
- * subsequent ones — callers with tight timeouts should account for this.
- *
- * Returns `ok: false` with an error message on any failure (missing env,
- * network error, malformed response) rather than throwing, so ingest.ts
- * can route the failure into its own retry/error-handling logic instead
- * of needing a try/catch around every call site.
- */
-export async function embedChunks(texts: string[]): Promise<EmbeddingResult> {
+export async function embedChunksBGE(texts: string[]): Promise<EmbeddingResult> {
   if (!texts.length) {
     return { ok: false, error: 'embedChunks called with an empty texts array' };
   }
@@ -95,13 +124,10 @@ export async function embedChunks(texts: string[]): Promise<EmbeddingResult> {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);
-      // --- ADDED: Fix for silent embedding server failure (Make failures loud) ---
       console.error(`[EMBEDDING FATAL] Server returned ${response.status}:`, errorText);
       throw new Error(`Embedding server unreachable or failed. Status: ${response.status}. Details: ${errorText}`);
-      // ------------------------------------------------------------------------
     }
 
-    // TEI's /embed returns a bare array of vectors, not { embeddings: [...] }.
     const embeddings = (await response.json()) as number[][];
 
     if (!Array.isArray(embeddings)) {
@@ -125,18 +151,12 @@ export async function embedChunks(texts: string[]): Promise<EmbeddingResult> {
 
     return { ok: true, embeddings };
   } catch (err: unknown) {
-    // --- ADDED: Ensure caught network errors also throw loudly ---
     console.error('[EMBEDDING FATAL] Network or fetch error:', err);
     throw new Error(`Embedding server unreachable: ${err instanceof Error ? err.message : 'Unknown network error'}`);
-    // -------------------------------------------------------------
   }
 }
 
-/**
- * Lightweight health check for the inference endpoint. TEI exposes a
- * plain GET /health that returns 200 when the replica is warm and ready.
- */
-export async function checkEmbeddingServerHealth(): Promise<{ healthy: boolean; detail: string }> {
+export async function checkEmbeddingServerHealthBGE(): Promise<{ healthy: boolean; detail: string }> {
   const inferenceUrl = getInferenceUrl();
   if (!inferenceUrl) {
     return { healthy: false, detail: 'BGE_M3_INFERENCE_URL is not set' };
@@ -150,9 +170,8 @@ export async function checkEmbeddingServerHealth(): Promise<{ healthy: boolean; 
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
     });
     if (!response.ok) {
-      // --- ADDED: Log health check failures clearly ---
       console.error(`[EMBEDDING HEALTH] Health check failed with status ${response.status}`);
-      return { healthy: false, detail: `Health check returned ${response.status} (endpoint may be scaled to zero / cold-starting)` };
+      return { healthy: false, detail: `Health check returned ${response.status}` };
     }
     return { healthy: true, detail: 'ok' };
   } catch (err: unknown) {
@@ -163,3 +182,4 @@ export async function checkEmbeddingServerHealth(): Promise<{ healthy: boolean; 
     };
   }
 }
+========================================================================= */
