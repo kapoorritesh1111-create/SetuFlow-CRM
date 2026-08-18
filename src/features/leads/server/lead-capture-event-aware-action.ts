@@ -62,6 +62,7 @@ type EventInteractionInput = {
   nextFollowUpAt: string;
   duplicateOfEntryId: string | null;
   possibleLeadIds: string[];
+  clientCaptureId: string;
 };
 
 async function loadLeadRecord(db: any, organizationId: string, leadId: string): Promise<LeadRecord | null> {
@@ -75,14 +76,29 @@ async function loadLeadRecord(db: any, organizationId: string, leadId: string): 
   return data as LeadRecord;
 }
 
+async function findSyncedOfflineCapture(db: any, organizationId: string, eventId: string, clientCaptureId: string) {
+  if (!clientCaptureId) return null;
+  const { data, error } = await db
+    .from('trade_event_entries')
+    .select('id, converted_lead_id')
+    .eq('organization_id', organizationId)
+    .eq('trade_event_id', eventId)
+    .eq('source_scan_ref', `offline:${clientCaptureId}`)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.id ? data : null;
+}
+
 async function saveEventInteraction(db: any, input: EventInteractionInput) {
   const capturedAt = new Date().toISOString();
   const normalizedPayload = {
-    capture_source: 'quick_lead',
+    capture_source: input.clientCaptureId ? 'offline_quick_lead_sync' : 'quick_lead',
     lead_type: input.leadType,
     source_event_name: input.event.name,
     next_follow_up_at: input.nextFollowUpAt || null,
     possible_lead_ids: input.possibleLeadIds,
+    client_capture_id: input.clientCaptureId || null,
   };
 
   const { data: entry, error } = await db
@@ -98,6 +114,7 @@ async function saveEventInteraction(db: any, input: EventInteractionInput) {
       captured_country: input.country || null,
       captured_notes: input.notes || null,
       source_label: input.event.name,
+      source_scan_ref: input.clientCaptureId ? `offline:${input.clientCaptureId}` : null,
       status: input.duplicateOfEntryId ? 'duplicate' : 'converted',
       duplicate_of_entry_id: input.duplicateOfEntryId,
       converted_lead_id: input.leadId,
@@ -107,6 +124,7 @@ async function saveEventInteraction(db: any, input: EventInteractionInput) {
         source_type: 'trade_show',
         source_label: input.event.name,
         captured_at: capturedAt,
+        client_capture_id: input.clientCaptureId || null,
       },
       captured_at: capturedAt,
       created_by: input.actorUserId,
@@ -138,6 +156,7 @@ async function saveEventInteraction(db: any, input: EventInteractionInput) {
         trade_event_id: input.event.id,
         lead_id: input.leadId,
         duplicate_of_entry_id: input.duplicateOfEntryId,
+        client_capture_id: input.clientCaptureId || null,
       },
     },
   });
@@ -170,6 +189,7 @@ async function ensureEventFollowUpTask(db: any, input: EventInteractionInput, en
       trade_event_id: input.event.id,
       trade_event_entry_id: entryId,
       source_label: input.event.name,
+      client_capture_id: input.clientCaptureId || null,
     },
   });
 }
@@ -195,6 +215,25 @@ export async function saveLead(previousState: ActionState | undefined, formData:
     .eq('id', tradeEventId)
     .maybeSingle();
   if (eventError || !event?.id) return { error: 'The selected trade event is not available in this organization.' };
+
+  const clientCaptureId = clean(formData.get('client_capture_id'));
+  if (clientCaptureId) {
+    try {
+      const alreadySynced = await findSyncedOfflineCapture(db, workspace.organization.id, tradeEventId, clientCaptureId);
+      const syncedLeadId = clean(alreadySynced?.converted_lead_id);
+      if (syncedLeadId) {
+        const syncedLead = await loadLeadRecord(db, workspace.organization.id, syncedLeadId);
+        if (syncedLead) {
+          return {
+            success: `${event.name} offline capture already synced. No duplicate lead was created.`,
+            lead: syncedLead,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('[trade-event-offline-sync] idempotency lookup failed', error);
+    }
+  }
 
   const originalSourceType = clean(formData.get('source_type'));
   const dedicatedContactScan = originalSourceType === 'contact_scan_review';
@@ -243,6 +282,7 @@ export async function saveLead(previousState: ActionState | undefined, formData:
         nextFollowUpAt,
         duplicateOfEntryId: match.repeatEntry?.id ?? null,
         possibleLeadIds: match.possibleLeadIds,
+        clientCaptureId,
       };
       const entryId = await saveEventInteraction(db, interaction);
       await ensureEventFollowUpTask(db, interaction, entryId);
@@ -284,6 +324,7 @@ export async function saveLead(previousState: ActionState | undefined, formData:
       nextFollowUpAt,
       duplicateOfEntryId: match.repeatEntry?.id ?? null,
       possibleLeadIds: match.possibleLeadIds.filter((id) => id !== result.lead?.id),
+      clientCaptureId,
     };
     const entryId = await saveEventInteraction(db, interaction);
     await ensureEventFollowUpTask(db, interaction, entryId);
