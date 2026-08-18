@@ -1,6 +1,7 @@
 import { buildEventOutcome } from './analytics';
 import { entryProductInterest, eventEntrySummary, eventReadiness, getTradeEventStatus, selectCommandEvent } from './command-center';
 import { collapseTradeEventDuplicates } from './dedupe';
+import { buildTradeEventQuickLeadHref } from './quick-lead-route';
 import type { TradeEventsCommandCenterData } from './query';
 
 export function formatEventPipeline(leads: Array<{ deal_value: number | null; deal_currency: string | null }>) {
@@ -41,10 +42,11 @@ export function buildTradeEventsViewModel(data: TradeEventsCommandCenterData, is
   const readiness = current ? eventReadiness(current) : null;
   const eventId = current?.id ? String(current.id) : '';
   const eventName = current?.name ? String(current.name) : '';
-  const captureHref = eventId ? `/trade-events/capture?eventId=${encodeURIComponent(eventId)}` : '/trade-events/capture';
-  const join = captureHref.includes('?') ? '&' : '?';
-  const scanHref = isTrial ? `${captureHref}${join}source=scan` : eventId ? `/contact-exchange/scan?eventId=${encodeURIComponent(eventId)}&sourceType=trade_event` : '/contact-exchange/scan?sourceType=trade_event';
-  const dictateHref = isTrial ? `${captureHref}${join}source=dictate` : eventId ? `/leads?quickLead=1&sourceType=trade_event&eventId=${encodeURIComponent(eventId)}&sourceLabel=${encodeURIComponent(eventName)}&dictate=1` : '/leads?quickLead=1&sourceType=trade_event&dictate=1';
+  const trialCaptureHref = eventId ? `/trade-events/capture?eventId=${encodeURIComponent(eventId)}` : '/trade-events/capture';
+  const captureHref = isTrial ? trialCaptureHref : buildTradeEventQuickLeadHref({ eventId, eventName });
+  const trialJoin = trialCaptureHref.includes('?') ? '&' : '?';
+  const scanHref = isTrial ? `${trialCaptureHref}${trialJoin}source=scan` : eventId ? `/contact-exchange/scan?eventId=${encodeURIComponent(eventId)}&sourceType=trade_show&sourceLabel=${encodeURIComponent(eventName)}` : '/contact-exchange/scan?sourceType=trade_show';
+  const dictateHref = isTrial ? `${trialCaptureHref}${trialJoin}source=dictate` : buildTradeEventQuickLeadHref({ eventId, eventName, dictate: true });
   const pipeline = formatEventPipeline(leads);
   const outcome = current ? buildEventOutcome(current, leads, quotes, orders) : null;
   return { allData: data, groups, events, current, group, entries, leads, tasks, quotes, orders, openTasks, entrySummary, captured, qualified, unassigned, noNextAction, meetings, influenced, duplicateCount, possibleCount, status, readiness, captureHref, scanHref, dictateHref, pipeline, outcome };
