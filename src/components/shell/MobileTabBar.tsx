@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
+import { TradeEventOfflineSync } from '@/features/trade-events/components/trade-event-offline-sync';
 import { canonicalMobileNavItems, mobileMoreNavItems } from '@/lib/navigation/nav-items';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +52,7 @@ export function MobileTabBar() {
 
   return (
     <>
+      <TradeEventOfflineSync />
       {moreOpen ? (
         <div className="fixed inset-0 z-[340] bg-slate-950/30 md:hidden" onClick={() => setMoreOpen(false)} role="presentation">
           <div
