@@ -159,18 +159,6 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   const router = useRouter();
   const trialTour = useTrialTour();
 
-  const handleShowStep = useCallback((action: TrialShowStepAction) => {
-    void fetch('/api/setu-guru/trial-step', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stepId: action.stepId, route: pathname }),
-    }).catch(() => undefined);
-    setDrawerOpen(false);
-    const onStepRoute = pathname === action.route || pathname.startsWith(`${action.route}/`);
-    if (onStepRoute && trialTour?.showStep(action.stepId)) return;
-    router.push(`${action.route}?guruStep=${encodeURIComponent(action.stepId)}`);
-  }, [pathname, router, trialTour]);
-
   const [inputValue, setInputValue] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -184,18 +172,47 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
   
-  useEffect(() => {
-    function handleDockOpen() { setDrawerOpen(true); }
-    window.addEventListener('setu-guru:open', handleDockOpen);
-    return () => window.removeEventListener('setu-guru:open', handleDockOpen);
-  }, []);
+  useEffect(() => { 
+    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); 
+  }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
   
-  useEffect(() => { setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
-  
-  useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
+  useEffect(() => { 
+    const target = scrollRef.current; 
+    if (!target) return; 
+    requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); 
+  }, [messages, isThinking, drawerOpen]);
+
+  const handleShowStep = useCallback((action: TrialShowStepAction) => {
+    void fetch('/api/setu-guru/trial-step', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stepId: action.stepId, route: pathname }),
+    }).catch(() => undefined);
+    setDrawerOpen(false);
+    const onStepRoute = pathname === action.route || pathname.startsWith(`${action.route}/`);
+    if (onStepRoute && trialTour?.showStep(action.stepId)) return;
+    router.push(`${action.route}?guruStep=${encodeURIComponent(action.stepId)}`);
+  }, [pathname, router, trialTour]);
+
+  // --- NATURAL TIMING STREAMING SIMULATOR ---
+  async function simulateStream(msgId: string, fullText: string, extraData: Partial<ChatMessage> = {}) {
+    let accumulated = '';
+    const chunkSize = 2; // Smooth character chunks
+    for (let i = 0; i < fullText.length; i += chunkSize) {
+      accumulated += fullText.slice(i, i + chunkSize);
+      setMessages((current) => current.map((msg) => (msg.id === msgId ? { ...msg, content: accumulated } : msg)));
+      await new Promise((r) => setTimeout(r, 22)); // Natural human typing delay (~22ms per tick)
+    }
+    if (Object.keys(extraData).length > 0) {
+      setMessages((current) => current.map((msg) => (msg.id === msgId ? { ...msg, ...extraData } : msg)));
+    }
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }
 
   function appendAssistant(content: string, tone: ChatMessage['tone'] = 'normal', extra?: Partial<ChatMessage>) {
-    setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: 'assistant', content, tone, ...extra }]);
+    const msgId = `assistant-${Date.now()}`;
+    setMessages((current) => [...current, { id: msgId, role: 'assistant', content: '', tone }]);
+    void simulateStream(msgId, content, extra);
   }
 
   async function runOrgSearch(question: string, requestedMode?: string) {
@@ -212,27 +229,25 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       });
       const payload: unknown = await response.json();
       const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
-        id: `org-${Date.now()}`,
-        role: 'assistant',
-        content: typeof data.answer === 'string' ? data.answer : 'I searched your organization data, but did not find a matching answer.',
+      
+      const assistantId = `org-${Date.now()}`;
+      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', sourceQuestion: question, tone: response.ok ? 'normal' : 'error' }));
+
+      const fullAnswer = typeof data.answer === 'string' ? data.answer : 'I searched your organization data, but did not find a matching answer.';
+      const extraData = {
         actions: Array.isArray(data.actions) ? data.actions.filter((action): action is string => typeof action === 'string') : typeof data.nextAction === 'string' ? [data.nextAction] : undefined,
         actionHref: typeof data.actionHref === 'string' ? data.actionHref : null,
         actionHrefs: data.actionHrefs && typeof data.actionHrefs === 'object' ? data.actionHrefs as Record<string, string | null> : undefined,
         rows: Array.isArray(data.rows) ? data.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === 'object' && !Array.isArray(row))) : [],
         hsnCatalogReview: data.hsnCatalogReview && typeof data.hsnCatalogReview === 'object' ? data.hsnCatalogReview as HsnCatalogReview : null,
-        trialAction:
-          data.trialAction && typeof data.trialAction === 'object' && (data.trialAction as Record<string, unknown>).type === 'show_step' && typeof (data.trialAction as Record<string, unknown>).stepId === 'string'
-            ? (data.trialAction as TrialShowStepAction)
-            : null,
-        sourceQuestion: question,
-        tone: response.ok ? 'normal' : 'error',
-      }));
+        trialAction: data.trialAction && typeof data.trialAction === 'object' && (data.trialAction as Record<string, unknown>).type === 'show_step' && typeof (data.trialAction as Record<string, unknown>).stepId === 'string' ? (data.trialAction as TrialShowStepAction) : null,
+      };
+
+      void simulateStream(assistantId, fullAnswer, extraData);
     } catch (error) {
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `org-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not search your organization data right now.', tone: 'error' }));
     } finally {
       setIsThinking(false);
-      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
     }
   }
 
@@ -245,12 +260,19 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       const response = await fetch('/api/setu-guru/pricing-defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: ctx.route || pathname, pageContext: ctx, action: 'suggest' }) });
       const payload: unknown = await response.json();
       const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `pricing-${Date.now()}`, role: 'assistant', content: typeof data.answer === 'string' ? data.answer : 'I prepared pricing guidance, but could not load default values.', actions: typeof data.nextAction === 'string' ? [data.nextAction] : undefined, actionHref: typeof data.actionHref === 'string' ? data.actionHref : null, tone: response.ok ? 'normal' : 'error' }));
+      
+      const assistantId = `pricing-${Date.now()}`;
+      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', tone: response.ok ? 'normal' : 'error' }));
+      
+      const fullAnswer = typeof data.answer === 'string' ? data.answer : 'I prepared pricing guidance, but could not load default values.';
+      void simulateStream(assistantId, fullAnswer, {
+        actions: typeof data.nextAction === 'string' ? [data.nextAction] : undefined, 
+        actionHref: typeof data.actionHref === 'string' ? data.actionHref : null
+      });
     } catch (error) {
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `pricing-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not prepare pricing calculator defaults right now.', tone: 'error' }));
     } finally {
       setIsThinking(false);
-      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
     }
   }
 
@@ -272,7 +294,12 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       const response = await fetch('/api/setu-guru/apply-hsn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...review, sourceQuestion: message.sourceQuestion, approved: true }) });
       const payload: unknown = await response.json();
       const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      setMessages((current) => current.filter((item) => item.id !== loadingId).concat({ id: `apply-hsn-result-${Date.now()}`, role: 'assistant', content: typeof data.answer === 'string' ? data.answer : typeof data.error === 'string' ? data.error : 'Catalog HSN update finished.', tone: response.ok ? 'success' : 'error', actions: ['Open Product Management'] }));
+      
+      const assistantId = `apply-hsn-result-${Date.now()}`;
+      setMessages((current) => current.filter((item) => item.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', tone: response.ok ? 'success' : 'error' }));
+
+      const fullAnswer = typeof data.answer === 'string' ? data.answer : typeof data.error === 'string' ? data.error : 'Catalog HSN update finished.';
+      void simulateStream(assistantId, fullAnswer, { actions: ['Open Product Management'] });
     } catch (error) {
       setMessages((current) => current.filter((item) => item.id !== loadingId).concat({ id: `apply-hsn-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not apply the catalog HSN update.', tone: 'error' }));
     } finally {
@@ -281,7 +308,15 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   }
 
   function askTopic(topic: SetuGuruHelpTopic) {
-    setMessages((current) => [...current, { id: `user-${topic.id}-${Date.now()}`, role: 'user', content: topic.title }, topicMessage(topic, routeTitle)]);
+    const userMsgId = `user-${topic.id}-${Date.now()}`;
+    const assistantMsgId = `topic-${topic.id}-${Date.now()}`;
+    setMessages((current) => [
+      ...current, 
+      { id: userMsgId, role: 'user', content: topic.title },
+      { id: assistantMsgId, role: 'assistant', content: '' }
+    ]);
+    const topicMsg = topicMessage(topic, routeTitle);
+    void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
   }
 
   function handleAsk(event: FormEvent<HTMLFormElement>) {
@@ -291,37 +326,94 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
     
+    const cleanLowerQuestion = question.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const casualKeywords = ['hi', 'hello', 'hey', 'hii', 'ok', 'okay', 'okey', 'thanks', 'thank you', 'yes', 'no', 'cool'];
+    
+    if (casualKeywords.includes(cleanLowerQuestion) || cleanLowerQuestion.length <= 2) {
+      const msgId = `greeting-${Date.now()}`;
+      setMessages((current) => [...current, { id: msgId, role: 'assistant', content: '' }]);
+      void simulateStream(msgId, 'Hello! I am Setu Guru. I am here to assist you with pricing, CRM workflows, and document checks. What do you need help with?');
+      return;
+    }
+
+    const isComplexAIQuery = /(summarize|strategy|explain|compare|analyze|generate|expansion)/i.test(question) || question.split(' ').length > 6;
+
+    if (isComplexAIQuery) {
+      setIsThinking(true);
+      const ctx = collectSetuGuruPageContext();
+      // @ts-ignore
+      const realOrgId = ctx.liveWorkspaceState?.organizationId || '00000000-0000-0000-0000-000000000000';
+
+      const assistantMsgId = `rag-stream-${Date.now()}`;
+      setMessages((current) => [...current, { id: assistantMsgId, role: 'assistant', content: '' }]);
+
+      fetch('/api/setu-guru/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: question, organizationId: realOrgId }), 
+      })
+      .then(async (response) => {
+        if (!response.body) throw new Error('Response body missing');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          // Natural stream chunk padding
+          for (let i = 0; i < chunk.length; i++) {
+            accumulatedText += chunk[i];
+            setMessages((current) =>
+              current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg))
+            );
+            await new Promise((r) => setTimeout(r, 12));
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('RAG Engine failed:', error);
+        setMessages((current) =>
+          current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: `Stream Error: ${error.message}`, tone: 'error' } : msg))
+        );
+      })
+      .finally(() => {
+        setIsThinking(false);
+        requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+      });
+      return;
+    }
+
     if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
     if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
     if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
     
-    // THE FIX: Removed the hardcoded "Data Not Found" block.
-    // Now, if it matches a local static topic, show the topic. 
-    // Otherwise, route it directly to the new Agentic backend to handle intelligently!
     if (isSetuGuruQuestionInScope(question)) {
-      setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeTitle)]);
+      const topic = getBestSetuGuruHelpTopic(question, pathname);
+      const assistantMsgId = `topic-inscope-${Date.now()}`;
+      setMessages((current) => [...current, { id: assistantMsgId, role: 'assistant', content: '' }]);
+      const topicMsg = topicMessage(topic, routeTitle);
+      void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
     } else {
       void runOrgSearch(question);
     }
-    
-    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
   function handleAction(message: ChatMessage, action: string) {
     const key = actionKey(action);
     if (key.includes('approve catalog hsn update')) { void applyHsnUpdate(message); return; }
-    if (key.includes('ask ai') || key.includes('evidence checklist')) { setInputValue('what evidence or documents are needed to fix this compliance blocker?'); appendAssistant('I queued an evidence-checklist question. Send it when ready; I will draft guidance only and will not clear or waive compliance.', 'success'); requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true })); return; }
-    if (key.includes('dispatch evidence checklist')) { setInputValue('Draft a dispatch evidence checklist for this order. Separate commercial, document, compliance, and dispatch blockers. Do not advance order state.'); appendAssistant('I queued a dispatch evidence checklist. This is guidance only; humans approve release, dispatch sends, waivers, and order state changes.', 'success'); requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true })); return; }
+    if (key.includes('ask ai') || key.includes('evidence checklist')) { setInputValue('what evidence or documents are needed to fix this compliance blocker?'); appendAssistant('I queued an evidence-checklist question. Send it when ready; I will draft guidance only and will not clear or waive compliance.', 'success'); return; }
+    if (key.includes('dispatch evidence checklist')) { setInputValue('Draft a dispatch evidence checklist for this order. Separate commercial, document, compliance, and dispatch blockers. Do not advance order state.'); appendAssistant('I queued a dispatch evidence checklist. This is guidance only; humans approve release, dispatch sends, waivers, and order state changes.', 'success'); return; }
     if (key.includes('order approval boundary')) { appendAssistant('Order approval boundary: Setu Guru can explain blockers, draft evidence checklists, and route to Orders, Compliance, or Documents. It must not advance order state, approve release, waive compliance, send dispatch documents, delete evidence, or change accepted terms without explicit human approval.', 'normal', { actions: ['Open Orders', 'Draft dispatch evidence checklist'] }); return; }
     if (key.includes('check order blockers')) { void runOrgSearch('Check this order for commercial, document, compliance, and dispatch blockers. Do not advance order state.'); return; }
-    if (key.includes('ask live research') || key.includes('research follow up')) { setInputValue('Research this with sources and check the catalog before any write-back.'); appendAssistant('I queued a source-backed research follow-up. Send it when ready; no CRM value will be saved without approval.', 'success'); requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true })); return; }
+    if (key.includes('ask live research') || key.includes('research follow up')) { setInputValue('Research this with sources and check the catalog before any write-back.'); appendAssistant('I queued a source-backed research follow-up. Send it when ready; no CRM value will be saved without approval.', 'success'); return; }
     if (key.includes('review sources')) { appendAssistant('Review the source cards above first. I can use them for draft guidance, but a human must approve any HSN, duty, margin, compliance, or catalog write-back.', 'normal', { actions: ['Ask live research follow-up'] }); return; }
     if (key.includes('check blocker')) { void runOrgSearch('Check this page for live blockers and tell me what needs human approval.'); return; }
     const href = actionHrefFor(message, action);
     if (href) { window.location.assign(href); return; }
     setInputValue(action);
     appendAssistant(`I queued “${action}” in the composer so you can refine it before I act.`, 'success');
-    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
   function saveFeedback(label: 'helpful' | 'missing') {
@@ -376,7 +468,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                   <div className={cn('max-w-[88%]', message.role === 'assistant' ? 'pr-8' : 'pl-8')}>
                     {message.role === 'assistant' ? <div className="mb-1 flex items-center gap-2 pl-1"><div className="grid h-6 w-6 place-items-center rounded-full bg-slate-950 p-[2px]"><img src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" className="h-full w-full rounded-full object-contain" /></div><span className="text-[11px] font-semibold text-slate-500">Setu Guru</span></div> : null}
                     <div className={cn('rounded-panel px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : message.tone === 'success' ? 'rounded-bl-md border border-emerald-200 bg-emerald-50 text-emerald-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
-                      {message.content.split('\n\n').map((paragraph) => <p key={paragraph} className="mb-2 last:mb-0">{paragraph}</p>)}
+                      {message.content.split('\n\n').map((paragraph) => {
+                        const cleanText = paragraph.replace(/[*#`]/g, '');
+                        return <p key={paragraph} className="mb-2 last:mb-0">{cleanText}</p>;
+                      })}
                       <ResultRows rows={message.rows ?? []} />
                       {message.trialAction && trialTour ? <div className="mt-3 border-t border-slate-100 pt-3"><button type="button" onClick={() => handleShowStep(message.trialAction!)} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700"><FaIcon icon="hand-o-right" fixedWidth />Show me: {message.trialAction.title}</button></div> : null}
                       {message.actions?.length ? <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action) => <button key={action} type="button" onClick={() => handleAction(message, action)} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-sky-700">{action}</button>)}</div> : null}

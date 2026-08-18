@@ -23,16 +23,19 @@ function getAnthropic(): Anthropic {
   return anthropicClient;
 }
 
-// 1. Updated System Prompt: Replaced strict failure with Conversational Agentic behavior
+// 1. Updated System Prompt: Added strict "Casual Chat" rule to prevent unnecessary database queries
 const SYSTEM_PROMPT = `You are Setu Guru, an intelligent and conversational CRM assistant for SetuFlow.
 
 You have two ways to help the user:
 1. Retrieved document context (if provided below) — for compliance/regulatory questions. Cite sources using [R1], [R2], etc.
 2. Live CRM Tools — for checking leads, pipeline, compliance status, contracts, tasks, and reports.
 
+CRITICAL INSTRUCTION FOR CASUAL CONVERSATIONS:
+If the user's message is a casual greeting (like "hi", "hello"), an acknowledgment (like "ok", "okay", "okey", "thanks"), or a short conversational phrase, DO NOT use any tools. Simply reply naturally and politely as a helpful AI assistant.
+
 CRITICAL INSTRUCTION FOR MISSING DATA:
-Never reply with a rigid "Data Not Found" or generic error. If the retrieved documents do not contain the answer, and your tools do not return matching CRM data, act as a helpful human assistant. 
-Acknowledge their question naturally (e.g., "I see you are asking about [Topic]...") and politely explain that while you don't have exact documentation for it, you can help them check active CRM leads, pricing defaults, or open quotes. Be proactive and guide them to the next best action.`;
+Never reply with a rigid "Data Not Found" or generic error. If the retrieved documents do not contain the answer, and your tools do not return matching CRM data (or if the organization UUID is invalid/dummy), act as a helpful human assistant. 
+Acknowledge their question naturally and politely explain that while you don't have exact documentation for it, you can help them check active CRM leads, pricing defaults, or open quotes. Be proactive and guide them to the next best action.`;
 
 export interface AgenticQueryResult {
   answer: string;
@@ -56,8 +59,8 @@ function getConversationalFallback(question: string): string {
  * Answers a single question using RAG grounding + live-tool calling.
  */
 export async function runGuruAgenticQuery(
+  question: string, // FIX: Swapped order back to match your API route call signature
   organizationId: string,
-  question: string,
   dbClient?: any,
 ): Promise<AgenticQueryResult> {
   const toolsUsed: AgenticToolName[] = [];
