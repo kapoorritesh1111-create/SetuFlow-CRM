@@ -27,7 +27,6 @@ async function getOutreachLeads() {
   const { data } = await (supabase as any)
     .from('client_onboarding_requests')
     .select('id,company_name,primary_admin_name,primary_admin_email,primary_phone,headquarters_country,industry,pipeline_stage,lead_score,source,source_detail,internal_notes,last_contact_at,next_follow_up_at,assigned_to_name,activity_log')
-    .not('pipeline_stage', 'in', '(converted,lost)')
     .order('lead_score', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false });
 
