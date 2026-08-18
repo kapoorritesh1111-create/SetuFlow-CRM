@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 import { getMailtrapFromAddress, sendMailtrapEmail } from '@/lib/email/mailtrap';
+import {
+  applyGrowthEmailSignature,
+  getGrowthSenderIdentity,
+  missingGrowthSenderFields,
+} from '@/lib/smc/growth-email-signature';
 
 export const dynamic = 'force-dynamic';
 
-const MARKETING_SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.setuflowcrm.com';
 const CONTACT_KINDS = new Set(['call', 'email', 'whatsapp', 'demo_completed']);
 
 function escapeHtml(value: string) {
@@ -44,9 +48,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const body = await request.json().catch(() => ({}));
   const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
   let message = typeof body.message === 'string' ? body.message.trim() : '';
-  const senderName = typeof body.sender_name === 'string' && body.sender_name.trim()
-    ? body.sender_name.trim()
-    : 'SETU Flow Growth';
   const requestedMode = body.message_mode === 'first_inquiry' || body.message_mode === 'follow_up'
     ? body.message_mode
     : 'auto';
@@ -56,6 +57,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 
   const db = auth.supabase as any;
+  const sender = await getGrowthSenderIdentity(db, auth.user);
+  const missingSender = missingGrowthSenderFields(sender);
+  if (missingSender.length) {
+    return NextResponse.json({
+      error: `Complete your My Card before sending email. Missing: ${missingSender.join(', ')}. Every SETU Flow email signature requires the logged-in user's name, email and phone number.`,
+    }, { status: 400 });
+  }
+
   const { data: lead, error: leadError } = await db
     .from('client_onboarding_requests')
     .select('id, company_name, primary_admin_name, primary_admin_email, activity_log, last_contact_at')
@@ -70,10 +79,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     ? (hasPriorContact(lead.activity_log, lead.last_contact_at) ? 'follow_up' : 'first_inquiry')
     : requestedMode;
 
-  // First-contact outreach always includes the public marketing site, even after manual edits.
-  if (mode === 'first_inquiry' && !message.includes(MARKETING_SITE)) {
-    message = `${message}\n\nLearn more: ${MARKETING_SITE}`;
-  }
+  // Every outgoing Growth email uses the authenticated sender's canonical signature.
+  // Re-applying here protects against manual edits or stale/generated signatures.
+  message = applyGrowthEmailSignature(message, sender);
 
   const recipient = String(lead.primary_admin_email ?? '').trim();
   if (!recipient) {
@@ -92,7 +100,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     customVariables: {
       lead_id: String(lead.id),
       company_name: String(lead.company_name ?? ''),
-      sender_name: senderName,
+      sender_name: sender.name,
+      sender_email: sender.email,
+      sender_phone: sender.phone,
       message_mode: mode,
     },
   });
@@ -107,13 +117,16 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     id: crypto.randomUUID(),
     kind: 'email',
     note: `${mode === 'first_inquiry' ? 'First inquiry' : 'Follow-up'} email sent — ${subject}`,
-    actor_name: senderName,
+    actor_name: sender.name,
     actor_user_id: auth.user.id,
     provider: 'mailtrap',
     provider_message_id: result.messageId ?? null,
     recipient,
     subject,
     message_mode: mode,
+    sender_email: sender.email,
+    sender_phone: sender.phone,
+    marketing_site: sender.marketingSite,
     created_at: sentAt,
   };
 
@@ -154,6 +167,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     provider: 'mailtrap',
     message_id: result.messageId ?? null,
     message_mode: mode,
+    sender_signature: sender,
     lead: update.data,
   });
 }
