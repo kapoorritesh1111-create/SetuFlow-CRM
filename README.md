@@ -2,6 +2,12 @@
 
 SETU Flow CRM is a Next.js CRM for export-led sales teams. It combines lead intake, pipeline management, RFQ/quote workflows, pricing/catalog operations, compliance/document readiness, trade-event capture, mobile field workflows, onboarding, administration, and Setu Guru intelligence in one Supabase-backed workspace.
 
+## Current development — Sprint 51 Trade Event Command Center
+
+PR `#78` is the current **Draft / unmerged** Trade Event enhancement program. Mobile Event Mode now reuses one canonical Quick Lead workflow, keeps Events reachable under the right-most **More** navigation entry, and includes an offline/low-signal fallback for booth-floor capture. Offline captures receive a unique client capture ID, persist temporarily on-device, retry automatically after reconnect, and return through the same event-aware CRM save path so dedupe, event attribution, repeat interactions, and follow-up work remain consistent.
+
+Offline storage is bounded to 150 captures and seven days, and Setu Flow reports a persistence failure instead of claiming an unsafe local save succeeded. The canonical event catalog, recommendation feedback, event attachment schema/storage, and offline idempotency migrations are staged in the PR but are **not applied to production** during this PR-first implementation pass. Production DB rollout, generated type refresh, PackPlus reconciliation, attachment runtime verification, offline phone acceptance, and final merge remain release gates.
+
 ## Current production baseline
 
 - **Latest release:** Sprint 47 — Setu Guru Experience Redesign

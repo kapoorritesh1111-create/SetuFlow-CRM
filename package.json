@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "python scripts/run-product-overview-ux-polish.py && npm run test:growth-agent && npm run test:packaging && next build",
+    "build": "python scripts/run-product-overview-ux-polish.py && npm run test:growth-agent && npm run test:packaging && npm run test:trade-events && next build",
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
@@ -17,6 +17,7 @@
     "test:s44": "node --test tests/s44-setu-guru-outreach-reply.test.mjs",
     "test:s45": "node --test tests/s45-setu-guru-quote-supplier.test.mjs",
     "test:s46": "node --test tests/s46-setu-guru-trade-events.test.mjs tests/s46-setu-guru-audit-hardening.test.mjs",
+    "test:trade-events": "node --test tests/trade-events-premium.test.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "test:release-readiness": "npm test",

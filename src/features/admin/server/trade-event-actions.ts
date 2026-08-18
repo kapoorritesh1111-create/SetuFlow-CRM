@@ -2,117 +2,73 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-
+import { classifyTradeEventMatch } from '@/lib/trade-events/identity';
 import { createClient } from '@/lib/supabase/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 
-function normalizeText(value: FormDataEntryValue | null | undefined) {
-  const text = String(value ?? '').trim();
-  return text.length > 0 ? text : null;
-}
+const text = (value: FormDataEntryValue | null | undefined) => String(value ?? '').trim() || null;
+const date = (value: FormDataEntryValue | null | undefined) => { const v = text(value); return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; };
+const url = (value: FormDataEntryValue | null | undefined) => { const v = text(value); return v && (v.startsWith('/') || /^https?:\/\//i.test(v)) ? v : null; };
 
-function normalizeDate(value: FormDataEntryValue | null | undefined) {
-  const text = normalizeText(value);
-  return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
-}
-
-function normalizeUrl(value: FormDataEntryValue | null | undefined) {
-  const text = normalizeText(value);
-  if (!text) return null;
-  if (text.startsWith('/')) return text;
-  if (/^https?:\/\//i.test(text)) return text;
-  return null;
-}
-
-function buildCaptureDefaults(formData: FormData, existing?: Record<string, unknown> | null) {
-  const imageUrl = normalizeUrl(formData.get('image_url'));
-  const websiteUrl = normalizeUrl(formData.get('website_url'));
-  const next = { ...(existing ?? {}) } as Record<string, unknown>;
-
-  if (imageUrl) next.image_url = imageUrl;
-  else delete next.image_url;
-
-  if (websiteUrl) next.website_url = websiteUrl;
-  else delete next.website_url;
-
+function captureDefaults(formData: FormData, existing: Record<string, unknown> = {}) {
+  const next = { ...existing };
+  const image = url(formData.get('image_url'));
+  const website = url(formData.get('website_url'));
+  if (image) next.image_url = image; else delete next.image_url;
+  if (website) next.website_url = website; else delete next.website_url;
   return next;
 }
 
-async function getContext() {
-  const context = await requireAdminWorkspace();
-  if (context.missingEnv || !context.organization) return null;
-  const supabase = await createClient();
-  return { supabase, organizationId: context.organization.id };
+async function context() {
+  const workspace = await requireAdminWorkspace();
+  if (workspace.missingEnv || !workspace.organization) return null;
+  return { supabase: await createClient(), organizationId: workspace.organization.id };
 }
 
-function revalidateTradeEvents() {
+function refresh() {
   revalidatePath('/admin/trade-events');
   revalidatePath('/trade-events');
 }
 
+function eventPayload(formData: FormData, organizationId?: string) {
+  return { ...(organizationId ? { organization_id: organizationId } : {}), name: text(formData.get('name')), city: text(formData.get('city')), country: text(formData.get('country')), starts_on: date(formData.get('starts_on')), ends_on: date(formData.get('ends_on')), booth_number: text(formData.get('booth_number')), notes: text(formData.get('notes')) };
+}
+
+function possibleDuplicateUrl(candidateId: string, payload: ReturnType<typeof eventPayload>, formData: FormData) {
+  const params = new URLSearchParams({ notice: 'event-possible-duplicate', eventId: candidateId, eventName: payload.name ?? '' });
+  for (const key of ['name','city','country','starts_on','ends_on','booth_number','notes','image_url','website_url']) {
+    const value = String(formData.get(key) ?? '').trim();
+    if (value) params.set(`draft_${key}`, value);
+  }
+  return `/admin/trade-events?${params.toString()}`;
+}
+
 export async function createEnrichedTradeEvent(formData: FormData): Promise<void> {
-  const context = await getContext();
-  if (!context) return;
-
-  const name = normalizeText(formData.get('name'));
-  if (!name) return;
-
-  const payload = {
-    organization_id: context.organizationId,
-    name,
-    city: normalizeText(formData.get('city')),
-    country: normalizeText(formData.get('country')),
-    starts_on: normalizeDate(formData.get('starts_on')),
-    ends_on: normalizeDate(formData.get('ends_on')),
-    booth_number: normalizeText(formData.get('booth_number')),
-    notes: normalizeText(formData.get('notes')),
-    capture_defaults: buildCaptureDefaults(formData),
-  };
-
-  await (context.supabase as any).from('trade_events').insert(payload);
-  revalidateTradeEvents();
+  const ctx = await context();
+  if (!ctx) return;
+  const payload = eventPayload(formData, ctx.organizationId);
+  if (!payload.name) return;
+  const { data: existing } = await (ctx.supabase as any).from('trade_events').select('id, name, city, country, starts_on, ends_on').eq('organization_id', ctx.organizationId);
+  const matches = (existing ?? []).map((event: any) => ({ event, strength: classifyTradeEventMatch(payload, event) }));
+  const exact = matches.find((item: any) => item.strength === 'exact');
+  if (exact) redirect(`/admin/trade-events?notice=event-duplicate&eventId=${encodeURIComponent(String(exact.event.id))}&eventName=${encodeURIComponent(payload.name)}`);
+  const possible = matches.find((item: any) => item.strength === 'possible');
+  if (possible && String(formData.get('allow_duplicate') ?? '') !== '1') redirect(possibleDuplicateUrl(String(possible.event.id), payload, formData));
+  await (ctx.supabase as any).from('trade_events').insert({ ...payload, capture_defaults: captureDefaults(formData) });
+  refresh();
   redirect('/admin/trade-events?notice=event-created');
 }
 
 export async function updateEnrichedTradeEvent(formData: FormData): Promise<void> {
-  const context = await getContext();
-  if (!context) return;
-
-  const id = normalizeText(formData.get('id'));
-  const name = normalizeText(formData.get('name'));
-  if (!id || !name) return;
-
-  const { data: existing } = await (context.supabase as any)
-    .from('trade_events')
-    .select('id, capture_defaults')
-    .eq('id', id)
-    .eq('organization_id', context.organizationId)
-    .maybeSingle();
-
+  const ctx = await context();
+  if (!ctx) return;
+  const id = text(formData.get('id'));
+  const payload = eventPayload(formData);
+  if (!id || !payload.name) return;
+  const { data: existing } = await (ctx.supabase as any).from('trade_events').select('id, capture_defaults').eq('id', id).eq('organization_id', ctx.organizationId).maybeSingle();
   if (!existing) return;
-
-  const currentDefaults = existing.capture_defaults && typeof existing.capture_defaults === 'object' && !Array.isArray(existing.capture_defaults)
-    ? existing.capture_defaults as Record<string, unknown>
-    : {};
-
-  const payload = {
-    name,
-    city: normalizeText(formData.get('city')),
-    country: normalizeText(formData.get('country')),
-    starts_on: normalizeDate(formData.get('starts_on')),
-    ends_on: normalizeDate(formData.get('ends_on')),
-    booth_number: normalizeText(formData.get('booth_number')),
-    notes: normalizeText(formData.get('notes')),
-    capture_defaults: buildCaptureDefaults(formData, currentDefaults),
-    updated_at: new Date().toISOString(),
-  };
-
-  await (context.supabase as any)
-    .from('trade_events')
-    .update(payload)
-    .eq('id', id)
-    .eq('organization_id', context.organizationId);
-
-  revalidateTradeEvents();
+  const defaults = existing.capture_defaults && typeof existing.capture_defaults === 'object' && !Array.isArray(existing.capture_defaults) ? existing.capture_defaults : {};
+  await (ctx.supabase as any).from('trade_events').update({ ...payload, capture_defaults: captureDefaults(formData, defaults), updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', ctx.organizationId);
+  refresh();
   redirect('/admin/trade-events?notice=event-updated');
 }
