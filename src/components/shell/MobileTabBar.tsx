@@ -52,10 +52,10 @@ export function MobileTabBar() {
   return (
     <>
       {moreOpen ? (
-        <div className="fixed inset-0 z-[240] bg-slate-950/30 md:hidden" onClick={() => setMoreOpen(false)} role="presentation">
+        <div className="fixed inset-0 z-[340] bg-slate-950/30 md:hidden" onClick={() => setMoreOpen(false)} role="presentation">
           <div
             id="shell-mobile-more-menu"
-            className="absolute bottom-20 left-1/2 grid w-[calc(100%-24px)] max-w-[406px] -translate-x-1/2 grid-cols-2 gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl"
+            className="absolute bottom-20 left-1/2 grid w-[calc(100%_-_24px)] max-w-[406px] -translate-x-1/2 grid-cols-2 gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             {mobileMoreNavItems.map((item) => (
@@ -80,7 +80,7 @@ export function MobileTabBar() {
 
       <nav
         aria-label="Primary mobile navigation"
-        className="setu-mobile-tabbar fixed inset-x-0 bottom-0 z-[250] border-t border-slate-200 bg-white shadow-[0_-4px_16px_rgba(15,23,42,0.07)] md:hidden"
+        className="setu-mobile-tabbar fixed inset-x-0 bottom-0 z-[350] border-t border-slate-200 bg-white shadow-[0_-4px_16px_rgba(15,23,42,0.07)] md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="mx-auto flex h-16 max-w-[430px] items-stretch">
