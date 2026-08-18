@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { LeadsBoard } from './leads-board';
+import { LeadsBoardContactState } from './leads-board-contact-state';
 
 export const dynamic = 'force-dynamic';
 
@@ -164,7 +164,7 @@ export default async function SmcLeadsPage({ searchParams }: { searchParams?: Se
         </form>
       </details>
 
-      <LeadsBoard initialLeads={leads as any} />
+      <LeadsBoardContactState initialLeads={leads as any} />
     </>
   );
 }
