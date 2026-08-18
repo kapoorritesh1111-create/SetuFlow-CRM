@@ -196,13 +196,14 @@ export async function saveLead(previousState: ActionState | undefined, formData:
     .maybeSingle();
   if (eventError || !event?.id) return { error: 'The selected trade event is not available in this organization.' };
 
+  const originalSourceType = clean(formData.get('source_type'));
+  const dedicatedContactScan = originalSourceType === 'contact_scan_review';
+
   // The event is acquisition context; camera/file scan is only the capture method.
   // Enforce the same source regardless of how the Quick Lead fields were populated.
   formData.set('source_type', 'trade_show');
   formData.set('source_label', String(event.name));
 
-  const originalSourceType = clean(formData.get('capture_source_type') || formData.get('source_type'));
-  const dedicatedContactScan = originalSourceType === 'contact_scan_review';
   const leadType: 'buyer' | 'supplier' = clean(formData.get('lead_type')).toLowerCase() === 'supplier' ? 'supplier' : 'buyer';
   const companyName = clean(formData.get('company_name'));
   const contactName = clean(formData.get('contact_name'));
