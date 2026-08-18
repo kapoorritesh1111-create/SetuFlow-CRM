@@ -78,7 +78,7 @@
 
 .setu-shared-hero-shell--home > main > section:first-child > div > p,
 .setu-shared-hero-shell--home > main > section:first-child > div > div:first-child p {
-  color: rgba(255,255,255,0.76) !important;
+  color: rgba(255,255,255,0.82) !important;
 }
 
 .setu-shared-hero-shell--home > main > section:first-child > div > p:first-child,
@@ -114,13 +114,13 @@
 
   .setu-shared-hero-background__overlay {
     background:
-      linear-gradient(180deg, rgba(4,16,31,0.86) 0%, rgba(4,16,31,0.72) 52%, rgba(4,16,31,0.58) 100%),
+      linear-gradient(180deg, rgba(4,16,31,0.88) 0%, rgba(4,16,31,0.76) 52%, rgba(4,16,31,0.64) 100%),
       radial-gradient(circle at 60% 16%, rgba(52,179,168,0.22), transparent 40%) !important;
   }
 
   .setu-shared-hero-background__overlay--strong {
     background:
-      linear-gradient(180deg, rgba(6,30,52,0.88) 0%, rgba(6,30,52,0.76) 52%, rgba(6,30,52,0.64) 100%),
+      linear-gradient(180deg, rgba(6,30,52,0.90) 0%, rgba(6,30,52,0.80) 52%, rgba(6,30,52,0.68) 100%),
       radial-gradient(circle at 60% 16%, rgba(52,179,168,0.22), transparent 40%) !important;
   }
 }

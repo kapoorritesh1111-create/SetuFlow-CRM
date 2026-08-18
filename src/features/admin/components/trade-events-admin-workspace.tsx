@@ -2,6 +2,7 @@ import { KitCompatSectionCard as SectionCard } from '@/features/admin/components
 import { StatusBadge } from '@/components/ui/status-badge';
 import { formatDate } from '@/lib/utils';
 import { createEnrichedTradeEvent, updateEnrichedTradeEvent } from '@/features/admin/server/trade-event-actions';
+import { TradeEventDeleteButton } from '@/features/admin/components/trade-event-delete-button';
 
 const inputClass = 'min-h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const buttonClass = 'inline-flex min-h-8 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800';
@@ -133,9 +134,12 @@ export function TradeEventsAdminWorkspace({ events }: { events: TradeEventRow[] 
                 <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
                   <EventFields event={event} />
                 </div>
-                <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
-                  <a href="#trade-events-top" className={secondaryButtonClass}>Cancel</a>
-                  <button type="submit" className={buttonClass}>Save event</button>
+                <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-6 py-4">
+                  <TradeEventDeleteButton eventId={String(event.id)} eventName={String(event.name ?? 'this event')} />
+                  <div className="flex items-center gap-2">
+                    <a href="#trade-events-top" className={secondaryButtonClass}>Cancel</a>
+                    <button type="submit" className={buttonClass}>Save event</button>
+                  </div>
                 </div>
               </form>
             </aside>

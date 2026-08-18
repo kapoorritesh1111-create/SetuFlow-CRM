@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f2338">
+  <title>Setu Flow Packaging Academy</title>
+  <link rel="icon" href="/logos/setu-flow-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/marketing/guides/packaging-academy-v2.css?v=20260727-10">
+  <script src="/marketing/guides/packaging-academy-data.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-evidence-v8.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-learning-v9.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-runtime-v7.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-sync.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-identity.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-experience.js?v=20260727-10" defer></script>
+  <script src="/marketing/guides/packaging-academy-reports.js?v=20260727-10" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <button id="mobileMenu" class="icon-btn mobile-menu" aria-label="Open menu">☰</button>
+      <a class="brand" href="https://packaging.setuflowcrm.com/" target="_blank" rel="noopener">
+        <img class="brand-logo" src="/logos/setu-flow-logo.svg" alt="Setu Flow logo">
+        <span><strong>Setu Flow Packaging Academy</strong><small>Learn · Practice · Test · Succeed</small></span>
+      </a>
+      <div class="mode-switch" aria-label="Academy mode">
+        <button class="mode-btn active" data-mode="learn">Learn Mode</button>
+        <button class="mode-btn" data-mode="test">Test Mode</button>
+      </div>
+      <div class="top-tools">
+        <span id="syncStatus" class="sync-status">Connecting…</span>
+        <select id="roleSelect" class="select" aria-label="Choose role"></select>
+        <div class="search-wrap">
+          <input id="globalSearch" class="search" placeholder="Search guides, actions…" autocomplete="off">
+          <div id="searchResults" class="search-results" hidden></div>
+        </div>
+      </div>
+    </header>
+
+    <aside id="sidebar" class="sidebar">
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z"/></svg><span>Dashboard</span></button>
+        <button class="nav-item" data-view="journey"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>My Journey</span></button>
+        <button class="nav-item" data-view="workflows"><svg viewBox="0 0 24 24"><path d="M7 3v6M17 15v6M3 7h8M13 17h8M12 7h5a4 4 0 0 1 4 4M12 17H7a4 4 0 0 1-4-4"/></svg><span>All Workflows</span></button>
+        <button class="nav-item" data-view="test"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg><span>Test Center</span></button>
+        <button class="nav-item" data-view="reports"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span></button>
+        <button class="nav-item" data-view="issues"><svg viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Zm0 6v5m0 3v1"/></svg><span>Current Issues</span></button>
+        <div class="nav-label">Reference</div>
+        <button class="nav-item" data-view="glossary"><svg viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4zM20 4h-7a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h7z"/></svg><span>Glossary</span></button>
+        <button class="nav-item" data-view="getting-started"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.2 2.3c-.7.3-1 1-1 1.7v.5M12 17h.01"/></svg><span>Getting Started</span></button>
+        <div class="sidebar-footer"><button id="resetProgress" class="nav-item"><span>Reset local progress</span></button></div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section id="dashboardView" class="view"></section>
+      <section id="journeyView" class="view" hidden></section>
+      <section id="workflowsView" class="view" hidden></section>
+      <section id="testView" class="view" hidden></section>
+      <section id="reportsView" class="view" hidden></section>
+      <section id="issuesView" class="view" hidden></section>
+      <section id="glossaryView" class="view" hidden></section>
+      <section id="gettingstartedView" class="view" hidden></section>
+    </main>
+  </div>
+
+  <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+    <div class="lightbox-toolbar">
+      <strong id="lightboxTitle">Screenshot</strong>
+      <button id="zoomOut" type="button" aria-label="Zoom out">−</button>
+      <button id="zoomReset" type="button">100%</button>
+      <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+      <a id="openOriginal" target="_blank" rel="noopener">Open original</a>
+      <button id="closeLightbox" type="button">Close</button>
+    </div>
+    <div id="lightboxViewport" class="lightbox-viewport"><div id="lightboxCanvas" class="lightbox-canvas"></div></div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript><main style="max-width:700px;margin:60px auto;font-family:sans-serif"><h1>JavaScript is required</h1><p>Enable JavaScript to use the interactive Packaging Academy.</p></main></noscript>
+</body>
+</html>

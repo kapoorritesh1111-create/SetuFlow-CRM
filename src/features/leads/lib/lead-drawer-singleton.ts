@@ -1,20 +1,15 @@
-// S24-TRIAL-206 (hotfix): Lead drawer singleton claim registry.
+// Lead drawer singleton claim registry.
 //
 // INVARIANT ENFORCED: at most ONE lead drawer renders its portal at any time,
-// no matter how many LeadDrawer instances any present or future code mounts
-// (duplicate workspace mounts, App Router transition tree retention, hidden
-// CSS trees whose portals still reach the page body, etc.).
+// no matter how many LeadDrawer instances are mounted by responsive hidden
+// trees, App Router retention, or duplicated workspace surfaces.
 //
-// Mechanism — pure React/JS, zero DOM reads or mutations:
-// - An OPEN LeadDrawer claims primacy with a stable per-instance token.
-// - If another instance already holds the claim, the newcomer renders null,
-//   so its portal is NEVER created (this is prevention, not pruning).
-// - When the primary releases (closes/unmounts), waiting instances are
-//   notified and the first to re-claim becomes primary — self-healing, so a
-//   suppressed-but-open drawer appears the moment the slot frees up.
-//
-// This guards the invariant at the component that owns form#lead-drawer-form,
-// which is why the bug class cannot resurface through new mount sites.
+// Important mobile rule: a suppressed duplicate must NOT automatically take
+// over when the visible drawer is closed. Canonical mobile routes can contain
+// a hidden desktop workspace instance; automatic handoff made that hidden
+// instance appear as a second Quick Lead immediately after the first drawer
+// closed. A newly mounted/opened drawer can still claim the now-free slot on
+// its normal open lifecycle.
 
 type ReleaseListener = () => void;
 
@@ -30,20 +25,20 @@ export function claimLeadDrawerPrimacy(owner: symbol): boolean {
   return false;
 }
 
-/** Release the claim. Notifies suppressed instances so one can take over. */
+/**
+ * Release the active claim without promoting a suppressed duplicate.
+ * The next legitimate open/mount lifecycle claims the free slot normally.
+ */
 export function releaseLeadDrawerPrimacy(owner: symbol): void {
   if (activeOwner !== owner) return;
   activeOwner = null;
-  releaseListeners.forEach((listener) => {
-    try {
-      listener();
-    } catch {
-      // A faulty listener must never block the handoff for others.
-    }
-  });
 }
 
-/** Subscribe to claim releases (used by suppressed instances to retry). */
+/**
+ * Compatibility subscription for existing drawer wiring. Suppressed instances
+ * remain registered only for lifecycle compatibility; close no longer emits a
+ * takeover event because that recreated the duplicate-drawer bug on mobile.
+ */
 export function onLeadDrawerPrimacyReleased(listener: ReleaseListener): () => void {
   releaseListeners.add(listener);
   return () => {

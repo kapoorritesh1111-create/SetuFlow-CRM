@@ -28,10 +28,11 @@ export function buildLeadsPageViewModel({
   const isWorkspaceEmpty = (data.leads as Array<unknown>).length === 0;
   const todayState = buildTodayLayerState({
     mode: workspaceMode,
+    activeFilter: 'all-open',
     nowIso: new Date().toISOString(),
-    leads: data.leads as Parameters<typeof buildTodayLayerState>[0]["leads"],
-    activities: data.activities as Parameters<typeof buildTodayLayerState>[0]["activities"],
-    complianceItems: data.complianceItems as Parameters<typeof buildTodayLayerState>[0]["complianceItems"],
+    leads: data.leads as Parameters<typeof buildTodayLayerState>[0]['leads'],
+    activities: data.activities as Parameters<typeof buildTodayLayerState>[0]['activities'],
+    complianceItems: data.complianceItems as Parameters<typeof buildTodayLayerState>[0]['complianceItems'],
   });
 
   return {

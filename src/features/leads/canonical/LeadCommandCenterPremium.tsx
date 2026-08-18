@@ -44,13 +44,44 @@ function OwnerControl({ data, members, canReassign }: { data: LeadProfileData; m
 }
 
 function StageStrip({ data }: { data: LeadProfileData }) {
-  const labels = normalize(data.lead?.lead_type) === 'supplier' ? SUPPLIER_STAGES : BUYER_STAGES;
+  // S27-STARK-DISCOVERY-FIX: this previously rendered a hardcoded generic
+  // 7-stage list ('New Lead','Qualified','Contacted','Samples Sent',
+  // 'Negotiation','Won','Lost') and looked up a matching real stage by name
+  // for each. Packaging (and any org with a custom-named pipeline) doesn't
+  // use those names at all -- Stark's real buyer pipeline is 'New packaging
+  // inquiry' -> 'Quote options' -> 'Artwork review' -> 'Sampling' -> 'Won'
+  // -> 'Lost'. Every label that didn't happen to match a real stage name
+  // came back with no stage id, which permanently disabled that button --
+  // so almost the entire stepper was unusable, and the "current stage"
+  // detection silently defaulted to index 0 whenever the real stage name
+  // didn't match any hardcoded label either. Now builds the stepper from
+  // the lead's own pipeline's real, ordered stages, with the old hardcoded
+  // labels only as a last-resort fallback if a pipeline genuinely has no
+  // stages configured at all.
+  const isSupplier = normalize(data.lead?.lead_type) === 'supplier';
   const current = data.stages.find((stage) => stage.id === data.lead?.stage_id) || null;
-  const currentIndex = Math.max(0, labels.findIndex((label) => normalize(label) === normalize(current?.name)));
-  const pipelineId = current?.pipeline_id || null;
-  const stageMap = new Map<string, (typeof data.stages)[number]>();
-  data.stages.filter((stage) => !pipelineId || stage.pipeline_id === pipelineId).forEach((stage) => { const key = normalize(stage.name); if (key && !stageMap.has(key)) stageMap.set(key, stage); });
-  return <div id="stage-strip" className="w-full overflow-x-auto pb-1"><div className="grid min-w-[520px] grid-cols-7 items-start gap-1">{labels.map((label, index) => { const stage = stageMap.get(normalize(label)); const active = index === currentIndex; const done = index < currentIndex; return <form key={label} action={moveCanonicalLeadStage} className="text-center"><input type="hidden" name="lead_id" value={data.lead!.id} /><input type="hidden" name="stage_id" value={stage?.id || ''} /><button disabled={!stage} className="group w-full disabled:cursor-not-allowed"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : done ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{done || active ? '✓' : index + 1}</span><span className={`mt-2 block text-[10px] font-bold ${active ? 'text-emerald-700' : 'text-slate-500'}`}>{label}</span></button></form>; })}</div></div>;
+  const pipelineId =
+    current?.pipeline_id ||
+    data.lead?.pipeline_id ||
+    (data.pipelines.find((pipeline) => normalize(pipeline.lead_type) === (isSupplier ? 'supplier' : 'buyer') && pipeline.is_default) ??
+      data.pipelines.find((pipeline) => normalize(pipeline.lead_type) === (isSupplier ? 'supplier' : 'buyer')))?.id ||
+    null;
+  const pipelineStages: Array<{ id: string; name: string }> = data.stages
+    .filter((stage: any) => !pipelineId || stage.pipeline_id === pipelineId)
+    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((stage: any): { id: string; name: string } => ({ id: String(stage.id), name: String(stage.name) }));
+  const fallbackLabels = isSupplier ? SUPPLIER_STAGES : BUYER_STAGES;
+  const fallbackSteps: Array<{ id: string; name: string }> = fallbackLabels.map((label): { id: string; name: string } => ({ id: '', name: label }));
+  const steps: Array<{ id: string; name: string }> = pipelineStages.length > 0 ? pipelineStages : fallbackSteps;
+  const currentStageId: string = current ? String((current as any).id) : '';
+  const currentStageName: string = current ? String((current as any).name) : '';
+  let currentIndex = 0;
+  for (let i = 0; i < steps.length; i += 1) {
+    const step: { id: string; name: string } = steps[i];
+    const matches: boolean = currentStageId ? step.id === currentStageId : normalize(step.name) === normalize(currentStageName);
+    if (matches) { currentIndex = i; break; }
+  }
+  return <div id="stage-strip" className="w-full overflow-x-auto pb-1"><div className="grid min-w-[520px] items-start gap-1" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>{steps.map((stage, index) => { const active = index === currentIndex; const done = index < currentIndex; return <form key={stage.id || stage.name} action={moveCanonicalLeadStage} className="text-center"><input type="hidden" name="lead_id" value={data.lead!.id} /><input type="hidden" name="stage_id" value={stage.id || ''} /><button disabled={!stage.id} title={!stage.id ? 'This pipeline has no stages configured yet' : undefined} className="group w-full disabled:cursor-not-allowed"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : done ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{done || active ? '✓' : index + 1}</span><span className={`mt-2 block text-[10px] font-bold ${active ? 'text-emerald-700' : 'text-slate-500'}`}>{stage.name}</span></button></form>; })}</div></div>;
 }
 
 function SummaryCard({ label, value, helper, href, tone = 'blue' }: { label: string; value: string; helper: string; href?: string; tone?: 'blue' | 'emerald' | 'purple' | 'amber' }) {

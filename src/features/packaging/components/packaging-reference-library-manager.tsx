@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import Link from 'next/link';
 import type { PackagingReferenceCategory, PackagingReferenceItem } from '@/lib/packaging/types';
 import { REFERENCE_CATEGORY_LABELS } from '@/lib/packaging/types';
 import { SetuIcon } from '@/components/ui/setu-icon';
-import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   workspacePanelClass,
@@ -98,12 +98,13 @@ export default function PackagingReferenceLibraryManager({ items }: { items: Pac
 
   return (
     <div className="space-y-4 pb-16">
-      <PageHeader
-        eyebrow="Packaging Setup"
-        title="Reference Library"
-        description="Your own list of materials, finishes, and service items — feeds the picker in Pricing Templates so nothing has to be re-typed per template."
-        meta={[`${items.filter((item) => item.is_active).length} active items`, isEmptyLibrary ? 'Not set up yet' : 'Set up']}
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-card border border-line bg-surface-1 p-4">
+        <div>
+          <p className="text-sm text-content-secondary">Your own list of materials, finishes, and service items — feeds the picker in Pricing Templates so nothing has to be re-typed per template.</p>
+          <p className="mt-1 text-xs font-semibold text-content-muted">{items.filter((item) => item.is_active).length} active items · {isEmptyLibrary ? 'Not set up yet' : 'Set up'}</p>
+        </div>
+        <Link href="/admin/packaging-templates" className="shrink-0 rounded-ctl border border-line bg-surface-app px-3 py-2 text-xs font-semibold text-content-secondary hover:bg-surface-2">← Pricing Templates</Link>
+      </div>
 
       {feedback ? (
         <p className={`rounded-ctl px-3 py-2 text-sm font-medium ${feedback.tone === 'success' ? 'bg-success-bg text-success-fg' : 'bg-danger-bg text-danger-fg'}`}>{feedback.text}</p>

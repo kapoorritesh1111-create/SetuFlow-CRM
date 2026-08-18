@@ -113,4 +113,13 @@ export const standaloneMobileNavItems: MobileNavItem[] = [
   { href: '/tasks', label: 'Tasks', icon: 'clipboard', match: ['/tasks'] },
 ];
 
+/**
+ * Secondary mobile destinations intentionally live behind the right-most More
+ * tab so the primary bar stays focused on the four daily commercial surfaces.
+ */
+export const mobileMoreNavItems: MobileNavItem[] = [
+  { href: '/tasks', label: 'Tasks', icon: 'clipboard', match: ['/tasks'] },
+  { href: '/trade-events', label: 'Events', icon: 'calendar', match: ['/trade-events'] },
+];
+
 export const canonicalMobileNavItems = getCanonicalMobileNavItems();

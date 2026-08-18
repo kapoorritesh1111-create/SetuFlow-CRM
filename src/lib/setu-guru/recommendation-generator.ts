@@ -1,18 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
+import { generatePackagingRecommendations } from '@/lib/setu-guru/packaging-recommendations';
 
 export type GeneratedRecommendation = {
   org_id: string;
-  entity_type: 'lead' | 'buyer' | 'supplier' | 'quote' | 'rfq' | 'trade_event';
+  entity_type: 'lead' | 'buyer' | 'supplier' | 'quote' | 'rfq' | 'trade_event' | 'packaging_line' | 'packaging_template' | 'packaging_order';
   entity_id: string;
-  recommendation_type:
-    | 'lead_no_outreach'
-    | 'quote_no_follow_up'
-    | 'trade_event_lead_not_contacted'
-    | 'supplier_document_gap'
-    | 'buyer_quote_request'
-    | 'catalog_sent_no_reply'
-    | 'supplier_rfq_overdue'
-    | 'deal_stuck_in_stage';
+  recommendation_type: string;
   title: string;
   summary: string;
   reason: string;
@@ -40,7 +33,7 @@ export async function generateRecommendationsForOrganization(orgId: string): Pro
   const supabase = await createClient();
   const client = supabase as any;
 
-  const [leadsResult, quotesResult, rfqsResult, sharesResult, communicationsResult, documentsResult, openResult] = await Promise.all([
+  const [leadsResult, quotesResult, rfqsResult, sharesResult, communicationsResult, documentsResult, openResult, packagingRecommendations] = await Promise.all([
     client.from('leads').select('id,lead_type,company_name,contact_name,products_or_needs,trade_event_id,intro_sent,last_contacted_at,next_follow_up_at,stage_id,deal_value,created_at,updated_at').eq('organization_id', orgId).limit(1000),
     client.from('quotes').select('id,lead_id,quote_number,status,sent_at,follow_up_at,last_customer_response_at,created_at,updated_at').eq('organization_id', orgId).limit(1000),
     client.from('rfqs').select('id,lead_id,status,validity_date,created_at,updated_at').eq('organization_id', orgId).limit(1000),
@@ -48,6 +41,7 @@ export async function generateRecommendationsForOrganization(orgId: string): Pro
     client.from('communications').select('id,lead_id,direction,status,sent_at,created_at').eq('organization_id', orgId).limit(2000),
     client.from('documents').select('id,related_entity,related_id,status,expires_at').eq('organization_id', orgId).limit(2000),
     client.from('ai_recommendations').select('id,entity_type,entity_id,recommendation_type,created_at').eq('org_id', orgId).eq('status', 'open').limit(2000),
+    generatePackagingRecommendations(client, orgId),
   ]);
 
   for (const result of [leadsResult, quotesResult, rfqsResult, sharesResult, communicationsResult, documentsResult, openResult]) {
@@ -146,6 +140,8 @@ export async function generateRecommendationsForOrganization(orgId: string): Pro
     if (!overdueByDate && !stalePending) continue;
     push({ org_id: orgId, entity_type: 'rfq', entity_id: rfq.id, recommendation_type: 'supplier_rfq_overdue', title: `Review overdue RFQ for ${lead.company_name || lead.contact_name || 'supplier'}`, summary: 'A supplier cost request needs attention.', reason: overdueByDate ? 'The RFQ validity date has passed.' : `The RFQ has not been updated for ${ageDays(rfq.updated_at)} day(s).`, recommended_action: 'Open the supplier record and review the RFQ response.', action_href: `/leads/${rfq.lead_id}`, priority: overdueByDate ? 'urgent' : 'high', metadata: { lead_id: rfq.lead_id, rfq_id: rfq.id } });
   }
+
+  for (const recommendation of packagingRecommendations) push(recommendation as GeneratedRecommendation);
 
   const generatedKeys = new Set(generated.map(keyOf));
   let completed = 0;

@@ -3,31 +3,35 @@ import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
-import { runDiscoveryJob } from '@/lib/setu-guru/external-discovery';
-import { listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
+import { DiscoveryExecutionError, runConfirmedDiscoveryJob as runDiscoveryJob } from '@/lib/setu-guru/external-discovery-runner';
+import { getDefaultDiscoveryProvider, listDiscoveryProviders } from '@/lib/setu-guru/discovery-providers';
+import { openAiVisibleReviewProvider } from '@/lib/setu-guru/discovery-providers/openai-visible-review';
 
 export const dynamic = 'force-dynamic';
 
 const CreateJobSchema = z.object({
   campaignId: z.string().uuid(),
-  providerKey: z.string().trim().min(2).max(80),
-});
+  providerKey: z.string().trim().min(2).max(80).optional(),
+}).strict();
 
 async function organizationId() {
   const workspace = await requireWorkspace();
   return workspace.organization?.id ?? null;
 }
 
+function automaticProvider() {
+  // OpenAI web-search provider remains preferred. Structurally valid companies are retained
+  // in External Discovery for explicit human review even when source reconciliation is incomplete.
+  return openAiVisibleReviewProvider.configured ? openAiVisibleReviewProvider : getDefaultDiscoveryProvider();
+}
+
 export async function GET(request: NextRequest) {
   const orgId = await organizationId();
-  if (!orgId) {
-    return NextResponse.json({ error: 'No active organization workspace.' }, { status: 403 });
-  }
+  if (!orgId) return NextResponse.json({ error: 'No active organization workspace.' }, { status: 403 });
 
   const campaignId = request.nextUrl.searchParams.get('campaign_id');
   const supabase = await createClient();
   const client = supabase as any;
-
   try {
     let query = client
       .from('external_discovery_jobs')
@@ -35,55 +39,47 @@ export async function GET(request: NextRequest) {
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .limit(100);
-
     if (campaignId) {
-      if (!z.string().uuid().safeParse(campaignId).success) {
-        return NextResponse.json({ error: 'campaign_id must be a valid UUID.' }, { status: 422 });
-      }
+      if (!z.string().uuid().safeParse(campaignId).success) return NextResponse.json({ error: 'campaign_id must be a valid UUID.' }, { status: 422 });
       query = query.eq('campaign_id', campaignId);
     }
-
     const { data, error } = await query;
     if (error) throw error;
-
-    return NextResponse.json({ jobs: data ?? [], providers: listDiscoveryProviders().map((p) => ({ key: p.key, label: p.label, configured: p.configured })) });
+    const providers = listDiscoveryProviders().map((provider) => ({ key: provider.key, label: provider.label, configured: provider.configured, capabilities: provider.capabilities }));
+    const defaultProvider = automaticProvider();
+    return NextResponse.json({ jobs: data ?? [], providers, defaultProviderKey: defaultProvider.key, licensedProviderReady: defaultProvider.key !== 'manual' && defaultProvider.configured });
   } catch (error) {
-    console.error('[external-discovery-jobs] list failed', {
-      orgId,
-      campaignId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    console.error('[external-discovery-jobs] list failed', { orgId, campaignId, error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: 'External Discovery jobs could not be loaded.' }, { status: 500 });
   }
 }
 
-// S48-GROWTH-011/013: creates (or reuses via idempotency key) a job and runs the selected
-// provider inline through the registry. See runDiscoveryJob for the full lifecycle — it never
-// creates leads and never sends outbound communication.
 export async function POST(request: NextRequest) {
   const orgId = await organizationId();
-  if (!orgId) {
-    return NextResponse.json({ error: 'No active organization workspace.' }, { status: 403 });
-  }
+  if (!orgId) return NextResponse.json({ error: 'No active organization workspace.' }, { status: 403 });
 
   const parsed = CreateJobSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid discovery job payload.', details: parsed.error.flatten() }, { status: 422 });
-  }
+  if (!parsed.success) return NextResponse.json({ error: 'Invalid discovery job payload.', details: parsed.error.flatten() }, { status: 422 });
 
   try {
-    const result = await runDiscoveryJob(orgId, parsed.data.campaignId, parsed.data.providerKey);
-    return NextResponse.json({ result }, { status: 201 });
+    const requested = parsed.data.providerKey;
+    const explicitlyRequested = requested && !['manual', 'auto'].includes(requested)
+      ? listDiscoveryProviders().find((provider) => provider.key === requested && provider.configured)
+      : undefined;
+    // Automatic selection prefers the reliable OpenAI Responses API web-search provider.
+    // Research leads remain outside CRM and require explicit verification, approval, and conversion.
+    const provider = explicitlyRequested ?? automaticProvider();
+    const result = await runDiscoveryJob(orgId, parsed.data.campaignId, provider.key);
+    return NextResponse.json({ result: { ...result, providerKey: provider.key, providerLabel: provider.label } }, { status: 201 });
   } catch (error) {
-    console.error('[external-discovery-jobs] run failed', {
-      orgId,
-      campaignId: parsed.data.campaignId,
-      providerKey: parsed.data.providerKey,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'External Discovery job could not be run.' },
-      { status: 500 },
-    );
+    const status = error instanceof DiscoveryExecutionError ? error.status : 500;
+    const outcome = error instanceof DiscoveryExecutionError ? error.outcome : 'failed';
+    const details = error instanceof DiscoveryExecutionError ? error.details : undefined;
+    console.error('[external-discovery-jobs] run failed', { orgId, campaignId: parsed.data.campaignId, providerKey: parsed.data.providerKey, status, outcome, error: error instanceof Error ? error.message : String(error) });
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'External Discovery job could not be run.',
+      outcome,
+      details,
+    }, { status });
   }
 }

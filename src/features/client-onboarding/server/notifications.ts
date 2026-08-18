@@ -1,4 +1,5 @@
 import { ADMIN_ONBOARDING_EMAIL } from '@/features/client-onboarding/shared';
+import { getMailtrapFromAddress, sendMailtrapEmail } from '@/lib/email/mailtrap';
 
 export type OnboardingNotificationResult = {
   status: 'email_sent' | 'email_failed' | 'email_env_missing';
@@ -22,11 +23,6 @@ export type FirstAdminInviteEmailInput = {
   expiresAt?: string | null;
 };
 
-type EmailAddress = {
-  email: string;
-  name?: string;
-};
-
 export type TransactionalEmail = {
   from: string;
   to: string;
@@ -42,21 +38,6 @@ function escapeHtml(value: string) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
-}
-
-function parseEmailAddress(value: string): EmailAddress {
-  const match = value.match(/^(.+?)\s*<([^>]+)>$/);
-  if (!match) return { email: value.trim() };
-  const name = match[1]?.replace(/^[ '\"]|[ '\"]$/g, '').trim();
-  return { email: match[2].trim(), ...(name ? { name } : {}) };
-}
-
-function parseRecipientList(value: string): EmailAddress[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map(parseEmailAddress);
 }
 
 export function getOnboardingAdminEmail() {
@@ -77,7 +58,7 @@ export function buildOnboardingSetupUrl(requestId: string, existingUrl?: string 
 }
 
 export function getSetuNotificationFromAddress() {
-  return process.env.SETU_NOTIFICATION_FROM_EMAIL ?? process.env.MAILTRAP_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL;
+  return getMailtrapFromAddress();
 }
 
 function buildAdminNotificationMessage(input: OnboardingNotificationInput) {
@@ -136,118 +117,36 @@ function buildFirstAdminInviteMessage(input: FirstAdminInviteEmailInput) {
   return { subject, text, html };
 }
 
-async function sendWithMailtrap(email: TransactionalEmail): Promise<OnboardingNotificationResult> {
-  const apiKey = process.env.MAILTRAP_API_KEY;
-  const useSandbox = String(process.env.MAILTRAP_USE_SANDBOX ?? '').toLowerCase() === 'true';
-  const sandboxId = process.env.MAILTRAP_SANDBOX_ID;
-
-  if (!apiKey) {
-    return { status: 'email_env_missing', error: 'MAILTRAP_API_KEY is required for Mailtrap notifications.' };
-  }
-
-  if (useSandbox && !sandboxId) {
-    return { status: 'email_env_missing', error: 'MAILTRAP_SANDBOX_ID is required when MAILTRAP_USE_SANDBOX is true.' };
-  }
-
-  const endpoint = useSandbox
-    ? `https://sandbox.api.mailtrap.io/api/send/${encodeURIComponent(sandboxId ?? '')}`
-    : 'https://send.api.mailtrap.io/api/send';
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: parseEmailAddress(email.from),
-        to: parseRecipientList(email.to),
-        subject: email.subject,
-        text: email.text,
-        html: email.html,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Mailtrap rejected the notification.');
-      return { status: 'email_failed', error: errorText.slice(0, 500) };
-    }
-
-    return { status: 'email_sent', error: null };
-  } catch (error) {
-    return {
-      status: 'email_failed',
-      error: error instanceof Error ? error.message : 'Unknown Mailtrap notification error.',
-    };
-  }
-}
-
-async function sendWithResend(email: TransactionalEmail): Promise<OnboardingNotificationResult> {
-  const apiKey = process.env.RESEND_API_KEY;
-
-  if (!apiKey) {
-    return { status: 'email_env_missing', error: 'RESEND_API_KEY is required for Resend notifications.' };
-  }
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from: email.from, to: [email.to], subject: email.subject, text: email.text, html: email.html }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Resend rejected the notification.');
-      return { status: 'email_failed', error: errorText.slice(0, 500) };
-    }
-
-    return { status: 'email_sent', error: null };
-  } catch (error) {
-    return {
-      status: 'email_failed',
-      error: error instanceof Error ? error.message : 'Unknown Resend notification error.',
-    };
-  }
-}
-
 export async function sendTransactionalEmail(email: TransactionalEmail): Promise<OnboardingNotificationResult> {
-  const provider = (process.env.SETU_EMAIL_PROVIDER ?? (process.env.MAILTRAP_API_KEY ? 'mailtrap' : 'resend')).toLowerCase();
+  const result = await sendMailtrapEmail({
+    from: email.from,
+    to: email.to,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
+    fromName: 'SETU Flow',
+    category: 'client_onboarding',
+  });
 
-  if (provider === 'mailtrap') return sendWithMailtrap(email);
-  if (provider === 'resend') return sendWithResend(email);
-
-  return {
-    status: 'email_env_missing',
-    error: `Unsupported SETU_EMAIL_PROVIDER "${provider}". Use "mailtrap" or "resend".`,
-  };
+  if (result.ok) return { status: 'email_sent', error: null };
+  if (result.error.includes('MAILTRAP_API_KEY') || result.error.includes('MAILTRAP_SANDBOX_ID')) {
+    return { status: 'email_env_missing', error: result.error };
+  }
+  return { status: 'email_failed', error: result.error };
 }
 
 export async function sendClientOnboardingAdminNotification(input: OnboardingNotificationInput): Promise<OnboardingNotificationResult> {
-  const from = getSetuNotificationFromAddress();
-
-  if (!from) {
-    return {
-      status: 'email_env_missing',
-      error: 'SETU_NOTIFICATION_FROM_EMAIL is required for outbound onboarding notifications.',
-    };
-  }
-
-  return sendTransactionalEmail({ from, to: input.adminEmail, ...buildAdminNotificationMessage(input) });
+  return sendTransactionalEmail({
+    from: getSetuNotificationFromAddress(),
+    to: input.adminEmail,
+    ...buildAdminNotificationMessage(input),
+  });
 }
 
 export async function sendFirstAdminInviteEmail(input: FirstAdminInviteEmailInput): Promise<OnboardingNotificationResult> {
-  const from = getSetuNotificationFromAddress();
-
-  if (!from) {
-    return {
-      status: 'email_env_missing',
-      error: 'SETU_NOTIFICATION_FROM_EMAIL is required for outbound first-admin invitations.',
-    };
-  }
-
-  return sendTransactionalEmail({ from, to: input.toEmail, ...buildFirstAdminInviteMessage(input) });
+  return sendTransactionalEmail({
+    from: getSetuNotificationFromAddress(),
+    to: input.toEmail,
+    ...buildFirstAdminInviteMessage(input),
+  });
 }

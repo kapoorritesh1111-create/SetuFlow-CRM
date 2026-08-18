@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packaging Workspace — Live User Journey Discovery v1</title>
+<style>
+  :root{
+    --navy-900:#0F2338; --navy-700:#1F487C; --navy-500:#2E5C96; --navy-100:#E7EEF6; --navy-50:#F4F7FB;
+    --teal-600:#279491; --teal-500:#359F91; --teal-100:#E3F3F1;
+    --blue-500:#3B82F6; --blue-100:#DBEAFE;
+    --green-600:#16A34A; --green-100:#DCFCE7; --green-fg:#166534;
+    --amber-600:#D97706; --amber-100:#FEF3C7; --amber-fg:#92400E;
+    --red-600:#DC2626; --red-100:#FEE2E2; --red-fg:#991B1B;
+    --slate-900:#0F172A; --slate-700:#334155; --slate-500:#64748B; --slate-300:#CBD5E1; --slate-200:#E2E8F0; --slate-100:#F1F5F9; --slate-50:#F8FAFC;
+    --white:#FFFFFF;
+    --radius-sm:8px; --radius-md:12px; --radius-lg:18px;
+    --shadow-card:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
+    --shadow-pop:0 12px 32px rgba(15,35,56,.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--slate-50); color:var(--slate-900); line-height:1.55; font-size:15px;
+  }
+  a{color:var(--navy-700);}
+  h1,h2,h3,h4{font-family:inherit; line-height:1.2; margin:0 0 8px 0; color:var(--navy-900);}
+  h1{font-size:28px; font-weight:800; letter-spacing:-0.01em;}
+  h2{font-size:22px; font-weight:750;}
+  h3{font-size:17px; font-weight:700;}
+  p{margin:0 0 10px 0;}
+  code{background:var(--slate-100); padding:1px 6px; border-radius:6px; font-size:.9em; color:var(--navy-700);}
+
+  /* ===== Layout shell ===== */
+  .shell{display:grid; grid-template-columns:260px 1fr; min-height:100vh;}
+  .sidenav{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    background:var(--navy-900); color:#DCE6F2; padding:22px 16px 40px;
+    border-right:1px solid rgba(255,255,255,.06);
+  }
+  .sidenav .brand{display:flex; align-items:center; gap:8px; margin-bottom:22px;}
+  .sidenav .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--teal-500);}
+  .sidenav .brand strong{color:#fff; font-size:14px; letter-spacing:.04em; text-transform:uppercase;}
+  .sidenav nav a{
+    display:block; color:#B7C6DA; text-decoration:none; font-size:13.5px; font-weight:600;
+    padding:8px 10px; border-radius:8px; margin-bottom:2px;
+  }
+  .sidenav nav a:hover{background:rgba(255,255,255,.07); color:#fff;}
+  .sidenav nav .section-label{
+    text-transform:uppercase; font-size:10.5px; letter-spacing:.12em; color:#5E7691; font-weight:700;
+    margin:18px 0 6px 10px;
+  }
+  .sidenav nav .section-label:first-child{margin-top:0;}
+
+  .main{min-width:0;}
+  .topbar{
+    position:sticky; top:0; z-index:20; background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--slate-200); padding:10px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .topbar .stats{display:flex; gap:18px; flex-wrap:wrap;}
+  .topbar .stat{font-size:12.5px; color:var(--slate-500); font-weight:600;}
+  .topbar .stat b{color:var(--navy-900); font-size:14px;}
+  .topbar .title{font-weight:800; color:var(--navy-900); font-size:14px;}
+
+  .content{padding:36px 40px 90px; max-width:1180px;}
+  section.block{margin-bottom:56px; scroll-margin-top:70px;}
+  .eyebrow{text-transform:uppercase; letter-spacing:.12em; font-size:11px; font-weight:800; color:var(--teal-600); margin-bottom:6px;}
+
+  /* ===== Cards / grids ===== */
+  .card{background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:22px;}
+  .grid{display:grid; gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  @media (max-width:900px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr 1fr;}}
+
+  .metric{background:var(--navy-50); border:1px solid var(--navy-100); border-radius:var(--radius-md); padding:16px;}
+  .metric .n{font-size:26px; font-weight:800; color:var(--navy-900);}
+  .metric .l{font-size:12px; color:var(--slate-500); font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .metric.sev-p0{background:#FDE8E8; border-color:#F7C8C8;}
+  .metric.sev-p1{background:#FFF1E6; border-color:#FFDCB8;}
+  .metric.sev-p2{background:#FFF9E0; border-color:#FCEBAF;}
+  .metric.sev-p3{background:var(--slate-100); border-color:var(--slate-200);}
+
+  /* ===== Badges ===== */
+  .badge{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; padding:4px 10px; border-radius:99px; border:1px solid transparent; white-space:nowrap;}
+  .badge-pass{background:var(--green-100); color:var(--green-fg); border-color:#BBF0CE;}
+  .badge-gaps{background:var(--amber-100); color:var(--amber-fg); border-color:#FCE3A8;}
+  .badge-blocked{background:var(--red-100); color:var(--red-fg); border-color:#F7C8C8;}
+  .badge-na{background:var(--slate-100); color:var(--slate-500); border-color:var(--slate-200);}
+  .badge-nt{background:#EFF3FF; color:#3548A8; border-color:#D6DEFB;}
+  .sev{display:inline-flex; align-items:center; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:6px;}
+  .sev-P0{background:var(--red-600); color:#fff;}
+  .sev-P1{background:var(--amber-600); color:#fff;}
+  .sev-P2{background:#CA8A04; color:#fff;}
+  .sev-P3{background:var(--slate-500); color:#fff;}
+
+  /* ===== Journey coverage map ===== */
+  .journey-map{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+  .journey-map .node{
+    display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center; width:128px;
+  }
+  .journey-map .node .box{
+    width:100%; padding:10px 8px; border-radius:var(--radius-md); background:var(--white); border:1.5px solid var(--slate-200);
+    font-size:12.5px; font-weight:700; color:var(--navy-900);
+  }
+  .journey-map .arrow{color:var(--slate-300); font-size:18px;}
+
+  /* ===== Expandable step sections ===== */
+  .journey-section{border:1px solid var(--slate-200); border-radius:var(--radius-lg); background:var(--white); margin-bottom:16px; overflow:hidden;}
+  .journey-header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; cursor:pointer; user-select:none;
+  }
+  .journey-header:hover{background:var(--slate-50);}
+  .journey-header .htitle{display:flex; align-items:center; gap:12px;}
+  .journey-header .num{
+    width:30px; height:30px; border-radius:9px; background:var(--navy-900); color:#fff; font-weight:800; font-size:13px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .journey-header .chev{transition:transform .2s ease; color:var(--slate-500);}
+  .journey-section.open .chev{transform:rotate(90deg);}
+  .journey-body{max-height:0; overflow:hidden; transition:max-height .25s ease;}
+  .journey-section.open .journey-body{max-height:6000px;}
+  .journey-body-inner{padding:0 20px 22px;}
+
+  .step-card{border:1px solid var(--slate-200); border-radius:var(--radius-md); padding:16px; margin-top:14px; background:var(--slate-50);}
+  .step-card .step-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;}
+  .step-card .step-num{font-size:11px; font-weight:800; color:var(--teal-600); text-transform:uppercase; letter-spacing:.06em;}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;}
+  @media (max-width:700px){.compare{grid-template-columns:1fr;}}
+  .compare .exp,.compare .act{border-radius:var(--radius-sm); padding:10px 12px; font-size:13.5px;}
+  .compare .exp{background:var(--blue-100); border:1px solid #BFDBFE;}
+  .compare .act.ok{background:var(--green-100); border:1px solid #BBF0CE;}
+  .compare .act.bad{background:var(--red-100); border:1px solid #F7C8C8;}
+  .compare .lbl{font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; display:block; opacity:.75;}
+
+  .shot{margin-top:10px; cursor:zoom-in; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--slate-200); display:inline-block; max-width:340px;}
+  .shot img{display:block; width:100%; height:auto;}
+  .shot-cap{font-size:11.5px; color:var(--slate-500); margin-top:4px; font-style:italic;}
+
+  .gap-chip{display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:700; color:var(--red-fg); background:var(--red-100); border:1px solid #F7C8C8; padding:3px 9px; border-radius:99px; margin:8px 6px 0 0; text-decoration:none;}
+  .gap-chip:hover{background:#FDD8D8;}
+
+  /* ===== Gap register table ===== */
+  .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+  .filters select, .filters input[type=text]{
+    border:1px solid var(--slate-300); border-radius:9px; padding:8px 12px; font-size:13px; background:#fff; color:var(--slate-700);
+  }
+  table.gaps{width:100%; border-collapse:collapse; font-size:13.5px; background:#fff; border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-card);}
+  table.gaps th{background:var(--navy-900); color:#fff; text-align:left; padding:10px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.05em;}
+  table.gaps td{padding:11px 12px; border-bottom:1px solid var(--slate-100); vertical-align:top;}
+  table.gaps tr:last-child td{border-bottom:none;}
+  table.gaps tr:hover{background:var(--slate-50);}
+  table.gaps .gid{font-weight:800; color:var(--navy-700); font-family:ui-monospace,monospace; font-size:12.5px;}
+
+  /* ===== Misc lists ===== */
+  ul.clean{margin:0; padding-left:20px;}
+  ul.clean li{margin-bottom:6px;}
+  .fix-group{border-left:4px solid var(--teal-500); background:var(--teal-100); border-radius:0 var(--radius-md) var(--radius-md) 0; padding:14px 18px; margin-bottom:12px;}
+  .fix-group h4{margin-bottom:4px; color:var(--navy-900);}
+  .fix-group .items{font-size:13.5px; color:var(--slate-700);}
+
+  .checklist{list-style:none; margin:0; padding:0;}
+  .checklist li{display:flex; gap:10px; padding:9px 0; border-bottom:1px dashed var(--slate-200); font-size:14px;}
+  .checklist li:last-child{border-bottom:none;}
+  .checklist input{margin-top:3px; width:16px; height:16px; flex-shrink:0;}
+
+  footer{padding:30px 40px 60px; color:var(--slate-500); font-size:12.5px; border-top:1px solid var(--slate-200); margin-top:20px;}
+
+  /* ===== Lightbox ===== */
+  #lightbox{position:fixed; inset:0; background:rgba(10,17,30,.86); display:none; align-items:center; justify-content:center; z-index:999; padding:40px; cursor:zoom-out;}
+  #lightbox.open{display:flex;}
+  #lightbox img{max-width:100%; max-height:100%; border-radius:10px; box-shadow:var(--shadow-pop);}
+
+  @media print{
+    .sidenav, .topbar, .filters{display:none !important;}
+    .shell{display:block;}
+    .journey-body{max-height:none !important;}
+    section.block{page-break-inside:avoid;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+
+<div id="lightbox" onclick="this.classList.remove('open')"><img id="lightbox-img" src="" alt=""></div>
+
+<div class="shell">
+  <aside class="sidenav">
+    <div class="brand"><span class="dot"></span><strong>Discovery v1</strong></div>
+    <nav>
+      <div class="section-label">Overview</div>
+      <a href="#exec-summary">Executive Summary</a>
+      <a href="#coverage-map">Journey Coverage Map</a>
+
+      <div class="section-label">Click-by-Click Guide</div>
+      <a href="#j1">1 · Login &amp; Entry</a>
+      <a href="#j2">2 · Home Dashboard</a>
+      <a href="#j3">3 · Analytics &amp; Reports</a>
+      <a href="#j4">4 · Quick Add Lead</a>
+      <a href="#j5">5 · Leads / Follow-up</a>
+      <a href="#j6">6 · Lead Detail &amp; Qualification</a>
+      <a href="#j7">7 · Packaging Catalog</a>
+      <a href="#j8">8 · Quote Creation</a>
+      <a href="#j9">9 · Quote Lifecycle</a>
+      <a href="#j10">10 · Customer PDF</a>
+      <a href="#j11">11 · Order Handoff &amp; Orders</a>
+      <a href="#j12">12 · Remaining Workspaces</a>
+
+      <div class="section-label">Findings</div>
+      <a href="#gap-register">Gap Register</a>
+      <a href="#missing-states">Missing Journey States</a>
+      <a href="#fix-sequence">Recommended Fix Sequence</a>
+      <a href="#retest">Retest Checklist</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="title">Packaging Workspace — Live User Journey Discovery <span style="color:var(--slate-400); font-weight:600;">· v1 · Phase 1</span></div>
+      <div class="stats">
+        <div class="stat"><b>12</b> journeys in scope</div>
+        <div class="stat"><b>7</b> fully or partly tested</div>
+        <div class="stat"><b>8</b> gaps logged</div>
+        <div class="stat"><b>1</b> P0 · <b>3</b> P1 · <b>2</b> P2 · <b>2</b> P3</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ EXEC SUMMARY ============ -->
+      <section class="block" id="exec-summary">
+        <div class="card" style="margin-bottom:20px; border-left:4px solid var(--teal-600); background:var(--teal-100);">
+          <h3 style="color:var(--navy-900);">Retest 1 update — July 23, 2026</h3>
+          <p style="margin-bottom:0;">A full end-to-end order journey (capture → qualify → quote → design → approval → order) was retested on July 23. <strong>PKG-JOURNEY-001 through 007 are all confirmed fixed</strong> and hold up under refresh/reload. The retest also found a new <strong>P0</strong> — a quote gets permanently stuck after one approval cycle, blocking Send/Accept/Order (<code>PKG-JOURNEY-009</code>) — plus 7 smaller gaps (<code>PKG-JOURNEY-010</code>–<code>016</code>). Full detail is in <code>gap-register.md</code> and <code>test-records.md</code>, which are more current than the step-by-step guide below (not yet re-synced into this HTML). See those files for the complete Retest 1 write-up.</p>
+        </div>
+        <div class="eyebrow">Section 1</div>
+        <h1>Executive Summary</h1>
+        <p style="max-width:760px; color:var(--slate-700);">A live, click-only walkthrough of the Packaging workspace, testing the real new-user journey from login through quote-to-order. This is discovery only — no fixes, commits, deployments, or database changes were made. Testing this session covered the core Lead → Quote entry path in depth and found a root-cause chain that blocks it entirely for new leads; several other journeys were reached and passed cleanly; the remaining sidebar workspaces were not yet reached (see Missing Journey States).</p>
+
+        <div class="grid grid-4" style="margin-top:20px;">
+          <div class="metric"><div class="n">Jul 22, 2026</div><div class="l">Date tested</div></div>
+          <div class="metric"><div class="n" style="font-size:16px;">packaging.setuflowcrm.com</div><div class="l">Live workspace</div></div>
+          <div class="metric"><div class="n">Chrome</div><div class="l">Browser (Claude for Chrome)</div></div>
+          <div class="metric"><div class="n">Owner / Admin</div><div class="l">User role tested</div></div>
+        </div>
+
+        <div class="grid grid-4" style="margin-top:16px;">
+          <div class="metric"><div class="n">12</div><div class="l">Workflows in scope</div></div>
+          <div class="metric"><div class="n">7</div><div class="l">Workflows reached</div></div>
+          <div class="metric sev-p1"><div class="n">1</div><div class="l">Workflow fully blocked</div></div>
+          <div class="metric"><div class="n">8</div><div class="l">Total gaps found</div></div>
+        </div>
+
+        <div class="grid grid-4" style="margin-top:16px;">
+          <div class="metric sev-p0"><div class="n">1</div><div class="l">P0 — production blocker</div></div>
+          <div class="metric sev-p1"><div class="n">3</div><div class="l">P1 — core workflow defects</div></div>
+          <div class="metric sev-p2"><div class="n">2</div><div class="l">P2 — data / workaround needed</div></div>
+          <div class="metric sev-p3"><div class="n">2</div><div class="l">P3 — polish / minor</div></div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <h3>Temporary test records created</h3>
+          <p style="margin-bottom:0;">One lead — <code>GUIDE TEST Packaging Buyer</code> (id <code>0425d474-3f10-4cd5-a15a-0ce03da67cef</code>) — created via Quick Add Lead in the live Stark Packmate org, per the specified test-data convention. No quotes, orders, messages, or notifications were created or sent. Full detail in <code>test-records.md</code>; flagged for cleanup.</p>
+        </div>
+
+        <div class="card" style="margin-top:16px; border-left:4px solid var(--red-600);">
+          <h3 style="color:var(--red-fg);">Headline finding</h3>
+          <p style="margin-bottom:0;">A brand-new lead currently <strong>cannot</strong> be walked through to a quote using on-screen actions alone. Root cause: the "Pick Categories" checkboxes on Lead Detail don't register clicks or persist a selection, which means a new lead never gets product interest mapped — which in turn silently blocks quote creation with an error that's generated but never shown anywhere in the UI (it only exists in the page URL). See <a href="#gap-register">Gap Register</a>, <code>PKG-JOURNEY-007</code>.</p>
+        </div>
+      </section>
+
+      <!-- ============ COVERAGE MAP ============ -->
+      <section class="block" id="coverage-map">
+        <div class="eyebrow">Section 2</div>
+        <h2>Journey Coverage Map</h2>
+        <p style="color:var(--slate-700);">Status reflects what was verifiable through live clicks this session.</p>
+
+        <div class="journey-map card">
+          <div class="node"><div class="box">Login</div><span class="badge badge-pass">Passed</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Home</div><span class="badge badge-pass">Passed</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Quick Lead</div><span class="badge badge-gaps">Passed w/ gaps</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Leads Queue</div><span class="badge badge-blocked">Blocked</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Lead Detail</div><span class="badge badge-pass">Passed*</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Qualification</div><span class="badge badge-blocked">Blocked</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Catalog</div><span class="badge badge-pass">Passed</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Quote Builder</div><span class="badge badge-blocked">Blocked</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Review</div><span class="badge badge-nt">Not tested</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Approval</div><span class="badge badge-nt">Not tested</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Customer PDF</div><span class="badge badge-gaps">Partly verified</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Quote Lifecycle</div><span class="badge badge-pass">Passed</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Order Handoff</div><span class="badge badge-nt">Not tested</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Orders</div><span class="badge badge-nt">Not tested</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="box">Execution Workspaces</div><span class="badge badge-nt">Not tested</span></div>
+        </div>
+        <p style="margin-top:10px; font-size:12.5px; color:var(--slate-500);">*Lead Detail itself passed — reached via a working alternate path (Pipeline kanban card) after the direct Leads Queue path was found blocked. See Journey 5 &amp; 6 below.</p>
+      </section>
+
+      <!-- ============ CLICK BY CLICK ============ -->
+      <section class="block" id="click-guide">
+        <div class="eyebrow">Section 3</div>
+        <h2>Click-by-Click Guide</h2>
+        <p style="color:var(--slate-700); max-width:760px;">Each journey below is expandable. Journeys reached this session have full step detail with expected-vs-actual comparisons and related gaps; journeys not yet reached are marked accordingly rather than guessed at.</p>
+
+        <!-- J1 -->
+        <div class="journey-section open" id="j1">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">1</span><h3 style="margin:0;">Login and First-Time Entry</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-pass">Passed</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Starting screen:</strong> Browser navigated to <code>packaging.setuflowcrm.com</code> with an existing authenticated session.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Either a login screen, or — if already authenticated — a direct landing on the workspace Home.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Landed directly on <code>/dashboard</code> (Home), fully authenticated as <strong>Ritesh Packing</strong> (<code>test@setuflowtest.com</code>). Workspace branding, "TRADE COMMAND CENTER" header, org identity, global nav (Growth Center, All/Buyer/Supplier, Share vCard, Quick Lead, notifications, user menu) and Setu Guru entry point all rendered correctly on first load.</div>
+              </div>
+              <p style="margin-top:8px; font-size:13px; color:var(--slate-500);">Full login-form flow (credentials entry) was not exercised since the session was already authenticated — worth a separate pass logged out.</p>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J2 -->
+        <div class="journey-section" id="j2">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">2</span><h3 style="margin:0;">Home Dashboard</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-pass">Passed</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Click:</strong> Home is the default landing tab; content confirmed by reading the live page.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Setu Guru status strip, filter row (markets/products/stages/statuses/period), five KPI tiles (Open Opportunities, Follow-ups Due, Quotes in Market, Blocked Revenue, Pipeline Value), Market Command Map, Needs Attention panel, and three lower panels (Pipeline Stage Distribution, Country Performance, Commercial Feed).</div>
+                <div class="act ok"><span class="lbl">Actual</span>All present and populated with live numbers (Open Opportunities: 5, Follow-ups Due: 1, Quotes in Market: 12, Blocked Revenue: 0, Pipeline Value: $136,910.00). Needs Attention correctly surfaced an overdue follow-up and an in-review quote for "Setu Groups", each with a working-looking "Open lead"/"Open quote" action.</div>
+              </div>
+              <div class="shot" onclick="openLightbox('evidence/00-reference-02-home-dashboard.png')">
+                <img src="evidence/00-reference-02-home-dashboard.png" alt="Home dashboard reference screenshot">
+              </div>
+              <div class="shot-cap">Reference screenshot supplied by Ritesh — layout matches what was live-verified this session. Click to zoom.</div>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Note</span></div>
+              <p style="margin-bottom:0;">Cross-checking dashboard numbers against underlying records (e.g., does "12 Quotes in Market" match the Quotes page count) was not fully reconciled this session — worth a dedicated pass.</p>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J3 -->
+        <div class="journey-section" id="j3">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">3</span><h3 style="margin:0;">Analytics and Reports</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-nt">Not tested</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <p>Not reached this session. The "Analytics" and "Reports" tabs are visible and clickable from the Home page header (confirmed present in live page text alongside "Home"), but were not clicked through.</p>
+          </div></div>
+        </div>
+
+        <!-- J4 -->
+        <div class="journey-section open" id="j4">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">4</span><h3 style="margin:0;">Quick Add Lead</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-gaps">Passed with gaps</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Click:</strong> <code>+ Quick Lead</code> in the global header (resolves to <code>/leads?quickLead=1</code>).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>A drawer opens with Smart Capture (camera/upload), Lead Type toggle, Company &amp; Contact fields, Source &amp; Pipeline fields, Interest picker, Trade Note, Next Action, and Save/Cancel.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Drawer opened exactly as expected, matching the reference screenshot field-for-field: Smart Scan / Use camera / Upload file or PDF, Buyer/Supplier toggle, Company Name*, Country*, Contact Name, Job Title, Email, Phone, WhatsApp, Lead Source, Event/Source Label, Owner, Deal Value Estimate, Interest (Product/Category/New request), Trade Note with Dictate, Next Follow-up, and Save lead / Cancel.</div>
+              </div>
+              <div class="shot" onclick="openLightbox('evidence/00-reference-04-quick-add-lead.png')">
+                <img src="evidence/00-reference-04-quick-add-lead.png" alt="Quick Add Lead drawer reference screenshot">
+              </div>
+              <div class="shot-cap">Reference screenshot supplied by Ritesh.</div>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 2</span></div>
+              <p><strong>Entered:</strong> Company name <code>GUIDE TEST Packaging Buyer</code>, Country India, Contact Journey Test User, Email journey-test@example.com, Lead source Trade show, Event/source label "User Journey Discovery", Trade note per spec. Left phone/WhatsApp/job title/deal value blank (optional).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Only Company Name and Country are required (marked *); everything else should be optional and save fine blank.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Confirmed — form accepted the partial data with no validation complaints on the optional fields.</div>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 3</span></div>
+              <p><strong>Click:</strong> Save lead.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Clear success confirmation, then land somewhere sensible with the new lead visible and correctly filed.</div>
+                <div class="act bad"><span class="lbl">Actual</span>Drawer closed and the Follow-up/Lead Queue view reloaded with the new lead present (count went 10→11), correctly owned by the logged-in user, correctly grouped under "Active/Upcoming", correct source label shown. <strong>But no success toast or confirmation message was observed</strong> in the checked window after save.</div>
+              </div>
+              <a class="gap-chip" href="#gap-002">⚠ PKG-JOURNEY-002 — no success confirmation</a>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J5 -->
+        <div class="journey-section open" id="j5">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">5</span><h3 style="margin:0;">Leads and Follow-Up Workspace</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-blocked">Blocked (core action)</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Click:</strong> "Leads" in the sidebar (also the default view landed on after Quick Add Lead saves).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Lead Queue with tabs (Lead Queue, Command Center, Quote Preview, Approval Queue), filter row, and lifecycle-grouped rows (Critical, Due Today, Active/Upcoming).</div>
+                <div class="act ok"><span class="lbl">Actual</span>All present and matching the reference screenshot, filters and grouping counts all populated correctly (11 leads, 1 overdue, 1 due today).</div>
+              </div>
+              <div class="shot" onclick="openLightbox('evidence/00-reference-06-lead-queue-followup.png')">
+                <img src="evidence/00-reference-06-lead-queue-followup.png" alt="Lead Queue / Follow-up reference screenshot">
+              </div>
+              <div class="shot-cap">Reference screenshot supplied by Ritesh — layout matches, but the row-open action shown here does not function live (see below).</div>
+            </div>
+            <div class="step-card" style="border-color:#F7C8C8; background:#FEF4F4;">
+              <div class="step-top"><span class="step-num">Step 2 — Failure</span></div>
+              <p><strong>Click:</strong> "Open →" on the "GUIDE TEST Packaging Buyer" row.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Navigates to that lead's Lead Detail page.</div>
+                <div class="act bad"><span class="lbl">Actual</span>Nothing happens. URL stays on <code>/leads</code>. Retried; same result. Tried the company-name link on the same row — also nothing. Retested against a real, pre-existing lead ("Suhana Spices &amp; Snacks Pvt Ltd") — same dead result. Checked browser console (no errors) and network activity (no request fired at all) to rule out a slow/silent failure — confirmed truly inert.</div>
+              </div>
+              <a class="gap-chip" href="#gap-001">⛔ PKG-JOURNEY-001 — Lead Queue "Open" is dead (P1)</a>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 3 — Workaround found</span></div>
+              <p><strong>Click:</strong> "Pipeline" in the sidebar (an alternate route to leads, in scope for this journey).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Some view of leads by stage.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Opens a kanban board ("Buyer leads") as a modal overlay. Clicking the "GUIDE TEST Packaging Buyer" card inside it <strong>did</strong> navigate correctly to Lead Detail (<code>/leads/{id}?mode=buyers</code>).</div>
+              </div>
+              <a class="gap-chip" href="#gap-008">⚠ PKG-JOURNEY-008 — Pipeline opens as a modal, no URL change (P3)</a>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J6 -->
+        <div class="journey-section open" id="j6">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">6</span><h3 style="margin:0;">Lead Detail and Qualification</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-gaps">Passed with gaps</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Reached via:</strong> Pipeline kanban card click (see Journey 5, Step 3).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Lead identity header, lifecycle stepper, Readiness Score, Active Quote, Products Selected, Next Action, Next Touchpoint composer, Commercial panel, Quotes on this Lead, Qualification &amp; Mapping, Quick Edit, sticky action bar.</div>
+                <div class="act ok"><span class="lbl">Actual</span>All present, matching the reference screenshot, and correctly data-bound to the new lead: name, "Buyer" tag, owner "Ritesh Packing", source "User Journey Discovery", market "Asia", email shown correctly, lifecycle stepper on step 1 "New Lead", Readiness Score 65/100 "Excellent", Active Quote "No quote", Products Selected "0 selected", Next Action "Create quote".</div>
+              </div>
+              <div class="shot" onclick="openLightbox('evidence/00-reference-07-lead-detail.png')">
+                <img src="evidence/00-reference-07-lead-detail.png" alt="Lead Detail reference screenshot">
+              </div>
+              <div class="shot-cap">Reference screenshot supplied by Ritesh (a different, pre-existing lead) — page structure matches what was live-verified on the new test lead.</div>
+            </div>
+            <div class="step-card" style="border-color:#F7C8C8; background:#FEF4F4;">
+              <div class="step-top"><span class="step-num">Step 2 — Failure</span></div>
+              <p><strong>Click:</strong> A checkbox under "Pick Categories" in Qualification &amp; Mapping (e.g. "Digital Label Production Category").</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Checkbox becomes checked; "0 products" count updates.</div>
+                <div class="act bad"><span class="lbl">Actual</span>Never becomes checked. Verified three ways: standard click, precise pixel-click directly on the confirmed-visible checkbox's bounding box, and a direct DOM <code>.checked</code> read immediately after — always false. "0 products" count never moved.</div>
+              </div>
+              <a class="gap-chip" href="#gap-003">⛔ PKG-JOURNEY-003 — category checkboxes don't toggle (P1)</a>
+            </div>
+            <div class="step-card" style="border-color:#F7C8C8; background:#FEF4F4;">
+              <div class="step-top"><span class="step-num">Step 3 — Failure</span></div>
+              <p><strong>Click:</strong> Edited Qualification Notes text → "Save qualification &amp; mapping" → refreshed the page (persistence test).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Edited note text still present after refresh.</div>
+                <div class="act bad"><span class="lbl">Actual</span>Reverted to the original auto-populated text (the trade note copied over from Quick Add Lead) — the edit was not retained.</div>
+              </div>
+              <a class="gap-chip" href="#gap-004">⚠ PKG-JOURNEY-004 — qualification note edits don't persist (P2)</a>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Nice detail</span></div>
+              <p style="margin-bottom:0;">The Trade Note entered in Quick Add Lead is automatically carried over into the Qualification Notes field on Lead Detail — a genuinely good bit of continuity between the two forms, worth keeping.</p>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J7 -->
+        <div class="journey-section open" id="j7">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">7</span><h3 style="margin:0;">Packaging Catalog</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-pass">Passed</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Click:</strong> "Catalog" in the sidebar.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>"How Packaging Pricing Works" explainer, buyer-inquiry paste box, 9 service-family cards, a selected-family detail panel.</div>
+                <div class="act ok"><span class="lbl">Actual</span>All present and correct: Digital Labels, Stand Up Pouches, Digital Shrink Sleeves, Digital Flexible Packaging, Prototypes &amp; Mockups, Variable Data Printing, 3D Packshots, Pre-Press, Packaging Add-ons — each with pricing mode badge (Dimensional/Service) and a starting price. Copy clearly states "No size-SKU explosion — dimensions are entered during quoting."</div>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 2</span></div>
+              <p><strong>Click:</strong> "View details →" on Digital Labels.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Family detail page: pricing mode, default unit, MOQ, lead time, linked pricing template, and the configurable product(s) under it.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Correct — showed "DL — Standard Matte Permanent" as the linked template, MOQ 500, lead time 7-9 business days, and explicit copy: "No need to enter sizes, materials, finishes, quantities, or prices in the catalog. Those are entered during quote creation." The distinction between family / product / quote-time configuration is clearly communicated for a new user.</div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J8 -->
+        <div class="journey-section open" id="j8">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">8</span><h3 style="margin:0;">Quote Creation</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-blocked">Blocked</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card" style="border-color:#F7C8C8; background:#FEF4F4;">
+              <div class="step-top"><span class="step-num">Step 1 — Failure</span></div>
+              <p><strong>Click:</strong> "+ New Quote" (Commercial section) on the test lead's Lead Detail page.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Opens the 5-step Quote Builder (Product → Terms → Pricing → Review → Send Gate), or if something's missing, says so clearly.</div>
+                <div class="act bad"><span class="lbl">Actual</span>Navigated to <code>/leads/{id}/quote?quoteDraftError=Lead%20needs%20at%20least%20one%20active%20product%20interest%20before%20creating%20a%20quote</code>. The 5-step shell renders (Product / Terms / Pricing / Review / Send Gate labels all visible) with a "Create Quote Draft" button — <strong>but the error message is only present in the URL, never rendered anywhere on the page.</strong> A user sees a normal-looking screen with no indication anything is blocking them.</div>
+              </div>
+              <a class="gap-chip" href="#gap-005">⛔ PKG-JOURNEY-005 — blocking error never shown to user (P1)</a>
+            </div>
+            <div class="step-card" style="border-color:#F7C8C8; background:#FEF4F4;">
+              <div class="step-top"><span class="step-num">Step 2 — Failure</span></div>
+              <p><strong>Click:</strong> "Create Quote Draft" (attempting to proceed anyway).</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Either proceeds, or shows a clear error/retry state.</div>
+                <div class="act bad"><span class="lbl">Actual</span>Nothing happens — same URL, no new message, no inline error, no navigation. Dead end for this lead.</div>
+              </div>
+              <a class="gap-chip" href="#gap-006">⚠ PKG-JOURNEY-006 — retry does nothing, no feedback (P2)</a>
+            </div>
+            <div class="step-card" style="border-color:#F7C8C8; background:#FEF4F4;">
+              <div class="step-top"><span class="step-num">Root cause</span></div>
+              <p style="margin-bottom:0;">This entire journey is blocked by <a href="#gap-003">PKG-JOURNEY-003</a> — because category checkboxes on Lead Detail never actually save a selection, no new lead can ever satisfy "at least one active product interest," so Quote Builder is unreachable for any brand-new lead via the UI.</p>
+              <a class="gap-chip" href="#gap-007">⛔ PKG-JOURNEY-007 — new-lead-to-quote path fully blocked (P0)</a>
+            </div>
+            <p style="font-size:13px; color:var(--slate-500); margin-top:10px;">Steps 2–5 of the builder (Terms, Pricing, Review, Send Gate) were not reachable this session as a result and are logged under Missing Journey States.</p>
+          </div></div>
+        </div>
+
+        <!-- J9 -->
+        <div class="journey-section open" id="j9">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">9</span><h3 style="margin:0;">Quote Lifecycle</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-pass">Passed</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Click:</strong> "Quotes" in the sidebar.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Lifecycle tiles (Follow-up, Revisions, Order Handoff, Cleanup, Expiring, Archive), filters, grouped customer worklist, and a Customer Quote Story panel.</div>
+                <div class="act ok"><span class="lbl">Actual</span>All present, matching the reference screenshot exactly, with live real data: 9 groups, Order Handoff 4 (Accepted value ready for Orders), correct proposed/accepted/order/cleanup/exposure totals.</div>
+              </div>
+              <div class="shot" onclick="openLightbox('evidence/00-reference-09-quote-lifecycle.png')">
+                <img src="evidence/00-reference-09-quote-lifecycle.png" alt="Quote lifecycle reference screenshot">
+              </div>
+              <div class="shot-cap">Reference screenshot supplied by Ritesh — layout, numbers, and structure all confirmed live for "Himalayan Springs Beverages Ltd."</div>
+            </div>
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 2</span></div>
+              <p><strong>Click:</strong> "Himalayan Springs Beverages Ltd" in the grouped worklist.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Customer Quote Story panel updates: totals, recommended next action, commercial lines, Setu Guru guidance, lifecycle timeline.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Correct in every field — 3 quote records, selected Q-00004, Order Value INR 3,518,200.00, "Move revenue work to Orders" recommended action, commercial line "Stand Up Pouches — 150×220×70mm, PET/MET PET/PE, 4 color, Matte + Zipper, 8,000 pcs" at INR 139,200.00.</div>
+              </div>
+              <p style="font-size:13px; color:var(--slate-500); margin-top:8px;">Per the discovery guardrails, no lifecycle-changing buttons (Mark accepted/rejected, Create/Open Order Handoff, etc.) were clicked on this real customer quote — viewing only.</p>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- J10 -->
+        <div class="journey-section open" id="j10">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">10</span><h3 style="margin:0;">Customer PDF and Documents</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-gaps">Partly verified</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <div class="step-card">
+              <div class="step-top"><span class="step-num">Step 1</span></div>
+              <p><strong>Checked:</strong> The "Customer PDF" button on the Himalayan Springs quote story is a real link (<code>&lt;a target="_blank"&gt;</code>) pointing to <code>/api/quotes/{id}/pdf</code>, confirming it's built to open in a new tab rather than replace the CRM page.</p>
+              <div class="compare">
+                <div class="exp"><span class="lbl">Expected</span>Clicking opens a correctly branded, correctly totaled PDF in a new tab.</div>
+                <div class="act ok"><span class="lbl">Actual</span>Directly requested the endpoint and confirmed it responds <code>200 OK</code> with <code>Content-Type: application/pdf</code> — the PDF genuinely generates. Visual verification of the rendered PDF (branding, totals, page breaks, print/download) was interrupted mid-click by a browser-automation tooling issue (the tab group reset) and not yet completed.</div>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--slate-500);">Recommend a short follow-up pass: click the button directly (not via injected script), confirm the new tab, and visually check branding/totals/page breaks per the original checklist.</p>
+          </div></div>
+        </div>
+
+        <!-- J11 -->
+        <div class="journey-section" id="j11">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">11</span><h3 style="margin:0;">Order Handoff and Orders</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-nt">Not tested</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <p>The "Create / open order handoff" and "Open order workspace" actions were visible and available on the Himalayan Springs quote story (see Journey 9 screenshot) but not clicked, to avoid altering a real accepted customer quote's execution state without a safe test quote to use instead (the test lead's quote creation was itself blocked — see Journey 8). Recommend testing this with a dedicated safe test quote once Journey 8 is unblocked.</p>
+          </div></div>
+        </div>
+
+        <!-- J12 -->
+        <div class="journey-section" id="j12">
+          <div class="journey-header" onclick="toggleJourney(this)">
+            <div class="htitle"><span class="num">12</span><h3 style="margin:0;">Remaining Sidebar Workspaces</h3></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span class="badge badge-nt">Not tested</span><span class="chev">▶</span></div>
+          </div>
+          <div class="journey-body"><div class="journey-body-inner">
+            <p>Send, Orders, Tasks, Events, Docs, Design, Dispatch, and Admin were all visible and present in the sidebar throughout this session (confirmed in every page's nav) but not individually clicked through. Given the depth of investigation the Lead → Quote path required (multiple repro attempts per gap, network/console verification), this was not reached this session. Full list logged under Missing Journey States below.</p>
+          </div></div>
+        </div>
+
+      </section>
+
+      <!-- ============ GAP REGISTER ============ -->
+      <section class="block" id="gap-register">
+        <div class="eyebrow">Section 4</div>
+        <h2>Gap Register</h2>
+        <p style="color:var(--slate-700);">Same data as <code>gap-register.md</code>, filterable here. All 8 gaps found this session — no fixes applied.</p>
+
+        <div class="filters">
+          <select id="f-severity" onchange="applyFilters()">
+            <option value="">All severities</option>
+            <option value="P0">P0</option>
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+            <option value="P3">P3</option>
+          </select>
+          <select id="f-workflow" onchange="applyFilters()">
+            <option value="">All workflows</option>
+          </select>
+          <select id="f-type" onchange="applyFilters()">
+            <option value="">All types</option>
+          </select>
+          <input type="text" id="f-search" placeholder="Search gap text…" oninput="applyFilters()">
+        </div>
+
+        <table class="gaps" id="gap-table">
+          <thead>
+            <tr><th>ID</th><th>Severity</th><th>Workflow</th><th>Summary</th><th>Type</th><th>Repro</th></tr>
+          </thead>
+          <tbody id="gap-tbody"></tbody>
+        </table>
+      </section>
+
+      <!-- ============ MISSING STATES ============ -->
+      <section class="block" id="missing-states">
+        <div class="eyebrow">Section 5</div>
+        <h2>Missing Journey States</h2>
+        <p style="color:var(--slate-700); max-width:760px;">What wasn't captured this session, and why — so the next pass knows exactly where to pick up.</p>
+        <div class="card">
+          <ul class="clean">
+            <li><strong>Quote Builder steps 2–5</strong> (Terms, Pricing, Review, Send Gate) — unreachable because step 1 is blocked for any new lead (PKG-JOURNEY-007).</li>
+            <li><strong>Order Handoff creation and Orders workspace</strong> — deliberately not exercised against a real accepted quote (guardrail); no safe test quote was available since quote creation is blocked.</li>
+            <li><strong>Customer PDF visual output</strong> — endpoint confirmed working (200, application/pdf) via direct request; new-tab click behavior, branding/totals/page-break visual check, and download/print were interrupted by a browser-automation tooling issue (tab group reset mid-session) before completion.</li>
+            <li><strong>Send, Orders, Tasks, Events, Docs, Design, Dispatch, Admin</strong> sidebar workspaces — not yet clicked into. All confirmed present and visible in the sidebar throughout the session.</li>
+            <li><strong>Analytics and Reports tabs</strong> — visible on the Home page header, not clicked through.</li>
+            <li><strong>Growth Center, Share vCard, notifications panel, Setu Guru chat</strong> — visible in global header/footer throughout, not individually tested.</li>
+            <li><strong>Smart Scan / camera capture / file upload</strong> in Quick Add Lead — visible in the drawer, not exercised (manual entry was used instead).</li>
+            <li><strong>Duplicate-lead detection</strong> — not tested; the test lead used a clearly unique company name.</li>
+            <li><strong>Full login flow</strong> (credentials entry from a logged-out state) — session was already authenticated.</li>
+            <li><strong>Responsive / mobile layouts</strong> — all testing this session was on desktop viewport.</li>
+            <li><strong>Dashboard-to-record number reconciliation</strong> — Home dashboard KPIs were read but not cross-checked line-by-line against Quotes/Leads page totals.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============ FIX SEQUENCE ============ -->
+      <section class="block" id="fix-sequence">
+        <div class="eyebrow">Section 6</div>
+        <h2>Recommended Fix Sequence</h2>
+        <p style="color:var(--slate-700);">Grouped by category per the discovery brief. Nothing here has been implemented — recommendation only.</p>
+
+        <div class="fix-group">
+          <h4>1 · Production blockers</h4>
+          <div class="items"><span class="sev sev-P0">P0</span> PKG-JOURNEY-007 — new-lead-to-quote path fully blocked end-to-end.</div>
+        </div>
+        <div class="fix-group">
+          <h4>2 · Core workflow defects</h4>
+          <div class="items">
+            <span class="sev sev-P1">P1</span> PKG-JOURNEY-001 — Lead Queue "Open" action dead.&nbsp;&nbsp;
+            <span class="sev sev-P1">P1</span> PKG-JOURNEY-003 — category checkboxes don't toggle.&nbsp;&nbsp;
+            <span class="sev sev-P1">P1</span> PKG-JOURNEY-005 — blocking quote-creation error never rendered.
+          </div>
+        </div>
+        <div class="fix-group">
+          <h4>3 · Data and calculation defects</h4>
+          <div class="items"><span class="sev sev-P2">P2</span> PKG-JOURNEY-004 — qualification note edits don't persist after refresh.</div>
+        </div>
+        <div class="fix-group">
+          <h4>4 · Navigation and state defects</h4>
+          <div class="items"><span class="sev sev-P3">P3</span> PKG-JOURNEY-008 — Pipeline opens as a modal with no URL change.</div>
+        </div>
+        <div class="fix-group">
+          <h4>5 · PDF and document defects</h4>
+          <div class="items">None confirmed this session — Customer PDF endpoint verified working; UI click-through visual check still pending (see Missing Journey States).</div>
+        </div>
+        <div class="fix-group">
+          <h4>6 · New-user usability defects</h4>
+          <div class="items">
+            <span class="sev sev-P2">P2</span> PKG-JOURNEY-006 — "Create Quote Draft" retry gives no feedback.&nbsp;&nbsp;
+            <span class="sev sev-P3">P3</span> PKG-JOURNEY-002 — no visible success confirmation after Quick Add Lead save.
+          </div>
+        </div>
+        <div class="fix-group">
+          <h4>7 · Visual polish</h4>
+          <div class="items">None logged this session.</div>
+        </div>
+      </section>
+
+      <!-- ============ RETEST CHECKLIST ============ -->
+      <section class="block" id="retest">
+        <div class="eyebrow">Section 7</div>
+        <h2>Retest Checklist</h2>
+        <p style="color:var(--slate-700);">Reusable once fixes for the above land. Check off during the next pass.</p>
+        <div class="card">
+          <ul class="checklist">
+            <li><input type="checkbox"><span>Lead Queue: "Open →" and company-name link navigate to Lead Detail from every lifecycle group (Critical, Due Today, Active/Upcoming).</span></li>
+            <li><input type="checkbox"><span>Lead Detail: clicking a Pick Categories checkbox visibly checks it and updates the products-selected count.</span></li>
+            <li><input type="checkbox"><span>Lead Detail: Save qualification &amp; mapping persists both category selections and notes text after a hard refresh.</span></li>
+            <li><input type="checkbox"><span>A brand-new lead, taken only through on-screen actions (Quick Add Lead → qualify → + New Quote), successfully opens the Quote Builder with no error.</span></li>
+            <li><input type="checkbox"><span>If quote creation is still blocked for any reason, the blocking reason is rendered visibly on the page — not only in the URL.</span></li>
+            <li><input type="checkbox"><span>"Create Quote Draft" gives visible feedback on both success and failure.</span></li>
+            <li><input type="checkbox"><span>Pipeline either becomes a real navigable page (URL updates) or this is confirmed as the intended design.</span></li>
+            <li><input type="checkbox"><span>Quick Add Lead shows a clear success confirmation before/as the drawer closes.</span></li>
+            <li><input type="checkbox"><span>Customer PDF opens in a new tab, correctly branded and totaled, without disturbing the CRM tab's state.</span></li>
+            <li><input type="checkbox"><span>Full Quote Builder walkthrough (Product → Terms → Pricing → Review → Send Gate) completed end-to-end on a test quote.</span></li>
+            <li><input type="checkbox"><span>Order Handoff creation tested on a safe test quote.</span></li>
+            <li><input type="checkbox"><span>Remaining sidebar workspaces (Send, Orders, Tasks, Events, Docs, Design, Dispatch, Admin) each clicked into at least once.</span></li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+
+    <footer>
+      Packaging Workspace Live User Journey Discovery — v1 — Phase 1 (discovery only, no fixes applied) — generated July 22, 2026 — Stark Packmate CRM, org <code>3f8ef935-16bf-49de-bc04-85b51a3e0cb8</code>. Not the final customer training guide.
+    </footer>
+  </div>
+</div>
+
+<script>
+  function toggleJourney(header){
+    header.parentElement.classList.toggle('open');
+  }
+  function openLightbox(src){
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  const GAPS = [
+    {id:'PKG-JOURNEY-001', sev:'P1', workflow:'Leads / Follow-up', summary:'"Open" button and company-name link on Lead Queue rows do not navigate to Lead Detail.', type:'Functional, Navigation', repro:'Always'},
+    {id:'PKG-JOURNEY-002', sev:'P3', workflow:'Quick Add Lead', summary:'No visible success confirmation after saving a new lead.', type:'UX', repro:'Once observed'},
+    {id:'PKG-JOURNEY-003', sev:'P1', workflow:'Lead Detail / Qualification', summary:'"Pick Categories" checkboxes never register as checked, tested 3 ways.', type:'Functional', repro:'Always'},
+    {id:'PKG-JOURNEY-004', sev:'P2', workflow:'Lead Detail / Qualification', summary:'Qualification note edits revert to the original auto-populated text after refresh.', type:'Data', repro:'Always (1 cycle run)'},
+    {id:'PKG-JOURNEY-005', sev:'P1', workflow:'Quote Creation', summary:'"Lead needs at least one active product interest" error exists only in the URL — never shown on the page.', type:'Functional, UX', repro:'Always'},
+    {id:'PKG-JOURNEY-006', sev:'P2', workflow:'Quote Creation', summary:'"Create Quote Draft" does nothing when blocked — no retry feedback.', type:'Functional, UX', repro:'Always (blocked state)'},
+    {id:'PKG-JOURNEY-007', sev:'P0', workflow:'Lead → Quote (core)', summary:'Root-cause rollup: a brand-new lead cannot reach a quote via any on-screen action.', type:'Functional', repro:'Always (new lead)'},
+    {id:'PKG-JOURNEY-008', sev:'P3', workflow:'Global Navigation', summary:'Sidebar "Pipeline" opens as a modal overlay with no URL change — no deep link.', type:'Navigation', repro:'Always'},
+  ];
+
+  function renderGaps(list){
+    const tbody = document.getElementById('gap-tbody');
+    tbody.innerHTML = list.map(g => `
+      <tr id="gap-${g.id.split('-').pop()}">
+        <td class="gid">${g.id}</td>
+        <td><span class="sev sev-${g.sev}">${g.sev}</span></td>
+        <td>${g.workflow}</td>
+        <td>${g.summary}</td>
+        <td>${g.type}</td>
+        <td>${g.repro}</td>
+      </tr>`).join('');
+  }
+
+  function populateFilterOptions(){
+    const wfSel = document.getElementById('f-workflow');
+    const tySel = document.getElementById('f-type');
+    const workflows = [...new Set(GAPS.map(g=>g.workflow))];
+    const types = [...new Set(GAPS.flatMap(g=>g.type.split(', ')))];
+    workflows.forEach(w => { const o = document.createElement('option'); o.value=w; o.textContent=w; wfSel.appendChild(o); });
+    types.forEach(t => { const o = document.createElement('option'); o.value=t; o.textContent=t; tySel.appendChild(o); });
+  }
+
+  function applyFilters(){
+    const sev = document.getElementById('f-severity').value;
+    const wf = document.getElementById('f-workflow').value;
+    const ty = document.getElementById('f-type').value;
+    const q = document.getElementById('f-search').value.toLowerCase();
+    const filtered = GAPS.filter(g =>
+      (!sev || g.sev === sev) &&
+      (!wf || g.workflow === wf) &&
+      (!ty || g.type.includes(ty)) &&
+      (!q || (g.summary+g.id+g.workflow).toLowerCase().includes(q))
+    );
+    renderGaps(filtered);
+  }
+
+  populateFilterOptions();
+  renderGaps(GAPS);
+
+  // Anchor targets for gap chips (map #gap-001 style links to table rows)
+  document.querySelectorAll('a.gap-chip').forEach(a=>{
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      const id = this.getAttribute('href').replace('#gap-','');
+      document.getElementById('gap-register').scrollIntoView({behavior:'smooth', block:'start'});
+      setTimeout(()=>{
+        const row = document.getElementById('gap-'+id);
+        if(row){ row.scrollIntoView({behavior:'smooth', block:'center'}); row.style.outline='2px solid #D97706'; setTimeout(()=>row.style.outline='', 1800); }
+      }, 400);
+    });
+  });
+</script>
+
+</body>
+</html>

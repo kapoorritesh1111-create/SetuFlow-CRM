@@ -1,5 +1,7 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
+import stageDrawerStyles from '@/features/admin/components/admin-stage-drawers.module.css';
+import { StageDrawerDeletePortal } from '@/features/admin/components/stage-drawer-delete-portal';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -19,5 +21,5 @@ export default async function Page() {
   const pipelines = (pipelinesResult.data ?? []) as any[];
   const stages = (stagesResult.data ?? []) as any[];
   const nextSteps = (nextStepsResult.data ?? []) as any[];
-  return <AdminSettingsShell active="stages" organizationName={organization.name} missingCount={pipelines.length === 0 || stages.length === 0 ? 1 : 0}><AdminPageHero title="Stages / Next Steps" description="Control pipeline board lanes and the standardized next-action list used by Lead Command Center." badge={organization.name} stats={[{ label: 'Pipelines', value: pipelines.length, tone: 'info' }, { label: 'Stages', value: stages.length, tone: stages.length ? 'success' : 'warning' }, { label: 'Next steps', value: nextSteps.length, tone: nextSteps.length ? 'success' : 'warning' }] as any} /><StagesAdminWorkspace pipelines={pipelines} stages={stages} nextSteps={nextSteps} /></AdminSettingsShell>;
+  return <AdminSettingsShell active="stages" organizationName={organization.name} missingCount={pipelines.length === 0 || stages.length === 0 ? 1 : 0}><AdminPageHero title="Stages / Next Steps" description="Control pipeline board lanes and the standardized next-action list used by Lead Command Center." badge={organization.name} stats={[{ label: 'Pipelines', value: pipelines.length, tone: 'info' }, { label: 'Stages', value: stages.length, tone: stages.length ? 'success' : 'warning' }, { label: 'Next steps', value: nextSteps.length, tone: nextSteps.length ? 'success' : 'warning' }] as any} /><div className={stageDrawerStyles.stageDrawerViewport}><StagesAdminWorkspace pipelines={pipelines} stages={stages} nextSteps={nextSteps} /><StageDrawerDeletePortal /></div></AdminSettingsShell>;
 }

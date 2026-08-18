@@ -1,14 +1,11 @@
 /**
- * lead-quote-gate.ts — Sprint 12
- * Canonical lead quote gate check.
+ * lead-quote-gate.ts — canonical lead quote readiness check.
  *
- * PROBLEM FIXED: The gate check and UI coverage display were reading from
- * different state sources, causing the gate to appear "ready" when the DB
- * had no lead_product_interests rows (or vice versa).
- *
- * FIX: This module is the single source of truth for lead quote readiness.
- * Both the UI coverage display AND the gate enforcement must call this.
- * Every gate check is logged to lead_quote_gate_log for debugging.
+ * A Lead can start quote work once it has at least one captured product
+ * requirement. That interest may already be mapped to a catalog product, or it
+ * may be a text-only requirement captured from Inbound. Catalog mapping and
+ * pricing can be completed inside quote preparation; the gate must not force
+ * Sales to invent a SKU or price just to open the workspace.
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -21,11 +18,6 @@ export interface LeadQuoteGateResult {
   leadDisqualified: boolean;
 }
 
-/**
- * Check whether a lead can proceed to quote creation.
- * Reads directly from DB — no cached/optimistic state.
- * Logs every check to lead_quote_gate_log for production debugging.
- */
 export async function checkLeadQuoteGate(
   organizationId: string,
   leadId: string,
@@ -33,7 +25,6 @@ export async function checkLeadQuoteGate(
 ): Promise<LeadQuoteGateResult> {
   const db = (await createClient()) as any;
 
-  // Direct DB read — same source as UI must use
   const { data: lead, error: leadError } = await db
     .from('leads')
     .select('id, lead_type, qualification_status, status')
@@ -69,14 +60,12 @@ export async function checkLeadQuoteGate(
     return result;
   }
 
-  // Read product interests from SAME table the UI displays — lead_product_interests
   const { data: interests, error: interestError } = await db
     .from('lead_product_interests')
-    .select('id')
+    .select('id, product_id, label')
     .eq('organization_id', organizationId)
     .eq('lead_id', leadId)
-    .eq('status', 'active')
-    .limit(1);
+    .limit(25);
 
   if (interestError) {
     const result: LeadQuoteGateResult = {
@@ -91,7 +80,6 @@ export async function checkLeadQuoteGate(
   }
 
   const count = (interests ?? []).length;
-
   if (count === 0) {
     const result: LeadQuoteGateResult = {
       allowed: false,
@@ -104,9 +92,10 @@ export async function checkLeadQuoteGate(
     return result;
   }
 
+  const hasMappedCatalogProduct = (interests ?? []).some((interest: any) => Boolean(interest.product_id));
   const result: LeadQuoteGateResult = {
     allowed: true,
-    reason: 'gate-passed',
+    reason: hasMappedCatalogProduct ? 'gate-passed' : 'gate-passed-captured-requirement',
     productInterestCount: count,
     leadExists: true,
     leadDisqualified: false,
@@ -133,6 +122,6 @@ async function logGateCheck(
       coverage_source: 'db_check',
     });
   } catch {
-    // Gate logging must never block the gate result
+    // Gate logging must never block the gate result.
   }
 }

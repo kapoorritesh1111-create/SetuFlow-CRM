@@ -19,7 +19,7 @@ function pct(part: number, total: number): string {
   return `${Math.round((part / total) * 100)}%`;
 }
 
-export default function PackagingAnalyticsDashboard({ data }: { data: PackagingProductionAnalytics }) {
+export default function PackagingAnalyticsDashboard({ data, compact = false }: { data: PackagingProductionAnalytics; compact?: boolean }) {
   const { stageCounts, jobsInProduction, dispatchedLast30Days, avgCycleDays, revenueInProduction, familyMix, digitalVsFlexo, cylinderStats } = data;
 
   const maxStageCount = Math.max(1, ...PRODUCTION_STAGES.map((stage) => stageCounts[stage.key] ?? 0));
@@ -29,12 +29,20 @@ export default function PackagingAnalyticsDashboard({ data }: { data: PackagingP
 
   return (
     <div className="space-y-4 pb-16">
+      {compact ? (
+        <div>
+          <p className="text-caption uppercase text-accent-600">Packaging Production</p>
+          <h2 className="mt-1 text-xl font-black text-slate-950">Packaging Analytics</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">Production throughput, revenue mix, and flexo cylinder economics — computed from accepted quotes and the live production-stage log.</p>
+        </div>
+      ) : (
       <PageHeader
         eyebrow="Packaging Insights"
         title="Packaging Analytics"
         description="Production throughput, revenue mix, and flexo cylinder economics for the packaging vertical — computed from accepted quotes and the live production-stage log."
         meta={[`${jobsInProduction} jobs in production`, `${dispatchedLast30Days} dispatched (30d)`]}
       />
+      )}
 
       <section className="grid gap-3 sm:grid-cols-4">
         <div className="rounded-card border border-line bg-surface-1 p-4">

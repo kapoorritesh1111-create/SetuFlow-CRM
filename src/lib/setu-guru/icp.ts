@@ -24,6 +24,7 @@ export type IcpProfile = {
   required_documents: string[];
   outreach_channel: string | null;
   outreach_tone: string | null;
+  vertical_profile: Record<string, unknown>;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
@@ -47,6 +48,7 @@ export type IcpProfileInput = {
   required_documents?: string[];
   outreach_channel?: string | null;
   outreach_tone?: string | null;
+  vertical_profile?: Record<string, unknown>;
 };
 
 const ICP_COLUMNS = [
@@ -54,7 +56,7 @@ const ICP_COLUMNS = [
   'is_active', 'archived_at', 'products', 'target_countries', 'buyer_types',
   'supplier_types', 'moq_rules', 'certifications', 'preferred_currency',
   'outreach_style', 'available_documents', 'required_documents', 'outreach_channel',
-  'outreach_tone', 'created_by', 'updated_by', 'created_at', 'updated_at',
+  'outreach_tone', 'vertical_profile', 'created_by', 'updated_by', 'created_at', 'updated_at',
 ].join(',');
 
 type OwnerResolution = {
@@ -67,11 +69,7 @@ export function resolveOwner(input: IcpProfileInput, userId: string): OwnerResol
   const ownerType = input.owner_type ?? 'personal';
   const ownerUserId = ownerType === 'personal' ? userId : null;
   const campaignKey = ownerType === 'campaign' ? input.campaign_key?.trim() || null : null;
-
-  if (ownerType === 'campaign' && !campaignKey) {
-    throw new Error('Campaign profiles require a campaign key.');
-  }
-
+  if (ownerType === 'campaign' && !campaignKey) throw new Error('Campaign profiles require a campaign key.');
   return { ownerType, ownerUserId, campaignKey };
 }
 
@@ -79,7 +77,6 @@ export async function listIcpProfiles(orgId: string): Promise<IcpProfile[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const client = supabase as any;
-
   const { data, error } = await client
     .from('org_icp_profiles')
     .select(ICP_COLUMNS)
@@ -88,7 +85,6 @@ export async function listIcpProfiles(orgId: string): Promise<IcpProfile[]> {
     .or(`owner_type.eq.organization,owner_user_id.eq.${user?.id ?? '00000000-0000-0000-0000-000000000000'}`)
     .order('is_active', { ascending: false })
     .order('updated_at', { ascending: false });
-
   if (error) throw error;
   return (data ?? []) as IcpProfile[];
 }
@@ -96,7 +92,6 @@ export async function listIcpProfiles(orgId: string): Promise<IcpProfile[]> {
 export async function getIcpProfile(orgId: string, profileId?: string | null): Promise<IcpProfile | null> {
   const profiles = await listIcpProfiles(orgId);
   if (profileId) return profiles.find((profile) => profile.id === profileId) ?? null;
-
   return profiles.find((profile) => profile.owner_type === 'personal' && profile.is_active)
     ?? profiles.find((profile) => profile.owner_type === 'organization' && profile.is_active)
     ?? profiles[0]
@@ -111,10 +106,8 @@ export async function saveIcpProfile(orgId: string, input: IcpProfileInput): Pro
 
   const existing = input.id ? await getIcpProfile(orgId, input.id) : null;
   if (input.id && !existing) throw new Error('ICP profile not found or not accessible.');
-
   const { ownerType, ownerUserId, campaignKey } = resolveOwner(input, user.id);
   const current = existing;
-
   const payload = {
     org_id: orgId,
     name: input.name?.trim() || current?.name || 'Default ICP',
@@ -136,21 +129,15 @@ export async function saveIcpProfile(orgId: string, input: IcpProfileInput): Pro
     required_documents: input.required_documents ?? current?.required_documents ?? [],
     outreach_channel: input.outreach_channel ?? current?.outreach_channel ?? null,
     outreach_tone: input.outreach_tone ?? current?.outreach_tone ?? null,
+    vertical_profile: input.vertical_profile ?? current?.vertical_profile ?? {},
     created_by: current?.created_by ?? user.id,
     updated_by: user.id,
   };
 
   if (!current) {
-    let deactivateQuery = client
-      .from('org_icp_profiles')
-      .update({ is_active: false, updated_by: user.id })
-      .eq('org_id', orgId)
-      .eq('owner_type', ownerType)
-      .eq('is_active', true);
-
+    let deactivateQuery = client.from('org_icp_profiles').update({ is_active: false, updated_by: user.id }).eq('org_id', orgId).eq('owner_type', ownerType).eq('is_active', true);
     if (ownerType === 'personal') deactivateQuery = deactivateQuery.eq('owner_user_id', user.id);
     if (ownerType === 'campaign') deactivateQuery = deactivateQuery.eq('campaign_key', campaignKey);
-
     const { error: deactivateError } = await deactivateQuery;
     if (deactivateError) throw deactivateError;
   }
@@ -158,7 +145,6 @@ export async function saveIcpProfile(orgId: string, input: IcpProfileInput): Pro
   const query = current
     ? client.from('org_icp_profiles').update(payload).eq('id', current.id).eq('org_id', orgId)
     : client.from('org_icp_profiles').insert(payload);
-
   const { data, error } = await query.select(ICP_COLUMNS).single();
   if (error) throw error;
   return data as IcpProfile;
@@ -169,12 +155,6 @@ export async function archiveIcpProfile(orgId: string, profileId: string): Promi
   const client = supabase as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Authentication is required.');
-
-  const { error } = await client
-    .from('org_icp_profiles')
-    .update({ is_active: false, archived_at: new Date().toISOString(), updated_by: user.id })
-    .eq('id', profileId)
-    .eq('org_id', orgId)
-    .or(`owner_type.eq.organization,owner_user_id.eq.${user.id}`);
+  const { error } = await client.from('org_icp_profiles').update({ is_active: false, archived_at: new Date().toISOString(), updated_by: user.id }).eq('id', profileId).eq('org_id', orgId).or(`owner_type.eq.organization,owner_user_id.eq.${user.id}`);
   if (error) throw error;
 }

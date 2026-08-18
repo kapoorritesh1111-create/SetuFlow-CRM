@@ -46,17 +46,25 @@ export function LeadDrawer(props: LeadDrawerProps) {
   const searchParams = useSearchParams();
   const quickNewLead = (props.mode ?? 'quick') === 'quick' && !props.lead?.id;
   const modeLeadType = workspaceModeToLeadJourney(parseWorkspaceMode(searchParams.get('mode') ?? undefined));
+  const seedLeadType: 'buyer' | 'supplier' = props.prefill?.leadType ?? (modeLeadType === 'supplier' ? 'supplier' : 'buyer');
+  const eventSeedLead = quickNewLead && props.prefill?.tradeEventId
+    ? {
+        ...buildModeSeedLead(seedLeadType),
+        trade_event_id: props.prefill.tradeEventId,
+        source_type: props.prefill.sourceType ?? 'trade_show',
+        source_label: props.prefill.sourceLabel ?? null,
+      }
+    : undefined;
   const modeSeedLead = quickNewLead && modeLeadType ? buildModeSeedLead(modeLeadType) : undefined;
 
   return (
     <LeadDrawerImplementation
       {...props}
-      lead={props.lead ?? modeSeedLead}
+      lead={props.lead ?? eventSeedLead ?? modeSeedLead}
       onSaved={(payload: LeadDrawerSavePayload) => {
-        if (quickNewLead && payload.resetForNextLead) {
-          props.onSaved?.({ ...payload, lead: modeSeedLead });
-          return;
-        }
+        // Keep the real saved row in the callback. Replacing it with an empty
+        // seed prevents the Leads workspace from adding a new Quick Lead to
+        // its live list until a full page reload.
         props.onSaved?.(payload);
       }}
     />

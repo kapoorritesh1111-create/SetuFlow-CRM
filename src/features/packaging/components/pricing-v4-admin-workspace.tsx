@@ -1,0 +1,56 @@
+import { updatePackagingMatrixRowV4 } from '@/features/packaging/server/pricing-v4-admin-actions';
+import { matrixEditableFields, type MatrixRateField } from '@/lib/packaging-pricing/matrix-source-formulas';
+import PricingV4AdminCatalogEditor from './pricing-v4-admin-catalog-editor';
+import PricingV4AdminTemplateEditor from './pricing-v4-admin-template-editor';
+import PricingV4TestQuote from './pricing-v4-test-quote';
+
+const STAGES=['Customer Requirement','Production Calculation','Cost Build / COGS','Commercial Rules','Final Selling Price'];
+const EDIT_FIELD='rounded-lg border border-yellow-300 bg-yellow-50 px-2 py-2 text-sm text-slate-900 outline-none ring-yellow-200 focus:ring-2';
+const CALCULATED_FIELD='rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700';
+const MATRIX_RATE_FIELDS:Array<{field:MatrixRateField;label:string}>=[
+  {field:'q1_rate_per_frame',label:'Q1'},{field:'q2_rate_per_frame',label:'Q2'},{field:'q3_rate_per_frame',label:'Q3'},{field:'q4_rate_per_frame',label:'Q4'},{field:'q5_rate_per_frame',label:'Q5'},
+];
+
+function Pill({children,tone='default'}:{children:React.ReactNode;tone?:'default'|'good'|'warn'|'info'}){
+  const toneClass=tone==='good'?'border-emerald-200 bg-emerald-50 text-emerald-700':tone==='warn'?'border-amber-200 bg-amber-50 text-amber-700':tone==='info'?'border-sky-200 bg-sky-50 text-sky-700':'border-slate-200 bg-slate-50 text-slate-600';
+  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass}`}>{children}</span>;
+}
+
+function Metric({label,value,detail}:{label:string;value:number|string;detail:string}){
+  return <div className="rounded-xl border border-emerald-200 bg-white p-3"><div className="text-2xl font-black text-slate-950">{value}</div><div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-600">{label}</div><div className="mt-1 text-xs text-slate-500">{detail}</div></div>;
+}
+
+function MatrixRateCell({row,field,label,editable}:{row:any;field:MatrixRateField;label:string;editable:boolean}){
+  const value=row[field];
+  return <label className="block min-w-[88px]"><span className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}{!editable&&<span className="font-medium normal-case text-slate-400">calc</span>}</span>{editable?<input name={field} type="number" min="0" step="0.001" defaultValue={value??''} className={`${EDIT_FIELD} w-full`}/>:<div className={`${CALCULATED_FIELD} w-full`} title="Calculated from the source workbook formula">{value??'—'}</div>}</label>;
+}
+
+function MatrixEditor({templates,matrixRows}:{templates:any[];matrixRows:any[]}){
+  const matrixTemplates=templates.filter((template:any)=>template.calculation_engine_key==='matrix_per_frame');
+  if(!matrixTemplates.length)return null;
+  return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-lg font-bold text-slate-900">Matrix Pricing Data</h3><p className="mt-1 max-w-3xl text-sm text-slate-500">The three workbook DATA sheets are the source. Yellow cells are hardcoded source values and can be edited. Gray cells are formula results and recalculate automatically.</p></div><div className="flex flex-wrap gap-2"><Pill tone="warn">Yellow = editable</Pill><Pill>Gray = calculated</Pill><Pill tone="good">{matrixRows.length} source rows</Pill></div></div><div className="space-y-3">{matrixTemplates.map((template:any)=>{const rows=matrixRows.filter((row:any)=>row.template_id===template.id);return <details key={template.id} className="group overflow-hidden rounded-xl border border-slate-200" open={rows.length>0&&rows.length<=48}><summary className="flex cursor-pointer list-none items-center justify-between gap-3 bg-slate-50 px-4 py-3 hover:bg-slate-100"><div><div className="font-semibold text-slate-900">{template.name}</div><div className="text-xs text-slate-500">{rows[0]?.source_worksheet??'Workbook source'} · {rows.length} rows</div></div><div className="flex items-center gap-2"><Pill tone={rows.length?'good':'warn'}>{rows.length?'Loaded':'Waiting'}</Pill><span className="text-xs font-semibold text-slate-500 group-open:rotate-180">⌄</span></div></summary><div className="max-h-[720px] space-y-2 overflow-auto p-3">{rows.map((row:any)=>{const editable=new Set(matrixEditableFields(row));return <form key={row.id} action={updatePackagingMatrixRowV4} className="rounded-xl border border-slate-200 bg-white p-3"><input type="hidden" name="id" value={row.id}/><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="text-xs text-slate-500">{row.source_worksheet} · row {row.source_row_number}</div><Pill tone="info">{row.supply_form.replaceAll('_',' ')}</Pill></div><div className="grid gap-2 xl:grid-cols-[130px_minmax(260px,1fr)_repeat(5,minmax(88px,110px))_auto] xl:items-end"><label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Product ID</span>{editable.has('client_product_id')?<input name="client_product_id" defaultValue={row.client_product_id} className={`${EDIT_FIELD} w-full`}/>:<div className={CALCULATED_FIELD}>{row.client_product_id}</div>}</label><label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Construction</span>{editable.has('construction_key')?<input name="construction_key" defaultValue={row.construction_key} className={`${EDIT_FIELD} w-full`}/>:<div className={CALCULATED_FIELD}>{row.construction_key}</div>}</label>{MATRIX_RATE_FIELDS.map(({field,label})=><MatrixRateCell key={field} row={row} field={field} label={label} editable={editable.has(field)}/>)}<button className="rounded-lg bg-slate-900 px-3 py-2.5 text-xs font-semibold text-white hover:bg-slate-800">Save row</button></div></form>})}</div></details>})}</div></section>;
+}
+
+export default function PricingV4AdminWorkspace({data}:{data:any}){
+  const {families,variations,costs,charges,templates,bands,matrixRows,recipes,flagEnabled}=data;
+  const needsRate=[...costs,...charges].filter((x:any)=>x.current_rate==null).length;
+  const centerRows=matrixRows.filter((row:any)=>row.supply_form==='center_seal').length;
+  const rollRows=matrixRows.filter((row:any)=>row.supply_form==='three_side_seal_roll').length;
+  const pouchRows=matrixRows.filter((row:any)=>row.supply_form==='three_side_seal_pouch').length;
+  const matrixComplete=centerRows===96&&rollRows===48&&pouchRows===48;
+  const supVariations=variations.filter((variation:any)=>families.find((family:any)=>family.id===variation.family_id)?.pricing_engine_type==='sup_formula').length;
+  const supBands=bands.filter((band:any)=>templates.find((template:any)=>template.id===band.template_id)?.calculation_engine_key==='sup_formula').length;
+  const supRecipes=recipes.filter((recipe:any)=>templates.find((template:any)=>template.id===recipe.template_id)?.calculation_engine_key==='sup_formula').length;
+
+  return <div className="space-y-6">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Packaging Pricing v4</p><h2 className="mt-1 text-2xl font-bold">Pricing Control Center</h2><p className="mt-1 max-w-2xl text-sm text-slate-300">Build customer requirements, calculate production, protect COGS, apply commercial rules, then publish the selling price.</p></div><div className="flex flex-wrap gap-2"><Pill tone={flagEnabled?'good':'warn'}>{flagEnabled?'v4 routing on':'v4 routing off'}</Pill><Pill tone={needsRate?'warn':'good'}>{needsRate} Needs rate</Pill><Pill tone="info">Admin / Pricing only</Pill></div></div></div><div className="grid gap-2 p-4 md:grid-cols-5">{STAGES.map((stage,i)=><div key={stage} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">{i+1}</div><div className="text-sm font-semibold text-slate-800">{stage}</div></div>)}</div></section>
+
+    <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Live v4 data loaded</p><h3 className="mt-1 text-lg font-bold text-slate-950">Stark pricing foundation is connected to Admin</h3><p className="mt-1 max-w-3xl text-sm text-slate-600">These counts come from the normalized v4 database tables used by the server pricing engines. They are not legacy-template counts.</p></div><div className="flex flex-wrap gap-2"><Pill tone={matrixComplete?'good':'warn'}>{matrixComplete?'192 matrix rows verified':'Matrix incomplete'}</Pill><Pill tone="warn">Sales routing remains off</Pill></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"><Metric label="Service families" value={families.length} detail="SUP, flat bottom, center seal, 3SS, labels, sleeves"/><Metric label="SUP sizes" value={supVariations} detail="Approved physical size records"/><Metric label="Cost Master" value={costs.length} detail="Materials + production processes"/><Metric label="Charge Master" value={charges.length} detail="Extras, pre-press and post charges"/><Metric label="SUP rules" value={`${supRecipes} + ${supBands}`} detail="Recipe items + commercial bands"/><Metric label="Matrix data" value={matrixRows.length} detail={`${centerRows} CS · ${rollRows} 3SS Roll · ${pouchRows} 3SS Pouch`}/></div></section>
+
+    <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"><strong>Edit convention:</strong> every value that can change pricing or setup is yellow in edit mode. Calculated and immutable values are gray/read-only.</div>
+    <PricingV4AdminCatalogEditor data={data}/>
+    <PricingV4AdminTemplateEditor data={data}/>
+    <MatrixEditor templates={templates} matrixRows={matrixRows}/>
+    <PricingV4TestQuote templates={templates} variations={data.variations} matrixRows={matrixRows}/>
+  </div>;
+}

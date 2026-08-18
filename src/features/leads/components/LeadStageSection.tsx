@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 // Local copies of the types used in the stage and ownership section.  We
 // duplicate these definitions rather than importing from the drawer to avoid
@@ -34,6 +34,21 @@ interface LeadStageSectionProps {
   inputClassName: () => string;
 }
 
+function isInPersonMeetingStep(name: string) {
+  const normalized = name.trim().toLowerCase();
+  return normalized.includes('meeting') && (normalized.includes('person') || normalized.includes('in-person') || normalized.includes('in person'));
+}
+
+function formatMeetingDateTime(value: string) {
+  if (!value) return 'the scheduled date and time';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'the scheduled date and time';
+  return parsed.toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
 /**
  * LeadStageSection encapsulates the pipeline, stage, follow‑up, next step and
  * owner selectors used in the lead drawer.  Extracting this block into
@@ -65,6 +80,17 @@ export default function LeadStageSection({
   const profileLabel = (profile: Profile) => {
     return profile.full_name ?? profile.username ?? 'Unassigned';
   };
+
+  const selectedNextStep = useMemo(
+    () => nextSteps.find((step) => step.id === nextStepId) ?? null,
+    [nextStepId, nextSteps],
+  );
+
+  const suggestedMeetingMessage = useMemo(() => {
+    if (!selectedNextStep || !isInPersonMeetingStep(selectedNextStep.name)) return null;
+    const when = formatMeetingDateTime(followUpAt);
+    return `Hi, just confirming our in-person meeting for ${when}. Looking forward to meeting you and discussing your requirements. Please let me know if there are any changes to the schedule.`;
+  }, [followUpAt, selectedNextStep]);
 
   return (
     <section className="rounded-3xl border border-slate-200 p-4">
@@ -119,6 +145,15 @@ export default function LeadStageSection({
             ))}
           </select>
         </label>
+        {suggestedMeetingMessage ? (
+          <div className="sm:col-span-2 rounded-2xl border border-teal-200 bg-teal-50/70 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700">Suggested follow-up message</span>
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-teal-700">In-person meeting</span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{suggestedMeetingMessage}</p>
+          </div>
+        ) : null}
         <label className="space-y-2 sm:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Owner</span>
           <select

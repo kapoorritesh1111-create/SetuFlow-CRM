@@ -8,7 +8,17 @@ export default async function SmcClientsLayout({ children }: { children: ReactNo
   const operator = await getRiteshClientUserOperator();
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div
+      style={{
+        position: 'relative',
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {operator ? (
         <div
           style={{

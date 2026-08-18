@@ -13,6 +13,7 @@ const mobileRoutes = [
 
 const mobileComponents = [
   'src/features/mobile/components/mobile-navigation.tsx',
+  'src/features/mobile/components/mobile-bottom-tabs.tsx',
   'src/features/mobile/components/mobile-shell.tsx',
   'src/features/mobile/components/icon-3d-orb.tsx',
   'src/features/mobile/components/role-aware-lead-list.tsx',
@@ -41,12 +42,15 @@ test('desktop app route group remains separate from mobile route group', () => {
 
 test('canonical leads route renders premium mobile leads without replacing desktop workspace', () => {
   const leadsPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
-  assert.match(leadsPage, /RoleAwareLeadList/);
+  const mobileSurface = readFileSync('src/features/leads/components/leads-mobile-surface.tsx', 'utf8');
+  assert.match(leadsPage, /LeadsMobileSurface/);
   assert.match(leadsPage, /buildMobileLeadCardsFromAppData/);
   assert.match(leadsPage, /buildMobileSignedInSummary/);
   assert.match(leadsPage, /md:hidden/);
   assert.match(leadsPage, /hidden space-y-4 md:block/);
   assert.match(leadsPage, /LeadsWorkspace/);
+  assert.match(mobileSurface, /RoleAwareLeadList/);
+  assert.doesNotMatch(mobileSurface, /MobileBusinessCardScanner/);
 });
 
 
@@ -63,24 +67,30 @@ test('canonical dashboard and leads use the blueprint-grade mobile shell on phon
   assert.match(dashboardPage, /MobileDashboardHome/);
   assert.match(dashboardPage, /<div className="md:hidden">/);
   assert.match(mobileShell, /data-mobile-shell=\{canonical \? 'canonical' : 'standalone'\}/);
+  assert.match(mobileShell, /mobile-bottom-tabs/);
   assert.match(mobileNav, /canonicalMobileNavItems/);
   assert.match(mobileNav, /standaloneMobileNavItems/);
   assert.match(mobileNav, /Share vCard/);
 });
 
-test('mobile navigation is derived from the shared shell nav config', () => {
+test('mobile navigation is derived from the shared shell nav config and exposes Tasks plus Events under More', () => {
   const sharedNav = readFileSync('src/lib/navigation/nav-items.ts', 'utf8');
   const shellNav = readFileSync('src/components/shell/navigation.tsx', 'utf8');
-  const mobileNav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
   const mobileTabBar = readFileSync('src/components/shell/MobileTabBar.tsx', 'utf8');
 
   assert.match(sharedNav, /canonicalShellSections/);
   assert.match(sharedNav, /getCanonicalMobileNavItems/);
+  assert.match(sharedNav, /mobileMoreNavItems/);
+  assert.match(sharedNav, /href: '\/tasks'/);
+  assert.match(sharedNav, /href: '\/trade-events'/);
   assert.match(shellNav, /filterShellSections/);
   assert.match(shellNav, /getPrimaryShellNavItems/);
-  assert.match(mobileNav, /canonicalMobileNavItems/);
-  assert.match(mobileNav, /standaloneMobileNavItems/);
-  assert.match(mobileTabBar, /canonicalMobileNavItems/);
+  assert.match(mobileBottomTabs, /mobileMoreNavItems/);
+  assert.match(mobileBottomTabs, /Tasks & Events/);
+  assert.match(mobileBottomTabs, />More</);
+  assert.match(mobileTabBar, /mobileMoreNavItems/);
+  assert.match(mobileTabBar, />More</);
   assert.doesNotMatch(mobileTabBar, /const tabs = \[/);
 });
 

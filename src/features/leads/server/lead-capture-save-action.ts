@@ -76,6 +76,56 @@ async function insertIntroCommunication(db: any, row: Record<string, unknown>) {
   return data as { id?: string | null } | null;
 }
 
+async function findDuplicateLead(db: any, input: {
+  organizationId: string;
+  leadType: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+}) {
+  const select = 'id, company_name, contact_name, email, phone, whatsapp_number';
+
+  if (input.email) {
+    const { data, error } = await db
+      .from('leads')
+      .select(select)
+      .eq('organization_id', input.organizationId)
+      .eq('lead_type', input.leadType)
+      .ilike('email', input.email)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.id) return data;
+  }
+
+  for (const phoneValue of unique([input.phone, input.whatsapp] as unknown as FormDataEntryValue[])) {
+    const [{ data: phoneMatch, error: phoneError }, { data: whatsappMatch, error: whatsappError }] = await Promise.all([
+      db
+        .from('leads')
+        .select(select)
+        .eq('organization_id', input.organizationId)
+        .eq('lead_type', input.leadType)
+        .eq('phone', phoneValue)
+        .limit(1)
+        .maybeSingle(),
+      db
+        .from('leads')
+        .select(select)
+        .eq('organization_id', input.organizationId)
+        .eq('lead_type', input.leadType)
+        .eq('whatsapp_number', phoneValue)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (phoneError) throw phoneError;
+    if (whatsappError) throw whatsappError;
+    if (phoneMatch?.id) return phoneMatch;
+    if (whatsappMatch?.id) return whatsappMatch;
+  }
+
+  return null;
+}
+
 async function sendLeadCaptureIntro(params: { db: any; organization: any; actorUserId: string; lead: any; notes: string }) {
   const { db, organization, actorUserId, lead, notes } = params;
   if (!lead?.id || await introAlreadyExists(db, lead.id)) return;
@@ -203,13 +253,40 @@ export async function saveLead(previousState: ActionState | undefined, formData:
   const leadTypeGuard = validateLeadTypeGuard(formData);
   if (leadTypeGuard) return leadTypeGuard;
 
+  const isNewLead = !clean(formData.get('lead_id'));
+  let workspace: Awaited<ReturnType<typeof requireWorkspace>> | null = null;
+  let db: any = null;
+
+  if (isNewLead) {
+    try {
+      workspace = await requireWorkspace();
+      if (!workspace.user || !workspace.organization) return { error: 'Not authenticated.' };
+      db = await createClient();
+      const duplicate = await findDuplicateLead(db, {
+        organizationId: workspace.organization.id,
+        leadType: clean(formData.get('lead_type')).toLowerCase(),
+        email: clean(formData.get('email')).toLowerCase(),
+        phone: clean(formData.get('phone')),
+        whatsapp: clean(formData.get('whatsapp_number')),
+      });
+      if (duplicate?.id) {
+        return {
+          error: `A ${clean(formData.get('lead_type')).toLowerCase()} lead already exists for ${duplicate.company_name || duplicate.contact_name || 'this contact'} with this email or phone. Open the existing lead instead.`,
+        };
+      }
+    } catch {
+      // The database trigger remains the race-safe backstop. Let the canonical
+      // save path proceed so transient duplicate-check errors do not block all capture.
+    }
+  }
+
   const result = await saveLeadBase(previousState, formData);
   if (!result?.success || !result.lead?.id || result.lead.intro_sent) return result;
 
   try {
-    const workspace = await requireWorkspace();
+    workspace = workspace ?? await requireWorkspace();
     if (!workspace.user || !workspace.organization) return result;
-    const db: any = await createClient();
+    db = db ?? await createClient();
     await sendLeadCaptureIntro({
       db,
       organization: workspace.organization,

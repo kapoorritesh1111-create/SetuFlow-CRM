@@ -39,10 +39,14 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
   const org = organization as any;
   const threshold = typeof org.approval_threshold_pct === 'number' ? org.approval_threshold_pct : null;
   const supabaseForSignals = await (await import('@/lib/supabase/server')).createClient();
-  const { dots: navDots } = await getAdminNavSignals(supabaseForSignals, organization.id, threshold);
+  const { getOrganizationVerticals } = await import('@/lib/verticals/capability');
+  const [{ dots: navDots }, verticals] = await Promise.all([
+    getAdminNavSignals(supabaseForSignals, organization.id, threshold),
+    getOrganizationVerticals(organization.id, supabaseForSignals),
+  ]);
   const currency  = org.default_currency ?? 'USD';
   return (
-    <AdminSettingsShell active="pricing-engine" organizationName={organization.name} sectionTitle="Pricing Engine" navDots={navDots} tbarChips={[
+    <AdminSettingsShell active="pricing-engine" organizationName={organization.name} sectionTitle="Commercial Defaults" navDots={navDots} tbarChips={[
         { label: threshold != null ? `Threshold: ${threshold}%` : '⚠ Not set', tone: threshold != null ? 'ok' : 'warn' },
         { label: currency, tone: 'info' },
       ]}>
@@ -86,6 +90,15 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
           </div>
         </form>
       </SectionCard>
+      {verticals.packagingEnabled ? (
+        <SectionCard title="Default quote templates" eyebrow="Commerce">
+          <p className="text-sm text-slate-600">
+            Packaging quotes are priced and templated per service family — see{' '}
+            <Link href="/admin/packaging-templates" className="font-semibold text-brand-700 hover:underline">Packaging Pricing Templates</Link>{' '}
+            instead of a single default template here.
+          </p>
+        </SectionCard>
+      ) : (
       <SectionCard title="Default quote templates" eyebrow="Commerce" actions={<Link href="/admin/document-templates" className="inline-flex min-h-8 items-center rounded-ctl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition">Manage templates →</Link>}>
         <div className="grid gap-4 sm:grid-cols-3">
           {[{ label: 'Chips & snacks', val: 'Snacks Quote v2' }, { label: 'Powders', val: 'Powder Quote Standard' }, { label: 'Combined', val: 'Combined Quote Template' }].map((t) => (
@@ -99,6 +112,7 @@ export default async function PricingEnginePage({ searchParams }: { searchParams
         </label>
         <p className="mt-2 text-xs text-slate-400">Template assignment per category — coming in Quote Builder V2.</p>
       </SectionCard>
+      )}
       {threshold == null
         ? <KitNextStep icon="📄" label="After setting threshold — configure document templates" description="Quote terms and bank details required before first quote" href="/admin/documents" warn />
         : <KitNextStep icon="📄" label="Pricing ready — configure document templates" description="Add quote terms, bank details, and export declarations" href="/admin/documents" />}

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
@@ -25,11 +26,18 @@ function readModeLeadType(value?: string | string[]): MobileLeadType {
   return '';
 }
 
+function readRequestedLeadType(value?: string | string[]): MobileLeadType {
+  const leadType = readParam(value).toLowerCase();
+  if (leadType === 'buyer' || leadType === 'supplier') return leadType;
+  return '';
+}
+
 export default async function LeadsPage({
   searchParams,
 }: {
   searchParams?: {
     mode?: string | string[];
+    leadType?: string | string[];
     quickLead?: string | string[];
     sourceType?: string | string[];
     sourceLabel?: string | string[];
@@ -96,9 +104,12 @@ export default async function LeadsPage({
   const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
   const quickLeadProductId = readParam(searchParams?.productId).trim();
   const eventId = readParam(searchParams?.eventId).trim();
-  const initialFastField = quickLeadEnabled && Boolean(eventId);
+  const requestedSourceType = readParam(searchParams?.sourceType).trim();
+  const requestedSourceLabel = readParam(searchParams?.sourceLabel).trim();
   const modeLeadType = readModeLeadType(searchParams?.mode);
-  const isTradeShowQuickLead = quickLeadEnabled && readParam(searchParams?.sourceType).trim() === 'trade_event';
+  const requestedLeadType = readRequestedLeadType(searchParams?.leadType);
+  const quickLeadType: 'buyer' | 'supplier' = requestedLeadType || modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer');
+  const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -106,14 +117,14 @@ export default async function LeadsPage({
 
   const initialQuickCapture = quickLeadEnabled
     ? {
-        sourceType: readParam(searchParams?.sourceType).trim() || 'trade_show',
-        sourceLabel: readParam(searchParams?.sourceLabel).trim() || 'Trade show fast lane',
+        ...(requestedSourceType ? { sourceType: requestedSourceType } : {}),
+        ...(requestedSourceLabel ? { sourceLabel: requestedSourceLabel } : {}),
+        ...(eventId ? { tradeEventId: eventId } : {}),
+        leadType: quickLeadType,
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
         autoOpenQuoteAfterSave: false,
-        title: isTradeShowQuickLead ? 'Trade show booth capture' : 'Quick lead',
-        description: isTradeShowQuickLead
-          ? 'Capture the visitor, company, interest, source event, and follow-up task from the existing Quick Lead drawer. Quotes and orders stay locked during the trial.'
-          : 'Capture the minimum buyer context, keep the product lane pre-linked, and move into Quote faster.',
+        title: 'Quick lead',
+        description: 'Capture the minimum buyer context, keep the product lane pre-linked, and move into follow-up or Quote when ready.',
       }
     : null;
 
@@ -121,9 +132,7 @@ export default async function LeadsPage({
     <div className="space-y-4">
       <div className="md:hidden">
         <LeadsMobileSurface
-          quickLeadEnabled={quickLeadEnabled}
-          initialLeadType={modeLeadType || (readParam(searchParams?.sourceType).trim() === 'supplier' ? 'supplier' : 'buyer')}
-          eventId={eventId || null}
+          initialLeadType={quickLeadType}
           leads={mobileLeadCards}
           user={mobileUser}
           signedIn={mobileSignedIn}
@@ -138,6 +147,18 @@ export default async function LeadsPage({
         {guidedTrialCoach ? (
           <div className="rounded-panel border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900 shadow-sm">
             Trade Show Trial mode: this list shows captured booth leads. You can add follow-up tasks, but quotes and orders stay preview-only until upgrade.
+          </div>
+        ) : null}
+        {isStarkPackmate && workspace.canAccessAdmin ? (
+          <div className="flex items-center justify-between gap-4 rounded-panel border border-blue-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white">Inbound</span>
+                <p className="text-sm font-bold text-slate-900">Interakt qualification queue</p>
+              </div>
+              <p className="mt-1 text-xs text-slate-600">Review WhatsApp/Instagram contacts with Setu Guru before they enter the qualified Lead Queue.</p>
+            </div>
+            <Link href="/leads/inbound" className="shrink-0 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Open Inbound →</Link>
           </div>
         ) : null}
         <LeadEventFilterNarrower
@@ -188,7 +209,7 @@ export default async function LeadsPage({
           initialTodayState={viewModel.todayState}
           initialQuickCapture={initialQuickCapture}
           initialEventId={eventId || null}
-          initialFastField={initialFastField}
+          initialFastField={false}
         />
         <QuoteReviewInlineComplianceFix />
       </div>

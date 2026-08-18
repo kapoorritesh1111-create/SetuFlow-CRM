@@ -1,7 +1,5 @@
 // S37-BUG-007: single source of truth for quote-gate messaging.
-// Every quote-creation / quote-open entry point (lead-draft RPC, wizard createQuote,
-// launcher clone/new, command-center) resolves user-facing copy through this module so the
-// buyer-safe wording stays consistent and raw SQL errors never reach the UI.
+// Every quote-creation / quote-open entry point resolves user-facing copy here.
 
 export type LeadQuoteGateCode =
   | 'LEAD_NOT_FOUND'
@@ -17,7 +15,7 @@ export type LeadQuoteGateCode =
 export const LEAD_QUOTE_GATE_MESSAGES: Record<LeadQuoteGateCode, string> = {
   LEAD_NOT_FOUND: 'This lead is no longer available in your workspace. Refresh and try again.',
   LEAD_DISQUALIFIED: 'This lead is disqualified. Reopen qualification before starting quote work.',
-  NO_PRODUCT_COVERAGE: 'Link at least one active product to this lead before creating a quote.',
+  NO_PRODUCT_COVERAGE: 'Capture at least one product or packaging requirement on this lead before creating a quote.',
   LEAD_COMPANY_NAME_REQUIRED: 'Add the buyer / company name to this lead before creating a quote.',
   NOT_ORG_MEMBER: 'You do not have access to create quotes in this workspace.',
   MISSING_REQUIRED_INPUT: 'Some required lead information is missing, so the quote could not be created.',
@@ -30,7 +28,6 @@ export function leadQuoteGateMessage(code: LeadQuoteGateCode): string {
   return LEAD_QUOTE_GATE_MESSAGES[code] ?? LEAD_QUOTE_GATE_MESSAGES.UNKNOWN;
 }
 
-// Classify a canonical RPC failure (app_create_lead_quote_draft_tx) by its SQLSTATE / message.
 export function mapLeadQuoteRpcErrorToCode(error: any): LeadQuoteGateCode {
   const code = String(error?.code ?? '').trim();
   const msg = String(error?.message ?? '').toLowerCase();
@@ -44,7 +41,7 @@ export function mapLeadQuoteRpcErrorToCode(error: any): LeadQuoteGateCode {
     case 'P0001':
       if (msg.includes('disqualified')) return 'LEAD_DISQUALIFIED';
       if (msg.includes('company name')) return 'LEAD_COMPANY_NAME_REQUIRED';
-      if (msg.includes('product interest') || msg.includes('coverage')) return 'NO_PRODUCT_COVERAGE';
+      if (msg.includes('product interest') || msg.includes('product requirement') || msg.includes('coverage')) return 'NO_PRODUCT_COVERAGE';
       return 'UNKNOWN';
     default:
       if (msg.includes('could not find the function') || msg.includes('schema cache')) return 'LOAD_FAILED';
@@ -52,23 +49,15 @@ export function mapLeadQuoteRpcErrorToCode(error: any): LeadQuoteGateCode {
   }
 }
 
-// Convert a canonical RPC failure into buyer-safe copy.
 export function mapLeadQuoteDraftRpcError(error: any): string {
   const mapped = mapLeadQuoteRpcErrorToCode(error);
   if (mapped === 'UNKNOWN' && String(error?.code ?? '') === 'P0001') {
-    // Unclassified business-rule blocker — the RPC's P0001 message is already buyer-safe.
     const raw = String(error?.message ?? '').trim();
     if (raw) return raw;
   }
   return leadQuoteGateMessage(mapped);
 }
 
-// ---------------------------------------------------------------------------
-// S37-ENH-008: send-time approval posture derived from public.approval_requests.
-// 'pending'  -> a decision is still outstanding for the current version
-// 'rejected' -> the most recent decision rejected the current version
-// 'approved' -> the most recent decision approved the current version
-// 'none'     -> no first-class approval request exists for the current version
 export type QuoteApprovalState = 'pending' | 'approved' | 'rejected' | 'none';
 
 export function quoteApprovalBlocker(state: QuoteApprovalState): { code: string; detail: string } | null {
