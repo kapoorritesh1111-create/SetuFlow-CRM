@@ -1,11 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getIcpProfile } from '@/lib/setu-guru/icp';
-<<<<<<< HEAD
 import { scoreFitAgainstIcp, type FitScoreResult } from '@/lib/setu-guru/fit-scoring';
-=======
-import { scoreFitAgainstIcp, type FitScoreResult } from '@/lib/setu-guru/entity-research';
 import { scorePackagingFit } from '@/lib/setu-guru/packaging-intelligence-core';
->>>>>>> origin/main
 
 export type OpportunityCard = {
   leadId: string;
@@ -57,8 +53,7 @@ function packagingScoreAsFit(lead: any, icp: any): { fitScore: FitScoreResult; m
     mainProductCategory: lead.main_product_category,
     industryMetadata: lead.industry_metadata,
   }, icp);
-  // Keep the explicit result name as a stable contract for Growth Center evaluation,
-  // analytics, and future card-level evidence display.
+  
   const matchedPackagingCategories = result.matchedCategories;
   const fitScore: FitScoreResult = {
     score: result.score,

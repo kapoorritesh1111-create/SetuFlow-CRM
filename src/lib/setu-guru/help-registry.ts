@@ -51,7 +51,6 @@ export const SETU_GURU_HELP_TOPICS: SetuGuruHelpTopic[] = [
   topicFromContext('trial',{id:'trial',slug:'trial',title:'Guided Trial help',tags:['trial','packaging'],summary:'Use Guided Trial to validate the Packaging flow before conversion.',answer:['Validate family selection, pricing calculation, quote, accepted order, artwork/proof and dispatch behavior.'],approvalRules:PACKAGING_APPROVAL,actions:['Open Guided Trial']}),
 ];
 
-<<<<<<< HEAD
 function normalize(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 
 /**
@@ -137,48 +136,3 @@ export function getBestSetuGuruHelpTopic(question: string, pathname: string) {
 export const getBestHelpTopic = getBestSetuGuruHelpTopic;
 export function getSetuGuruActionHref(action: string) { const normalized = normalize(action); if (normalized.includes('growth center')) return '/growth-agent'; if (normalized.includes('revenue workspace')) return '/growth-agent?workspace=revenue'; if (normalized.includes('supplier workspace')) return '/growth-agent?workspace=suppliers'; if (normalized.includes('pricing intelligence')) return '/products?mode=pricing'; if (normalized.includes('suggested price list')) return '/growth-agent?workspace=pricing'; if (normalized.includes('lead smart action')) return '/leads'; if (normalized.includes('guided trial')) return '/trial'; if (normalized.includes('stark packmate')) return '/trial'; if (normalized.includes('catalog readiness')) return '/products?gap=has_gap'; if (normalized.includes('dispatch evidence')) return '/documents'; if (normalized.includes('lead document')) return '/documents'; if (normalized.includes('compliance')) return '/compliance'; if (normalized.includes('product management')) return '/admin/product-management'; if (normalized.includes('open products')) return '/products'; if (normalized.includes('organization')) return '/admin/organization#company-profile'; if (normalized.includes('open leads')) return '/leads'; if (normalized.includes('order')) return '/orders'; if (normalized.includes('quote')) return '/quotes'; if (normalized.includes('approval') || normalized.includes('release')) return '/approval-send'; if (normalized.includes('product')) return '/products'; return null; }
 export function getRouteHelpSummary(pathname: string) { const context: SetuGuruPageContext = getSetuGuruPageContext(pathname); const topic = getHelpTopicById(context.helpTopicId) ?? getSetuGuruRouteTopics(pathname)[0]; return { routeKey: context.routeKey, routeTitle: context.title, helpFile: topic.helpFile, summary: topic.summary, suggestedPrompts: context.suggestedPrompts, liveSearchModes: context.liveSearchModes, approvalRequiredActions: context.approvalRequiredActions }; }
-=======
-function normalize(value:string){return value.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
-export function getHelpTopicById(id:string){return SETU_GURU_HELP_TOPICS.find((topic)=>topic.id===id||topic.slug===id)??null;}
-export function getSetuGuruRouteTopics(pathname:string){
-  const pageContext=getSetuGuruPageContext(pathname);
-  const matches=SETU_GURU_HELP_TOPICS.filter((topic)=>topic.routeKeys.includes(pageContext.routeKey)||topic.routes.some((route)=>routeMatchesSetuGuruPath(pathname,route)));
-  return matches.length?matches:SETU_GURU_HELP_TOPICS;
-}
-export const getHelpTopicsForPath=getSetuGuruRouteTopics;
-
-export function getBestSetuGuruHelpTopic(question:string,pathname:string){
-  const routeTopics=getSetuGuruRouteTopics(pathname); const q=normalize(question); if(!q)return routeTopics[0]??SETU_GURU_HELP_TOPICS[0];
-  const ranked=routeTopics.map((topic)=>{const haystack=normalize([topic.title,topic.summary,...topic.tags,...topic.answer].join(' '));const wordScore=q.split(/\s+/).filter(Boolean).reduce((score,token)=>score+(haystack.includes(token)?1:0),0);return{topic,score:4+wordScore};}).sort((a,b)=>b.score-a.score);
-  if(ranked[0]?.score>4)return ranked[0].topic;
-  const global=SETU_GURU_HELP_TOPICS.map((topic)=>{const haystack=normalize([topic.title,topic.summary,...topic.tags,...topic.answer].join(' '));const wordScore=q.split(/\s+/).filter(Boolean).reduce((score,token)=>score+(haystack.includes(token)?1:0),0);return{topic,score:wordScore};}).sort((a,b)=>b.score-a.score);
-  return global[0]?.score?global[0].topic:routeTopics[0]??SETU_GURU_HELP_TOPICS[0];
-}
-export const getBestHelpTopic=getBestSetuGuruHelpTopic;
-
-export function getSetuGuruActionHref(action:string){
-  const normalized=normalize(action);
-  if(normalized.includes('reference library'))return '/admin/packaging-reference-library';
-  if(normalized.includes('packaging operation')||normalized.includes('growth center'))return '/growth-agent';
-  if(normalized.includes('design queue')||normalized.includes('artwork')||normalized.includes('proof status'))return '/design-queue';
-  if(normalized.includes('dispatch board')||normalized.includes('production readiness'))return '/dispatch-board';
-  if(normalized.includes('packaging template')||normalized.includes('template blocker')||normalized.includes('template health')||normalized.includes('live preview'))return '/admin/packaging-templates';
-  if(normalized.includes('packaging famil'))return '/admin/packaging-families';
-  if(normalized.includes('packaging academy'))return '/academy';
-  if(normalized.includes('guided trial'))return '/trial';
-  if(normalized.includes('compliance'))return '/compliance';
-  if(normalized.includes('open products')||normalized.includes('catalog'))return '/products';
-  if(normalized.includes('open leads'))return '/leads';
-  if(normalized.includes('order'))return '/orders';
-  if(normalized.includes('quote'))return '/quotes';
-  if(normalized.includes('approval')||normalized.includes('release'))return '/approval-send';
-  if(normalized.includes('organization'))return '/admin/organization#company-profile';
-  return null;
-}
-
-export function getRouteHelpSummary(pathname:string){
-  const context:SetuGuruPageContext=getSetuGuruPageContext(pathname);
-  const topic=getHelpTopicById(context.helpTopicId)??getSetuGuruRouteTopics(pathname)[0];
-  return {routeKey:context.routeKey,routeTitle:context.title,helpFile:topic.helpFile,summary:topic.summary,suggestedPrompts:context.suggestedPrompts,liveSearchModes:context.liveSearchModes,approvalRequiredActions:context.approvalRequiredActions};
-}
->>>>>>> origin/main

@@ -71,7 +71,12 @@ function parseProviderOutput<T>(task: AiTaskType, rawText: string, provider: str
   }
 }
 
-<<<<<<< HEAD
+class NoopProvider implements AiProvider {
+  name = 'noop';
+  configured() { return false; }
+  async invoke<T>(_task: AiTaskType, _payload: unknown): Promise<AiProviderResult<T>> { return { ok: false, error: 'AI disabled', data: undefined }; }
+}
+
 /**
  * Provider implementation for Anthropic Claude.
  *
@@ -91,14 +96,6 @@ function parseProviderOutput<T>(task: AiTaskType, rawText: string, provider: str
  * longer valid. Updated to 'claude-sonnet-5'. If this ever 404s again,
  * check the current valid model ids before re-pinning.
  */
-=======
-class NoopProvider implements AiProvider {
-  name = 'noop';
-  configured() { return false; }
-  async invoke<T>(_task: AiTaskType, _payload: unknown): Promise<AiProviderResult<T>> { return { ok: false, error: 'AI disabled', data: undefined }; }
-}
-
->>>>>>> origin/main
 class AnthropicProvider implements AiProvider {
   name = 'anthropic';
   configured() { return Boolean(process.env.ANTHROPIC_API_KEY); }
@@ -108,22 +105,8 @@ class AnthropicProvider implements AiProvider {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-<<<<<<< HEAD
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-5',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMessage }],
-        }),
-=======
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514', max_tokens: task === AiTaskType.DraftGeneration ? 1400 : 1800, temperature: 0.2, system: ADVISORY_SYSTEM_PROMPT, messages: [{ role: 'user', content: taskPrompt(task, payload) }] }),
->>>>>>> origin/main
       });
       if (!response.ok) return { ok: false, error: `Anthropic API error ${response.status}: ${(await response.text().catch(() => response.statusText)).slice(0, 500)}` };
       const json = await response.json() as { content?: Array<{ type: string; text?: string }>; error?: { message?: string } };
@@ -182,12 +165,14 @@ export async function runAiTask<T>(task: AiTaskType, payload: unknown): Promise<
   if (!isAiEnabled()) return providers.noop.invoke<T>(task, payload);
   const failures: string[] = [];
   for (const provider of providerOrder()) {
-    try { const result = await provider.invoke<T>(task, payload); if (result.ok) return result; failures.push(`${provider.name}: ${result.error || 'unknown error'}`); }
-    catch (error) { failures.push(`${provider.name}: ${error instanceof Error ? error.message : String(error)}`); }
+    try { 
+      const result = await provider.invoke<T>(task, payload); 
+      if (result.ok) return result; 
+      failures.push(`${provider.name}: ${result.error || 'unknown error'}`); 
+    }
+    catch (error) { 
+      failures.push(`${provider.name}: ${error instanceof Error ? error.message : String(error)}`); 
+    }
   }
-<<<<<<< HEAD
+  return { ok: false, error: 'No configured AI provider is available.' };
 }
-=======
-  return { ok: false, error: failures.length ? `AI providers unavailable — ${failures.join(' | ')}` : 'No configured AI provider is available.' };
-}
->>>>>>> origin/main

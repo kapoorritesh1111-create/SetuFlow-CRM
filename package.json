@@ -35,12 +35,8 @@
     "test:security": "tsx --test tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts",
     "check:mobile-scan": "node scripts/check-mobile-scan-prod.mjs",
     "test:docs-drift": "node --test tests/docs-drift.test.mjs",
-<<<<<<< HEAD
-    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts",
+    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts tests/packaging/pricing-v4-engine.test.ts tests/packaging/pricing-v4-workbook-matrix.test.ts tests/packaging/pricing-v4-charges.test.ts tests/packaging/pricing-v4-persistence-contract.test.ts tests/packaging/pricing-v4-snapshot-reproduction.test.ts tests/packaging/pricing-v4-admin-ux.test.ts tests/packaging/design-proof.test.ts && node --test tests/s50-packaging-intelligence-completion.test.mjs",
     "test:golden-eval": "tsx scripts/golden-eval-runner.ts"
-=======
-    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts tests/packaging/pricing-v4-engine.test.ts tests/packaging/pricing-v4-workbook-matrix.test.ts tests/packaging/pricing-v4-charges.test.ts tests/packaging/pricing-v4-persistence-contract.test.ts tests/packaging/pricing-v4-snapshot-reproduction.test.ts tests/packaging/pricing-v4-admin-ux.test.ts tests/packaging/design-proof.test.ts && node --test tests/s50-packaging-intelligence-completion.test.mjs"
->>>>>>> origin/main
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.113.0",

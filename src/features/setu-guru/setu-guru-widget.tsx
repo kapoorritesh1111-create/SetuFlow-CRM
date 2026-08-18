@@ -222,7 +222,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   }, [pathname]);
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
-<<<<<<< HEAD
+
   
   useEffect(() => { 
     setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); 
@@ -260,7 +260,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     }
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
-=======
+
   useEffect(() => {
     function handleDockOpen() { setDrawerOpen(true); }
     window.addEventListener('setu-guru:open', handleDockOpen);
@@ -273,7 +273,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content }]);
   }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
   useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
->>>>>>> origin/main
+
 
   function appendAssistant(content: string, tone: ChatMessage['tone'] = 'normal', extra?: Partial<ChatMessage>) {
     const msgId = `assistant-${Date.now()}`;
@@ -307,15 +307,9 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
         rows: Array.isArray(data.rows) ? data.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === 'object' && !Array.isArray(row))) : [],
         hsnCatalogReview: data.hsnCatalogReview && typeof data.hsnCatalogReview === 'object' ? data.hsnCatalogReview as HsnCatalogReview : null,
         trialAction: data.trialAction && typeof data.trialAction === 'object' && (data.trialAction as Record<string, unknown>).type === 'show_step' && typeof (data.trialAction as Record<string, unknown>).stepId === 'string' ? (data.trialAction as TrialShowStepAction) : null,
-<<<<<<< HEAD
       };
 
       void simulateStream(assistantId, fullAnswer, extraData);
-=======
-        sourceQuestion: question,
-        tone: response.ok ? 'normal' : 'error',
-      }));
->>>>>>> origin/main
     } catch (error) {
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `org-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not search your organization data right now.', tone: 'error' }));
     } finally {
@@ -380,7 +374,6 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   }
 
   function askTopic(topic: SetuGuruHelpTopic) {
-<<<<<<< HEAD
     const userMsgId = `user-${topic.id}-${Date.now()}`;
     const assistantMsgId = `topic-${topic.id}-${Date.now()}`;
     setMessages((current) => [
@@ -390,10 +383,6 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     ]);
     const topicMsg = topicMessage(topic, routeTitle);
     void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
-=======
-    const answer = isPackagingPricingRoute(pathname) && topic.id === 'packaging-templates' ? packagingPricingMessage(topic.title) : topicMessage(topic, routeHelp.routeTitle || routeTitle);
-    setMessages((current) => [...current, { id: `user-${topic.id}-${Date.now()}`, role: 'user', content: topic.title }, answer]);
->>>>>>> origin/main
   }
 
   function handleAsk(event: FormEvent<HTMLFormElement>) {
@@ -402,7 +391,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (!question || isThinking) return;
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
-<<<<<<< HEAD
+
     
     const cleanLowerQuestion = question.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
     const casualKeywords = ['hi', 'hello', 'hey', 'hii', 'ok', 'okay', 'okey', 'thanks', 'thank you', 'yes', 'no', 'cool'];
@@ -476,7 +465,6 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     } else {
       void runOrgSearch(question);
     }
-=======
     if (isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(question)) {
       setMessages((current) => [...current, packagingPricingMessage(question)]);
       requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
@@ -487,7 +475,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
     setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeHelp.routeTitle || routeTitle)]);
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
->>>>>>> origin/main
+
   }
 
   function handleAction(message: ChatMessage, action: string) {
