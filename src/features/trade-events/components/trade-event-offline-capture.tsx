@@ -13,6 +13,15 @@ import {
 } from '@/lib/trade-events/offline-capture-queue';
 import { flushOfflineTradeCaptures } from './trade-event-offline-sync';
 
+class OfflineCaptureHttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'OfflineCaptureHttpError';
+    this.status = status;
+  }
+}
+
 function tomorrowFollowUpIso() {
   const value = new Date(Date.now() + 24 * 60 * 60 * 1000);
   value.setMinutes(0, 0, 0);
@@ -63,7 +72,7 @@ export function TradeEventOfflineCapture({
       credentials: 'same-origin',
     });
     const body = await response.json().catch(() => ({})) as { error?: string; success?: string };
-    if (!response.ok) throw new Error(body.error ?? 'Could not save this lead.');
+    if (!response.ok) throw new OfflineCaptureHttpError(response.status, body.error ?? 'Could not save this lead.');
     return body.success ?? 'Lead saved.';
   }
 
@@ -94,9 +103,10 @@ export function TradeEventOfflineCapture({
           const success = await submitOnline(payload);
           setMessage(success);
         } catch (requestError) {
-          if (navigator.onLine) throw requestError;
+          if (requestError instanceof OfflineCaptureHttpError) throw requestError;
           enqueueOfflineTradeCapture(payload);
-          setMessage('Connection dropped. Lead saved on this device and queued for automatic sync.');
+          setOnline(false);
+          setMessage('Signal dropped before Setu Flow confirmed the save. Lead is safely queued on this device for automatic retry.');
         }
       } else {
         enqueueOfflineTradeCapture(payload);
@@ -123,13 +133,13 @@ export function TradeEventOfflineCapture({
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300">Offline Event Capture</p>
             <h1 className="mt-1 text-2xl font-black">{event.name}</h1>
-            <p className="mt-1 text-xs font-semibold text-slate-300">{event.locationLabel || 'Trade event'} · {online ? 'Connected' : 'Offline'}</p>
+            <p className="mt-1 text-xs font-semibold text-slate-300">{event.locationLabel || 'Trade event'} · {online ? 'Connected' : 'Offline / low signal'}</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-[11px] font-black ${online ? 'bg-emerald-400/20 text-emerald-200' : 'bg-amber-400/20 text-amber-200'}`}>
             {online ? 'ONLINE' : 'OFFLINE'}
           </span>
         </div>
-        <p className="mt-4 text-sm text-slate-300">Use this fallback only when the show floor connection is unavailable. Saved leads stay on this device until Setu Flow confirms they synced.</p>
+        <p className="mt-4 text-sm text-slate-300">Use this fallback whenever show-floor signal is unreliable. Setu Flow keeps unconfirmed captures on this device until the server confirms a sync.</p>
       </section>
 
       {pendingCount > 0 ? (
