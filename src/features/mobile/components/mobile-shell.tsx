@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { BrandedMobileTopBar, MobileBottomTabs } from './mobile-navigation';
+import { BrandedMobileTopBar } from './mobile-navigation';
+import { MobileBottomTabs } from './mobile-bottom-tabs';
 
 export type MobileSignedInIdentity = {
   name: string;
