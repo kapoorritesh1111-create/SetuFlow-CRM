@@ -98,7 +98,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.error, provider: result.provider }, { status: 502 });
+    return NextResponse.json({ error: 'Email delivery failed. Please try again.', provider: result.provider }, { status: 502 });
   }
 
   const sentAt = new Date().toISOString();
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const activity = {
     id: crypto.randomUUID(),
     kind: 'email',
-    note: `${mode === 'first_inquiry' ? 'First inquiry' : 'Follow-up'} email sent via Mailtrap — ${subject}`,
+    note: `${mode === 'first_inquiry' ? 'First inquiry' : 'Follow-up'} email sent — ${subject}`,
     actor_name: senderName,
     actor_user_id: auth.user.id,
     provider: 'mailtrap',
