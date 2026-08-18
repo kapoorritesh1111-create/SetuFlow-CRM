@@ -25,13 +25,13 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
     <>
       {moreOpen ? (
         <div
-          className="fixed inset-0 z-[410] bg-slate-950/30 backdrop-blur-[2px] md:hidden"
+          className="fixed inset-0 z-[510] bg-slate-950/30 backdrop-blur-[2px] md:hidden"
           onClick={() => setMoreOpen(false)}
           role="presentation"
         >
           <section
             id="mobile-more-menu"
-            className="absolute bottom-[86px] left-1/2 w-[calc(100%-24px)] max-w-[406px] -translate-x-1/2 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,.28)] dark:border-slate-800 dark:bg-slate-950"
+            className="absolute bottom-[86px] left-1/2 w-[calc(100%_-_24px)] max-w-[406px] -translate-x-1/2 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,.28)] dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
             aria-label="More mobile navigation"
           >
@@ -80,7 +80,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
       ) : null}
 
       <nav
-        className="fixed bottom-0 left-1/2 z-[420] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-panel border border-slate-200/80 border-b-0 bg-white/95 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/95"
+        className="fixed bottom-0 left-1/2 z-[520] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-panel border border-slate-200/80 border-b-0 bg-white/95 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/95"
         aria-label="Mobile navigation"
       >
         {primaryTabs.map((tab) => {
@@ -90,7 +90,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
               key={tab.href}
               href={tab.href}
               aria-current={active ? 'page' : undefined}
-              className={`relative z-[421] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${active ? 'bg-blue-500/10 text-blue-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}`}
+              className={`relative z-[521] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${active ? 'bg-blue-500/10 text-blue-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}`}
             >
               <SetuIcon name={tab.icon} className="mb-0.5 h-5 w-5" />
               {tab.label}
@@ -102,7 +102,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
           onClick={() => setMoreOpen((current) => !current)}
           aria-expanded={moreOpen}
           aria-controls="mobile-more-menu"
-          className={`relative z-[421] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${moreActive || moreOpen ? 'bg-blue-500/10 text-blue-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}`}
+          className={`relative z-[521] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${moreActive || moreOpen ? 'bg-blue-500/10 text-blue-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}`}
         >
           <SetuIcon name="more" className="mb-0.5 h-5 w-5" />
           More
