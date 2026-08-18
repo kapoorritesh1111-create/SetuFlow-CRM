@@ -1,4 +1,4 @@
-// S24-TRIAL-206 Pass D regression: duplicate-drawer root fix.
+// S24-TRIAL-206 / S51-EVENT-028 regression: duplicate-drawer root fix.
 // Asserts the DOM-pruning guard is fully deleted, the quick-lead channel is
 // the single open path on /leads, the form owns validation, and no forbidden
 // DOM-hack patterns remain anywhere in the leads feature.
@@ -62,11 +62,6 @@ test('drawer form owns validation relaxation (replaces guard)', () => {
 });
 
 test('no forbidden DOM-hack patterns in the drawer-owning surfaces', () => {
-  // Scoped to the surfaces that owned the duplicate-drawer bug (workspace,
-  // drawer, channel, page). Pre-existing observers in contact-action overlays
-  // and the event-filter narrower, and the command center's intentional
-  // full-page quote navigations, are separate legacy debt tracked on the
-  // sprint board — not this regression class.
   const scanDirs = ['src/features/leads/components/workspace', 'src/features/leads/components/drawer', 'src/features/leads/lib'];
   for (const dir of scanDirs) for (const file of walk(dir)) {
     const source = read(file);
@@ -89,32 +84,29 @@ test('setu-guru contract content restored (the 4 pre-existing failures)', () => 
   assert.ok(ordersHelp.includes('guidance and routing only'));
 });
 
-test('singleton claim guarantees at most one rendered lead drawer (hotfix)', () => {
+test('singleton claim guarantees one rendered drawer and hidden duplicates do not take over after close', () => {
   const singleton = read('src/features/leads/lib/lead-drawer-singleton.ts');
   assert.ok(singleton.includes('claimLeadDrawerPrimacy'));
   assert.ok(singleton.includes('releaseLeadDrawerPrimacy'));
-  assert.ok(singleton.includes('onLeadDrawerPrimacyReleased'), 'self-healing handoff must exist');
+  assert.ok(singleton.includes('onLeadDrawerPrimacyReleased'), 'compatibility subscription must remain while drawer wiring is shared');
+  assert.ok(!singleton.includes('releaseListeners.forEach'), 'closing the visible drawer must not promote a hidden responsive duplicate');
   assert.ok(!singleton.includes('document'), 'registry must be DOM-free');
   assert.ok(!singleton.includes('querySelector'), 'registry must be DOM-free');
-  // Drawer wiring: claim on open, render-null guard after hooks, release on close/unmount.
   assert.ok(drawer.includes('claimLeadDrawerPrimacy(owner)'));
   assert.ok(drawer.includes('if (open && !isPrimaryDrawer) return null;'));
   assert.ok(drawer.includes('releaseLeadDrawerPrimacy(owner)'));
-  assert.ok(drawer.includes('onLeadDrawerPrimacyReleased'), 'suppressed instances must retry on release');
+  assert.ok(drawer.includes('onLeadDrawerPrimacyReleased'));
 });
 
 test('tour and lead drawer are mutually exclusive on screen (critical fix)', () => {
   const provider = read('src/features/trial/tour-provider.tsx');
   const channel = read('src/features/leads/lib/quick-lead-channel.ts');
-  // Drawer announces opening after winning the claim; tour closes on it.
   assert.ok(channel.includes('notifyLeadDrawerOpened'));
   assert.ok(channel.includes('subscribeLeadDrawerOpened'));
   assert.ok(drawer.includes('notifyLeadDrawerOpened()'));
   assert.ok(provider.includes('subscribeLeadDrawerOpened'));
-  // Tour never auto-runs, replays, or guru-steps over an open drawer.
   assert.ok(provider.includes('hasActiveLeadDrawerClaim'));
   assert.equal((provider.match(/hasActiveLeadDrawerClaim\(\)/g) || []).length, 3, 'guard auto-run, guruStep, and relaunch paths');
-  // Suppression diagnostic must be production-visible.
   assert.ok(drawer.includes('console.warn("[LeadDrawer] duplicate open instance suppressed'));
   assert.ok(!drawer.includes("process.env.NODE_ENV !== \"production\""), 'suppression warn must not be dev-only');
 });
