@@ -12,6 +12,8 @@ const leadDrawerSingleton = readFileSync('src/features/leads/lib/lead-drawer-sin
 const leadsMobileSurface = readFileSync('src/features/leads/components/leads-mobile-surface.tsx', 'utf8');
 const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
+const interactions = readFileSync('src/features/trade-events/components/event-interactions-panel.tsx', 'utf8');
+const attachmentUploader = readFileSync('src/features/trade-events/components/event-attachment-uploader.tsx', 'utf8');
 const mobile = readFileSync('src/features/trade-events/components/trade-events-mobile-workspace.tsx', 'utf8');
 const eventModeBanner = readFileSync('src/features/trade-events/components/event-mode-banner.tsx', 'utf8');
 const offlineQueue = readFileSync('src/lib/trade-events/offline-capture-queue.ts', 'utf8');
@@ -52,6 +54,16 @@ test('command center loads booth readiness and normalized capture evidence', () 
   assert.match(query, /normalized_payload, raw_payload/);
   assert.match(query, /scheduled_tasks/);
   assert.match(query, /deal_value, deal_currency/);
+});
+
+test('event interaction evidence UI activates only when attachment schema is available', () => {
+  assert.match(query, /trade_event_entry_attachments/);
+  assert.match(query, /attachmentStorageReady/);
+  assert.match(commandCenter, /EventInteractionsPanel/);
+  assert.match(interactions, /Conversation evidence/);
+  assert.match(interactions, /attachmentStorageReady \? <div className="mt-3"><EventAttachmentUploader/);
+  assert.match(interactions, /will activate automatically after the approved Trade Event database\/storage migration/);
+  assert.match(attachmentUploader, /image\/jpeg,image\/png,image\/webp,application\/pdf/);
 });
 
 test('command event selection sorts nearest upcoming event explicitly', () => {
