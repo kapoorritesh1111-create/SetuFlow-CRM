@@ -1,5 +1,3 @@
-'use server';
-
 const MAX_FILES = 5;
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
