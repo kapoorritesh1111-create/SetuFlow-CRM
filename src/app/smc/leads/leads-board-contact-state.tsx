@@ -207,12 +207,12 @@ function LeadMailtrapComposer({ lead, onClose, onSent }: { lead:Lead; onClose:()
         }),
       });
       const data = await res.json().catch(()=>({}));
-      if (!res.ok && res.status !== 207) throw new Error(data.error || 'Mailtrap send failed.');
+      if (!res.ok && res.status !== 207) throw new Error(data.error || 'Email send failed.');
       if (data.lead) onSent(data.lead as Lead);
       setResolvedMode('follow_up');
-      setNotice({kind:data.error?'error':'ok',text:data.error || `Sent through Mailtrap to ${lead.primary_admin_email}. Future Auto messages will be follow-ups.`});
+      setNotice({kind:data.error?'error':'ok',text:data.error || `Email sent to ${lead.primary_admin_email}. Future Auto messages will be follow-ups.`});
     } catch (error) {
-      setNotice({kind:'error',text:error instanceof Error?error.message:'Mailtrap send failed.'});
+      setNotice({kind:'error',text:error instanceof Error?error.message:'Email send failed.'});
     } finally { setSending(false); }
   }
 
@@ -221,7 +221,7 @@ function LeadMailtrapComposer({ lead, onClose, onSent }: { lead:Lead; onClose:()
       <div onClick={e=>e.stopPropagation()} style={{width:'min(760px,96vw)',maxHeight:'92vh',overflowY:'auto',background:'#fff',borderRadius:18,boxShadow:'0 24px 80px rgba(15,23,42,.28)',border:'1px solid #dbe6ef'}}>
         <div style={{padding:'16px 18px',background:'linear-gradient(135deg,#1f487c,#279491)',color:'#fff',display:'flex',alignItems:'center',gap:12,borderRadius:'18px 18px 0 0'}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',opacity:.78}}>SMC Growth · Mailtrap</div>
+            <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',opacity:.78}}>SMC Growth · Mail Outreach</div>
             <div style={{fontSize:17,fontWeight:800,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lead.company_name}</div>
             <div style={{fontSize:11,opacity:.85,marginTop:2}}>{lead.primary_admin_email || 'No email address on lead'}</div>
           </div>
@@ -250,14 +250,14 @@ function LeadMailtrapComposer({ lead, onClose, onSent }: { lead:Lead; onClose:()
             <textarea value={body} onChange={e=>setBody(e.target.value)} rows={13} placeholder="Generate with Setu Guru or write the email here…" style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid #cbd5e1',borderRadius:10,padding:'10px 11px',fontSize:12.5,fontFamily:'inherit',resize:'vertical',lineHeight:1.55}} />
           </label>
 
-          {effectiveMode === 'first_inquiry' && <div style={{fontSize:10.5,color:'#0f766e',background:'#ecfeff',border:'1px solid #a5f3fc',borderRadius:9,padding:'7px 9px'}}>First inquiry emails always include <strong>{MARKETING_SITE}</strong>. The Mailtrap send endpoint enforces this even after manual edits.</div>}
+          {effectiveMode === 'first_inquiry' && <div style={{fontSize:10.5,color:'#0f766e',background:'#ecfeff',border:'1px solid #a5f3fc',borderRadius:9,padding:'7px 9px'}}>First inquiry emails always include <strong>{MARKETING_SITE}</strong>. The send service enforces this even after manual edits.</div>}
           {notice && <div style={{fontSize:11.5,fontWeight:650,color:notice.kind==='ok'?'#047857':'#b91c1c',background:notice.kind==='ok'?'#ecfdf5':'#fef2f2',border:`1px solid ${notice.kind==='ok'?'#a7f3d0':'#fecaca'}`,borderRadius:10,padding:'8px 10px'}}>{notice.text}</div>}
 
           <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center',flexWrap:'wrap'}}>
-            <a href="/smc/leads/outreach" style={{fontSize:10.5,fontWeight:700,color:'#64748b',textDecoration:'none'}}>Open full Mailtrap Outreach →</a>
+            <a href="/smc/leads/outreach" style={{fontSize:10.5,fontWeight:700,color:'#64748b',textDecoration:'none'}}>Open full Mail Outreach →</a>
             <div style={{display:'flex',gap:8}}>
               <button type="button" onClick={generate} disabled={generating} style={{border:'1px solid #c4b5fd',background:'#f5f3ff',color:'#5b21b6',borderRadius:9,padding:'9px 14px',fontSize:12,fontWeight:800,cursor:generating?'wait':'pointer',opacity:generating?.7:1}}>{generating?'Generating…':'✨ Generate with Setu Guru'}</button>
-              <button type="button" onClick={send} disabled={sending || !lead.primary_admin_email || !subject.trim() || !body.trim()} style={{border:'none',background:sending?'#94a3b8':'#7c3aed',color:'#fff',borderRadius:9,padding:'9px 15px',fontSize:12,fontWeight:800,cursor:sending?'wait':'pointer',opacity:(!lead.primary_admin_email || !subject.trim() || !body.trim())?.55:1}}>{sending?'Sending…':'Send via Mailtrap'}</button>
+              <button type="button" onClick={send} disabled={sending || !lead.primary_admin_email || !subject.trim() || !body.trim()} style={{border:'none',background:sending?'#94a3b8':'#7c3aed',color:'#fff',borderRadius:9,padding:'9px 15px',fontSize:12,fontWeight:800,cursor:sending?'wait':'pointer',opacity:(!lead.primary_admin_email || !subject.trim() || !body.trim())?.55:1}}>{sending?'Sending…':'Send mail'}</button>
             </div>
           </div>
         </div>
@@ -326,7 +326,7 @@ export function LeadsBoardContactState({ initialLeads }: { initialLeads: Lead[] 
           mail.addEventListener('click',event => event.stopPropagation());
           card.insertBefore(mail,badge);
         }
-        mail.textContent = lead.primary_admin_email ? '✉ Mailtrap email' : '✉ Add email to send';
+        mail.textContent = lead.primary_admin_email ? '✉ Send mail' : '✉ Add email to send';
         mail.disabled = !lead.primary_admin_email;
         mail.title = lead.primary_admin_email ? `Generate and send an email to ${lead.primary_admin_email}` : 'Add an email address in Contact before sending';
         mail.onclick = event => { event.stopPropagation(); if (lead.primary_admin_email) openComposer(lead); };
@@ -346,7 +346,7 @@ export function LeadsBoardContactState({ initialLeads }: { initialLeads: Lead[] 
       });
 
       // The existing Lead Manager drawer remains the source for editing, WhatsApp,
-      // demo and activity. Add a first-class Mailtrap action directly to its header.
+      // demo and activity. Add a first-class mail action directly to its header.
       root.querySelectorAll('div').forEach(node => {
         if (node.textContent?.trim() !== 'Internal Lead') return;
         const meta = node.parentElement as HTMLElement | null;
@@ -362,10 +362,10 @@ export function LeadsBoardContactState({ initialLeads }: { initialLeads: Lead[] 
           const close = header.lastElementChild;
           if (close) header.insertBefore(action,close); else header.appendChild(action);
         }
-        action.textContent = lead.primary_admin_email ? '✉ Mailtrap' : '✉ No email';
+        action.textContent = lead.primary_admin_email ? '✉ Send mail' : '✉ No email';
         action.disabled = !lead.primary_admin_email;
         action.onclick = event => { event.stopPropagation(); if (lead.primary_admin_email) openComposer(lead); };
-        action.title = lead.primary_admin_email ? 'Generate, review and send email through Mailtrap' : 'Add an email address in Contact first';
+        action.title = lead.primary_admin_email ? 'Generate, review and send email' : 'Add an email address in Contact first';
         action.style.border = '1px solid rgba(255,255,255,.28)';
         action.style.background = 'rgba(255,255,255,.14)';
         action.style.color = '#fff';
@@ -394,7 +394,7 @@ export function LeadsBoardContactState({ initialLeads }: { initialLeads: Lead[] 
       <div style={{display:'flex',gap:6,alignItems:'center',padding:'0 16px 8px',fontSize:9.5,color:'#64748b',flexWrap:'wrap'}}>
         <strong style={{fontSize:9.5,color:'#475569'}}>Contact state:</strong>
         <span>○ Not contacted</span><span>✉ Email</span><span>💬 WhatsApp</span><span>📞 Call</span><span>↩ Reply</span><span>🖥 Demo</span>
-        <span style={{marginLeft:'auto',color:'#6d28d9',fontWeight:800}}>✉ Mailtrap email is available on every email-ready lead</span>
+        <span style={{marginLeft:'auto',color:'#6d28d9',fontWeight:800}}>✉ Send mail is available on every email-ready lead</span>
       </div>
       <LeadsBoard key={boardVersion} initialLeads={leads as any} />
       {composerLead && <LeadMailtrapComposer lead={composerLead} onClose={()=>setComposerLeadId(null)} onSent={handleSent} />}
