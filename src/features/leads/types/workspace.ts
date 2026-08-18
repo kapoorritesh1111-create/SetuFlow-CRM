@@ -63,6 +63,7 @@ export type LeadWizardStepId = LeadOpenStep;
 export type LeadQuickCapturePrefill = {
   sourceType?: string;
   sourceLabel?: string;
+  tradeEventId?: string;
   selectedProductIds?: string[];
   autoOpenQuoteAfterSave?: boolean;
   title?: string;
