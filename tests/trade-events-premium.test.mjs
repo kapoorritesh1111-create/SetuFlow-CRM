@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const page = readFileSync('src/app/(app)/trade-events/page.tsx', 'utf8');
 const capturePage = readFileSync('src/app/(app)/trade-events/capture/page.tsx', 'utf8');
+const offlineCapturePage = readFileSync('src/app/(app)/trade-events/offline-capture/page.tsx', 'utf8');
+const offlineCaptureRoute = readFileSync('src/app/api/trade-events/offline-capture/route.ts', 'utf8');
 const leadsPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
 const leadDrawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
 const leadDrawerSingleton = readFileSync('src/features/leads/lib/lead-drawer-singleton.ts', 'utf8');
@@ -11,6 +13,9 @@ const leadsMobileSurface = readFileSync('src/features/leads/components/leads-mob
 const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
 const mobile = readFileSync('src/features/trade-events/components/trade-events-mobile-workspace.tsx', 'utf8');
+const offlineQueue = readFileSync('src/lib/trade-events/offline-capture-queue.ts', 'utf8');
+const offlineSync = readFileSync('src/features/trade-events/components/trade-event-offline-sync.tsx', 'utf8');
+const offlineCapture = readFileSync('src/features/trade-events/components/trade-event-offline-capture.tsx', 'utf8');
 const captureDedupe = readFileSync('src/lib/trade-events/event-capture-dedupe.ts', 'utf8');
 const eventAwareLeadSave = readFileSync('src/features/leads/server/lead-capture-event-aware-action.ts', 'utf8');
 const quickLeadRoute = readFileSync('src/lib/trade-events/quick-lead-route.ts', 'utf8');
@@ -93,6 +98,28 @@ test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
   assert.match(mobileBottomTabs, /Tasks & Events/);
   assert.match(mobileBottomTabs, /Trade Event Command Center/);
   assert.match(mobileBottomTabs, /<span>More<\/span>/);
+});
+
+test('mobile event capture falls back to a durable offline queue and syncs automatically after reconnect', () => {
+  assert.match(mobile, /OfflineAwareCaptureLink/);
+  assert.match(mobile, /offline-capture/);
+  assert.match(offlineCapturePage, /TradeEventOfflineCapture/);
+  assert.match(offlineQueue, /setu:trade-event-offline-queue:v1/);
+  assert.match(offlineQueue, /clientCaptureId/);
+  assert.match(offlineSync, /window\.addEventListener\('online'/);
+  assert.match(offlineSync, /\/api\/trade-events\/offline-capture/);
+  assert.match(offlineCapture, /saved on this device/i);
+  assert.match(offlineCapture, /Sync now/);
+  assert.match(mobileBottomTabs, /TradeEventOfflineSync/);
+});
+
+test('offline event sync is idempotent and still uses canonical event-aware lead save', () => {
+  assert.match(offlineCaptureRoute, /saveLead/);
+  assert.match(offlineCaptureRoute, /client_capture_id/);
+  assert.match(eventAwareLeadSave, /findSyncedOfflineCapture/);
+  assert.match(eventAwareLeadSave, /offline:\$\{clientCaptureId\}/);
+  assert.match(eventAwareLeadSave, /offline capture already synced/i);
+  assert.match(eventAwareLeadSave, /client_capture_id/);
 });
 
 test('event Quick Lead enforces the initiating event as source regardless of scan method', () => {
