@@ -13,6 +13,7 @@ const leadsMobileSurface = readFileSync('src/features/leads/components/leads-mob
 const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
 const mobile = readFileSync('src/features/trade-events/components/trade-events-mobile-workspace.tsx', 'utf8');
+const eventModeBanner = readFileSync('src/features/trade-events/components/event-mode-banner.tsx', 'utf8');
 const offlineQueue = readFileSync('src/lib/trade-events/offline-capture-queue.ts', 'utf8');
 const offlineSync = readFileSync('src/features/trade-events/components/trade-event-offline-sync.tsx', 'utf8');
 const offlineCapture = readFileSync('src/features/trade-events/components/trade-event-offline-capture.tsx', 'utf8');
@@ -103,12 +104,16 @@ test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
 test('mobile event capture falls back to a durable offline queue and syncs automatically after reconnect', () => {
   assert.match(mobile, /OfflineAwareCaptureLink/);
   assert.match(mobile, /offline-capture/);
+  assert.match(eventModeBanner, /Low signal\? Save offline/);
+  assert.match(eventModeBanner, /offlineCaptureHref/);
   assert.match(offlineCapturePage, /TradeEventOfflineCapture/);
   assert.match(offlineQueue, /setu:trade-event-offline-queue:v1/);
   assert.match(offlineQueue, /clientCaptureId/);
   assert.match(offlineSync, /window\.addEventListener\('online'/);
   assert.match(offlineSync, /\/api\/trade-events\/offline-capture/);
   assert.match(offlineCapture, /saved on this device/i);
+  assert.match(offlineCapture, /Signal dropped before Setu Flow confirmed the save/);
+  assert.match(offlineCapture, /OfflineCaptureHttpError/);
   assert.match(offlineCapture, /Sync now/);
   assert.match(mobileBottomTabs, /TradeEventOfflineSync/);
 });
