@@ -12,6 +12,7 @@ const leadDrawerSingleton = readFileSync('src/features/leads/lib/lead-drawer-sin
 const leadsMobileSurface = readFileSync('src/features/leads/components/leads-mobile-surface.tsx', 'utf8');
 const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
+const discoverPanel = readFileSync('src/features/trade-events/components/trade-events-discover-panel.tsx', 'utf8');
 const interactions = readFileSync('src/features/trade-events/components/event-interactions-panel.tsx', 'utf8');
 const attachmentUploader = readFileSync('src/features/trade-events/components/event-attachment-uploader.tsx', 'utf8');
 const mobile = readFileSync('src/features/trade-events/components/trade-events-mobile-workspace.tsx', 'utf8');
@@ -45,14 +46,14 @@ test('command center exposes operational desktop and mobile event views', () => 
   assert.match(commandCenter, /My Events/);
   assert.match(commandCenter, /Discover Events/);
   assert.match(commandCenter, /Past Events/);
-  assert.match(commandCenter, /Verified recommendations only/);
+  assert.match(discoverPanel, /Verified recommendations only/);
   assert.match(mobile, /Scan card \/ badge/);
   assert.match(mobile, /Dictate note/);
   assert.match(mobile, /Capture next lead/);
 });
 
 test('hard-coded stale trade-event recommendations are removed', () => {
-  assert.doesNotMatch(`${page}\n${commandCenter}`, /Bharat Tex 2026|Texworld USA|Apparel Sourcing Paris|setuGuruRecommendedEvents/);
+  assert.doesNotMatch(`${page}\n${commandCenter}\n${discoverPanel}`, /Bharat Tex 2026|Texworld USA|Apparel Sourcing Paris|setuGuruRecommendedEvents/);
 });
 
 test('command center loads booth readiness and normalized capture evidence', () => {
@@ -116,7 +117,7 @@ test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
   assert.match(mobileBottomTabs, /mobileMoreNavItems/);
   assert.match(mobileBottomTabs, /Tasks & Events/);
   assert.match(mobileBottomTabs, /Trade Event Command Center/);
-  assert.match(mobileBottomTabs, /<span>More<\/span>/);
+  assert.match(mobileBottomTabs, /aria-controls="mobile-more-menu"/);
 });
 
 test('mobile event capture falls back to a durable offline queue and syncs automatically after reconnect', () => {
@@ -205,7 +206,8 @@ test('database release boundary contains canonical catalog, private attachments 
   assert.match(offlineMigration, /unique/i);
 });
 
-test('desktop shell still integrates Add Event navigation', () => {
-  assert.match(appShell, /pathname\.startsWith\('\/trade-events'\) \? '\/admin\/trade-events' : '\/trade-events'/);
-  assert.match(appShell, /Add Event/);
+test('desktop shell keeps Events visible and Command Center owns Add Event navigation', () => {
+  assert.match(appShell, /href: '\/trade-events', label: 'Events'/);
+  assert.match(commandCenter, /href="\/admin\/trade-events"/);
+  assert.match(commandCenter, /Add event/);
 });
