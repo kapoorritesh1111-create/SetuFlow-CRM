@@ -46,7 +46,7 @@ export function LeadDrawer(props: LeadDrawerProps) {
   const searchParams = useSearchParams();
   const quickNewLead = (props.mode ?? 'quick') === 'quick' && !props.lead?.id;
   const modeLeadType = workspaceModeToLeadJourney(parseWorkspaceMode(searchParams.get('mode') ?? undefined));
-  const seedLeadType = props.prefill?.leadType ?? modeLeadType ?? 'buyer';
+  const seedLeadType: 'buyer' | 'supplier' = props.prefill?.leadType ?? (modeLeadType === 'supplier' ? 'supplier' : 'buyer');
   const eventSeedLead = quickNewLead && props.prefill?.tradeEventId
     ? {
         ...buildModeSeedLead(seedLeadType),
