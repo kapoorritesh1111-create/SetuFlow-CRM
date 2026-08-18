@@ -33,7 +33,7 @@ export default async function TradeEventOfflineCapturePage({
   const db = await createClient();
   const { data: event } = await db
     .from('trade_events')
-    .select('id, name, city, country, venue')
+    .select('id, name, city, country')
     .eq('organization_id', workspace.organization.id)
     .eq('id', eventId)
     .maybeSingle();
@@ -50,7 +50,7 @@ export default async function TradeEventOfflineCapturePage({
     );
   }
 
-  const locationLabel = [event.venue, event.city, event.country].map((value) => String(value ?? '').trim()).filter(Boolean).join(' · ');
+  const locationLabel = [event.city, event.country].map((value) => String(value ?? '').trim()).filter(Boolean).join(' · ');
   return (
     <TradeEventOfflineCapture
       event={{ id: String(event.id), name: String(event.name), locationLabel }}
