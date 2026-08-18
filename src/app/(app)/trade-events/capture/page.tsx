@@ -21,7 +21,7 @@ export default async function TradeEventsCapturePage({ searchParams }: { searchP
 
   if (!data.isTradeShowTrial) {
     redirect(buildTradeEventQuickLeadHref({
-      eventId: selectedEvent?.id ?? requestedEventId || null,
+      eventId: (selectedEvent?.id ?? requestedEventId) || null,
       eventName: selectedEvent?.name ?? null,
       mode: leadType === 'supplier' ? 'suppliers' : leadType === 'buyer' ? 'buyers' : null,
       dictate: source === 'dictate',
