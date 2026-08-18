@@ -7,22 +7,29 @@ export type TradeCommandLead = { id: string; company_name: string; contact_name:
 export type TradeCommandTask = { id: string; lead_id: string | null; scheduled_for: string | null; status: string | null; task_type: string | null; payload: Record<string, unknown> | null; completed_at: string | null };
 export type TradeCommandQuote = { id: string; lead_id: string | null; status: string | null; currency: string | null; created_at: string | null };
 export type TradeCommandOrder = { id: string; lead_id: string | null; status: string | null; currency: string | null; total_order_value: number | null; created_at: string | null };
-export type TradeEventsCommandCenterData = { queryIssues: string[]; events: TradeCommandEvent[]; entries: TradeCommandEntry[]; leads: TradeCommandLead[]; tasks: TradeCommandTask[]; quotes: TradeCommandQuote[]; orders: TradeCommandOrder[] };
+export type TradeCommandAttachment = { id: string; trade_event_entry_id: string; file_name: string; content_type: string | null; file_size: number | null; created_at: string | null };
+export type TradeEventsCommandCenterData = { queryIssues: string[]; events: TradeCommandEvent[]; entries: TradeCommandEntry[]; leads: TradeCommandLead[]; tasks: TradeCommandTask[]; quotes: TradeCommandQuote[]; orders: TradeCommandOrder[]; attachments: TradeCommandAttachment[]; attachmentStorageReady: boolean };
 
 const leadSelect = 'id, company_name, contact_name, lead_type, trade_event_id, source_type, source_label, stage_id, owner_user_id, next_follow_up_at, deal_value, deal_currency, created_at, updated_at';
 const rows = <T,>(value: T[] | null | undefined) => value ?? [];
 function addIssue(issues: string[], scope: string, error: { message?: string } | null | undefined) { if (!error?.message) return; console.error(`[trade-events:${scope}]`, error.message); issues.push(`${scope}: A live event query could not complete. Refresh or use the linked CRM workspace.`); }
 
 export async function getTradeEventsCommandCenterData(organizationId: string): Promise<TradeEventsCommandCenterData> {
-  if (!hasSupabaseEnv) return { queryIssues: [], events: [], entries: [], leads: [], tasks: [], quotes: [], orders: [] };
+  if (!hasSupabaseEnv) return { queryIssues: [], events: [], entries: [], leads: [], tasks: [], quotes: [], orders: [], attachments: [], attachmentStorageReady: false };
   const db: any = await createClient();
   const issues: string[] = [];
-  const [eventsResult, entriesResult, directLeadsResult] = await Promise.all([
+  const [eventsResult, entriesResult, directLeadsResult, attachmentsResult] = await Promise.all([
     db.from('trade_events').select('id, name, city, country, starts_on, ends_on, notes, booth_number, capture_defaults, created_at, updated_at, organization_id').eq('organization_id', organizationId).order('starts_on', { ascending: true, nullsFirst: false }),
     db.from('trade_event_entries').select('id, trade_event_id, captured_company_name, captured_contact_name, captured_email, captured_phone, captured_country, captured_notes, source_label, source_scan_ref, status, assigned_user_id, converted_lead_id, normalized_payload, raw_payload, captured_at, qualified_at, converted_at, created_at').eq('organization_id', organizationId).order('captured_at', { ascending: false, nullsFirst: false }).limit(400),
     db.from('leads').select(leadSelect).eq('organization_id', organizationId).not('trade_event_id', 'is', null).order('updated_at', { ascending: false }).limit(500),
+    db.from('trade_event_entry_attachments').select('id, trade_event_entry_id, file_name, content_type, file_size, created_at').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(500),
   ]);
   addIssue(issues, 'events', eventsResult.error); addIssue(issues, 'entries', entriesResult.error); addIssue(issues, 'event leads', directLeadsResult.error);
+  // Attachment schema is intentionally staged behind the PR migration. A missing table
+  // is a capability signal, not a broken command-center query, so do not surface it as
+  // an operational error before the production migration rollout.
+  const attachmentStorageReady = !attachmentsResult.error;
+  const attachments = attachmentStorageReady ? rows(attachmentsResult.data) as TradeCommandAttachment[] : [];
 
   const entries = rows(entriesResult.data) as TradeCommandEntry[];
   const influenceByLead = new Map<string, Set<string>>();
@@ -54,5 +61,5 @@ export async function getTradeEventsCommandCenterData(organizationId: string): P
     tasks = rows(taskResult.data) as TradeCommandTask[]; quotes = rows(quoteResult.data) as TradeCommandQuote[]; orders = rows(orderResult.data) as TradeCommandOrder[];
   }
 
-  return { queryIssues: issues, events: rows(eventsResult.data) as TradeCommandEvent[], entries, leads, tasks, quotes, orders };
+  return { queryIssues: issues, events: rows(eventsResult.data) as TradeCommandEvent[], entries, leads, tasks, quotes, orders, attachments, attachmentStorageReady };
 }
