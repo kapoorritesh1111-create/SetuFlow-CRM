@@ -121,9 +121,7 @@ export default async function LeadsPage({
     <div className="space-y-4">
       <div className="md:hidden">
         <LeadsMobileSurface
-          quickLeadEnabled={quickLeadEnabled}
           initialLeadType={modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer')}
-          eventId={eventId || null}
           leads={mobileLeadCards}
           user={mobileUser}
           signedIn={mobileSignedIn}
