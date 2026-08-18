@@ -6,9 +6,14 @@ import { buildTradeEventsViewModel } from '@/lib/trade-events/view-model';
 
 type Model = ReturnType<typeof buildTradeEventsViewModel>;
 
+function withLeadMode(href: string, leadType: 'buyer' | 'supplier') {
+  const join = href.includes('?') ? '&' : '?';
+  return `${href}${join}leadType=${leadType}&mode=${leadType === 'supplier' ? 'suppliers' : 'buyers'}`;
+}
+
 export function TradeEventsMobileWorkspace({ model }: { model: Model }) {
-  const buyerHref = `${model.captureHref}${model.captureHref.includes('?') ? '&' : '?'}leadType=buyer`;
-  const supplierHref = `${model.captureHref}${model.captureHref.includes('?') ? '&' : '?'}leadType=supplier`;
+  const buyerHref = withLeadMode(model.captureHref, 'buyer');
+  const supplierHref = withLeadMode(model.captureHref, 'supplier');
   return <div className="space-y-3 lg:hidden">
     <EventModeBanner eventName={String(model.current?.name ?? 'No active event')} statusLabel={model.status === 'live' ? 'Live' : model.status === 'upcoming' ? 'Upcoming' : model.status === 'completed' ? 'Completed' : 'Dates needed'} timingLabel={model.current ? getEventTimingLabel(model.current) : 'Add event'} captureHref={model.captureHref} />
     <section className="grid grid-cols-2 gap-2">
