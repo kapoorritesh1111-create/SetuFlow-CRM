@@ -4,14 +4,15 @@ import test from 'node:test';
 
 const page = readFileSync('src/app/(app)/trade-events/page.tsx', 'utf8');
 const capturePage = readFileSync('src/app/(app)/trade-events/capture/page.tsx', 'utf8');
+const leadsPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
 const mobile = readFileSync('src/features/trade-events/components/trade-events-mobile-workspace.tsx', 'utf8');
-const quickCapture = readFileSync('src/features/trade-events/components/event-quick-capture-panel.tsx', 'utf8');
-const quickCaptureAction = readFileSync('src/features/trade-events/server/event-quick-capture-actions.ts', 'utf8');
 const captureDedupe = readFileSync('src/lib/trade-events/event-capture-dedupe.ts', 'utf8');
-const packagingFields = readFileSync('src/features/trade-events/components/packaging-event-fields.tsx', 'utf8');
+const eventAwareLeadSave = readFileSync('src/features/leads/server/lead-capture-event-aware-action.ts', 'utf8');
+const quickLeadRoute = readFileSync('src/lib/trade-events/quick-lead-route.ts', 'utf8');
 const query = readFileSync('src/lib/trade-events/query.ts', 'utf8');
 const helpers = readFileSync('src/lib/trade-events/command-center.ts', 'utf8');
+const viewModel = readFileSync('src/lib/trade-events/view-model.ts', 'utf8');
 const identity = readFileSync('src/lib/trade-events/identity.ts', 'utf8');
 const adminActions = readFileSync('src/features/admin/server/trade-event-actions.ts', 'utf8');
 const appShell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
@@ -59,44 +60,37 @@ test('event identity separates exact duplicates from possible matches', () => {
   assert.match(adminActions, /allow_duplicate/);
 });
 
-test('full CRM capture uses event-specific quick capture while trial capture stays isolated', () => {
-  assert.match(capturePage, /EventQuickCapturePanel/);
+test('full CRM Capture Lead reuses the canonical Quick Lead drawer while trial capture stays isolated', () => {
+  assert.match(quickLeadRoute, /quickLead/);
+  assert.match(quickLeadRoute, /sourceType/);
+  assert.match(quickLeadRoute, /sourceLabel/);
+  assert.match(viewModel, /buildTradeEventQuickLeadHref/);
+  assert.match(capturePage, /redirect\(buildTradeEventQuickLeadHref/);
   assert.match(capturePage, /TrialCapturePanel/);
-  assert.match(capturePage, /isTradeShowTrial/);
-  assert.match(capturePage, /showPackaging/);
+  assert.doesNotMatch(capturePage, /EventQuickCapturePanel/);
+  assert.match(leadsPage, /title: 'Quick lead'/);
+  assert.match(leadsPage, /initialFastField=\{false\}/);
 });
 
-test('event capture links existing identities and repeat interactions instead of creating duplicate CRM leads', () => {
+test('event Quick Lead enforces the initiating event as source regardless of scan method', () => {
+  assert.match(eventAwareLeadSave, /formData\.set\('source_type', 'trade_show'\)/);
+  assert.match(eventAwareLeadSave, /formData\.set\('source_label', String\(event\.name\)\)/);
+  assert.match(eventAwareLeadSave, /trade_event_id/);
+});
+
+test('event Quick Lead links existing CRM identities and repeat conversations instead of creating duplicate leads', () => {
   assert.match(captureDedupe, /repeatEntry/);
   assert.match(captureDedupe, /exactLead/);
-  assert.match(captureDedupe, /possibleLeadIds/);
-  assert.match(quickCaptureAction, /duplicate_of_entry_id/);
-  assert.match(quickCaptureAction, /converted_lead_id/);
-  assert.match(quickCaptureAction, /possible_lead_ids/);
-  assert.match(quickCaptureAction, /trade_event_repeat_capture/);
+  assert.match(eventAwareLeadSave, /findEventCaptureIdentityMatch/);
+  assert.match(eventAwareLeadSave, /trade_event_repeat_capture/);
+  assert.match(eventAwareLeadSave, /No duplicate lead was created/);
+  assert.match(eventAwareLeadSave, /converted_lead_id/);
 });
 
-test('fast capture keeps requirements optional and can create CRM follow-up work', () => {
-  assert.match(quickCapture, /Save the conversation first/);
-  assert.match(quickCapture, /Hot/);
-  assert.match(quickCapture, /Review later/);
-  assert.match(quickCapture, /follow_up_promise/);
-  assert.match(quickCaptureAction, /scheduled_tasks/);
-  assert.match(quickCaptureAction, /send_sample|promise/);
-});
-
-test('packaging capture supports unknown dimensions, artwork status and sample need without making them required', () => {
-  assert.match(packagingFields, /Dimensions not known yet/);
-  assert.match(packagingFields, /Artwork unknown/);
-  assert.match(packagingFields, /Ready — can share/);
-  assert.match(packagingFields, /Sample needed/);
-  assert.doesNotMatch(packagingFields, /required/);
-});
-
-test('event quick capture provides unfinished draft recovery', () => {
-  assert.match(quickCapture, /localStorage/);
-  assert.match(quickCapture, /Unfinished capture restored/);
-  assert.match(quickCapture, /Discard/);
+test('event Quick Lead keeps event follow-up work visible to the Trade Command Center', () => {
+  assert.match(eventAwareLeadSave, /scheduled_tasks/);
+  assert.match(eventAwareLeadSave, /trade_event_quick_lead/);
+  assert.match(eventAwareLeadSave, /next_follow_up_at/);
 });
 
 test('desktop shell still integrates Add Event navigation', () => {
