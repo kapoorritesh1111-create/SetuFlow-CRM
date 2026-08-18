@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { INTERNAL_ORG_ID } from '@/lib/config/internal';
 import { getAiProviderKey, isAiEnabled } from '@/lib/ai/config';
+import {
+  SETU_FLOW_MARKETING_SITE,
+  applyGrowthEmailSignature,
+  getGrowthSenderIdentity,
+  missingGrowthSenderFields,
+} from '@/lib/smc/growth-email-signature';
 
 export const dynamic = 'force-dynamic';
 
-const MARKETING_SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.setuflowcrm.com';
+const MARKETING_SITE = SETU_FLOW_MARKETING_SITE;
 const CONTACT_KINDS = new Set(['call', 'email', 'whatsapp', 'demo_completed']);
 
 type MessageMode = 'auto' | 'first_inquiry' | 'follow_up';
@@ -55,7 +61,7 @@ export async function POST(request: NextRequest) {
   const {
     company_name, contact_name, pipeline_stage, source, source_detail,
     internal_notes, last_contact_at, next_follow_up_at, lead_score,
-    activity_log, kind, sender_name, message_mode,
+    activity_log, kind, message_mode,
   } = body;
 
   // Enrich older callers (notably the lead drawer) from the canonical SMC lead row.
@@ -80,16 +86,35 @@ export async function POST(request: NextRequest) {
   const contactFirst = firstName(contact_name);
   const name = contactFirst || company_name || 'there';
   const industryLabel = industry || 'import/export and trade';
+  const sender = await getGrowthSenderIdentity(auth.sb as any, auth.user);
+  const senderName = sender.name || 'SETU Flow';
+
+  if (kind === 'email') {
+    const missingSender = missingGrowthSenderFields(sender);
+    if (missingSender.length) {
+      return NextResponse.json({
+        error: `Complete your My Card before generating email. Missing: ${missingSender.join(', ')}. Every SETU Flow email signature requires the logged-in user's name, email and phone number.`,
+      }, { status: 400 });
+    }
+  }
 
   const apiKey = getAiProviderKey();
   if (!isAiEnabled() || !apiKey) {
-    const fallback = kind === 'email'
-      ? isFirstInquiry
-        ? `Subject: A simpler sales workflow for ${company_name}\n\nHi ${contactFirst || 'there'},\n\nI am Ritesh from SETU Flow. We built SETU Flow for ${industryLabel} teams that manage inquiries, quotations and follow-ups across email, WhatsApp and spreadsheets. It brings the buyer journey, quotes, orders and trade documentation into one place so the sales team can move faster without losing context.\n\nYou can see the platform here: ${MARKETING_SITE}\n\nWould you be open to a short demo using a workflow similar to ${company_name}?\n\nBest regards,\n${sender_name || 'Ritesh Kapoor'}\nSETU Flow`
-        : `Subject: Following up — SETU Flow CRM\n\nHi ${contactFirst || 'there'},\n\nI wanted to follow up on SETU Flow and see if a short demo would be useful for your ${industryLabel} team.\n\nWould you be open to a quick call this week?\n\nBest regards,\n${sender_name || 'Ritesh Kapoor'}\nSETU Flow`
-      : isFirstInquiry
-        ? `Hi ${name}, I’m ${sender_name || 'Ritesh Kapoor'} from SETU Flow. We help ${industryLabel} teams manage inquiries, quotations, follow-ups, orders and trade documents in one place instead of across WhatsApp, email and spreadsheets. See what we do: ${MARKETING_SITE} — would a short demo be useful for ${company_name}?`
-        : `Hi ${name}, following up on SETU Flow. Would a short demo be useful to see how it can support your ${industryLabel} sales and trade workflow?`;
+    if (kind === 'email') {
+      const emailBody = isFirstInquiry
+        ? `Subject: A simpler sales workflow for ${company_name}\n\nHi ${contactFirst || 'there'},\n\nI am ${senderName} from SETU Flow. We built SETU Flow for ${industryLabel} teams that manage inquiries, quotations and follow-ups across email, WhatsApp and spreadsheets. It brings the buyer journey, quotes, orders and trade documentation into one place so the sales team can move faster without losing context.\n\nWould you be open to a short demo using a workflow similar to ${company_name}?`
+        : `Subject: Following up — SETU Flow CRM\n\nHi ${contactFirst || 'there'},\n\nI wanted to follow up on SETU Flow and see if a short demo would be useful for your ${industryLabel} team.\n\nWould you be open to a quick call this week?`;
+      return NextResponse.json({
+        message: applyGrowthEmailSignature(emailBody, sender),
+        source: 'fallback',
+        message_mode: mode,
+        sender_signature: sender,
+      });
+    }
+
+    const fallback = isFirstInquiry
+      ? `Hi ${name}, I’m ${senderName} from SETU Flow. We help ${industryLabel} teams manage inquiries, quotations, follow-ups, orders and trade documents in one place instead of across WhatsApp, email and spreadsheets. See what we do: ${MARKETING_SITE} — would a short demo be useful for ${company_name}?`
+      : `Hi ${name}, following up on SETU Flow. Would a short demo be useful to see how it can support your ${industryLabel} sales and trade workflow?`;
     return NextResponse.json({ message: fallback, source: 'fallback', message_mode: mode });
   }
 
@@ -110,7 +135,7 @@ export async function POST(request: NextRequest) {
     : 'This is a FOLLOW-UP. Reference prior contact only when supported by the activity/history supplied below.';
 
   if (kind === 'whatsapp') {
-    const waPrompt = `You are writing a WhatsApp sales message on behalf of ${sender_name || 'Ritesh Kapoor'} from SETU Flow CRM — a B2B trade operating system for import/export teams. SETU Flow helps manage leads, quotations, buyer follow-ups, orders, trade/compliance documents and supplier workflows in one connected workspace.
+    const waPrompt = `You are writing a WhatsApp sales message on behalf of ${senderName} from SETU Flow CRM — a B2B trade operating system for import/export teams. SETU Flow helps manage leads, quotations, buyer follow-ups, orders, trade/compliance documents and supplier workflows in one connected workspace.
 
 MESSAGE MODE: ${mode.toUpperCase()}
 ${historyRule}
@@ -149,7 +174,6 @@ RULES:
       if (!res.ok) return NextResponse.json({ error: `AI error: ${await res.text()}` }, { status: 500 });
       const data = await res.json();
       let message = data.content?.[0]?.text?.trim() ?? '';
-      // First inquiry must always carry the marketing-site link, even if the model omits it.
       if (isFirstInquiry && !message.includes(MARKETING_SITE)) message = `${message}\n\n${MARKETING_SITE}`.trim();
       return NextResponse.json({ message, source: 'claude-sonnet-4-6', message_mode: mode });
     } catch (err) {
@@ -157,7 +181,7 @@ RULES:
     }
   }
 
-  const emailPrompt = `You are writing a ${isFirstInquiry ? 'first-introduction sales email' : 'follow-up email'} on behalf of ${sender_name || 'Ritesh Kapoor'} from SETU Flow CRM — a B2B trade operating system for import/export teams. SETU Flow helps manage lead capture, quotation building, buyer follow-up, order execution, trade/compliance documents and supplier procurement.
+  const emailPrompt = `You are writing a ${isFirstInquiry ? 'first-introduction sales email' : 'follow-up email'} on behalf of ${senderName} from SETU Flow CRM — a B2B trade operating system for import/export teams. SETU Flow helps manage lead capture, quotation building, buyer follow-up, order execution, trade/compliance documents and supplier procurement.
 
 MESSAGE MODE: ${mode.toUpperCase()}
 ${historyRule}
@@ -189,20 +213,16 @@ Hi [first name or "there"],
 
 [one clear low-friction ask]
 
-Best regards,
-${sender_name || 'Ritesh Kapoor'}
-SETU Flow
-${isFirstInquiry ? MARKETING_SITE : ''}
-
 RULES:
 - Subject line must be on the first line starting with "Subject: ".
+- Do not add a closing, sender name, company signature, email address, phone number, or website. SETU Flow appends the authenticated user's canonical signature after generation.
 - ${isFirstInquiry ? `Introduce why you are reaching out and explain 2-3 concrete ways SETU Flow can help a ${industryLabel} business. Focus on business outcomes, not a generic CRM feature list.` : 'Use the real prior history to make the follow-up relevant.'}
 - Do not invent company facts, pain points, prior contact or software usage.
-- ${isFirstInquiry ? `The marketing-site link ${MARKETING_SITE} MUST appear exactly once in the email.` : 'The marketing-site link is optional for a follow-up.'}
-- Keep the body under 190 words.
+- Do not place ${MARKETING_SITE} in the body. It is always added once in the canonical signature for every email, including follow-ups.
+- Keep the body under 190 words before the signature.
 - Do not mention SETU Flow more than three times.
 - End with a short demo ask or a simple reply question.
-- Output only the email.`;
+- Output only the email content above; the application appends the signature.`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -212,9 +232,13 @@ RULES:
     });
     if (!res.ok) return NextResponse.json({ error: `AI error: ${await res.text()}` }, { status: 500 });
     const data = await res.json();
-    let message = data.content?.[0]?.text?.trim() ?? '';
-    if (isFirstInquiry && !message.includes(MARKETING_SITE)) message = `${message}\n${MARKETING_SITE}`.trim();
-    return NextResponse.json({ message, source: 'claude-sonnet-4-6', message_mode: mode });
+    const draft = data.content?.[0]?.text?.trim() ?? '';
+    return NextResponse.json({
+      message: applyGrowthEmailSignature(draft, sender),
+      source: 'claude-sonnet-4-6',
+      message_mode: mode,
+      sender_signature: sender,
+    });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

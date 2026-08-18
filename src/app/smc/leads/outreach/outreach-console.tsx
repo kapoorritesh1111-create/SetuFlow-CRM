@@ -16,6 +16,7 @@ type Draft = { subject:string; body:string; mode:ResolvedMode; status?:'ready'|'
 const MARKETING_SITE = 'https://www.setuflowcrm.com';
 const CONTACT_KINDS = new Set(['call','email','whatsapp','demo_completed']);
 const MAX_BULK = 25;
+const BULK_EXCLUDED_STAGES = new Set(['converted','lost']);
 
 function parseGeneratedEmail(value: string, company: string) {
   const lines = value.split('\n');
@@ -38,9 +39,18 @@ function modeLabel(mode: ResolvedMode) {
   return mode === 'first_inquiry' ? 'First inquiry' : 'Follow-up';
 }
 
+function isBulkEligible(lead: Lead) {
+  return Boolean(lead.primary_admin_email) && !BULK_EXCLUDED_STAGES.has(String(lead.pipeline_stage ?? '').toLowerCase());
+}
+
+function stageLabel(lead: Lead) {
+  const stage = String(lead.pipeline_stage || 'inquiry');
+  return stage.charAt(0).toUpperCase() + stage.slice(1);
+}
+
 export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState(initialLeads);
-  const first = leads.find(l => l.primary_admin_email) ?? leads[0] ?? null;
+  const first = leads.find(l => l.primary_admin_email && !BULK_EXCLUDED_STAGES.has(String(l.pipeline_stage ?? '').toLowerCase())) ?? leads.find(l => l.primary_admin_email) ?? leads[0] ?? null;
   const [leadId, setLeadId] = useState(first?.id ?? '');
   const selected = useMemo(() => leads.find(l => l.id === leadId) ?? null, [leads, leadId]);
   const [subject, setSubject] = useState(first ? `SETU Flow for ${first.company_name}` : '');
@@ -57,8 +67,8 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
 
-  const emailReady = useMemo(() => leads.filter(l => Boolean(l.primary_admin_email)), [leads]);
-  const bulkTargets = useMemo(() => selectedIds.map(id => leads.find(l => l.id === id)).filter((l): l is Lead => Boolean(l?.primary_admin_email)), [selectedIds, leads]);
+  const emailReady = useMemo(() => leads.filter(isBulkEligible), [leads]);
+  const bulkTargets = useMemo(() => selectedIds.map(id => leads.find(l => l.id === id)).filter((l): l is Lead => Boolean(l && isBulkEligible(l))), [selectedIds, leads]);
   const readyDrafts = useMemo(() => bulkTargets.filter(l => {
     const d = bulkDrafts[l.id];
     return d?.subject.trim() && d?.body.trim() && d.status !== 'sent';
@@ -74,6 +84,11 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
   }
 
   function toggleBulk(id: string) {
+    const lead = leads.find(l => l.id === id);
+    if (!lead || !isBulkEligible(lead)) {
+      setNotice({kind:'error',text:'Converted/lost leads and leads without an email stay visible for parity but are excluded from bulk prospect campaigns. Use the single composer for intentional one-to-one outreach.'});
+      return;
+    }
     setSelectedIds(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id);
       if (prev.length >= MAX_BULK) {
@@ -86,7 +101,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
 
   function selectEmailReady() {
     setSelectedIds(emailReady.slice(0,MAX_BULK).map(l => l.id));
-    if (emailReady.length > MAX_BULK) setNotice({kind:'ok',text:`Selected the top ${MAX_BULK} email-ready prospects. Send another batch for the remainder.`});
+    if (emailReady.length > MAX_BULK) setNotice({kind:'ok',text:`Selected the top ${MAX_BULK} active email-ready prospects. Send another batch for the remainder.`});
   }
 
   async function generateForLead(lead: Lead, mode: MessageMode): Promise<Draft> {
@@ -138,19 +153,19 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
         body:JSON.stringify({subject:subject.trim(), message:message.trim(), message_mode:sendMode, sender_name:selected.assigned_to_name || 'Ritesh Kapoor'}),
       });
       const data = await res.json().catch(()=>({}));
-      if (!res.ok && res.status !== 207) throw new Error(data.error || 'Mailtrap send failed.');
+      if (!res.ok && res.status !== 207) throw new Error(data.error || 'Email send failed.');
       const sentAt = new Date().toISOString();
-      setLeads(prev => prev.map(l => l.id===selected.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(data.message_mode || resolvedSingleMode)} email sent via Mailtrap — ${subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
+      setLeads(prev => prev.map(l => l.id===selected.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(data.message_mode || resolvedSingleMode)} email sent — ${subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
       setResolvedSingleMode('follow_up');
-      setNotice({kind:'ok',text:data.error ? data.error : `Sent through Mailtrap to ${selected.primary_admin_email}. Future auto-generated messages will be follow-ups.`});
+      setNotice({kind:'ok',text:data.error ? data.error : `Email sent to ${selected.primary_admin_email}. Future auto-generated messages will be follow-ups.`});
     } catch (error) {
-      setNotice({kind:'error',text:error instanceof Error ? error.message : 'Mailtrap send failed.'});
+      setNotice({kind:'error',text:error instanceof Error ? error.message : 'Email send failed.'});
     } finally { setSending(false); }
   }
 
   async function generateBulk() {
     if (!bulkTargets.length) {
-      setNotice({kind:'error',text:'Select at least one prospect with an email address.'});
+      setNotice({kind:'error',text:'Select at least one active prospect with an email address.'});
       return;
     }
     setBulkGenerating(true); setNotice(null);
@@ -177,7 +192,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
 
   async function sendBulk() {
     if (!readyDrafts.length) return;
-    const ok = window.confirm(`Send ${readyDrafts.length} personalized email${readyDrafts.length===1?'':'s'} individually through Mailtrap? Each send will be logged to its SMC lead.`);
+    const ok = window.confirm(`Send ${readyDrafts.length} personalized email${readyDrafts.length===1?'':'s'} individually? Each send will be logged to its SMC lead.`);
     if (!ok) return;
     setBulkSending(true); setNotice(null);
     let sent = 0;
@@ -190,60 +205,68 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
           body:JSON.stringify({subject:draft.subject.trim(),message:draft.body.trim(),message_mode:draft.mode,sender_name:lead.assigned_to_name || 'Ritesh Kapoor'}),
         });
         const data = await res.json().catch(()=>({}));
-        if (!res.ok && res.status !== 207) throw new Error(data.error || 'Mailtrap send failed.');
+        if (!res.ok && res.status !== 207) throw new Error(data.error || 'Email send failed.');
         sent += 1;
         updateDraft(lead.id,{status:'sent',error:undefined});
         const sentAt = new Date().toISOString();
-        setLeads(prev => prev.map(l => l.id===lead.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(draft.mode)} email sent via Mailtrap — ${draft.subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
+        setLeads(prev => prev.map(l => l.id===lead.id ? {...l,last_contact_at:sentAt,activity_log:[...(l.activity_log||[]),{id:crypto.randomUUID(),kind:'email',note:`${modeLabel(draft.mode)} email sent — ${draft.subject.trim()}`,actor_name:l.assigned_to_name||'Ritesh Kapoor',created_at:sentAt}]} : l));
       } catch (error) {
         failed += 1;
-        updateDraft(lead.id,{status:'error',error:error instanceof Error ? error.message : 'Mailtrap send failed.'});
+        updateDraft(lead.id,{status:'error',error:error instanceof Error ? error.message : 'Email send failed.'});
       }
     }
     setBulkSending(false);
-    setNotice({kind:failed?'error':'ok',text:`Bulk outreach complete: ${sent} sent through Mailtrap${failed?`, ${failed} failed and remain available for review/retry.`:'.'}`});
+    setNotice({kind:failed?'error':'ok',text:`Bulk outreach complete: ${sent} email${sent===1?'':'s'} sent${failed?`, ${failed} failed and remain available for review/retry.`:'.'}`});
   }
 
   const sendReady = Boolean(selected?.primary_admin_email && subject.trim() && message.trim() && !sending);
+  const selectedBulkEligible = selected ? isBulkEligible(selected) : false;
 
   return (
     <div style={{padding:'0 16px 18px'}}>
       <div style={{display:'grid',gridTemplateColumns:'minmax(270px,340px) minmax(0,1fr)',gap:14}}>
         <section style={{background:'#fff',border:'1px solid #dbe6ef',borderRadius:16,overflow:'hidden'}}>
           <div style={{padding:'11px 13px',borderBottom:'1px solid #e2e8f0'}}>
-            <div style={{fontSize:11,fontWeight:800,color:'#475569',textTransform:'uppercase',letterSpacing:'.06em'}}>Prospects ready for outreach</div>
+            <div style={{fontSize:11,fontWeight:800,color:'#475569',textTransform:'uppercase',letterSpacing:'.06em'}}>All Growth leads</div>
+            <div style={{fontSize:9.5,color:'#94a3b8',marginTop:2}}>Lead Manager parity — converted/lost stay visible but are not auto-selected for prospect bulk campaigns.</div>
             <div style={{display:'flex',gap:6,marginTop:8}}>
-              <button type="button" onClick={selectEmailReady} style={{border:'1px solid #dbe6ef',background:'#fff',borderRadius:7,padding:'4px 7px',fontSize:10,fontWeight:700,color:'#475569',cursor:'pointer'}}>Select email-ready</button>
+              <button type="button" onClick={selectEmailReady} style={{border:'1px solid #dbe6ef',background:'#fff',borderRadius:7,padding:'4px 7px',fontSize:10,fontWeight:700,color:'#475569',cursor:'pointer'}}>Select active email-ready</button>
               <button type="button" onClick={()=>setSelectedIds([])} style={{border:'none',background:'none',fontSize:10,fontWeight:700,color:'#94a3b8',cursor:'pointer'}}>Clear</button>
               <span style={{marginLeft:'auto',fontSize:10,fontWeight:800,color:'#7c3aed'}}>{selectedIds.length}/{MAX_BULK}</span>
             </div>
           </div>
           <div style={{maxHeight:'70vh',overflowY:'auto'}}>
-            {leads.map(lead => (
-              <div key={lead.id} style={{display:'grid',gridTemplateColumns:'26px 1fr',alignItems:'stretch',borderBottom:'1px solid #f1f5f9',background:lead.id===leadId?'#eef6ff':'#fff'}}>
-                <label style={{display:'flex',alignItems:'center',justifyContent:'center',cursor:lead.primary_admin_email?'pointer':'not-allowed'}} title={lead.primary_admin_email?'Select for bulk outreach':'No email address'}>
-                  <input type="checkbox" checked={selectedIds.includes(lead.id)} disabled={!lead.primary_admin_email} onChange={()=>toggleBulk(lead.id)} />
+            {leads.map(lead => {
+              const bulkEligible = isBulkEligible(lead);
+              const excludedStage = BULK_EXCLUDED_STAGES.has(String(lead.pipeline_stage ?? '').toLowerCase());
+              return (
+              <div key={lead.id} style={{display:'grid',gridTemplateColumns:'26px 1fr',alignItems:'stretch',borderBottom:'1px solid #f1f5f9',background:lead.id===leadId?'#eef6ff':'#fff',opacity:excludedStage?.82:1}}>
+                <label style={{display:'flex',alignItems:'center',justifyContent:'center',cursor:bulkEligible?'pointer':'not-allowed'}} title={bulkEligible?'Select for bulk outreach':excludedStage?'Visible for parity; converted/lost leads require intentional one-to-one outreach':'No email address'}>
+                  <input type="checkbox" checked={selectedIds.includes(lead.id)} disabled={!bulkEligible} onChange={()=>toggleBulk(lead.id)} />
                 </label>
                 <button type="button" onClick={()=>choose(lead.id)} style={{display:'block',width:'100%',textAlign:'left',border:'none',background:'transparent',padding:'10px 11px 10px 4px',cursor:'pointer'}}>
                   <div style={{display:'flex',justifyContent:'space-between',gap:8}}><strong style={{fontSize:12.5,color:'#1e293b'}}>{lead.company_name}</strong><span style={{fontSize:11,fontWeight:800,color:(lead.lead_score??0)>=80?'#059669':'#64748b'}}>{lead.lead_score??0}</span></div>
                   <div style={{fontSize:10.5,color:lead.primary_admin_email?'#64748b':'#dc2626',marginTop:3}}>{lead.primary_admin_email || 'No email found yet'}</div>
                   <div style={{display:'flex',gap:5,alignItems:'center',marginTop:4,flexWrap:'wrap'}}>
                     <span style={{fontSize:9.5,color:'#94a3b8'}}>{lead.headquarters_country || '—'}{lead.industry?` · ${lead.industry}`:''}</span>
+                    <span style={{fontSize:9,fontWeight:800,borderRadius:6,padding:'2px 6px',background:excludedStage?'#f1f5f9':'#eff6ff',color:excludedStage?'#64748b':'#1F487C'}}>{stageLabel(lead)}</span>
                     <span style={{fontSize:9,fontWeight:800,borderRadius:6,padding:'2px 6px',background:inferredMode(lead)==='first_inquiry'?'#ecfeff':'#f5f3ff',color:inferredMode(lead)==='first_inquiry'?'#0f766e':'#6d28d9'}}>{modeLabel(inferredMode(lead))}</span>
                   </div>
                 </button>
               </div>
-            ))}
-            {!leads.length && <div style={{padding:20,fontSize:12,color:'#94a3b8'}}>No active leads available.</div>}
+            );})}
+            {!leads.length && <div style={{padding:20,fontSize:12,color:'#94a3b8'}}>No Growth leads available.</div>}
           </div>
         </section>
 
         <section style={{background:'#fff',border:'1px solid #dbe6ef',borderRadius:16,padding:16,minWidth:0}}>
-          {!selected ? <div style={{color:'#94a3b8',fontSize:13}}>Select a prospect to compose outreach.</div> : <>
+          {!selected ? <div style={{color:'#94a3b8',fontSize:13}}>Select a lead to compose outreach.</div> : <>
             <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start',marginBottom:12}}>
               <div><div style={{fontSize:11,color:'#64748b'}}>To</div><div style={{fontSize:14,fontWeight:800,color:'#1e293b'}}>{selected.company_name}</div><div style={{fontSize:11,color:selected.primary_admin_email?'#475569':'#dc2626'}}>{selected.primary_admin_email || 'Add an email address in Lead Manager before sending.'}</div></div>
-              <div style={{fontSize:10.5,color:'#64748b',textAlign:'right'}}>Provider<br/><strong style={{color:'#7c3aed'}}>Mailtrap</strong></div>
+              <div style={{fontSize:10.5,color:'#64748b',textAlign:'right'}}>Channel<br/><strong style={{color:'#7c3aed'}}>Email</strong></div>
             </div>
+
+            {!selectedBulkEligible && BULK_EXCLUDED_STAGES.has(String(selected.pipeline_stage ?? '').toLowerCase()) && <div style={{marginBottom:10,fontSize:10.5,color:'#92400e',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:8,padding:'7px 9px'}}>This lead is <strong>{stageLabel(selected)}</strong>. It remains available for intentional one-to-one email, but SMC excludes it from bulk prospect selection.</div>}
 
             <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:8,alignItems:'end',marginBottom:10}}>
               <label style={{fontSize:11,fontWeight:700,color:'#475569'}}>Message type
@@ -270,7 +293,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
 
             <div style={{display:'flex',justifyContent:'space-between',gap:8,marginTop:12}}>
               <button type="button" onClick={generate} disabled={generating} style={{border:'1px solid #c7d2fe',background:'#eef2ff',color:'#4338ca',borderRadius:9,padding:'9px 14px',fontSize:12,fontWeight:800,cursor:generating?'not-allowed':'pointer'}}>{generating?'Generating…':'✨ Generate personalized message'}</button>
-              <button type="button" onClick={send} disabled={!sendReady} style={{border:'none',background:sendReady?'#7c3aed':'#e2e8f0',color:sendReady?'#fff':'#94a3b8',borderRadius:9,padding:'9px 18px',fontSize:12,fontWeight:800,cursor:sendReady?'pointer':'not-allowed'}}>{sending?'Sending…':'Send via Mailtrap'}</button>
+              <button type="button" onClick={send} disabled={!sendReady} style={{border:'none',background:sendReady?'#7c3aed':'#e2e8f0',color:sendReady?'#fff':'#94a3b8',borderRadius:9,padding:'9px 18px',fontSize:12,fontWeight:800,cursor:sendReady?'pointer':'not-allowed'}}>{sending?'Sending…':'Send mail'}</button>
             </div>
             <div style={{marginTop:9,fontSize:10,color:'#94a3b8'}}>Generating never sends. A successful send is logged to this lead and changes future Auto messages to follow-up mode.</div>
           </>}
@@ -281,7 +304,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
         <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start',flexWrap:'wrap'}}>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:'#1e293b'}}>Bulk personalized email</div>
-            <div style={{fontSize:11,color:'#64748b',marginTop:3}}>Select up to {MAX_BULK} prospects above. SMC generates and sends one separate Mailtrap email per company — never a shared To/CC blast.</div>
+            <div style={{fontSize:11,color:'#64748b',marginTop:3}}>Select up to {MAX_BULK} active prospects above. Converted/lost leads remain visible for parity but are intentionally excluded from bulk selection. SMC sends one separate email per company — never a shared To/CC blast.</div>
           </div>
           <div style={{display:'flex',gap:8,alignItems:'end',flexWrap:'wrap'}}>
             <label style={{fontSize:10,fontWeight:700,color:'#64748b'}}>Campaign mode
@@ -316,7 +339,7 @@ export function OutreachConsole({ initialLeads }: { initialLeads: Lead[] }) {
             </details>;
           })}
         </div>}
-        {!bulkTargets.length && <div style={{marginTop:13,border:'1px dashed #dbe6ef',borderRadius:10,padding:14,fontSize:11,color:'#94a3b8',textAlign:'center'}}>Choose prospects using the checkboxes in the list above to build a personalized bulk outreach batch.</div>}
+        {!bulkTargets.length && <div style={{marginTop:13,border:'1px dashed #dbe6ef',borderRadius:10,padding:14,fontSize:11,color:'#94a3b8',textAlign:'center'}}>Choose active prospects using the checkboxes in the list above to build a personalized bulk outreach batch.</div>}
       </section>
     </div>
   );
