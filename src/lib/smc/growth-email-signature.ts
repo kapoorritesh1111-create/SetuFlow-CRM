@@ -1,4 +1,4 @@
-export const SETU_FLOW_MARKETING_SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.setuflowcrm.com';
+export const SETU_FLOW_MARKETING_SITE = 'https://www.setuflowcrm.com';
 
 export type GrowthSenderIdentity = {
   name: string;
