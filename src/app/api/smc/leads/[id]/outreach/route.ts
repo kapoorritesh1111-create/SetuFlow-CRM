@@ -5,6 +5,9 @@ import { getMailtrapFromAddress, sendMailtrapEmail } from '@/lib/email/mailtrap'
 
 export const dynamic = 'force-dynamic';
 
+const MARKETING_SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.setuflowcrm.com';
+const CONTACT_KINDS = new Set(['call', 'email', 'whatsapp', 'demo_completed']);
+
 function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -12,6 +15,11 @@ function escapeHtml(value: string) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+function hasPriorContact(activityLog: unknown, lastContactAt: unknown) {
+  if (lastContactAt) return true;
+  return Array.isArray(activityLog) && activityLog.some((entry: any) => CONTACT_KINDS.has(String(entry?.kind ?? '').toLowerCase()));
 }
 
 async function assertSetuMember() {
@@ -35,10 +43,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const body = await request.json().catch(() => ({}));
   const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
-  const message = typeof body.message === 'string' ? body.message.trim() : '';
+  let message = typeof body.message === 'string' ? body.message.trim() : '';
   const senderName = typeof body.sender_name === 'string' && body.sender_name.trim()
     ? body.sender_name.trim()
     : 'SETU Flow Growth';
+  const requestedMode = body.message_mode === 'first_inquiry' || body.message_mode === 'follow_up'
+    ? body.message_mode
+    : 'auto';
 
   if (!subject || !message) {
     return NextResponse.json({ error: 'Subject and message are required.' }, { status: 400 });
@@ -47,12 +58,21 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const db = auth.supabase as any;
   const { data: lead, error: leadError } = await db
     .from('client_onboarding_requests')
-    .select('id, company_name, primary_admin_name, primary_admin_email, activity_log')
+    .select('id, company_name, primary_admin_name, primary_admin_email, activity_log, last_contact_at')
     .eq('id', params.id)
     .single();
 
   if (leadError || !lead) {
     return NextResponse.json({ error: leadError?.message ?? 'Lead not found.' }, { status: 404 });
+  }
+
+  const mode = requestedMode === 'auto'
+    ? (hasPriorContact(lead.activity_log, lead.last_contact_at) ? 'follow_up' : 'first_inquiry')
+    : requestedMode;
+
+  // First-contact outreach always includes the public marketing site, even after manual edits.
+  if (mode === 'first_inquiry' && !message.includes(MARKETING_SITE)) {
+    message = `${message}\n\nLearn more: ${MARKETING_SITE}`;
   }
 
   const recipient = String(lead.primary_admin_email ?? '').trim();
@@ -68,11 +88,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     subject,
     text: message,
     html,
-    category: 'smc_growth_outreach',
+    category: mode === 'first_inquiry' ? 'smc_growth_first_inquiry' : 'smc_growth_follow_up',
     customVariables: {
       lead_id: String(lead.id),
       company_name: String(lead.company_name ?? ''),
       sender_name: senderName,
+      message_mode: mode,
     },
   });
 
@@ -85,13 +106,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const activity = {
     id: crypto.randomUUID(),
     kind: 'email',
-    note: `Outbound email sent via Mailtrap — ${subject}`,
+    note: `${mode === 'first_inquiry' ? 'First inquiry' : 'Follow-up'} email sent via Mailtrap — ${subject}`,
     actor_name: senderName,
     actor_user_id: auth.user.id,
     provider: 'mailtrap',
     provider_message_id: result.messageId ?? null,
     recipient,
     subject,
+    message_mode: mode,
     created_at: sentAt,
   };
 
@@ -101,8 +123,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     updated_at: sentAt,
   };
 
-  // The Growth migration adds outreach_status. Keep the send path compatible with
-  // pre-migration previews by retrying without the new field if schema cache is stale.
   let update = await db
     .from('client_onboarding_requests')
     .update({ ...updatePayload, outreach_status: 'contacted' })
@@ -125,6 +145,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       sent: true,
       provider: 'mailtrap',
       message_id: result.messageId ?? null,
+      message_mode: mode,
     }, { status: 207 });
   }
 
@@ -132,6 +153,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     sent: true,
     provider: 'mailtrap',
     message_id: result.messageId ?? null,
+    message_mode: mode,
     lead: update.data,
   });
 }
