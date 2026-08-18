@@ -26,8 +26,14 @@ const query = readFileSync('src/lib/trade-events/query.ts', 'utf8');
 const helpers = readFileSync('src/lib/trade-events/command-center.ts', 'utf8');
 const viewModel = readFileSync('src/lib/trade-events/view-model.ts', 'utf8');
 const identity = readFileSync('src/lib/trade-events/identity.ts', 'utf8');
+const recommendations = readFileSync('src/lib/trade-events/recommendations.ts', 'utf8');
+const history = readFileSync('src/lib/trade-events/history.ts', 'utf8');
+const analytics = readFileSync('src/lib/trade-events/analytics.ts', 'utf8');
 const adminActions = readFileSync('src/features/admin/server/trade-event-actions.ts', 'utf8');
 const appShell = readFileSync('src/components/layout/app-shell.tsx', 'utf8');
+const catalogMigration = readFileSync('supabase/migrations/20260817173000_s51_event_trade_event_catalog_foundation.sql', 'utf8');
+const attachmentMigration = readFileSync('supabase/migrations/20260817180000_s51_event_interactions_feedback_attachments.sql', 'utf8');
+const offlineMigration = readFileSync('supabase/migrations/20260818101500_s51_event_offline_capture_idempotency.sql', 'utf8');
 
 test('trade events page delegates to the refreshed command center while preserving trial capability', () => {
   assert.match(page, /TradeEventsCommandCenter/);
@@ -161,6 +167,42 @@ test('event Quick Lead keeps event follow-up work visible to the Trade Command C
   assert.match(eventAwareLeadSave, /scheduled_tasks/);
   assert.match(eventAwareLeadSave, /trade_event_quick_lead/);
   assert.match(eventAwareLeadSave, /next_follow_up_at/);
+});
+
+test('Guru Discover recommendations are future-only, dismissible, vertical-aware and evidence-backed', () => {
+  assert.match(recommendations, /trade_event_catalog/);
+  assert.match(recommendations, /trade_event_recommendation_feedback/);
+  assert.match(recommendations, /event\.ends_on && event\.ends_on < today/);
+  assert.match(recommendations, /status.*cancelled/);
+  assert.match(recommendations, /classifyTradeEventMatch\(attendance, event\) === 'exact'/);
+  assert.match(recommendations, /Matches products in your catalog/);
+  assert.match(recommendations, /Fits an active target market/);
+  assert.match(recommendations, /Prior edition produced/);
+  assert.match(recommendations, /if \(!reasons\.length\) continue/);
+});
+
+test('past event history preserves influenced leads and real outcomes', () => {
+  assert.match(history, /getTradeEventStatus\(group\.event\) === 'completed'/);
+  assert.match(history, /event_influence_ids/);
+  assert.match(history, /buildEventOutcome/);
+  assert.match(history, /captured:/);
+  assert.match(history, /qualified:/);
+});
+
+test('event ROI refuses unsafe mixed-currency math', () => {
+  assert.match(analytics, /revenueCurrencies\.size === 1/);
+  assert.match(analytics, /pipelineCurrencies\.size === 1/);
+  assert.match(analytics, /revenueCurrency === spend\.currency/);
+  assert.match(analytics, /roiMultiple = spendTotal > 0/);
+});
+
+test('database release boundary contains canonical catalog, private attachments and offline idempotency protections', () => {
+  assert.match(catalogMigration, /trade_event_catalog/);
+  assert.match(catalogMigration, /canonical_event_id/);
+  assert.match(attachmentMigration, /trade_event_entry_attachments/);
+  assert.match(attachmentMigration, /trade-event-attachments/);
+  assert.match(offlineMigration, /client_capture_id/);
+  assert.match(offlineMigration, /unique/i);
 });
 
 test('desktop shell still integrates Add Event navigation', () => {
