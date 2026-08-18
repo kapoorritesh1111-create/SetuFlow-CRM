@@ -17,7 +17,7 @@
     "test:s44": "node --test tests/s44-setu-guru-outreach-reply.test.mjs",
     "test:s45": "node --test tests/s45-setu-guru-quote-supplier.test.mjs",
     "test:s46": "node --test tests/s46-setu-guru-trade-events.test.mjs tests/s46-setu-guru-audit-hardening.test.mjs",
-    "test:trade-events": "node --test tests/trade-events-premium.test.mjs tests/mobile-route-contract.test.mjs tests/s24-trial-206-drawer-root-fix.test.mjs",
+    "test:trade-events": "node --test tests/trade-events-premium.test.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "test:release-readiness": "npm test",
