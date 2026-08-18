@@ -5,6 +5,7 @@ import test from 'node:test';
 const page = readFileSync('src/app/(app)/trade-events/page.tsx', 'utf8');
 const capturePage = readFileSync('src/app/(app)/trade-events/capture/page.tsx', 'utf8');
 const leadsPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+const leadDrawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
 const leadsMobileSurface = readFileSync('src/features/leads/components/leads-mobile-surface.tsx', 'utf8');
 const mobileBottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
 const commandCenter = readFileSync('src/features/trade-events/components/trade-events-command-center.tsx', 'utf8');
@@ -74,6 +75,15 @@ test('full CRM Capture Lead reuses one canonical Quick Lead drawer while trial c
   assert.match(leadsPage, /initialFastField=\{false\}/);
   assert.match(leadsMobileSurface, /RoleAwareLeadList/);
   assert.doesNotMatch(leadsMobileSurface, /MobileBusinessCardScanner/);
+});
+
+test('canonical Quick Lead keeps the initiating event id, name and buyer-supplier shortcut without changing its UI', () => {
+  assert.match(leadsPage, /tradeEventId: eventId/);
+  assert.match(leadsPage, /leadType: quickLeadType/);
+  assert.match(leadDrawer, /props\.prefill\?\.tradeEventId/);
+  assert.match(leadDrawer, /trade_event_id: props\.prefill\.tradeEventId/);
+  assert.match(leadDrawer, /source_label: props\.prefill\.sourceLabel/);
+  assert.match(leadDrawer, /props\.prefill\?\.leadType/);
 });
 
 test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
