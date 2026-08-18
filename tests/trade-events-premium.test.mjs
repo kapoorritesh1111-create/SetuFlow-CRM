@@ -80,7 +80,7 @@ test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
   assert.match(mobileBottomTabs, /mobileMoreNavItems/);
   assert.match(mobileBottomTabs, /Tasks & Events/);
   assert.match(mobileBottomTabs, /Trade Event Command Center/);
-  assert.match(mobileBottomTabs, />More</);
+  assert.match(mobileBottomTabs, /<span>More<\/span>/);
 });
 
 test('event Quick Lead enforces the initiating event as source regardless of scan method', () => {
