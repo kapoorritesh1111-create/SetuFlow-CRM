@@ -64,6 +64,7 @@ export type LeadQuickCapturePrefill = {
   sourceType?: string;
   sourceLabel?: string;
   tradeEventId?: string;
+  leadType?: 'buyer' | 'supplier';
   selectedProductIds?: string[];
   autoOpenQuoteAfterSave?: boolean;
   title?: string;
