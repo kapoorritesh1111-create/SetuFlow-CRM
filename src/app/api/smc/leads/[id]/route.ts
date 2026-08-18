@@ -24,7 +24,11 @@ const ALLOWED_FIELDS = [
   // Contact info — editable from SMC drawer
   'primary_admin_name', 'primary_admin_email', 'primary_phone',
   'headquarters_country', 'website', 'industry', 'company_name',
-  // Sprint C: demo tracking
+  // Growth prospect enrichment
+  'lead_origin', 'contact_title', 'linkedin_url', 'employee_size_signal',
+  'evidence_urls', 'fit_reasons', 'pain_signals', 'outreach_status',
+  'research_notes', 'research_last_verified_at', 'source', 'source_detail',
+  // Demo tracking
   'demo_scheduled_at', 'demo_completed_at', 'demo_outcome', 'demo_notes',
 ];
 
@@ -48,7 +52,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       actor_user_id: body._activity.actor_user_id ?? null,
       created_at: new Date().toISOString(),
     };
-    // Use Postgres jsonb_build_object append pattern via RPC or raw update
     const { data: existing } = await (sb as any)
       .from('client_onboarding_requests')
       .select('activity_log')
@@ -56,7 +59,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       .single();
     const currentLog: unknown[] = Array.isArray(existing?.activity_log) ? existing.activity_log : [];
     patch.activity_log = [...currentLog, entry];
-    // Update last_contact_at when logging a contact activity
     if (['call', 'email', 'whatsapp', 'demo_completed'].includes(entry.kind)) {
       patch.last_contact_at = entry.created_at;
     }
