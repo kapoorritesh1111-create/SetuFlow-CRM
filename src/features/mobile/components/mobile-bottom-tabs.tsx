@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
+import { TradeEventOfflineSync } from '@/features/trade-events/components/trade-event-offline-sync';
 import { canonicalMobileNavItems, mobileMoreNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
 
 function matchesPath(pathname: string, match: readonly string[]) {
@@ -23,6 +24,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
 
   return (
     <>
+      <TradeEventOfflineSync />
       {moreOpen ? (
         <div
           className="fixed inset-0 z-[510] bg-slate-950/30 backdrop-blur-[2px] md:hidden"
@@ -105,7 +107,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
           className={`relative z-[521] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${moreActive || moreOpen ? 'bg-blue-500/10 text-blue-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'}`}
         >
           <SetuIcon name="more" className="mb-0.5 h-5 w-5" />
-          <span>More</span>
+          More
         </button>
       </nav>
     </>
