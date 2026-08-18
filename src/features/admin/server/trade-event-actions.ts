@@ -72,3 +72,41 @@ export async function updateEnrichedTradeEvent(formData: FormData): Promise<void
   refresh();
   redirect('/admin/trade-events?notice=event-updated');
 }
+
+export async function deleteEnrichedTradeEvent(formData: FormData): Promise<void> {
+  const ctx = await context();
+  if (!ctx) return;
+  const id = text(formData.get('id'));
+  if (!id) return;
+
+  const { data: existing } = await (ctx.supabase as any)
+    .from('trade_events')
+    .select('id, name')
+    .eq('id', id)
+    .eq('organization_id', ctx.organizationId)
+    .maybeSingle();
+  if (!existing) return;
+
+  const [leadRef, entryRef, trialRef] = await Promise.all([
+    (ctx.supabase as any).from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', ctx.organizationId).eq('trade_event_id', id),
+    (ctx.supabase as any).from('trade_event_entries').select('id', { count: 'exact', head: true }).eq('organization_id', ctx.organizationId).eq('trade_event_id', id),
+    (ctx.supabase as any).from('trade_show_trial_workspaces').select('id', { count: 'exact', head: true }).eq('organization_id', ctx.organizationId).eq('trade_event_id', id),
+  ]);
+
+  const linkedCount = Number(leadRef.count ?? 0) + Number(entryRef.count ?? 0) + Number(trialRef.count ?? 0);
+  if (linkedCount > 0) {
+    redirect(`/admin/trade-events?notice=event-delete-blocked&eventName=${encodeURIComponent(String(existing.name ?? 'Event'))}&linked=${linkedCount}`);
+  }
+
+  const { error } = await (ctx.supabase as any)
+    .from('trade_events')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', ctx.organizationId);
+  if (error) {
+    redirect(`/admin/trade-events?notice=event-delete-failed&eventName=${encodeURIComponent(String(existing.name ?? 'Event'))}`);
+  }
+
+  refresh();
+  redirect(`/admin/trade-events?notice=event-deleted&eventName=${encodeURIComponent(String(existing.name ?? 'Event'))}`);
+}
