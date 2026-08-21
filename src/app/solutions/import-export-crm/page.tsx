@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Import Export CRM for Global Trade Teams | SETU Flow CRM',
   description: 'SETU Flow CRM helps importers, exporters, and global trade teams manage leads, quotes, documents, approvals, and shipment handoff in one operating workflow.',
+  alternates: { canonical: 'https://www.setuflowcrm.com/solutions/import-export-crm' },
 };
 
 export default function SeoLandingPage() {
