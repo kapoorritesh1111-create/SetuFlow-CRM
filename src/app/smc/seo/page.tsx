@@ -19,6 +19,9 @@ export default async function SmcSeoPage() {
     getSearchConsoleSnapshot(),
   ]);
 
+  const linkedinConfigured = Boolean(
+    process.env.LINKEDIN_ACCESS_TOKEN?.trim() && process.env.LINKEDIN_AUTHOR_URN?.trim(),
+  );
   const readyClusters = seoKeywordClusters.filter((cluster) => cluster.currentCoverage === 'ready').length;
   const coverageHealth = Math.round((readyClusters / Math.max(seoKeywordClusters.length, 1)) * 100);
   const botHealth = bot.status === 'healthy' ? 100 : bot.status === 'stale' ? 55 : 20;
@@ -75,9 +78,9 @@ export default async function SmcSeoPage() {
 
           <div className="smc-content-card">
             <h3>LinkedIn Distribution</h3>
-            <p><strong>Cadence:</strong> Weekday publishing target</p>
-            <p><strong>Current state:</strong> Publisher connection is not configured in the product yet.</p>
-            <p>SMC will manage the queue and performance here once LinkedIn publishing credentials are connected.</p>
+            <p><strong>Cadence:</strong> Weekdays at 13:30 UTC</p>
+            <p><strong>Current state:</strong> {linkedinConfigured ? 'Publisher credentials detected' : 'Credentials required'}</p>
+            <p>{linkedinConfigured ? 'The scheduled publisher is ready to send the rotating Setu Flow growth campaign.' : 'Add LINKEDIN_ACCESS_TOKEN and LINKEDIN_AUTHOR_URN to activate automatic posting.'}</p>
           </div>
         </div>
 
