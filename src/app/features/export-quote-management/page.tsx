@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Export Quote Management Software | SETU Flow CRM',
   description: 'Create, review, and manage export quotations with product pricing, incoterms, approvals, and quote-to-order handoff built for trade teams.',
+  alternates: { canonical: 'https://www.setuflowcrm.com/features/export-quote-management' },
 };
 
 export default function SeoLandingPage() {

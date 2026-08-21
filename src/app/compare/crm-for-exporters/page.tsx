@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Best CRM for Exporters: Generic CRM vs Trade Execution CRM | SETU Flow CRM',
   description: 'Compare generic CRM tools with a trade execution CRM built for exporters that need buyer follow-up, quotes, documents, approvals, and shipment handoff.',
+  alternates: { canonical: 'https://www.setuflowcrm.com/compare/crm-for-exporters' },
 };
 
 export default function SeoLandingPage() {

@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Export Compliance Checklist for Trade Teams | SETU Flow CRM',
   description: 'Use this export compliance checklist to organize buyer details, product requirements, trade documents, approvals, and shipment readiness before orders move forward.',
+  alternates: { canonical: 'https://www.setuflowcrm.com/resources/export-compliance-checklist' },
 };
 
 export default function SeoLandingPage() {

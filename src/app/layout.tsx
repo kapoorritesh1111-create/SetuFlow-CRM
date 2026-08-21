@@ -112,7 +112,6 @@ export const metadata: Metadata = {
     description: 'One connected operating system from market opportunity to final dispatch.',
     images: ['/og-image.png'],
   },
-  alternates: { canonical: 'https://www.setuflowcrm.com' },
   manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent', startupImage: ['/api/workspace/favicon'] },
   icons: {

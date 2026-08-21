@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Trade Show Lead Capture CRM for Exporters | SETU Flow CRM',
   description: 'Capture trade show leads, scan business cards, organize event contacts, and move export opportunities into follow-up workflows with SETU Flow CRM.',
+  alternates: { canonical: 'https://www.setuflowcrm.com/features/trade-show-lead-capture' },
 };
 
 export default function SeoLandingPage() {
