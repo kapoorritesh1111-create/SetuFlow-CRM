@@ -21,6 +21,8 @@ const publicRoutes: Array<{
   { path: '/pricing', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/field-mobile', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/book-demo', priority: 0.9, changeFrequency: 'monthly' },
+  { path: '/resources/export-document-checklist', priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/resources/import-export-crm-keyword-guide', priority: 0.8, changeFrequency: 'monthly' },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
