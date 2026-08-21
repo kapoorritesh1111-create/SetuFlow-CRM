@@ -38,7 +38,9 @@ function empty(status: SeoConversionSnapshot['status'], message: string, baselin
 
 export async function getSeoConversionSnapshot(): Promise<SeoConversionSnapshot> {
   const baselineDate = process.env.SEO_BASELINE_DATE?.trim() || DEFAULT_BASELINE_DATE;
-  const admin = createAdminSupabaseClient();
+  // This table is introduced by the same release. Keep access behind the
+  // service-role client until generated DB types are refreshed post-migration.
+  const admin = createAdminSupabaseClient() as any;
   if (!admin) return empty('not_configured', 'Supabase service-role access is required for marketing attribution.', baselineDate);
 
   try {
@@ -59,7 +61,7 @@ export async function getSeoConversionSnapshot(): Promise<SeoConversionSnapshot>
       );
     }
 
-    const rows = data ?? [];
+    const rows = (data ?? []) as Array<{ channel: string; landing_page: string | null; created_at: string }>;
     const count = (channel: string) => rows.filter((row) => row.channel === channel).length;
     return {
       status: 'connected',
