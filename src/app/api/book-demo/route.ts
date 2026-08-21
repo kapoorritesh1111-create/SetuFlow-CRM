@@ -99,7 +99,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const admin = createAdminSupabaseClient();
+    // This table is introduced by the same release. Keep access behind the
+    // service-role client until generated DB types are refreshed post-migration.
+    const admin = createAdminSupabaseClient() as any;
     if (admin) {
       const { error } = await admin.from('marketing_conversion_events').insert({
         event_name: 'demo_request',
