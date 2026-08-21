@@ -7,6 +7,7 @@ type GitHubContentFile = { path: string; content: string };
 
 const repoFullName = process.env.SEO_GITHUB_REPOSITORY || process.env.GITHUB_REPOSITORY || 'kapoorritesh1111-create/SetuFlow-CRM';
 const githubApi = 'https://api.github.com';
+const siteBase = 'https://www.setuflowcrm.com';
 
 function githubToken() {
   return process.env.SEO_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
@@ -16,7 +17,7 @@ function nowStamp() {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').toLowerCase();
 }
 
-function seoPage(title: string, eyebrow: string, description: string, bullets: string[], faq: Array<{ question: string; answer: string }>) {
+function seoPage(canonicalPath: string, title: string, eyebrow: string, description: string, bullets: string[], faq: Array<{ question: string; answer: string }>) {
   const bulletMarkup = bullets.map((bullet) => `<li>${bullet}</li>`).join('');
   const faqMarkup = faq.map((item) => `<article className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-bold text-slate-950">${item.question}</h2><p className="mt-2 text-sm leading-6 text-slate-600">${item.answer}</p></article>`).join('\n          ');
   const schema = JSON.stringify({
@@ -28,6 +29,7 @@ function seoPage(title: string, eyebrow: string, description: string, bullets: s
   return `export const metadata = {
   title: '${title} | SETU Flow CRM',
   description: '${description}',
+  alternates: { canonical: '${siteBase}${canonicalPath}' },
 };
 
 export default function SeoLandingPage() {
@@ -56,6 +58,7 @@ function plannedFiles(): GitHubContentFile[] {
     {
       path: 'src/app/resources/export-document-checklist/page.tsx',
       content: seoPage(
+        '/resources/export-document-checklist',
         'Export Document Checklist for Import Export Teams',
         'Export Documents',
         'Use this export document checklist to organize invoice, packing, certificate, compliance, shipping, and payment documents before handoff.',
@@ -69,6 +72,7 @@ function plannedFiles(): GitHubContentFile[] {
     {
       path: 'src/app/resources/import-export-crm-keyword-guide/page.tsx',
       content: seoPage(
+        '/resources/import-export-crm-keyword-guide',
         'Import Export CRM Keyword Guide',
         'SEO Keyword Guide',
         'A practical guide to how buyers search for import export CRM, export management software, trade show lead capture, and quote management tools.',
@@ -81,7 +85,7 @@ function plannedFiles(): GitHubContentFile[] {
     },
     {
       path: `docs/seo/seo-quality-improvement-request-${stamp}.md`,
-      content: `# SEO Quality Improvement PR Request\n\nGenerated from the SETU Flow SEO Intelligence dashboard on ${date}.\n\n## Current state\n\n- First SEO batch is merged and deployed.\n- Second SEO batch is merged and deployed.\n- All first-wave keyword clusters are marked ready in the SEO Intelligence dashboard.\n\n## Included in this PR\n\n- Export document checklist resource page\n- Import export CRM keyword guide resource page\n- Review note for internal linking, schema, and Search Console follow-up\n\n## Next manual review\n\n- Add internal links from homepage and existing SEO pages to all resources.\n- Validate FAQPage/BreadcrumbList/SoftwareApplication schema.\n- Connect Google Search Console for impressions, clicks, CTR, and query trend history.\n`,
+      content: `# SEO Quality Improvement PR Request\n\nGenerated from the SETU Flow SMC SEO Command Center on ${date}.\n\n## Current state\n\n- Google Search Console is connected to SMC.\n- Sitemap and canonical controls are live.\n- The SEO bot runs daily and can be started manually from SMC.\n\n## Included in this PR\n\n- Export document checklist resource page\n- Import export CRM keyword guide resource page\n- Self-referencing canonicals for both pages\n- Sitemap entries for both pages\n\n## Review before merge\n\n- Confirm page copy and claims.\n- Add internal links from the most relevant marketing pages.\n- Confirm Search Console discovery after deployment.\n`,
     },
   ];
 }
@@ -104,6 +108,13 @@ async function githubFetch(path: string, init: RequestInit = {}) {
   return data;
 }
 
+async function readGitHubFile(branch: string, path: string) {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const existing = await githubFetch(`/repos/${repoFullName}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`);
+  const content = Buffer.from(String(existing?.content || '').replace(/\n/g, ''), 'base64').toString('utf8');
+  return { sha: String(existing?.sha || ''), content };
+}
+
 async function createOrUpdateFile(branch: string, file: GitHubContentFile) {
   const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
   let sha: string | undefined;
@@ -124,6 +135,31 @@ async function createOrUpdateFile(branch: string, file: GitHubContentFile) {
   });
 }
 
+async function ensureSitemapRoutes(branch: string) {
+  const path = 'src/app/sitemap.ts';
+  const { sha, content } = await readGitHubFile(branch, path);
+  const routes = [
+    "  { path: '/resources/export-document-checklist', priority: 0.8, changeFrequency: 'monthly' },",
+    "  { path: '/resources/import-export-crm-keyword-guide', priority: 0.8, changeFrequency: 'monthly' },",
+  ];
+  const additions = routes.filter((route) => !content.includes(route));
+  if (!additions.length) return;
+
+  const marker = '];\n\nexport default function sitemap';
+  if (!content.includes(marker)) throw new Error('Unable to locate sitemap route list.');
+  const nextContent = content.replace(marker, `${additions.join('\n')}\n];\n\nexport default function sitemap`);
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  await githubFetch(`/repos/${repoFullName}/contents/${encodedPath}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message: 'chore(seo): add generated resource pages to sitemap',
+      branch,
+      sha,
+      content: Buffer.from(nextContent, 'utf8').toString('base64'),
+    }),
+  });
+}
+
 export async function POST() {
   try {
     const context = await requireSetuInternalAdminWorkspace();
@@ -137,6 +173,7 @@ export async function POST() {
 
     await githubFetch(`/repos/${repoFullName}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }) });
     for (const file of plannedFiles()) await createOrUpdateFile(branch, file);
+    await ensureSitemapRoutes(branch);
 
     const pr = await githubFetch(`/repos/${repoFullName}/pulls`, {
       method: 'POST',
@@ -144,11 +181,11 @@ export async function POST() {
         title: 'SEO quality improvement: add supporting resources',
         head: branch,
         base: 'main',
-        body: 'Created from the SETU Flow SEO Intelligence dashboard. All first-wave SEO pages are live; this PR adds supporting resource pages and a quality-improvement review note for internal links, schema, and Search Console follow-up.',
+        body: 'Created from the SETU Flow SMC SEO Command Center. This PR adds supporting SEO resources with self-referencing canonicals and sitemap discovery. Review copy and claims before merging to main.',
       }),
     });
 
-    return NextResponse.redirect(pr.html_url || '/admin/seo-intelligence', { status: 303 });
+    return NextResponse.redirect(pr.html_url || '/smc/seo', { status: 303 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create SEO PR.' }, { status: 500 });
   }
