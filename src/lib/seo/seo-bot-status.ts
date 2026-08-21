@@ -4,6 +4,20 @@ export type SeoBotClusterCoverage = {
   keywordCount: number;
 };
 
+export type SeoBotTargetPageAudit = {
+  cluster: string;
+  targetPage: string;
+  url: string;
+  hits: number;
+  keywordCount: number;
+  matchedKeywords: string[];
+  canonical: string;
+  canonicalOk: boolean;
+  h1Count: number;
+  jsonLdCount: number;
+  issues: string[];
+};
+
 export type SeoBotData = {
   generatedAt: string;
   siteUrl: string;
@@ -15,6 +29,7 @@ export type SeoBotData = {
     jsonLdCount: number;
     clusterCoverage: SeoBotClusterCoverage[];
   };
+  targetPageAnalyses?: SeoBotTargetPageAudit[];
   recommendations: string[];
 };
 

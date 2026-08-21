@@ -87,7 +87,7 @@ function analyzeHtml(url, html) {
     hits: cluster.keywords.filter((keyword) => text.includes(keyword.toLowerCase())).length,
     keywordCount: cluster.keywords.length,
   }));
-  return { url, title, description, ogTitle, canonical, h1s, jsonLdCount, clusterCoverage };
+  return { url, title, description, ogTitle, canonical, h1s, jsonLdCount, clusterCoverage, text };
 }
 
 async function fetchHtml(url) {
@@ -96,51 +96,113 @@ async function fetchHtml(url) {
   return response.text();
 }
 
-function recommendationList(siteAnalysis) {
+function normalizeUrl(value) {
+  return String(value || '').replace(/\/$/, '');
+}
+
+function auditTargetPage(cluster, analysis) {
+  const matchedKeywords = cluster.keywords.filter((keyword) => analysis.text.includes(keyword.toLowerCase()));
+  const expectedCanonical = new URL(cluster.targetPage, siteUrl).toString();
+  const canonicalOk = normalizeUrl(analysis.canonical) === normalizeUrl(expectedCanonical);
+  const issues = [];
+  if (!analysis.title) issues.push('missing title');
+  if (!analysis.description) issues.push('missing description');
+  if (analysis.h1s.length !== 1) issues.push(`H1 count ${analysis.h1s.length}`);
+  if (!canonicalOk) issues.push('canonical mismatch');
+  if (matchedKeywords.length === 0) issues.push('no direct target phrase coverage');
+  return {
+    cluster: cluster.cluster,
+    targetPage: cluster.targetPage,
+    url: analysis.url,
+    hits: matchedKeywords.length,
+    keywordCount: cluster.keywords.length,
+    matchedKeywords,
+    canonical: analysis.canonical,
+    canonicalOk,
+    h1Count: analysis.h1s.length,
+    jsonLdCount: analysis.jsonLdCount,
+    issues,
+  };
+}
+
+function recommendationList(siteAnalysis, targetPageAnalyses) {
   const recommendations = [];
   if (!siteAnalysis.title || siteAnalysis.title.length < 35 || siteAnalysis.title.length > 65) {
-    recommendations.push('Review home page title length and keep the primary phrase near the front: Trade Execution CRM for Import-Export Teams.');
+    recommendations.push('Review home page title length and keep a clear trade CRM / import-export value phrase near the front.');
   }
   if (!siteAnalysis.description || siteAnalysis.description.length < 120 || siteAnalysis.description.length > 170) {
-    recommendations.push('Review meta description length and include import-export CRM, quote workflow, approvals, orders, and shipment execution.');
+    recommendations.push('Review the home page meta description length and keep import-export CRM, quotes, orders, and execution language clear.');
   }
   if (!siteAnalysis.canonical) recommendations.push('Add or verify canonical link coverage for the public home page.');
   if (siteAnalysis.h1s.length !== 1) recommendations.push(`Home page should have exactly one clear H1. Current detected H1 count: ${siteAnalysis.h1s.length}.`);
   if (siteAnalysis.jsonLdCount < 1) recommendations.push('Add JSON-LD structured data for Organization and SoftwareApplication.');
-  const lowCoverage = siteAnalysis.clusterCoverage.filter((cluster) => cluster.hits === 0);
-  for (const cluster of lowCoverage) recommendations.push(`Add internal links or page briefs for keyword cluster: ${cluster.cluster}.`);
-  recommendations.push('Create dedicated solution pages for import-export CRM and export management software instead of forcing all SEO intent onto the home page.');
-  recommendations.push('Create comparison content around generic CRM alternatives only with fair, factual, reviewable claims.');
-  return recommendations;
+
+  for (const audit of targetPageAnalyses) {
+    if (!audit.canonicalOk) recommendations.push(`Fix the self-referencing canonical on ${audit.targetPage}.`);
+    if (audit.h1Count !== 1) recommendations.push(`Review H1 structure on ${audit.targetPage}.`);
+    if (audit.hits === 0) recommendations.push(`Strengthen ${audit.targetPage} with natural language for its target cluster: ${audit.cluster}.`);
+    if (audit.jsonLdCount === 0) recommendations.push(`Consider relevant structured data on ${audit.targetPage}.`);
+  }
+  recommendations.push('Add internal links from high-authority marketing pages to target SEO landing pages where they genuinely help the reader.');
+  recommendations.push('Use Search Console non-brand queries and landing-page impressions to decide the next SEO PR instead of creating pages from keyword guesses alone.');
+  return [...new Set(recommendations)];
 }
 
-function buildReport({ siteAnalysis, competitorAnalyses, recommendations }) {
+function buildReport({ siteAnalysis, targetPageAnalyses, competitorAnalyses, recommendations }) {
   const competitorRows = competitorAnalyses.map((item) => `| ${item.name} | ${item.category} | ${item.analysis?.title || 'Fetch failed'} | ${item.analysis?.description || item.error || 'No description'} |`).join('\n');
   const clusterRows = keywordClusters.map((cluster) => `| ${cluster.cluster} | ${cluster.priority} | ${cluster.targetPage} | ${cluster.keywords.join(', ')} |`).join('\n');
-  const coverageRows = siteAnalysis.clusterCoverage.map((cluster) => `| ${cluster.cluster} | ${cluster.hits}/${cluster.keywordCount} |`).join('\n');
+  const homeCoverageRows = siteAnalysis.clusterCoverage.map((cluster) => `| ${cluster.cluster} | ${cluster.hits}/${cluster.keywordCount} |`).join('\n');
+  const targetRows = targetPageAnalyses.map((audit) => `| ${audit.cluster} | ${audit.targetPage} | ${audit.hits}/${audit.keywordCount} | ${audit.canonicalOk ? 'OK' : 'Mismatch'} | ${audit.issues.length ? audit.issues.join('; ') : 'Healthy'} |`).join('\n');
   const recLines = recommendations.map((rec) => `- ${rec}`).join('\n');
 
-  return `# SEO Bot Report\n\n_Last generated: ${runDate}_\n\n## Site analyzed\n\n- URL: ${siteAnalysis.url}\n- Title: ${siteAnalysis.title || 'Missing'}\n- Description: ${siteAnalysis.description || 'Missing'}\n- Canonical: ${siteAnalysis.canonical || 'Missing'}\n- H1 count: ${siteAnalysis.h1s.length}\n- JSON-LD blocks: ${siteAnalysis.jsonLdCount}\n\n## Home page keyword-cluster coverage\n\n| Cluster | Direct keyword hits |\n| --- | --- |\n${coverageRows}\n\n## Competitor snapshot\n\n| Competitor | Category | Detected title | Detected description / status |\n| --- | --- | --- | --- |\n${competitorRows}\n\n## Tracked keyword clusters\n\n| Cluster | Priority | Recommended target page | Example keywords |\n| --- | --- | --- | --- |\n${clusterRows}\n\n## Recommendations for next PRs\n\n${recLines}\n\n## Bot policy\n\nThis bot must open reviewable pull requests. It should not silently publish AI-written claims, competitor comparisons, pricing statements, or search-volume claims without human review.\n`;
+  return `# SEO Bot Report\n\n_Last generated: ${runDate}_\n\n## Site analyzed\n\n- URL: ${siteAnalysis.url}\n- Title: ${siteAnalysis.title || 'Missing'}\n- Description: ${siteAnalysis.description || 'Missing'}\n- Canonical: ${siteAnalysis.canonical || 'Missing'}\n- H1 count: ${siteAnalysis.h1s.length}\n- JSON-LD blocks: ${siteAnalysis.jsonLdCount}\n\n## Homepage positioning context\n\nThis is a homepage content signal only, not a Google ranking score.\n\n| Cluster | Direct keyword hits |\n| --- | --- |\n${homeCoverageRows}\n\n## Target landing-page audit\n\n| Cluster | Target page | Phrase coverage | Canonical | Audit |\n| --- | --- | --- | --- | --- |\n${targetRows}\n\n## Competitor snapshot\n\n| Competitor | Category | Detected title | Detected description / status |\n| --- | --- | --- | --- |\n${competitorRows}\n\n## Tracked keyword clusters\n\n| Cluster | Priority | Recommended target page | Example keywords |\n| --- | --- | --- | --- |\n${clusterRows}\n\n## Recommendations for next PRs\n\n${recLines}\n\n## Bot policy\n\nThis bot must open reviewable pull requests. It should not silently publish AI-written claims, competitor comparisons, pricing statements, or search-volume claims without human review.\n`;
 }
 
 async function main() {
   await fs.mkdir(reportDir, { recursive: true });
   const siteHtml = await fetchHtml(siteUrl);
-  const siteAnalysis = analyzeHtml(siteUrl, siteHtml);
+  const siteAnalysisRaw = analyzeHtml(siteUrl, siteHtml);
+  const { text: _homeText, ...siteAnalysis } = siteAnalysisRaw;
+
+  const targetPageAnalyses = [];
+  for (const cluster of keywordClusters) {
+    const url = new URL(cluster.targetPage, siteUrl).toString();
+    try {
+      const html = await fetchHtml(url);
+      const analysis = analyzeHtml(url, html);
+      targetPageAnalyses.push(auditTargetPage(cluster, analysis));
+    } catch (error) {
+      targetPageAnalyses.push({
+        cluster: cluster.cluster,
+        targetPage: cluster.targetPage,
+        url,
+        hits: 0,
+        keywordCount: cluster.keywords.length,
+        matchedKeywords: [],
+        canonical: '',
+        canonicalOk: false,
+        h1Count: 0,
+        jsonLdCount: 0,
+        issues: [error instanceof Error ? error.message : String(error)],
+      });
+    }
+  }
 
   const competitorAnalyses = [];
   for (const competitor of competitors) {
     try {
       const html = await fetchHtml(competitor.url);
-      competitorAnalyses.push({ ...competitor, analysis: analyzeHtml(competitor.url, html) });
+      const raw = analyzeHtml(competitor.url, html);
+      const { text: _text, ...analysis } = raw;
+      competitorAnalyses.push({ ...competitor, analysis });
     } catch (error) {
       competitorAnalyses.push({ ...competitor, error: error instanceof Error ? error.message : String(error) });
     }
   }
 
-  const recommendations = recommendationList(siteAnalysis);
-  const report = buildReport({ siteAnalysis, competitorAnalyses, recommendations });
-  const data = { generatedAt: runDate, siteUrl, competitors, keywordClusters, siteAnalysis, competitorAnalyses, recommendations };
+  const recommendations = recommendationList(siteAnalysis, targetPageAnalyses);
+  const report = buildReport({ siteAnalysis, targetPageAnalyses, competitorAnalyses, recommendations });
+  const data = { generatedAt: runDate, siteUrl, competitors, keywordClusters, siteAnalysis, targetPageAnalyses, competitorAnalyses, recommendations };
 
   await fs.writeFile(reportPath, report, 'utf8');
   await fs.writeFile(dataPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');

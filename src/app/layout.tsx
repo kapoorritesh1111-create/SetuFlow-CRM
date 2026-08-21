@@ -10,6 +10,7 @@ import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegis
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
 import { ProductsUiPolish } from '@/components/shell/ProductsUiPolish';
+import { MarketingAttributionRecorder } from '@/components/marketing/marketing-attribution-recorder';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -143,6 +144,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <LeadsFilterStability />
         <OfflineStatusBanner />
         <ProductsUiPolish />
+        <MarketingAttributionRecorder />
         {children}
       </body>
     </html>
