@@ -6,8 +6,8 @@ type FormState = 'idle' | 'calendar' | 'form' | 'success' | 'error';
 
 const interests = ['Lead capture & pipeline', 'Quote workflow & pricing', 'Order execution & dispatch', 'Trade events & field capture', 'Setu Guru AI assistant', 'Digital vCard & contact exchange', 'Full platform walkthrough'];
 const teamSizes = ['1–5 users', '6–10 users', '11–25 users', '25+ users'];
+const ATTRIBUTION_KEY = 'setuflow-first-touch-v1';
 
-// Calendar slot generator — builds a 2-week grid of available slots (Mon–Fri, 9am–5pm UTC+0)
 function buildSlots() {
   const slots: { label: string; date: string; time: string; iso: string }[] = [];
   const now = new Date();
@@ -19,7 +19,7 @@ function buildSlots() {
     const dow = day.getDay();
     if (dow === 0 || dow === 6) continue;
     count++;
-    if (count < 2) continue; // Skip next 1 business day buffer
+    if (count < 2) continue;
     const dateLabel = day.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' });
     for (const hour of [9, 11, 14, 16]) {
       if (slots.length >= 18) break;
@@ -57,6 +57,31 @@ export function BookDemoForm() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     if (selectedSlot) formData.set('preferredSlot', selectedSlotLabel);
+    try {
+      formData.set('conversionPage', `${window.location.pathname}${window.location.search}`);
+      const raw = window.localStorage.getItem(ATTRIBUTION_KEY);
+      if (raw) {
+        const attribution = JSON.parse(raw) as Record<string, unknown>;
+        const mappings: Array<[string, string]> = [
+          ['channel', 'attributionChannel'],
+          ['landingPage', 'firstTouchLandingPage'],
+          ['referrer', 'firstTouchReferrer'],
+          ['utmSource', 'utmSource'],
+          ['utmMedium', 'utmMedium'],
+          ['utmCampaign', 'utmCampaign'],
+          ['utmContent', 'utmContent'],
+          ['utmTerm', 'utmTerm'],
+          ['gclid', 'gclid'],
+          ['capturedAt', 'attributionCapturedAt'],
+        ];
+        for (const [sourceKey, formKey] of mappings) {
+          const value = attribution[sourceKey];
+          if (typeof value === 'string' && value) formData.set(formKey, value);
+        }
+      }
+    } catch {
+      // Attribution must never block a demo request.
+    }
     setState('idle');
     setMessage('');
     startTransition(() => {
@@ -92,9 +117,7 @@ export function BookDemoForm() {
     );
   }
 
-  // Calendar step
   if (state === 'calendar') {
-    // Group by date
     const byDate: Record<string, typeof slots> = {};
     slots.forEach(s => { (byDate[s.date] = byDate[s.date] || []).push(s); });
     return (
@@ -113,12 +136,7 @@ export function BookDemoForm() {
               <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{date}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {daySlots.map(slot => (
-                  <button
-                    key={slot.iso}
-                    type="button"
-                    onClick={() => handleSlotSelect(slot)}
-                    className="rounded-2xl border border-brand-700/12 bg-brand-50 px-3 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-accent-500 hover:bg-[#eef6fb] hover:text-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500/30"
-                  >
+                  <button key={slot.iso} type="button" onClick={() => handleSlotSelect(slot)} className="rounded-2xl border border-brand-700/12 bg-brand-50 px-3 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-accent-500 hover:bg-[#eef6fb] hover:text-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500/30">
                     {slot.time} <span className="block text-[10px] font-medium text-slate-400">UTC</span>
                   </button>
                 ))}
@@ -126,23 +144,13 @@ export function BookDemoForm() {
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => setState('form')}
-          className="mt-6 w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-700"
-        >
-          Skip — just send a request →
-        </button>
+        <button type="button" onClick={() => setState('form')} className="mt-6 w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-700">Skip — just send a request →</button>
       </div>
     );
   }
 
-  // Form step
   return (
-    <form
-      className="rounded-hero border border-brand-700/10 bg-white p-5 shadow-[0_24px_70px_rgba(31,72,124,0.10)] sm:p-7"
-      onSubmit={handleSubmit}
-    >
+    <form className="rounded-hero border border-brand-700/10 bg-white p-5 shadow-[0_24px_70px_rgba(31,72,124,0.10)] sm:p-7" onSubmit={handleSubmit}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Almost done</p>
@@ -188,27 +196,15 @@ export function BookDemoForm() {
         <textarea name="notes" rows={3} placeholder="Describe your biggest trade workflow challenge..." className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10" />
       </label>
 
-      {(state === 'error') && message && (
-        <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{message}</p>
-      )}
+      {(state === 'error') && message && <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{message}</p>}
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-        {!selectedSlotLabel && (
-          <button type="button" onClick={() => setState('calendar')} className="flex-1 rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-            ← Pick a time slot
-          </button>
-        )}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="flex-1 rounded-2xl bg-[linear-gradient(135deg,#1F487C,#0c7fff)] py-3.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(12,127,255,0.26)] transition hover:-translate-y-0.5 disabled:opacity-60"
-        >
+        {!selectedSlotLabel && <button type="button" onClick={() => setState('calendar')} className="flex-1 rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">← Pick a time slot</button>}
+        <button type="submit" disabled={isPending} className="flex-1 rounded-2xl bg-[linear-gradient(135deg,#1F487C,#0c7fff)] py-3.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(12,127,255,0.26)] transition hover:-translate-y-0.5 disabled:opacity-60">
           {isPending ? 'Sending…' : selectedSlotLabel ? 'Confirm demo booking →' : 'Send demo request →'}
         </button>
       </div>
-      <p className="mt-4 text-center text-xs font-medium text-slate-400">
-        Replies come from <span className="font-semibold text-slate-500">help@setugroups.com</span> · No spam, ever.
-      </p>
+      <p className="mt-4 text-center text-xs font-medium text-slate-400">Replies come from <span className="font-semibold text-slate-500">help@setugroups.com</span> · No spam, ever.</p>
     </form>
   );
 }

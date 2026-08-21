@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { SeoPerformanceVisuals } from '@/components/smc/seo-performance-visuals';
+import { SeoProgressSummary } from '@/components/smc/seo-progress-summary';
+import { getSeoConversionSnapshot } from '@/lib/seo/conversions';
 import { getLiveGoogleTrends } from '@/lib/seo/google-trends';
 import { getSearchConsoleSnapshot } from '@/lib/seo/search-console';
+import { getSeoSearchProgress } from '@/lib/seo/search-console-progress';
 import { getSeoBotStatus } from '@/lib/seo/seo-bot-status';
 import { seoCompetitors, seoKeywordClusters, seoUpgradeActions } from '@/lib/seo/seo-intelligence';
 
@@ -36,10 +39,12 @@ const buttonBase = {
 } as const;
 
 export default async function SmcSeoPage({ searchParams }: { searchParams?: { seoAction?: string; message?: string; pr?: string } }) {
-  const [bot, trends, searchConsole] = await Promise.all([
+  const [bot, trends, searchConsole, searchProgress, conversions] = await Promise.all([
     getSeoBotStatus(),
     getLiveGoogleTrends(),
     getSearchConsoleSnapshot(),
+    getSeoSearchProgress(),
+    getSeoConversionSnapshot(),
   ]);
 
   const githubConfigured = Boolean(
@@ -124,6 +129,8 @@ export default async function SmcSeoPage({ searchParams }: { searchParams?: { se
           </div>
         </div>
 
+        <SeoProgressSummary progress={searchProgress} conversions={conversions} bot={bot} />
+
         <div className="smc-content-grid">
           <div className="smc-content-card">
             <h3>SEO Bot</h3>
@@ -180,7 +187,8 @@ export default async function SmcSeoPage({ searchParams }: { searchParams?: { se
           </div>
         )}
 
-        <h2 style={{ marginTop: 24 }}>Homepage Keyword Coverage · Latest Bot Run</h2>
+        <h2 style={{ marginTop: 24 }}>Homepage Positioning Signal · Latest Bot Run</h2>
+        <p style={{ marginTop: -10, opacity: 0.72 }}>This section measures literal homepage phrase coverage only. It is not a Google rank score; target landing-page health is shown in the SEO Progress section above.</p>
         <div className="smc-content-grid">
           {homepageCoverage.length > 0 ? homepageCoverage.map((cluster) => (
             <div key={cluster.cluster} className="smc-content-card">
