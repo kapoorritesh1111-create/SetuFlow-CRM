@@ -19,11 +19,10 @@ function deltaLabel(current: number, previous: number) {
   return `${delta >= 0 ? '+' : ''}${Math.round(delta)}%`;
 }
 
-function actionNotice(action?: string, message?: string) {
+function actionNotice(action?: string, message?: string, pr?: string) {
   if (action === 'bot-started') return { tone: '#0f766e', text: 'SEO bot started in GitHub Actions. The SMC bot status will refresh after the workflow finishes.' };
-  if (action === 'sitemap-submitted') return { tone: '#0f766e', text: 'Sitemap submitted to Google Search Console successfully.' };
-  if (action === 'github-token-required') return { tone: '#b45309', text: 'GitHub publishing is not configured yet. Add SEO_GITHUB_TOKEN in Vercel to run the bot and create SEO PRs from SMC.' };
-  if (action === 'google-token-required') return { tone: '#b45309', text: 'Google Search Console credentials are required before SMC can submit the sitemap.' };
+  if (action === 'pr-published') return { tone: '#0f766e', text: `SEO PR #${pr || ''} was published to main. Vercel will deploy the change automatically.` };
+  if (action === 'github-token-required') return { tone: '#b45309', text: 'GitHub publishing is not configured yet. Add SEO_GITHUB_TOKEN in Vercel to run the bot, create SEO PRs, and publish approved work from SMC.' };
   if (action === 'error') return { tone: '#b91c1c', text: message || 'The SEO action could not be completed.' };
   return null;
 }
@@ -36,7 +35,7 @@ const buttonBase = {
   cursor: 'pointer',
 } as const;
 
-export default async function SmcSeoPage({ searchParams }: { searchParams?: { seoAction?: string; message?: string } }) {
+export default async function SmcSeoPage({ searchParams }: { searchParams?: { seoAction?: string; message?: string; pr?: string } }) {
   const [bot, trends, searchConsole] = await Promise.all([
     getSeoBotStatus(),
     getLiveGoogleTrends(),
@@ -62,7 +61,11 @@ export default async function SmcSeoPage({ searchParams }: { searchParams?: { se
   const previousImpressions = previous7.reduce((sum, row) => sum + row.impressions, 0);
   const recentClicks = recent7.reduce((sum, row) => sum + row.clicks, 0);
   const previousClicks = previous7.reduce((sum, row) => sum + row.clicks, 0);
-  const notice = actionNotice(searchParams?.seoAction, searchParams?.message ? decodeURIComponent(searchParams.message) : undefined);
+  const notice = actionNotice(
+    searchParams?.seoAction,
+    searchParams?.message ? decodeURIComponent(searchParams.message) : undefined,
+    searchParams?.pr,
+  );
 
   return (
     <>
@@ -70,7 +73,7 @@ export default async function SmcSeoPage({ searchParams }: { searchParams?: { se
         <div>
           <div className="bc">Growth · Search & SEO</div>
           <h1>SEO Command Center</h1>
-          <p>Monitor Google visibility, see which pages and queries are moving, run the SEO bot, and push approved SEO work through GitHub.</p>
+          <p>Monitor Google visibility, see which pages and queries are moving, run the SEO bot, and publish approved SEO work through GitHub.</p>
         </div>
       </div>
 
@@ -93,24 +96,31 @@ export default async function SmcSeoPage({ searchParams }: { searchParams?: { se
             <div style={{ maxWidth: 720 }}>
               <div className="bc">SEO publishing controls</div>
               <h2 style={{ margin: '4px 0 8px' }}>Operate SEO directly from SMC</h2>
-              <p style={{ margin: 0 }}>Run the live SEO audit, submit the sitemap to Google, or create a reviewable SEO improvement PR. Code changes still go through GitHub review before they reach main.</p>
+              <p style={{ margin: 0 }}>Run the live SEO audit, generate a reviewable SEO improvement PR, then explicitly publish an approved SMC-generated PR to main. Google Search Console remains read-only for measurement and indexing visibility.</p>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <form action="/api/smc/seo/run-bot" method="post">
                 <button type="submit" disabled={!githubConfigured} style={{ ...buttonBase, background: githubConfigured ? '#0f766e' : '#cbd5e1', color: githubConfigured ? '#fff' : '#64748b', cursor: githubConfigured ? 'pointer' : 'not-allowed' }}>Run SEO bot now</button>
-              </form>
-              <form action="/api/smc/seo/submit-sitemap" method="post">
-                <button type="submit" disabled={searchConsole.status !== 'connected'} style={{ ...buttonBase, background: searchConsole.status === 'connected' ? '#1d4ed8' : '#cbd5e1', color: searchConsole.status === 'connected' ? '#fff' : '#64748b', cursor: searchConsole.status === 'connected' ? 'pointer' : 'not-allowed' }}>Submit sitemap to Google</button>
               </form>
               <form action="/api/admin/seo/create-pr" method="post" target="_blank">
                 <button type="submit" disabled={!githubConfigured} style={{ ...buttonBase, background: githubConfigured ? '#0f172a' : '#cbd5e1', color: githubConfigured ? '#fff' : '#64748b', cursor: githubConfigured ? 'pointer' : 'not-allowed' }}>Create SEO improvement PR</button>
               </form>
             </div>
           </div>
+
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(148,163,184,.2)' }}>
+            <div style={{ fontWeight: 750, marginBottom: 7 }}>Publish an approved SMC SEO PR to main</div>
+            <p style={{ margin: '0 0 10px', fontSize: 13, opacity: 0.76 }}>Review the generated PR in GitHub first. Then enter its PR number here. SMC only permits open PRs created by the `seo/quality-improvement-*` workflow and targeting `main`.</p>
+            <form action="/api/smc/seo/publish-pr" method="post" style={{ display: 'flex', flexWrap: 'wrap', gap: 9, alignItems: 'center' }}>
+              <input name="prNumber" type="number" min="1" required placeholder="PR number" disabled={!githubConfigured} style={{ width: 130, border: '1px solid rgba(148,163,184,.45)', borderRadius: 9, padding: '9px 11px', background: 'transparent' }} />
+              <button type="submit" disabled={!githubConfigured} style={{ ...buttonBase, background: githubConfigured ? '#166534' : '#cbd5e1', color: githubConfigured ? '#fff' : '#64748b', cursor: githubConfigured ? 'pointer' : 'not-allowed' }}>Publish approved PR to main</button>
+            </form>
+          </div>
+
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, marginTop: 14, fontSize: 12, opacity: 0.76 }}>
             <span>GitHub publishing: <strong>{githubConfigured ? 'ready' : 'SEO_GITHUB_TOKEN required'}</strong></span>
-            <span>Google publishing: <strong>{searchConsole.status === 'connected' ? 'ready' : searchConsole.status.replace('_', ' ')}</strong></span>
-            <span>Target branch: <strong>main via PR review</strong></span>
+            <span>Google Search Console: <strong>{searchConsole.status === 'connected' ? 'connected · read-only' : searchConsole.status.replace('_', ' ')}</strong></span>
+            <span>Target branch: <strong>main after explicit approval</strong></span>
           </div>
         </div>
 
@@ -239,11 +249,12 @@ export default async function SmcSeoPage({ searchParams }: { searchParams?: { se
 
         <div className="smc-content-card" style={{ marginTop: 24 }}>
           <h3>Operator links</h3>
-          <p>SMC is now the daily operating view. The internal SEO Intelligence page remains available for deeper technical analysis while we consolidate the remaining controls.</p>
+          <p>SMC is now the daily operating view. The internal SEO Intelligence page remains available for deeper technical analysis.</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
             <Link href="/admin/seo-intelligence">Open SEO Intelligence</Link>
             <Link href="https://www.setuflowcrm.com/sitemap.xml" target="_blank">Open sitemap</Link>
             <Link href="https://github.com/kapoorritesh1111-create/SetuFlow-CRM/actions/workflows/seo-autobot.yml" target="_blank">Open SEO bot in GitHub</Link>
+            <Link href="https://github.com/kapoorritesh1111-create/SetuFlow-CRM/pulls" target="_blank">Review SEO PRs</Link>
             <Link href="https://www.setuflowcrm.com" target="_blank">Open public site</Link>
           </div>
         </div>
