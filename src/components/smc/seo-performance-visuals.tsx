@@ -34,7 +34,7 @@ function DailySearchChart({ snapshot }: { snapshot: SearchConsoleSnapshot }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
           <h3 style={{ marginBottom: 4 }}>Google visibility · daily</h3>
-          <p style={{ margin: 0 }}>Daily impressions from Search Console. Click any bar with your cursor to see the exact day and value.</p>
+          <p style={{ margin: 0 }}>Daily impressions from Search Console. Hover over a bar to see the exact day and value.</p>
         </div>
         <div style={{ textAlign: 'right' }}>
           <strong>{number(snapshot.impressions)} impressions</strong>
@@ -102,7 +102,9 @@ function TrendBars({ trends }: { trends: LiveTrendResult }) {
   const averages = trends.averages.length
     ? trends.averages
     : trends.queries.map((query) => {
-        const values = trends.points.map((point) => point.values[query]).filter((value) => Number.isFinite(value));
+        const values = trends.points
+          .map((point) => point.values[query])
+          .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
         return { query, value: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0 };
       });
   const max = Math.max(1, ...averages.map((row) => row.value));
@@ -170,13 +172,14 @@ function LandingPagesTable({ snapshot }: { snapshot: SearchConsoleSnapshot }) {
 }
 
 export function SeoPerformanceVisuals({ snapshot, trends }: { snapshot: SearchConsoleSnapshot; trends: LiveTrendResult }) {
+  const responsiveGrid = 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))';
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(320px, .65fr)', gap: 16, marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: responsiveGrid, gap: 16, marginTop: 14 }}>
         <DailySearchChart snapshot={snapshot} />
         <QueryBars snapshot={snapshot} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, .7fr) minmax(0, 1.3fr)', gap: 16, marginTop: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: responsiveGrid, gap: 16, marginTop: 16 }}>
         <TrendBars trends={trends} />
         <LandingPagesTable snapshot={snapshot} />
       </div>
