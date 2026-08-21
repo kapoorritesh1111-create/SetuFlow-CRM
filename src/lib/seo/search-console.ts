@@ -155,7 +155,7 @@ async function getSitemapSnapshot(siteUrl: string, accessToken: string): Promise
     const sitemap = (payload.sitemap ?? []).find((item) => item.path === sitemapUrl) ?? payload.sitemap?.[0];
     if (!sitemap) return emptySitemap('not_found');
 
-    const totals = (sitemap.contents ?? []).reduce(
+    const totals = (sitemap.contents ?? []).reduce<{ submitted: number; indexed: number }>(
       (acc, item) => ({
         submitted: acc.submitted + Number(item.submitted ?? 0),
         indexed: acc.indexed + Number(item.indexed ?? 0),
