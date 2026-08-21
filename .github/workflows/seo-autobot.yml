@@ -44,13 +44,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: seo/autobot-report
-          delete-branch: true
+          delete-branch: false
           commit-message: 'chore(seo): refresh daily autobot report'
           title: 'chore(seo): refresh daily SEO intelligence report'
           body: |
             Automated SEO monitoring update.
 
             This PR refreshes the generated SEO intelligence report and JSON snapshot under `docs/seo/`.
+            The `seo/autobot-report` branch is intentionally persistent because SMC reads its latest
+            JSON snapshot as the live SEO-bot health source.
 
             Review required before merging:
             - Competitor descriptions and detected metadata
