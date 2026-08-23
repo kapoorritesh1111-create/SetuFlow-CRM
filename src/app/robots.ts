@@ -28,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
           '/notifications/',
           '/contact-exchange/',
           '/integrations/',
+          '/development/',
         ],
       },
     ],
