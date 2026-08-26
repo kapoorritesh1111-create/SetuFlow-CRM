@@ -51,6 +51,7 @@ const clientLogos = [
   { src: '/clients/avanti-foods.png', alt: 'Avanti Foods', width: 76, height: 52 },
   { src: '/clients/wholesome-food.png', alt: 'Wholesome Food', width: 140, height: 48 },
   { src: '/clients/ash-and-noir.png', alt: 'Ash and Noir', width: 118, height: 42, dark: true },
+  { src: '/clients/stark-packmate-logo.webp', alt: 'Stark Packmate', width: 76, height: 76 },
 ];
 
 const compareRows = [
