@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SETU Flow CRM Documentation Workspace</title>
-<meta name="description" content="SETU Flow CRM technical documentation workspace for testers, architects, developers, and tech leads." />
+<title>SETU Flow Documentation Hub</title>
+<meta name="description" content="Current SETU Flow platform documentation for CRM, sourcing, packaging, trade events, growth, AI, integrations, Academy, and internal operations." />
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,62 +54,40 @@
 <header class="topbar">
   <button class="icon-button mobile-only" onclick="Docs.toggleNav()" aria-label="Open navigation">☰</button>
   <a class="brand" href="#overview">
-    <span class="brand-mark-img">
-      <img src="../logos/setu-flow-logo.svg" alt="SETU Flow" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px;color:#2dd4bf\'>⌁</span>'">
-    </span>
+    <span class="brand-mark-img"><img src="../logos/setu-flow-logo.svg" alt="SETU Flow" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px;color:#2dd4bf\'>⌁</span>'"></span>
     <strong>SETU Flow</strong><em>CRM</em>
   </a>
-  <div class="workspace-pill desktop-only"><span>Workspace</span><strong>SETU Development</strong></div>
-  <div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search docs, screens, workflows..." oninput="Docs.search(this.value)" /><kbd>⌘K</kbd></div>
+  <div class="workspace-pill desktop-only"><span>Documentation</span><strong>Current Main</strong></div>
+  <div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search CRM, packaging, growth, integrations..." oninput="Docs.search(this.value)" /><kbd>⌘K</kbd></div>
   <nav class="top-actions">
-    <a class="internal-only" href="/smc/issues">Issue Tracker <span id="issuePill">—</span></a>
+    <a class="internal-only" href="/smc/issues">Issue Tracker</a>
     <a class="internal-only" href="setuflow-roadmap.html">Roadmap</a>
     <a class="internal-only" href="setuflow-demo-checklist.html">Pre-Demo</a>
     <a class="internal-only" href="/smc/qa">QA Tests</a>
     <button class="internal-only" onclick="Docs.openShare()">Share Doc</button>
     <a class="internal-only" href="/dashboard">Live CRM</a>
   </nav>
-  <div class="user-chip internal-only"><span id="userInitial">R</span><strong id="userName">Ritesh Kapoor</strong></div>
+  <div class="user-chip internal-only"><span id="userInitial">S</span><strong id="userName">SETU User</strong></div>
 </header>
 <div class="shell">
   <aside id="leftNav" class="left-nav">
-    <div class="nav-title">
-      <span class="nav-title-icon">
-        <img src="../logos/setu-flow-logo.svg" alt="" onerror="this.style.display='none'">
-      </span>
-      Documentation
-    </div>
+    <div class="nav-title"><span class="nav-title-icon"><img src="../logos/setu-flow-logo.svg" alt="" onerror="this.style.display='none'"></span>Documentation</div>
     <div class="nav-search"><input placeholder="Filter topics..." oninput="Docs.search(this.value)" /></div>
     <div id="topicNav"></div>
     <div class="nav-footer internal-only"><button onclick="Docs.showFullDocument()">Full document</button><a href="/smc/issues">Issues</a><a href="setuflow-roadmap.html">Roadmap</a><a href="setuflow-demo-checklist.html">Pre-Demo</a><a href="/smc/qa">QA Tests</a></div>
   </aside>
   <main class="main">
-    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><span>SETU Flow CRM</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
+    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><span>SETU Flow</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
     <section id="overviewView" class="overview-view"></section>
     <section id="topicView" class="topic-view hidden"></section>
   </main>
   <aside id="rightRail" class="right-rail"></aside>
 </div>
-<div class="mobile-topic-bar"><button id="mobilePrev" onclick="Docs.goPrev()">← Previous</button><span id="mobileProgress">1 / 12</span><button id="mobileNext" onclick="Docs.goNext()">Next →</button></div>
-<script src="setuflow-docs-workspace.js?v=20260604-doc-pass"></script>
+<div class="mobile-topic-bar"><button id="mobilePrev" onclick="Docs.goPrev()">← Previous</button><span id="mobileProgress">1 / 46</span><button id="mobileNext" onclick="Docs.goNext()">Next →</button></div>
+<script src="setuflow-docs-workspace-v20260827.js?v=20260827-platform-refresh"></script>
 <div id="diagModal" class="diag-modal">
-  <div class="diag-topbar">
-    <span id="diagModalTitle" class="diag-modal-title">Diagram</span>
-    <div class="diag-controls">
-      <button class="dc" onclick="Docs.diagZoom(-0.2)" title="Zoom out (-)">&#8722;</button>
-      <span id="diagZoomPct" class="diag-zoom-pct">100%</span>
-      <button class="dc" onclick="Docs.diagZoom(0.2)" title="Zoom in (+)">+</button>
-      <div class="diag-sep"></div>
-      <button class="dc dc-sm" onclick="Docs.diagReset()">Reset</button>
-      <button class="dc dc-sm" onclick="Docs.downloadDiagram()">&#8595; SVG</button>
-      <div class="diag-sep"></div>
-      <button class="dc" onclick="Docs.closeDiagramViewer()" title="Close (Esc)">&#x2715;</button>
-    </div>
-  </div>
-  <div id="diagViewport" class="diag-viewport">
-    <div id="diagCanvas" class="diag-canvas"></div>
-    <div class="diag-hint">Scroll to zoom &nbsp;&middot;&nbsp; Drag to pan &nbsp;&middot;&nbsp; + / &minus; / 0 / Esc</div>
-  </div>
+  <div class="diag-topbar"><span id="diagModalTitle" class="diag-modal-title">Diagram</span><div class="diag-controls"><button class="dc" onclick="Docs.diagZoom(-0.2)">&#8722;</button><span id="diagZoomPct" class="diag-zoom-pct">100%</span><button class="dc" onclick="Docs.diagZoom(0.2)">+</button><div class="diag-sep"></div><button class="dc dc-sm" onclick="Docs.diagReset()">Reset</button><button class="dc dc-sm" onclick="Docs.downloadDiagram()">&#8595; SVG</button><div class="diag-sep"></div><button class="dc" onclick="Docs.closeDiagramViewer()">&#x2715;</button></div></div>
+  <div id="diagViewport" class="diag-viewport"><div id="diagCanvas" class="diag-canvas"></div><div class="diag-hint">Scroll to zoom &nbsp;&middot;&nbsp; Drag to pan</div></div>
 </div>
 </body>
 </html>
