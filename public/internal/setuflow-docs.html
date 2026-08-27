@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SETU Flow CRM Documentation Workspace</title>
-<meta name="description" content="SETU Flow CRM premium technical documentation workspace for current architecture, CRM, packaging, sourcing, growth, integrations, Academy, operations, testers, architects, developers, and tech leads." />
+<title>SETU Flow Product & Engineering Documentation</title>
+<meta name="description" content="SETU Flow premium product and engineering documentation for platform architecture, CRM, packaging, sourcing, growth, Setu Guru, integrations, operations, Academy, and technical reference." />
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="setuflow-docs-workspace.css?v=20260604-doc-pass" />
 <link rel="stylesheet" href="setuflow-docs-surgical-fixes.css?v=20260604-doc-pass" />
+<link rel="stylesheet" href="setuflow-docs-product-docs-v2.css?v=20260827-product-docs-v2" />
 </head>
 <body>
 <div id="authGate" class="auth-gate hidden">
@@ -57,12 +58,11 @@
     <span class="brand-mark-img">
       <img src="../logos/setu-flow-logo.svg" alt="SETU Flow" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px;color:#2dd4bf\'>⌁</span>'">
     </span>
-    <strong>SETU Flow</strong><em>CRM</em>
+    <strong>SETU Flow</strong><em>Docs</em>
   </a>
-  <div class="workspace-pill desktop-only"><span>Workspace</span><strong>SETU Development</strong></div>
-  <div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search all docs, workflows, packaging, integrations..." oninput="Docs.search(this.value)" /><kbd>⌘K</kbd></div>
+  <div class="workspace-pill desktop-only"><span>Product & Engineering</span><strong>Current Main</strong></div>
+  <div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search products, workflows, architecture, APIs..." oninput="Docs.search(this.value)" /><kbd>⌘K</kbd></div>
   <nav class="top-actions">
-    <a class="internal-only" href="setuflow-docs-current-updates.html">2026 Update Archive</a>
     <a class="internal-only" href="/smc/issues">Issue Tracker <span id="issuePill">—</span></a>
     <a class="internal-only" href="setuflow-roadmap.html">Roadmap</a>
     <a class="internal-only" href="setuflow-demo-checklist.html">Pre-Demo</a>
@@ -80,20 +80,21 @@
       </span>
       Documentation
     </div>
-    <div class="nav-search"><input placeholder="Filter all topics and keywords..." oninput="Docs.search(this.value)" /></div>
+    <div class="nav-search"><input placeholder="Filter documentation..." oninput="Docs.search(this.value)" /></div>
     <div id="topicNav"></div>
-    <div class="nav-footer internal-only"><button onclick="Docs.showFullDocument()">Full document</button><a href="setuflow-docs-current-updates.html">2026 Update Archive</a><a href="/smc/issues">Issues</a><a href="setuflow-roadmap.html">Roadmap</a><a href="setuflow-demo-checklist.html">Pre-Demo</a><a href="/smc/qa">QA Tests</a></div>
+    <div class="nav-footer internal-only"><button onclick="Docs.showFullDocument()">Full document</button><a href="/smc/issues">Issues</a><a href="setuflow-roadmap.html">Roadmap</a><a href="setuflow-demo-checklist.html">Pre-Demo</a><a href="/smc/qa">QA Tests</a></div>
   </aside>
   <main class="main">
-    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><span>SETU Flow CRM</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
+    <div class="crumbs"><a href="#overview">Home</a><span>›</span><span>Documentation</span><span>›</span><span>SETU Flow</span><span>›</span><strong id="crumbCurrent">Overview</strong></div>
     <section id="overviewView" class="overview-view"></section>
     <section id="topicView" class="topic-view hidden"></section>
   </main>
   <aside id="rightRail" class="right-rail"></aside>
 </div>
-<div class="mobile-topic-bar"><button id="mobilePrev" onclick="Docs.goPrev()">← Previous</button><span id="mobileProgress">1 / 12</span><button id="mobileNext" onclick="Docs.goNext()">Next →</button></div>
+<div class="mobile-topic-bar"><button id="mobilePrev">← Previous</button><span id="mobileProgress">— / —</span><button id="mobileNext">Next →</button></div>
 <script src="setuflow-docs-workspace.js?v=20260604-doc-pass"></script>
 <script src="setuflow-docs-premium-20260827.js?v=20260827-premium-current"></script>
+<script src="setuflow-docs-product-docs-v2.js?v=20260827-product-docs-v2"></script>
 <div id="diagModal" class="diag-modal">
   <div class="diag-topbar">
     <span id="diagModalTitle" class="diag-modal-title">Diagram</span>
