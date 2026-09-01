@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { retrieveGuru } from '@/lib/rag/retrieve';
 import { embedChunks } from '@/lib/rag/embedding-provider';
-import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 const AGENTIC_MODEL = process.env.SETU_GURU_RAG_MODEL || 'claude-haiku-4-5-20251001';
 
@@ -20,40 +19,11 @@ Strict formatting rules:
 
 export async function POST(req: Request) {
   try {
-    // SECURITY FIX (cross-tenant RAG leak): organizationId must NEVER be trusted
-    // from the client request body. Previously this route read `organizationId`
-    // straight off `body`, so any signed-in user could edit the request and pass
-    // a different org's ID to retrieve and chat over that org's documents.
-    // We now resolve the organization strictly from the authenticated session
-    // (cookie-verified membership), the same way org-search/route.ts does, and
-    // ignore/reject any organizationId the client tries to supply.
-    const workspace = await getWorkspaceAccess();
-    if (!workspace.user) {
-      return NextResponse.json({ error: 'Please sign in before using Setu Guru.' }, { status: 401 });
-    }
-    if (!workspace.organization) {
-      return NextResponse.json({ error: 'No active organization found for this account.' }, { status: 403 });
-    }
-    const organizationId = workspace.organization.id;
-
     const body = await req.json();
-    const { query } = body;
+    const { query, organizationId } = body;
 
-    // If the client sent an organizationId that doesn't match the session's
-    // verified organization, treat it as a tampering attempt and reject
-    // outright rather than silently overriding it — this makes cross-tenant
-    // probing loud (in logs) instead of silently "fixed".
-    if (typeof body.organizationId === 'string' && body.organizationId && body.organizationId !== organizationId) {
-      console.warn('[ask route] organizationId mismatch — client supplied a different org than session', {
-        userId: workspace.user.id,
-        sessionOrgId: organizationId,
-        requestedOrgId: body.organizationId,
-      });
-      return NextResponse.json({ error: 'Organization mismatch for this session.' }, { status: 403 });
-    }
-
-    if (!query) {
-      return NextResponse.json({ error: 'Missing required field: query' }, { status: 400 });
+    if (!query || !organizationId) {
+      return NextResponse.json({ error: 'Missing required fields: query and organizationId' }, { status: 400 });
     }
 
     let systemPrompt = SYSTEM_PROMPT;

@@ -37,6 +37,9 @@ type ChatMessage = {
   trialAction?: TrialShowStepAction | null;
 };
 
+const CASUAL_KEYWORDS = ['hi', 'hello', 'hey', 'hii', 'ok', 'okay', 'okey', 'thanks', 'thank you', 'yes', 'no', 'cool'];
+const COMPLEX_QUERY_PATTERN = /(summarize|strategy|explain|compare|analyze|generate|expansion)/i;
+
 function isPageHelpQuestion(question: string) {
   const q = question.toLowerCase();
   return ['help', 'what can you do', 'what should i do', 'guide me', 'how do i use this page', 'what is this page'].some((phrase) => q.includes(phrase));
@@ -53,6 +56,15 @@ function isPackagingPricingQuestion(question: string) {
     'pouch', 'gusset', 'finish', 'add-on', 'addon', 'zipper', 'moq', 'quantity tier', 'multiplier', 'setup', 'pre-press',
     'prepress', 'rush', 'waste', 'lead time', 'flexo', 'cylinder', 'why', 'how does this work', 'help',
   ].some((phrase) => q.includes(phrase));
+}
+
+function isCasualGreeting(question: string) {
+  const clean = question.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  return CASUAL_KEYWORDS.includes(clean) || clean.length <= 2;
+}
+
+function isComplexAIQuery(question: string) {
+  return COMPLEX_QUERY_PATTERN.test(question) || question.split(' ').length > 6;
 }
 
 function packagingPricingMessage(question: string): ChatMessage {
@@ -223,16 +235,24 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   useEffect(() => { fetch('/api/setu-guru/health', { method: 'HEAD' }).then((r) => setGuruOnline(r.ok)).catch(() => setGuruOnline(false)); }, []);
 
-  
-  useEffect(() => { 
-    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content: `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.` }]); 
+  useEffect(() => {
+    const content = isPackagingPricingRoute(pathname)
+      ? 'Hi, I’m Setu Guru. I can explain how this Packaging Pricing Template calculates material, print, add-ons, MOQ tiers, setup, rush, Flexo cylinder charges, and the final price per pouch / piece.'
+      : `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.`;
+    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content }]);
   }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
-  
-  useEffect(() => { 
-    const target = scrollRef.current; 
-    if (!target) return; 
-    requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); 
+
+  useEffect(() => {
+    const target = scrollRef.current;
+    if (!target) return;
+    requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' }));
   }, [messages, isThinking, drawerOpen]);
+
+  useEffect(() => {
+    function handleDockOpen() { setDrawerOpen(true); }
+    window.addEventListener('setu-guru:open', handleDockOpen);
+    return () => window.removeEventListener('setu-guru:open', handleDockOpen);
+  }, []);
 
   const handleShowStep = useCallback((action: TrialShowStepAction) => {
     void fetch('/api/setu-guru/trial-step', {
@@ -246,34 +266,19 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     router.push(`${action.route}?guruStep=${encodeURIComponent(action.stepId)}`);
   }, [pathname, router, trialTour]);
 
-  // --- NATURAL TIMING STREAMING SIMULATOR ---
   async function simulateStream(msgId: string, fullText: string, extraData: Partial<ChatMessage> = {}) {
     let accumulated = '';
-    const chunkSize = 2; // Smooth character chunks
+    const chunkSize = 2;
     for (let i = 0; i < fullText.length; i += chunkSize) {
       accumulated += fullText.slice(i, i + chunkSize);
       setMessages((current) => current.map((msg) => (msg.id === msgId ? { ...msg, content: accumulated } : msg)));
-      await new Promise((r) => setTimeout(r, 22)); // Natural human typing delay (~22ms per tick)
+      await new Promise((r) => setTimeout(r, 22));
     }
     if (Object.keys(extraData).length > 0) {
       setMessages((current) => current.map((msg) => (msg.id === msgId ? { ...msg, ...extraData } : msg)));
     }
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
-
-  useEffect(() => {
-    function handleDockOpen() { setDrawerOpen(true); }
-    window.addEventListener('setu-guru:open', handleDockOpen);
-    return () => window.removeEventListener('setu-guru:open', handleDockOpen);
-  }, []);
-  useEffect(() => {
-    const content = isPackagingPricingRoute(pathname)
-      ? 'Hi, I’m Setu Guru. I can explain how this Packaging Pricing Template calculates material, print, add-ons, MOQ tiers, setup, rush, Flexo cylinder charges, and the final price per pouch / piece.'
-      : `Hi, I’m Setu Guru. I can help with ${routeHelp.routeTitle || routeTitle}: ${routeHelp.summary} Ask me about blockers, missing data, pricing defaults, HS codes, compliance, or what to do next.`;
-    setMessages([{ id: `welcome-${pathname}`, role: 'assistant', content }]);
-  }, [pathname, routeHelp.routeTitle, routeHelp.summary, routeTitle]);
-  useEffect(() => { const target = scrollRef.current; if (!target) return; requestAnimationFrame(() => target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' })); }, [messages, isThinking, drawerOpen]);
-
 
   function appendAssistant(content: string, tone: ChatMessage['tone'] = 'normal', extra?: Partial<ChatMessage>) {
     const msgId = `assistant-${Date.now()}`;
@@ -285,7 +290,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     const loadingId = `loading-${Date.now()}`;
     const ctx = collectSetuGuruPageContext();
     setIsThinking(true);
-    setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: requestedMode === 'page_help' ? 'Checking this page help registry…' : 'Searching this live workspace and the visible page context…', tone: 'loading' }]);
+    setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: 'Searching this live workspace...', tone: 'loading' }]);
     try {
       const mode = requestedMode ?? (isSetuGuruComplianceQuestion(question) ? 'quote_compliance' : undefined);
       const response = await fetch('/api/setu-guru/org-search', {
@@ -295,11 +300,14 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       });
       const payload: unknown = await response.json();
       const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      
+
       const assistantId = `org-${Date.now()}`;
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', sourceQuestion: question, tone: response.ok ? 'normal' : 'error' }));
 
-      const fullAnswer = typeof data.answer === 'string' ? data.answer : 'I searched your organization data, but did not find a matching answer.';
+      const fullAnswer = typeof data.answer === 'string' && data.answer.trim()
+        ? data.answer
+        : 'I searched your organization data, but did not find a matching answer.';
+
       const extraData = {
         actions: Array.isArray(data.actions) ? data.actions.filter((action): action is string => typeof action === 'string') : typeof data.nextAction === 'string' ? [data.nextAction] : undefined,
         actionHref: typeof data.actionHref === 'string' ? data.actionHref : null,
@@ -326,20 +334,83 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       const response = await fetch('/api/setu-guru/pricing-defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: ctx.route || pathname, pageContext: ctx, action: 'suggest' }) });
       const payload: unknown = await response.json();
       const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      
+
       const assistantId = `pricing-${Date.now()}`;
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', tone: response.ok ? 'normal' : 'error' }));
-      
+
       const fullAnswer = typeof data.answer === 'string' ? data.answer : 'I prepared pricing guidance, but could not load default values.';
       void simulateStream(assistantId, fullAnswer, {
-        actions: typeof data.nextAction === 'string' ? [data.nextAction] : undefined, 
-        actionHref: typeof data.actionHref === 'string' ? data.actionHref : null
+        actions: typeof data.nextAction === 'string' ? [data.nextAction] : undefined,
+        actionHref: typeof data.actionHref === 'string' ? data.actionHref : null,
       });
     } catch (error) {
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `pricing-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not prepare pricing calculator defaults right now.', tone: 'error' }));
     } finally {
       setIsThinking(false);
     }
+  }
+
+  function runComplexAIQuery(question: string) {
+    setIsThinking(true);
+    const ctx = collectSetuGuruPageContext();
+    const realOrgId = (ctx.liveWorkspaceState as { organizationId?: string } | undefined)?.organizationId || '00000000-0000-0000-0000-000000000000';
+
+    const assistantMsgId = `rag-stream-${Date.now()}`;
+    setMessages((current) => [...current, { id: assistantMsgId, role: 'assistant', content: '' }]);
+
+    fetch('/api/setu-guru/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: question, organizationId: realOrgId }),
+    })
+      .then(async (response) => {
+        if (!response.body) throw new Error('Response body missing');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedText = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (let i = 0; i < chunk.length; i++) {
+            accumulatedText += chunk[i];
+            setMessages((current) =>
+              current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg)),
+            );
+            await new Promise((r) => setTimeout(r, 12));
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('RAG Engine failed:', error);
+        setMessages((current) =>
+          current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: `Stream Error: ${error.message}`, tone: 'error' } : msg)),
+        );
+      })
+      .finally(() => {
+        setIsThinking(false);
+        requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+      });
+  }
+
+  function runGreeting() {
+    const msgId = `greeting-${Date.now()}`;
+    setMessages((current) => [...current, { id: msgId, role: 'assistant', content: '' }]);
+    void simulateStream(msgId, 'Hello! I am Setu Guru. I am here to assist you with pricing, CRM workflows, and document checks. What do you need help with?');
+  }
+
+  function runPackagingPricingExplainer(question: string) {
+    setMessages((current) => [...current, packagingPricingMessage(question)]);
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }
+
+  function runInScopeTopic(question: string) {
+    const topic = getBestSetuGuruHelpTopic(question, pathname);
+    const assistantMsgId = `topic-inscope-${Date.now()}`;
+    setMessages((current) => [...current, { id: assistantMsgId, role: 'assistant', content: '' }]);
+    const topicMsg = topicMessage(topic, routeHelp.routeTitle || routeTitle);
+    void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
   }
 
   async function applyHsnUpdate(message: ChatMessage) {
@@ -360,7 +431,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       const response = await fetch('/api/setu-guru/apply-hsn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...review, sourceQuestion: message.sourceQuestion, approved: true }) });
       const payload: unknown = await response.json();
       const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      
+
       const assistantId = `apply-hsn-result-${Date.now()}`;
       setMessages((current) => current.filter((item) => item.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', tone: response.ok ? 'success' : 'error' }));
 
@@ -377,13 +448,26 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     const userMsgId = `user-${topic.id}-${Date.now()}`;
     const assistantMsgId = `topic-${topic.id}-${Date.now()}`;
     setMessages((current) => [
-      ...current, 
+      ...current,
       { id: userMsgId, role: 'user', content: topic.title },
-      { id: assistantMsgId, role: 'assistant', content: '' }
+      { id: assistantMsgId, role: 'assistant', content: '' },
     ]);
     const topicMsg = topicMessage(topic, routeTitle);
     void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
   }
+
+  const intentRules = useMemo(
+    () => [
+      { name: 'casual-greeting', match: (q: string) => isCasualGreeting(q), handle: () => runGreeting() },
+      { name: 'complex-ai-query', match: (q: string) => isComplexAIQuery(q), handle: (q: string) => runComplexAIQuery(q) },
+      { name: 'packaging-pricing-explainer', match: (q: string) => isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(q), handle: (q: string) => runPackagingPricingExplainer(q) },
+      { name: 'pricing-defaults', match: (q: string) => isSetuGuruPricingDefaultQuestion(q), handle: (q: string) => void runPricingDefaults(q) },
+      { name: 'in-scope-topic', match: (q: string) => isSetuGuruQuestionInScope(q), handle: (q: string) => runInScopeTopic(q) },
+      { name: 'page-help', match: (q: string) => isPageHelpQuestion(q), handle: (q: string) => void runOrgSearch(q, 'page_help') },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pathname, routeHelp.routeTitle, routeTitle],
+  );
 
   function handleAsk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -392,90 +476,25 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
 
-    
-    const cleanLowerQuestion = question.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
-    const casualKeywords = ['hi', 'hello', 'hey', 'hii', 'ok', 'okay', 'okey', 'thanks', 'thank you', 'yes', 'no', 'cool'];
-    
-    if (casualKeywords.includes(cleanLowerQuestion) || cleanLowerQuestion.length <= 2) {
-      const msgId = `greeting-${Date.now()}`;
-      setMessages((current) => [...current, { id: msgId, role: 'assistant', content: '' }]);
-      void simulateStream(msgId, 'Hello! I am Setu Guru. I am here to assist you with pricing, CRM workflows, and document checks. What do you need help with?');
+    const lowerQ = question.toLowerCase();
+
+    if (isCasualGreeting(question)) {
+      runGreeting();
       return;
     }
 
-    const isComplexAIQuery = /(summarize|strategy|explain|compare|analyze|generate|expansion)/i.test(question) || question.split(' ').length > 6;
-
-    if (isComplexAIQuery) {
-      setIsThinking(true);
-      const ctx = collectSetuGuruPageContext();
-      // @ts-ignore
-      const realOrgId = ctx.liveWorkspaceState?.organizationId || '00000000-0000-0000-0000-000000000000';
-
-      const assistantMsgId = `rag-stream-${Date.now()}`;
-      setMessages((current) => [...current, { id: assistantMsgId, role: 'assistant', content: '' }]);
-
-      fetch('/api/setu-guru/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: question, organizationId: realOrgId }), 
-      })
-      .then(async (response) => {
-        if (!response.body) throw new Error('Response body missing');
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedText = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          // Natural stream chunk padding
-          for (let i = 0; i < chunk.length; i++) {
-            accumulatedText += chunk[i];
-            setMessages((current) =>
-              current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg))
-            );
-            await new Promise((r) => setTimeout(r, 12));
-          }
-        }
-      })
-      .catch((error) => {
-        console.error('RAG Engine failed:', error);
-        setMessages((current) =>
-          current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: `Stream Error: ${error.message}`, tone: 'error' } : msg))
-        );
-      })
-      .finally(() => {
-        setIsThinking(false);
-        requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-      });
-      return;
-    }
-
-    if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
-    if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
-    if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
-    
-    if (isSetuGuruQuestionInScope(question)) {
-      const topic = getBestSetuGuruHelpTopic(question, pathname);
-      const assistantMsgId = `topic-inscope-${Date.now()}`;
-      setMessages((current) => [...current, { id: assistantMsgId, role: 'assistant', content: '' }]);
-      const topicMsg = topicMessage(topic, routeTitle);
-      void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
-    } else {
+    if (isSetuGuruOrgSearchQuestion(question) || /(cost|price|pricing|chips|chana|sku|catalog|tell me|show me|what is)/i.test(lowerQ)) {
       void runOrgSearch(question);
-    }
-    if (isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(question)) {
-      setMessages((current) => [...current, packagingPricingMessage(question)]);
-      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
       return;
     }
-    if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
-    if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
-    if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
-    setMessages((current) => [...current, topicMessage(getBestSetuGuruHelpTopic(question, pathname), routeHelp.routeTitle || routeTitle)]);
-    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
 
+    const matchedRule = intentRules.find((rule) => rule.match(question));
+    if (matchedRule) {
+      matchedRule.handle(question);
+      return;
+    }
+
+    void runOrgSearch(question);
   }
 
   function handleAction(message: ChatMessage, action: string) {

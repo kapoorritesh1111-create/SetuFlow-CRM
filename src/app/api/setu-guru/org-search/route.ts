@@ -44,6 +44,9 @@ function asLiveResearchMode(mode: SetuGuruOrgSearchMode): SetuGuruLiveResearchMo
 function questionMode(question: string): SetuGuruOrgSearchMode {
   const q = question.toLowerCase();
   if (['how do i use this page', 'what can you do', 'what should i do', 'page help', 'help me here'].some((word) => q.includes(word))) return 'page_help';
+  // FIX: price/cost/rate intent must be checked BEFORE catalog falls through as default,
+  // otherwise "kabuli chana price" / "banana chips cost" never reach pricing logic.
+  if (['price', 'prices', 'pricing', 'cost', 'costs', 'rate', 'rates', 'fob', 'moq', 'quote me', 'quotation', 'how much'].some((word) => q.includes(word))) return 'pricing_defaults';
   if (q.includes('hsn') || q.includes('hs code') || q.includes('hs-code')) return 'hsn_enrichment';
   if (['tariff', 'duty', 'duties', 'customs', 'required document', 'document requirement', 'destination requirement', 'country requirement'].some((word) => q.includes(word))) return 'document_requirements';
   if (['margin benchmark', 'market margin', 'industry margin', 'benchmark margin'].some((word) => q.includes(word))) return 'margin_benchmark';
@@ -56,8 +59,18 @@ function questionMode(question: string): SetuGuruOrgSearchMode {
   return 'catalog_search';
 }
 function normalizeSetuGuruOrgSearchMode(rawMode: string, question = ''): SetuGuruOrgSearchMode { const key = modeKey(rawMode); if (key && MODE_ALIASES[key]) return MODE_ALIASES[key]; return questionMode(question); }
+
+// FIX: distinguishes a genuine catalog/CRM question from an unrelated one
+// (e.g. "what is india capital") so we can reply with a scope message instead
+// of a misleading "0 matching products" line.
+function isDomainRelevantQuestion(question: string) {
+  const q = question.toLowerCase();
+  const domainWords = ['price', 'prices', 'pricing', 'cost', 'costs', 'rate', 'rates', 'fob', 'moq', 'how much', 'product', 'products', 'catalog', 'sku', 'hsn', 'hs code', 'buyer', 'supplier', 'lead', 'contact', 'company', 'order', 'orders', 'quote', 'compliance', 'document', 'tariff', 'duty', 'margin', 'dispatch', 'shipment', 'freight', 'payment', 'finance', 'blocker', 'category'];
+  return domainWords.some((word) => q.includes(word));
+}
+
 function isPureCountQuestion(question: string) { const q = question.toLowerCase(); return /how many|count|total/.test(q) && !/named|called|find|search|filter|missing/.test(q); }
-function extractSearchTerm(question: string, mode: string) { if (isPureCountQuestion(question)) return ''; const filler = ['how many', 'count', 'total', 'show me', 'find', 'search', 'filter', 'buyer', 'buyers', 'supplier', 'suppliers', 'lead', 'leads', 'product', 'products', 'catalog', 'category', 'categories', 'named', 'called', 'by name', 'in my', 'my', 'are in', 'there are', 'missing', 'hsn', 'hs code', 'hs-code', mode.replaceAll('_', ' ')]; let cleaned = question.toLowerCase(); for (const word of filler) cleaned = cleaned.replaceAll(word, ' '); cleaned = cleaned.replace(/[^a-z0-9\s-]/gi, ' ').replace(/\s+/g, ' ').trim(); return cleaned.length >= 2 ? cleaned : ''; }
+function extractSearchTerm(question: string, mode: string) { if (isPureCountQuestion(question)) return ''; const filler = ['how many', 'count', 'total', 'show me', 'find', 'search', 'filter', 'buyer', 'buyers', 'supplier', 'suppliers', 'lead', 'leads', 'product', 'products', 'catalog', 'category', 'categories', 'named', 'called', 'by name', 'in my', 'my', 'are in', 'there are', 'missing', 'hsn', 'hs code', 'hs-code', 'price', 'prices', 'pricing', 'cost', 'costs', 'rate', 'rates', 'fob', 'moq', 'how much', mode.replaceAll('_', ' ')]; let cleaned = question.toLowerCase(); for (const word of filler) cleaned = cleaned.replaceAll(word, ' '); cleaned = cleaned.replace(/[^a-z0-9\s-]/gi, ' ').replace(/\s+/g, ' ').trim(); return cleaned.length >= 2 ? cleaned : ''; }
 
 // --- STRICT WORD-LEVEL FUZZY SEARCH (NO OVERFETCHING) ---
 function fuzzyMatchString(source: string, target: string): boolean {
@@ -435,19 +448,138 @@ export async function POST(request: Request) {
     
     if (mode === 'quote_compliance') { const lead = await resolveActiveLead(db, organizationId, route, pageText); if (!lead?.id) return NextResponse.json({ answer: 'I can help with quote compliance, but I could not identify a lead from the route or visible page. Open the quote or lead workspace and ask again.', confidence: 'medium', rows: [], actions: ['Open Leads', 'Open compliance'], actionHref: '/leads' }); const [{ data: quotes }, { data: leadProducts }, { data: documents }, { data: complianceRows }, { data: rules }, { data: country }] = await Promise.all([db.from('quotes').select('id, quote_number, status, country_id, market_id, currency, display_currency').eq('organization_id', organizationId).eq('lead_id', lead.id).order('updated_at', { ascending: false }).limit(1), db.from('lead_product_interests').select('product_id, products(id, name, hsn_code, category_id)').eq('organization_id', organizationId).eq('lead_id', lead.id), db.from('documents').select('id, requirement_code, file_name, status, expires_at, related_entity, related_id').eq('organization_id', organizationId).eq('related_entity', 'lead').eq('related_id', lead.id), db.from('lead_compliance_items').select('id, status, severity, due_at, compliance_checklist_items(code, description, is_mandatory)').eq('organization_id', organizationId).eq('lead_id', lead.id), db.from('document_requirement_rules').select('id, market_id, product_id, lead_type, progression_scope, requirement_code, title, doc_type, is_mandatory, is_active').eq('organization_id', organizationId).eq('is_active', true).in('progression_scope', ['general', 'quote_send']), lead.country ? db.from('countries').select('id, name, market_id').eq('organization_id', organizationId).ilike('name', asText(lead.country)).maybeSingle() : Promise.resolve({ data: null })]); const quote = firstRow(quotes); const productRows = rowList(leadProducts).map((row) => nestedRow(row.products)).filter(isRecord); const productIdSet = new Set(productRows.map((product) => product.id)); const marketId = quote?.market_id ?? country?.market_id ?? null; const applicableRules = rowList(rules).filter((rule) => { if (rule.lead_type && rule.lead_type !== lead.lead_type) return false; if (rule.market_id && rule.market_id !== marketId) return false; if (rule.product_id && !productIdSet.has(rule.product_id)) return false; return true; }); const built = buildQuoteComplianceAnswer({ organizationName, lead, quote, complianceRows: rowList(complianceRows), documentRows: rowList(documents), requirementRows: applicableRules, productRows, countryName: asText(country?.name) || asText(lead.country) }); const rows = [...built.blockers.map((item, index) => ({ id: `blocker-${index}`, name: item, type: 'mandatory blocker', next: 'Upload evidence, submit review, or owner/admin waive with reason' })), ...applicableRules.filter((rule) => rule.is_mandatory !== true).slice(0, 4).map((rule) => ({ id: rule.id, name: rule.title || rule.requirement_code, type: 'advisory before dispatch', next: 'Prepare before order dispatch' }))]; return NextResponse.json({ answer: built.answer, confidence: 'high', mode, rows, actions: ['Open lead documents', 'Open compliance', 'Ask AI evidence checklist'], actionHref: `/leads/${lead.id}`, actionHrefs: { 'Open lead documents': `/leads/${lead.id}?tab=documents`, 'Open compliance': `/compliance/assist?leadId=${lead.id}`, 'Ask AI evidence checklist': `/compliance/assist?leadId=${lead.id}&mode=evidence` } }); }
     
-    if (mode === 'catalog_search' || mode === 'hsn_enrichment') { 
+    // FIX: catalog_search AND hsn_enrichment now also serve pricing_defaults, so a
+    // pricing question that reaches here (e.g. via mode param or fallback) still
+    // returns FOB/MOQ/currency instead of a generic paragraph or a dead-end.
+    if (mode === 'catalog_search' || mode === 'hsn_enrichment' || mode === 'pricing_defaults') { 
       const workspaceData = await getProductsData(organizationId); 
       const products = workspaceData?.products ?? []; 
       const categories = workspaceData?.categories ?? []; 
+      // FIX (v2): synthesizeCatalogPricesFromRules() collapses ex-factory AND fob
+      // values into one opaque "price" field, prioritizing ex_factory_usd_per_case
+      // FIRST — so a chat "fob" label was actually showing ex-factory case price.
+      // Query product_pricing_rules directly and read fob_usd explicitly instead
+      // of trusting the synthesized/ambiguous prices array for chat display.
+      const variants = workspaceData?.variants ?? [];
       const categoryNameById = new Map(categories.map((category: TableRow) => [category.id, category.name])); 
+
+      const productIds = products.map((product: TableRow) => asText(product.id)).filter(Boolean);
+      const { data: pricingRulesRaw } = productIds.length
+        ? await db.from('product_pricing_rules')
+            .select('id, product_id, product_variant_id, fob_usd, fob_usd_per_unit, fob_inr, is_active, is_quoteable')
+            .eq('organization_id', organizationId)
+            .eq('is_active', true)
+            .eq('is_quoteable', true)
+            .in('product_id', productIds)
+        : { data: [] };
+      const pricingRuleByProductId = new Map<string, TableRow>();
+      for (const rule of rowList(pricingRulesRaw)) {
+        const pId = asText(rule.product_id);
+        if (pId && !pricingRuleByProductId.has(pId)) pricingRuleByProductId.set(pId, rule);
+      }
+
+      const variantsByProductId = new Map<string, TableRow[]>();
+      for (const variant of variants as TableRow[]) {
+        const pId = asText(variant.product_id);
+        if (!pId) continue;
+        if (!variantsByProductId.has(pId)) variantsByProductId.set(pId, []);
+        variantsByProductId.get(pId)!.push(variant);
+      }
+      function getPricingForProduct(productId: string) {
+        const productVariants = variantsByProductId.get(productId) ?? [];
+        const defaultVariant = productVariants.find((variant) => variant.is_quoteable !== false) ?? productVariants[0] ?? null;
+        const rule = pricingRuleByProductId.get(productId);
+        // FIX: never silently substitute INR for USD — keep both explicit so the
+        // displayed currency always matches the actual field it came from.
+        const fobUsd = typeof rule?.fob_usd_per_unit === 'number' ? rule.fob_usd_per_unit : (typeof rule?.fob_usd === 'number' ? rule.fob_usd : null);
+        const fobInr = typeof rule?.fob_inr === 'number' ? rule.fob_inr : null;
+        return {
+          fobUsd,
+          fobInr,
+          moq: defaultVariant?.moq_cases ?? defaultVariant?.moq_kg ?? null,
+        };
+      }
+
       const visibleProducts = products.filter((product: TableRow) => product.is_active !== false); 
       const missingHsnProducts = visibleProducts.filter((product: TableRow) => !asText(product.hsn_code)); 
       const sourceProducts = mode === 'hsn_enrichment' ? missingHsnProducts : visibleProducts; 
       
       const matchedProducts = term ? sourceProducts.filter((product: TableRow) => includesTerm({ name: product.name, sku: product.sku, sku_code: product.sku_code, hsn_code: product.hsn_code, category: categoryNameById.get(product.category_id) }, term)) : sourceProducts; 
       
-      const rows = matchedProducts.slice(0, 8).map((product: TableRow) => ({ id: product.id, name: product.name, sku: product.sku ?? product.sku_code ?? null, hsnCode: product.hsn_code ?? null, category: categoryNameById.get(product.category_id) ?? null })); 
-      const answer = mode === 'hsn_enrichment' ? `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review. For actual HS/HSN assignment, use live source-backed research and human review before write-back.` : term ? `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.` : `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`; 
+      // FIX: was mapping only id/name/sku/hsnCode/category — FOB, MOQ and currency
+      // were never included, so price/cost questions always came back empty even
+      // when the data existed for that product (in the variant/price tables).
+      const rows = matchedProducts.slice(0, 8).map((product: TableRow) => {
+        const pricing = getPricingForProduct(asText(product.id));
+        return {
+          id: product.id,
+          name: product.name,
+          sku: product.sku ?? product.sku_code ?? null,
+          hsnCode: product.hsn_code ?? null,
+          category: categoryNameById.get(product.category_id) ?? null,
+          // both shown when available; each explicitly labeled so USD is never
+          // silently swapped for INR or vice versa.
+          fobUsd: pricing.fobUsd,
+          fobInr: pricing.fobInr,
+          moq: pricing.moq,
+        };
+      });
+
+      // FIX: an unrelated question ("what is india capital") used to fall through
+      // to catalog_search by default and reply "I found 0 matching catalog
+      // product(s)" — confusing, since the question was never about the catalog.
+      // Reply with a natural, apologetic scope message instead when nothing
+      // domain-relevant was asked (varied phrasing so it doesn't feel canned).
+      if (mode === 'catalog_search' && term && matchedProducts.length === 0 && !isDomainRelevantQuestion(question)) {
+        const outOfScopeReplies = [
+          `Sorry, ye main search nahi kar sakta — main is workspace ke liye banaya gaya hoon: catalog products, pricing, buyers, suppliers, leads, HSN codes, aur compliance. Kuch aisa try karo — "banana chips price" ya "how many buyers do we have?".`,
+          `Hmm, ye mere scope se bahar hai. Main sirf CRM se juda kaam handle kar sakta hoon — products, pricing, buyers, suppliers, leads, HSN codes, compliance. Poochho jaise "banana chips price" ya "how many buyers do we have?".`,
+          `That's a bit outside what I can help with — I'm set up for this workspace only (catalog, pricing, buyers, suppliers, leads, HSN codes, compliance). Try asking something like "banana chips price" or "how many buyers do we have?".`,
+          `Is par main help nahi kar paunga, apologies! Main CRM aur catalog related sawaalon ke liye hoon — products, pricing, buyers, suppliers, leads, HSN codes, compliance jaisa kuch poocho.`,
+        ];
+        return NextResponse.json({
+          answer: outOfScopeReplies[Math.floor(Math.random() * outOfScopeReplies.length)],
+          confidence: 'high',
+          mode: 'page_help',
+          rows: [],
+          actions: ['Open Products', 'Open Leads'],
+        });
+      }
+
+      // FIX: pricing_defaults now gets a short, price-focused answer instead of
+      // the generic "I found N matching catalog product(s)..." listing line —
+      // the person asked for a price, so lead with the price.
+      let answer: string;
+      if (mode === 'hsn_enrichment') {
+        answer = `I found ${missingHsnProducts.length} catalog product(s) missing HSN/HS codes in ${organizationName}. I listed ${rows.length} row(s) for review. For actual HS/HSN assignment, use live source-backed research and human review before write-back.`;
+      } else if (mode === 'pricing_defaults') {
+        if (rows.length === 0) {
+          answer = term ? `I couldn't find a catalog product matching "${term}" to price. Try the exact product name or SKU.` : 'Tell me which product you want the price for.';
+        } else if (rows.length === 1) {
+          const row = rows[0] as TableRow;
+          const priceParts = [
+            typeof row.fobUsd === 'number' ? `FOB $${row.fobUsd}` : null,
+            typeof row.fobInr === 'number' ? `₹${row.fobInr}` : null,
+          ].filter(Boolean);
+          const priceText = priceParts.length ? priceParts.join(' / ') : 'price not set yet in the catalog';
+          const moqText = row.moq != null ? ` · MOQ ${row.moq}` : '';
+          answer = `${asText(row.name)} (${asText(row.sku)}) — ${priceText}${moqText}.`;
+        } else {
+          const lines = rows.map((row: TableRow) => {
+            const priceParts = [
+              typeof row.fobUsd === 'number' ? `FOB $${row.fobUsd}` : null,
+              typeof row.fobInr === 'number' ? `₹${row.fobInr}` : null,
+            ].filter(Boolean);
+            const priceText = priceParts.length ? priceParts.join(' / ') : 'price not set';
+            return `${asText(row.name)}: ${priceText}`;
+          });
+          answer = `Found ${rows.length} matches for "${term}":\n${lines.join('\n')}`;
+        }
+      } else if (term) {
+        answer = `I found ${matchedProducts.length} matching catalog product(s) for "${term}" in ${organizationName}. There are ${visibleProducts.length} catalog product(s) total.`;
+      } else {
+        answer = `You have ${visibleProducts.length} catalog product(s) in ${organizationName}. I did not apply any search filter.`;
+      }
       
       return NextResponse.json({ answer, confidence: 'high', mode, term, rows, metrics: { catalogProducts: visibleProducts.length, categories: categories.length, missingHsnCount: missingHsnProducts.length }, nextAction: mode === 'hsn_enrichment' ? 'Open Products filtered to missing HSN codes.' : 'Open Products to review the catalog.', actionHref: mode === 'hsn_enrichment' ? '/products?guru=missing-hsn' : '/products' }); 
     }
