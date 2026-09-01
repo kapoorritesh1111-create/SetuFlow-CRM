@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SETU Flow Documentation — Current Updates</title>
+<meta name="description" content="Current 2026 SETU Flow platform updates covering Packaging, Growth, Integrations, Academy, and platform changes." />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="setuflow-docs-workspace.css?v=20260604-doc-pass" />
+<link rel="stylesheet" href="setuflow-docs-surgical-fixes.css?v=20260604-doc-pass" />
+</head>
+<body>
+<div id="authGate" class="auth-gate hidden"><div class="auth-card"><div class="auth-logo"><img src="../logos/setu-flow-logo.svg" alt="SETU Flow" style="width:34px;height:34px;object-fit:contain;filter:brightness(10)"></div><h1>SETU Flow documentation is restricted</h1><p>Sign in with your SETU Flow workspace account.</p><button onclick="window.location.href='/client-login?next=/go-internal?f=setuflow-docs-current-updates.html'">Sign in to continue</button><p id="authError" class="auth-error"></p></div></div>
+<div id="sharedBanner" class="shared-banner hidden"><span>Shared review workspace</span><strong id="sharedRecipient">External reviewer</strong><span id="sharedExpiry"></span></div>
+<div id="shareModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><div><h2>Share documentation</h2><p>Creates a time-limited reviewer link.</p></div><button onclick="Docs.closeShare()">×</button></div><label>Recipient name</label><input id="shareRecipient" /><label>Valid for</label><select id="shareDuration"><option value="24">24 hours</option><option value="72" selected>3 days</option><option value="168">7 days</option></select><button class="primary wide" onclick="Docs.generateShareLink()">Generate secure link</button><div id="shareResult" class="share-result hidden"><div class="link-line"><input id="shareOutput" readonly /><button onclick="Docs.copyShareLink()">Copy</button></div><p id="shareMeta"></p></div></div></div>
+<div id="screenshotModal" class="modal hidden"></div><div id="imageLightbox" class="lightbox hidden"></div>
+<header class="topbar"><button class="icon-button mobile-only" onclick="Docs.toggleNav()">☰</button><a class="brand" href="#overview"><span class="brand-mark-img"><img src="../logos/setu-flow-logo.svg" alt="SETU Flow"></span><strong>SETU Flow</strong><em>CRM</em></a><div class="workspace-pill desktop-only"><span>Documentation</span><strong>Current Updates</strong></div><div class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Search current updates..." oninput="Docs.search(this.value)" /></div><nav class="top-actions"><a href="setuflow-docs.html">Premium Hub</a><a class="internal-only" href="/smc/issues">Issue Tracker</a><a class="internal-only" href="/dashboard">Live CRM</a></nav><div class="user-chip internal-only"><span id="userInitial">S</span><strong id="userName">SETU User</strong></div></header>
+<div class="shell"><aside id="leftNav" class="left-nav"><div class="nav-title"><span class="nav-title-icon"><img src="../logos/setu-flow-logo.svg" alt=""></span>Current Updates</div><div class="nav-search"><input placeholder="Filter topics..." oninput="Docs.search(this.value)" /></div><div id="topicNav"></div><div class="nav-footer internal-only"><a href="setuflow-docs.html">Back to Premium Hub</a></div></aside><main class="main"><div class="crumbs"><a href="setuflow-docs.html">Premium Hub</a><span>›</span><strong id="crumbCurrent">Current Updates</strong></div><section id="overviewView" class="overview-view"></section><section id="topicView" class="topic-view hidden"></section></main><aside id="rightRail" class="right-rail"></aside></div>
+<div class="mobile-topic-bar"><button id="mobilePrev" onclick="Docs.goPrev()">← Previous</button><span id="mobileProgress">1 / 46</span><button id="mobileNext" onclick="Docs.goNext()">Next →</button></div>
+<script src="setuflow-docs-workspace-v20260827.js?v=20260827-platform-refresh"></script>
+<div id="diagModal" class="diag-modal"><div class="diag-topbar"><span id="diagModalTitle" class="diag-modal-title">Diagram</span><div class="diag-controls"><button class="dc" onclick="Docs.diagZoom(-0.2)">&#8722;</button><span id="diagZoomPct" class="diag-zoom-pct">100%</span><button class="dc" onclick="Docs.diagZoom(0.2)">+</button><button class="dc" onclick="Docs.closeDiagramViewer()">&#x2715;</button></div></div><div id="diagViewport" class="diag-viewport"><div id="diagCanvas" class="diag-canvas"></div></div></div>
+</body>
+</html>

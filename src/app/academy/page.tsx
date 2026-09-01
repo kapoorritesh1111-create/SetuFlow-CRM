@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { CoreAcademyClient } from '@/features/academy/core-academy-client';
 import { CoreAcademyIssueLogger } from '@/features/academy/core-academy-issue-logger';
 import { CoreAcademyPassLogger } from '@/features/academy/core-academy-pass-logger';
@@ -35,6 +36,18 @@ export default async function AcademyPage() {
 
   return (
     <div className={responsive.page}>
+      <div className="border-b border-teal-200 bg-gradient-to-r from-teal-50 via-white to-blue-50 px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-[1650px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-teal-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">New</span>
+              <p className="text-sm font-black text-slate-950">Day in the Life</p>
+            </div>
+            <p className="mt-1 text-sm font-medium text-slate-600">Role-based Buyer Lead training for Owner and Sales with detailed click-by-click instructions for every part of the day.</p>
+          </div>
+          <Link href="/academy/day-in-life" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#041735] px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800">Open Day in the Life →</Link>
+        </div>
+      </div>
       <CoreAcademyClient
         initialProgress={progress}
         isAuthenticated={isAuthenticated}

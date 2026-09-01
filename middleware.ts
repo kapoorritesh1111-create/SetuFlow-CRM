@@ -86,6 +86,17 @@ const PUBLIC_EXACT_PATHS = new Set([
   '/academy',
   '/core-academy',
   '/packaging-academy',
+  '/platform',
+  '/solutions',
+  '/setu-guru-ai',
+  '/field-mobile',
+  '/pricing',
+  '/compare',
+  '/trade-show-trial',
+  '/trade-show-trial/success',
+  '/roi-calculator',
+  '/book-demo',
+  '/training',
   '/client-login',
   '/forgot-password',
   '/reset-password',
@@ -95,6 +106,10 @@ const PUBLIC_EXACT_PATHS = new Set([
 ]);
 
 const PUBLIC_PREFIXES = [
+  '/solutions/',
+  '/features/',
+  '/compare/',
+  '/resources/',
   '/auth/',
   '/api/public/',
   '/api/logout',

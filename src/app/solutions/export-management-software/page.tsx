@@ -1,6 +1,7 @@
 export const metadata = {
   title: 'Export Management Software for Growing Trade Teams | SETU Flow CRM',
   description: 'SETU Flow helps exporters manage leads, buyers, quotes, documents, tasks, approvals, and order handoff from one export management workspace.',
+  alternates: { canonical: 'https://www.setuflowcrm.com/solutions/export-management-software' },
 };
 
 export default function SeoLandingPage() {

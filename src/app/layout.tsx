@@ -10,6 +10,7 @@ import { ServiceWorkerRegistration } from '@/components/shell/ServiceWorkerRegis
 import { LeadsFilterStability } from '@/components/shell/LeadsFilterStability';
 import { OfflineStatusBanner } from '@/components/shell/OfflineStatusBanner';
 import { ProductsUiPolish } from '@/components/shell/ProductsUiPolish';
+import { MarketingAttributionRecorder } from '@/components/marketing/marketing-attribution-recorder';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -112,7 +113,6 @@ export const metadata: Metadata = {
     description: 'One connected operating system from market opportunity to final dispatch.',
     images: ['/og-image.png'],
   },
-  alternates: { canonical: 'https://www.setuflowcrm.com' },
   manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'SETU Flow', statusBarStyle: 'black-translucent', startupImage: ['/api/workspace/favicon'] },
   icons: {
@@ -144,6 +144,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <LeadsFilterStability />
         <OfflineStatusBanner />
         <ProductsUiPolish />
+        <MarketingAttributionRecorder />
         {children}
       </body>
     </html>
