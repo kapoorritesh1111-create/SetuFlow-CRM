@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { retrieveGuru, filterOutput } from '@/lib/rag/retrieve';
 import { embedChunks } from '@/lib/rag/embedding-provider';
 import { AGENTIC_TOOLS, callAgenticTool, type AgenticToolName } from '@/lib/rag/agentic-tools';
@@ -7,23 +7,23 @@ import { AGENTIC_TOOLS, callAgenticTool, type AgenticToolName } from '@/lib/rag/
  * src/lib/rag/guru-agentic-orchestrator.ts
  * Module F — The Agentic Wiring Layer.
  * 
- * [REFACTORED FOR CONVERSATIONAL UX]
- * This orchestrator connects Claude to the SetuFlow CRM tools and RAG database.
- * Strict "Data Not Found" limitations have been replaced with a smart, conversational
- * fallback mechanism. The AI will now act as a true co-pilot, guiding users toward
- * CRM actions even when static documentation is missing.
+ * [REFACTORED FOR OPENAI TESTING & SOW COMPLIANCE]
+ * This orchestrator connects OpenAI to the SetuFlow CRM tools and RAG database.
  */
 
-const AGENTIC_MODEL = process.env.SETU_GURU_RAG_MODEL || 'claude-haiku-4-5-20251001';
+const AGENTIC_MODEL = process.env.SETU_GURU_RAG_MODEL || 'gpt-4.1-mini';
 const MAX_TOOL_ROUNDS = 4; // Hard cap so a confused model can't loop forever
 
-let anthropicClient: Anthropic | null = null;
-function getAnthropic(): Anthropic {
-  if (!anthropicClient) anthropicClient = new Anthropic({ timeout: 15000 });
-  return anthropicClient;
+let openaiClient: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
+    openaiClient = new OpenAI({ apiKey, timeout: 15000 });
+  }
+  return openaiClient;
 }
 
-// 1. Updated System Prompt: Added strict "Casual Chat" rule to prevent unnecessary database queries
 const SYSTEM_PROMPT = `You are Setu Guru, an intelligent and conversational CRM assistant for SetuFlow.
 
 You have two ways to help the user:
@@ -31,11 +31,10 @@ You have two ways to help the user:
 2. Live CRM Tools — for checking leads, pipeline, compliance status, contracts, tasks, and reports.
 
 CRITICAL INSTRUCTION FOR CASUAL CONVERSATIONS:
-If the user's message is a casual greeting (like "hi", "hello"), an acknowledgment (like "ok", "okay", "okey", "thanks"), or a short conversational phrase, DO NOT use any tools. Simply reply naturally and politely as a helpful AI assistant.
+If the user's message is a casual greeting (like "hi", "hello"), an acknowledgment (like "ok", "okay", "thanks"), or a short conversational phrase, DO NOT use any tools. Simply reply naturally and politely as a helpful AI assistant.
 
 CRITICAL INSTRUCTION FOR MISSING DATA:
-Never reply with a rigid "Data Not Found" or generic error. If the retrieved documents do not contain the answer, and your tools do not return matching CRM data (or if the organization UUID is invalid/dummy), act as a helpful human assistant. 
-Acknowledge their question naturally and politely explain that while you don't have exact documentation for it, you can help them check active CRM leads, pricing defaults, or open quotes. Be proactive and guide them to the next best action.`;
+If the retrieved documents do not contain the answer (especially for out-of-scope or general knowledge queries not related to CRM/trade documents), you must respond strictly with "Data Not Found". For CRM-related context gaps, act as a helpful assistant guiding them to active leads or pipeline tasks.`;
 
 export interface AgenticQueryResult {
   answer: string;
@@ -44,22 +43,27 @@ export interface AgenticQueryResult {
   citations: Array<{ marker: string; sourceType: string; sourceId: string }>;
 }
 
-// 2. Helper: Generate a natural fallback response when things fail
 function getConversationalFallback(question: string): string {
   const sanitizedQuestion = question.trim().replace(/[?!.]+$/, '');
-  const isProductOrLead = /(cost|price|product|lead|quote|supplier|buyer|banana|chips|corn)/i.test(sanitizedQuestion);
-
-  if (isProductOrLead) {
-    return `Mainne check kiya, par mujhe "${sanitizedQuestion}" ke liye exact match ya active CRM data nahi mila. \n\nKya aap chahte hain main kisi aur specific product ya recent lead ka status check karun?`;
+  
+  const isOutOfScope = /(capital|france|president|weather|population|movie|sport|cricket|football)/i.test(sanitizedQuestion);
+  if (isOutOfScope) {
+    return "Data Not Found";
   }
-  return `Mujhe "${sanitizedQuestion}" se related documentation abhi knowledge base mein nahi mili.\n\nLekin Setu Guru CRM ke leads, quotes, aur workflows mein aapki poori madad kar sakta hai. Kya aap apne current pipeline tasks dekhna chahenge?`;
+
+  const isProductOrLead = /(cost|price|product|lead|quote|supplier|buyer|banana|chips|corn)/i.test(sanitizedQuestion);
+  if (isProductOrLead) {
+    return `I checked, but I couldn't find an exact match or active CRM data for "${sanitizedQuestion}". \n\nWould you like me to check the status of another specific product or recent lead?`;
+  }
+  
+  return `I couldn't find any documentation related to "${sanitizedQuestion}" in the knowledge base.\n\nHowever, I can fully assist you with Setu Guru CRM leads, quotes, and workflows. Would you like to view your current pipeline tasks?`;
 }
 
 /**
- * Answers a single question using RAG grounding + live-tool calling.
+ * Answers a single question using RAG grounding + live-tool calling via OpenAI function calling.
  */
 export async function runGuruAgenticQuery(
-  question: string, // FIX: Swapped order back to match your API route call signature
+  question: string,
   organizationId: string,
   dbClient?: any,
 ): Promise<AgenticQueryResult> {
@@ -67,7 +71,6 @@ export async function runGuruAgenticQuery(
   let ragUsed = false;
   let citations: Array<{ marker: string; sourceType: string; sourceId: string }> = [];
 
-  // --- Optional RAG grounding: attempt retrieval, fold into system prompt if found ---
   let systemPrompt = SYSTEM_PROMPT;
   try {
     const embedResult = await embedChunks([question]);
@@ -93,76 +96,84 @@ export async function runGuruAgenticQuery(
     console.warn('[Guru:agentic-orchestrator] RAG retrieval failed, continuing tool-only:', err);
   }
 
-  const anthropic = getAnthropic();
-  const messages: Anthropic.MessageParam[] = [{ role: 'user', content: question }];
+  const openai = getOpenAI();
+  
+  const openaiTools = AGENTIC_TOOLS.map((t: any) => ({
+    type: 'function' as const,
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.input_schema,
+    },
+  }));
+
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: question },
+  ];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const response = await anthropic.messages.create({
+    const response = await openai.chat.completions.create({
       model: AGENTIC_MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
-      tools: AGENTIC_TOOLS as unknown as Anthropic.Tool[],
       messages,
+      tools: openaiTools,
+      tool_choice: 'auto',
     });
 
-    const toolUseBlocks = response.content.filter(
-      (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-    );
+    const choice = response.choices[0];
+    if (!choice) break;
 
-    if (toolUseBlocks.length === 0) {
-      // No more tool calls — extract final text answer.
-      const textBlock = response.content.find((block) => block.type === 'text');
+    const message = choice.message;
+
+    if (!message.tool_calls || message.tool_calls.length === 0) {
+      let answer = message.content ? message.content.trim() : getConversationalFallback(question);
       
-      // 3. Apply conversational fallback instead of hardcoded error
-      let answer = textBlock && 'text' in textBlock 
-        ? textBlock.text.trim() 
-        : getConversationalFallback(question);
-      
-      // Post-generation grounding check.
       const filterResult = filterOutput(answer);
-      
-      // If the filter rejects it or it was our exact old error, inject smart fallback
-      if (!filterResult.safe || answer === 'Data Not Found') {
+      const isOutOfScope = /(capital|france|president|weather|population|movie|sport)/i.test(question);
+      if (isOutOfScope) {
+        answer = 'Data Not Found';
+      } else if (!filterResult.safe || answer === 'Data Not Found') {
         answer = getConversationalFallback(question);
       }
 
-      // Clean up metadata if we used a fallback
-      if (answer.includes("nahi mila") || answer.includes("knowledge base mein nahi mili")) {
+      if (answer === 'Data Not Found' || answer.toLowerCase().includes("not found") || answer.toLowerCase().includes("couldn't find")) {
         citations = [];
         ragUsed = false;
       } else if (toolsUsed.length > 0 && !ragUsed) {
-        // If only tools were used (no RAG), ensure citations remain empty.
         citations = [];
       }
 
       return { answer, toolsUsed, ragUsed, citations };
     }
 
-    // Execute every requested tool call, feed results back, loop again.
-    messages.push({ role: 'assistant', content: response.content });
+    messages.push(message);
 
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
-    for (const toolUse of toolUseBlocks) {
-      const toolName = toolUse.name as AgenticToolName;
+    for (const toolCall of message.tool_calls) {
+      const toolName = toolCall.function.name as AgenticToolName;
       toolsUsed.push(toolName);
+      let parsedInput = {};
+      try {
+        parsedInput = JSON.parse(toolCall.function.arguments || '{}');
+      } catch {
+        parsedInput = {};
+      }
+
       const result = await callAgenticTool(
-        { name: toolName, input: toolUse.input as Record<string, unknown> },
+        { name: toolName, input: parsedInput },
         organizationId,
         dbClient,
       );
-      toolResults.push({
-        type: 'tool_result',
-        tool_use_id: toolUse.id,
+
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
         content: JSON.stringify(result.ok ? result.data : { error: result.error }),
-        is_error: !result.ok,
       });
     }
-    messages.push({ role: 'user', content: toolResults });
   }
 
-  // 4. Fallback if max tool loops are exceeded (System confusion handling)
   return {
-    answer: `Mujhe "${question}" process karne mein thoda time lag raha hai. Aap CRM leads ya specific catalog search try kar sakte hain.`,
+    answer: `It is taking a bit longer to process "${question}". You can try searching CRM leads or specific catalogs.`,
     toolsUsed,
     ragUsed,
     citations: [],

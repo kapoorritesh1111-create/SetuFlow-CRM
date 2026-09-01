@@ -1,15 +1,12 @@
 /**
  * src/lib/rag/ingest.ts
  * Module A, Step 6 — Ingest Orchestrator
- *
- * Wires: dedup.ts -> vlm-parser.ts -> review-queue.ts -> chunker.ts ->
- * embedding-provider.ts -> guru_embeddings.
- *
- * Confidence threshold decides routing between chunker output going
- * straight to embedding vs. being sent to human review.
+ * 
+ * Secure, production-grade orchestrator managing deduplication, VLM parsing,
+ * truncation handling, confidence routing, stale chunk cleanup, and batched embeddings.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { checkFileDuplicate } from './dedup';
 import { parseWithVlm } from './vlm-parser';
 import { queueForHumanReview } from './review-queue';
@@ -18,7 +15,7 @@ import { embedChunks, EMBEDDING_MODEL_VERSION } from './embedding-provider';
 
 const CONFIDENCE_THRESHOLD = 0.75;
 const EMBED_BATCH_SIZE = 50;
-const MAX_WORDS = 100000; // backup heuristic if stop_reason isn't available
+const MAX_WORDS = 100000; // Fallback heuristic for extreme document sizes
 
 export interface IngestInput {
   organizationId: string;
@@ -43,9 +40,24 @@ export type IngestOutcome =
   | { status: 'error'; error: string };
 
 export async function ingestDocument(input: IngestInput): Promise<IngestOutcome> {
-  const supabaseUntyped: any = input.dbClient ?? (await createClient());
+  // Validate input parameters defensively
+  if (!input.organizationId || !input.sourceType || !input.sourceId) {
+    return { status: 'error', error: 'Missing required ingestion metadata parameters.' };
+  }
 
-  // --- Step 1: file-level dedup (Existing instance check) ----------------
+  if (!Buffer.isBuffer(input.fileBuffer) || input.fileBuffer.length === 0) {
+    return { status: 'error', error: 'Invalid or empty file buffer provided for ingestion.' };
+  }
+
+  // FIXED: Properly resolve Supabase client with required credentials for @supabase/supabase-js
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  
+  const supabase = input.dbClient ?? createSupabaseClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+  });
+
+  // --- Step 1: File-Level Deduplication Check ---
   let dedupResult;
   try {
     dedupResult = await checkFileDuplicate({
@@ -53,20 +65,21 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       sourceType: input.sourceType,
       sourceId: input.sourceId,
       fileBuffer: input.fileBuffer,
-      dbClient: supabaseUntyped,
+      dbClient: supabase,
     });
   } catch (err: unknown) {
-    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(JSON.stringify({ event: 'INGEST_DEDUP_FAILURE', error: errorMsg, orgId: input.organizationId }));
+    return { status: 'error', error: errorMsg };
   }
 
   if (dedupResult.isDuplicate) {
+    console.info(JSON.stringify({ event: 'INGEST_SKIPPED_DUPLICATE', fileHash: dedupResult.fileHash, orgId: input.organizationId }));
     return { status: 'skipped_duplicate', fileHash: dedupResult.fileHash };
   }
 
-  // --- Step 1.5: Global Content/File-Hash Deduplication (Senior Guardrail) ---
-  // Prevents duplicate records from being created under a different generated source_id 
-  // if the exact file binary has already been ingested previously for this organization.
-  const { data: globalDuplicateMatch, error: globalDupError } = await supabaseUntyped
+  // --- Step 1.5: Global Binary Hash Deduplication Guardrail ---
+  const { data: globalDuplicateMatch, error: globalDupError } = await supabase
     .from('guru_embeddings')
     .select('source_id')
     .eq('organization_id', input.organizationId)
@@ -76,51 +89,53 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
 
   if (!globalDupError && globalDuplicateMatch && globalDuplicateMatch.length > 0) {
     const existingSourceId = globalDuplicateMatch[0].source_id;
-    // If it's a completely different source_id trying to upload the exact same file content, skip it cleanly.
     if (existingSourceId !== input.sourceId) {
-      console.warn(`[INGEST DEDUP] Exact file match found for hash ${dedupResult.fileHash} under different source_id (${existingSourceId}). Skipping duplicate ingestion.`);
+      console.warn(JSON.stringify({
+        event: 'INGEST_GLOBAL_DEDUP_MATCH',
+        hash: dedupResult.fileHash,
+        existingSourceId,
+        newSourceId: input.sourceId,
+      }));
       return { status: 'skipped_duplicate', fileHash: dedupResult.fileHash };
     }
   }
-  // -------------------------------------------------------------------------
 
-  // --- Step 2: VLM parse ---------------------------------------------------
+  // --- Step 2: VLM Document Parsing ---
   let pages;
   try {
     pages = await parseWithVlm(input.fileBuffer, input.mimeType);
   } catch (err: unknown) {
-    return {
-      status: 'error',
-      error: `VLM parse failed: ${err instanceof Error ? err.message : String(err)}`,
-    };
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(JSON.stringify({ event: 'INGEST_VLM_PARSE_ERROR', error: errorMsg }));
+    return { status: 'error', error: `VLM parse failed: ${errorMsg}` };
   }
 
-  if (pages.length === 0) {
-    return { status: 'error', error: 'VLM parser returned no pages' };
+  if (!Array.isArray(pages) || pages.length === 0) {
+    return { status: 'error', error: 'VLM parser returned zero pages or invalid output.' };
   }
 
-  // Issue #14 fix: exact truncation signal from vlm-parser's stop_reason check.
-  const wasTruncatedByStopReason = pages.some((p: any) => p.truncated === true);
+  // Truncation detection via stop_reason
+  const wasTruncatedByStopReason = pages.some((p: any) => p?.truncated === true);
   if (wasTruncatedByStopReason) {
-    console.warn(`[TRUNCATION CONFIRMED] max_tokens ceiling hit while parsing source ${input.sourceId}.`);
+    console.warn(JSON.stringify({ event: 'INGEST_TRUNCATION_STOP_REASON', sourceId: input.sourceId }));
   }
 
   const chunks = chunkPages(pages);
-  if (chunks.length === 0) {
-    return { status: 'error', error: 'Chunker produced no chunks from parsed pages' };
+  if (!Array.isArray(chunks) || chunks.length === 0) {
+    return { status: 'error', error: 'Chunker produced no valid chunks from parsed pages.' };
   }
 
-  // Backup heuristic — catches truncation even if stop_reason wasn't available.
+  // Backup heuristic check on total word count
   const totalWordCount = chunks.reduce((acc, chunk) => acc + (chunk.content?.split(/\s+/).length || 0), 0);
   const wasTruncatedByWordCount = totalWordCount > MAX_WORDS;
   if (wasTruncatedByWordCount) {
-    console.warn(`[WARNING - TRUNCATION RISK] Document exceeds ${MAX_WORDS} words. Source ID: ${input.sourceId}`);
+    console.warn(JSON.stringify({ event: 'INGEST_TRUNCATION_WORD_COUNT', words: totalWordCount, sourceId: input.sourceId }));
   }
 
   const documentTruncated = wasTruncatedByStopReason || wasTruncatedByWordCount;
 
-  // --- Step 2.5: Per-chunk hash dedup & stale chunk cleanup ---
-  const { data: existingChunks, error: existingChunksError } = await supabaseUntyped
+  // --- Step 2.5: Stale Chunk Cleanup & Index Sync ---
+  const { data: existingChunks, error: existingChunksError } = await supabase
     .from('guru_embeddings')
     .select('chunk_index, metadata')
     .eq('organization_id', input.organizationId)
@@ -132,17 +147,17 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
   }
 
   const existingHashByIndex = new Map<number, string>(
-    (existingChunks ?? []).map((row: any) => [row.chunk_index, row.metadata?.chunk_hash]),
+    (existingChunks ?? []).map((row: any) => [row.chunk_index, row.metadata?.chunk_hash])
   );
 
-  const incomingChunkIndices = new Set(chunks.map(c => c.chunkIndex));
+  const incomingChunkIndices = new Set(chunks.map((c) => c.chunkIndex));
   const staleChunkIndices = (existingChunks ?? [])
     .filter((row: any) => !incomingChunkIndices.has(row.chunk_index))
     .map((row: any) => row.chunk_index);
 
   let chunksDeletedStale = 0;
   if (staleChunkIndices.length > 0) {
-    const { error: deleteError } = await supabaseUntyped
+    const { error: deleteError } = await supabase
       .from('guru_embeddings')
       .delete()
       .eq('organization_id', input.organizationId)
@@ -151,7 +166,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       .in('chunk_index', staleChunkIndices);
 
     if (deleteError) {
-      console.error('[ingest] Failed to delete stale chunks:', deleteError.message);
+      console.error(JSON.stringify({ event: 'INGEST_STALE_DELETE_ERROR', error: deleteError.message }));
     } else {
       chunksDeletedStale = staleChunkIndices.length;
     }
@@ -160,12 +175,15 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
   const changedChunks = chunks.filter((c) => existingHashByIndex.get(c.chunkIndex) !== c.chunkHash);
   const unchangedCount = chunks.length - changedChunks.length;
 
-  // --- Step 3: confidence routing ------------------------------------------
+  // --- Step 3: Confidence Routing ---
   const acceptable: Chunk[] = [];
   const lowConfidence: Chunk[] = [];
   for (const chunk of changedChunks) {
-    if (chunk.confidence < CONFIDENCE_THRESHOLD) lowConfidence.push(chunk);
-    else acceptable.push(chunk);
+    if (chunk.confidence < CONFIDENCE_THRESHOLD) {
+      lowConfidence.push(chunk);
+    } else {
+      acceptable.push(chunk);
+    }
   }
 
   let queuedCount = 0;
@@ -181,10 +199,11 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       });
       queuedCount++;
     } catch (err: unknown) {
-      console.error(
-        `[ingest] failed to queue chunk ${chunk.chunkIndex} for review:`,
-        err instanceof Error ? err.message : err,
-      );
+      console.error(JSON.stringify({
+        event: 'INGEST_REVIEW_QUEUE_FAIL',
+        chunkIndex: chunk.chunkIndex,
+        error: err instanceof Error ? err.message : String(err),
+      }));
     }
   }
 
@@ -200,7 +219,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     };
   }
 
-  // --- Step 5: embed (batched) and upsert -----------------------------------
+  // --- Step 4: Batched Embedding Generation & Upsert ---
   let written = 0;
   for (let i = 0; i < acceptable.length; i += EMBED_BATCH_SIZE) {
     const batch = acceptable.slice(i, i + EMBED_BATCH_SIZE);
@@ -209,7 +228,7 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
     if (!embedResult.ok || !embedResult.embeddings) {
       return {
         status: 'error',
-        error: `Embedding failed on batch starting at chunk ${batch[0].chunkIndex}: ${embedResult.error}`,
+        error: `Embedding generation failed on batch starting at chunk ${batch[0].chunkIndex}: ${embedResult.error}`,
       };
     }
 
@@ -232,19 +251,29 @@ export async function ingestDocument(input: IngestInput): Promise<IngestOutcome>
       },
     }));
 
-    const { error: upsertError } = await supabaseUntyped
+    const { error: upsertError } = await supabase
       .from('guru_embeddings')
       .upsert(rows, { onConflict: 'organization_id,source_type,source_id,chunk_index' });
 
     if (upsertError) {
       return {
         status: 'error',
-        error: `Upsert failed on batch starting at chunk ${batch[0].chunkIndex}: ${upsertError.message}`,
+        error: `Database upsert failed on batch starting at chunk ${batch[0].chunkIndex}: ${upsertError.message}`,
       };
     }
 
     written += rows.length;
   }
+
+  console.info(JSON.stringify({
+    event: 'INGEST_SUCCESS',
+    sourceId: input.sourceId,
+    written,
+    unchanged: unchangedCount,
+    queued: queuedCount,
+    staleDeleted: chunksDeletedStale,
+    truncated: documentTruncated,
+  }));
 
   return {
     status: 'ingested',

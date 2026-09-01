@@ -4,11 +4,18 @@ import { retrieveGuru } from '@/lib/rag/retrieve';
 import { embedChunks } from '@/lib/rag/embedding-provider';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
+export const dynamic = 'force-dynamic';
+
 const AGENTIC_MODEL = process.env.SETU_GURU_RAG_MODEL || 'claude-haiku-4-5-20251001';
 
 let anthropicClient: Anthropic | null = null;
 function getAnthropic(): Anthropic {
-  if (!anthropicClient) anthropicClient = new Anthropic({ timeout: 15000 });
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ 
+      timeout: 15000,
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
   return anthropicClient;
 }
 
@@ -18,65 +25,70 @@ Strict formatting rules:
 - Write clean, plain text paragraphs like ChatGPT streaming output. 
 - Maintain a helpful, conversational, and direct tone without rigid errors.`;
 
+// Standardized JSON error response helper
+const createErrorResponse = (message: string, status: number) => {
+  return NextResponse.json({ success: false, error: message }, { status });
+};
+
 export async function POST(req: Request) {
   try {
-    // SECURITY FIX (cross-tenant RAG leak): organizationId must NEVER be trusted
-    // from the client request body. Previously this route read `organizationId`
-    // straight off `body`, so any signed-in user could edit the request and pass
-    // a different org's ID to retrieve and chat over that org's documents.
-    // We now resolve the organization strictly from the authenticated session
-    // (cookie-verified membership), the same way org-search/route.ts does, and
-    // ignore/reject any organizationId the client tries to supply.
+    // --- Step 1: Strict Session & Workspace Authorization ---
     const workspace = await getWorkspaceAccess();
     if (!workspace.user) {
-      return NextResponse.json({ error: 'Please sign in before using Setu Guru.' }, { status: 401 });
+      return createErrorResponse('Please sign in before using Setu Guru.', 401);
     }
     if (!workspace.organization) {
-      return NextResponse.json({ error: 'No active organization found for this account.' }, { status: 403 });
+      return createErrorResponse('No active organization found for this account.', 403);
     }
-    const organizationId = workspace.organization.id;
+    
+    const sessionOrganizationId = workspace.organization.id;
 
-    const body = await req.json();
+    // --- Step 2: Parse Payload & Validate Anti-Tampering ---
+    const body = await req.json().catch(() => ({}));
     const { query } = body;
 
-    // If the client sent an organizationId that doesn't match the session's
-    // verified organization, treat it as a tampering attempt and reject
-    // outright rather than silently overriding it — this makes cross-tenant
-    // probing loud (in logs) instead of silently "fixed".
-    if (typeof body.organizationId === 'string' && body.organizationId && body.organizationId !== organizationId) {
-      console.warn('[ask route] organizationId mismatch — client supplied a different org than session', {
-        userId: workspace.user.id,
-        sessionOrgId: organizationId,
-        requestedOrgId: body.organizationId,
-      });
-      return NextResponse.json({ error: 'Organization mismatch for this session.' }, { status: 403 });
+    // Strict multi-tenant security boundary check
+    if (typeof body.organizationId === 'string' && body.organizationId.trim() !== '') {
+      if (body.organizationId !== sessionOrganizationId) {
+        console.warn('[Security Alert] Cross-tenant probing attempt detected in /ask route', {
+          userId: workspace.user.id,
+          sessionOrgId: sessionOrganizationId,
+          requestedOrgId: body.organizationId,
+          timestamp: new Date().toISOString(),
+        });
+        return createErrorResponse('Organization mismatch for this session. Access denied.', 403);
+      }
     }
 
-    if (!query) {
-      return NextResponse.json({ error: 'Missing required field: query' }, { status: 400 });
+    if (!query || typeof query !== 'string' || query.trim().length === 0) {
+      return createErrorResponse('Missing or invalid required field: query', 400);
     }
 
-    let systemPrompt = SYSTEM_PROMPT;
+    const trimmedQuery = query.trim();
+    let enrichedSystemPrompt = SYSTEM_PROMPT;
+
+    // --- Step 3: Secure Retrieval-Augmented Generation (RAG) Context Fetch ---
     try {
-      const embedResult = await embedChunks([query]);
-      if (embedResult.ok && embedResult.embeddings) {
+      const embedResult = await embedChunks([trimmedQuery]);
+      if (embedResult.ok && embedResult.embeddings && embedResult.embeddings.length > 0) {
         const ragResult = await retrieveGuru({
-          organizationId,
-          question: query,
+          organizationId: sessionOrganizationId,
+          question: trimmedQuery,
           queryEmbedding: embedResult.embeddings[0],
           matchCount: 3,
         });
-        if (ragResult.found) {
-          systemPrompt = `${SYSTEM_PROMPT}\n\nRetrieved context:\n${ragResult.groundingPrompt}`;
+        
+        if (ragResult.found && ragResult.groundingPrompt) {
+          enrichedSystemPrompt = `${SYSTEM_PROMPT}\n\nRetrieved context:\n${ragResult.groundingPrompt}`;
         }
       }
-    } catch (e) {
-      console.warn('RAG skip on stream route:', e);
+    } catch (ragError) {
+      console.warn('[Setu Guru Ask] RAG pipeline soft-skipped during stream generation:', ragError);
     }
 
     const anthropic = getAnthropic();
 
-    // Direct streaming response to client
+    // --- Step 4: Secure Readable Stream Response ---
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -84,8 +96,8 @@ export async function POST(req: Request) {
           const responseStream = await anthropic.messages.create({
             model: AGENTIC_MODEL,
             max_tokens: 1024,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: query }],
+            system: enrichedSystemPrompt,
+            messages: [{ role: 'user', content: trimmedQuery }],
             stream: true,
           });
 
@@ -94,8 +106,9 @@ export async function POST(req: Request) {
               controller.enqueue(encoder.encode(chunk.delta.text));
             }
           }
-        } catch (err: any) {
-          controller.enqueue(encoder.encode(`Streaming error: ${err.message}`));
+        } catch (streamErr: any) {
+          console.error('[Setu Guru Ask] Streaming chunk execution error:', streamErr);
+          controller.enqueue(encoder.encode(`\n[Streaming interrupted due to a temporary service error]`));
         } finally {
           controller.close();
         }
@@ -103,13 +116,16 @@ export async function POST(req: Request) {
     });
 
     return new Response(stream, {
+      status: 200,
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Transfer-Encoding': 'chunked',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
+
   } catch (error: any) {
-    console.error('API Route Error:', error);
-    return NextResponse.json({ error: 'Failed to stream response', details: error.message }, { status: 500 });
+    console.error('[Setu Guru Ask Fatal Error]:', error);
+    return createErrorResponse('Failed to stream response from AI engine', 500);
   }
 }
