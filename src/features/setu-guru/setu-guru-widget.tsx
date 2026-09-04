@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import RightDrawer from '@/components/RightDrawer';
 import { FaIcon } from '@/components/ui/fa-icon';
 import { cn } from '@/lib/utils';
@@ -38,7 +40,6 @@ type ChatMessage = {
 };
 
 const CASUAL_KEYWORDS = ['hi', 'hello', 'hey', 'hii', 'ok', 'okay', 'okey', 'thanks', 'thank you', 'yes', 'no', 'cool'];
-const COMPLEX_QUERY_PATTERN = /(summarize|strategy|explain|compare|analyze|generate|expansion)/i;
 
 function isPageHelpQuestion(question: string) {
   const q = question.toLowerCase();
@@ -61,10 +62,6 @@ function isPackagingPricingQuestion(question: string) {
 function isCasualGreeting(question: string) {
   const clean = question.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
   return CASUAL_KEYWORDS.includes(clean) || clean.length <= 2;
-}
-
-function isComplexAIQuery(question: string) {
-  return COMPLEX_QUERY_PATTERN.test(question) || question.split(' ').length > 6;
 }
 
 function packagingPricingMessage(question: string): ChatMessage {
@@ -213,6 +210,38 @@ function ResultRows({ rows }: { rows: Array<Record<string, unknown>> }) {
   );
 }
 
+/**
+ * Renders a message's markdown content (bold, bullets, numbered lists,
+ * horizontal rules, inline code, links) with clean typographic styling.
+ * This replaces the old approach of stripping markdown symbols with regex.
+ */
+function MessageContent({ content }: { content: string }) {
+  return (
+    <div className="text-sm leading-6">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-semibold text-slate-950">{children}</strong>,
+          em: ({ children }) => <em className="text-slate-600">{children}</em>,
+          ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-1 last:mb-0">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal space-y-1 last:mb-0">{children}</ol>,
+          li: ({ children }) => <li className="leading-6">{children}</li>,
+          hr: () => <hr className="my-3 border-slate-100" />,
+          code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">{children}</code>,
+          a: ({ href, children }) => (
+            <a href={href} target="_blank" rel="noreferrer" className="text-sky-700 underline">
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content || ' '}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLabel }: { pathname: string; routeTitle: string; organizationName?: string | null; roleLabel: string }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
@@ -223,8 +252,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [guruOnline, setGuruOnline] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const routeHelp = useMemo(() => getRouteHelpSummary(pathname), [pathname]);
   const quickPrompts = useMemo(() => {
@@ -325,31 +356,6 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     }
   }
 
-  async function runPricingDefaults(question: string) {
-    const loadingId = `pricing-${Date.now()}`;
-    const ctx = collectSetuGuruPageContext();
-    setIsThinking(true);
-    setMessages((current) => [...current, { id: loadingId, role: 'assistant', content: 'Preparing draft pricing calculator defaults…', tone: 'loading' }]);
-    try {
-      const response = await fetch('/api/setu-guru/pricing-defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, route: ctx.route || pathname, pageContext: ctx, action: 'suggest' }) });
-      const payload: unknown = await response.json();
-      const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-
-      const assistantId = `pricing-${Date.now()}`;
-      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: assistantId, role: 'assistant', content: '', tone: response.ok ? 'normal' : 'error' }));
-
-      const fullAnswer = typeof data.answer === 'string' ? data.answer : 'I prepared pricing guidance, but could not load default values.';
-      void simulateStream(assistantId, fullAnswer, {
-        actions: typeof data.nextAction === 'string' ? [data.nextAction] : undefined,
-        actionHref: typeof data.actionHref === 'string' ? data.actionHref : null,
-      });
-    } catch (error) {
-      setMessages((current) => current.filter((message) => message.id !== loadingId).concat({ id: `pricing-error-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'I could not prepare pricing calculator defaults right now.', tone: 'error' }));
-    } finally {
-      setIsThinking(false);
-    }
-  }
-
   function runComplexAIQuery(question: string) {
     setIsThinking(true);
     const ctx = collectSetuGuruPageContext();
@@ -372,20 +378,18 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+          // Decode the streaming chunk and immediately append it
           const chunk = decoder.decode(value, { stream: true });
-          for (let i = 0; i < chunk.length; i++) {
-            accumulatedText += chunk[i];
-            setMessages((current) =>
-              current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg)),
-            );
-            await new Promise((r) => setTimeout(r, 12));
-          }
+          accumulatedText += chunk;
+          setMessages((current) =>
+            current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg)),
+          );
         }
       })
       .catch((error) => {
         console.error('RAG Engine failed:', error);
         setMessages((current) =>
-          current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: `Stream Error: ${error.message}`, tone: 'error' } : msg)),
+          current.map((msg) => (msg.id === assistantMsgId ? { ...msg, content: `System Error: Unable to fetch live context.`, tone: 'error' } : msg)),
         );
       })
       .finally(() => {
@@ -456,45 +460,15 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     void simulateStream(assistantMsgId, topicMsg.content, { actions: topicMsg.actions });
   }
 
-  const intentRules = useMemo(
-    () => [
-      { name: 'casual-greeting', match: (q: string) => isCasualGreeting(q), handle: () => runGreeting() },
-      { name: 'complex-ai-query', match: (q: string) => isComplexAIQuery(q), handle: (q: string) => runComplexAIQuery(q) },
-      { name: 'packaging-pricing-explainer', match: (q: string) => isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(q), handle: (q: string) => runPackagingPricingExplainer(q) },
-      { name: 'pricing-defaults', match: (q: string) => isSetuGuruPricingDefaultQuestion(q), handle: (q: string) => void runPricingDefaults(q) },
-      { name: 'in-scope-topic', match: (q: string) => isSetuGuruQuestionInScope(q), handle: (q: string) => runInScopeTopic(q) },
-      { name: 'page-help', match: (q: string) => isPageHelpQuestion(q), handle: (q: string) => void runOrgSearch(q, 'page_help') },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pathname, routeHelp.routeTitle, routeTitle],
-  );
-
   function handleAsk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const question = inputValue.trim();
     if (!question || isThinking) return;
+    
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
 
-    const lowerQ = question.toLowerCase();
-
-    if (isCasualGreeting(question)) {
-      runGreeting();
-      return;
-    }
-
-    if (isSetuGuruOrgSearchQuestion(question) || /(cost|price|pricing|chips|chana|sku|catalog|tell me|show me|what is)/i.test(lowerQ)) {
-      void runOrgSearch(question);
-      return;
-    }
-
-    const matchedRule = intentRules.find((rule) => rule.match(question));
-    if (matchedRule) {
-      matchedRule.handle(question);
-      return;
-    }
-
-    void runOrgSearch(question);
+    runComplexAIQuery(question);
   }
 
   function handleAction(message: ChatMessage, action: string) {
@@ -561,11 +535,12 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                 <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className={cn('max-w-[88%]', message.role === 'assistant' ? 'pr-8' : 'pl-8')}>
                     {message.role === 'assistant' ? <div className="mb-1 flex items-center gap-2 pl-1"><div className="grid h-6 w-6 place-items-center rounded-full bg-slate-950 p-[2px]"><img src="/setu-guru/guru-avatar-128.png" alt="Setu Guru" className="h-full w-full rounded-full object-contain" /></div><span className="text-[11px] font-semibold text-slate-500">Setu Guru</span></div> : null}
-                    <div className={cn('rounded-panel px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : message.tone === 'success' ? 'rounded-bl-md border border-emerald-200 bg-emerald-50 text-emerald-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
-                      {message.content.split('\n\n').map((paragraph) => {
-                        const cleanText = paragraph.replace(/[*#`]/g, '');
-                        return <p key={paragraph} className="mb-2 last:mb-0">{cleanText}</p>;
-                      })}
+                    <div className={cn('rounded-panel px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', message.role === 'user' ? 'rounded-br-md bg-sky-600 text-white' : message.tone === 'error' ? 'rounded-bl-md border border-rose-200 bg-rose-50 text-rose-900' : message.tone === 'success' ? 'rounded-bl-md border border-emerald-200 bg-emerald-50 text-emerald-900' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700')}>
+                      {message.role === 'user' ? (
+                        <p className="text-sm leading-6">{message.content}</p>
+                      ) : (
+                        <MessageContent content={message.content} />
+                      )}
                       <ResultRows rows={message.rows ?? []} />
                       {message.trialAction && trialTour ? <div className="mt-3 border-t border-slate-100 pt-3"><button type="button" onClick={() => handleShowStep(message.trialAction!)} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700"><FaIcon icon="hand-o-right" fixedWidth />Show me: {message.trialAction.title}</button></div> : null}
                       {message.actions?.length ? <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">{message.actions.map((action) => <button key={action} type="button" onClick={() => handleAction(message, action)} className="rounded-full bg-sky-600 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-sky-700">{action}</button>)}</div> : null}
@@ -578,7 +553,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
           <footer className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3">
             <div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div>
             <form onSubmit={handleAsk} className="flex items-end gap-2 rounded-panel border border-slate-200 bg-brand-50 p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100"><textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder={isPackagingPricingRoute(pathname) ? 'Ask how material, add-ons, MOQ or the pouch price is calculated…' : 'Ask about this page, products, pricing defaults, buyers, HSN codes…'} className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" /><button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button></form>
-            <p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru checks page context, the help registry, and live organization data. Humans approve prices, compliance, sends, and write-backs.</p>
+            <p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru securely searches live database embeddings. Human approval is required for sensitive operations.</p>
           </footer>
         </div>
       </RightDrawer>

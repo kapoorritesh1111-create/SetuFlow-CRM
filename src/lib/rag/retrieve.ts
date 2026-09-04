@@ -16,6 +16,7 @@ export interface RetrieveInput {
 
 export interface RetrievedChunk {
   id: string;
+  organization_id?: string;
   source_type: string;
   source_id: string;
   content: string;
@@ -34,20 +35,19 @@ interface VectorMatchRow {
   organization_id: string;
   source_type: string;
   source_id: string;
-  chunk_index: number;
   content: string;
-  metadata: Record<string, any>;
   similarity: number;
 }
 
 interface KeywordMatchRow {
   id: string;
+  organization_id?: string;
   source_type: string;
   source_id: string;
   content: string;
 }
 
-const MIN_SIMILARITY_THRESHOLD = 0.3;
+const MIN_SIMILARITY_THRESHOLD = 0.2;
 const MAX_CITATIONS = 6;
 const DEFAULT_MATCH_COUNT = 8;
 
@@ -82,7 +82,7 @@ const INJECTION_PATTERNS = [
 /**
  * Output-side guard: blocks any generated response that echoes an injection pattern.
  */
-function filterOutput(response: string): { safe: boolean; filtered: string } {
+export function filterOutput(response: string): { safe: boolean; filtered: string } {
   for (const pattern of INJECTION_PATTERNS) {
     if (pattern.test(response)) {
       console.warn(JSON.stringify({ event: 'RAG_OUTPUT_INJECTION_DETECTED', timestamp: new Date().toISOString() }));
@@ -133,7 +133,6 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
     return NOT_FOUND;
   }
 
-  // Validate embedding vector doesn't contain corrupted values
   if (input.queryEmbedding.some((val) => typeof val !== 'number' || Number.isNaN(val))) {
     console.error(JSON.stringify({ event: 'RAG_INVALID_EMBEDDING_VECTOR', orgId: input.organizationId }));
     return NOT_FOUND;
@@ -144,7 +143,6 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
 
   const supabase = input.dbClient ?? (await createClient());
 
-  // Execute Vector Search and Full-Text Search securely with robust degradation handling
   let vectorResponse: { data: any; error: any } = { data: [], error: null };
   let keywordResponse: { data: any; error: any } = { data: [], error: null };
 
@@ -165,7 +163,7 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
     vectorResponse = vecRes;
     keywordResponse = ftsRes;
   } catch (err: any) {
-    // Fallback if FTS or RPC execution throws a runtime exception
+    console.error("[RAG DEBUG] Parallel RPC Execution Failure:", err);
     try {
       vectorResponse = await supabase.rpc('match_guru_embeddings', {
         p_organization_id: input.organizationId,
@@ -175,67 +173,86 @@ export async function retrieveGuru(input: RetrieveInput): Promise<RetrieveResult
       });
       keywordResponse = { data: [], error: err };
     } catch (innerErr: any) {
-      console.error(JSON.stringify({ event: 'RAG_RPC_EXECUTION_FAILURE', error: innerErr.message || String(innerErr) }));
+      console.error("[RAG DEBUG] Fallback RPC Execution Failure:", innerErr);
       return NOT_FOUND;
     }
   }
 
   if (vectorResponse.error) {
-    console.error(JSON.stringify({ event: 'RAG_VECTOR_RPC_ERROR', error: vectorResponse.error, orgId: input.organizationId }));
+    console.error("[RAG DEBUG] Vector DB Error:", vectorResponse.error);
     return NOT_FOUND;
   }
 
-  // Gracefully degrade if FTS function is missing or fails, falling back to pure vector search
   let keywordMatches: KeywordMatchRow[] = [];
   if (keywordResponse.error) {
-    console.warn(JSON.stringify({ event: 'RAG_KEYWORD_RPC_DEGRADED', error: keywordResponse.error.message || keywordResponse.error }));
+    console.warn("[RAG DEBUG] FTS RPC Error:", keywordResponse.error);
   } else {
     keywordMatches = keywordResponse.data ?? [];
   }
 
-  const vectorMatches: VectorMatchRow[] = vectorResponse.data ?? [];
+  const rawVectorMatches: VectorMatchRow[] = vectorResponse.data ?? [];
+
+  // --- STRICT TENANT ISOLATION SAFEGUARD ---
+  const vectorMatches = rawVectorMatches.filter((c) => {
+    if (!c.organization_id) return true;
+    const matchesTenant = c.organization_id === input.organizationId;
+    if (!matchesTenant) {
+      console.warn(`[RAG DEBUG] Cross-tenant block. Expected: ${input.organizationId}, Found: ${c.organization_id}`);
+    }
+    return matchesTenant;
+  });
 
   if (vectorMatches.length === 0 && keywordMatches.length === 0) {
+    console.log("[RAG DEBUG] No chunks found matching query.");
     return NOT_FOUND;
   }
 
   const allChunksMap = new Map<string, VectorMatchRow | KeywordMatchRow>();
   [...vectorMatches, ...keywordMatches].forEach((c) => allChunksMap.set(c.id, c));
 
-  // Filter vector matches satisfying the strict similarity threshold
   const aboveThreshold = vectorMatches.filter(
     (c) => (c.similarity ?? 0) >= MIN_SIMILARITY_THRESHOLD
   );
 
   const rrfScores = applyRRF(aboveThreshold, keywordMatches);
 
-  // Gate: keyword/FTS signal alone cannot qualify a chunk without passing vector threshold
   const aboveThresholdIds = new Set(aboveThreshold.map((c) => c.id));
   const gatedScores = keywordMatches.length > 0 
     ? rrfScores.filter((scoreObj) => aboveThresholdIds.has(scoreObj.id))
     : rrfScores;
 
+  // FIX APPLIED HERE: Clean filter without syntax error
   const topChunks = gatedScores
     .slice(0, MAX_CITATIONS)
     .map((scoreObj) => allChunksMap.get(scoreObj.id))
-    .filter((chunk): chunk is VectorMatchRow => chunk !== undefined);
+    .filter((chunk) => chunk !== undefined);
+
+  // --- CRITICAL TERMINAL LOGS ---
+  console.log("\n=========================================");
+  console.log("[RAG X-RAY] QUERY:", safeQuestion);
+  console.log(`[RAG X-RAY] RAW VECTOR MATCHES: ${rawVectorMatches.length}, FTS MATCHES: ${keywordMatches.length}`);
+  console.log(`[RAG X-RAY] FINAL FILTERED CHUNKS: ${topChunks.length}`);
+  topChunks.forEach((c, i) => {
+    console.log(`\n  -> [CHUNK ${i + 1}] ID: ${c!.id}`);
+    console.log(`  -> [CONTENT]: ${c!.content.substring(0, 200)}...`);
+  });
+  console.log("=========================================\n");
 
   if (topChunks.length === 0) {
     return NOT_FOUND;
   }
 
   const chunks: RetrievedChunk[] = topChunks.map((c, index) => ({
-    id: c.id,
-    source_type: c.source_type,
-    source_id: c.source_id,
-    content: c.content,
-    similarity: 'similarity' in c ? (c.similarity ?? 0) : 0.5,
+    id: c!.id,
+    organization_id: 'organization_id' in c! ? c!.organization_id : undefined,
+    source_type: c!.source_type,
+    source_id: c!.source_id,
+    content: c!.content,
+    similarity: 'similarity' in c! ? (c!.similarity ?? 0) : 0.5,
     citation: `[R${index + 1}]`,
   }));
 
   const groundingPrompt = buildGroundingPrompt(safeQuestion, chunks);
-  console.info(JSON.stringify({ event: 'RAG_RETRIEVAL_SUCCESS', chunksCount: chunks.length, orgId: input.organizationId }));
-
   return { chunks, groundingPrompt, found: true };
 }
 
@@ -268,5 +285,3 @@ No relevant documents were found for this query.
 
 Respond with exactly: "Data Not Found - I could not find relevant information in the available documents."`;
 }
-
-export { filterOutput };
