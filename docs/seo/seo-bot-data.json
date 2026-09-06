@@ -1,0 +1,438 @@
+{
+  "generatedAt": "2026-09-06T13:39:53.186Z",
+  "siteUrl": "https://www.setuflowcrm.com",
+  "competitors": [
+    {
+      "name": "HubSpot CRM",
+      "url": "https://www.hubspot.com/products/crm",
+      "category": "generic CRM"
+    },
+    {
+      "name": "Zoho CRM",
+      "url": "https://www.zoho.com/crm/",
+      "category": "generic CRM"
+    },
+    {
+      "name": "Pipedrive",
+      "url": "https://www.pipedrive.com/",
+      "category": "sales pipeline CRM"
+    },
+    {
+      "name": "Freshsales",
+      "url": "https://www.freshworks.com/crm/sales/",
+      "category": "sales CRM"
+    },
+    {
+      "name": "CargoWise",
+      "url": "https://www.cargowise.com/",
+      "category": "logistics execution"
+    },
+    {
+      "name": "SAP Global Trade Services",
+      "url": "https://www.sap.com/products/financial-management/global-trade-services.html",
+      "category": "global trade management"
+    }
+  ],
+  "keywordClusters": [
+    {
+      "cluster": "Import export CRM",
+      "priority": "high",
+      "keywords": [
+        "import export CRM",
+        "CRM for import export business",
+        "CRM for exporters",
+        "CRM for importers",
+        "EXIM CRM software"
+      ],
+      "targetPage": "/solutions/import-export-crm"
+    },
+    {
+      "cluster": "Export management software",
+      "priority": "high",
+      "keywords": [
+        "export management software",
+        "export sales CRM",
+        "software for exporters",
+        "export software for small business"
+      ],
+      "targetPage": "/solutions/export-management-software"
+    },
+    {
+      "cluster": "Trade show lead capture",
+      "priority": "high",
+      "keywords": [
+        "trade show lead capture app",
+        "business card scanner CRM",
+        "trade fair lead management",
+        "lead capture for exporters"
+      ],
+      "targetPage": "/features/trade-show-lead-capture"
+    },
+    {
+      "cluster": "Export quote workflow",
+      "priority": "high",
+      "keywords": [
+        "export quote software",
+        "FOB CIF quote software",
+        "quotation software for exporters",
+        "quote approval workflow CRM"
+      ],
+      "targetPage": "/features/export-quote-management"
+    },
+    {
+      "cluster": "CRM alternatives for exporters",
+      "priority": "medium",
+      "keywords": [
+        "HubSpot alternative for exporters",
+        "Zoho CRM for export business",
+        "Pipedrive alternative for import export",
+        "best CRM for exporters"
+      ],
+      "targetPage": "/compare/crm-for-exporters"
+    }
+  ],
+  "siteAnalysis": {
+    "url": "https://www.setuflowcrm.com",
+    "title": "Setu Flow — AI-Powered Trade Execution OS",
+    "description": "Setu Flow is the AI-powered Trade Execution OS for importers, exporters, manufacturers and distributors. Manage growth intelligence, buyers, suppliers, quotations, documents, orders and dispatch in one connected platform.",
+    "ogTitle": "Setu Flow — AI-Powered Trade Execution OS",
+    "canonical": "https://www.setuflowcrm.com",
+    "h1s": [
+      "The Trade Execution OS"
+    ],
+    "jsonLdCount": 4,
+    "clusterCoverage": [
+      {
+        "cluster": "Import export CRM",
+        "hits": 0,
+        "keywordCount": 5
+      },
+      {
+        "cluster": "Export management software",
+        "hits": 0,
+        "keywordCount": 4
+      },
+      {
+        "cluster": "Trade show lead capture",
+        "hits": 0,
+        "keywordCount": 4
+      },
+      {
+        "cluster": "Export quote workflow",
+        "hits": 0,
+        "keywordCount": 4
+      },
+      {
+        "cluster": "CRM alternatives for exporters",
+        "hits": 0,
+        "keywordCount": 4
+      }
+    ]
+  },
+  "targetPageAnalyses": [
+    {
+      "cluster": "Import export CRM",
+      "targetPage": "/solutions/import-export-crm",
+      "url": "https://www.setuflowcrm.com/solutions/import-export-crm",
+      "hits": 1,
+      "keywordCount": 5,
+      "matchedKeywords": [
+        "import export CRM"
+      ],
+      "canonical": "https://www.setuflowcrm.com/solutions/import-export-crm",
+      "canonicalOk": true,
+      "h1Count": 1,
+      "jsonLdCount": 6,
+      "issues": []
+    },
+    {
+      "cluster": "Export management software",
+      "targetPage": "/solutions/export-management-software",
+      "url": "https://www.setuflowcrm.com/solutions/export-management-software",
+      "hits": 1,
+      "keywordCount": 4,
+      "matchedKeywords": [
+        "export management software"
+      ],
+      "canonical": "https://www.setuflowcrm.com/solutions/export-management-software",
+      "canonicalOk": true,
+      "h1Count": 1,
+      "jsonLdCount": 6,
+      "issues": []
+    },
+    {
+      "cluster": "Trade show lead capture",
+      "targetPage": "/features/trade-show-lead-capture",
+      "url": "https://www.setuflowcrm.com/features/trade-show-lead-capture",
+      "hits": 1,
+      "keywordCount": 4,
+      "matchedKeywords": [
+        "lead capture for exporters"
+      ],
+      "canonical": "https://www.setuflowcrm.com/features/trade-show-lead-capture",
+      "canonicalOk": true,
+      "h1Count": 1,
+      "jsonLdCount": 6,
+      "issues": []
+    },
+    {
+      "cluster": "Export quote workflow",
+      "targetPage": "/features/export-quote-management",
+      "url": "https://www.setuflowcrm.com/features/export-quote-management",
+      "hits": 0,
+      "keywordCount": 4,
+      "matchedKeywords": [],
+      "canonical": "https://www.setuflowcrm.com/features/export-quote-management",
+      "canonicalOk": true,
+      "h1Count": 1,
+      "jsonLdCount": 6,
+      "issues": [
+        "no direct target phrase coverage"
+      ]
+    },
+    {
+      "cluster": "CRM alternatives for exporters",
+      "targetPage": "/compare/crm-for-exporters",
+      "url": "https://www.setuflowcrm.com/compare/crm-for-exporters",
+      "hits": 1,
+      "keywordCount": 4,
+      "matchedKeywords": [
+        "best CRM for exporters"
+      ],
+      "canonical": "https://www.setuflowcrm.com/compare/crm-for-exporters",
+      "canonicalOk": true,
+      "h1Count": 1,
+      "jsonLdCount": 6,
+      "issues": []
+    }
+  ],
+  "competitorAnalyses": [
+    {
+      "name": "HubSpot CRM",
+      "url": "https://www.hubspot.com/products/crm",
+      "category": "generic CRM",
+      "analysis": {
+        "url": "https://www.hubspot.com/products/crm",
+        "title": "Streamline Your Entire Business With a Free CRM | HubSpot",
+        "description": "HubSpot’s free CRM powers your customer support, sales, and marketing with easy-to-use features like live chat, meeting scheduling, and email tracking.",
+        "ogTitle": "Streamline Your Entire Business With a Free CRM | HubSpot",
+        "canonical": "https://www.hubspot.com/products/crm",
+        "h1s": [
+          "Free CRM Software for Startups&nbsp;&amp; Small Businesses"
+        ],
+        "jsonLdCount": 3,
+        "clusterCoverage": [
+          {
+            "cluster": "Import export CRM",
+            "hits": 0,
+            "keywordCount": 5
+          },
+          {
+            "cluster": "Export management software",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Trade show lead capture",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Export quote workflow",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "CRM alternatives for exporters",
+            "hits": 0,
+            "keywordCount": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "Zoho CRM",
+      "url": "https://www.zoho.com/crm/",
+      "category": "generic CRM",
+      "analysis": {
+        "url": "https://www.zoho.com/crm/",
+        "title": "Zoho CRM | Built-in AI Agents",
+        "description": "Zoho CRM is the best CRM to grow with. Zoho CRM comes with built-in AI agents, advanced automation, powerful reporting capability, and integrates with more than 1,200 business apps.",
+        "ogTitle": "Zoho CRM | Built-in AI Agents",
+        "canonical": "https://www.zoho.com/en-us/crm/",
+        "h1s": [
+          "Close more deals with free AI agents"
+        ],
+        "jsonLdCount": 0,
+        "clusterCoverage": [
+          {
+            "cluster": "Import export CRM",
+            "hits": 0,
+            "keywordCount": 5
+          },
+          {
+            "cluster": "Export management software",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Trade show lead capture",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Export quote workflow",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "CRM alternatives for exporters",
+            "hits": 0,
+            "keywordCount": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pipedrive",
+      "url": "https://www.pipedrive.com/",
+      "category": "sales pipeline CRM",
+      "analysis": {
+        "url": "https://www.pipedrive.com/",
+        "title": "Sales CRM &amp; Pipeline Management Software | Pipedrive",
+        "description": "Pipedrive is the easy-to-use, #1 user-rated CRM tool. Get more qualified leads and grow your business with our sales CRM. Sign up for a 14-day free trial.",
+        "ogTitle": "Sales CRM &amp; Pipeline Management Software",
+        "canonical": "https://www.pipedrive.com",
+        "h1s": [
+          "The easy and effective CRM for closing deals"
+        ],
+        "jsonLdCount": 2,
+        "clusterCoverage": [
+          {
+            "cluster": "Import export CRM",
+            "hits": 0,
+            "keywordCount": 5
+          },
+          {
+            "cluster": "Export management software",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Trade show lead capture",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Export quote workflow",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "CRM alternatives for exporters",
+            "hits": 0,
+            "keywordCount": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "Freshsales",
+      "url": "https://www.freshworks.com/crm/sales/",
+      "category": "sales CRM",
+      "analysis": {
+        "url": "https://www.freshworks.com/crm/sales/",
+        "title": "Freshsales: Streamlined Sales CRM Solution | Freshworks",
+        "description": "Freshsales is an AI-powered CRM to boost your sales efficiency. Effortlessly capture leads and close deals faster. Try for free!",
+        "ogTitle": "Freshsales: Streamlined Sales CRM Solution | Freshworks",
+        "canonical": "https://www.freshworks.com/crm/sales/",
+        "h1s": [
+          "Sell smarter and close deals faster"
+        ],
+        "jsonLdCount": 1,
+        "clusterCoverage": [
+          {
+            "cluster": "Import export CRM",
+            "hits": 0,
+            "keywordCount": 5
+          },
+          {
+            "cluster": "Export management software",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Trade show lead capture",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Export quote workflow",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "CRM alternatives for exporters",
+            "hits": 0,
+            "keywordCount": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "CargoWise",
+      "url": "https://www.cargowise.com/",
+      "category": "logistics execution",
+      "analysis": {
+        "url": "https://www.cargowise.com/",
+        "title": "Centralize global logistics operations on a single platform solution, CargoWise.",
+        "description": "CargoWise transforms supply chains worldwide, offering advanced logistics and cargo software for streamlined, borderless operations.",
+        "ogTitle": "Centralize global logistics operations on a single platform solution, CargoWise.",
+        "canonical": "https://www.cargowise.com/",
+        "h1s": [
+          "The platform that powers global logistics"
+        ],
+        "jsonLdCount": 0,
+        "clusterCoverage": [
+          {
+            "cluster": "Import export CRM",
+            "hits": 0,
+            "keywordCount": 5
+          },
+          {
+            "cluster": "Export management software",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Trade show lead capture",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "Export quote workflow",
+            "hits": 0,
+            "keywordCount": 4
+          },
+          {
+            "cluster": "CRM alternatives for exporters",
+            "hits": 0,
+            "keywordCount": 4
+          }
+        ]
+      }
+    },
+    {
+      "name": "SAP Global Trade Services",
+      "url": "https://www.sap.com/products/financial-management/global-trade-services.html",
+      "category": "global trade management",
+      "error": "https://www.sap.com/products/financial-management/global-trade-services.html returned 404"
+    }
+  ],
+  "recommendations": [
+    "Review the home page meta description length and keep import-export CRM, quotes, orders, and execution language clear.",
+    "Strengthen /features/export-quote-management with natural language for its target cluster: Export quote workflow.",
+    "Add internal links from high-authority marketing pages to target SEO landing pages where they genuinely help the reader.",
+    "Use Search Console non-brand queries and landing-page impressions to decide the next SEO PR instead of creating pages from keyword guesses alone."
+  ]
+}
