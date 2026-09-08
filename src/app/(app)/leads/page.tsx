@@ -110,6 +110,7 @@ export default async function LeadsPage({
   const requestedLeadType = readRequestedLeadType(searchParams?.leadType);
   const quickLeadType: 'buyer' | 'supplier' = requestedLeadType || modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer');
   const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
+  const canAccessStarkInbound = workspace.canAccessAdmin || workspace.currentRoles.some((role) => String(role).toLowerCase() === 'sales');
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -149,7 +150,7 @@ export default async function LeadsPage({
             Trade Show Trial mode: this list shows captured booth leads. You can add follow-up tasks, but quotes and orders stay preview-only until upgrade.
           </div>
         ) : null}
-        {isStarkPackmate && workspace.canAccessAdmin ? (
+        {isStarkPackmate && canAccessStarkInbound ? (
           <div className="flex items-center justify-between gap-4 rounded-panel border border-blue-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 shadow-sm">
             <div>
               <div className="flex items-center gap-2">
